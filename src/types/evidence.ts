@@ -23,6 +23,7 @@ export interface EvidenceItem {
 export interface CaseInfo {
   petitioner_name: string;
   beneficiary_name: string;
-  case_type: string;
   compiled_date: string;
 }
+
+export type Lang = 'es' | 'en';

@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Upload, FileImage, MessageSquare, FileText, X, CheckCircle } from 'lucide-react';
-import { EvidenceItem, EvidenceType } from '@/types/evidence';
-import { classifyFile, generateExhibitNumber } from '@/lib/evidenceUtils';
+import { Upload, FileImage, MessageSquare, FileText, X, CheckCircle, ExternalLink } from 'lucide-react';
+import { EvidenceItem, EvidenceType, Lang } from '@/types/evidence';
+import { classifyFile } from '@/lib/evidenceUtils';
+import { t } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 interface FileUploadZoneProps {
   onFilesAdded: (items: EvidenceItem[]) => void;
   existingCount: number;
+  lang: Lang;
 }
 
 const TYPE_ICONS = {
@@ -15,40 +17,33 @@ const TYPE_ICONS = {
   other: FileText,
 } as const;
 
-const TYPE_LABELS = {
-  photo: 'Foto',
-  chat: 'Chat / Captura',
-  other: 'Otro',
-} as const;
-
 const TYPE_COLORS = {
   photo: 'text-primary bg-primary/10 border-primary/30',
   chat: 'text-primary bg-primary/10 border-primary/30',
   other: 'text-accent bg-accent/10 border-accent/30',
 };
 
-export function FileUploadZone({ onFilesAdded, existingCount }: FileUploadZoneProps) {
+export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUploadZoneProps) {
   const [dragOver, setDragOver] = useState(false);
   const [previewing, setPreviewing] = useState<{ file: File; type: EvidenceType; url: string }[]>([]);
 
+  const TYPE_LABELS = {
+    photo: t('typePhoto', lang),
+    chat: t('typeChat', lang),
+    other: t('typeOther', lang),
+  };
+
   const processFiles = (files: FileList | File[]) => {
     const arr = Array.from(files);
-    const newItems = arr.map((file, i) => {
+    const newItems = arr.map((file) => {
       const type = classifyFile(file);
-      const idx = existingCount + i;
-      const counts = { photo: 0, chat: 0, other: 0 };
-      const exhibit_number = generateExhibitNumber(type, counts[type]++);
-      return {
-        file,
-        type,
-        url: URL.createObjectURL(file),
-      };
+      return { file, type, url: URL.createObjectURL(file) };
     });
-    setPreviewing(newItems);
+    setPreviewing(prev => [...prev, ...newItems]);
   };
 
   const confirmFiles = () => {
-    const items: EvidenceItem[] = previewing.map((p, i) => ({
+    const items: EvidenceItem[] = previewing.map((p) => ({
       id: crypto.randomUUID(),
       file: p.file,
       previewUrl: p.url,
@@ -71,6 +66,11 @@ export function FileUploadZone({ onFilesAdded, existingCount }: FileUploadZonePr
 
   const changeType = (idx: number, type: EvidenceType) => {
     setPreviewing(prev => prev.map((p, i) => i === idx ? { ...p, type } : p));
+  };
+
+  const openGoogleDrivePicker = () => {
+    // Opens Google Drive in a new tab for manual download
+    window.open('https://drive.google.com', '_blank');
   };
 
   return (
@@ -103,18 +103,28 @@ export function FileUploadZone({ onFilesAdded, existingCount }: FileUploadZonePr
             <Upload className="w-6 h-6 text-primary-foreground" />
           </div>
           <div>
-            <p className="font-semibold text-foreground">Arrastra tus archivos aquí</p>
-            <p className="text-sm text-muted-foreground mt-1">o haz clic para seleccionar fotos, capturas de chat, comprobantes</p>
+            <p className="font-semibold text-foreground">{t('uploadHere', lang)}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t('uploadSub', lang)}</p>
           </div>
-          <p className="text-xs text-muted-foreground">Soporta: JPG, PNG, WEBP, PDF</p>
+          <p className="text-xs text-muted-foreground">{t('uploadFormats', lang)}</p>
         </div>
       </label>
+
+      {/* Google Drive shortcut */}
+      <button
+        type="button"
+        onClick={openGoogleDrivePicker}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border bg-card text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/50 transition-all"
+      >
+        <ExternalLink className="w-4 h-4" />
+        {t('orFromDrive', lang)}
+      </button>
 
       {/* Preview list before confirming */}
       {previewing.length > 0 && (
         <div className="space-y-3">
           <p className="text-sm font-semibold text-foreground">
-            Confirma la clasificación de cada archivo:
+            {t('confirmClassify', lang)}
           </p>
           {previewing.map((p, idx) => {
             const Icon = TYPE_ICONS[p.type];
@@ -140,18 +150,18 @@ export function FileUploadZone({ onFilesAdded, existingCount }: FileUploadZonePr
 
                   {/* Type selector */}
                   <div className="flex gap-1.5 mt-2">
-                    {(['photo', 'chat', 'other'] as EvidenceType[]).map(t => (
+                    {(['photo', 'chat', 'other'] as EvidenceType[]).map(typeKey => (
                       <button
-                        key={t}
-                        onClick={() => changeType(idx, t)}
+                        key={typeKey}
+                        onClick={() => changeType(idx, typeKey)}
                         className={cn(
                           'text-xs px-2 py-0.5 rounded border font-medium transition-all',
-                          p.type === t
-                            ? TYPE_COLORS[t] + ' font-semibold'
+                          p.type === typeKey
+                            ? TYPE_COLORS[typeKey] + ' font-semibold'
                             : 'text-muted-foreground border-border hover:border-primary/30'
                         )}
                       >
-                        {TYPE_LABELS[t]}
+                        {TYPE_LABELS[typeKey]}
                       </button>
                     ))}
                   </div>
@@ -173,7 +183,7 @@ export function FileUploadZone({ onFilesAdded, existingCount }: FileUploadZonePr
             className="w-full py-2.5 rounded-lg gradient-hero text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 shadow-primary hover:opacity-90 transition-opacity"
           >
             <CheckCircle className="w-4 h-4" />
-            Confirmar {previewing.length} archivo{previewing.length !== 1 ? 's' : ''}
+            {t('confirmFiles', lang)} {previewing.length} {previewing.length !== 1 ? t('files', lang) : t('file', lang)}
           </button>
         </div>
       )}
