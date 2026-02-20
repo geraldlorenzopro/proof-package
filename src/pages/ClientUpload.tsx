@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Scale, Upload, CheckCircle, Clock, Image, MessageSquare, FileText, ChevronDown, ChevronUp, Save, AlertCircle } from 'lucide-react';
+import { Scale, Upload, CheckCircle, Clock, Image, MessageSquare, FileText, ChevronDown, ChevronUp, AlertCircle, ZoomIn, X, CalendarIcon, Trash2 } from 'lucide-react';
+import { format, parse, isValid } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 type EvidenceItem = {
   id: string;
@@ -30,6 +35,16 @@ type ClientCase = {
   status: string;
 };
 
+const DEMONSTRATES_OPTIONS = [
+  'Comunicación constante',
+  'Coordinación de vida en común',
+  'Apoyo emocional',
+  'Apoyo financiero',
+  'Planificación de viaje / mudanza',
+  'Relación romántica',
+  'Otro',
+];
+
 export default function ClientUpload() {
   const { token } = useParams<{ token: string }>();
   const [clientCase, setClientCase] = useState<ClientCase | null>(null);
@@ -39,13 +54,17 @@ export default function ClientUpload() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [savedId, setSavedId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const autoSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
     loadCase();
+    return () => {
+      // Clear all auto-save timers on unmount
+      Object.values(autoSaveTimers.current).forEach(clearTimeout);
+    };
   }, [token]);
 
   async function loadCase() {
@@ -68,7 +87,6 @@ export default function ClientUpload() {
       .order('upload_order', { ascending: true });
     setItems(data || []);
     setLoading(false);
-    // Update case status to in_progress
     await supabase.from('client_cases').update({ status: 'in_progress' }).eq('access_token', token);
   }
 
@@ -80,8 +98,8 @@ export default function ClientUpload() {
 
   function detectType(fileName: string): string {
     const ext = fileName.split('.').pop()?.toLowerCase() || '';
-    if (['jpg','jpeg','png','heic','webp','gif'].includes(ext)) return 'photo';
-    if (['pdf','doc','docx','txt'].includes(ext)) return 'other';
+    if (['jpg', 'jpeg', 'png', 'heic', 'webp', 'gif'].includes(ext)) return 'photo';
+    if (['pdf', 'doc', 'docx', 'txt'].includes(ext)) return 'other';
     return 'photo';
   }
 
@@ -106,7 +124,6 @@ export default function ClientUpload() {
         file_type: detectType(file.name),
         file_size: file.size,
         upload_order: existingCount + i,
-        source_location: 'Cliente',
       }).select().single();
 
       if (inserted) newItems.push(inserted);
@@ -115,33 +132,77 @@ export default function ClientUpload() {
     setItems(prev => [...prev, ...newItems]);
     setUploading(false);
     setUploadProgress(0);
-    // Auto-expand the first new item
     if (newItems.length > 0) setExpandedId(newItems[0].id);
   }
 
-  async function saveItem(item: EvidenceItem) {
-    setSavingId(item.id);
-    const isComplete = !!(item.caption && item.event_date && item.participants);
-    await supabase.from('evidence_items').update({
-      caption: item.caption,
-      event_date: item.event_date,
-      participants: item.participants,
-      location: item.location,
-      platform: item.platform,
-      demonstrates: item.demonstrates,
-      source_location: item.source_location,
-      notes: item.notes,
-      date_is_approximate: item.date_is_approximate,
-      form_complete: isComplete,
-    }).eq('id', item.id);
-    setItems(prev => prev.map(i => i.id === item.id ? { ...i, form_complete: isComplete } : i));
-    setSavingId(null);
-    setSavedId(item.id);
-    setTimeout(() => setSavedId(null), 2000);
-  }
-
+  // Auto-save with debounce
   function updateItem(id: string, field: string, value: any) {
     setItems(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i));
+
+    // Clear existing timer for this item
+    if (autoSaveTimers.current[id]) {
+      clearTimeout(autoSaveTimers.current[id]);
+    }
+
+    // Set new debounced save (1.5s after last change)
+    autoSaveTimers.current[id] = setTimeout(() => {
+      setItems(current => {
+        const item = current.find(i => i.id === id);
+        if (item) {
+          const isComplete = checkComplete(item);
+          supabase.from('evidence_items').update({
+            caption: item.caption,
+            event_date: item.event_date,
+            participants: item.participants,
+            location: item.location,
+            platform: item.platform,
+            demonstrates: item.demonstrates,
+            notes: item.notes,
+            date_is_approximate: item.date_is_approximate,
+            form_complete: isComplete,
+          }).eq('id', id).then(() => {
+            // Update form_complete locally
+            setItems(prev => prev.map(i => i.id === id ? { ...i, form_complete: isComplete } : i));
+          });
+        }
+        return current;
+      });
+      delete autoSaveTimers.current[id];
+    }, 1500);
+  }
+
+  // Immediate save (for date picker, checkboxes)
+  function updateItemImmediate(id: string, updates: Partial<EvidenceItem>) {
+    setItems(prev => {
+      const updated = prev.map(i => i.id === id ? { ...i, ...updates } : i);
+      const item = updated.find(i => i.id === id);
+      if (item) {
+        const isComplete = checkComplete(item);
+        supabase.from('evidence_items').update({
+          ...updates,
+          form_complete: isComplete,
+        }).eq('id', id);
+        return updated.map(i => i.id === id ? { ...i, form_complete: isComplete } : i);
+      }
+      return updated;
+    });
+  }
+
+  function checkComplete(item: EvidenceItem): boolean {
+    if (!item.event_date) return false;
+    if (item.file_type === 'photo') return !!(item.caption && item.participants);
+    if (item.file_type === 'chat') return !!(item.participants && item.demonstrates);
+    if (item.file_type === 'other') return !!item.caption;
+    return false;
+  }
+
+  async function deleteItem(id: string) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    await supabase.from('evidence_items').delete().eq('id', id);
+    await supabase.storage.from('evidence-files').remove([item.file_path]);
+    setItems(prev => prev.filter(i => i.id !== id));
+    if (expandedId === id) setExpandedId(null);
   }
 
   async function markCompleted() {
@@ -154,6 +215,10 @@ export default function ClientUpload() {
 
   function getFileUrl(path: string) {
     return supabase.storage.from('evidence-files').getPublicUrl(path).data.publicUrl;
+  }
+
+  function isPhoto(fileName: string) {
+    return ['jpg', 'jpeg', 'png', 'webp', 'gif'].some(ext => fileName.toLowerCase().endsWith(ext));
   }
 
   if (loading) return (
@@ -190,6 +255,18 @@ export default function ClientUpload() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Full-screen image preview */}
+      {previewUrl && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
+          <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setPreviewUrl(null)} className="absolute -top-10 right-0 text-white hover:text-white/70 transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+            <img src={previewUrl} alt="" className="w-full rounded-xl shadow-2xl object-contain max-h-[80vh]" />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="gradient-hero text-primary-foreground">
         <div className="max-w-2xl mx-auto px-4 py-6">
@@ -215,17 +292,11 @@ export default function ClientUpload() {
                 <span className="text-primary font-semibold">{Math.round((completedCount / items.length) * 100)}%</span>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full gradient-hero rounded-full transition-all duration-500"
-                  style={{ width: `${(completedCount / items.length) * 100}%` }}
-                />
+                <div className="h-full gradient-hero rounded-full transition-all duration-500" style={{ width: `${(completedCount / items.length) * 100}%` }} />
               </div>
             </div>
             {allDone && (
-              <button
-                onClick={markCompleted}
-                className="flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-600 transition-colors whitespace-nowrap"
-              >
+              <button onClick={markCompleted} className="flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-600 transition-colors whitespace-nowrap">
                 <CheckCircle className="w-3.5 h-3.5" />
                 ¡Listo!
               </button>
@@ -274,10 +345,11 @@ export default function ClientUpload() {
         </div>
 
         {/* Items list */}
-        {items.map((item, idx) => {
+        {items.map((item) => {
           const Icon = typeIcon[item.file_type] || Image;
           const isExpanded = expandedId === item.id;
-          const isPhoto = ['jpg','jpeg','png','webp','gif'].some(ext => item.file_name.toLowerCase().endsWith(ext));
+          const itemIsPhoto = isPhoto(item.file_name);
+          const fileUrl = getFileUrl(item.file_path);
 
           return (
             <div key={item.id} className={`bg-card border rounded-2xl overflow-hidden shadow-card transition-all ${item.form_complete ? 'border-emerald-200' : ''}`}>
@@ -287,9 +359,17 @@ export default function ClientUpload() {
                 onClick={() => setExpandedId(isExpanded ? null : item.id)}
               >
                 {/* Thumbnail */}
-                <div className="w-14 h-14 rounded-xl bg-secondary overflow-hidden shrink-0">
-                  {isPhoto ? (
-                    <img src={getFileUrl(item.file_path)} alt={item.file_name} className="w-full h-full object-cover" />
+                <div
+                  className="w-14 h-14 rounded-xl bg-secondary overflow-hidden shrink-0 relative group cursor-pointer"
+                  onClick={e => { if (itemIsPhoto) { e.stopPropagation(); setPreviewUrl(fileUrl); } }}
+                >
+                  {itemIsPhoto ? (
+                    <>
+                      <img src={fileUrl} alt={item.file_name} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <ZoomIn className="w-4 h-4 text-white" />
+                      </div>
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Icon className="w-6 h-6 text-muted-foreground" />
@@ -316,98 +396,183 @@ export default function ClientUpload() {
                 </div>
               </button>
 
-              {/* Expanded form */}
+              {/* Expanded narrative form */}
               {isExpanded && (
-                <div className="border-t px-4 pb-4 pt-4 space-y-3">
-                  {isPhoto && (
-                    <img src={getFileUrl(item.file_path)} alt="" className="w-full max-h-48 object-contain rounded-xl bg-secondary mb-2" />
+                <div className="border-t px-4 pb-4 pt-4 space-y-5">
+                  {/* Full-size image preview */}
+                  {itemIsPhoto && (
+                    <div className="relative cursor-pointer group" onClick={() => setPreviewUrl(fileUrl)}>
+                      <img src={fileUrl} alt="" className="w-full max-h-64 object-contain rounded-xl bg-secondary" />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                        <div className="bg-black/60 text-white text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                          <ZoomIn className="w-3.5 h-3.5" />
+                          Ver en grande
+                        </div>
+                      </div>
+                    </div>
                   )}
 
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">¿Qué muestra esta foto? *</label>
-                    <textarea
-                      value={item.caption || ''}
-                      onChange={e => updateItem(item.id, 'caption', e.target.value)}
-                      placeholder="Ej: Foto de la boda de María y Juan en la iglesia San Pedro"
-                      rows={2}
-                      className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                  {/* Auto-save indicator */}
+                  <p className="text-xs text-muted-foreground/60 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Se guarda automáticamente
+                  </p>
+
+                  {/* DATE — with date picker */}
+                  <NarrativeQuestion
+                    question={item.file_type === 'chat' ? '¿Cuándo fue esta conversación?' : item.file_type === 'other' ? '¿De qué fecha es este documento?' : '¿Cuándo fue tomada esta foto?'}
+                    hint="Toca el calendario para elegir la fecha"
+                    required
+                  >
+                    <ClientDatePicker
+                      value={item.event_date || ''}
+                      isApprox={item.date_is_approximate || false}
+                      onDateChange={val => updateItemImmediate(item.id, { event_date: val })}
+                      onApproxChange={val => updateItemImmediate(item.id, { date_is_approximate: val })}
                     />
-                  </div>
+                  </NarrativeQuestion>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">Fecha *</label>
-                      <input
-                        type="date"
-                        value={item.event_date || ''}
-                        onChange={e => updateItem(item.id, 'event_date', e.target.value)}
-                        className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">Lugar</label>
-                      <input
-                        type="text"
-                        value={item.location || ''}
-                        onChange={e => updateItem(item.id, 'location', e.target.value)}
-                        placeholder="Ciudad, País"
-                        className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">¿Quiénes aparecen? *</label>
-                    <input
-                      type="text"
-                      value={item.participants || ''}
-                      onChange={e => updateItem(item.id, 'participants', e.target.value)}
-                      placeholder="Ej: María García (peticionaria) y Juan Pérez (beneficiario)"
-                      className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-
-                  {item.file_type === 'chat' && (
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">Plataforma</label>
-                      <select
-                        value={item.platform || ''}
-                        onChange={e => updateItem(item.id, 'platform', e.target.value)}
-                        className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  {/* PHOTO-specific fields */}
+                  {item.file_type === 'photo' && (
+                    <>
+                      <NarrativeQuestion
+                        question="¿Qué estaban haciendo en esta foto?"
+                        hint='Cuéntalo como se lo contarías a un amigo. Ej: "Estábamos celebrando nuestro aniversario en un restaurante"'
+                        required
                       >
-                        <option value="">Seleccionar…</option>
-                        {['WhatsApp','Instagram','Facebook','iMessage','SMS','Email','Otro'].map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                    </div>
+                        <textarea
+                          value={item.caption || ''}
+                          onChange={e => updateItem(item.id, 'caption', e.target.value)}
+                          placeholder="Ej: Mi mamá y yo estábamos celebrando su cumpleaños en casa"
+                          rows={2}
+                          className="w-full border border-border bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
+                        />
+                      </NarrativeQuestion>
+
+                      <NarrativeQuestion
+                        question="¿Quiénes aparecen en la foto?"
+                        hint='Escribe el nombre real de cada persona. Ej: "María López (peticionaria) y Juan García (beneficiario)"'
+                        required
+                      >
+                        <input
+                          type="text"
+                          value={item.participants || ''}
+                          onChange={e => updateItem(item.id, 'participants', e.target.value)}
+                          placeholder="Ej: María López y Juan García"
+                          className="w-full border border-border bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                        />
+                      </NarrativeQuestion>
+
+                      <NarrativeQuestion question="¿Dónde fue tomada? (opcional)">
+                        <input
+                          type="text"
+                          value={item.location || ''}
+                          onChange={e => updateItem(item.id, 'location', e.target.value)}
+                          placeholder="Ej: Miami, FL"
+                          className="w-full border border-border bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                        />
+                      </NarrativeQuestion>
+                    </>
                   )}
 
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">Notas adicionales</label>
+                  {/* CHAT-specific fields */}
+                  {item.file_type === 'chat' && (
+                    <>
+                      <NarrativeQuestion
+                        question="¿Entre quiénes es esta conversación?"
+                        hint='Escribe los nombres reales de las personas'
+                        required
+                      >
+                        <input
+                          type="text"
+                          value={item.participants || ''}
+                          onChange={e => updateItem(item.id, 'participants', e.target.value)}
+                          placeholder="Ej: María López y Juan García"
+                          className="w-full border border-border bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                        />
+                      </NarrativeQuestion>
+
+                      <NarrativeQuestion question="¿Qué muestra esta conversación?" required>
+                        <select
+                          value={item.demonstrates || ''}
+                          onChange={e => updateItemImmediate(item.id, { demonstrates: e.target.value })}
+                          className="w-full border border-border bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                        >
+                          <option value="">— Elige una opción —</option>
+                          {DEMONSTRATES_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                      </NarrativeQuestion>
+
+                      <NarrativeQuestion question="¿De qué plataforma es? (opcional)">
+                        <select
+                          value={item.platform || ''}
+                          onChange={e => updateItemImmediate(item.id, { platform: e.target.value })}
+                          className="w-full border border-border bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                        >
+                          <option value="">Seleccionar…</option>
+                          {['WhatsApp', 'Instagram', 'Facebook', 'iMessage', 'SMS', 'Email', 'Otro'].map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      </NarrativeQuestion>
+
+                      <NarrativeQuestion question="Cuéntanos más sobre este chat (opcional)" hint="Ej: Estaban coordinando el pago del apartamento">
+                        <textarea
+                          value={item.caption || ''}
+                          onChange={e => updateItem(item.id, 'caption', e.target.value)}
+                          placeholder="Ej: Hablaban de los gastos del hogar y del próximo viaje juntos"
+                          rows={2}
+                          className="w-full border border-border bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
+                        />
+                      </NarrativeQuestion>
+                    </>
+                  )}
+
+                  {/* OTHER/DOCUMENT-specific fields */}
+                  {item.file_type === 'other' && (
+                    <>
+                      <NarrativeQuestion
+                        question="¿Qué es este documento?"
+                        hint='Descríbelo en palabras simples. Ej: "Es un recibo de renta del apartamento que compartimos"'
+                        required
+                      >
+                        <textarea
+                          value={item.caption || ''}
+                          onChange={e => updateItem(item.id, 'caption', e.target.value)}
+                          placeholder="Ej: Recibo de renta del apartamento que compartimos en New York"
+                          rows={2}
+                          className="w-full border border-border bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
+                        />
+                      </NarrativeQuestion>
+
+                      <NarrativeQuestion question="¿A quiénes corresponde este documento? (opcional)">
+                        <input
+                          type="text"
+                          value={item.participants || ''}
+                          onChange={e => updateItem(item.id, 'participants', e.target.value)}
+                          placeholder="Ej: María López y Juan García"
+                          className="w-full border border-border bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                        />
+                      </NarrativeQuestion>
+                    </>
+                  )}
+
+                  {/* Notes — all types */}
+                  <NarrativeQuestion question="Notas adicionales (opcional)">
                     <input
                       type="text"
                       value={item.notes || ''}
                       onChange={e => updateItem(item.id, 'notes', e.target.value)}
                       placeholder="Cualquier detalle relevante para el abogado…"
-                      className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-full border border-border bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
-                  </div>
+                  </NarrativeQuestion>
 
+                  {/* Delete button */}
                   <button
-                    onClick={() => saveItem(item)}
-                    disabled={savingId === item.id}
-                    className={`w-full flex items-center justify-center gap-2 font-semibold py-2.5 rounded-xl transition-all text-sm ${
-                      savedId === item.id
-                        ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-                        : 'gradient-hero text-primary-foreground shadow-primary hover:opacity-90'
-                    } disabled:opacity-50`}
+                    onClick={() => { if (confirm('¿Eliminar este archivo?')) deleteItem(item.id); }}
+                    className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 transition-colors mt-2"
                   >
-                    {savingId === item.id ? (
-                      <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Guardando…</>
-                    ) : savedId === item.id ? (
-                      <><CheckCircle className="w-4 h-4" /> ¡Guardado!</>
-                    ) : (
-                      <><Save className="w-4 h-4" /> Guardar</>
-                    )}
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Eliminar archivo
                   </button>
                 </div>
               )}
@@ -420,7 +585,7 @@ export default function ClientUpload() {
           <div className="bg-secondary/50 border rounded-2xl p-5 text-center">
             <Clock className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
             <p className="font-medium text-foreground text-sm mb-1">¿No terminaste? No hay problema</p>
-            <p className="text-xs text-muted-foreground">Cierra y vuelve cuando quieras. Todo está guardado automáticamente.</p>
+            <p className="text-xs text-muted-foreground">Cierra y vuelve cuando quieras. Todo se guarda automáticamente.</p>
           </div>
         )}
 
@@ -434,6 +599,89 @@ export default function ClientUpload() {
           </button>
         )}
       </main>
+    </div>
+  );
+}
+
+// ── Helper components ─────────────────────────────────────────────────────────
+
+function NarrativeQuestion({ question, hint, required, children }: {
+  question: string;
+  hint?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-sm font-semibold text-foreground leading-snug">
+        {question} {required && <span className="text-destructive">*</span>}
+      </p>
+      {hint && <p className="text-xs text-muted-foreground leading-relaxed">{hint}</p>}
+      {children}
+    </div>
+  );
+}
+
+function ClientDatePicker({ value, isApprox, onDateChange, onApproxChange }: {
+  value: string;
+  isApprox: boolean;
+  onDateChange: (val: string) => void;
+  onApproxChange: (val: boolean) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  let selectedDate: Date | undefined = undefined;
+  if (value) {
+    const parsed = parse(value, 'yyyy-MM-dd', new Date());
+    if (isValid(parsed)) selectedDate = parsed;
+  }
+
+  function handleSelect(date: Date | undefined) {
+    if (date) {
+      onDateChange(format(date, 'yyyy-MM-dd'));
+      setOpen(false);
+    }
+  }
+
+  const displayValue = selectedDate
+    ? format(selectedDate, 'MMM d, yyyy')
+    : '';
+
+  return (
+    <div className="space-y-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full justify-start text-left font-normal text-sm h-10 rounded-xl",
+              !value && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0 text-primary" />
+            <span className="truncate text-base">{displayValue || 'Toca para elegir fecha'}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0 z-[200]" align="start">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleSelect}
+            initialFocus
+            className={cn("p-3 pointer-events-auto")}
+            disabled={(date) => date > new Date()}
+          />
+        </PopoverContent>
+      </Popover>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={isApprox}
+          onChange={e => onApproxChange(e.target.checked)}
+          className="rounded w-4 h-4"
+        />
+        <span className="text-xs text-muted-foreground">No recuerdo el día exacto (marcar si es aproximada)</span>
+      </label>
     </div>
   );
 }
