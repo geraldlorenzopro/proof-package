@@ -1,44 +1,17 @@
 import jsPDF from 'jspdf';
 import { EvidenceItem, CaseInfo } from '@/types/evidence';
 import { buildCaption, formatDateDisplay } from './evidenceUtils';
-import { supabase } from '@/integrations/supabase/client';
+import { translateToEnglish } from './translator';
 
-// ── AI Translation ─────────────────────────────────────────────────────────────
-async function translateItems(
-  items: EvidenceItem[]
-): Promise<Map<string, { caption: string; participants: string; location?: string; notes?: string }>> {
-  const result = new Map<string, { caption: string; participants: string; location?: string; notes?: string }>();
-
-  const texts: Record<string, string> = {};
-  for (const item of items) {
-    if (item.caption) texts[`${item.id}__caption`] = item.caption;
-    if (item.participants) texts[`${item.id}__participants`] = item.participants;
-    if (item.location) texts[`${item.id}__location`] = item.location;
-    if (item.notes) texts[`${item.id}__notes`] = item.notes;
-  }
-
-  if (Object.keys(texts).length === 0) {
-    for (const item of items) result.set(item.id, { caption: item.caption, participants: item.participants, location: item.location, notes: item.notes });
-    return result;
-  }
-
-  try {
-    const { data, error } = await supabase.functions.invoke('translate-evidence', { body: { texts } });
-    const translated: Record<string, string> = (data && !error) ? (data.translated || {}) : {};
-    for (const item of items) {
-      result.set(item.id, {
-        caption: translated[`${item.id}__caption`] || item.caption,
-        participants: translated[`${item.id}__participants`] || item.participants,
-        location: item.location ? (translated[`${item.id}__location`] || item.location) : undefined,
-        notes: item.notes ? (translated[`${item.id}__notes`] || item.notes) : undefined,
-      });
-    }
-  } catch {
-    for (const item of items) {
-      result.set(item.id, { caption: item.caption, participants: item.participants, location: item.location, notes: item.notes });
-    }
-  }
-  return result;
+// ── Local Translation (zero cost, no API calls) ─────────────────────────────
+function translateItemsLocally(items: EvidenceItem[]): EvidenceItem[] {
+  return items.map(item => ({
+    ...item,
+    caption: translateToEnglish(item.caption),
+    participants: translateToEnglish(item.participants),
+    location: item.location ? translateToEnglish(item.location) : item.location,
+    notes: item.notes ? translateToEnglish(item.notes) : item.notes,
+  }));
 }
 
 
@@ -67,15 +40,8 @@ export async function generateEvidencePDF(
   items: EvidenceItem[],
   caseInfo: CaseInfo
 ): Promise<void> {
-  // ── Translate all free-text fields via AI before generating ──────────────────
-  const translations = await translateItems(items);
-
-  // Build translated items — replace text fields with AI-translated versions
-  const translatedItems: EvidenceItem[] = items.map(item => {
-    const tx = translations.get(item.id);
-    if (!tx) return item;
-    return { ...item, caption: tx.caption, participants: tx.participants, location: tx.location, notes: tx.notes };
-  });
+  // ── Translate all free-text fields locally (zero cost) ──────────────────
+  const translatedItems = translateItemsLocally(items);
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
   const W = doc.internal.pageSize.getWidth();
