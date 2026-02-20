@@ -51,8 +51,8 @@ export function EvidenceSummary({ items }: EvidenceSummaryProps) {
 
 function StatCard({ value, label, accent, warn }: { value: number; label: string; accent?: boolean; warn?: boolean }) {
   return (
-    <div className={`rounded-lg p-3 text-center border ${accent ? 'border-emerald-200 bg-emerald-50' : warn ? 'border-amber-200 bg-amber-50' : 'border-border bg-secondary/40'}`}>
-      <div className={`text-2xl font-bold ${accent ? 'text-emerald-600' : warn ? 'text-amber-600' : 'text-foreground'}`}>
+    <div className={`rounded-lg p-3 text-center border ${accent ? 'border-primary/30 bg-primary/5' : warn ? 'border-accent/30 bg-accent/5' : 'border-border bg-secondary/40'}`}>
+      <div className={`text-2xl font-bold ${accent ? 'text-primary' : warn ? 'text-accent' : 'text-foreground'}`}>
         {value}
       </div>
       <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
@@ -75,8 +75,8 @@ function SummaryRow({ item }: { item: EvidenceItem }) {
         <div className="flex items-center gap-1.5 mb-1">
           <span className="text-xs font-bold text-primary">{item.exhibit_number || '—'}</span>
           {item.formComplete
-            ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-            : <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+            ? <CheckCircle className="w-3.5 h-3.5 text-primary" />
+            : <AlertCircle className="w-3.5 h-3.5 text-accent" />
           }
           <span className="text-xs text-muted-foreground">{formatDateDisplay(item.event_date, item.date_is_approximate)}</span>
         </div>
