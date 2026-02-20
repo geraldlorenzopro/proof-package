@@ -234,10 +234,8 @@ async function renderMultiItemPage(
     let imgY = slotY;
     if (item.file.type.startsWith('image/')) {
       try {
-        const imgData = await fileToBase64(item.file);
-        const imgProps = doc.getImageProperties(imgData);
-        const ratio = imgProps.height / imgProps.width;
-        // Center image, max width fits page, but also cap height
+        const { dataUrl, width: natW, height: natH } = await imageFileToJpegDataUrl(item.file);
+        const ratio = natH / natW;
         let imgW = CONTENT_W;
         let imgH = imgW * ratio;
         if (imgH > IMG_MAX_H) {
@@ -245,8 +243,7 @@ async function renderMultiItemPage(
           imgW = imgH / ratio;
         }
         const imgX = MARGIN + (CONTENT_W - imgW) / 2;
-        const fmt = (imgProps.fileType || '').toUpperCase() || 'JPEG';
-        doc.addImage(imgData, fmt as 'JPEG' | 'PNG' | 'WEBP', imgX, imgY, imgW, imgH);
+        doc.addImage(dataUrl, 'JPEG', imgX, imgY, imgW, imgH);
         imgY += imgH + 3;
       } catch {
         doc.setFillColor(...LIGHT);
@@ -329,9 +326,8 @@ async function renderSingleItemPage(
 
   if (item.file.type.startsWith('image/')) {
     try {
-      const imgData = await fileToBase64(item.file);
-      const imgProps = doc.getImageProperties(imgData);
-      const ratio = imgProps.height / imgProps.width;
+      const { dataUrl, width: natW, height: natH } = await imageFileToJpegDataUrl(item.file);
+      const ratio = natH / natW;
       let imgW = CONTENT_W;
       let imgH = imgW * ratio;
       if (imgH > maxImgH) {
@@ -339,8 +335,7 @@ async function renderSingleItemPage(
         imgW = imgH / ratio;
       }
       const imgX = MARGIN + (CONTENT_W - imgW) / 2;
-      const fmt = (imgProps.fileType || '').toUpperCase() || 'JPEG';
-      doc.addImage(imgData, fmt as 'JPEG' | 'PNG' | 'WEBP', imgX, imgY, imgW, imgH);
+      doc.addImage(dataUrl, 'JPEG', imgX, imgY, imgW, imgH);
       imgY += imgH + 6;
     } catch {
       doc.setFillColor(...LIGHT);
@@ -411,5 +406,27 @@ function fileToBase64(file: File): Promise<string> {
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(file);
+  });
+}
+
+// Converts any image file to a JPEG data URL via canvas
+// This is necessary for WEBP, HEIC, and other formats not supported by jsPDF
+function imageFileToJpegDataUrl(file: File): Promise<{ dataUrl: string; width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas not available')); return; }
+      ctx.drawImage(img, 0, 0);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      URL.revokeObjectURL(url);
+      resolve({ dataUrl, width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+    img.src = url;
   });
 }
