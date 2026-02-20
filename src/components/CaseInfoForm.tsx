@@ -1,13 +1,15 @@
 import { CaseInfo } from '@/types/evidence';
+import { Lang, t } from '@/lib/i18n';
 
 interface CaseInfoFormProps {
   caseInfo: CaseInfo;
   onChange: (info: CaseInfo) => void;
+  lang: Lang;
 }
 
 const inputCls = "w-full text-sm border border-border rounded-md px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all";
 
-export function CaseInfoForm({ caseInfo, onChange }: CaseInfoFormProps) {
+export function CaseInfoForm({ caseInfo, onChange, lang }: CaseInfoFormProps) {
   function update(partial: Partial<CaseInfo>) {
     onChange({ ...caseInfo, ...partial });
   }
@@ -15,13 +17,13 @@ export function CaseInfoForm({ caseInfo, onChange }: CaseInfoFormProps) {
   return (
     <div className="bg-card rounded-xl border shadow-card p-5 space-y-4">
       <div>
-        <h2 className="font-display text-lg font-semibold text-foreground">Información del Caso</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">Estos datos aparecerán en la portada del PDF.</p>
+        <h2 className="font-display text-lg font-semibold text-foreground">{t('caseInfoTitle', lang)}</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">{t('caseInfoDesc', lang)}</p>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Nombre del Peticionario *
+            {t('petitionerName', lang)} *
           </label>
           <input
             type="text"
@@ -33,7 +35,7 @@ export function CaseInfoForm({ caseInfo, onChange }: CaseInfoFormProps) {
         </div>
         <div className="space-y-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Nombre del Beneficiario *
+            {t('beneficiaryName', lang)} *
           </label>
           <input
             type="text"
@@ -43,28 +45,9 @@ export function CaseInfoForm({ caseInfo, onChange }: CaseInfoFormProps) {
             className={inputCls}
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1 sm:col-span-2">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Tipo de Caso
-          </label>
-          <select
-            value={caseInfo.case_type}
-            onChange={e => update({ case_type: e.target.value })}
-            className={inputCls}
-          >
-            <option value="">Seleccionar…</option>
-            <option value="I-130 Petition for Alien Relative">I-130 – Petition for Alien Relative</option>
-            <option value="I-485 Adjustment of Status">I-485 – Adjustment of Status</option>
-            <option value="I-751 Remove Conditions on Residence">I-751 – Remove Conditions on Residence</option>
-            <option value="CR-1 / IR-1 Spousal Visa">CR-1 / IR-1 – Spousal Visa</option>
-            <option value="K-1 Fiancé(e) Visa">K-1 – Fiancé(e) Visa</option>
-            <option value="N-400 Naturalization">N-400 – Naturalization</option>
-            <option value="Otro">Otro</option>
-          </select>
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Fecha de Compilación
+            {t('compiledDate', lang)}
           </label>
           <input
             type="text"

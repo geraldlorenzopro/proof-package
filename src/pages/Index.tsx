@@ -3,28 +3,31 @@ import { FileUploadZone } from '@/components/FileUploadZone';
 import { EvidenceForm } from '@/components/EvidenceForm';
 import { EvidenceSummary } from '@/components/EvidenceSummary';
 import { CaseInfoForm } from '@/components/CaseInfoForm';
-import { EvidenceItem, CaseInfo } from '@/types/evidence';
+import { EvidenceItem, CaseInfo, Lang } from '@/types/evidence';
 import { generateExhibitNumber } from '@/lib/evidenceUtils';
 import { generateEvidencePDF } from '@/lib/pdfGenerator';
-import { FileText, Upload, ClipboardList, Download, Scale, Shield, Clock } from 'lucide-react';
+import { t } from '@/lib/i18n';
+import { FileText, Upload, ClipboardList, Download, Scale, Shield, Clock, Globe } from 'lucide-react';
 
-const STEPS = [
-  { id: 1, label: 'Información del caso', icon: ClipboardList },
-  { id: 2, label: 'Subir archivos', icon: Upload },
-  { id: 3, label: 'Completar datos', icon: FileText },
-  { id: 4, label: 'Generar PDF', icon: Download },
+const STEPS = (lang: Lang) => [
+  { id: 1, label: t('step1', lang), icon: ClipboardList },
+  { id: 2, label: t('step2', lang), icon: Upload },
+  { id: 3, label: t('step3', lang), icon: FileText },
+  { id: 4, label: t('step4', lang), icon: Download },
 ];
 
 export default function Index() {
+  const [lang, setLang] = useState<Lang>('es');
   const [step, setStep] = useState(1);
   const [caseInfo, setCaseInfo] = useState<CaseInfo>({
     petitioner_name: '',
     beneficiary_name: '',
-    case_type: '',
     compiled_date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
   });
   const [items, setItems] = useState<EvidenceItem[]>([]);
   const [generating, setGenerating] = useState(false);
+
+  const steps = STEPS(lang);
 
   // Assign exhibit numbers whenever items change
   const numberedItems = useMemo(() => {
@@ -65,29 +68,39 @@ export default function Index() {
       {/* Hero Header */}
       <header className="gradient-hero text-primary-foreground">
         <div className="max-w-5xl mx-auto px-4 py-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center">
-              <Scale className="w-5 h-5 text-accent" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center">
+                <Scale className="w-5 h-5 text-accent" />
+              </div>
+              <span className="text-accent font-semibold text-sm tracking-wide uppercase">{t('appName', lang)}</span>
             </div>
-            <span className="text-accent font-semibold text-sm tracking-wide uppercase">USCIS Evidence Assistant</span>
+            {/* Language toggle */}
+            <button
+              onClick={() => setLang(l => l === 'es' ? 'en' : 'es')}
+              className="flex items-center gap-1.5 text-xs text-primary-foreground/80 hover:text-primary-foreground bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-all border border-white/20"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              {lang === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+            </button>
           </div>
           <h1 className="font-display text-3xl font-bold mb-2 leading-tight">
-            Paquete Profesional<br />de Evidencias para USCIS
+            {t('tagline', lang)}
           </h1>
           <p className="text-primary-foreground/70 text-sm max-w-xl">
-            Organiza fotos, capturas de chat y documentos en un PDF listo para imprimir o anexar a tu caso de inmigración.
+            {t('taglineDesc', lang)}
           </p>
 
           {/* Trust badges */}
           <div className="flex flex-wrap gap-4 mt-5">
             {[
-              { icon: Shield, label: 'Formato USCIS-friendly' },
-              { icon: Clock, label: 'Organización cronológica' },
-              { icon: FileText, label: 'PDF con portada e índice' },
+              { icon: Shield, key: 'badge1' as const },
+              { icon: Clock, key: 'badge2' as const },
+              { icon: FileText, key: 'badge3' as const },
             ].map(b => (
-              <div key={b.label} className="flex items-center gap-1.5 text-xs text-primary-foreground/80">
+              <div key={b.key} className="flex items-center gap-1.5 text-xs text-primary-foreground/80">
                 <b.icon className="w-3.5 h-3.5 text-accent" />
-                {b.label}
+                {t(b.key, lang)}
               </div>
             ))}
           </div>
@@ -98,7 +111,7 @@ export default function Index() {
       <div className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex">
-            {STEPS.map((s, idx) => {
+            {steps.map((s, idx) => {
               const Icon = s.icon;
               const isActive = step === s.id;
               const isDone = step > s.id;
@@ -131,13 +144,13 @@ export default function Index() {
         {/* Step 1: Case Info */}
         {step === 1 && (
           <div className="max-w-2xl mx-auto space-y-6">
-            <CaseInfoForm caseInfo={caseInfo} onChange={setCaseInfo} />
+            <CaseInfoForm caseInfo={caseInfo} onChange={setCaseInfo} lang={lang} />
             <button
               onClick={() => setStep(2)}
               disabled={!caseComplete}
               className="w-full py-3 rounded-xl gradient-hero text-primary-foreground font-semibold shadow-primary disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
             >
-              Continuar →
+              {t('continue', lang)}
             </button>
           </div>
         )}
@@ -146,13 +159,13 @@ export default function Index() {
         {step === 2 && (
           <div className="max-w-2xl mx-auto space-y-6">
             <div>
-              <h2 className="font-display text-xl font-semibold text-foreground mb-1">Sube tus evidencias</h2>
-              <p className="text-sm text-muted-foreground">Puedes subir fotos, capturas de WhatsApp/Instagram, tickets, comprobantes, etc.</p>
+              <h2 className="font-display text-xl font-semibold text-foreground mb-1">{t('uploadTitle', lang)}</h2>
+              <p className="text-sm text-muted-foreground">{t('uploadDesc', lang)}</p>
             </div>
-            <FileUploadZone onFilesAdded={handleFilesAdded} existingCount={items.length} />
+            <FileUploadZone onFilesAdded={handleFilesAdded} existingCount={items.length} lang={lang} />
             {items.length > 0 && (
               <button onClick={() => setStep(3)} className="w-full py-3 rounded-xl gradient-hero text-primary-foreground font-semibold shadow-primary hover:opacity-90 transition-opacity">
-                Completar datos de {items.length} archivo{items.length !== 1 ? 's' : ''} →
+                {t('completeData', lang)} {items.length} {items.length !== 1 ? t('files', lang) : t('file', lang)} →
               </button>
             )}
           </div>
@@ -164,12 +177,12 @@ export default function Index() {
             {/* Forms */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-xl font-semibold text-foreground">Completa los datos</h2>
+                <h2 className="font-display text-xl font-semibold text-foreground">{t('completeDataTitle', lang)}</h2>
                 <button
                   onClick={() => setStep(2)}
                   className="text-xs text-primary hover:underline"
                 >
-                  + Agregar más archivos
+                  {t('addMoreFiles', lang)}
                 </button>
               </div>
               {numberedItems.map(item => (
@@ -177,12 +190,13 @@ export default function Index() {
                   <EvidenceForm
                     item={item}
                     onChange={handleItemChange}
+                    lang={lang}
                   />
                   <button
                     onClick={() => removeItem(item.id)}
                     className="absolute top-3 right-3 text-xs text-muted-foreground hover:text-destructive transition-colors"
                   >
-                    Eliminar
+                    {t('remove', lang)}
                   </button>
                 </div>
               ))}
@@ -192,14 +206,14 @@ export default function Index() {
                   onClick={() => setStep(4)}
                   className="w-full py-3 rounded-xl gradient-hero text-primary-foreground font-semibold shadow-primary hover:opacity-90 transition-opacity"
                 >
-                  Ver resumen y generar PDF →
+                  {t('reviewAndGenerate', lang)}
                 </button>
               )}
             </div>
 
             {/* Sidebar summary */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-foreground text-sm">Progreso</h3>
+              <h3 className="font-semibold text-foreground text-sm">{t('progress', lang)}</h3>
               <EvidenceSummary items={numberedItems} />
             </div>
           </div>
@@ -209,21 +223,19 @@ export default function Index() {
         {step === 4 && (
           <div className="max-w-2xl mx-auto space-y-6">
             <div>
-              <h2 className="font-display text-xl font-semibold text-foreground mb-1">Resumen Final</h2>
-              <p className="text-sm text-muted-foreground">Revisa tu paquete de evidencias antes de generar el PDF.</p>
+              <h2 className="font-display text-xl font-semibold text-foreground mb-1">{t('finalSummary', lang)}</h2>
+              <p className="text-sm text-muted-foreground">{t('finalSummaryDesc', lang)}</p>
             </div>
 
             {/* Case info recap */}
             <div className="bg-card border rounded-xl p-5 shadow-card">
-              <h3 className="text-sm font-semibold text-foreground mb-3">Información del Caso</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-3">{t('caseInfoRecap', lang)}</h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <span className="text-muted-foreground">Peticionario:</span>
+                <span className="text-muted-foreground">{t('petitioner', lang)}</span>
                 <span className="font-medium text-foreground">{caseInfo.petitioner_name}</span>
-                <span className="text-muted-foreground">Beneficiario:</span>
+                <span className="text-muted-foreground">{t('beneficiary', lang)}</span>
                 <span className="font-medium text-foreground">{caseInfo.beneficiary_name}</span>
-                <span className="text-muted-foreground">Tipo de caso:</span>
-                <span className="font-medium text-foreground">{caseInfo.case_type || '—'}</span>
-                <span className="text-muted-foreground">Compilado:</span>
+                <span className="text-muted-foreground">{t('compiled', lang)}</span>
                 <span className="font-medium text-foreground">{caseInfo.compiled_date}</span>
               </div>
             </div>
@@ -232,17 +244,17 @@ export default function Index() {
 
             {/* PDF structure preview */}
             <div className="bg-secondary/50 border border-border rounded-xl p-4 text-sm space-y-2">
-              <p className="font-semibold text-foreground text-sm">El PDF incluirá:</p>
+              <p className="font-semibold text-foreground text-sm">{t('pdfWillInclude', lang)}</p>
               <ul className="space-y-1 text-muted-foreground">
-                <li>✅ Portada con información del caso</li>
-                <li>✅ Tabla de contenidos</li>
+                <li>✅ {t('pdfCoverPage', lang)}</li>
+                <li>✅ {t('pdfTOC', lang)}</li>
                 {numberedItems.filter(i => i.type === 'photo').length > 0 &&
-                  <li>✅ Section A – Fotografías ({numberedItems.filter(i => i.type === 'photo').length} exhibits)</li>}
+                  <li>✅ Section A – Photographs ({numberedItems.filter(i => i.type === 'photo').length} items)</li>}
                 {numberedItems.filter(i => i.type === 'chat').length > 0 &&
-                  <li>✅ Section B – Chats/Mensajes ({numberedItems.filter(i => i.type === 'chat').length} exhibits)</li>}
+                  <li>✅ Section B – Messages & Chats ({numberedItems.filter(i => i.type === 'chat').length} items)</li>}
                 {numberedItems.filter(i => i.type === 'other').length > 0 &&
-                  <li>✅ Section C – Otros ({numberedItems.filter(i => i.type === 'other').length} exhibits)</li>}
-                <li>✅ Pie de página con número de exhibit y fecha</li>
+                  <li>✅ Section C – Other Documents ({numberedItems.filter(i => i.type === 'other').length} items)</li>}
+                <li>✅ {t('pdfFooter', lang)}</li>
               </ul>
             </div>
 
@@ -252,11 +264,11 @@ export default function Index() {
               className="w-full py-4 rounded-xl gradient-hero text-primary-foreground font-bold text-base shadow-primary hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
               <Download className="w-5 h-5" />
-              {generating ? 'Generando PDF…' : 'Descargar PDF Profesional'}
+              {generating ? t('generating', lang) : t('downloadPDF', lang)}
             </button>
 
             <p className="text-xs text-center text-muted-foreground">
-              El PDF se descargará directamente a tu dispositivo. No se almacena ningún dato en servidores.
+              {t('noStorage', lang)}
             </p>
           </div>
         )}

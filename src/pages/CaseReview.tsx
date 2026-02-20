@@ -100,7 +100,6 @@ export default function CaseReview() {
       await generateEvidencePDF(mappedItems, {
         petitioner_name: clientCase.petitioner_name || clientCase.client_name,
         beneficiary_name: clientCase.beneficiary_name || '',
-        case_type: clientCase.case_type,
         compiled_date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
       });
     } finally {
