@@ -1,6 +1,46 @@
 import jsPDF from 'jspdf';
 import { EvidenceItem, CaseInfo } from '@/types/evidence';
 import { buildCaption, formatDateDisplay } from './evidenceUtils';
+import { supabase } from '@/integrations/supabase/client';
+
+// ── AI Translation ─────────────────────────────────────────────────────────────
+async function translateItems(
+  items: EvidenceItem[]
+): Promise<Map<string, { caption: string; participants: string; location?: string; notes?: string }>> {
+  const result = new Map<string, { caption: string; participants: string; location?: string; notes?: string }>();
+
+  const texts: Record<string, string> = {};
+  for (const item of items) {
+    if (item.caption) texts[`${item.id}__caption`] = item.caption;
+    if (item.participants) texts[`${item.id}__participants`] = item.participants;
+    if (item.location) texts[`${item.id}__location`] = item.location;
+    if (item.notes) texts[`${item.id}__notes`] = item.notes;
+  }
+
+  if (Object.keys(texts).length === 0) {
+    for (const item of items) result.set(item.id, { caption: item.caption, participants: item.participants, location: item.location, notes: item.notes });
+    return result;
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('translate-evidence', { body: { texts } });
+    const translated: Record<string, string> = (data && !error) ? (data.translated || {}) : {};
+    for (const item of items) {
+      result.set(item.id, {
+        caption: translated[`${item.id}__caption`] || item.caption,
+        participants: translated[`${item.id}__participants`] || item.participants,
+        location: item.location ? (translated[`${item.id}__location`] || item.location) : undefined,
+        notes: item.notes ? (translated[`${item.id}__notes`] || item.notes) : undefined,
+      });
+    }
+  } catch {
+    for (const item of items) {
+      result.set(item.id, { caption: item.caption, participants: item.participants, location: item.location, notes: item.notes });
+    }
+  }
+  return result;
+}
+
 
 const NAVY = [22, 42, 90] as const;
 const GOLD = [196, 155, 48] as const;
@@ -27,10 +67,21 @@ export async function generateEvidencePDF(
   items: EvidenceItem[],
   caseInfo: CaseInfo
 ): Promise<void> {
+  // ── Translate all free-text fields via AI before generating ──────────────────
+  const translations = await translateItems(items);
+
+  // Build translated items — replace text fields with AI-translated versions
+  const translatedItems: EvidenceItem[] = items.map(item => {
+    const tx = translations.get(item.id);
+    if (!tx) return item;
+    return { ...item, caption: tx.caption, participants: tx.participants, location: tx.location, notes: tx.notes };
+  });
+
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   let pageNum = 1;
+
 
   // ── COVER PAGE ──────────────────────────────────────────────────────────────
   doc.setFillColor(...NAVY);
@@ -87,9 +138,9 @@ export async function generateEvidencePDF(
   doc.line(35, infoY + lineH * 2.8, W - 35, infoY + lineH * 2.8);
 
   // Section counts on cover
-  const photoCount = items.filter(i => i.type === 'photo').length;
-  const chatCount = items.filter(i => i.type === 'chat').length;
-  const otherCount = items.filter(i => i.type === 'other').length;
+  const photoCount = translatedItems.filter(i => i.type === 'photo').length;
+  const chatCount = translatedItems.filter(i => i.type === 'chat').length;
+  const otherCount = translatedItems.filter(i => i.type === 'other').length;
   const countY = infoY + lineH * 4.5;
 
   doc.setFontSize(10);
@@ -117,9 +168,9 @@ export async function generateEvidencePDF(
 
   let tocY = 42;
   const sections = [
-    { label: 'Section A – Photographs', type: 'photo', items: items.filter(i => i.type === 'photo') },
-    { label: 'Section B – Messages & Chats', type: 'chat', items: items.filter(i => i.type === 'chat') },
-    { label: 'Section C – Other Supporting Documents', type: 'other', items: items.filter(i => i.type === 'other') },
+    { label: 'Section A – Photographs', type: 'photo', items: translatedItems.filter(i => i.type === 'photo') },
+    { label: 'Section B – Messages & Chats', type: 'chat', items: translatedItems.filter(i => i.type === 'chat') },
+    { label: 'Section C – Other Supporting Documents', type: 'other', items: translatedItems.filter(i => i.type === 'other') },
   ];
 
   sections.forEach(sec => {
@@ -270,11 +321,13 @@ async function renderMultiItemPage(
     doc.text(captionLines.slice(0, 3), MARGIN, imgY + 4); // max 3 lines
     imgY += Math.min(captionLines.length, 3) * 4.5 + 6;
 
-    // Meta row: Date | Participants
+    // Meta row: only show fields with actual values
     const metaItems: { label: string; value: string }[] = [
       { label: 'DATE', value: formatDateDisplay(item.event_date, item.date_is_approximate) },
-      { label: 'PARTICIPANTS', value: item.participants || '—' },
     ];
+    if (item.participants && item.participants.trim()) {
+      metaItems.push({ label: 'PARTICIPANTS', value: item.participants });
+    }
 
     const colW = CONTENT_W / metaItems.length;
     let mx = MARGIN;
@@ -366,11 +419,13 @@ async function renderSingleItemPage(
   doc.text(captionLines, MARGIN + 6, imgY + 8);
   imgY += captionH + 6;
 
-  // Metadata row
-  const metaItems = [
+  // Metadata row — only show fields with actual values
+  const metaItems: { label: string; value: string }[] = [
     { label: 'DATE', value: formatDateDisplay(item.event_date, item.date_is_approximate) },
-    { label: 'PARTICIPANTS', value: item.participants || '—' },
   ];
+  if (item.participants && item.participants.trim()) {
+    metaItems.push({ label: 'PARTICIPANTS', value: item.participants });
+  }
 
   const colW = CONTENT_W / metaItems.length;
   let mx = MARGIN;
