@@ -45,6 +45,29 @@ export function toEnglish(value: string): string {
   return DEMONSTRATES_EN_MAP[value] || value;
 }
 
+// Human-readable date for captions (same logic as PDF)
+function formatDateHuman(date: string, isApprox: boolean): string {
+  if (!date) return 'Date not specified';
+  const parts = date.split('-');
+  if (parts.length === 3) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthIdx = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const year = parts[0];
+    if (monthIdx >= 0 && monthIdx < 12) {
+      const formatted = `${months[monthIdx]} ${day}, ${year}`;
+      return isApprox ? `${formatted} (approx.)` : formatted;
+    }
+  }
+  return isApprox ? `${date} (approx.)` : date;
+}
+
+// Strip leading "between"/"entre" from participants to avoid "between Between..."
+function cleanParticipants(raw: string): string {
+  return raw.replace(/^(between|entre)\s+/i, '').trim();
+}
+
 export function buildCaption(item: {
   type: EvidenceType;
   participants: string;
@@ -55,8 +78,8 @@ export function buildCaption(item: {
   platform?: string;
   demonstrates?: string;
 }): string {
-  const dateStr = formatDateDisplay(item.event_date, item.date_is_approximate);
-  const participants = item.participants || '—';
+  const dateStr = formatDateHuman(item.event_date, item.date_is_approximate);
+  const participants = item.participants ? cleanParticipants(item.participants) : '—';
 
   if (item.type === 'photo') {
     const loc = item.location ? ` Location: ${item.location}.` : '';
