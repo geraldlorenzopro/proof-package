@@ -234,7 +234,7 @@ async function renderMultiItemPage(
     let imgY = slotY;
     if (item.file.type.startsWith('image/')) {
       try {
-        const { dataUrl, width: natW, height: natH } = await imageFileToJpegDataUrl(item.file);
+        const { dataUrl, width: natW, height: natH } = await imageToJpegDataUrl(item.file, item.previewUrl);
         const ratio = natH / natW;
         let imgW = CONTENT_W;
         let imgH = imgW * ratio;
@@ -326,7 +326,7 @@ async function renderSingleItemPage(
 
   if (item.file.type.startsWith('image/')) {
     try {
-      const { dataUrl, width: natW, height: natH } = await imageFileToJpegDataUrl(item.file);
+      const { dataUrl, width: natW, height: natH } = await imageToJpegDataUrl(item.file, item.previewUrl);
       const ratio = natH / natW;
       let imgW = CONTENT_W;
       let imgH = imgW * ratio;
@@ -409,24 +409,33 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-// Converts any image file to a JPEG data URL via canvas
-// This is necessary for WEBP, HEIC, and other formats not supported by jsPDF
-function imageFileToJpegDataUrl(file: File): Promise<{ dataUrl: string; width: number; height: number }> {
+// Converts any image to a JPEG data URL via canvas.
+// Accepts a previewUrl (already a blob URL) or falls back to creating one from the File.
+// This normalizes WEBP, HEIC, PNG, JPG → JPEG for reliable jsPDF rendering on all devices.
+function imageToJpegDataUrl(
+  file: File,
+  previewUrl?: string
+): Promise<{ dataUrl: string; width: number; height: number }> {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
+    const src = previewUrl || URL.createObjectURL(file);
+    const created = !previewUrl;
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
+      // Cap canvas size to avoid memory issues on mobile (max 2048px wide)
+      const maxPx = 2048;
+      const scale = Math.min(1, maxPx / Math.max(img.naturalWidth, img.naturalHeight));
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
       const ctx = canvas.getContext('2d');
-      if (!ctx) { reject(new Error('Canvas not available')); return; }
-      ctx.drawImage(img, 0, 0);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-      URL.revokeObjectURL(url);
-      resolve({ dataUrl, width: img.naturalWidth, height: img.naturalHeight });
+      if (!ctx) { if (created) URL.revokeObjectURL(src); reject(new Error('Canvas not available')); return; }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+      if (created) URL.revokeObjectURL(src);
+      resolve({ dataUrl, width: canvas.width, height: canvas.height });
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
-    img.src = url;
+    img.onerror = () => { if (created) URL.revokeObjectURL(src); reject(new Error('Image load failed')); };
+    img.crossOrigin = 'anonymous';
+    img.src = src;
   });
 }
