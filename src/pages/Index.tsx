@@ -7,7 +7,21 @@ import { EvidenceItem, CaseInfo, Lang } from '@/types/evidence';
 import { generateExhibitNumber } from '@/lib/evidenceUtils';
 import { generateEvidencePDF } from '@/lib/pdfGenerator';
 import { t } from '@/lib/i18n';
-import { FileText, Upload, ClipboardList, Download, Scale, Shield, Clock, Globe } from 'lucide-react';
+import {
+  FileText, Upload, ClipboardList, Download, Scale, Shield, Clock, Globe,
+  ListChecks, AlertTriangle, X
+} from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const STEPS = (lang: Lang) => [
   { id: 1, label: t('step1', lang), icon: ClipboardList },
@@ -26,10 +40,10 @@ export default function Index() {
   });
   const [items, setItems] = useState<EvidenceItem[]>([]);
   const [generating, setGenerating] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const steps = STEPS(lang);
 
-  // Assign exhibit numbers whenever items change
   const numberedItems = useMemo(() => {
     const counts = { photo: 0, chat: 0, other: 0 };
     return items.map(item => ({
@@ -53,6 +67,7 @@ export default function Index() {
 
   async function handleGeneratePDF() {
     setGenerating(true);
+    setShowConfirm(false);
     try {
       await generateEvidencePDF(numberedItems, caseInfo);
     } finally {
@@ -62,37 +77,36 @@ export default function Index() {
 
   const allComplete = numberedItems.length > 0 && numberedItems.every(i => i.formComplete);
   const caseComplete = !!(caseInfo.petitioner_name && caseInfo.beneficiary_name);
+  const pendingCount = numberedItems.filter(i => !i.formComplete).length;
+  const completedCount = numberedItems.filter(i => i.formComplete).length;
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Header */}
       <header className="gradient-hero text-primary-foreground">
-        <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center">
-                <Scale className="w-5 h-5 text-accent" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-accent/20 flex items-center justify-center">
+                <Scale className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
               </div>
-              <span className="text-accent font-semibold text-sm tracking-wide uppercase">{t('appName', lang)}</span>
+              <span className="text-accent font-semibold text-xs sm:text-sm tracking-wide uppercase">{t('appName', lang)}</span>
             </div>
-            {/* Language toggle */}
             <button
               onClick={() => setLang(l => l === 'es' ? 'en' : 'es')}
               className="flex items-center gap-1.5 text-xs text-primary-foreground/80 hover:text-primary-foreground bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-all border border-white/20"
             >
               <Globe className="w-3.5 h-3.5" />
-              {lang === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+              {lang === 'es' ? 'English' : 'Español'}
             </button>
           </div>
-          <h1 className="font-display text-3xl font-bold mb-2 leading-tight">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold mb-2 leading-tight">
             {t('tagline', lang)}
           </h1>
-          <p className="text-primary-foreground/70 text-sm max-w-xl">
+          <p className="text-primary-foreground/70 text-sm max-w-xl hidden sm:block">
             {t('taglineDesc', lang)}
           </p>
-
-          {/* Trust badges */}
-          <div className="flex flex-wrap gap-4 mt-5">
+          <div className="flex flex-wrap gap-3 sm:gap-4 mt-4 sm:mt-5">
             {[
               { icon: Shield, key: 'badge1' as const },
               { icon: Clock, key: 'badge2' as const },
@@ -109,8 +123,8 @@ export default function Index() {
 
       {/* Step indicator */}
       <div className="border-b bg-card sticky top-0 z-10 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex">
+        <div className="max-w-5xl mx-auto px-2 sm:px-4">
+          <div className="flex overflow-x-auto scrollbar-none">
             {steps.map((s, idx) => {
               const Icon = s.icon;
               const isActive = step === s.id;
@@ -123,14 +137,13 @@ export default function Index() {
                       setStep(s.id);
                     }
                   }}
-                  className={`flex items-center gap-2 px-4 py-3.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap flex-shrink-0
                     ${isActive ? 'border-primary text-primary' : isDone ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-muted-foreground'}`}
                 >
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
                     ${isActive ? 'bg-primary text-primary-foreground' : isDone ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'}`}>
                     {isDone ? '✓' : s.id}
                   </div>
-                  <Icon className="w-3.5 h-3.5 hidden sm:block" />
                   <span className="hidden sm:block">{s.label}</span>
                 </button>
               );
@@ -140,7 +153,8 @@ export default function Index() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 py-8">
+      <main className="max-w-5xl mx-auto px-4 py-6 sm:py-8 pb-24">
+
         {/* Step 1: Case Info */}
         {step === 1 && (
           <div className="max-w-2xl mx-auto space-y-6">
@@ -173,11 +187,36 @@ export default function Index() {
 
         {/* Step 3: Fill forms */}
         {step === 3 && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Forms */}
-            <div className="lg:col-span-2 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display text-xl font-semibold text-foreground">{t('completeDataTitle', lang)}</h2>
+          <div className="space-y-4">
+            {/* Header row */}
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-display text-lg sm:text-xl font-semibold text-foreground">{t('completeDataTitle', lang)}</h2>
+              <div className="flex items-center gap-2">
+                {/* Progress Sheet Button */}
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <button className="flex items-center gap-1.5 text-xs font-semibold border border-border rounded-lg px-3 py-2 bg-card hover:bg-secondary transition-colors">
+                      <ListChecks className="w-3.5 h-3.5 text-primary" />
+                      <span className="hidden sm:inline">{lang === 'es' ? 'Ver progreso' : 'View progress'}</span>
+                      <span className="inline sm:hidden">{completedCount}/{numberedItems.length}</span>
+                      {pendingCount > 0 && (
+                        <span className="w-4 h-4 rounded-full bg-accent text-accent-foreground text-[10px] font-bold flex items-center justify-center">
+                          {pendingCount}
+                        </span>
+                      )}
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+                    <SheetHeader className="mb-4">
+                      <SheetTitle className="flex items-center gap-2">
+                        <ListChecks className="w-5 h-5 text-primary" />
+                        {lang === 'es' ? 'Progreso del paquete' : 'Package Progress'}
+                      </SheetTitle>
+                    </SheetHeader>
+                    <EvidenceSummary items={numberedItems} />
+                  </SheetContent>
+                </Sheet>
+
                 <button
                   onClick={() => setStep(2)}
                   className="text-xs text-primary hover:underline"
@@ -185,6 +224,10 @@ export default function Index() {
                   {t('addMoreFiles', lang)}
                 </button>
               </div>
+            </div>
+
+            {/* Evidence forms – full width, scrollable on mobile */}
+            <div className="space-y-4">
               {numberedItems.map(item => (
                 <div key={item.id} className="relative">
                   <EvidenceForm
@@ -194,28 +237,23 @@ export default function Index() {
                   />
                   <button
                     onClick={() => removeItem(item.id)}
-                    className="absolute top-3 right-3 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                    className="absolute top-3 right-3 p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    title={t('remove', lang)}
                   >
-                    {t('remove', lang)}
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               ))}
-
-              {allComplete && (
-                <button
-                  onClick={() => setStep(4)}
-                  className="w-full py-3 rounded-xl gradient-hero text-primary-foreground font-semibold shadow-primary hover:opacity-90 transition-opacity"
-                >
-                  {t('reviewAndGenerate', lang)}
-                </button>
-              )}
             </div>
 
-            {/* Sidebar summary */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-foreground text-sm">{t('progress', lang)}</h3>
-              <EvidenceSummary items={numberedItems} />
-            </div>
+            {allComplete && (
+              <button
+                onClick={() => setStep(4)}
+                className="w-full py-3 rounded-xl gradient-hero text-primary-foreground font-semibold shadow-primary hover:opacity-90 transition-opacity mt-4"
+              >
+                {t('reviewAndGenerate', lang)}
+              </button>
+            )}
           </div>
         )}
 
@@ -258,8 +296,9 @@ export default function Index() {
               </ul>
             </div>
 
+            {/* Generate button → triggers confirmation */}
             <button
-              onClick={handleGeneratePDF}
+              onClick={() => setShowConfirm(true)}
               disabled={generating}
               className="w-full py-4 rounded-xl gradient-hero text-primary-foreground font-bold text-base shadow-primary hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
@@ -273,6 +312,36 @@ export default function Index() {
           </div>
         )}
       </main>
+
+      {/* Pre-submit confirmation dialog */}
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent className="max-w-sm mx-4">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-accent" />
+              {lang === 'es' ? '¿Listo para generar el PDF?' : 'Ready to generate the PDF?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed">
+              {lang === 'es'
+                ? 'Antes de continuar, asegúrate de que todos los datos estén correctos. Los nombres, fechas y descripciones aparecerán tal cual en el documento final para USCIS. ¿Deseas proceder?'
+                : 'Before continuing, make sure all details are correct. Names, dates and descriptions will appear exactly as entered in the final USCIS document. Do you want to proceed?'
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {lang === 'es' ? 'Revisar datos' : 'Review details'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleGeneratePDF}
+              className="gradient-hero text-primary-foreground"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              {lang === 'es' ? 'Sí, generar PDF' : 'Yes, generate PDF'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

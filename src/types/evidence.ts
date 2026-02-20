@@ -14,7 +14,6 @@ export interface EvidenceItem {
   participants: string;
   platform?: string; // for chats
   demonstrates?: string; // for chats
-  source_location: string;
   notes?: string;
   // Status
   formComplete: boolean;

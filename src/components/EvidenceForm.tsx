@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { EvidenceItem, EvidenceType, Lang } from '@/types/evidence';
 import { t } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { FileImage, MessageSquare, FileText, CheckCircle, AlertCircle, ZoomIn, X } from 'lucide-react';
+import { FileImage, MessageSquare, FileText, CheckCircle, AlertCircle, ZoomIn, X, CalendarIcon } from 'lucide-react';
+import { format, parse, isValid } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Button } from '@/components/ui/button';
 
 interface EvidenceFormProps {
   item: EvidenceItem;
@@ -10,7 +14,6 @@ interface EvidenceFormProps {
   lang: Lang;
 }
 
-const SOURCE_OPTIONS = ['Google Drive', 'WhatsApp', 'iCloud', 'iPhone / Android', 'Email', 'Facebook', 'Instagram', 'Other'];
 const CHAT_PLATFORMS = ['WhatsApp', 'Instagram', 'Facebook Messenger', 'iMessage', 'Telegram', 'SMS', 'Email', 'Other'];
 
 const TYPE_ICON = { photo: FileImage, chat: MessageSquare, other: FileText } as const;
@@ -33,6 +36,88 @@ function Field({ label, required, children }: { label: string; required?: boolea
 }
 
 const inputCls = "w-full text-sm border border-border rounded-md px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all";
+
+function DatePickerField({
+  value,
+  isApprox,
+  onDateChange,
+  onApproxChange,
+  lang,
+  itemId,
+}: {
+  value: string;
+  isApprox: boolean;
+  onDateChange: (val: string) => void;
+  onApproxChange: (val: boolean) => void;
+  lang: Lang;
+  itemId: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  // Parse stored date string to Date object for the picker
+  let selectedDate: Date | undefined = undefined;
+  if (value) {
+    // Try YYYY-MM-DD
+    const parsed = parse(value, 'yyyy-MM-dd', new Date());
+    if (isValid(parsed)) selectedDate = parsed;
+  }
+
+  function handleSelect(date: Date | undefined) {
+    if (date) {
+      onDateChange(format(date, 'yyyy-MM-dd'));
+      setOpen(false);
+    }
+  }
+
+  const displayValue = selectedDate
+    ? format(selectedDate, 'MMM d, yyyy')
+    : value || (lang === 'es' ? 'Seleccionar fecha…' : 'Select date…');
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2 items-start">
+        <div className="flex-1">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal text-sm h-9",
+                  !value && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate">{displayValue}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 z-[200]" align="start">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={handleSelect}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+                disabled={(date) => date > new Date()}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id={`approx-${itemId}`}
+          checked={isApprox}
+          onChange={e => onApproxChange(e.target.checked)}
+          className="rounded"
+        />
+        <label htmlFor={`approx-${itemId}`} className="text-xs text-muted-foreground">
+          {lang === 'es' ? 'Fecha aproximada' : 'Approximate date'}
+        </label>
+      </div>
+    </div>
+  );
+}
 
 export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
   const Icon = TYPE_ICON[item.type];
@@ -140,32 +225,17 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
 
         {/* Form */}
         <div className="p-4 space-y-3">
-          {/* Date row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label={t('date', lang)} required>
-              <input
-                type="text"
-                placeholder={t('datePlaceholder', lang)}
-                value={item.event_date}
-                onChange={e => update({ event_date: e.target.value })}
-                className={inputCls}
-              />
-            </Field>
-            <Field label={t('dateApprox', lang)}>
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  type="checkbox"
-                  id={`approx-${item.id}`}
-                  checked={item.date_is_approximate}
-                  onChange={e => update({ date_is_approximate: e.target.checked })}
-                  className="rounded"
-                />
-                <label htmlFor={`approx-${item.id}`} className="text-sm text-muted-foreground">
-                  {t('dateApproxLabel', lang)}
-                </label>
-              </div>
-            </Field>
-          </div>
+          {/* Date picker */}
+          <Field label={t('date', lang)} required>
+            <DatePickerField
+              value={item.event_date}
+              isApprox={item.date_is_approximate}
+              onDateChange={(val) => update({ event_date: val })}
+              onApproxChange={(val) => update({ date_is_approximate: val })}
+              lang={lang}
+              itemId={item.id}
+            />
+          </Field>
 
           {item.type === 'photo' && (
             <>
@@ -265,17 +335,6 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
             </>
           )}
 
-          <Field label={t('sourceFile', lang)} required>
-            <select
-              value={item.source_location}
-              onChange={e => update({ source_location: e.target.value })}
-              className={inputCls}
-            >
-              <option value="">{t('selectSource', lang)}</option>
-              {SOURCE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </Field>
-
           <Field label={t('additionalNote', lang)}>
             <input
               type="text"
@@ -292,7 +351,7 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
 }
 
 function checkComplete(item: EvidenceItem): boolean {
-  if (!item.event_date || !item.source_location) return false;
+  if (!item.event_date) return false;
   if (item.type === 'photo') return !!(item.caption && item.participants);
   if (item.type === 'chat') return !!(item.platform && item.participants && item.demonstrates);
   if (item.type === 'other') return !!item.caption;
