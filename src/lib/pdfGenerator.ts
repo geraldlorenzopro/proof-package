@@ -206,36 +206,46 @@ export async function generateEvidencePDF(
       // Image
       let imgY = 36;
       const maxImgH = 120;
-      try {
-        const imgData = await fileToBase64(item.file);
-        const imgProps = doc.getImageProperties(imgData);
-        const imgW = W - 40;
-        const ratio = imgProps.height / imgProps.width;
-        const imgH = Math.min(imgW * ratio, maxImgH);
-
-        doc.addImage(imgData, imgProps.fileType || 'JPEG', 20, imgY, imgW, imgH);
-        imgY += imgH + 6;
-      } catch {
-        // If image fails, just leave space
+      if (item.file.type.startsWith('image/')) {
+        try {
+          const imgData = await fileToBase64(item.file);
+          const imgProps = doc.getImageProperties(imgData);
+          const imgW = W - 40;
+          const ratio = imgProps.height / imgProps.width;
+          const imgH = Math.min(imgW * ratio, maxImgH);
+          const fmt = (imgProps.fileType || '').toUpperCase() || 'JPEG';
+          doc.addImage(imgData, fmt as 'JPEG' | 'PNG' | 'WEBP', 20, imgY, imgW, imgH);
+          imgY += imgH + 6;
+        } catch {
+          doc.setFillColor(...LIGHT);
+          doc.rect(20, imgY, W - 40, 50, 'F');
+          doc.setFontSize(9);
+          doc.setTextColor(...GRAY);
+          doc.text('[La imagen no pudo renderizarse]', W / 2, imgY + 25, { align: 'center' });
+          imgY += 56;
+        }
+      } else {
+        // PDF or other non-image file — show placeholder
         doc.setFillColor(...LIGHT);
-        doc.rect(20, imgY, W - 40, 50, 'F');
+        doc.rect(20, imgY, W - 40, 30, 'F');
         doc.setFontSize(9);
         doc.setTextColor(...GRAY);
-        doc.text('[Image could not be rendered]', W / 2, imgY + 25, { align: 'center' });
-        imgY += 56;
+        doc.text(`[Archivo adjunto: ${item.file.name}]`, W / 2, imgY + 17, { align: 'center' });
+        imgY += 36;
       }
 
-      // Caption / metadata block
-      doc.setFillColor(...LIGHT);
-      const metaH = 48;
-      doc.roundedRect(20, imgY, W - 40, metaH, 2, 2, 'F');
-
+      // Caption / metadata block — dynamic height based on text
       const fullCaption = buildCaption(item);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
       doc.setTextColor(40, 55, 90);
-      const lines = doc.splitTextToSize(fullCaption, W - 52);
-      doc.text(lines, 26, imgY + 8);
+      const captionLines = doc.splitTextToSize(fullCaption, W - 52);
+      const captionH = captionLines.length * 5 + 6;
+      const metaH = Math.max(30, captionH + 8);
+
+      doc.setFillColor(...LIGHT);
+      doc.roundedRect(20, imgY, W - 40, metaH, 2, 2, 'F');
+      doc.text(captionLines, 26, imgY + 8);
 
       // Metadata row
       const metaRowY = imgY + metaH + 6;
@@ -251,7 +261,7 @@ export async function generateEvidencePDF(
       metaItems.forEach(m => {
         doc.setFontSize(7);
         doc.setFont('helvetica', 'bold');
-      doc.setTextColor(196, 155, 48);
+        doc.setTextColor(196, 155, 48);
         doc.text(m.label.toUpperCase(), mx, metaRowY);
         doc.setFontSize(8.5);
         doc.setFont('helvetica', 'normal');

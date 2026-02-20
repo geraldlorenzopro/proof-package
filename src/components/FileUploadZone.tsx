@@ -22,9 +22,9 @@ const TYPE_LABELS = {
 } as const;
 
 const TYPE_COLORS = {
-  photo: 'text-blue-600 bg-blue-50 border-blue-200',
-  chat: 'text-emerald-600 bg-emerald-50 border-emerald-200',
-  other: 'text-amber-600 bg-amber-50 border-amber-200',
+  photo: 'text-primary bg-primary/10 border-primary/30',
+  chat: 'text-primary bg-primary/10 border-primary/30',
+  other: 'text-accent bg-accent/10 border-accent/30',
 };
 
 export function FileUploadZone({ onFilesAdded, existingCount }: FileUploadZoneProps) {

@@ -22,9 +22,9 @@ const DEMONSTRATES_OPTIONS = [
 const TYPE_ICON = { photo: FileImage, chat: MessageSquare, other: FileText } as const;
 const TYPE_LABEL = { photo: 'FOTO', chat: 'CHAT', other: 'OTRO' } as const;
 const TYPE_COLOR = {
-  photo: 'text-blue-600 bg-blue-50',
-  chat: 'text-emerald-600 bg-emerald-50',
-  other: 'text-amber-600 bg-amber-50',
+  photo: 'text-primary bg-primary/10',
+  chat: 'text-primary bg-primary/10',
+  other: 'text-accent bg-accent/10',
 };
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
@@ -69,10 +69,10 @@ export function EvidenceForm({ item, onChange }: EvidenceFormProps) {
               <Icon className="inline w-3 h-3 mr-1" />
               {TYPE_LABEL[item.type]}
             </span>
-            {isComplete
-              ? <CheckCircle className="w-4 h-4 text-emerald-500" />
-              : <AlertCircle className="w-4 h-4 text-amber-400" />
-            }
+          {isComplete
+            ? <CheckCircle className="w-4 h-4 text-primary" />
+            : <AlertCircle className="w-4 h-4 text-accent" />
+          }
           </div>
           <p className="text-sm font-medium truncate mt-0.5 text-foreground">{item.file.name}</p>
         </div>
