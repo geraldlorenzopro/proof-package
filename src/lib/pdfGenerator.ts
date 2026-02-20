@@ -283,7 +283,7 @@ async function renderMultiItemPage(
   const CONTENT_W = W - MARGIN * 2;
   const USABLE_H = H - 36 - 24; // header + footer
   const slotH = USABLE_H / 2;
-  const IMG_MAX_H = slotH * 0.52;
+  const IMG_MAX_H = slotH * 0.68;
 
   // Light page header
   doc.setFillColor(...NAVY);
@@ -397,7 +397,7 @@ async function renderSingleItemPage(
   doc.rect(0, 28, W, 1.5, 'F');
 
   let imgY = 36;
-  const maxImgH = 130;
+  const maxImgH = 170;
 
   if (isImageItem(item)) {
     try {
