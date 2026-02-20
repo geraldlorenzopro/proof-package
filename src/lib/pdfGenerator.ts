@@ -37,6 +37,38 @@ const GRAY = [100, 110, 130] as const;
 const LIGHT = [245, 247, 252] as const;
 const WHITE = [255, 255, 255] as const;
 
+// ── Detect if an item is an image by file name or type ──────────────────────
+function isImageItem(item: EvidenceItem): boolean {
+  const ext = item.file.name?.split('.').pop()?.toLowerCase() || '';
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic'].includes(ext)) return true;
+  if (item.file.type?.startsWith('image/')) return true;
+  // Check previewUrl for known image patterns
+  if (item.previewUrl && /\.(jpg|jpeg|png|webp|gif)/i.test(item.previewUrl)) return true;
+  return false;
+}
+
+// ── Human-readable date formatting for PDF ──────────────────────────────────
+function formatDateForPDF(date: string, isApprox: boolean): string {
+  if (!date) return 'Date not specified';
+  
+  // Try to parse YYYY-MM-DD format
+  const parts = date.split('-');
+  if (parts.length === 3) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthIdx = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const year = parts[0];
+    if (monthIdx >= 0 && monthIdx < 12) {
+      const formatted = `${months[monthIdx]} ${day}, ${year}`;
+      return isApprox ? `${formatted} (approx.)` : formatted;
+    }
+  }
+  
+  // Fallback
+  return isApprox ? `${date} (approx.)` : date;
+}
+
 function addPageFooter(doc: jsPDF, compiledDate: string, pageNum: number) {
   const pageH = doc.internal.pageSize.getHeight();
   const pageW = doc.internal.pageSize.getWidth();
@@ -53,10 +85,13 @@ function addPageFooter(doc: jsPDF, compiledDate: string, pageNum: number) {
 
 export async function generateEvidencePDF(
   items: EvidenceItem[],
-  caseInfo: CaseInfo
+  caseInfo: CaseInfo,
+  onProgress?: (status: string) => void,
 ): Promise<void> {
   // ── Translate all free-text fields via AI ──────────────────────────────────
+  onProgress?.('Translating to English…');
   const translatedItems = await translateItems(items);
+  onProgress?.('Building PDF…');
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
   const W = doc.internal.pageSize.getWidth();
@@ -168,7 +203,7 @@ export async function generateEvidencePDF(
       doc.setTextColor(...GRAY);
       const desc = item.caption.length > 55 ? item.caption.substring(0, 55) + '…' : item.caption;
       doc.text(`  ${desc}`, 20, tocY);
-      doc.text(formatDateDisplay(item.event_date, item.date_is_approximate), W - 20, tocY, { align: 'right' });
+      doc.text(formatDateForPDF(item.event_date, item.date_is_approximate), W - 20, tocY, { align: 'right' });
       tocY += 6;
     });
     tocY += 5;
@@ -177,6 +212,9 @@ export async function generateEvidencePDF(
   addPageFooter(doc, caseInfo.compiled_date, pageNum);
 
   // ── EVIDENCE SECTIONS ────────────────────────────────────────────────────────
+  let itemIdx = 0;
+  const totalItems = translatedItems.length;
+
   for (const sec of sections) {
     if (sec.items.length === 0) continue;
 
@@ -207,26 +245,30 @@ export async function generateEvidencePDF(
 
     // ── MULTI-ITEM PAGES: 2 images per page for photos/chats, 1 per page for other ──
     if (sec.type === 'other') {
-      // One per page for documents
       for (const item of sec.items) {
+        itemIdx++;
+        onProgress?.(`Rendering ${itemIdx}/${totalItems}…`);
         doc.addPage();
         pageNum++;
         await renderSingleItemPage(doc, item, caseInfo.compiled_date, pageNum, W, H);
       }
     } else {
-      // 2 images per page for photos and chats
       const ITEMS_PER_PAGE = 2;
       for (let i = 0; i < sec.items.length; i += ITEMS_PER_PAGE) {
+        const pageItems = sec.items.slice(i, i + ITEMS_PER_PAGE);
+        itemIdx += pageItems.length;
+        onProgress?.(`Rendering ${itemIdx}/${totalItems}…`);
         doc.addPage();
         pageNum++;
-        const pageItems = sec.items.slice(i, i + ITEMS_PER_PAGE);
         await renderMultiItemPage(doc, pageItems, caseInfo.compiled_date, pageNum, W, H);
       }
     }
   }
 
+  onProgress?.('Saving PDF…');
   const filename = `USCIS_Evidence_${(caseInfo.petitioner_name || 'Case').replace(/\s+/g, '_')}_${caseInfo.compiled_date.replace(/[\s,/]/g, '-')}.pdf`;
   doc.save(filename);
+  onProgress?.('');
 }
 
 async function renderMultiItemPage(
@@ -262,9 +304,9 @@ async function renderMultiItemPage(
       doc.line(MARGIN, slotY - 3, W - MARGIN, slotY - 3);
     }
 
-    // Image
+    // Image — detect by extension/previewUrl, not file.type
     let imgY = slotY;
-    if (item.file.type.startsWith('image/')) {
+    if (isImageItem(item)) {
       try {
         const { dataUrl, width: natW, height: natH } = await imageToJpegDataUrl(item.file, item.previewUrl);
         const ratio = natH / natW;
@@ -304,7 +346,7 @@ async function renderMultiItemPage(
 
     // Meta row: only show fields with actual values
     const metaItems: { label: string; value: string }[] = [
-      { label: 'DATE', value: formatDateDisplay(item.event_date, item.date_is_approximate) },
+      { label: 'DATE', value: formatDateForPDF(item.event_date, item.date_is_approximate) },
     ];
     if (item.participants && item.participants.trim()) {
       metaItems.push({ label: 'PARTICIPANTS', value: item.participants });
@@ -357,7 +399,7 @@ async function renderSingleItemPage(
   let imgY = 36;
   const maxImgH = 130;
 
-  if (item.file.type.startsWith('image/')) {
+  if (isImageItem(item)) {
     try {
       const { dataUrl, width: natW, height: natH } = await imageToJpegDataUrl(item.file, item.previewUrl);
       const ratio = natH / natW;
@@ -402,7 +444,7 @@ async function renderSingleItemPage(
 
   // Metadata row — only show fields with actual values
   const metaItems: { label: string; value: string }[] = [
-    { label: 'DATE', value: formatDateDisplay(item.event_date, item.date_is_approximate) },
+    { label: 'DATE', value: formatDateForPDF(item.event_date, item.date_is_approximate) },
   ];
   if (item.participants && item.participants.trim()) {
     metaItems.push({ label: 'PARTICIPANTS', value: item.participants });
@@ -434,25 +476,17 @@ async function renderSingleItemPage(
   addPageFooter(doc, compiledDate, pageNum);
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 // Converts any image to a JPEG data URL via canvas.
-// Accepts a previewUrl (already a blob URL) or falls back to creating one from the File.
-// This normalizes WEBP, HEIC, PNG, JPG → JPEG for reliable jsPDF rendering on all devices.
+// Accepts a previewUrl (already a blob URL or public URL) or falls back to creating one from the File.
 function imageToJpegDataUrl(
   file: File,
   previewUrl?: string
 ): Promise<{ dataUrl: string; width: number; height: number }> {
   return new Promise((resolve, reject) => {
-    const src = previewUrl || URL.createObjectURL(file);
-    const created = !previewUrl;
+    // Prefer previewUrl (works for remote URLs from Supabase storage)
+    const src = previewUrl || (file.size > 0 ? URL.createObjectURL(file) : '');
+    if (!src) { reject(new Error('No image source available')); return; }
+    const created = !previewUrl && file.size > 0;
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');

@@ -9,7 +9,7 @@ import { generateEvidencePDF } from '@/lib/pdfGenerator';
 import { t } from '@/lib/i18n';
 import {
   FileText, Upload, ClipboardList, Download, Scale, Shield, Clock, Globe,
-  ListChecks, AlertTriangle, X
+  ListChecks, AlertTriangle, X, Loader2
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -40,6 +40,7 @@ export default function Index() {
   });
   const [items, setItems] = useState<EvidenceItem[]>([]);
   const [generating, setGenerating] = useState(false);
+  const [pdfStatus, setPdfStatus] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
 
   const steps = STEPS(lang);
@@ -68,12 +69,12 @@ export default function Index() {
   async function handleGeneratePDF() {
     setGenerating(true);
     setShowConfirm(false);
-    // Scroll to top immediately so user sees the generating state
     window.scrollTo({ top: 0, behavior: 'smooth' });
     try {
-      await generateEvidencePDF(numberedItems, caseInfo);
+      await generateEvidencePDF(numberedItems, caseInfo, (status) => setPdfStatus(status));
     } finally {
       setGenerating(false);
+      setPdfStatus('');
     }
   }
 
@@ -127,7 +128,7 @@ export default function Index() {
       <div className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-2 sm:px-4">
           <div className="flex overflow-x-auto scrollbar-none">
-            {steps.map((s, idx) => {
+            {steps.map((s) => {
               const Icon = s.icon;
               const isActive = step === s.id;
               const isDone = step > s.id;
@@ -190,11 +191,9 @@ export default function Index() {
         {/* Step 3: Fill forms */}
         {step === 3 && (
           <div className="space-y-4">
-            {/* Header row */}
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-display text-lg sm:text-xl font-semibold text-foreground">{t('completeDataTitle', lang)}</h2>
               <div className="flex items-center gap-2">
-                {/* Progress Sheet Button */}
                 <Sheet>
                   <SheetTrigger asChild>
                     <button className="flex items-center gap-1.5 text-xs font-semibold border border-border rounded-lg px-3 py-2 bg-card hover:bg-secondary transition-colors">
@@ -219,24 +218,16 @@ export default function Index() {
                   </SheetContent>
                 </Sheet>
 
-                <button
-                  onClick={() => setStep(2)}
-                  className="text-xs text-primary hover:underline"
-                >
+                <button onClick={() => setStep(2)} className="text-xs text-primary hover:underline">
                   {t('addMoreFiles', lang)}
                 </button>
               </div>
             </div>
 
-            {/* Evidence forms – full width, scrollable on mobile */}
             <div className="space-y-4">
               {numberedItems.map(item => (
                 <div key={item.id} className="relative">
-                  <EvidenceForm
-                    item={item}
-                    onChange={handleItemChange}
-                    lang={lang}
-                  />
+                  <EvidenceForm item={item} onChange={handleItemChange} lang={lang} />
                   <button
                     onClick={() => removeItem(item.id)}
                     className="absolute top-3 right-3 p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
@@ -267,7 +258,6 @@ export default function Index() {
               <p className="text-sm text-muted-foreground">{t('finalSummaryDesc', lang)}</p>
             </div>
 
-            {/* Case info recap */}
             <div className="bg-card border rounded-xl p-5 shadow-card">
               <h3 className="text-sm font-semibold text-foreground mb-3">{t('caseInfoRecap', lang)}</h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -282,7 +272,6 @@ export default function Index() {
 
             <EvidenceSummary items={numberedItems} />
 
-            {/* PDF structure preview */}
             <div className="bg-secondary/50 border border-border rounded-xl p-4 text-sm space-y-2">
               <p className="font-semibold text-foreground text-sm">{t('pdfWillInclude', lang)}</p>
               <ul className="space-y-1 text-muted-foreground">
@@ -298,14 +287,22 @@ export default function Index() {
               </ul>
             </div>
 
-            {/* Generate button → triggers confirmation */}
             <button
               onClick={() => setShowConfirm(true)}
               disabled={generating}
               className="w-full py-4 rounded-xl gradient-hero text-primary-foreground font-bold text-base shadow-primary hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
-              <Download className="w-5 h-5" />
-              {generating ? t('generating', lang) : t('downloadPDF', lang)}
+              {generating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  {pdfStatus || t('generating', lang)}
+                </>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  {t('downloadPDF', lang)}
+                </>
+              )}
             </button>
 
             <p className="text-xs text-center text-muted-foreground">

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Download, Image, MessageSquare, FileText, CheckCircle, Clock, User } from 'lucide-react';
+import { ArrowLeft, Download, Image, MessageSquare, FileText, CheckCircle, Clock, User, Loader2 } from 'lucide-react';
 import { generateEvidencePDF } from '@/lib/pdfGenerator';
 
 type EvidenceItem = {
@@ -41,6 +41,7 @@ export default function CaseReview() {
   const [items, setItems] = useState<EvidenceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [pdfStatus, setPdfStatus] = useState('');
 
   useEffect(() => {
     loadCase();
@@ -77,8 +78,8 @@ export default function CaseReview() {
   async function handleGeneratePDF() {
     if (!clientCase) return;
     setGenerating(true);
+    setPdfStatus('Preparing…');
     try {
-      // Map to the format expected by pdfGenerator
       const mappedItems = items.map((item, idx) => ({
         id: item.id,
         file: new File([], item.file_name),
@@ -101,9 +102,10 @@ export default function CaseReview() {
         petitioner_name: clientCase.petitioner_name || clientCase.client_name,
         beneficiary_name: clientCase.beneficiary_name || '',
         compiled_date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-      });
+      }, (status) => setPdfStatus(status));
     } finally {
       setGenerating(false);
+      setPdfStatus('');
     }
   }
 
@@ -181,8 +183,17 @@ export default function CaseReview() {
               disabled={generating || items.length === 0}
               className="w-full gradient-hero text-primary-foreground font-bold py-4 rounded-2xl shadow-primary hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mb-6"
             >
-              <Download className="w-5 h-5" />
-              {generating ? 'Generando PDF…' : `Generar PDF profesional (${items.length} archivos)`}
+              {generating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  {pdfStatus || 'Generando PDF…'}
+                </>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  {`Generar PDF profesional (${items.length} archivos)`}
+                </>
+              )}
             </button>
 
             {/* Evidence grid */}
