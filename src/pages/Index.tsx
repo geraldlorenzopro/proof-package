@@ -68,6 +68,8 @@ export default function Index() {
   async function handleGeneratePDF() {
     setGenerating(true);
     setShowConfirm(false);
+    // Scroll to top immediately so user sees the generating state
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     try {
       await generateEvidencePDF(numberedItems, caseInfo);
     } finally {

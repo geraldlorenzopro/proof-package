@@ -271,16 +271,6 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
 
           {item.type === 'chat' && (
             <>
-              <Field label={t('platform', lang)} required>
-                <select
-                  value={item.platform || ''}
-                  onChange={e => update({ platform: e.target.value })}
-                  className={inputCls}
-                >
-                  <option value="">{t('selectPlatform', lang)}</option>
-                  {CHAT_PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </Field>
               <Field label={t('participants', lang)} required>
                 <input
                   type="text"
@@ -353,7 +343,7 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
 function checkComplete(item: EvidenceItem): boolean {
   if (!item.event_date) return false;
   if (item.type === 'photo') return !!(item.caption && item.participants);
-  if (item.type === 'chat') return !!(item.platform && item.participants && item.demonstrates);
+  if (item.type === 'chat') return !!(item.participants && item.demonstrates);
   if (item.type === 'other') return !!item.caption;
   return false;
 }

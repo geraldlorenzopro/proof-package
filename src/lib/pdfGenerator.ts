@@ -275,7 +275,6 @@ async function renderMultiItemPage(
       { label: 'DATE', value: formatDateDisplay(item.event_date, item.date_is_approximate) },
       { label: 'PARTICIPANTS', value: item.participants || '—' },
     ];
-    if (item.platform) metaItems.push({ label: 'PLATFORM', value: item.platform });
 
     const colW = CONTENT_W / metaItems.length;
     let mx = MARGIN;
@@ -372,7 +371,6 @@ async function renderSingleItemPage(
     { label: 'DATE', value: formatDateDisplay(item.event_date, item.date_is_approximate) },
     { label: 'PARTICIPANTS', value: item.participants || '—' },
   ];
-  if (item.platform) metaItems.push({ label: 'PLATFORM', value: item.platform });
 
   const colW = CONTENT_W / metaItems.length;
   let mx = MARGIN;
