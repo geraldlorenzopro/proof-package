@@ -14,7 +14,149 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      client_cases: {
+        Row: {
+          access_token: string
+          beneficiary_name: string | null
+          case_type: string
+          client_email: string
+          client_name: string
+          created_at: string
+          id: string
+          notes: string | null
+          petitioner_name: string | null
+          professional_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string
+          beneficiary_name?: string | null
+          case_type?: string
+          client_email: string
+          client_name: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          petitioner_name?: string | null
+          professional_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          beneficiary_name?: string | null
+          case_type?: string
+          client_email?: string
+          client_name?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          petitioner_name?: string | null
+          professional_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      evidence_items: {
+        Row: {
+          caption: string | null
+          case_id: string
+          created_at: string
+          date_is_approximate: boolean | null
+          demonstrates: string | null
+          event_date: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          form_complete: boolean | null
+          id: string
+          location: string | null
+          notes: string | null
+          participants: string | null
+          platform: string | null
+          source_location: string | null
+          updated_at: string
+          upload_order: number | null
+        }
+        Insert: {
+          caption?: string | null
+          case_id: string
+          created_at?: string
+          date_is_approximate?: boolean | null
+          demonstrates?: string | null
+          event_date?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string
+          form_complete?: boolean | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          participants?: string | null
+          platform?: string | null
+          source_location?: string | null
+          updated_at?: string
+          upload_order?: number | null
+        }
+        Update: {
+          caption?: string | null
+          case_id?: string
+          created_at?: string
+          date_is_approximate?: boolean | null
+          demonstrates?: string | null
+          event_date?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          form_complete?: boolean | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          participants?: string | null
+          platform?: string | null
+          source_location?: string | null
+          updated_at?: string
+          upload_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_items_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          firm_name: string | null
+          full_name: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          firm_name?: string | null
+          full_name?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          firm_name?: string | null
+          full_name?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
