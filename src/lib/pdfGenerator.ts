@@ -1,17 +1,33 @@
 import jsPDF from 'jspdf';
 import { EvidenceItem, CaseInfo } from '@/types/evidence';
 import { buildCaption, formatDateDisplay } from './evidenceUtils';
-import { translateToEnglish } from './translator';
+import { supabase } from '@/integrations/supabase/client';
 
-// ── Local Translation (zero cost, no API calls) ─────────────────────────────
-function translateItemsLocally(items: EvidenceItem[]): EvidenceItem[] {
-  return items.map(item => ({
-    ...item,
-    caption: translateToEnglish(item.caption),
-    participants: translateToEnglish(item.participants),
-    location: item.location ? translateToEnglish(item.location) : item.location,
-    notes: item.notes ? translateToEnglish(item.notes) : item.notes,
-  }));
+// ── AI Translation via Lovable AI (Gemini) ──────────────────────────────────
+async function translateItems(items: EvidenceItem[]): Promise<EvidenceItem[]> {
+  const texts: Record<string, string> = {};
+  for (const item of items) {
+    if (item.caption) texts[`${item.id}__caption`] = item.caption;
+    if (item.participants) texts[`${item.id}__participants`] = item.participants;
+    if (item.location) texts[`${item.id}__location`] = item.location;
+    if (item.notes) texts[`${item.id}__notes`] = item.notes;
+  }
+
+  if (Object.keys(texts).length === 0) return items;
+
+  try {
+    const { data, error } = await supabase.functions.invoke('translate-evidence', { body: { texts } });
+    const translated: Record<string, string> = (data && !error) ? (data.translated || {}) : {};
+    return items.map(item => ({
+      ...item,
+      caption: translated[`${item.id}__caption`] || item.caption,
+      participants: translated[`${item.id}__participants`] || item.participants,
+      location: item.location ? (translated[`${item.id}__location`] || item.location) : item.location,
+      notes: item.notes ? (translated[`${item.id}__notes`] || item.notes) : item.notes,
+    }));
+  } catch {
+    return items; // fallback to originals on error
+  }
 }
 
 
@@ -24,11 +40,9 @@ const WHITE = [255, 255, 255] as const;
 function addPageFooter(doc: jsPDF, compiledDate: string, pageNum: number) {
   const pageH = doc.internal.pageSize.getHeight();
   const pageW = doc.internal.pageSize.getWidth();
-
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.5);
   doc.line(20, pageH - 18, pageW - 20, pageH - 18);
-
   doc.setFontSize(8);
   doc.setTextColor(...GRAY);
   doc.setFont('helvetica', 'normal');
@@ -36,12 +50,13 @@ function addPageFooter(doc: jsPDF, compiledDate: string, pageNum: number) {
   doc.text(`Page ${pageNum}`, pageW - 20, pageH - 10, { align: 'right' });
 }
 
+
 export async function generateEvidencePDF(
   items: EvidenceItem[],
   caseInfo: CaseInfo
 ): Promise<void> {
-  // ── Translate all free-text fields locally (zero cost) ──────────────────
-  const translatedItems = translateItemsLocally(items);
+  // ── Translate all free-text fields via AI ──────────────────────────────────
+  const translatedItems = await translateItems(items);
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
   const W = doc.internal.pageSize.getWidth();
