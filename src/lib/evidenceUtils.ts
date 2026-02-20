@@ -4,7 +4,6 @@ export function classifyFile(file: File): EvidenceType {
   const name = file.name.toLowerCase();
   const type = file.type.toLowerCase();
 
-  // Images are likely photos unless named chat/screenshot/msg
   if (type.startsWith('image/')) {
     const chatKeywords = ['chat', 'whatsapp', 'instagram', 'facebook', 'imessage', 'sms', 'msg', 'message', 'screenshot', 'captura', 'screen'];
     if (chatKeywords.some(kw => name.includes(kw))) {
@@ -13,7 +12,6 @@ export function classifyFile(file: File): EvidenceType {
     return 'photo';
   }
 
-  // PDFs, docs → other
   if (type.includes('pdf') || type.includes('document') || type.includes('sheet')) {
     return 'other';
   }
@@ -27,9 +25,24 @@ export function generateExhibitNumber(type: EvidenceType, index: number): string
 }
 
 export function formatDateDisplay(date: string, isApprox: boolean): string {
-  if (!date) return 'Fecha no especificada';
-  const suffix = isApprox ? ' (aprox.)' : '';
+  if (!date) return 'Date not specified';
+  const suffix = isApprox ? ' (approx.)' : '';
   return date + suffix;
+}
+
+// Maps Spanish UI selections to English for USCIS PDF
+const DEMONSTRATES_EN_MAP: Record<string, string> = {
+  'Comunicación constante': 'Ongoing communication',
+  'Coordinación de vida en común': 'Coordination of shared life',
+  'Apoyo emocional': 'Emotional support',
+  'Apoyo financiero': 'Financial support',
+  'Planificación de viaje / mudanza': 'Travel / relocation planning',
+  'Relación romántica': 'Romantic relationship',
+  'Otro': 'Other',
+};
+
+export function toEnglish(value: string): string {
+  return DEMONSTRATES_EN_MAP[value] || value;
 }
 
 export function buildCaption(item: {
@@ -41,19 +54,19 @@ export function buildCaption(item: {
   location?: string;
   platform?: string;
   demonstrates?: string;
-  source_location: string;
 }): string {
   const dateStr = formatDateDisplay(item.event_date, item.date_is_approximate);
+  const participants = item.participants || '—';
 
   if (item.type === 'photo') {
     const loc = item.location ? ` Location: ${item.location}.` : '';
-    return `Photo of ${item.participants} during ${item.caption}. Date: ${dateStr}.${loc} Source: ${item.source_location}.`;
+    return `Photo of ${participants} during ${item.caption}. Date: ${dateStr}.${loc}`;
   }
 
   if (item.type === 'chat') {
-    const purpose = item.demonstrates || 'ongoing communication';
-    return `${item.platform || 'Chat'} message screenshot between ${item.participants}. Date/range: ${dateStr}. Purpose: demonstrates ${purpose}. Source: ${item.source_location}.`;
+    const purpose = toEnglish(item.demonstrates || '') || 'ongoing communication';
+    return `${item.platform || 'Chat'} message screenshot between ${participants}. Date/range: ${dateStr}. Demonstrates: ${purpose}.`;
   }
 
-  return `${item.caption}. Date: ${dateStr}. Participants: ${item.participants}. Source: ${item.source_location}.`;
+  return `${item.caption}. Date: ${dateStr}. Participants: ${participants}.`;
 }
