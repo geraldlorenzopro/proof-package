@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import CasesPage from "./pages/CasesPage";
 import EvidenceTool from "./pages/EvidenceTool";
 import PlaceholderTool from "./pages/PlaceholderTool";
+import CspaTool from "./pages/CspaTool";
 import ClientUpload from "./pages/ClientUpload";
 import CaseReview from "./pages/CaseReview";
 import NotFound from "./pages/NotFound";
@@ -28,7 +29,7 @@ const App = () => (
           <Route path="/dashboard/cases" element={<CasesPage />} />
           <Route path="/dashboard/evidence" element={<EvidenceTool />} />
           <Route path="/dashboard/affidavit" element={<PlaceholderTool tool="affidavit" />} />
-          <Route path="/dashboard/cspa" element={<PlaceholderTool tool="cspa" />} />
+          <Route path="/dashboard/cspa" element={<CspaTool />} />
           <Route path="/dashboard/tracker" element={<PlaceholderTool tool="tracker" />} />
           <Route path="/upload/:token" element={<ClientUpload />} />
           <Route path="/case/:id" element={<CaseReview />} />
