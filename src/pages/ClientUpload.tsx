@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Scale, Upload, CheckCircle, Clock, Image, MessageSquare, FileText, ChevronDown, ChevronUp, AlertCircle, ZoomIn, X, CalendarIcon, Trash2 } from 'lucide-react';
+import { Scale, Upload, CheckCircle, Clock, Image, MessageSquare, FileText, ChevronDown, ChevronUp, AlertCircle, ZoomIn, X, CalendarIcon, Trash2, Loader2 } from 'lucide-react';
+import { useGoogleDrivePicker } from '@/hooks/useGoogleDrivePicker';
 import { format, parse, isValid } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -58,6 +59,12 @@ export default function ClientUpload() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  const handleDriveFiles = useCallback((files: File[]) => {
+    handleFiles(files);
+  }, []);
+
+  const { openPicker: openDrivePicker, loading: driveLoading } = useGoogleDrivePicker(handleDriveFiles);
 
   useEffect(() => {
     loadCase();
@@ -344,7 +351,28 @@ export default function ClientUpload() {
           )}
         </div>
 
-        {/* Items list */}
+        {/* Google Drive button */}
+        <button
+          type="button"
+          onClick={openDrivePicker}
+          disabled={driveLoading}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border bg-card text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/50 transition-all disabled:opacity-50"
+        >
+          {driveLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <svg className="w-4 h-4" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+              <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+              <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+              <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.4 13.4z" fill="#ea4335"/>
+              <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+              <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+              <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+            </svg>
+          )}
+          Importar desde Google Drive
+        </button>
+
         {items.map((item) => {
           const Icon = typeIcon[item.file_type] || Image;
           const isExpanded = expandedId === item.id;
