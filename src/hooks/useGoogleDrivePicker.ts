@@ -85,12 +85,17 @@ export function useGoogleDrivePicker(onFilesPicked: (files: File[]) => void) {
           const accessToken = tokenResponse.access_token;
 
           // Build and show picker
+          // Detect current language
+          const isSpanish = document.documentElement.lang === 'es' || 
+            navigator.language.startsWith('es');
+          
           const picker = new window.google.picker.PickerBuilder()
             .addView(window.google.picker.ViewId.DOCS_IMAGES_AND_VIDEOS)
             .addView(window.google.picker.ViewId.DOCUMENTS)
             .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
             .setOAuthToken(accessToken)
             .setDeveloperKey(creds.apiKey)
+            .setLocale(isSpanish ? 'es' : 'en')
             .setCallback(async (data: any) => {
               if (data.action === window.google.picker.Action.PICKED) {
                 const files: File[] = [];
