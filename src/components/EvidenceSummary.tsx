@@ -13,9 +13,9 @@ export function EvidenceSummary({ items }: EvidenceSummaryProps) {
   const completed = items.filter(i => i.formComplete).length;
 
   const sections = [
-    { label: 'Section A – Fotografías', items: photos, Icon: FileImage, color: 'text-blue-600' },
-    { label: 'Section B – Chats / Mensajes', items: chats, Icon: MessageSquare, color: 'text-emerald-600' },
-    { label: 'Section C – Otros', items: others, Icon: FileText, color: 'text-amber-600' },
+    { label: '📷 Estas son tus fotos', items: photos, Icon: FileImage, color: 'text-blue-600' },
+    { label: '💬 Estas son tus conversaciones', items: chats, Icon: MessageSquare, color: 'text-emerald-600' },
+    { label: '📄 Estos son tus documentos', items: others, Icon: FileText, color: 'text-amber-600' },
   ];
 
   return (
