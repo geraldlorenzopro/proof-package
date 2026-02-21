@@ -1,1 +1,4 @@
 project_id = "dewjhkgnoaepgkhulcbv"
+
+[functions.get-google-credentials]
+verify_jwt = false
