@@ -1,12 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Scale, Upload, CheckCircle, Clock, Image, MessageSquare, FileText, ChevronDown, ChevronUp, AlertCircle, ZoomIn, X, CalendarIcon, Trash2, Loader2 } from 'lucide-react';
-import { useGoogleDrivePicker } from '@/hooks/useGoogleDrivePicker';
-import { format, parse, isValid } from 'date-fns';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Button } from '@/components/ui/button';
+import { Scale, Upload, CheckCircle, Clock, Image, MessageSquare, FileText, ChevronDown, ChevronUp, AlertCircle, ZoomIn, X, Trash2, Loader2, Heart, PartyPopper, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type EvidenceItem = {
@@ -57,19 +52,13 @@ export default function ClientUpload() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-
-  const handleDriveFiles = useCallback((files: File[]) => {
-    handleFiles(files);
-  }, []);
-
-  const { openPicker: openDrivePicker, loading: driveLoading } = useGoogleDrivePicker(handleDriveFiles);
 
   useEffect(() => {
     loadCase();
     return () => {
-      // Clear all auto-save timers on unmount
       Object.values(autoSaveTimers.current).forEach(clearTimeout);
     };
   }, [token]);
@@ -146,12 +135,10 @@ export default function ClientUpload() {
   function updateItem(id: string, field: string, value: any) {
     setItems(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i));
 
-    // Clear existing timer for this item
     if (autoSaveTimers.current[id]) {
       clearTimeout(autoSaveTimers.current[id]);
     }
 
-    // Set new debounced save (1.5s after last change)
     autoSaveTimers.current[id] = setTimeout(() => {
       setItems(current => {
         const item = current.find(i => i.id === id);
@@ -159,16 +146,13 @@ export default function ClientUpload() {
           const isComplete = checkComplete(item);
           supabase.from('evidence_items').update({
             caption: item.caption,
-            event_date: item.event_date,
             participants: item.participants,
             location: item.location,
             platform: item.platform,
             demonstrates: item.demonstrates,
             notes: item.notes,
-            date_is_approximate: item.date_is_approximate,
             form_complete: isComplete,
           }).eq('id', id).then(() => {
-            // Update form_complete locally
             setItems(prev => prev.map(i => i.id === id ? { ...i, form_complete: isComplete } : i));
           });
         }
@@ -178,7 +162,7 @@ export default function ClientUpload() {
     }, 1500);
   }
 
-  // Immediate save (for date picker, checkboxes)
+  // Immediate save (for selects, checkboxes)
   function updateItemImmediate(id: string, updates: Partial<EvidenceItem>) {
     setItems(prev => {
       const updated = prev.map(i => i.id === id ? { ...i, ...updates } : i);
@@ -196,7 +180,6 @@ export default function ClientUpload() {
   }
 
   function checkComplete(item: EvidenceItem): boolean {
-    if (!item.event_date) return false;
     if (item.file_type === 'photo') return !!(item.caption && item.participants);
     if (item.file_type === 'chat') return !!(item.participants && item.demonstrates);
     if (item.file_type === 'other') return !!item.caption;
@@ -213,12 +196,28 @@ export default function ClientUpload() {
   }
 
   async function markCompleted() {
-    await supabase.from('client_cases').update({ status: 'completed' }).eq('access_token', token);
-    setClientCase(prev => prev ? { ...prev, status: 'completed' } : prev);
+    setCompleting(true);
+    try {
+      await supabase.from('client_cases').update({ status: 'completed' }).eq('access_token', token);
+      
+      // Fire GHL webhook
+      try {
+        await supabase.functions.invoke('notify-completion', {
+          body: { access_token: token },
+        });
+      } catch {
+        // Webhook failure shouldn't block completion
+      }
+
+      setClientCase(prev => prev ? { ...prev, status: 'completed' } : prev);
+    } finally {
+      setCompleting(false);
+    }
   }
 
   const completedCount = items.filter(i => i.form_complete).length;
   const allDone = items.length > 0 && completedCount === items.length;
+  const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
 
   function getFileUrl(path: string) {
     return supabase.storage.from('evidence-files').getPublicUrl(path).data.publicUrl;
@@ -247,19 +246,48 @@ export default function ClientUpload() {
     </div>
   );
 
+  // ── Completed state ──────────────────────────────────────────────────────────
   if (clientCase?.status === 'completed') return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="text-center max-w-sm">
-        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="w-8 h-8 text-emerald-600" />
+      <div className="text-center max-w-md">
+        <div className="relative mb-6">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto animate-bounce">
+            <PartyPopper className="w-10 h-10 text-emerald-600" />
+          </div>
         </div>
-        <h2 className="font-display text-2xl font-bold text-foreground mb-2">¡Todo listo!</h2>
-        <p className="text-muted-foreground text-sm">Has enviado todas tus evidencias. Tu abogado las revisará pronto.</p>
-        <p className="text-xs text-muted-foreground/60 mt-4">Caso: {clientCase.case_type} · {clientCase.client_name}</p>
+        <h2 className="font-display text-3xl font-bold text-foreground mb-3">¡Excelente trabajo! 🎉</h2>
+        <p className="text-muted-foreground text-base mb-6 leading-relaxed">
+          Has enviado todas tus evidencias exitosamente. Tu abogado ha sido notificado y revisará todo pronto.
+        </p>
+        
+        <div className="bg-card border rounded-2xl p-5 text-left space-y-3 mb-6">
+          <div className="flex items-center gap-2 text-sm">
+            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="text-foreground font-medium">Tus archivos están seguros y almacenados</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="text-foreground font-medium">Tu abogado fue notificado automáticamente</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-muted-foreground">No necesitas hacer nada más por ahora</span>
+          </div>
+        </div>
+
+        <div className="bg-secondary/50 rounded-xl p-4 border">
+          <p className="text-xs text-muted-foreground">
+            Caso: <strong className="text-foreground">{clientCase.case_type}</strong> · {clientCase.client_name}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {items.length} archivos enviados
+          </p>
+        </div>
       </div>
     </div>
   );
 
+  // ── Main upload portal ────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background">
       {/* Full-screen image preview */}
@@ -274,40 +302,81 @@ export default function ClientUpload() {
         </div>
       )}
 
-      {/* Header */}
+      {/* Header - Warmer welcome */}
       <header className="gradient-hero text-primary-foreground">
         <div className="max-w-2xl mx-auto px-4 py-6">
           <div className="flex items-center gap-2 mb-3">
             <Scale className="w-5 h-5 text-accent" />
             <span className="text-accent text-xs font-semibold uppercase tracking-wide">NER Immigration AI</span>
           </div>
-          <h1 className="font-display text-2xl font-bold mb-1">Hola, {clientCase?.client_name?.split(' ')[0]} 👋</h1>
-          <p className="text-primary-foreground/70 text-sm">
-            Sube tus fotos y documentos para tu caso <strong className="text-primary-foreground/90">{clientCase?.case_type}</strong>.
-            Puedes hacerlo poco a poco — tu progreso se guarda automáticamente.
+          <h1 className="font-display text-2xl font-bold mb-2">¡Hola, {clientCase?.client_name?.split(' ')[0]}! 👋</h1>
+          <p className="text-primary-foreground/80 text-sm leading-relaxed">
+            Aquí puedes subir las fotos y documentos para tu caso. 
+            <strong className="text-primary-foreground"> Es muy fácil</strong> — solo sube tus archivos y responde unas preguntas sencillas.
           </p>
+          <div className="flex items-center gap-4 mt-4 text-xs text-primary-foreground/60">
+            <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-accent" /> 100% seguro</span>
+            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-accent" /> Se guarda solo</span>
+            <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5 text-accent" /> Sin prisa</span>
+          </div>
         </div>
       </header>
 
-      {/* Progress bar */}
+      {/* Enhanced progress bar */}
       {items.length > 0 && (
         <div className="bg-card border-b sticky top-0 z-10">
-          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-4">
-            <div className="flex-1">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-muted-foreground font-medium">{completedCount} de {items.length} completados</span>
-                <span className="text-primary font-semibold">{Math.round((completedCount / items.length) * 100)}%</span>
+          <div className="max-w-2xl mx-auto px-4 py-3">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-foreground font-semibold">
+                    {allDone ? '🎉 ¡Todo listo!' : `${completedCount} de ${items.length} archivos completados`}
+                  </span>
+                  <span className={cn(
+                    "font-bold text-sm",
+                    progressPercent === 100 ? "text-emerald-600" : progressPercent > 50 ? "text-primary" : "text-accent"
+                  )}>
+                    {progressPercent}%
+                  </span>
+                </div>
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all duration-700 ease-out",
+                      progressPercent === 100 ? "bg-emerald-500" : "gradient-hero"
+                    )}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                {/* Mini status indicators */}
+                <div className="flex gap-1 mt-2">
+                  {items.map((item) => (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        "h-1 rounded-full flex-1 transition-all duration-300",
+                        item.form_complete ? "bg-emerald-400" : "bg-muted-foreground/20"
+                      )}
+                      title={item.file_name}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div className="h-full gradient-hero rounded-full transition-all duration-500" style={{ width: `${(completedCount / items.length) * 100}%` }} />
-              </div>
+              {allDone && (
+                <button
+                  onClick={markCompleted}
+                  disabled={completing}
+                  className="flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors whitespace-nowrap shadow-md disabled:opacity-70"
+                >
+                  {completing ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-3.5 h-3.5" />
+                  )}
+                  ¡Enviar todo!
+                </button>
+              )}
             </div>
-            {allDone && (
-              <button onClick={markCompleted} className="flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-600 transition-colors whitespace-nowrap">
-                <CheckCircle className="w-3.5 h-3.5" />
-                ¡Listo!
-              </button>
-            )}
           </div>
         </div>
       )}
@@ -319,9 +388,12 @@ export default function ClientUpload() {
           onDragLeave={() => setIsDragging(false)}
           onDrop={e => { e.preventDefault(); setIsDragging(false); handleFiles(Array.from(e.dataTransfer.files)); }}
           onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
-            isDragging ? 'border-primary bg-primary/5' : 'border-border bg-card hover:border-primary/50 hover:bg-secondary/30'
-          }`}
+          className={cn(
+            "border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all",
+            isDragging
+              ? "border-primary bg-primary/5 scale-[1.01]"
+              : "border-border bg-card hover:border-primary/50 hover:bg-secondary/30"
+          )}
         >
           <input
             ref={fileInputRef}
@@ -333,46 +405,47 @@ export default function ClientUpload() {
           />
           {uploading ? (
             <div>
-              <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              <p className="font-semibold text-foreground">Subiendo archivos… {uploadProgress}%</p>
-              <div className="h-2 bg-muted rounded-full mt-3 mx-auto max-w-xs overflow-hidden">
+              <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="font-semibold text-foreground text-lg">Subiendo… {uploadProgress}%</p>
+              <div className="h-2.5 bg-muted rounded-full mt-3 mx-auto max-w-xs overflow-hidden">
                 <div className="h-full gradient-hero rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
               </div>
+              <p className="text-xs text-muted-foreground mt-2">No cierres esta ventana</p>
             </div>
           ) : (
             <div>
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <Upload className="w-7 h-7 text-primary" />
+              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Upload className="w-8 h-8 text-primary" />
               </div>
-              <p className="font-semibold text-foreground mb-1">Toca aquí para subir fotos</p>
-              <p className="text-sm text-muted-foreground">O arrastra archivos aquí · Fotos, capturas de chat, documentos</p>
-              <p className="text-xs text-muted-foreground/60 mt-2">Puedes subir 1 o 100 a la vez. Tu progreso se guarda solo.</p>
+              <p className="font-semibold text-foreground text-lg mb-1">
+                {items.length === 0 ? '📸 Comienza subiendo tus fotos' : '+ Agregar más archivos'}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Toca aquí o arrastra fotos, capturas de chat o documentos
+              </p>
+              <div className="flex items-center justify-center gap-3 mt-3 text-xs text-muted-foreground/60">
+                <span>📷 Fotos</span>
+                <span>•</span>
+                <span>💬 WhatsApp</span>
+                <span>•</span>
+                <span>📄 Recibos</span>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Google Drive button */}
-        <button
-          type="button"
-          onClick={openDrivePicker}
-          disabled={driveLoading}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border bg-card text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/50 transition-all disabled:opacity-50"
-        >
-          {driveLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <svg className="w-4 h-4" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-              <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-              <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
-              <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.4 13.4z" fill="#ea4335"/>
-              <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-              <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-              <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-            </svg>
-          )}
-          Importar desde Google Drive
-        </button>
+        {/* First-time helper tip */}
+        {items.length === 0 && (
+          <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-center">
+            <p className="text-sm text-foreground font-medium mb-1">💡 ¿No sabes por dónde empezar?</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Sube fotos juntos (bodas, fiestas, viajes), capturas de WhatsApp, o cualquier documento que demuestre su relación. 
+              Puedes subir 1 o 100 a la vez — ¡tú decides!
+            </p>
+          </div>
+        )}
 
+        {/* Evidence items */}
         {items.map((item) => {
           const Icon = typeIcon[item.file_type] || Image;
           const isExpanded = expandedId === item.id;
@@ -380,7 +453,10 @@ export default function ClientUpload() {
           const fileUrl = getFileUrl(item.file_path);
 
           return (
-            <div key={item.id} className={`bg-card border rounded-2xl overflow-hidden shadow-card transition-all ${item.form_complete ? 'border-emerald-200' : ''}`}>
+            <div key={item.id} className={cn(
+              "bg-card border rounded-2xl overflow-hidden shadow-card transition-all",
+              item.form_complete ? "border-emerald-200 bg-emerald-50/30" : ""
+            )}>
               {/* Item header */}
               <button
                 className="w-full flex items-center gap-3 p-4 text-left hover:bg-secondary/30 transition-colors"
@@ -409,17 +485,19 @@ export default function ClientUpload() {
                   <p className="font-medium text-foreground text-sm truncate">{item.file_name}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {item.form_complete ? (
-                      <span className="text-emerald-600 font-semibold">✓ Completado</span>
+                      <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> ¡Completado!
+                      </span>
                     ) : item.caption ? (
                       <span className="text-amber-600">Faltan algunos datos</span>
                     ) : (
-                      <span className="text-muted-foreground/70">Toca para agregar información</span>
+                      <span className="text-primary font-medium">👆 Toca para agregar información</span>
                     )}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  {item.form_complete && <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}
+                  {item.form_complete && <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center"><CheckCircle className="w-4 h-4 text-white" /></div>}
                   {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 </div>
               </button>
@@ -445,20 +523,6 @@ export default function ClientUpload() {
                     <CheckCircle className="w-3 h-3" />
                     Se guarda automáticamente
                   </p>
-
-                  {/* DATE — with date picker */}
-                  <NarrativeQuestion
-                    question={item.file_type === 'chat' ? '¿Cuándo fue esta conversación?' : item.file_type === 'other' ? '¿De qué fecha es este documento?' : '¿Cuándo fue tomada esta foto?'}
-                    hint="Toca el calendario para elegir la fecha"
-                    required
-                  >
-                    <ClientDatePicker
-                      value={item.event_date || ''}
-                      isApprox={item.date_is_approximate || false}
-                      onDateChange={val => updateItemImmediate(item.id, { event_date: val })}
-                      onApproxChange={val => updateItemImmediate(item.id, { date_is_approximate: val })}
-                    />
-                  </NarrativeQuestion>
 
                   {/* PHOTO-specific fields */}
                   {item.file_type === 'photo' && (
@@ -531,17 +595,6 @@ export default function ClientUpload() {
                         </select>
                       </NarrativeQuestion>
 
-                      <NarrativeQuestion question="¿De qué plataforma es? (opcional)">
-                        <select
-                          value={item.platform || ''}
-                          onChange={e => updateItemImmediate(item.id, { platform: e.target.value })}
-                          className="w-full border border-border bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                        >
-                          <option value="">Seleccionar…</option>
-                          {['WhatsApp', 'Instagram', 'Facebook', 'iMessage', 'SMS', 'Email', 'Otro'].map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
-                      </NarrativeQuestion>
-
                       <NarrativeQuestion question="Cuéntanos más sobre este chat (opcional)" hint="Ej: Estaban coordinando el pago del apartamento">
                         <textarea
                           value={item.caption || ''}
@@ -608,23 +661,41 @@ export default function ClientUpload() {
           );
         })}
 
-        {/* Bottom CTA */}
-        {items.length > 0 && (
+        {/* Bottom encouragement */}
+        {items.length > 0 && !allDone && (
           <div className="bg-secondary/50 border rounded-2xl p-5 text-center">
-            <Clock className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-            <p className="font-medium text-foreground text-sm mb-1">¿No terminaste? No hay problema</p>
+            <Heart className="w-8 h-8 text-primary/30 mx-auto mb-2" />
+            <p className="font-medium text-foreground text-sm mb-1">¿No terminaste? ¡Tranquilo!</p>
             <p className="text-xs text-muted-foreground">Cierra y vuelve cuando quieras. Todo se guarda automáticamente.</p>
           </div>
         )}
 
+        {/* Final CTA */}
         {allDone && (
-          <button
-            onClick={markCompleted}
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-2xl transition-colors flex items-center justify-center gap-2 text-base"
-          >
-            <CheckCircle className="w-5 h-5" />
-            He terminado de subir todo
-          </button>
+          <div className="space-y-3">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center">
+              <PartyPopper className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+              <p className="font-semibold text-foreground mb-1">¡Todas tus evidencias están completas!</p>
+              <p className="text-xs text-muted-foreground">Revisa que todo esté correcto y luego presiona el botón de abajo.</p>
+            </div>
+            <button
+              onClick={markCompleted}
+              disabled={completing}
+              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-2xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg disabled:opacity-70"
+            >
+              {completing ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Enviando…
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-5 h-5" />
+                  ✅ He terminado — enviar todo a mi abogado
+                </>
+              )}
+            </button>
+          </div>
         )}
       </main>
     </div>
@@ -646,70 +717,6 @@ function NarrativeQuestion({ question, hint, required, children }: {
       </p>
       {hint && <p className="text-xs text-muted-foreground leading-relaxed">{hint}</p>}
       {children}
-    </div>
-  );
-}
-
-function ClientDatePicker({ value, isApprox, onDateChange, onApproxChange }: {
-  value: string;
-  isApprox: boolean;
-  onDateChange: (val: string) => void;
-  onApproxChange: (val: boolean) => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  let selectedDate: Date | undefined = undefined;
-  if (value) {
-    const parsed = parse(value, 'yyyy-MM-dd', new Date());
-    if (isValid(parsed)) selectedDate = parsed;
-  }
-
-  function handleSelect(date: Date | undefined) {
-    if (date) {
-      onDateChange(format(date, 'yyyy-MM-dd'));
-      setOpen(false);
-    }
-  }
-
-  const displayValue = selectedDate
-    ? format(selectedDate, 'MMM d, yyyy')
-    : '';
-
-  return (
-    <div className="space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(
-              "w-full justify-start text-left font-normal text-sm h-10 rounded-xl",
-              !value && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0 text-primary" />
-            <span className="truncate text-base">{displayValue || 'Toca para elegir fecha'}</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 z-[200]" align="start">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleSelect}
-            initialFocus
-            className={cn("p-3 pointer-events-auto")}
-            disabled={(date) => date > new Date()}
-          />
-        </PopoverContent>
-      </Popover>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={isApprox}
-          onChange={e => onApproxChange(e.target.checked)}
-          className="rounded w-4 h-4"
-        />
-        <span className="text-xs text-muted-foreground">No recuerdo el día exacto (marcar si es aproximada)</span>
-      </label>
     </div>
   );
 }

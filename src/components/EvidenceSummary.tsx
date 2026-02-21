@@ -78,7 +78,7 @@ function SummaryRow({ item }: { item: EvidenceItem }) {
             ? <CheckCircle className="w-3.5 h-3.5 text-primary" />
             : <AlertCircle className="w-3.5 h-3.5 text-accent" />
           }
-          <span className="text-xs text-muted-foreground">{formatDateDisplay(item.event_date, item.date_is_approximate)}</span>
+          {item.event_date && <span className="text-xs text-muted-foreground">{formatDateDisplay(item.event_date, item.date_is_approximate)}</span>}
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{caption}</p>
       </div>
