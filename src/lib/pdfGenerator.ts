@@ -100,53 +100,33 @@ export async function generateEvidencePDF(
 
 
   // ── COVER PAGE ──────────────────────────────────────────────────────────────
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, W, H, 'F');
-
-  doc.setFillColor(...GOLD);
-  doc.rect(0, 0, W, 6, 'F');
-
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...WHITE);
-  doc.text('USCIS', W / 2, 22, { align: 'center' });
-
-  doc.setFontSize(22);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...GOLD);
-  doc.text('Relationship Evidence Package', W / 2, 55, { align: 'center' });
-
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(200, 210, 235);
-  doc.text('Supporting Documentation for Immigration Case', W / 2, 65, { align: 'center' });
-
+  // White background (part of a larger immigration package)
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.8);
-  doc.line(35, 75, W - 35, 75);
+  doc.line(35, 30, W - 35, 30);
 
-  const infoY = 90;
+  const infoY = 45;
   const lineH = 9;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...GOLD);
+  doc.setTextColor(...NAVY);
   doc.text('Petitioner:', 45, infoY);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(220, 230, 255);
+  doc.setTextColor(...GRAY);
   doc.text(caseInfo.petitioner_name || '—', 85, infoY);
 
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...GOLD);
+  doc.setTextColor(...NAVY);
   doc.text('Beneficiary:', 45, infoY + lineH);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(220, 230, 255);
+  doc.setTextColor(...GRAY);
   doc.text(caseInfo.beneficiary_name || '—', 85, infoY + lineH);
 
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...GOLD);
+  doc.setTextColor(...NAVY);
   doc.text('Compiled:', 45, infoY + lineH * 2);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(220, 230, 255);
+  doc.setTextColor(...GRAY);
   doc.text(caseInfo.compiled_date, 85, infoY + lineH * 2);
 
   doc.setDrawColor(...GOLD);
@@ -161,26 +141,22 @@ export async function generateEvidencePDF(
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(180, 190, 220);
+  doc.setTextColor(...GRAY);
   if (photoCount > 0) doc.text(`Section A – Photographs: ${photoCount} item${photoCount !== 1 ? 's' : ''}`, W / 2, countY, { align: 'center' });
   if (chatCount > 0) doc.text(`Section B – Messages & Chats: ${chatCount} item${chatCount !== 1 ? 's' : ''}`, W / 2, countY + 8, { align: 'center' });
   if (otherCount > 0) doc.text(`Section C – Other Documents: ${otherCount} item${otherCount !== 1 ? 's' : ''}`, W / 2, countY + (chatCount > 0 ? 16 : 8), { align: 'center' });
-
-  doc.setFillColor(...GOLD);
-  doc.rect(0, H - 6, W, 6, 'F');
 
   // ── TABLE OF CONTENTS PAGE ──────────────────────────────────────────────────
   doc.addPage();
   pageNum++;
 
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, W, 28, 'F');
   doc.setFontSize(15);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...WHITE);
+  doc.setTextColor(...NAVY);
   doc.text('Table of Contents', 20, 18);
-  doc.setFillColor(...GOLD);
-  doc.rect(0, 28, W, 2, 'F');
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.8);
+  doc.line(20, 22, W - 20, 22);
 
   let tocY = 42;
   const sections = [
@@ -222,26 +198,26 @@ export async function generateEvidencePDF(
     doc.addPage();
     pageNum++;
 
-    doc.setFillColor(...NAVY);
-    doc.rect(0, 0, W, H, 'F');
-    doc.setFillColor(...GOLD);
-    doc.rect(0, 0, W, 4, 'F');
-    doc.rect(0, H - 4, W, 4, 'F');
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(0.8);
+    doc.line(35, H / 2 - 25, W - 35, H / 2 - 25);
 
     doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...GOLD);
+    doc.setTextColor(...NAVY);
     doc.text(sec.label.split('–')[0].trim(), W / 2, H / 2 - 10, { align: 'center' });
 
     doc.setFontSize(16);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(200, 215, 245);
+    doc.setTextColor(...GRAY);
     const subLabel = sec.label.split('–')[1]?.trim() || '';
     doc.text(subLabel, W / 2, H / 2 + 5, { align: 'center' });
 
     doc.setFontSize(11);
-    doc.setTextColor(160, 175, 210);
+    doc.setTextColor(...GRAY);
     doc.text(`${sec.items.length} item${sec.items.length !== 1 ? 's' : ''}`, W / 2, H / 2 + 18, { align: 'center' });
+
+    doc.line(35, H / 2 + 25, W - 35, H / 2 + 25);
 
     // ── MULTI-ITEM PAGES: 2 images per page for photos/chats, 1 per page for other ──
     if (sec.type === 'other') {
@@ -286,10 +262,9 @@ async function renderMultiItemPage(
   const IMG_MAX_H = slotH * 0.68;
 
   // Light page header
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, W, 14, 'F');
-  doc.setFillColor(...GOLD);
-  doc.rect(0, 14, W, 1.5, 'F');
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.5);
+  doc.line(MARGIN, 14, W - MARGIN, 14);
 
   let slotY = 20;
 
@@ -383,18 +358,16 @@ async function renderSingleItemPage(
   const MARGIN = 20;
   const CONTENT_W = W - MARGIN * 2;
 
-  // Header bar
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, W, 28, 'F');
-
+  // Header
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...WHITE);
+  doc.setTextColor(...NAVY);
   const shortCaption = item.caption.length > 60 ? item.caption.substring(0, 60) + '…' : item.caption;
   doc.text(shortCaption, MARGIN, 18);
 
-  doc.setFillColor(...GOLD);
-  doc.rect(0, 28, W, 1.5, 'F');
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.5);
+  doc.line(MARGIN, 22, W - MARGIN, 22);
 
   let imgY = 36;
   const maxImgH = 170;
