@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import CasesPage from "./pages/CasesPage";
+import EvidenceTool from "./pages/EvidenceTool";
+import PlaceholderTool from "./pages/PlaceholderTool";
 import ClientUpload from "./pages/ClientUpload";
 import CaseReview from "./pages/CaseReview";
 import NotFound from "./pages/NotFound";
@@ -22,6 +25,11 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/cases" element={<CasesPage />} />
+          <Route path="/dashboard/evidence" element={<EvidenceTool />} />
+          <Route path="/dashboard/affidavit" element={<PlaceholderTool tool="affidavit" />} />
+          <Route path="/dashboard/cspa" element={<PlaceholderTool tool="cspa" />} />
+          <Route path="/dashboard/tracker" element={<PlaceholderTool tool="tracker" />} />
           <Route path="/upload/:token" element={<ClientUpload />} />
           <Route path="/case/:id" element={<CaseReview />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -2,69 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
 
-/* USCIS Evidence Assistant – Design System */
+/* NER Immigration AI – JARVIS Design System */
 
 @layer base {
   :root {
-    /* Navy / Deep Blue as primary brand */
-    --background: 210 20% 98%;
-    --foreground: 220 40% 10%;
+    /* Dark futuristic base */
+    --background: 220 25% 6%;
+    --foreground: 210 30% 90%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 40% 10%;
+    --card: 220 25% 10%;
+    --card-foreground: 210 30% 90%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 40% 10%;
+    --popover: 220 25% 10%;
+    --popover-foreground: 210 30% 90%;
 
-    /* Deep navy */
+    /* Deep navy primary */
     --primary: 220 60% 18%;
     --primary-foreground: 48 80% 95%;
 
-    --secondary: 220 20% 94%;
-    --secondary-foreground: 220 40% 18%;
+    --secondary: 220 25% 14%;
+    --secondary-foreground: 210 30% 80%;
 
-    --muted: 220 15% 93%;
-    --muted-foreground: 220 15% 48%;
+    --muted: 220 20% 16%;
+    --muted-foreground: 210 15% 50%;
 
     /* Gold accent */
     --accent: 43 85% 52%;
-    --accent-foreground: 220 60% 10%;
+    --accent-foreground: 220 60% 6%;
+
+    /* Cyan glow for Jarvis effect */
+    --jarvis: 195 100% 50%;
+    --jarvis-dim: 195 80% 30%;
+    --jarvis-glow: 195 100% 60%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 88%;
-    --input: 220 20% 88%;
-    --ring: 220 60% 18%;
+    --border: 220 30% 16%;
+    --input: 220 25% 18%;
+    --ring: 195 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
     /* Step indicator colors */
-    --step-active: 220 60% 18%;
+    --step-active: 195 100% 50%;
     --step-done: 158 64% 38%;
-    --step-pending: 220 15% 75%;
+    --step-pending: 220 15% 30%;
 
     /* Section tag colors */
-    --tag-photo: 215 80% 50%;
+    --tag-photo: 195 100% 50%;
     --tag-chat: 158 60% 38%;
     --tag-other: 43 85% 52%;
 
     /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(220 60% 18%) 0%, hsl(225 55% 28%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(220 60% 12%) 0%, hsl(220 50% 20%) 100%);
     --gradient-gold: linear-gradient(135deg, hsl(43 85% 52%) 0%, hsl(38 90% 60%) 100%);
-    --shadow-card: 0 4px 24px -4px hsl(220 60% 18% / 0.12);
-    --shadow-primary: 0 8px 32px -8px hsl(220 60% 18% / 0.35);
+    --gradient-jarvis: linear-gradient(135deg, hsl(195 100% 50% / 0.15) 0%, hsl(220 60% 12%) 50%, hsl(43 85% 52% / 0.1) 100%);
+    --shadow-card: 0 4px 24px -4px hsl(195 100% 50% / 0.08);
+    --shadow-primary: 0 8px 32px -8px hsl(195 100% 50% / 0.2);
+    --shadow-glow: 0 0 20px hsl(195 100% 50% / 0.15);
 
-    --sidebar-background: 220 60% 14%;
-    --sidebar-foreground: 210 30% 85%;
+    --sidebar-background: 220 30% 8%;
+    --sidebar-foreground: 210 30% 75%;
     --sidebar-primary: 43 85% 52%;
-    --sidebar-primary-foreground: 220 60% 10%;
-    --sidebar-accent: 220 55% 22%;
+    --sidebar-primary-foreground: 220 60% 6%;
+    --sidebar-accent: 220 30% 14%;
     --sidebar-accent-foreground: 210 30% 90%;
-    --sidebar-border: 220 50% 22%;
-    --sidebar-ring: 43 85% 52%;
+    --sidebar-border: 220 30% 14%;
+    --sidebar-ring: 195 100% 50%;
   }
 }
 
@@ -79,7 +86,8 @@
   }
 
   h1, h2, h3 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
   }
 }
 
@@ -90,24 +98,112 @@
   .gradient-gold {
     background: var(--gradient-gold);
   }
+  .gradient-jarvis {
+    background: var(--gradient-jarvis);
+  }
   .shadow-card {
     box-shadow: var(--shadow-card);
   }
   .shadow-primary {
     box-shadow: var(--shadow-primary);
   }
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
   .font-display {
+    font-family: 'Orbitron', sans-serif;
+  }
+  .font-serif {
     font-family: 'Playfair Display', serif;
+  }
+
+  /* Jarvis glow effects */
+  .glow-border {
+    border: 1px solid hsl(195 100% 50% / 0.2);
+    box-shadow: inset 0 0 20px hsl(195 100% 50% / 0.03), 0 0 20px hsl(195 100% 50% / 0.05);
+  }
+  .glow-border-gold {
+    border: 1px solid hsl(43 85% 52% / 0.25);
+    box-shadow: inset 0 0 20px hsl(43 85% 52% / 0.03), 0 0 20px hsl(43 85% 52% / 0.05);
+  }
+  .glow-text {
+    text-shadow: 0 0 10px hsl(195 100% 50% / 0.5);
+  }
+  .glow-text-gold {
+    text-shadow: 0 0 10px hsl(43 85% 52% / 0.5);
+  }
+
+  /* Scan line effect */
+  .scan-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(195 100% 50% / 0.4), transparent);
+    animation: scan 3s ease-in-out infinite;
+  }
+
+  /* Grid background */
+  .grid-bg {
+    background-image: 
+      linear-gradient(hsl(195 100% 50% / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(195 100% 50% / 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Hex pattern */
+  .hex-pattern {
+    background-image: radial-gradient(circle at 25% 25%, hsl(195 100% 50% / 0.04) 1px, transparent 1px);
+    background-size: 30px 30px;
   }
 }
 
-
-@layer base {
-  * {
-    @apply border-border;
+@layer components {
+  /* Tool card with hover glow */
+  .tool-card {
+    @apply relative overflow-hidden rounded-xl transition-all duration-500;
+    background: hsl(220 25% 10%);
+    border: 1px solid hsl(220 30% 16%);
+  }
+  .tool-card:hover {
+    border-color: hsl(195 100% 50% / 0.3);
+    box-shadow: 0 0 30px hsl(195 100% 50% / 0.1), inset 0 0 30px hsl(195 100% 50% / 0.02);
+    transform: translateY(-2px);
+  }
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, hsl(195 100% 50% / 0.5), hsl(43 85% 52% / 0.5), transparent);
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .tool-card:hover::before {
+    opacity: 1;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  /* Status indicator pulse */
+  .status-pulse {
+    animation: pulse-glow 2s ease-in-out infinite;
   }
+}
+
+@keyframes scan {
+  0%, 100% { transform: translateY(0); opacity: 0; }
+  50% { transform: translateY(100%); opacity: 1; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px hsl(195 100% 50% / 0.3); }
+  50% { box-shadow: 0 0 15px hsl(195 100% 50% / 0.6); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
 }
