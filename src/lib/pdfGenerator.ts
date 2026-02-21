@@ -179,7 +179,9 @@ export async function generateEvidencePDF(
       doc.setTextColor(...GRAY);
       const desc = item.caption.length > 55 ? item.caption.substring(0, 55) + '…' : item.caption;
       doc.text(`  ${desc}`, 20, tocY);
-      doc.text(formatDateForPDF(item.event_date, item.date_is_approximate), W - 20, tocY, { align: 'right' });
+      if (item.event_date) {
+        doc.text(formatDateForPDF(item.event_date, item.date_is_approximate), W - 20, tocY, { align: 'right' });
+      }
       tocY += 6;
     });
     tocY += 5;
@@ -320,9 +322,10 @@ async function renderMultiItemPage(
     imgY += Math.min(captionLines.length, 3) * 4.5 + 6;
 
     // Meta row: only show fields with actual values
-    const metaItems: { label: string; value: string }[] = [
-      { label: 'DATE', value: formatDateForPDF(item.event_date, item.date_is_approximate) },
-    ];
+    const metaItems: { label: string; value: string }[] = [];
+    if (item.event_date) {
+      metaItems.push({ label: 'DATE', value: formatDateForPDF(item.event_date, item.date_is_approximate) });
+    }
     if (item.participants && item.participants.trim()) {
       metaItems.push({ label: 'PARTICIPANTS', value: item.participants });
     }
@@ -416,9 +419,10 @@ async function renderSingleItemPage(
   imgY += captionH + 6;
 
   // Metadata row — only show fields with actual values
-  const metaItems: { label: string; value: string }[] = [
-    { label: 'DATE', value: formatDateForPDF(item.event_date, item.date_is_approximate) },
-  ];
+  const metaItems: { label: string; value: string }[] = [];
+  if (item.event_date) {
+    metaItems.push({ label: 'DATE', value: formatDateForPDF(item.event_date, item.date_is_approximate) });
+  }
   if (item.participants && item.participants.trim()) {
     metaItems.push({ label: 'PARTICIPANTS', value: item.participants });
   }

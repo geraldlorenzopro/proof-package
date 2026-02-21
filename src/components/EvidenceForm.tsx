@@ -323,17 +323,7 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
         {/* Form questions */}
         <div className="p-4 space-y-5">
 
-          {/* DATE — all types */}
-          <Question question={L.dateQ} hint={L.dateHint} required>
-            <DatePickerField
-              value={item.event_date}
-              isApprox={item.date_is_approximate}
-              onDateChange={(val) => update({ event_date: val })}
-              onApproxChange={(val) => update({ date_is_approximate: val })}
-              approxLabel={L.approxLabel}
-              itemId={item.id}
-            />
-          </Question>
+          {/* DATE fields removed — focusing on description and participants */}
 
           {/* PHOTO fields */}
           {item.type === 'photo' && (
@@ -433,7 +423,6 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
 }
 
 function checkComplete(item: EvidenceItem): boolean {
-  if (!item.event_date) return false;
   if (item.type === 'photo') return !!(item.caption && item.participants);
   if (item.type === 'chat') return !!(item.participants && item.demonstrates);
   if (item.type === 'other') return !!item.caption;

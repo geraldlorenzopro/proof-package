@@ -81,15 +81,17 @@ export function buildCaption(item: {
   const dateStr = formatDateHuman(item.event_date, item.date_is_approximate);
   const participants = item.participants ? cleanParticipants(item.participants) : '—';
 
+  const dateInfo = item.event_date ? ` Date: ${dateStr}.` : '';
+
   if (item.type === 'photo') {
     const loc = item.location ? ` Location: ${item.location}.` : '';
-    return `Photo of ${participants} during ${item.caption}. Date: ${dateStr}.${loc}`;
+    return `Photo of ${participants} during ${item.caption}.${dateInfo}${loc}`;
   }
 
   if (item.type === 'chat') {
     const purpose = toEnglish(item.demonstrates || '') || 'ongoing communication';
-    return `${item.platform || 'Chat'} message screenshot between ${participants}. Date/range: ${dateStr}. Demonstrates: ${purpose}.`;
+    return `${item.platform || 'Chat'} message screenshot between ${participants}.${dateInfo} Demonstrates: ${purpose}.`;
   }
 
-  return `${item.caption}. Date: ${dateStr}. Participants: ${participants}.`;
+  return `${item.caption}.${dateInfo} Participants: ${participants}.`;
 }
