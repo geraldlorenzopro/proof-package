@@ -34,7 +34,7 @@ const TOOLS = [
     description: 'Determina la edad CSPA del beneficiario y elegibilidad para protección.',
     icon: BarChart3,
     route: '/dashboard/cspa',
-    status: 'coming' as const,
+    status: 'active' as const,
     color: 'jarvis',
     stats: 'Child Status Protection Act',
   },
