@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 declare global {
@@ -29,7 +29,7 @@ function loadScript(src: string): Promise<void> {
   });
 }
 
-export function useGoogleDrivePicker(onFilesPicked: (files: File[]) => void) {
+export function useGoogleDrivePicker(onFilesPicked: (files: File[]) => void, lang: 'es' | 'en' = 'es') {
   const [loading, setLoading] = useState(false);
   const credentialsRef = useRef<{ apiKey: string; clientId: string } | null>(null);
   const tokenClientRef = useRef<any>(null);
@@ -85,17 +85,13 @@ export function useGoogleDrivePicker(onFilesPicked: (files: File[]) => void) {
           const accessToken = tokenResponse.access_token;
 
           // Build and show picker
-          // Detect current language
-          const isSpanish = document.documentElement.lang === 'es' || 
-            navigator.language.startsWith('es');
-          
           const picker = new window.google.picker.PickerBuilder()
             .addView(window.google.picker.ViewId.DOCS_IMAGES_AND_VIDEOS)
             .addView(window.google.picker.ViewId.DOCUMENTS)
             .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
             .setOAuthToken(accessToken)
             .setDeveloperKey(creds.apiKey)
-            .setLocale(isSpanish ? 'es' : 'en')
+            .setLocale(lang)
             .setCallback(async (data: any) => {
               if (data.action === window.google.picker.Action.PICKED) {
                 const files: File[] = [];
