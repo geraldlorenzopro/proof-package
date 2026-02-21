@@ -36,7 +36,7 @@ export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUpload
     setPreviewing(prev => [...prev, ...newItems]);
   }, []);
 
-  const { openPicker, loading: driveLoading } = useGoogleDrivePicker(handleDriveFiles);
+  const { openPicker, loading: driveLoading } = useGoogleDrivePicker(handleDriveFiles, lang);
 
   const TYPE_LABELS = {
     photo: t('typePhoto', lang),
