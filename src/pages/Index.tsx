@@ -207,7 +207,7 @@ export default function Index() {
                       )}
                     </button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+                  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto [&>div]:flex [&>div]:flex-col" onOpenAutoFocus={(e) => { e.preventDefault(); const el = document.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement; if (el) el.scrollTop = 0; }}>
                     <SheetHeader className="mb-4">
                       <SheetTitle className="flex items-center gap-2">
                         <ListChecks className="w-5 h-5 text-primary" />
@@ -241,7 +241,7 @@ export default function Index() {
 
             {allComplete && (
               <button
-                onClick={() => setStep(4)}
+                onClick={() => { setStep(4); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className="w-full py-3 rounded-xl gradient-hero text-primary-foreground font-semibold shadow-primary hover:opacity-90 transition-opacity mt-4"
               >
                 {t('reviewAndGenerate', lang)}

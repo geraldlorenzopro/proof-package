@@ -69,9 +69,9 @@ export const T = {
   notePlaceholder: { es: 'Cualquier contexto adicional relevante', en: 'Any additional relevant context' },
 
   // Type labels
-  typePhoto: { es: 'Foto', en: 'Photo' },
-  typeChat: { es: 'Chat / Captura', en: 'Chat / Screenshot' },
-  typeOther: { es: 'Otro', en: 'Other' },
+  typePhoto: { es: '📷 Foto', en: '📷 Photo' },
+  typeChat: { es: '💬 Conversación', en: '💬 Conversation' },
+  typeOther: { es: '📄 Documento', en: '📄 Document' },
 
   // Step 2
   uploadTitle: { es: 'Sube tus evidencias', en: 'Upload your evidence' },
