@@ -28,6 +28,7 @@ export type Database = {
           professional_id: string
           status: string
           updated_at: string
+          webhook_url: string | null
         }
         Insert: {
           access_token?: string
@@ -42,6 +43,7 @@ export type Database = {
           professional_id: string
           status?: string
           updated_at?: string
+          webhook_url?: string | null
         }
         Update: {
           access_token?: string
@@ -56,6 +58,7 @@ export type Database = {
           professional_id?: string
           status?: string
           updated_at?: string
+          webhook_url?: string | null
         }
         Relationships: []
       }
