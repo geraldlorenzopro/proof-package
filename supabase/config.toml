@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.notify-completion]
 verify_jwt = false
+
+[functions.get-visa-date]
+verify_jwt = false
+
+[functions.sync-visa-bulletin]
+verify_jwt = false

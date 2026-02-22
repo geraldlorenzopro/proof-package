@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      bulletin_sync_log: {
+        Row: {
+          bulletin_month: number
+          bulletin_year: number
+          created_at: string
+          error_message: string | null
+          id: string
+          records_inserted: number
+          status: string
+        }
+        Insert: {
+          bulletin_month: number
+          bulletin_year: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          records_inserted?: number
+          status: string
+        }
+        Update: {
+          bulletin_month?: number
+          bulletin_year?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          records_inserted?: number
+          status?: string
+        }
+        Relationships: []
+      }
       client_cases: {
         Row: {
           access_token: string
@@ -157,6 +187,45 @@ export type Database = {
           full_name?: string | null
           id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      visa_bulletin: {
+        Row: {
+          bulletin_month: number
+          bulletin_year: number
+          category: string
+          chargeability: string
+          created_at: string
+          final_action_date: string | null
+          id: string
+          is_current: boolean
+          raw_value: string | null
+          updated_at: string
+        }
+        Insert: {
+          bulletin_month: number
+          bulletin_year: number
+          category: string
+          chargeability: string
+          created_at?: string
+          final_action_date?: string | null
+          id?: string
+          is_current?: boolean
+          raw_value?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bulletin_month?: number
+          bulletin_year?: number
+          category?: string
+          chargeability?: string
+          created_at?: string
+          final_action_date?: string | null
+          id?: string
+          is_current?: boolean
+          raw_value?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

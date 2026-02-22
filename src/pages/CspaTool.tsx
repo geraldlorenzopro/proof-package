@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BarChart3 } from 'lucide-react';
+import CSPACalculator from '@/components/CSPACalculator';
 
 export default function CspaTool() {
   const navigate = useNavigate();
@@ -13,13 +14,7 @@ export default function CspaTool() {
         <BarChart3 className="w-4 h-4 text-jarvis" />
         <span className="font-display text-xs tracking-wider text-jarvis">CSPA CALCULATOR</span>
       </div>
-      <iframe
-        src="https://cspa-age-wizard.lovable.app"
-        className="w-full border-0"
-        style={{ height: '900px' }}
-        title="CSPA Calculator"
-        allow="clipboard-write"
-      />
+      <CSPACalculator />
     </div>
   );
 }
