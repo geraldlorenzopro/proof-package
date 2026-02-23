@@ -34,7 +34,7 @@ export default function Features() {
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-12">
         <div className="text-center mb-10">
-          <img src={nerLogo} alt="NER" className="h-10 mx-auto mb-4" />
+          <img src={nerLogo} alt="NER" className="h-10 mx-auto mb-4 brightness-0 invert" />
           <h1 className="text-2xl font-bold text-foreground mb-2">NER Tools</h1>
           <p className="text-sm text-muted-foreground">Herramientas disponibles y próximas funcionalidades</p>
         </div>
