@@ -534,10 +534,16 @@ export default function CSPACalculator() {
         firmName,
         logoUrl,
         lang,
-        projection: projectionData ? {
-          base: projectionData.projected_current_date ? { date: projectionData.projected_current_date, months: projectionData.months_to_current ?? 0, agedOut: projectionData.status === "WILL_AGE_OUT" } : undefined,
-          optimistic: projectionData.optimistic ?? undefined,
-          pessimistic: projectionData.pessimistic ?? undefined,
+      projection: projectionData ? {
+          base: projectionData.projected_current_date ? { date: projectionData.projected_current_date, months: projectionData.months_to_current ?? 0, agedOut: projectionData.status === "WILL_AGE_OUT", cspaAge: projectionData.projected_cspa_age } : undefined,
+          optimistic: projectionData.optimistic ? { date: projectionData.optimistic.date, months: projectionData.optimistic.months, agedOut: projectionData.optimistic.aged_out } : undefined,
+          pessimistic: projectionData.pessimistic ? { date: projectionData.pessimistic.date, months: projectionData.pessimistic.months, agedOut: projectionData.pessimistic.aged_out } : undefined,
+          marginMonths: projectionData.margin_months,
+          effectiveAgeOut: projectionData.effective_age_out,
+          rateDaysPerMonth: projectionData.rate_days_per_month,
+          rates: projectionData.rates,
+          pendingTimeDays: projectionData.pending_time_days,
+          status: projectionData.status,
         } : undefined,
       };
 
