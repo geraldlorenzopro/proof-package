@@ -77,13 +77,17 @@ Deno.serve(async (req) => {
     const effectiveAgeOutDate = new Date(turns21);
     effectiveAgeOutDate.setDate(effectiveAgeOutDate.getDate() + pendingTimeDays);
 
-    // Check if PD is already current
+    // Check if PD is already current using only the LATEST bulletin entry
     const pdStr = priority_date;
-    const alreadyCurrent = rows.some(r => {
-      if (r.is_current) return true;
-      if (r.final_action_date && r.final_action_date >= pdStr) return true;
-      return false;
-    });
+    const sortedDesc = [...rows].sort((a, b) =>
+      b.bulletin_year !== a.bulletin_year
+        ? b.bulletin_year - a.bulletin_year
+        : b.bulletin_month - a.bulletin_month
+    );
+    const latestEntry = sortedDesc[0];
+    const alreadyCurrent = latestEntry
+      ? (latestEntry.is_current || (latestEntry.final_action_date !== null && latestEntry.final_action_date >= pdStr))
+      : false;
 
     if (alreadyCurrent) {
       return new Response(
