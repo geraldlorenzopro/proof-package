@@ -480,7 +480,7 @@ export default function CSPACalculator() {
     setShowDialog(true);
   };
 
-  const handleGeneratePDF = async (leadData: { name: string; email: string; phone: string }) => {
+  const handleGeneratePDF = async (leadData: { name: string; email: string; phone: string; reportLang: Lang }) => {
     if (!result) return;
     setGeneratingPDF(true);
     try {
@@ -513,7 +513,7 @@ export default function CSPACalculator() {
         bulletin_info: result.bulletinInfo || null,
       });
 
-      // Generate PDF
+      // Generate PDF in the selected language
       const reportData: CSPAReportData = {
         clientName: leadData.name,
         clientEmail: leadData.email,
@@ -533,7 +533,7 @@ export default function CSPACalculator() {
         isHypothetical: hypothetical,
         firmName,
         logoUrl,
-        lang,
+        lang: leadData.reportLang,
       projection: projectionData ? {
           base: projectionData.projected_current_date ? { date: projectionData.projected_current_date, months: projectionData.months_to_current ?? 0, agedOut: projectionData.status === "WILL_AGE_OUT", cspaAge: projectionData.projected_cspa_age } : undefined,
           optimistic: projectionData.optimistic ? { date: projectionData.optimistic.date, months: projectionData.optimistic.months, agedOut: projectionData.optimistic.aged_out } : undefined,
