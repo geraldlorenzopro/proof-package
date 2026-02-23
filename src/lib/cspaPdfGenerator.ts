@@ -490,51 +490,129 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
 
   let cy = 40;
 
-  // Marriage impact (for family categories)
+  // Marriage impact (detailed per category)
   const familyCats = ['F1', 'F2A', 'F2B', 'F3', 'F4'];
   if (familyCats.includes(data.category)) {
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...NAVY);
-    doc.text(isEs ? 'Que pasa si el beneficiario se casa?' : 'What if the beneficiary gets married?', 20, cy);
-    cy += 7;
+    doc.text(isEs ? '💍 Que pasa si el beneficiario se casa?' : '💍 What if the beneficiary gets married?', 20, cy);
+    cy += 8;
 
-    const severeMarriage = ['F2A', 'F2B'].includes(data.category);
-    const moderateMarriage = data.category === 'F1';
+    // ── Category-specific marriage data ──
+    const marriageData: Record<string, { severity: 'severe' | 'moderate' | 'none'; riskTag: [string, string]; who: [string, string]; cspaProtects: [string, string]; effect: [string, string]; example: [string, string] }> = {
+      F1: {
+        severity: 'moderate',
+        riskTag: ['🟡 RIESGO MODERADO — El caso pasa de F1 a F3 (fila mas lenta).', '🟡 MODERATE RISK — Case moves from F1 to F3 (slower line).'],
+        who: ['El beneficiario principal es el hijo/a soltero/a (21+) del ciudadano americano.', 'The principal beneficiary is the unmarried son/daughter (21+) of the U.S. citizen.'],
+        cspaProtects: ['La CSPA protege a los hijos derivados (hijos menores del beneficiario principal — nietos del peticionario).', 'CSPA protects the derivative children (minor children of the principal — petitioner\'s grandchildren).'],
+        effect: ['Si el beneficiario principal se casa, el caso pasa de F1 a F3. La peticion no se destruye, pero la fila F3 es significativamente mas lenta. Los hijos derivados mantienen la proteccion CSPA pero bajo el calendario mas lento de F3, lo que puede aumentar el riesgo de que cumplan 21.', 'If the principal gets married, the case moves from F1 to F3. The petition isn\'t destroyed, but the F3 line is significantly slower. Derivative children keep CSPA protection but under the slower F3 timeline, increasing the risk of aging out.'],
+        example: ['Ejemplo: Carlos (F1, 28 anos) tiene un hijo de 16. Si Carlos se casa, pasa a F3. Su hijo sigue protegido por CSPA, pero ahora bajo la fila F3 que puede tardar 10+ anos mas. Su hijo podria cumplir 21 antes de que la visa este disponible.', 'Example: Carlos (F1, age 28) has a 16-year-old son. If Carlos marries, he moves to F3. His son keeps CSPA protection, but now under the F3 line which may take 10+ more years. His son could turn 21 before the visa is available.'],
+      },
+      F2A: {
+        severity: 'severe',
+        riskTag: ['🔴 RIESGO ALTO — Depende de quien sea el beneficiario principal.', '🔴 HIGH RISK — Depends on who the principal beneficiary is.'],
+        who: ['El beneficiario principal puede ser: (a) el conyuge del residente permanente, o (b) un hijo/a menor soltero/a (menor de 21).', 'The principal beneficiary can be: (a) the LPR\'s spouse, or (b) an unmarried minor child (under 21).'],
+        cspaProtects: ['Si el principal es el hijo menor: la CSPA lo protege directamente. Si el principal es el conyuge: la CSPA protege a los hijos derivados del conyuge.', 'If the principal is the minor child: CSPA directly protects them. If the principal is the spouse: CSPA protects the spouse\'s derivative children.'],
+        effect: ['Si el hijo menor (principal) se casa: pierde COMPLETAMENTE el estatus de "hijo". No existe categoria para hijo casado de residente permanente. Perdida total e irreversible. Si el principal es el conyuge: el conyuge ya esta casado (esa es la base), pero sus hijos derivados necesitan proteccion CSPA.', 'If the minor child (principal) marries: they COMPLETELY lose "child" status. No category exists for a married child of an LPR. Total, irreversible loss. If the principal is the spouse: they\'re already married (that\'s the basis), but their derivative children need CSPA protection.'],
+        example: ['Ejemplo: Maria (conyuge F2A) tiene dos hijos de 15 y 18. La CSPA protege a ambos hijos como derivados. Si el hijo de 18 (edad CSPA) cumple 21 antes de que la visa este disponible, queda fuera del caso. Es crucial monitorear su edad.', 'Example: Maria (F2A spouse) has children ages 15 and 18. CSPA protects both as derivatives. If the 18-year-old (CSPA age) turns 21 before the visa is available, they fall out of the case. Monitoring their age is crucial.'],
+      },
+      F2B: {
+        severity: 'severe',
+        riskTag: ['🔴 RIESGO ALTO — Casarse destruye la peticion por completo.', '🔴 HIGH RISK — Getting married destroys the petition entirely.'],
+        who: ['El beneficiario principal es el hijo/a soltero/a (21+) del residente permanente.', 'The principal beneficiary is the unmarried adult son/daughter (21+) of the LPR.'],
+        cspaProtects: ['La CSPA protege a los hijos derivados (hijos menores del beneficiario principal — nietos del peticionario residente).', 'CSPA protects the derivative children (minor children of the principal — LPR petitioner\'s grandchildren).'],
+        effect: ['Si el beneficiario principal se casa, pierde la categoria F2B por completo. No existe categoria para hijo casado de residente permanente. La peticion se destruye y los derivados tambien pierden su proteccion. La unica forma de recuperar seria que el peticionario se naturalice y presente una nueva peticion bajo F3.', 'If the principal gets married, they completely lose F2B. No category exists for a married child of an LPR. The petition is destroyed and derivatives also lose protection. The only recovery path: petitioner naturalizes and files new petition under F3.'],
+        example: ['Ejemplo: Pedro (F2B, 25 anos) tiene un hijo de 12. Si Pedro se casa, la peticion desaparece. Su hijo pierde toda proteccion CSPA. Si el padre de Pedro se hace ciudadano, podria presentar una NUEVA peticion bajo F3, pero empezaria de cero.', 'Example: Pedro (F2B, age 25) has a 12-year-old son. If Pedro marries, the petition disappears. His son loses all CSPA protection. If Pedro\'s father becomes a citizen, he could file a NEW F3 petition, but it would start from scratch.'],
+      },
+      F3: {
+        severity: 'none',
+        riskTag: ['✅ SIN RIESGO — El beneficiario ya esta en la categoria de hijo casado.', '✅ NO RISK — The beneficiary is already in the married child category.'],
+        who: ['El beneficiario principal es el hijo/a casado/a de un ciudadano americano.', 'The principal beneficiary is the married son/daughter of a U.S. citizen.'],
+        cspaProtects: ['La CSPA protege a los hijos derivados (hijos menores del beneficiario principal — nietos del peticionario).', 'CSPA protects the derivative children (minor children of the principal — petitioner\'s grandchildren).'],
+        effect: ['El beneficiario principal ya esta casado — ese es el requisito de esta categoria. El matrimonio no cambia nada. Sus hijos derivados mantienen la proteccion CSPA normalmente.', 'The principal is already married — that\'s the requirement for this category. Marriage doesn\'t change anything. Derivative children keep CSPA protection normally.'],
+        example: ['Ejemplo: Ana (F3) tiene un hijo de 14. Como Ana ya esta casada, su estado civil no afecta el caso. Su hijo esta protegido por CSPA y solo necesita monitorear que su edad CSPA no llegue a 21 antes de la visa.', 'Example: Ana (F3) has a 14-year-old son. Since Ana is already married, her marital status doesn\'t affect the case. Her son is protected by CSPA and just needs to ensure his CSPA age doesn\'t reach 21 before the visa.'],
+      },
+      F4: {
+        severity: 'none',
+        riskTag: ['✅ SIN RIESGO — El estado civil no afecta la categoria F4.', '✅ NO RISK — Marital status doesn\'t affect the F4 category.'],
+        who: ['El beneficiario principal es el hermano/a del ciudadano americano.', 'The principal beneficiary is the sibling of the U.S. citizen.'],
+        cspaProtects: ['La CSPA protege a los hijos derivados (hijos menores del beneficiario — sobrinos del peticionario).', 'CSPA protects the derivative children (minor children of the beneficiary — petitioner\'s nieces/nephews).'],
+        effect: ['El estado civil del beneficiario principal no afecta F4. Ya sea soltero o casado, la categoria es la misma. Los hijos derivados mantienen la proteccion CSPA normalmente.', 'The principal\'s marital status doesn\'t affect F4. Whether single or married, the category stays the same. Derivative children keep CSPA protection normally.'],
+        example: ['Ejemplo: Luis (F4) tiene hijos de 10 y 17. Si Luis se casa o divorcia, su categoria F4 no cambia. Sus hijos estan protegidos por CSPA. El unico riesgo es que la fila F4 es muy lenta (15-25 anos) y alguno podria cumplir 21 antes.', 'Example: Luis (F4) has children ages 10 and 17. If Luis marries or divorces, his F4 category doesn\'t change. His children are protected by CSPA. The only risk is the F4 line is very slow (15-25 years) and one could turn 21 before then.'],
+      },
+    };
 
-    if (severeMarriage) {
-      doc.setFillColor(255, 235, 235);
+    const catInfo = marriageData[data.category];
+    if (catInfo) {
+      const li = isEs ? 0 : 1;
+
+      // Risk severity banner
+      const bannerColor = catInfo.severity === 'severe' ? [255, 235, 235] as const : catInfo.severity === 'moderate' ? [255, 248, 220] as const : [230, 245, 230] as const;
+      const textColor = catInfo.severity === 'severe' ? RED : catInfo.severity === 'moderate' ? GOLD : GREEN;
+      doc.setFillColor(bannerColor[0], bannerColor[1], bannerColor[2]);
       doc.roundedRect(20, cy - 3, W - 40, 12, 2, 2, 'F');
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...RED);
-      doc.text(isEs ? 'RIESGO ALTO - Casarse terminaria la proteccion CSPA en esta categoria.' : 'HIGH RISK - Getting married would end CSPA protection in this category.', 25, cy + 5);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.text(catInfo.riskTag[li], 25, cy + 5);
       cy += 16;
-    } else if (moderateMarriage) {
-      doc.setFillColor(255, 248, 220);
-      doc.roundedRect(20, cy - 3, W - 40, 12, 2, 2, 'F');
+
+      // Who is who
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...GOLD);
-      doc.text(isEs ? 'RIESGO MODERADO - Casarse podria cambiar la categoria y aumentar la espera.' : 'MODERATE RISK - Getting married could change the category and increase the wait.', 25, cy + 5);
-      cy += 16;
-    } else {
+      doc.setTextColor(...NAVY);
+      doc.text(isEs ? 'Quien es quien en esta categoria:' : 'Who is who in this category:', 25, cy);
+      cy += 5;
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...GRAY);
-      doc.text(isEs ? 'Esta categoria no se ve afectada si el beneficiario se casa.' : 'This category is not affected if the beneficiary gets married.', 25, cy + 2);
-      cy += 10;
-    }
+      const whoLines = doc.splitTextToSize(catInfo.who[li], W - 55);
+      doc.text(whoLines, 25, cy);
+      cy += whoLines.length * 4 + 3;
 
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...GRAY);
-    const marriageExpl = isEs
-      ? 'Para la ley de inmigracion, un "hijo" es alguien soltero y menor de 21 anos. Si el beneficiario se casa, automaticamente deja de ser considerado "hijo" y la proteccion CSPA ya no aplica. Esta decision no se puede revertir.'
-      : 'Under immigration law, a "child" is someone unmarried and under 21. If the beneficiary gets married, they automatically stop being considered a "child" and CSPA protection no longer applies. This cannot be reversed.';
-    const marriageLines = doc.splitTextToSize(marriageExpl, W - 50);
-    doc.text(marriageLines, 25, cy);
-    cy += marriageLines.length * 4 + 8;
+      // Who does CSPA protect
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NAVY);
+      doc.text(isEs ? 'A quien protege la CSPA:' : 'Who does CSPA protect:', 25, cy);
+      cy += 5;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      const cspaLines = doc.splitTextToSize(catInfo.cspaProtects[li], W - 55);
+      doc.text(cspaLines, 25, cy);
+      cy += cspaLines.length * 4 + 3;
+
+      // Marriage effect
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NAVY);
+      doc.text(isEs ? 'Que pasa si se casa:' : 'What happens if they marry:', 25, cy);
+      cy += 5;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      const effectLines = doc.splitTextToSize(catInfo.effect[li], W - 55);
+      doc.text(effectLines, 25, cy);
+      cy += effectLines.length * 4 + 4;
+
+      // Narrative example box
+      doc.setFillColor(...LIGHT);
+      doc.roundedRect(20, cy - 3, W - 40, 28, 2, 2, 'F');
+      doc.setDrawColor(...GOLD);
+      doc.setLineWidth(0.4);
+      doc.line(22, cy - 3, 22, cy + 25);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NAVY);
+      doc.text(isEs ? '📖 Ejemplo practico:' : '📖 Practical example:', 27, cy + 3);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      const exLines = doc.splitTextToSize(catInfo.example[li], W - 60);
+      doc.text(exLines, 27, cy + 9);
+      cy += 32;
+    }
   }
 
   // Sought to Acquire reminder
