@@ -12,6 +12,7 @@ import PlaceholderTool from "./pages/PlaceholderTool";
 import CspaTool from "./pages/CspaTool";
 import ClientUpload from "./pages/ClientUpload";
 import CaseReview from "./pages/CaseReview";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/dashboard/cspa" element={<CspaTool />} />
           <Route path="/dashboard/tracker" element={<PlaceholderTool tool="tracker" />} />
           <Route path="/upload/:token" element={<ClientUpload />} />
+          <Route path="/dashboard/admin" element={<AdminPanel />} />
           <Route path="/case/:id" element={<CaseReview />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
