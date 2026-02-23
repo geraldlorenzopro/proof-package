@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TrendingUp, TrendingDown, Clock, AlertTriangle, CheckCircle2, XCircle, Loader2, BarChart3, Calendar, Timer } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -122,6 +122,12 @@ export default function CSPAProjectionSimulator({
   const [error, setError] = useState<string | null>(null);
 
   const canRun = dob && priorityDate && category && chargeability;
+
+  // Reset result when inputs change
+  useEffect(() => {
+    setResult(null);
+    setError(null);
+  }, [dob, priorityDate, approvalDate, category, chargeability]);
 
   const formatDateStr = (dateStr: string) => {
     const d = new Date(dateStr + "T12:00:00");
