@@ -10,8 +10,8 @@ import {
 const TOOLS = [
   {
     id: 'evidence',
-    name: 'Evidence Organizer',
-    description: 'Organiza y compila evidencias USCIS en paquetes profesionales listos para presentar.',
+    name: 'Photo Evidence Organizer',
+    description: 'Organiza las fotos de tu caso en un paquete profesional listo para USCIS con descripciones y fechas.',
     icon: FolderOpen,
     route: '/dashboard/evidence',
     status: 'active' as const,
