@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, Loader2, Search, Shield, ExternalLink, Globe } from "lucide-react";
+import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, Loader2, Search, Shield, ExternalLink, Globe, TrendingDown } from "lucide-react";
+import RetrogradeTimeline from "@/components/RetrogradeTimeline";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -542,6 +543,18 @@ export default function CSPACalculator() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Retrogression Timeline */}
+        {form.category && form.chargeability && (
+          <div className="mt-6">
+            <RetrogradeTimeline
+              category={form.category}
+              chargeability={form.chargeability}
+              priorityDate={form.priorityDate || undefined}
+              lang={lang}
+            />
+          </div>
+        )}
       </div>
 
       {/* Footer */}
