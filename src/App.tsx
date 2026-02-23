@@ -13,6 +13,7 @@ import CspaTool from "./pages/CspaTool";
 import ClientUpload from "./pages/ClientUpload";
 import CaseReview from "./pages/CaseReview";
 import AdminPanel from "./pages/AdminPanel";
+import Features from "./pages/Features";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/features" element={<Features />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/cases" element={<CasesPage />} />
