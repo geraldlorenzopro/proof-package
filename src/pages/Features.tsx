@@ -10,8 +10,8 @@ const tools = [
     href: '/dashboard/cspa',
   },
   {
-    name: 'Evidence Organizer',
-    description: 'Organiza y clasifica evidencia para casos de inmigración con soporte de carga de archivos y generación de índices.',
+    name: 'Photo Evidence Organizer',
+    description: 'Organiza las fotos de tu caso en un paquete profesional listo para USCIS con descripciones y fechas.',
     icon: FileText,
     status: 'coming' as const,
   },
