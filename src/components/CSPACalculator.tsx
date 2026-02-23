@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, Loader2, Search, Shield, ExternalLink, Globe, TrendingDown, Info } from "lucide-react";
+import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, Loader2, Search, Shield, ExternalLink, Globe, TrendingDown, Info, FileText } from "lucide-react";
 import RetrogradeTimeline from "@/components/RetrogradeTimeline";
 import SoughtToAcquireAlert from "@/components/SoughtToAcquireAlert";
 import NaturalizationSimulator from "@/components/NaturalizationSimulator";
@@ -24,6 +24,9 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import CSPALeadCaptureModal from "@/components/CSPALeadCaptureModal";
+import { generateCSPAReport, type CSPAReportData } from "@/lib/cspaPdfGenerator";
+import { toast } from "@/hooks/use-toast";
 
 // ─── Translations ─────────────────────────────────────────────────────────────
 type Lang = "es" | "en";
@@ -374,6 +377,8 @@ export default function CSPACalculator() {
   const [visaAutoInfo, setVisaAutoInfo] = useState<string | null>(null);
   const [visaError, setVisaError] = useState<string | null>(null);
   const [pdBecameCurrent, setPdBecameCurrent] = useState<string | null>(null);
+  const [showLeadCapture, setShowLeadCapture] = useState(false);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   const autoDetectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
@@ -454,6 +459,72 @@ export default function CSPACalculator() {
     const approvalControlled = !!(pdBecameCurrent && form.approvalDate && form.approvalDate > pdBecameCurrent);
     setResult({ biologicalAge, pendingTime, cspaAgeDays, cspaAgeYears, qualifies: cspaAgeYears < 21, dobDate: dob, priorityDate: pd, approvalDate: ad, visaAvailableDate: vad, category: form.category || "—", chargeability: form.chargeability || "—", visaDateAutoDetected: !!visaAutoInfo, bulletinInfo: visaAutoInfo ?? undefined, pdBecameCurrentDate: pdBecameCurrent ?? undefined, approvalControlled });
     setShowDialog(true);
+  };
+
+  const handleGeneratePDF = async (leadData: { name: string; email: string; phone: string }) => {
+    if (!result) return;
+    setGeneratingPDF(true);
+    try {
+      // Get profile for branding
+      const { data: { user } } = await supabase.auth.getUser();
+      let firmName: string | undefined;
+      let logoUrl: string | undefined;
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('firm_name, logo_url').eq('user_id', user.id).single();
+        firmName = profile?.firm_name || undefined;
+        logoUrl = profile?.logo_url || undefined;
+      }
+
+      // Save to cspa_calculations for lead tracking
+      await supabase.from('cspa_calculations' as any).insert({
+        professional_id: user?.id || null,
+        client_name: leadData.name,
+        client_email: leadData.email,
+        client_phone: leadData.phone || null,
+        dob: form.dob,
+        priority_date: form.priorityDate,
+        approval_date: form.approvalDate || null,
+        visa_available_date: form.visaAvailableDate || null,
+        category: form.category,
+        chargeability: form.chargeability,
+        cspa_age_years: result.cspaAgeYears,
+        qualifies: result.qualifies,
+        pending_time_days: result.pendingTime,
+        biological_age_days: result.biologicalAge,
+        bulletin_info: result.bulletinInfo || null,
+      });
+
+      // Generate PDF
+      const reportData: CSPAReportData = {
+        clientName: leadData.name,
+        clientEmail: leadData.email,
+        clientPhone: leadData.phone,
+        dob: form.dob,
+        priorityDate: form.priorityDate,
+        approvalDate: form.approvalDate,
+        visaAvailableDate: form.visaAvailableDate,
+        category: form.category,
+        chargeability: form.chargeability,
+        cspaAgeYears: result.cspaAgeYears,
+        qualifies: result.qualifies,
+        pendingTimeDays: result.pendingTime,
+        biologicalAgeDays: result.biologicalAge,
+        bulletinInfo: result.bulletinInfo,
+        approvalControlled: result.approvalControlled,
+        firmName,
+        logoUrl,
+        lang,
+      };
+
+      await generateCSPAReport(reportData);
+      setShowLeadCapture(false);
+      toast({ title: lang === 'es' ? '✅ Reporte generado' : '✅ Report generated', description: lang === 'es' ? 'El PDF se descargó exitosamente.' : 'The PDF was downloaded successfully.' });
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Error', description: lang === 'es' ? 'No se pudo generar el reporte.' : 'Could not generate the report.', variant: 'destructive' });
+    } finally {
+      setGeneratingPDF(false);
+    }
   };
 
   const requiredFilled = form.dob && form.priorityDate && form.approvalDate && form.visaAvailableDate && !loadingVisa;
@@ -779,13 +850,28 @@ export default function CSPACalculator() {
                   color={result.qualifies ? "success" : "danger"} highlight />
               </div>
 
-              <Button onClick={() => setShowDialog(false)} className="w-full gradient-gold text-accent-foreground font-semibold" size="sm">
-                {t.close}
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
+                  <FileText className="w-4 h-4 mr-1" />
+                  {lang === 'es' ? 'Generar Reporte PDF' : 'Generate PDF Report'}
+                </Button>
+                <Button onClick={() => setShowDialog(false)} variant="outline" className="shrink-0" size="sm">
+                  {t.close}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Lead Capture Modal for PDF */}
+      <CSPALeadCaptureModal
+        open={showLeadCapture}
+        onOpenChange={setShowLeadCapture}
+        onSubmit={handleGeneratePDF}
+        loading={generatingPDF}
+        lang={lang}
+      />
     </div>
   );
 }

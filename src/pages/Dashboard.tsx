@@ -77,7 +77,7 @@ export default function Dashboard() {
 
   async function loadData(userId: string) {
     const [profileRes, casesRes] = await Promise.all([
-      supabase.from('profiles').select('full_name, firm_name').eq('user_id', userId).single(),
+      supabase.from('profiles').select('full_name, firm_name, logo_url').eq('user_id', userId).single(),
       supabase.from('client_cases').select('status').eq('professional_id', userId),
     ]);
     setProfile(profileRes.data);
