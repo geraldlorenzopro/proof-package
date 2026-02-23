@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, Loader2, Search, Shield, ExternalLink, Globe, TrendingDown } from "lucide-react";
+import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, Loader2, Search, Shield, ExternalLink, Globe, TrendingDown, Info } from "lucide-react";
 import RetrogradeTimeline from "@/components/RetrogradeTimeline";
+import SoughtToAcquireAlert from "@/components/SoughtToAcquireAlert";
+import NaturalizationSimulator from "@/components/NaturalizationSimulator";
+import MarriageImpactAlert from "@/components/MarriageImpactAlert";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -251,7 +254,14 @@ function daysToYears(days: number): number {
   return days / 365.25;
 }
 
-const CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4"];
+const FAMILY_CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4"];
+const ALL_CATEGORIES = [
+  { group: "family", label: "Family-Based", items: ["F1", "F2A", "F2B", "F3", "F4"] },
+  { group: "immediate", label: "Immediate Relative", items: ["IR"] },
+  { group: "employment", label: "Employment-Based", items: ["EB1", "EB2", "EB3", "EB4", "EB5"] },
+  { group: "other", label: "Other", items: ["DV", "ASYLUM"] },
+];
+const CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4", "IR", "EB1", "EB2", "EB3", "EB4", "EB5", "DV", "ASYLUM"];
 const CHARGEABILITIES_ES = [
   { value: "ALL", label: "All Chargeability Areas" },
   { value: "MEXICO", label: "México" },
@@ -482,7 +492,14 @@ export default function CSPACalculator() {
                 <Label className="text-foreground font-medium text-sm">{t.category}</Label>
                 <Select value={form.category} onValueChange={handleSelect("category")}>
                   <SelectTrigger className="h-10 border-border bg-secondary"><SelectValue placeholder={t.categoryPlaceholder} /></SelectTrigger>
-                  <SelectContent>{CATEGORIES.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
+                   <SelectContent>
+                    {ALL_CATEGORIES.map((group) => (
+                      <div key={group.group}>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group.label}</div>
+                        {group.items.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                      </div>
+                    ))}
+                   </SelectContent>
                 </Select>
                 <p className="text-muted-foreground text-xs">{t.categoryHint}</p>
               </div>
@@ -544,8 +561,38 @@ export default function CSPACalculator() {
           </CardContent>
         </Card>
 
+        {/* Sought to Acquire Alert */}
+        {form.visaAvailableDate && (
+          <div className="mt-6">
+            <SoughtToAcquireAlert
+              visaAvailableDate={form.visaAvailableDate}
+              lang={lang}
+            />
+          </div>
+        )}
+
+        {/* Naturalization Simulator */}
+        {form.category && FAMILY_CATEGORIES.includes(form.category) && (
+          <div className="mt-6">
+            <NaturalizationSimulator
+              category={form.category}
+              lang={lang}
+            />
+          </div>
+        )}
+
+        {/* Marriage Impact Alert */}
+        {form.category && FAMILY_CATEGORIES.includes(form.category) && (
+          <div className="mt-6">
+            <MarriageImpactAlert
+              category={form.category}
+              lang={lang}
+            />
+          </div>
+        )}
+
         {/* Retrogression Timeline */}
-        {form.category && form.chargeability && (
+        {form.category && form.chargeability && FAMILY_CATEGORIES.includes(form.category) && (
           <div className="mt-6">
             <RetrogradeTimeline
               category={form.category}
@@ -553,6 +600,78 @@ export default function CSPACalculator() {
               priorityDate={form.priorityDate || undefined}
               lang={lang}
             />
+          </div>
+        )}
+
+        {/* Category-specific info for non-family */}
+        {form.category && !FAMILY_CATEGORIES.includes(form.category) && (
+          <div className="mt-6">
+            <Card className="glow-border bg-card">
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Info className="w-5 h-5 text-jarvis" />
+                  <h3 className="text-base font-semibold text-foreground">
+                    {lang === "es" ? "Fórmula CSPA Especial" : "Special CSPA Formula"} — {form.category}
+                  </h3>
+                </div>
+                {form.category === "IR" && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      {lang === "es"
+                        ? "Para Familiares Inmediatos (IR), la edad se congela en la fecha de presentación de la petición (filing date). No hay espera por boletín de visas porque los IR no están sujetos a cuotas numéricas."
+                        : "For Immediate Relatives (IR), age freezes at the petition filing date. There is no visa bulletin wait since IRs are not subject to numerical caps."}
+                    </p>
+                    <div className="bg-accent/10 border border-accent/20 rounded-lg px-3 py-2">
+                      <p className="text-xs font-semibold text-accent">
+                        {lang === "es" ? "Fórmula: Edad al momento de presentar I-130" : "Formula: Age at time of I-130 filing"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {form.category === "DV" && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      {lang === "es"
+                        ? "Para la Lotería de Visas de Diversidad (DV), la edad CSPA se calcula al momento del registro (entry) en el programa DV, no al momento de la entrevista. Si el beneficiario derivado era menor de 21 al registrarse, califica."
+                        : "For Diversity Visa (DV) Lottery, CSPA age is calculated at the time of DV program registration (entry), not at the interview. If the derivative beneficiary was under 21 at registration, they qualify."}
+                    </p>
+                    <div className="bg-accent/10 border border-accent/20 rounded-lg px-3 py-2">
+                      <p className="text-xs font-semibold text-accent">
+                        {lang === "es" ? "Fórmula: Edad al momento de registro DV" : "Formula: Age at time of DV registration"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {form.category === "ASYLUM" && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      {lang === "es"
+                        ? "Para casos de Asilo/Refugio, la edad se congela al momento de presentar el I-589 (asilo) o al momento de admisión como refugiado. Los derivados mantienen la clasificación de \"child\" si eran menores de 21 en esa fecha."
+                        : "For Asylum/Refugee cases, age freezes at the time of I-589 filing (asylum) or at the time of admission as a refugee. Derivatives maintain \"child\" classification if they were under 21 on that date."}
+                    </p>
+                    <div className="bg-accent/10 border border-accent/20 rounded-lg px-3 py-2">
+                      <p className="text-xs font-semibold text-accent">
+                        {lang === "es" ? "Fórmula: Edad al presentar I-589 o al admitirse como refugiado" : "Formula: Age at I-589 filing or refugee admission"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {(form.category.startsWith("EB")) && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      {lang === "es"
+                        ? `Para categorías de empleo (${form.category}), CSPA aplica a los derivados (hijos del beneficiario principal). La fórmula es la misma que para categorías familiares: Edad biológica al momento de disponibilidad de visa − tiempo pendiente en USCIS.`
+                        : `For employment categories (${form.category}), CSPA applies to derivatives (children of the principal beneficiary). The formula is the same as family categories: Biological age at visa availability − pending time at USCIS.`}
+                    </p>
+                    <div className="bg-jarvis/10 border border-jarvis/20 rounded-lg px-3 py-2">
+                      <p className="text-xs font-semibold text-jarvis">
+                        {lang === "es" ? "Usa la calculadora estándar para derivados EB" : "Use the standard calculator for EB derivatives"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
