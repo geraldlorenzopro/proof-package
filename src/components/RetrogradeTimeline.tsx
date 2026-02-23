@@ -30,7 +30,7 @@ const T = {
     hideTable: "Ocultar tabla",
     year: "Año",
     month: "Mes",
-    value: "Valor",
+    value: "Fecha de Corte",
     status: "¿Qué pasó?",
     advanced: "Avanzó ✅",
     retrogressed: "Retrocedió ❌",
@@ -57,7 +57,7 @@ const T = {
     hideTable: "Hide table",
     year: "Year",
     month: "Month",
-    value: "Value",
+    value: "Cutoff Date",
     status: "What happened?",
     advanced: "Advanced ✅",
     retrogressed: "Went back ❌",
@@ -156,7 +156,9 @@ export default function RetrogradeTimeline({
         ? dateToTimestamp(r.final_action_date)
         : null,
       isCurrent: r.is_current,
-      rawValue: r.raw_value ?? (r.is_current ? "CURRENT" : "—"),
+      rawValue: (r.raw_value && r.raw_value.trim() !== "" && !r.raw_value.includes("&nbsp") && r.raw_value !== "\u00A0")
+        ? r.raw_value
+        : (r.is_current ? "CURRENT" : (r.final_action_date ? r.final_action_date : "—")),
       bulletin_year: r.bulletin_year,
       bulletin_month: r.bulletin_month,
     }));
@@ -313,11 +315,21 @@ export default function RetrogradeTimeline({
 
         <div className="flex items-start gap-2 bg-secondary/50 rounded-lg px-3 py-2 border border-border">
           <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {lang === "es"
-              ? "Cuando la línea sube, la fila avanza (buenas noticias). Cuando baja, la fila retrocedió (malas noticias). Si tu fecha de prioridad (línea roja) está por debajo de la línea dorada, tu visa todavía no está lista."
-              : "When the line goes up, the line is moving forward (good news). When it drops, the line went backwards (bad news). If your priority date (red line) is below the gold line, your visa isn't ready yet."}
-          </p>
+          <div className="text-xs text-muted-foreground leading-relaxed space-y-1">
+            <p>
+              {lang === "es"
+                ? "Cuando la línea sube, la fila avanza (buenas noticias). Cuando baja, la fila retrocedió (malas noticias). Si tu fecha de prioridad (línea roja) está por debajo de la línea dorada, tu visa todavía no está lista."
+                : "When the line goes up, the line is moving forward (good news). When it drops, the line went backwards (bad news). If your priority date (red line) is below the gold line, your visa isn't ready yet."}
+            </p>
+            <p className="text-muted-foreground/70">
+              {lang === "es"
+                ? "📋 Para verificar estos datos, puedes compararlos con el Boletín de Visas oficial del Departamento de Estado en: "
+                : "📋 To verify this data, you can compare it with the official Visa Bulletin from the Department of State at: "}
+              <a href="https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+                travel.state.gov
+              </a>
+            </p>
+          </div>
         </div>
 
         {/* Toggle table */}
