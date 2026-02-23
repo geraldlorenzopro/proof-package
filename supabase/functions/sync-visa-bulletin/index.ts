@@ -233,6 +233,8 @@ Deno.serve(async (req) => {
     const targetMonth = body.month ?? (now.getMonth() + 1);
     const backfill = body.backfill ?? false;
     const backfillMonths = body.backfill_months ?? 60;
+    // When called without specific month (cron), also try next month for "upcoming" bulletin
+    const autoMode = !body.year && !body.month;
     
     const monthsToSync: Array<{ year: number; month: number }> = [];
     
@@ -246,6 +248,13 @@ Deno.serve(async (req) => {
       }
     } else {
       monthsToSync.push({ year: targetYear, month: targetMonth });
+      // In auto mode, also try the next month (upcoming bulletin)
+      if (autoMode) {
+        let nextMonth = targetMonth + 1;
+        let nextYear = targetYear;
+        if (nextMonth > 12) { nextMonth = 1; nextYear++; }
+        monthsToSync.push({ year: nextYear, month: nextMonth });
+      }
     }
     
     let totalInserted = 0;
