@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_app_access: {
+        Row: {
+          account_id: string
+          app_id: string
+          granted_at: string
+          id: string
+        }
+        Insert: {
+          account_id: string
+          app_id: string
+          granted_at?: string
+          id?: string
+        }
+        Update: {
+          account_id?: string
+          app_id?: string
+          granted_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_app_access_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_app_access_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "hub_apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_members: {
+        Row: {
+          account_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["account_role"]
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["account_role"]
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["account_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_members_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bulletin_sync_log: {
         Row: {
           bulletin_month: number
@@ -166,6 +234,72 @@ export type Database = {
           },
         ]
       }
+      hub_apps: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      ner_accounts: {
+        Row: {
+          account_name: string
+          created_at: string
+          ghl_contact_id: string | null
+          id: string
+          is_active: boolean
+          max_users: number
+          phone: string | null
+          plan: Database["public"]["Enums"]["ner_plan"]
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          created_at?: string
+          ghl_contact_id?: string | null
+          id?: string
+          is_active?: boolean
+          max_users?: number
+          phone?: string | null
+          plan?: Database["public"]["Enums"]["ner_plan"]
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          created_at?: string
+          ghl_contact_id?: string | null
+          id?: string
+          is_active?: boolean
+          max_users?: number
+          phone?: string | null
+          plan?: Database["public"]["Enums"]["ner_plan"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -234,10 +368,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_account_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["account_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      user_account_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      account_role: "owner" | "admin" | "member"
+      ner_plan: "essential" | "professional" | "elite"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -364,6 +506,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_role: ["owner", "admin", "member"],
+      ner_plan: ["essential", "professional", "elite"],
+    },
   },
 } as const
