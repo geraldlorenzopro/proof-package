@@ -4,6 +4,7 @@ import RetrogradeTimeline from "@/components/RetrogradeTimeline";
 import SoughtToAcquireAlert from "@/components/SoughtToAcquireAlert";
 import NaturalizationSimulator from "@/components/NaturalizationSimulator";
 import MarriageImpactAlert from "@/components/MarriageImpactAlert";
+import CSPAProjectionSimulator from "@/components/CSPAProjectionSimulator";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -598,6 +599,20 @@ export default function CSPACalculator() {
               category={form.category}
               chargeability={form.chargeability}
               priorityDate={form.priorityDate || undefined}
+              lang={lang}
+            />
+          </div>
+        )}
+
+        {/* CSPA Projection Simulator */}
+        {form.category && form.chargeability && form.dob && form.priorityDate && FAMILY_CATEGORIES.includes(form.category) && (
+          <div className="mt-6">
+            <CSPAProjectionSimulator
+              dob={form.dob}
+              priorityDate={form.priorityDate}
+              approvalDate={form.approvalDate || undefined}
+              category={form.category}
+              chargeability={form.chargeability}
               lang={lang}
             />
           </div>
