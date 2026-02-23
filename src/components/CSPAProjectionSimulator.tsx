@@ -42,9 +42,15 @@ const T = {
     last12: "último año",
     last24: "últimos 2 años",
     last36: "últimos 3 años",
-    pendingDeduction: "Tiempo que se resta (espera en USCIS)",
+    pendingDeduction: "Crédito CSPA (tiempo que se resta)",
     days: "días",
-    noApproval: "Sin fecha de aprobación — no se puede restar el tiempo de espera",
+    noApproval: "Sin fecha de aprobación — no se puede calcular el crédito de tiempo",
+    pendingHuman: (days: number) => {
+      const y = Math.floor(days / 365);
+      const m = Math.round((days % 365) / 30);
+      if (y === 0) return `${m} meses`;
+      return m > 0 ? `${y} años y ${m} meses` : `${y} años`;
+    },
   },
   en: {
     title: "🔮 When could the visa be ready?",
@@ -80,9 +86,15 @@ const T = {
     last12: "last year",
     last24: "last 2 years",
     last36: "last 3 years",
-    pendingDeduction: "Time subtracted (USCIS wait)",
+    pendingDeduction: "CSPA credit (time subtracted)",
     days: "days",
-    noApproval: "No approval date — can't subtract wait time",
+    noApproval: "No approval date — can't calculate the time credit",
+    pendingHuman: (days: number) => {
+      const y = Math.floor(days / 365);
+      const m = Math.round((days % 365) / 30);
+      if (y === 0) return `${m} months`;
+      return m > 0 ? `${y} years and ${m} months` : `${y} years`;
+    },
   },
 };
 
@@ -111,10 +123,11 @@ interface CSPAProjectionSimulatorProps {
   category: string;
   chargeability: string;
   lang: Lang;
+  onResult?: (result: ProjectionResult | null) => void;
 }
 
 export default function CSPAProjectionSimulator({
-  dob, priorityDate, approvalDate, category, chargeability, lang,
+  dob, priorityDate, approvalDate, category, chargeability, lang, onResult,
 }: CSPAProjectionSimulatorProps) {
   const t = T[lang];
   const [loading, setLoading] = useState(false);
@@ -127,7 +140,13 @@ export default function CSPAProjectionSimulator({
   useEffect(() => {
     setResult(null);
     setError(null);
+    onResult?.(null);
   }, [dob, priorityDate, approvalDate, category, chargeability]);
+
+  // Notify parent of result changes
+  useEffect(() => {
+    onResult?.(result);
+  }, [result]);
 
   const formatDateStr = (dateStr: string) => {
     const d = new Date(dateStr + "T12:00:00");
@@ -267,7 +286,7 @@ export default function CSPAProjectionSimulator({
                   </div>
                   <p className="font-semibold text-foreground text-sm">{formatDateStr(result.effective_age_out)}</p>
                   {result.pending_time_days ? (
-                    <p className="text-xs text-muted-foreground">{t.pendingDeduction}: {result.pending_time_days} {t.days}</p>
+                    <p className="text-xs text-muted-foreground">{t.pendingDeduction}: {t.pendingHuman(result.pending_time_days)}</p>
                   ) : (
                     <p className="text-xs text-accent">{t.noApproval}</p>
                   )}
