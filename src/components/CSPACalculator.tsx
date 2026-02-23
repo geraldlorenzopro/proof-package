@@ -87,9 +87,9 @@ const T = {
     bulletin: "Fecha del boletín de visas",
     approvalLater: (date: string) => ` — La visa estuvo disponible el ${date}, pero la aprobación fue después.`,
     pdBefore: " — La visa estuvo disponible después de la aprobación.",
-    step1Title: "⏳ Tiempo que USCIS se tardó",
+    step1Title: "⏳ Tiempo que USCIS se tardó en aprobar",
     step1Formula: "Aprobación − Prioridad",
-    step1Desc: "Este tiempo se le resta a la edad (es el beneficio de la ley CSPA)",
+    step1Desc: "Este tiempo se le resta a la edad — es como un 'crédito' que da la ley CSPA",
     step2Title: "🎂 Edad real cuando la visa estuvo lista",
     step2Formula: "Visa Lista − Nacimiento",
     step2Desc: "La edad que tenía cuando la visa estuvo disponible",
@@ -107,6 +107,10 @@ const T = {
     errorVisa: "La fecha de disponibilidad de visa no puede ser anterior a la fecha de prioridad.",
     notYetCurrent: (m: string, y: number, cut: string, cat: string, ch: string) =>
       `La fecha de prioridad aún NO está vigente. El boletín más reciente (${m} ${y}) tiene un corte de ${cut} para ${cat}/${ch}.`,
+    hypotheticalCalc: "Ver simulación — ¿qué pasaría si la visa estuviera lista hoy?",
+    hypotheticalBanner: "🔮 Simulación hipotética",
+    hypotheticalDesc: "Esto muestra qué pasaría SI la visa estuviera disponible hoy. No es un resultado real — es para que tengas una idea de cómo se ve el caso.",
+    hypotheticalVisaDate: "Fecha simulada (hoy)",
     noBulletin: "No hay datos del Boletín para esta categoría/país. Verifique la selección.",
     noConsult: "No se pudo consultar el Boletín de Visas.",
     bulletinCurrent: (m: string, y: number) => `Boletín ${m} ${y} — CURRENT`,
@@ -189,6 +193,10 @@ const T = {
     errorVisa: "The visa availability date cannot be earlier than the priority date.",
     notYetCurrent: (m: string, y: number, cut: string, cat: string, ch: string) =>
       `Priority date is NOT yet current. The most recent bulletin (${m} ${y}) has a cutoff of ${cut} for ${cat}/${ch}.`,
+    hypotheticalCalc: "See simulation — what if the visa were ready today?",
+    hypotheticalBanner: "🔮 Hypothetical simulation",
+    hypotheticalDesc: "This shows what would happen IF the visa were available today. This is not a real result — it's to give you an idea of how the case looks.",
+    hypotheticalVisaDate: "Simulated date (today)",
     noBulletin: "No bulletin data for this category/country. Please verify your selection.",
     noConsult: "Could not consult the Visa Bulletin.",
     bulletinCurrent: (m: string, y: number) => `Bulletin ${m} ${y} — CURRENT`,
@@ -371,6 +379,7 @@ export default function CSPACalculator() {
   });
 
   const [result, setResult] = useState<CSPAResult | null>(null);
+  const [projectionData, setProjectionData] = useState<any>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingVisa, setLoadingVisa] = useState(false);
@@ -445,18 +454,28 @@ export default function CSPACalculator() {
     setForm((prev) => ({ ...prev, [field]: value })); setResult(null); setError(null);
   };
 
-  const calculate = () => {
-    setError(null); setResult(null);
+  const [hypothetical, setHypothetical] = useState(false);
+
+  const calculate = (forceHypothetical = false) => {
+    setError(null); setResult(null); setHypothetical(false);
     const dob = new Date(form.dob), pd = new Date(form.priorityDate);
-    const ad = new Date(form.approvalDate), vad = new Date(form.visaAvailableDate);
-    if ([dob, pd, ad, vad].some((d) => isNaN(d.getTime()))) { setError(t.errorDates); return; }
+    const ad = new Date(form.approvalDate);
+
+    // If visa not available, do hypothetical calc with today's date
+    const isHypothetical = forceHypothetical || !form.visaAvailableDate;
+    const vadStr = isHypothetical ? format(new Date(), "yyyy-MM-dd") : form.visaAvailableDate;
+    const vad = new Date(vadStr);
+
+    if ([dob, pd, ad].some((d) => isNaN(d.getTime()))) { setError(t.errorDates); return; }
+    if (!isHypothetical && isNaN(vad.getTime())) { setError(t.errorDates); return; }
     if (ad < pd) { setError(t.errorApproval); return; }
-    if (vad < pd) { setError(t.errorVisa); return; }
+    if (!isHypothetical && vad < pd) { setError(t.errorVisa); return; }
     const biologicalAge = diffInDays(dob, vad);
     const pendingTime = diffInDays(pd, ad);
     const cspaAgeDays = biologicalAge - pendingTime;
     const cspaAgeYears = daysToYears(cspaAgeDays);
     const approvalControlled = !!(pdBecameCurrent && form.approvalDate && form.approvalDate > pdBecameCurrent);
+    setHypothetical(isHypothetical);
     setResult({ biologicalAge, pendingTime, cspaAgeDays, cspaAgeYears, qualifies: cspaAgeYears < 21, dobDate: dob, priorityDate: pd, approvalDate: ad, visaAvailableDate: vad, category: form.category || "—", chargeability: form.chargeability || "—", visaDateAutoDetected: !!visaAutoInfo, bulletinInfo: visaAutoInfo ?? undefined, pdBecameCurrentDate: pdBecameCurrent ?? undefined, approvalControlled });
     setShowDialog(true);
   };
@@ -514,6 +533,11 @@ export default function CSPACalculator() {
         firmName,
         logoUrl,
         lang,
+        projection: projectionData ? {
+          base: projectionData.projected_current_date ? { date: projectionData.projected_current_date, months: projectionData.months_to_current ?? 0, agedOut: projectionData.status === "WILL_AGE_OUT" } : undefined,
+          optimistic: projectionData.optimistic ?? undefined,
+          pessimistic: projectionData.pessimistic ?? undefined,
+        } : undefined,
       };
 
       await generateCSPAReport(reportData);
@@ -527,6 +551,7 @@ export default function CSPACalculator() {
     }
   };
 
+  const canCalculateHypothetical = form.dob && form.priorityDate && form.approvalDate && !form.visaAvailableDate && !loadingVisa;
   const requiredFilled = form.dob && form.priorityDate && form.approvalDate && form.visaAvailableDate && !loadingVisa;
 
   if (!accepted) return <WelcomeSplash onContinue={() => setAccepted(true)} lang={lang} setLang={setLang} />;
@@ -626,10 +651,18 @@ export default function CSPACalculator() {
               </div>
             )}
 
-            <Button onClick={calculate} disabled={!requiredFilled}
-              className="w-full md:w-auto gradient-gold text-accent-foreground font-semibold px-10 py-2.5 text-sm hover:opacity-90 transition-opacity">
-              {t.calculate}<ChevronRight className="ml-2 w-4 h-4" />
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={() => calculate()} disabled={!requiredFilled}
+                className="w-full md:w-auto gradient-gold text-accent-foreground font-semibold px-10 py-2.5 text-sm hover:opacity-90 transition-opacity">
+                {t.calculate}<ChevronRight className="ml-2 w-4 h-4" />
+              </Button>
+              {canCalculateHypothetical && (
+                <Button onClick={() => calculate(true)} variant="outline"
+                  className="w-full md:w-auto text-sm">
+                  🔮 {t.hypotheticalCalc}
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -685,6 +718,7 @@ export default function CSPACalculator() {
               category={form.category}
               chargeability={form.chargeability}
               lang={lang}
+              onResult={setProjectionData}
             />
           </div>
         )}
@@ -786,6 +820,13 @@ export default function CSPACalculator() {
           </DialogHeader>
 
           {result && (
+            <>
+            {hypothetical && (
+              <div className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 space-y-1">
+                <p className="text-sm font-bold text-accent">{t.hypotheticalBanner}</p>
+                <p className="text-xs text-muted-foreground">{t.hypotheticalDesc}</p>
+              </div>
+            )}
             <div className="space-y-3">
               <div className="flex flex-wrap gap-1.5">
                 <span className="inline-flex items-center gap-1 bg-accent/10 border border-accent/20 text-foreground text-xs px-2.5 py-0.5 rounded-full font-medium">
@@ -813,10 +854,12 @@ export default function CSPACalculator() {
               <div className="grid grid-cols-2 gap-2">
                 {t.dateLabels.map((label, i) => {
                   const vals = [formatDate(result.dobDate), formatDate(result.priorityDate), formatDate(result.approvalDate), formatDate(result.visaAvailableDate)];
+                  const isHypotheticalDate = hypothetical && i === 3;
                   return (
-                    <div key={label} className="bg-secondary rounded-lg px-3 py-2 border border-border">
-                      <p className="text-muted-foreground text-xs">{label}</p>
+                    <div key={label} className={cn("rounded-lg px-3 py-2 border", isHypotheticalDate ? "bg-accent/10 border-accent/30" : "bg-secondary border-border")}>
+                      <p className="text-muted-foreground text-xs">{isHypotheticalDate ? t.hypotheticalVisaDate : label}</p>
                       <p className="font-semibold text-foreground text-sm">{vals[i]}</p>
+                      {isHypotheticalDate && <p className="text-xs text-accent">🔮</p>}
                     </div>
                   );
                 })}
@@ -860,6 +903,7 @@ export default function CSPACalculator() {
                 </Button>
               </div>
             </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
