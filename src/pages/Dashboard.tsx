@@ -54,6 +54,7 @@ const NAV_ITEMS = [
   { label: 'Hub Central', icon: LayoutDashboard, route: '/dashboard' },
   { label: 'Mis Casos', icon: FileText, route: '/dashboard/cases' },
   { label: 'Herramientas', icon: Zap, route: '/dashboard', section: 'tools' },
+  { label: 'Admin', icon: Shield, route: '/dashboard/admin' },
 ];
 
 export default function Dashboard() {
