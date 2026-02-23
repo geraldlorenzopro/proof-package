@@ -160,6 +160,66 @@ export type Database = {
         }
         Relationships: []
       }
+      cspa_calculations: {
+        Row: {
+          approval_date: string | null
+          biological_age_days: number | null
+          bulletin_info: string | null
+          category: string
+          chargeability: string
+          client_email: string
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          cspa_age_years: number | null
+          dob: string
+          id: string
+          pending_time_days: number | null
+          priority_date: string
+          professional_id: string | null
+          qualifies: boolean | null
+          visa_available_date: string | null
+        }
+        Insert: {
+          approval_date?: string | null
+          biological_age_days?: number | null
+          bulletin_info?: string | null
+          category: string
+          chargeability: string
+          client_email: string
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          cspa_age_years?: number | null
+          dob: string
+          id?: string
+          pending_time_days?: number | null
+          priority_date: string
+          professional_id?: string | null
+          qualifies?: boolean | null
+          visa_available_date?: string | null
+        }
+        Update: {
+          approval_date?: string | null
+          biological_age_days?: number | null
+          bulletin_info?: string | null
+          category?: string
+          chargeability?: string
+          client_email?: string
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          cspa_age_years?: number | null
+          dob?: string
+          id?: string
+          pending_time_days?: number | null
+          priority_date?: string
+          professional_id?: string | null
+          qualifies?: boolean | null
+          visa_available_date?: string | null
+        }
+        Relationships: []
+      }
       evidence_items: {
         Row: {
           caption: string | null
@@ -306,6 +366,7 @@ export type Database = {
           firm_name: string | null
           full_name: string | null
           id: string
+          logo_url: string | null
           user_id: string
         }
         Insert: {
@@ -313,6 +374,7 @@ export type Database = {
           firm_name?: string | null
           full_name?: string | null
           id?: string
+          logo_url?: string | null
           user_id: string
         }
         Update: {
@@ -320,6 +382,7 @@ export type Database = {
           firm_name?: string | null
           full_name?: string | null
           id?: string
+          logo_url?: string | null
           user_id?: string
         }
         Relationships: []
