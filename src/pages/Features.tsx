@@ -25,19 +25,20 @@ const liveTools = [
       { icon: FileCheck, text: 'Genera resumen de elegibilidad financiera' },
     ],
   },
-];
-
-const comingTools = [
   {
     name: 'Photo Evidence Organizer',
     description: 'Organiza las fotos de tu caso en un paquete profesional listo para USCIS con descripciones y fechas.',
     icon: FileText,
+    href: '/dashboard/evidence',
     features: [
       { icon: Camera, text: 'Sube fotos y agrégales fecha, ubicación y descripción' },
       { icon: Users, text: 'Portal para que el cliente suba sus propias fotos' },
       { icon: FileCheck, text: 'Genera un paquete PDF organizado cronológicamente' },
     ],
   },
+];
+
+const comingTools = [
   {
     name: 'Case Tracker',
     description: 'Seguimiento en tiempo real del estatus de casos con portal de cliente integrado.',
@@ -111,8 +112,6 @@ export default function Features() {
         <div className="grid gap-4">
           {comingTools.map((tool) => {
             const Icon = tool.icon;
-            const hasFeatures = tool.features && tool.features.length > 0;
-            const isExpanded = expanded === tool.name;
             return (
               <div key={tool.name} className="rounded-xl border bg-muted/30 border-border opacity-75 p-5 transition-colors">
                 <div className="flex items-start gap-4">
@@ -122,27 +121,8 @@ export default function Features() {
                   <div className="flex-1 min-w-0">
                     <h2 className="font-semibold text-foreground text-sm mb-1">{tool.name}</h2>
                     <p className="text-xs text-muted-foreground leading-relaxed">{tool.description}</p>
-                    {hasFeatures && (
-                      <button onClick={() => setExpanded(isExpanded ? null : tool.name)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-3">
-                        {isExpanded ? 'Menos' : 'Cómo funciona'}
-                        <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                      </button>
-                    )}
                   </div>
                 </div>
-                {hasFeatures && isExpanded && (
-                  <div className="mt-4 pt-4 border-t border-border/50 space-y-3 ml-[52px]">
-                    {tool.features!.map((feature, i) => {
-                      const FIcon = feature.icon;
-                      return (
-                        <div key={i} className="flex items-start gap-3">
-                          <FIcon className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                          <span className="text-xs text-muted-foreground leading-relaxed">{feature.text}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             );
           })}
