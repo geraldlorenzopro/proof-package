@@ -13,6 +13,21 @@ const MONTH_NAMES = [
 
 const CATEGORIES = ['F1', 'F2A', 'F2B', 'F3', 'F4'];
 
+// Map old-style category names to standard format
+const CATEGORY_ALIASES: Record<string, string> = {
+  '1ST': 'F1',
+  '2A': 'F2A',
+  '2A*': 'F2A',
+  '2B': 'F2B',
+  '3RD': 'F3',
+  '4TH': 'F4',
+  'F1': 'F1',
+  'F2A': 'F2A',
+  'F2B': 'F2B',
+  'F3': 'F3',
+  'F4': 'F4',
+};
+
 const CHARGEABILITY_MAP: Record<string, string> = {
   'all chargeability': 'ALL',
   'china': 'CHINA',
@@ -63,24 +78,36 @@ function parseVisaDate(raw: string): { date: string | null; isCurrent: boolean }
 
 async function fetchBulletin(year: number, month: number): Promise<string | null> {
   const monthName = MONTH_NAMES[month - 1];
-  const url = `https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/${year}/visa-bulletin-for-${monthName}-${year}.html`;
+  // State Department uses fiscal years (Oct = start of new FY)
+  const fiscalYear = month >= 10 ? year + 1 : year;
   
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; NERImmigration/1.0)',
-        'Accept': 'text/html',
-      },
-    });
-    if (!res.ok) {
-      console.log(`Bulletin not found for ${month}/${year}: ${res.status}`);
-      return null;
+  // Try multiple URL patterns since older bulletins have inconsistent naming
+  const urlPatterns = [
+    `https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/${fiscalYear}/visa-bulletin-for-${monthName}-${year}.html`,
+    `https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/${fiscalYear}/visa-bulletin-${monthName}-${year}.html`,
+    `https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/${year}/visa-bulletin-for-${monthName}-${year}.html`,
+  ];
+  
+  for (const url of urlPatterns) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; NERImmigration/1.0)',
+          'Accept': 'text/html',
+        },
+      });
+      if (res.ok) {
+        return await res.text();
+      }
+      // Consume body to prevent leaks
+      await res.text();
+    } catch (e) {
+      console.error(`Error fetching ${url}:`, e);
     }
-    return await res.text();
-  } catch (e) {
-    console.error(`Error fetching bulletin ${month}/${year}:`, e);
-    return null;
   }
+  
+  console.log(`Bulletin not found for ${month}/${year} (tried ${urlPatterns.length} patterns)`);
+  return null;
 }
 
 function extractFamilyPreferenceDates(html: string, year: number, month: number): BulletinRow[] {
@@ -94,11 +121,13 @@ function extractFamilyPreferenceDates(html: string, year: number, month: number)
     const tableStart = tableMatch.index;
     const contextBefore = normalizedHtml.slice(Math.max(0, tableStart - 2000), tableStart).toLowerCase();
     
+    // For newer bulletins, check for "final action" section
+    // For older bulletins (pre-2015), tables appear directly without "final action" header
     const finalActionIdx = contextBefore.lastIndexOf('final action');
     const datesForFilingIdx = contextBefore.lastIndexOf('dates for filing');
     
-    if (finalActionIdx === -1) continue;
-    if (datesForFilingIdx > finalActionIdx) continue;
+    // Skip "dates for filing" tables (we only want final action dates)
+    if (datesForFilingIdx > -1 && (finalActionIdx === -1 || datesForFilingIdx > finalActionIdx)) continue;
     
     const rowMatches = [...tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)];
     if (rowMatches.length < 3) continue;
@@ -125,8 +154,9 @@ function extractFamilyPreferenceDates(html: string, year: number, month: number)
       
       if (cells.length < 2) continue;
       
-      const cat = cells[0].replace(/\s+/g, '');
-      if (!CATEGORIES.includes(cat)) continue;
+      const rawCat = cells[0].replace(/\s+/g, '').replace(/\*/g, '');
+      const cat = CATEGORY_ALIASES[rawCat] || CATEGORY_ALIASES[rawCat + '*'];
+      if (!cat) continue;
       
       for (let col = 1; col < cells.length && col < colMapping.length; col++) {
         const chargeability = colMapping[col];
