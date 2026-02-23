@@ -521,7 +521,7 @@ export default function CSPACalculator() {
         dob: form.dob,
         priorityDate: form.priorityDate,
         approvalDate: form.approvalDate,
-        visaAvailableDate: form.visaAvailableDate,
+        visaAvailableDate: hypothetical ? format(new Date(), "yyyy-MM-dd") : form.visaAvailableDate,
         category: form.category,
         chargeability: form.chargeability,
         cspaAgeYears: result.cspaAgeYears,
@@ -530,6 +530,7 @@ export default function CSPACalculator() {
         biologicalAgeDays: result.biologicalAge,
         bulletinInfo: result.bulletinInfo,
         approvalControlled: result.approvalControlled,
+        isHypothetical: hypothetical,
         firmName,
         logoUrl,
         lang,
@@ -896,7 +897,7 @@ export default function CSPACalculator() {
               <div className="flex gap-2">
                 <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
                   <FileText className="w-4 h-4 mr-1" />
-                  {lang === 'es' ? 'Generar Reporte PDF' : 'Generate PDF Report'}
+                  {lang === 'es' ? '📄 Descargar Reporte Completo' : '📄 Download Full Report'}
                 </Button>
                 <Button onClick={() => setShowDialog(false)} variant="outline" className="shrink-0" size="sm">
                   {t.close}
