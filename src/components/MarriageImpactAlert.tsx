@@ -9,6 +9,7 @@ interface CategoryInfo {
   cspaProtects: string;
   marriageEffect: string;
   severity: "severe" | "moderate" | "none";
+  criticalText?: string;
 }
 
 const categoryData: Record<string, Record<Lang, CategoryInfo>> = {
@@ -18,26 +19,30 @@ const categoryData: Record<string, Record<Lang, CategoryInfo>> = {
       cspaProtects: "La CSPA protege a los hijos derivados (los hijos menores del beneficiario principal — es decir, los nietos del peticionario).",
       marriageEffect: "Si el beneficiario principal se casa, el caso pasa de F1 a F3 (hijo casado de ciudadano). La fila F3 es mucho más lenta. Sus hijos derivados siguen protegidos por CSPA, pero bajo la nueva línea de tiempo más lenta de F3.",
       severity: "moderate",
+      criticalText: "Al casarse, el beneficiario principal pasa de F1 a F3. Esto no destruye la petición, pero la fila F3 es significativamente más lenta. Los hijos derivados mantienen la protección CSPA pero ahora bajo el calendario de F3, lo que puede aumentar el riesgo de que cumplan 21 años antes de que la visa esté disponible. Informe al cliente ANTES de casarse.",
     },
     en: {
       who: "The principal beneficiary is the unmarried son/daughter (21+) of the U.S. citizen.",
       cspaProtects: "CSPA protects the derivative children (the minor children of the principal beneficiary — i.e., the petitioner's grandchildren).",
       marriageEffect: "If the principal beneficiary gets married, the case moves from F1 to F3 (married child of citizen). The F3 line is much slower. Their derivative children remain protected by CSPA, but under the new, slower F3 timeline.",
       severity: "moderate",
+      criticalText: "By getting married, the principal beneficiary moves from F1 to F3. This doesn't destroy the petition, but the F3 line is significantly slower. The derivative children maintain CSPA protection but now under the F3 timeline, which may increase the risk of aging out before a visa becomes available. Inform the client BEFORE they get married.",
     },
   },
   F2A: {
     es: {
-      who: "El beneficiario principal es el hijo/a menor soltero/a (menor de 21) del residente permanente.",
-      cspaProtects: "La CSPA protege directamente al beneficiario principal (el propio hijo/a menor). En esta categoría, el hijo ES el sujeto de la protección CSPA.",
-      marriageEffect: "Si el beneficiario principal se casa, pierde completamente el estatus de \"hijo\" y no existe categoría equivalente para hijo casado de residente permanente. Es una pérdida total e irreversible.",
+      who: "El beneficiario principal puede ser el cónyuge o un hijo/a menor soltero/a (menor de 21) del residente permanente.",
+      cspaProtects: "Si el beneficiario principal es el hijo menor: la CSPA protege directamente al hijo (él/ella ES el sujeto de la protección). Si el beneficiario principal es el cónyuge: la CSPA protege a los hijos derivados (los hijos menores del cónyuge que vienen como dependientes en la petición).",
+      marriageEffect: "Si el beneficiario principal es el hijo menor y se casa: pierde completamente el estatus de \"hijo\" y no existe categoría equivalente para hijo casado de residente permanente. Es una pérdida total e irreversible. Si el beneficiario principal es el cónyuge: el cónyuge ya está casado (esa es la base de la petición), pero sus hijos derivados necesitan protección CSPA para no envejecer fuera del caso.",
       severity: "severe",
+      criticalText: "Para el hijo menor como beneficiario principal: casarse destruye la petición por completo — no hay categoría para hijo casado de residente permanente. Para el cónyuge como beneficiario principal: sus hijos derivados están protegidos por CSPA, pero si cumplen 21 años (edad CSPA) antes de que la visa esté disponible, quedan fuera del caso. Es crucial monitorear la edad de los derivados.",
     },
     en: {
-      who: "The principal beneficiary is the unmarried minor child (under 21) of the lawful permanent resident.",
-      cspaProtects: "CSPA directly protects the principal beneficiary (the child themselves). In this category, the child IS the subject of CSPA protection.",
-      marriageEffect: "If the principal beneficiary gets married, they completely lose \"child\" status and no equivalent category exists for a married child of an LPR. This is a total and irreversible loss.",
+      who: "The principal beneficiary can be the spouse or an unmarried minor child (under 21) of the lawful permanent resident.",
+      cspaProtects: "If the principal is the minor child: CSPA directly protects the child (they ARE the subject of protection). If the principal is the spouse: CSPA protects the derivative children (the spouse's minor children who come as dependents on the petition).",
+      marriageEffect: "If the principal is the minor child and gets married: they completely lose \"child\" status and no equivalent category exists for a married child of an LPR. Total and irreversible loss. If the principal is the spouse: the spouse is already married (that's the basis of the petition), but their derivative children need CSPA protection to avoid aging out.",
       severity: "severe",
+      criticalText: "For the minor child as principal: getting married destroys the petition entirely — no category exists for a married child of an LPR. For the spouse as principal: their derivative children are protected by CSPA, but if they turn 21 (CSPA age) before a visa is available, they fall out of the case. It's crucial to monitor derivative ages.",
     },
   },
   F2B: {
@@ -46,12 +51,14 @@ const categoryData: Record<string, Record<Lang, CategoryInfo>> = {
       cspaProtects: "La CSPA protege a los hijos derivados (los hijos menores del beneficiario principal — es decir, los nietos del peticionario residente).",
       marriageEffect: "Si el beneficiario principal se casa, pierde la categoría F2B por completo. No existe categoría para hijo casado de residente permanente. Los derivados también pierden su protección porque la petición base desaparece.",
       severity: "severe",
+      criticalText: "Casarse destruye completamente la petición F2B — no existe categoría para hijo casado de residente permanente. Esto elimina tanto la petición del principal como la protección CSPA de todos los derivados. La única forma de recuperar el caso sería que el peticionario se naturalice (se haga ciudadano), lo que abriría la posibilidad de una nueva petición bajo F3. Informe al cliente ANTES de casarse.",
     },
     en: {
       who: "The principal beneficiary is the unmarried adult son/daughter (21+) of the lawful permanent resident.",
       cspaProtects: "CSPA protects the derivative children (the minor children of the principal beneficiary — i.e., the LPR petitioner's grandchildren).",
       marriageEffect: "If the principal beneficiary gets married, they completely lose the F2B category. No category exists for a married child of an LPR. The derivatives also lose their protection because the underlying petition is destroyed.",
       severity: "severe",
+      criticalText: "Getting married completely destroys the F2B petition — no category exists for a married child of an LPR. This eliminates both the principal's petition and the CSPA protection of all derivatives. The only way to recover would be if the petitioner naturalizes (becomes a citizen), which would open the possibility of a new petition under F3. Inform the client BEFORE they get married.",
     },
   },
   F3: {
@@ -94,10 +101,10 @@ const T = {
     severeTag: "🔴 RIESGO ALTO — El matrimonio destruye la petición o la protección CSPA.",
     moderateTag: "🟡 RIESGO MODERADO — El matrimonio cambia la categoría y aumenta la espera.",
     noneTag: "✅ SIN RIESGO — El matrimonio no afecta esta categoría.",
-    criticalNote: "⚠️ Muy importante",
-    criticalText: "Cuando un beneficiario se casa y pierde el estatus de \"hijo\", esto es automático e irreversible. No hay excepción bajo CSPA para revertirlo. Es crucial informar a los clientes sobre este riesgo ANTES de que se casen.",
+    criticalNote: "⚠️ Muy importante para esta categoría",
     derivativeNote: "💡 Nota sobre derivados",
     derivativeText: "En las categorías F1, F2B, F3 y F4, la CSPA protege principalmente a los hijos derivados (los hijos menores del beneficiario principal). El beneficiario principal en estas categorías ya es mayor de 21 años, por lo que la CSPA no aplica a su propia edad.",
+    derivativeTextF2A: "En F2A, la CSPA puede proteger tanto al hijo menor como beneficiario principal, como a los hijos derivados del cónyuge beneficiario. Es importante identificar quién es el beneficiario principal para evaluar correctamente el riesgo.",
   },
   en: {
     title: "💍 What happens if the principal beneficiary gets married?",
@@ -108,10 +115,10 @@ const T = {
     severeTag: "🔴 HIGH RISK — Marriage destroys the petition or CSPA protection.",
     moderateTag: "🟡 MODERATE RISK — Marriage changes the category and increases the wait.",
     noneTag: "✅ NO RISK — Marriage doesn't affect this category.",
-    criticalNote: "⚠️ Very important",
-    criticalText: "When a beneficiary gets married and loses \"child\" status, this is automatic and irreversible. There's no CSPA exception to reverse it. It's crucial to inform clients about this risk BEFORE they get married.",
+    criticalNote: "⚠️ Very important for this category",
     derivativeNote: "💡 Note about derivatives",
     derivativeText: "In categories F1, F2B, F3, and F4, CSPA primarily protects the derivative children (the minor children of the principal beneficiary). The principal beneficiary in these categories is already over 21, so CSPA doesn't apply to their own age.",
+    derivativeTextF2A: "In F2A, CSPA can protect both the minor child as principal beneficiary, and the derivative children of the spouse beneficiary. It's important to identify who the principal beneficiary is to correctly assess the risk.",
   },
 };
 
@@ -129,7 +136,6 @@ export default function MarriageImpactAlert({
 
   const isSevere = info.severity === "severe";
   const isModerate = info.severity === "moderate";
-  const isNone = info.severity === "none";
 
   return (
     <Card className={cn(
@@ -180,21 +186,21 @@ export default function MarriageImpactAlert({
           </div>
         </div>
 
-        {/* Critical warning for severe/moderate */}
-        {(isSevere || isModerate) && (
+        {/* Critical warning — contextual per category */}
+        {info.criticalText && (
           <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5">
             <p className="text-xs font-semibold text-destructive mb-0.5">{t.criticalNote}</p>
-            <p className="text-xs text-foreground/70">{t.criticalText}</p>
+            <p className="text-xs text-foreground/70">{info.criticalText}</p>
           </div>
         )}
 
-        {/* Derivative explanation for categories where CSPA protects derivatives */}
-        {category !== "F2A" && (
-          <div className="bg-secondary/50 rounded-lg px-3 py-2.5 border border-border">
-            <p className="text-xs font-semibold text-foreground mb-0.5">{t.derivativeNote}</p>
-            <p className="text-xs text-muted-foreground">{t.derivativeText}</p>
-          </div>
-        )}
+        {/* Derivative explanation — contextual */}
+        <div className="bg-secondary/50 rounded-lg px-3 py-2.5 border border-border">
+          <p className="text-xs font-semibold text-foreground mb-0.5">{t.derivativeNote}</p>
+          <p className="text-xs text-muted-foreground">
+            {category === "F2A" ? t.derivativeTextF2A : t.derivativeText}
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
