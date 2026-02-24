@@ -250,9 +250,9 @@ export default function ClientUpload() {
   if (clientCase?.status === 'completed') return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="text-center max-w-md">
-        <div className="relative mb-6">
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto animate-bounce">
-            <PartyPopper className="w-10 h-10 text-emerald-600" />
+            <div className="relative mb-6">
+          <div className="w-20 h-20 bg-[hsl(158,64%,38%,0.15)] rounded-full flex items-center justify-center mx-auto animate-bounce">
+            <PartyPopper className="w-10 h-10 text-[hsl(158,64%,38%)]" />
           </div>
         </div>
         <h2 className="font-display text-3xl font-bold text-foreground mb-3">¡Excelente trabajo! 🎉</h2>
@@ -262,11 +262,11 @@ export default function ClientUpload() {
         
         <div className="bg-card border rounded-2xl p-5 text-left space-y-3 mb-6">
           <div className="flex items-center gap-2 text-sm">
-            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+            <ShieldCheck className="w-4 h-4 text-[hsl(var(--step-done))] shrink-0" />
             <span className="text-foreground font-medium">Tus archivos están seguros y almacenados</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+            <CheckCircle className="w-4 h-4 text-[hsl(var(--step-done))] shrink-0" />
             <span className="text-foreground font-medium">Tu abogado fue notificado automáticamente</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -334,7 +334,7 @@ export default function ClientUpload() {
                   </span>
                   <span className={cn(
                     "font-bold text-sm",
-                    progressPercent === 100 ? "text-emerald-600" : progressPercent > 50 ? "text-primary" : "text-accent"
+                    progressPercent === 100 ? "text-[hsl(var(--step-done))]" : progressPercent > 50 ? "text-primary" : "text-accent"
                   )}>
                     {progressPercent}%
                   </span>
@@ -343,7 +343,7 @@ export default function ClientUpload() {
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-700 ease-out",
-                      progressPercent === 100 ? "bg-emerald-500" : "gradient-hero"
+                      progressPercent === 100 ? "bg-[hsl(var(--step-done))]" : "gradient-hero"
                     )}
                     style={{ width: `${progressPercent}%` }}
                   />
@@ -355,7 +355,7 @@ export default function ClientUpload() {
                       key={item.id}
                       className={cn(
                         "h-1 rounded-full flex-1 transition-all duration-300",
-                        item.form_complete ? "bg-emerald-400" : "bg-muted-foreground/20"
+                        item.form_complete ? "bg-[hsl(var(--step-done))]" : "bg-muted-foreground/20"
                       )}
                       title={item.file_name}
                     />
@@ -366,7 +366,7 @@ export default function ClientUpload() {
                 <button
                   onClick={markCompleted}
                   disabled={completing}
-                  className="flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors whitespace-nowrap shadow-md disabled:opacity-70"
+                  className="flex items-center gap-1.5 bg-[hsl(var(--step-done))] text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-[hsl(158,64%,32%)] transition-colors whitespace-nowrap shadow-md disabled:opacity-70"
                 >
                   {completing ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -436,7 +436,7 @@ export default function ClientUpload() {
 
         {/* First-time helper tip */}
         {items.length === 0 && (
-          <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-center">
+          <div className="bg-secondary/50 border border-border rounded-xl p-4 text-center">
             <p className="text-sm text-foreground font-medium mb-1">💡 ¿No sabes por dónde empezar?</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Sube fotos juntos (bodas, fiestas, viajes), capturas de WhatsApp, o cualquier documento que demuestre su relación. 
@@ -455,7 +455,7 @@ export default function ClientUpload() {
           return (
             <div key={item.id} className={cn(
               "bg-card border rounded-2xl overflow-hidden shadow-card transition-all",
-              item.form_complete ? "border-emerald-200 bg-emerald-50/30" : ""
+              item.form_complete ? "border-[hsl(var(--step-done),0.3)] bg-[hsl(158,64%,38%,0.05)]" : ""
             )}>
               {/* Item header */}
               <button
@@ -485,11 +485,11 @@ export default function ClientUpload() {
                   <p className="font-medium text-foreground text-sm truncate">{item.file_name}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {item.form_complete ? (
-                      <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                      <span className="text-[hsl(var(--step-done))] font-semibold flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" /> ¡Completado!
                       </span>
                     ) : item.caption ? (
-                      <span className="text-amber-600">Faltan algunos datos</span>
+                      <span className="text-accent">Faltan algunos datos</span>
                     ) : (
                       <span className="text-primary font-medium">👆 Toca para agregar información</span>
                     )}
@@ -497,7 +497,7 @@ export default function ClientUpload() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  {item.form_complete && <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center"><CheckCircle className="w-4 h-4 text-white" /></div>}
+                  {item.form_complete && <div className="w-6 h-6 bg-[hsl(var(--step-done))] rounded-full flex items-center justify-center"><CheckCircle className="w-4 h-4 text-white" /></div>}
                   {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 </div>
               </button>
@@ -673,15 +673,15 @@ export default function ClientUpload() {
         {/* Final CTA */}
         {allDone && (
           <div className="space-y-3">
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center">
-              <PartyPopper className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+            <div className="bg-[hsl(158,64%,38%,0.08)] border border-[hsl(var(--step-done),0.3)] rounded-2xl p-5 text-center">
+              <PartyPopper className="w-8 h-8 text-[hsl(var(--step-done))] mx-auto mb-2" />
               <p className="font-semibold text-foreground mb-1">¡Todas tus evidencias están completas!</p>
               <p className="text-xs text-muted-foreground">Revisa que todo esté correcto y luego presiona el botón de abajo.</p>
             </div>
             <button
               onClick={markCompleted}
               disabled={completing}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-2xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg disabled:opacity-70"
+              className="w-full bg-[hsl(var(--step-done))] hover:bg-[hsl(158,64%,32%)] text-white font-bold py-4 rounded-2xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg disabled:opacity-70"
             >
               {completing ? (
                 <>

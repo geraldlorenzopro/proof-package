@@ -13,9 +13,9 @@ export function EvidenceSummary({ items }: EvidenceSummaryProps) {
   const completed = items.filter(i => i.formComplete).length;
 
   const sections = [
-    { label: '📷 Estas son tus fotos (bodas, familia, viajes)', items: photos, Icon: FileImage, color: 'text-blue-600' },
-    { label: '💬 Estas son tus capturas de conversaciones', items: chats, Icon: MessageSquare, color: 'text-emerald-600' },
-    { label: '📄 Estas son tus capturas de boletos, recibos, etc.', items: others, Icon: FileText, color: 'text-amber-600' },
+    { label: '📷 Estas son tus fotos (bodas, familia, viajes)', items: photos, Icon: FileImage, color: 'text-[hsl(var(--jarvis))]' },
+    { label: '💬 Estas son tus capturas de conversaciones', items: chats, Icon: MessageSquare, color: 'text-[hsl(var(--step-done))]' },
+    { label: '📄 Estas son tus capturas de boletos, recibos, etc.', items: others, Icon: FileText, color: 'text-accent' },
   ];
 
   return (
