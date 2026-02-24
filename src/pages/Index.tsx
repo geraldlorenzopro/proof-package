@@ -214,7 +214,7 @@ export default function Index() {
                         {lang === 'es' ? 'Progreso del paquete' : 'Package Progress'}
                       </SheetTitle>
                     </SheetHeader>
-                    <EvidenceSummary items={numberedItems} />
+                    <EvidenceSummary items={numberedItems} lang={lang} />
                   </SheetContent>
                 </Sheet>
 
@@ -273,7 +273,7 @@ export default function Index() {
               </div>
             </div>
 
-            <EvidenceSummary items={numberedItems} />
+            <EvidenceSummary items={numberedItems} lang={lang} />
 
             <div className="bg-secondary/50 border border-border rounded-xl p-4 text-sm space-y-2">
               <p className="font-semibold text-foreground text-sm">{t('pdfWillInclude', lang)}</p>
@@ -281,11 +281,11 @@ export default function Index() {
                 <li>✅ {t('pdfCoverPage', lang)}</li>
                 <li>✅ {t('pdfTOC', lang)}</li>
                 {numberedItems.filter(i => i.type === 'photo').length > 0 &&
-                  <li>✅ Section A – Photographs ({numberedItems.filter(i => i.type === 'photo').length} items)</li>}
+                  <li>✅ {lang === 'es' ? `Sección A – Fotografías (${numberedItems.filter(i => i.type === 'photo').length})` : `Section A – Photographs (${numberedItems.filter(i => i.type === 'photo').length} items)`}</li>}
                 {numberedItems.filter(i => i.type === 'chat').length > 0 &&
-                  <li>✅ Section B – Messages & Chats ({numberedItems.filter(i => i.type === 'chat').length} items)</li>}
+                  <li>✅ {lang === 'es' ? `Sección B – Mensajes y Chats (${numberedItems.filter(i => i.type === 'chat').length})` : `Section B – Messages & Chats (${numberedItems.filter(i => i.type === 'chat').length} items)`}</li>}
                 {numberedItems.filter(i => i.type === 'other').length > 0 &&
-                  <li>✅ Section C – Other Documents ({numberedItems.filter(i => i.type === 'other').length} items)</li>}
+                  <li>✅ {lang === 'es' ? `Sección C – Otros Documentos (${numberedItems.filter(i => i.type === 'other').length})` : `Section C – Other Documents (${numberedItems.filter(i => i.type === 'other').length} items)`}</li>}
                 <li>✅ {t('pdfFooter', lang)}</li>
               </ul>
             </div>

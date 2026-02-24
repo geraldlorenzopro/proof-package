@@ -1,30 +1,51 @@
-import { EvidenceItem } from '@/types/evidence';
+import { EvidenceItem, Lang } from '@/types/evidence';
 import { FileImage, MessageSquare, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { buildCaption, formatDateDisplay } from '@/lib/evidenceUtils';
 
 interface EvidenceSummaryProps {
   items: EvidenceItem[];
+  lang?: Lang;
 }
 
-export function EvidenceSummary({ items }: EvidenceSummaryProps) {
+const LABELS = {
+  es: {
+    photos: '📷 Estas son tus fotos (bodas, familia, viajes)',
+    chats: '💬 Estas son tus capturas de conversaciones',
+    others: '📄 Estas son tus capturas de boletos, recibos, etc.',
+    total: 'Total evidencias',
+    complete: 'Completas',
+    pending: 'Pendientes',
+  },
+  en: {
+    photos: '📷 Your photos (weddings, family, trips)',
+    chats: '💬 Your conversation screenshots',
+    others: '📄 Your tickets, receipts, etc.',
+    total: 'Total evidence',
+    complete: 'Complete',
+    pending: 'Pending',
+  },
+};
+
+export function EvidenceSummary({ items, lang = 'es' }: EvidenceSummaryProps) {
   const photos = items.filter(i => i.type === 'photo');
   const chats = items.filter(i => i.type === 'chat');
   const others = items.filter(i => i.type === 'other');
   const completed = items.filter(i => i.formComplete).length;
+  const L = LABELS[lang];
 
   const sections = [
-    { label: '📷 Estas son tus fotos (bodas, familia, viajes)', items: photos, Icon: FileImage, color: 'text-[hsl(var(--jarvis))]' },
-    { label: '💬 Estas son tus capturas de conversaciones', items: chats, Icon: MessageSquare, color: 'text-[hsl(var(--step-done))]' },
-    { label: '📄 Estas son tus capturas de boletos, recibos, etc.', items: others, Icon: FileText, color: 'text-accent' },
+    { label: L.photos, items: photos, Icon: FileImage, color: 'text-[hsl(var(--jarvis))]' },
+    { label: L.chats, items: chats, Icon: MessageSquare, color: 'text-[hsl(var(--step-done))]' },
+    { label: L.others, items: others, Icon: FileText, color: 'text-accent' },
   ];
 
   return (
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard value={items.length} label="Total evidencias" />
-        <StatCard value={completed} label="Completas" accent />
-        <StatCard value={items.length - completed} label="Pendientes" warn={items.length - completed > 0} />
+        <StatCard value={items.length} label={L.total} />
+        <StatCard value={completed} label={L.complete} accent />
+        <StatCard value={items.length - completed} label={L.pending} warn={items.length - completed > 0} />
       </div>
 
       {/* Sections */}

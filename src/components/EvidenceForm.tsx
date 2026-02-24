@@ -296,7 +296,7 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
                 {L.typeTag}
               </span>
               {isComplete ? (
-                <span className="flex items-center gap-1 text-xs text-[hsl(142,60%,38%)] font-medium">
+                <span className="flex items-center gap-1 text-xs text-[hsl(var(--step-done))] font-medium">
                   <CheckCircle className="w-3.5 h-3.5" /> {lang === 'es' ? 'Listo ✓' : 'Done ✓'}
                 </span>
               ) : (
@@ -323,7 +323,17 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
         {/* Form questions */}
         <div className="p-4 space-y-5">
 
-          {/* DATE fields removed — focusing on description and participants */}
+          {/* DATE — all types */}
+          <Question question={L.dateQ} hint={L.dateHint} required>
+            <DatePickerField
+              value={item.event_date}
+              isApprox={item.date_is_approximate}
+              onDateChange={val => update({ event_date: val })}
+              onApproxChange={val => update({ date_is_approximate: val })}
+              approxLabel={L.approxLabel}
+              itemId={item.id}
+            />
+          </Question>
 
           {/* PHOTO fields */}
           {item.type === 'photo' && (
@@ -423,8 +433,8 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
 }
 
 function checkComplete(item: EvidenceItem): boolean {
-  if (item.type === 'photo') return !!(item.caption && item.participants);
-  if (item.type === 'chat') return !!(item.participants && item.demonstrates);
-  if (item.type === 'other') return !!item.caption;
+  if (item.type === 'photo') return !!(item.event_date && item.caption && item.participants);
+  if (item.type === 'chat') return !!(item.event_date && item.participants && item.demonstrates);
+  if (item.type === 'other') return !!(item.event_date && item.caption);
   return false;
 }
