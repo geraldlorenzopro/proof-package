@@ -218,7 +218,8 @@ export default function Index() {
                   </SheetContent>
                 </Sheet>
 
-                <button onClick={() => setStep(2)} className="text-xs text-primary hover:underline">
+                <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-xs font-semibold border border-border rounded-lg px-3 py-2 bg-card hover:bg-secondary transition-colors text-foreground">
+                  <Upload className="w-3.5 h-3.5 text-accent" />
                   {t('addMoreFiles', lang)}
                 </button>
               </div>
@@ -239,14 +240,16 @@ export default function Index() {
               ))}
             </div>
 
-            {allComplete && (
-              <button
-                onClick={() => { setStep(4); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="w-full py-3 rounded-xl gradient-hero text-primary-foreground font-semibold shadow-primary hover:opacity-90 transition-opacity mt-4"
-              >
-                {t('reviewAndGenerate', lang)}
-              </button>
-            )}
+            <button
+              onClick={() => { setStep(4); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              disabled={!allComplete}
+              className="w-full py-3 rounded-xl gradient-hero text-primary-foreground font-semibold shadow-primary hover:opacity-90 transition-opacity mt-4 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {allComplete
+                ? t('reviewAndGenerate', lang)
+                : `${lang === 'es' ? 'Completa todas las fotos' : 'Complete all photos'} (${completedCount}/${numberedItems.length})`
+              }
+            </button>
           </div>
         )}
 
