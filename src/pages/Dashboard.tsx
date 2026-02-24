@@ -71,7 +71,7 @@ export default function Dashboard() {
 
   async function checkAuth() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { navigate('/auth'); return; }
+    if (!user) { navigate('/auth', { replace: true }); return; }
     loadData(user.id);
   }
 
@@ -92,7 +92,7 @@ export default function Dashboard() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    navigate('/auth');
+    navigate('/auth', { replace: true });
   }
 
   const currentTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });

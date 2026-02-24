@@ -49,7 +49,7 @@ export default function CaseReview() {
 
   async function loadCase() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { navigate('/auth'); return; }
+    if (!user) { navigate('/auth', { replace: true }); return; }
 
     const { data: caseData } = await supabase
       .from('client_cases')
