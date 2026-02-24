@@ -73,9 +73,9 @@ function SummaryRow({ item }: { item: EvidenceItem }) {
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-xs font-bold text-primary">{item.exhibit_number || '—'}</span>
+          <span className="text-xs font-bold text-[hsl(var(--jarvis))]">{item.exhibit_number || '—'}</span>
           {item.formComplete
-            ? <CheckCircle className="w-3.5 h-3.5 text-primary" />
+            ? <CheckCircle className="w-3.5 h-3.5 text-[hsl(var(--step-done))]" />
             : <AlertCircle className="w-3.5 h-3.5 text-accent" />
           }
           {item.event_date && <span className="text-xs text-muted-foreground">{formatDateDisplay(item.event_date, item.date_is_approximate)}</span>}
