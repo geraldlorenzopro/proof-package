@@ -224,13 +224,27 @@ export async function generateEvidencePDF(
 
     drawGoldRule(doc, H / 2 + 25, 35);
 
-    // One item per page — consistent for all types
-    for (const item of sec.items) {
-      itemIdx++;
-      onProgress?.(`Rendering ${itemIdx}/${totalItems}…`);
-      doc.addPage();
-      pageNum++;
-      await renderEvidencePage(doc, item, caseInfo.compiled_date, pageNum, W, H);
+    // Photos: 4 per page in 2x2 grid. Chats/docs: 2 per page stacked.
+    if (sec === sections[0]) {
+      // Section A — Photos: 4 per page
+      for (let i = 0; i < sec.items.length; i += 4) {
+        const pageItems = sec.items.slice(i, i + 4);
+        itemIdx += pageItems.length;
+        onProgress?.(`Rendering ${itemIdx}/${totalItems}…`);
+        doc.addPage();
+        pageNum++;
+        await renderPhotoGrid(doc, pageItems, caseInfo.compiled_date, pageNum, W, H);
+      }
+    } else {
+      // Section B/C — 2 per page stacked
+      for (let i = 0; i < sec.items.length; i += 2) {
+        const pageItems = sec.items.slice(i, i + 2);
+        itemIdx += pageItems.length;
+        onProgress?.(`Rendering ${itemIdx}/${totalItems}…`);
+        doc.addPage();
+        pageNum++;
+        await renderStackedItems(doc, pageItems, caseInfo.compiled_date, pageNum, W, H);
+      }
     }
   }
 
@@ -240,135 +254,190 @@ export async function generateEvidencePDF(
   onProgress?.('');
 }
 
-// ── Render a single evidence item — full page, consistent sizing ────────────
+// ── Render 4 photos in 2x2 grid ─────────────────────────────────────────────
 
-async function renderEvidencePage(
+async function renderPhotoGrid(
   doc: jsPDF,
-  item: EvidenceItem,
+  items: EvidenceItem[],
   compiledDate: string,
   pageNum: number,
   W: number,
   H: number,
 ) {
-  const MARGIN = 20;
+  const MARGIN = 15;
+  const GAP = 6;
   const CONTENT_W = W - MARGIN * 2;
-  const FOOTER_ZONE = 26; // space reserved for footer
+  const COL_W = (CONTENT_W - GAP) / 2;
+  const FOOTER_ZONE = 22;
+  const USABLE_H = H - 20 - FOOTER_ZONE; // top header + footer
+  const ROW_H = (USABLE_H - GAP) / 2;
+  const IMG_MAX_H = ROW_H - 22; // leave room for caption below image
 
-  // ── Page header: Exhibit number + thin gold rule ──
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...GOLD);
-  doc.text(`Exhibit ${item.exhibit_number}`, MARGIN, 16);
+  // Header
+  drawGoldRule(doc, 14, MARGIN);
+  let startY = 18;
 
-  drawGoldRule(doc, 19, MARGIN);
+  const positions = [
+    { x: MARGIN, y: startY },
+    { x: MARGIN + COL_W + GAP, y: startY },
+    { x: MARGIN, y: startY + ROW_H + GAP },
+    { x: MARGIN + COL_W + GAP, y: startY + ROW_H + GAP },
+  ];
 
-  let y = 26;
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const pos = positions[i];
+    let y = pos.y;
 
-  // ── Image ──
-  // Calculate max available height for image: leave room for caption + metadata + footer
-  const META_ZONE = 50; // space for caption + metadata below image
-  const MAX_IMG_H = H - y - META_ZONE - FOOTER_ZONE;
+    // Exhibit label
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...GOLD);
+    doc.text(`Exhibit ${item.exhibit_number}`, pos.x, y + 3);
+    y += 6;
 
-  if (isImageItem(item)) {
-    try {
-      const { dataUrl, width: natW, height: natH } = await imageToJpegDataUrl(item.file, item.previewUrl);
-      const ratio = natH / natW;
+    // Image
+    if (isImageItem(item)) {
+      try {
+        const { dataUrl, width: natW, height: natH } = await imageToJpegDataUrl(item.file, item.previewUrl);
+        const ratio = natH / natW;
+        let imgW = COL_W;
+        let imgH = imgW * ratio;
+        if (imgH > IMG_MAX_H) {
+          imgH = IMG_MAX_H;
+          imgW = imgH / ratio;
+        }
+        const imgX = pos.x + (COL_W - imgW) / 2;
 
-      let imgW: number;
-      let imgH: number;
-
-      // Fill content width, then cap height
-      imgW = CONTENT_W;
-      imgH = imgW * ratio;
-
-      if (imgH > MAX_IMG_H) {
-        imgH = MAX_IMG_H;
-        imgW = imgH / ratio;
+        doc.setDrawColor(200, 205, 215);
+        doc.setLineWidth(0.2);
+        doc.rect(imgX - 0.3, y - 0.3, imgW + 0.6, imgH + 0.6);
+        doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
+        y += imgH + 2;
+      } catch {
+        doc.setFillColor(...LIGHT);
+        doc.rect(pos.x, y, COL_W, 25, 'F');
+        doc.setFontSize(7);
+        doc.setTextColor(...GRAY);
+        doc.text('[Image error]', pos.x + COL_W / 2, y + 13, { align: 'center' });
+        y += 27;
       }
-
-      // Center horizontally
-      const imgX = MARGIN + (CONTENT_W - imgW) / 2;
-
-      // Add thin border around image
-      doc.setDrawColor(200, 205, 215);
-      doc.setLineWidth(0.3);
-      doc.rect(imgX - 0.5, y - 0.5, imgW + 1, imgH + 1);
-
-      doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
-      y += imgH + 6;
-    } catch {
-      doc.setFillColor(...LIGHT);
-      doc.rect(MARGIN, y, CONTENT_W, 40, 'F');
-      doc.setFontSize(9);
-      doc.setTextColor(...GRAY);
-      doc.text('[Image could not be rendered]', W / 2, y + 20, { align: 'center' });
-      y += 46;
     }
-  } else {
-    // Non-image file placeholder
-    doc.setFillColor(...LIGHT);
-    doc.rect(MARGIN, y, CONTENT_W, 30, 'F');
-    doc.setFontSize(9);
-    doc.setTextColor(...GRAY);
-    doc.text(`[Attached file: ${item.file.name}]`, W / 2, y + 17, { align: 'center' });
-    y += 36;
+
+    // Compact caption (2 lines max)
+    const caption = buildCaption(item);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(40, 55, 90);
+    const lines = doc.splitTextToSize(caption, COL_W - 2);
+    doc.text(lines.slice(0, 2), pos.x + 1, y + 3);
+    y += Math.min(lines.length, 2) * 3.5 + 2;
+
+    // Participants (compact)
+    if (item.participants && item.participants.trim()) {
+      doc.setFontSize(6);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      doc.text(`Participants: ${item.participants}`, pos.x + 1, y + 2);
+    }
   }
 
-  // ── Caption ──
-  const fullCaption = buildCaption(item);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'italic');
-  doc.setTextColor(40, 55, 90);
-  const captionLines = doc.splitTextToSize(fullCaption, CONTENT_W - 4);
-  const maxCaptionLines = 4;
-  const displayLines = captionLines.slice(0, maxCaptionLines);
+  addPageFooter(doc, compiledDate, pageNum);
+}
 
-  // Caption background
-  const captionH = displayLines.length * 4.5 + 6;
-  doc.setFillColor(...LIGHT);
-  doc.roundedRect(MARGIN, y, CONTENT_W, captionH, 1.5, 1.5, 'F');
-  doc.text(displayLines, MARGIN + 4, y + 5);
-  y += captionH + 5;
+// ── Render 2 items stacked (for chats/documents) ────────────────────────────
 
-  // ── Metadata row ──
-  const metaItems: { label: string; value: string }[] = [];
-  if (item.exhibit_number) {
-    metaItems.push({ label: 'EXHIBIT', value: item.exhibit_number });
-  }
-  if (item.event_date) {
-    metaItems.push({ label: 'DATE', value: formatDateForPDF(item.event_date, item.date_is_approximate) });
-  }
-  if (item.participants && item.participants.trim()) {
-    metaItems.push({ label: 'PARTICIPANTS', value: item.participants });
-  }
-  if (item.location && item.location.trim()) {
-    metaItems.push({ label: 'LOCATION', value: item.location });
-  }
+async function renderStackedItems(
+  doc: jsPDF,
+  items: EvidenceItem[],
+  compiledDate: string,
+  pageNum: number,
+  W: number,
+  H: number,
+) {
+  const MARGIN = 18;
+  const CONTENT_W = W - MARGIN * 2;
+  const FOOTER_ZONE = 22;
+  const USABLE_H = H - 18 - FOOTER_ZONE;
+  const SLOT_H = USABLE_H / 2;
+  const IMG_MAX_H = SLOT_H - 30;
 
-  if (metaItems.length > 0) {
-    const colW = CONTENT_W / metaItems.length;
-    let mx = MARGIN;
-    metaItems.forEach(m => {
+  drawGoldRule(doc, 14, MARGIN);
+
+  for (let idx = 0; idx < items.length; idx++) {
+    const item = items[idx];
+    const slotTop = 18 + idx * SLOT_H;
+    let y = slotTop;
+
+    // Separator between items
+    if (idx > 0) {
+      doc.setDrawColor(210, 215, 225);
+      doc.setLineWidth(0.3);
+      doc.line(MARGIN, y - 2, W - MARGIN, y - 2);
+    }
+
+    // Exhibit label
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...GOLD);
+    doc.text(`Exhibit ${item.exhibit_number}`, MARGIN, y + 3);
+    y += 7;
+
+    // Image
+    if (isImageItem(item)) {
+      try {
+        const { dataUrl, width: natW, height: natH } = await imageToJpegDataUrl(item.file, item.previewUrl);
+        const ratio = natH / natW;
+        let imgW = CONTENT_W;
+        let imgH = imgW * ratio;
+        if (imgH > IMG_MAX_H) {
+          imgH = IMG_MAX_H;
+          imgW = imgH / ratio;
+        }
+        const imgX = MARGIN + (CONTENT_W - imgW) / 2;
+
+        doc.setDrawColor(200, 205, 215);
+        doc.setLineWidth(0.2);
+        doc.rect(imgX - 0.3, y - 0.3, imgW + 0.6, imgH + 0.6);
+        doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
+        y += imgH + 3;
+      } catch {
+        doc.setFillColor(...LIGHT);
+        doc.rect(MARGIN, y, CONTENT_W, 25, 'F');
+        doc.setFontSize(8);
+        doc.setTextColor(...GRAY);
+        doc.text('[Image error]', W / 2, y + 13, { align: 'center' });
+        y += 28;
+      }
+    } else {
+      doc.setFillColor(...LIGHT);
+      doc.rect(MARGIN, y, CONTENT_W, 20, 'F');
+      doc.setFontSize(8);
+      doc.setTextColor(...GRAY);
+      doc.text(`[File: ${item.file.name}]`, W / 2, y + 12, { align: 'center' });
+      y += 24;
+    }
+
+    // Caption (3 lines max)
+    const caption = buildCaption(item);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(40, 55, 90);
+    const lines = doc.splitTextToSize(caption, CONTENT_W - 4);
+    doc.text(lines.slice(0, 3), MARGIN + 2, y + 3);
+    y += Math.min(lines.length, 3) * 4 + 3;
+
+    // Participants
+    if (item.participants && item.participants.trim()) {
       doc.setFontSize(6.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...GOLD);
-      doc.text(m.label, mx, y);
-      doc.setFontSize(8.5);
+      doc.text('PARTICIPANTS', MARGIN, y);
+      doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...NAVY);
-      const valLines = doc.splitTextToSize(m.value, colW - 4);
-      doc.text(valLines[0] || '', mx, y + 4.5);
-      mx += colW;
-    });
-    y += 14;
-  }
-
-  // ── Notes ──
-  if (item.notes) {
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(...GRAY);
-    doc.text(`Note: ${item.notes}`, MARGIN, y);
+      doc.text(item.participants, MARGIN, y + 4);
+    }
   }
 
   addPageFooter(doc, compiledDate, pageNum);
