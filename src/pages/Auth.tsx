@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Scale, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,15 @@ export default function Auth() {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
+  // Replace history so "back" goes to /features instead of staying on /auth
+  useEffect(() => {
+    window.history.replaceState(null, '', '/auth');
+    // If already logged in, redirect to dashboard
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) navigate('/dashboard', { replace: true });
+    });
+  }, [navigate]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -25,7 +34,7 @@ export default function Auth() {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;

@@ -40,7 +40,7 @@ export default function AdminPanel() {
 
   async function checkAdminAccess() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { navigate('/auth'); return; }
+    if (!user) { navigate('/auth', { replace: true }); return; }
 
     // Check if user is owner/admin
     const { data: member } = await supabase

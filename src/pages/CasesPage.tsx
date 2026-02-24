@@ -25,7 +25,7 @@ export default function CasesPage() {
 
   async function loadCases() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { navigate('/auth'); return; }
+    if (!user) { navigate('/auth', { replace: true }); return; }
     const { data } = await supabase
       .from('client_cases')
       .select('*')
