@@ -141,10 +141,10 @@ export default function Index() {
                     }
                   }}
                   className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap flex-shrink-0
-                    ${isActive ? 'border-primary text-primary' : isDone ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-muted-foreground'}`}
+                    ${isActive ? 'border-primary text-primary' : isDone ? 'border-[hsl(var(--step-done))] text-[hsl(var(--step-done))]' : 'border-transparent text-muted-foreground'}`}
                 >
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
-                    ${isActive ? 'bg-primary text-primary-foreground' : isDone ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                    ${isActive ? 'bg-primary text-primary-foreground' : isDone ? 'bg-[hsl(var(--step-done))] text-white' : 'bg-muted text-muted-foreground'}`}>
                     {isDone ? '✓' : s.id}
                   </div>
                   <span className="hidden sm:block">{s.label}</span>
