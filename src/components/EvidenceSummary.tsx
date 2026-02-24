@@ -51,8 +51,8 @@ export function EvidenceSummary({ items }: EvidenceSummaryProps) {
 
 function StatCard({ value, label, accent, warn }: { value: number; label: string; accent?: boolean; warn?: boolean }) {
   return (
-    <div className={`rounded-lg p-3 text-center border ${accent ? 'border-primary/30 bg-primary/5' : warn ? 'border-accent/30 bg-accent/5' : 'border-border bg-secondary/40'}`}>
-      <div className={`text-2xl font-bold ${accent ? 'text-primary' : warn ? 'text-accent' : 'text-foreground'}`}>
+    <div className={`rounded-lg p-3 text-center border ${accent ? 'border-[hsl(var(--step-done),0.3)] bg-[hsl(var(--step-done),0.08)]' : warn ? 'border-accent/30 bg-accent/5' : 'border-border bg-secondary/40'}`}>
+      <div className={`text-2xl font-bold ${accent ? 'text-[hsl(var(--step-done))]' : warn ? 'text-accent' : 'text-foreground'}`}>
         {value}
       </div>
       <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
