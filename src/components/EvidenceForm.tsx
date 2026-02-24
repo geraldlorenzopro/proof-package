@@ -15,9 +15,9 @@ interface EvidenceFormProps {
 
 const TYPE_ICON = { photo: FileImage, chat: MessageSquare, other: FileText } as const;
 const TYPE_COLOR = {
-  photo: 'text-primary bg-primary/10',
-  chat: 'text-primary bg-primary/10',
-  other: 'text-accent bg-accent/10',
+  photo: 'text-[hsl(var(--jarvis))] bg-[hsl(var(--jarvis))/0.15]',
+  chat: 'text-[hsl(var(--step-done))] bg-[hsl(var(--step-done))/0.15]',
+  other: 'text-accent bg-accent/15',
 };
 
 // Very simple, human-friendly labels for each type
