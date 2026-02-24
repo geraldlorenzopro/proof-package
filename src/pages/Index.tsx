@@ -127,7 +127,7 @@ export default function Index() {
       {/* Step indicator */}
       <div className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-2 sm:px-4">
-          <div className="flex overflow-x-auto scrollbar-none">
+          <div className="flex justify-center overflow-x-auto scrollbar-none">
             {steps.map((s) => {
               const Icon = s.icon;
               const isActive = step === s.id;
