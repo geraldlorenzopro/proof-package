@@ -86,30 +86,21 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Header */}
-      <header className="gradient-hero text-primary-foreground">
-        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-accent/20 flex items-center justify-center">
-                <Scale className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
-              </div>
-              <span className="text-accent font-semibold text-xs sm:text-sm tracking-wide uppercase">{t('appName', lang)}</span>
+      <header className="gradient-hero text-primary-foreground relative">
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 text-center">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-accent/20 flex items-center justify-center">
+              <Scale className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
             </div>
-            <button
-              onClick={() => setLang(l => l === 'es' ? 'en' : 'es')}
-              className="flex items-center gap-1.5 text-xs text-primary-foreground/80 hover:text-primary-foreground bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-all border border-white/20"
-            >
-              <Globe className="w-3.5 h-3.5" />
-              {lang === 'es' ? 'English' : 'Español'}
-            </button>
+            <span className="text-accent font-semibold text-xs sm:text-sm tracking-wide uppercase">{t('appName', lang)}</span>
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold mb-2 leading-tight">
             {t('tagline', lang)}
           </h1>
-          <p className="text-primary-foreground/70 text-sm max-w-xl hidden sm:block">
+          <p className="text-primary-foreground/70 text-sm max-w-xl mx-auto hidden sm:block">
             {t('taglineDesc', lang)}
           </p>
-          <div className="flex flex-wrap gap-3 sm:gap-4 mt-4 sm:mt-5">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-4 sm:mt-5">
             {[
               { icon: Shield, key: 'badge1' as const },
               { icon: Clock, key: 'badge2' as const },
@@ -120,6 +111,15 @@ export default function Index() {
                 {t(b.key, lang)}
               </div>
             ))}
+          </div>
+          <div className="absolute top-4 right-4">
+            <button
+              onClick={() => setLang(l => l === 'es' ? 'en' : 'es')}
+              className="flex items-center gap-1.5 text-xs text-primary-foreground/80 hover:text-primary-foreground bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-all border border-white/20"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              {lang === 'es' ? 'English' : 'Español'}
+            </button>
           </div>
         </div>
       </header>
@@ -141,10 +141,10 @@ export default function Index() {
                     }
                   }}
                   className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap flex-shrink-0
-                    ${isActive ? 'border-primary text-primary' : isDone ? 'border-[hsl(var(--step-done))] text-[hsl(var(--step-done))]' : 'border-transparent text-muted-foreground'}`}
+                    ${isActive ? 'border-[hsl(var(--jarvis))] text-[hsl(var(--jarvis))]' : isDone ? 'border-[hsl(var(--step-done))] text-[hsl(var(--step-done))]' : 'border-transparent text-muted-foreground'}`}
                 >
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
-                    ${isActive ? 'bg-primary text-primary-foreground' : isDone ? 'bg-[hsl(var(--step-done))] text-white' : 'bg-muted text-muted-foreground'}`}>
+                    ${isActive ? 'bg-[hsl(var(--jarvis))] text-background' : isDone ? 'bg-[hsl(var(--step-done))] text-white' : 'bg-muted text-muted-foreground'}`}>
                     {isDone ? '✓' : s.id}
                   </div>
                   <span className="hidden sm:block">{s.label}</span>

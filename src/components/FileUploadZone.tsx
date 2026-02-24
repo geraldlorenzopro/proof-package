@@ -20,8 +20,8 @@ const TYPE_ICONS = {
 } as const;
 
 const TYPE_COLORS = {
-  photo: 'text-primary bg-primary/10 border-primary/30',
-  chat: 'text-primary bg-primary/10 border-primary/30',
+  photo: 'text-[hsl(var(--jarvis))] bg-[hsl(var(--jarvis),0.1)] border-[hsl(var(--jarvis),0.3)]',
+  chat: 'text-[hsl(var(--step-done))] bg-[hsl(var(--step-done),0.1)] border-[hsl(var(--step-done),0.3)]',
   other: 'text-accent bg-accent/10 border-accent/30',
 };
 
