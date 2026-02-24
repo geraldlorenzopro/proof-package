@@ -288,6 +288,14 @@ export default function Index() {
             </div>
 
             <button
+              onClick={() => setStep(2)}
+              className="w-full py-2.5 rounded-xl border border-border text-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-secondary/50 transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              {lang === 'es' ? '+ Agregar más archivos' : '+ Add more files'}
+            </button>
+
+            <button
               onClick={() => setShowConfirm(true)}
               disabled={generating}
               className="w-full py-4 rounded-xl gradient-hero text-primary-foreground font-bold text-base shadow-primary hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
