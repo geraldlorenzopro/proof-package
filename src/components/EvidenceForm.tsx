@@ -15,8 +15,8 @@ interface EvidenceFormProps {
 
 const TYPE_ICON = { photo: FileImage, chat: MessageSquare, other: FileText } as const;
 const TYPE_COLOR = {
-  photo: 'text-[hsl(var(--jarvis))] bg-[hsl(var(--jarvis))/0.15]',
-  chat: 'text-[hsl(var(--step-done))] bg-[hsl(var(--step-done))/0.15]',
+  photo: 'text-accent bg-accent/15',
+  chat: 'text-accent bg-accent/15',
   other: 'text-accent bg-accent/15',
 };
 
@@ -296,7 +296,7 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
                 {L.typeTag}
               </span>
               {isComplete ? (
-                <span className="flex items-center gap-1 text-xs text-[hsl(var(--step-done))] font-medium">
+                <span className="flex items-center gap-1 text-xs text-accent font-medium">
                   <CheckCircle className="w-3.5 h-3.5" /> {lang === 'es' ? 'Listo ✓' : 'Done ✓'}
                 </span>
               ) : (

@@ -20,8 +20,8 @@ const TYPE_ICONS = {
 } as const;
 
 const TYPE_COLORS = {
-  photo: 'text-[hsl(var(--jarvis))] bg-[hsl(var(--jarvis),0.1)] border-[hsl(var(--jarvis),0.3)]',
-  chat: 'text-[hsl(var(--step-done))] bg-[hsl(var(--step-done),0.1)] border-[hsl(var(--step-done),0.3)]',
+  photo: 'text-accent bg-accent/10 border-accent/30',
+  chat: 'text-accent bg-accent/10 border-accent/30',
   other: 'text-accent bg-accent/10 border-accent/30',
 };
 
@@ -180,7 +180,7 @@ export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUpload
 
           <button
             onClick={confirmFiles}
-            className="w-full py-2.5 rounded-lg gradient-hero text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 shadow-primary hover:opacity-90 transition-opacity"
+            className="w-full py-2.5 rounded-lg gradient-gold text-accent-foreground font-semibold text-sm flex items-center justify-center gap-2 shadow-primary hover:opacity-90 transition-opacity"
           >
             <CheckCircle className="w-4 h-4" />
             {t('confirmFiles', lang)} {previewing.length} {previewing.length !== 1 ? t('files', lang) : t('file', lang)}

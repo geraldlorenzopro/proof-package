@@ -141,10 +141,10 @@ export default function Index() {
                     }
                   }}
                   className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap flex-shrink-0
-                    ${isActive ? 'border-[hsl(var(--jarvis))] text-[hsl(var(--jarvis))]' : isDone ? 'border-[hsl(var(--step-done))] text-[hsl(var(--step-done))]' : 'border-transparent text-muted-foreground'}`}
+                    ${isActive ? 'border-accent text-accent' : isDone ? 'border-accent/50 text-accent/70' : 'border-transparent text-muted-foreground'}`}
                 >
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
-                    ${isActive ? 'bg-[hsl(var(--jarvis))] text-background' : isDone ? 'bg-[hsl(var(--step-done))] text-white' : 'bg-muted text-muted-foreground'}`}>
+                    ${isActive ? 'bg-accent text-accent-foreground' : isDone ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground'}`}>
                     {isDone ? '✓' : s.id}
                   </div>
                   <span className="hidden sm:block">{s.label}</span>
@@ -165,7 +165,7 @@ export default function Index() {
             <button
               onClick={() => setStep(2)}
               disabled={!caseComplete}
-              className="w-full py-3 rounded-xl gradient-hero text-primary-foreground font-semibold shadow-primary disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+              className="w-full py-3 rounded-xl gradient-gold text-accent-foreground font-semibold shadow-primary disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
             >
               {t('continue', lang)}
             </button>
@@ -181,7 +181,7 @@ export default function Index() {
             </div>
             <FileUploadZone onFilesAdded={handleFilesAdded} existingCount={items.length} lang={lang} />
             {items.length > 0 && (
-              <button onClick={() => setStep(3)} className="w-full py-3 rounded-xl gradient-hero text-primary-foreground font-semibold shadow-primary hover:opacity-90 transition-opacity">
+              <button onClick={() => setStep(3)} className="w-full py-3 rounded-xl gradient-gold text-accent-foreground font-semibold shadow-primary hover:opacity-90 transition-opacity">
                 {t('completeData', lang)} {items.length} {items.length !== 1 ? t('files', lang) : t('file', lang)} →
               </button>
             )}
@@ -243,7 +243,7 @@ export default function Index() {
             <button
               onClick={() => { setStep(4); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               disabled={!allComplete}
-              className="w-full py-3 rounded-xl gradient-hero text-primary-foreground font-semibold shadow-primary hover:opacity-90 transition-opacity mt-4 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-3 rounded-xl gradient-gold text-accent-foreground font-semibold shadow-primary hover:opacity-90 transition-opacity mt-4 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {allComplete
                 ? t('reviewAndGenerate', lang)
@@ -301,7 +301,7 @@ export default function Index() {
             <button
               onClick={() => setShowConfirm(true)}
               disabled={generating}
-              className="w-full py-4 rounded-xl gradient-hero text-primary-foreground font-bold text-base shadow-primary hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+              className="w-full py-4 rounded-xl gradient-gold text-accent-foreground font-bold text-base shadow-primary hover:opacity-90 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
               {generating ? (
                 <>
@@ -344,7 +344,7 @@ export default function Index() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleGeneratePDF}
-              className="gradient-hero text-primary-foreground"
+              className="gradient-gold text-accent-foreground"
             >
               <Download className="w-4 h-4 mr-2" />
               {lang === 'es' ? 'Sí, generar PDF' : 'Yes, generate PDF'}
