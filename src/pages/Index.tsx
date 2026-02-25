@@ -8,9 +8,10 @@ import { generateExhibitNumber } from '@/lib/evidenceUtils';
 import { generateEvidencePDF } from '@/lib/pdfGenerator';
 import { t } from '@/lib/i18n';
 import {
-  FileText, Upload, ClipboardList, Download, Scale, Shield, Clock, Globe,
+  FileText, Upload, ClipboardList, Download, Scale, Shield, Clock,
   ListChecks, AlertTriangle, X, Loader2, ChevronRight, Camera
 } from 'lucide-react';
+import { LangToggle } from '@/components/LangToggle';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
   AlertDialog,
@@ -56,13 +57,7 @@ function WelcomeSplash({ onContinue, lang, setLang }: { onContinue: () => void; 
       <div className="absolute top-0 right-0 w-72 h-72 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(195_100%_50%),_transparent_70%)] pointer-events-none" />
 
       <div className="absolute top-4 right-4">
-        <button
-          onClick={() => setLang(lang === 'es' ? 'en' : 'es')}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-full transition-all border border-border"
-        >
-          <Globe className="w-3.5 h-3.5" />
-          {lang === 'es' ? 'English' : 'Español'}
-        </button>
+        <LangToggle lang={lang} setLang={setLang} />
       </div>
 
       <div
@@ -95,13 +90,7 @@ function WelcomeSplash({ onContinue, lang, setLang }: { onContinue: () => void; 
                 <Shield className="w-5 h-5 text-accent" />
                 {t('disclaimerTitle', lang)}
               </DialogTitle>
-              <button
-                onClick={() => setLang(lang === 'es' ? 'en' : 'es')}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-full transition-all border border-border"
-              >
-                <Globe className="w-3.5 h-3.5" />
-                {lang === 'es' ? 'EN' : 'ES'}
-              </button>
+              <LangToggle lang={lang} setLang={setLang} />
             </div>
           </DialogHeader>
           <div className="space-y-4">
@@ -224,13 +213,7 @@ export default function Index() {
             ))}
           </div>
           <div className="absolute top-4 right-4">
-            <button
-              onClick={() => setLang(l => l === 'es' ? 'en' : 'es')}
-              className="flex items-center gap-1.5 text-xs text-primary-foreground/80 hover:text-primary-foreground bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-all border border-white/20"
-            >
-              <Globe className="w-3.5 h-3.5" />
-              {lang === 'es' ? 'English' : 'Español'}
-            </button>
+            <LangToggle lang={lang} setLang={setLang} />
           </div>
         </div>
       </header>
