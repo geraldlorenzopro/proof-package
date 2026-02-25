@@ -84,20 +84,20 @@ Deno.serve(async (req) => {
 
 Rules:
 - Translate from ANY language (Spanish, Portuguese, French, etc.) to English.
-- If already in English, keep it exactly as-is.
+- If the text is already in English, return it exactly as-is.
 - Keep names of people and places (cities, countries) unchanged.
 - Fix obvious typos and spelling errors in the source language before translating.
 - Use formal but clear language appropriate for immigration officials.
 - Return ONLY a numbered list matching the input format, one line per item.
-- Do not add explanations or extra text.
+- Do NOT add explanations, headers, markdown, or extra text.
+- Each line MUST follow this exact format: NUMBER. [KEY]: TRANSLATED_TEXT
 
 Text to translate:
 ${numbered}
 
-Output format (exactly):
+Return ONLY lines in this exact format (no extra text):
 1. [key]: translated text
-2. [key]: translated text
-...`;
+2. [key]: translated text`;
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -138,20 +138,35 @@ Output format (exactly):
 
     const data = await response.json();
     const rawOutput: string = data.choices?.[0]?.message?.content || '';
+    console.log('AI raw output:', rawOutput.substring(0, 500));
 
     // Parse numbered output back to key→translation map
     const translated: Record<string, string> = {};
     const lines = rawOutput.split('\n');
     for (const line of lines) {
-      const match = line.match(/^\d+\.\s+\[([^\]]+)\]:\s+(.+)$/);
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+      // Try standard format: "1. [key]: translated text"
+      const match = trimmedLine.match(/^\d+\.\s*\[([^\]]+)\]:\s*(.+)$/);
       if (match) {
         translated[match[1].trim()] = match[2].trim();
+        continue;
+      }
+      // Fallback: "1. [key] translated text" (missing colon)
+      const match2 = trimmedLine.match(/^\d+\.\s*\[([^\]]+)\]\s+(.+)$/);
+      if (match2) {
+        translated[match2[1].trim()] = match2[2].trim();
       }
     }
 
+    console.log('Parsed translations:', Object.keys(translated).length, '/', entries.length);
+
     // Fill missing keys with originals
     for (const [k, v] of entries) {
-      if (!(k in translated)) translated[k] = v;
+      if (!(k in translated)) {
+        console.log('Missing translation for key:', k);
+        translated[k] = v;
+      }
     }
 
     return new Response(JSON.stringify({ translated }), {
