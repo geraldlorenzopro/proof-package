@@ -15,9 +15,31 @@ async function translateItems(items: EvidenceItem[]): Promise<EvidenceItem[]> {
 
   if (Object.keys(texts).length === 0) return items;
 
+  console.log('[translate] Sending texts for translation:', Object.keys(texts).length, 'fields');
+
   try {
     const { data, error } = await supabase.functions.invoke('translate-evidence', { body: { texts } });
-    const translated: Record<string, string> = (data && !error) ? (data.translated || {}) : {};
+    
+    console.log('[translate] Response:', { data, error });
+
+    if (error) {
+      console.error('[translate] Edge function error:', error);
+      return items;
+    }
+
+    if (data?.error) {
+      console.warn('[translate] Translation service error:', data.error);
+    }
+
+    const translated: Record<string, string> = data?.translated || {};
+    const translatedCount = Object.keys(translated).length;
+    console.log('[translate] Received translations:', translatedCount, '/', Object.keys(texts).length);
+
+    if (translatedCount === 0) {
+      console.warn('[translate] No translations returned — using originals');
+      return items;
+    }
+
     return items.map(item => ({
       ...item,
       caption: translated[`${item.id}__caption`] || item.caption,
@@ -25,7 +47,8 @@ async function translateItems(items: EvidenceItem[]): Promise<EvidenceItem[]> {
       location: item.location ? (translated[`${item.id}__location`] || item.location) : item.location,
       notes: item.notes ? (translated[`${item.id}__notes`] || item.notes) : item.notes,
     }));
-  } catch {
+  } catch (err) {
+    console.error('[translate] Exception during translation:', err);
     return items; // fallback to originals on error
   }
 }
