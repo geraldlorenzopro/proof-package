@@ -6,6 +6,10 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+const VALID_CATEGORIES = ['F1', 'F2A', 'F2B', 'F3', 'F4'];
+const VALID_CHARGEABILITIES = ['ALL', 'CHINA', 'INDIA', 'MEXICO', 'PHILIPPINES'];
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 interface BulletinRow {
   bulletin_year: number;
   bulletin_month: number;
@@ -20,8 +24,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { dob, priority_date, category, chargeability, approval_date } = await req.json();
+    const body = await req.json();
+    const { dob, priority_date, category, chargeability, approval_date } = body;
 
+    // Input validation
     if (!dob || !priority_date || !category || !chargeability) {
       return new Response(
         JSON.stringify({ success: false, error: 'dob, priority_date, category, and chargeability are required' }),
@@ -29,11 +35,38 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate date formats
+    for (const [name, val] of [['dob', dob], ['priority_date', priority_date], ['approval_date', approval_date]] as const) {
+      if (val && (typeof val !== 'string' || !DATE_REGEX.test(val) || isNaN(new Date(val).getTime()))) {
+        return new Response(
+          JSON.stringify({ success: false, error: `Invalid ${name} format. Use YYYY-MM-DD.` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    const catUpper = String(category).toUpperCase().trim();
+    const charUpper = String(chargeability).toUpperCase().trim();
+
+    if (!VALID_CATEGORIES.includes(catUpper)) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!VALID_CHARGEABILITIES.includes(charUpper)) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Invalid chargeability. Must be one of: ${VALID_CHARGEABILITIES.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Fetch all bulletin data for this category/chargeability
     const params = new URLSearchParams({
       select: 'bulletin_year,bulletin_month,final_action_date,is_current,raw_value',
-      category: `eq.${category.toUpperCase()}`,
-      chargeability: `eq.${chargeability.toUpperCase()}`,
+      category: `eq.${catUpper}`,
+      chargeability: `eq.${charUpper}`,
       order: 'bulletin_year.asc,bulletin_month.asc',
       limit: '1000',
     });
@@ -72,8 +105,6 @@ Deno.serve(async (req) => {
     }
 
     // Effective age-out date: when CSPA age = 21
-    // CSPA age = (visa_date - dob) - pending_time
-    // CSPA age = 21 when visa_date = dob + 21 years + pending_time
     const effectiveAgeOutDate = new Date(turns21);
     effectiveAgeOutDate.setDate(effectiveAgeOutDate.getDate() + pendingTimeDays);
 
@@ -101,7 +132,6 @@ Deno.serve(async (req) => {
     }
 
     // Calculate advancement rate from historical data
-    // Get rows with valid final_action_dates, sorted chronologically
     const validRows = rows
       .filter(r => r.final_action_date && !r.is_current)
       .sort((a, b) => a.bulletin_year !== b.bulletin_year
@@ -120,7 +150,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Calculate advancement rates over different windows
     const calcRate = (windowRows: BulletinRow[]): number | null => {
       if (windowRows.length < 2) return null;
       const first = windowRows[0];
@@ -128,17 +157,13 @@ Deno.serve(async (req) => {
       const firstFAD = new Date(first.final_action_date!).getTime();
       const lastFAD = new Date(last.final_action_date!).getTime();
       const fadAdvanceDays = (lastFAD - firstFAD) / (1000 * 60 * 60 * 24);
-
       const bulletinMonths =
         (last.bulletin_year - first.bulletin_year) * 12 +
         (last.bulletin_month - first.bulletin_month);
-
       if (bulletinMonths <= 0) return null;
-      // Days of FAD advancement per calendar month
       return fadAdvanceDays / bulletinMonths;
     };
 
-    // Use last 12, 24, and 36 months for different rate windows
     const latest = validRows.slice(-12);
     const mid = validRows.slice(-24);
     const long = validRows.slice(-36);
@@ -147,7 +172,6 @@ Deno.serve(async (req) => {
     const rate24 = calcRate(mid);
     const rate36 = calcRate(long);
 
-    // Use weighted average: more weight on recent
     const rates = [rate12, rate24, rate36].filter(r => r !== null) as number[];
     if (rates.length === 0 || rates.every(r => r <= 0)) {
       return new Response(
@@ -163,7 +187,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Weighted: 50% recent, 30% mid, 20% long
     const weights = [0.5, 0.3, 0.2];
     let weightedRate = 0;
     let totalWeight = 0;
@@ -173,16 +196,13 @@ Deno.serve(async (req) => {
     });
     weightedRate = weightedRate / totalWeight;
 
-    // Get latest FAD
     const latestRow = validRows[validRows.length - 1];
     const latestFAD = new Date(latestRow.final_action_date!);
     const latestBulletinDate = new Date(latestRow.bulletin_year, latestRow.bulletin_month - 1, 1);
 
-    // How many days does the FAD need to advance to reach the PD?
     const fadGapDays = (pdDate.getTime() - latestFAD.getTime()) / (1000 * 60 * 60 * 24);
 
     if (fadGapDays <= 0) {
-      // Already past — should have been caught above
       return new Response(
         JSON.stringify({
           success: true,
@@ -193,7 +213,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Months needed = gap / rate
     const monthsNeeded = weightedRate > 0 ? fadGapDays / weightedRate : Infinity;
 
     if (!isFinite(monthsNeeded) || monthsNeeded > 600) {
@@ -213,18 +232,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Projected current date
     const projectedCurrentDate = new Date(latestBulletinDate);
     projectedCurrentDate.setMonth(projectedCurrentDate.getMonth() + Math.ceil(monthsNeeded));
 
-    // Will the child age out before then?
     const agedOut = projectedCurrentDate > effectiveAgeOutDate;
 
-    // Margin: how many months between projected current and age-out
     const marginDays = (effectiveAgeOutDate.getTime() - projectedCurrentDate.getTime()) / (1000 * 60 * 60 * 24);
     const marginMonths = Math.round(marginDays / 30.44);
 
-    // Calculate optimistic and pessimistic scenarios
     const optimisticRate = Math.max(...rates);
     const pessimisticRate = Math.min(...rates.filter(r => r > 0));
 
@@ -237,7 +252,6 @@ Deno.serve(async (req) => {
     const pessimisticDate = new Date(latestBulletinDate);
     if (isFinite(pessimisticMonths)) pessimisticDate.setMonth(pessimisticDate.getMonth() + Math.ceil(pessimisticMonths));
 
-    // CSPA age at projected date
     const projectedBioAgeDays = (projectedCurrentDate.getTime() - dobDate.getTime()) / (1000 * 60 * 60 * 24);
     const projectedCspaAgeDays = projectedBioAgeDays - pendingTimeDays;
     const projectedCspaAgeYears = projectedCspaAgeDays / 365.25;

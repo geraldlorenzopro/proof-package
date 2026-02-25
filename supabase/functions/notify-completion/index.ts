@@ -6,17 +6,37 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const TOKEN_REGEX = /^[a-f0-9]{64}$/;
+const MAX_TOKEN_LENGTH = 128;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { case_id, access_token } = await req.json();
+    const body = await req.json();
+    const { case_id, access_token } = body;
 
+    // Validate inputs
     if (!case_id && !access_token) {
       return new Response(
         JSON.stringify({ error: "case_id or access_token required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (case_id && (typeof case_id !== 'string' || !UUID_REGEX.test(case_id))) {
+      return new Response(
+        JSON.stringify({ error: "Invalid case_id format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (access_token && (typeof access_token !== 'string' || access_token.length > MAX_TOKEN_LENGTH)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid access_token format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -60,7 +80,7 @@ Deno.serve(async (req) => {
         .eq("form_complete", true)
     ).count;
 
-    // Build webhook payload (GHL-compatible)
+    // Build webhook payload
     const payload = {
       event: "evidence_upload_completed",
       timestamp: new Date().toISOString(),
@@ -82,6 +102,20 @@ Deno.serve(async (req) => {
     // Fire webhook if configured
     let webhookResult = null;
     if (caseData.webhook_url) {
+      // Validate webhook URL
+      try {
+        const url = new URL(caseData.webhook_url);
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          throw new Error('Invalid protocol');
+        }
+      } catch {
+        webhookResult = { error: "Invalid webhook URL configured" };
+        return new Response(
+          JSON.stringify({ success: true, webhook: webhookResult, payload }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       try {
         const webhookResponse = await fetch(caseData.webhook_url, {
           method: "POST",
@@ -103,7 +137,7 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: String(error) }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
