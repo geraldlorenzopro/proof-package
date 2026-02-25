@@ -76,7 +76,7 @@ export default function Features() {
                     <h2 className="font-semibold text-foreground text-sm mb-1">{tool.name}</h2>
                     <p className="text-xs text-muted-foreground leading-relaxed">{tool.description}</p>
                     <div className="flex items-center gap-3 mt-3">
-                      <a href={tool.href} className="text-xs font-medium text-accent hover:underline">
+                      <a href={tool.href} {...(tool.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="text-xs font-medium text-accent hover:underline">
                         Abrir herramienta →
                       </a>
                       {hasFeatures && (

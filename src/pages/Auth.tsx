@@ -15,10 +15,8 @@ export default function Auth() {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
-  // Replace history so "back" goes to /features instead of staying on /auth
+  // If already logged in, redirect to dashboard
   useEffect(() => {
-    window.history.replaceState(null, '', '/auth');
-    // If already logged in, redirect to dashboard
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) navigate('/dashboard', { replace: true });
     });
