@@ -16,8 +16,8 @@ import {
   ChevronDown,
   Info,
   Shield,
-  Globe,
 } from "lucide-react";
+import { LangToggle } from '@/components/LangToggle';
 import {
   Dialog,
   DialogContent,
@@ -235,18 +235,7 @@ function toFilingStatus(fs: ExtFilingStatus): FilingStatus {
   return fs as FilingStatus;
 }
 
-// ──────── Language Toggle ────────
-function LangToggle({ onToggle, label }: { onToggle: () => void; label: string }) {
-  return (
-    <button
-      onClick={onToggle}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border bg-card text-foreground hover:bg-secondary transition-all"
-    >
-      <Globe size={13} className="text-accent" />
-      {label}
-    </button>
-  );
-}
+// LangToggle imported from shared component
 
 // ──────── Splash Screen ────────
 function SplashScreen({ onStart, t }: { onStart: () => void; t: typeof T["es"] | typeof T["en"] }) {
@@ -376,7 +365,7 @@ export default function AffidavitCalculator() {
       <div className="min-h-screen bg-background">
         <SplashScreen onStart={() => setAppState("legal")} t={t} />
         <div className="fixed top-5 right-5 z-10">
-          <LangToggle onToggle={toggleLang} label={t.langBtn} />
+          <LangToggle lang={lang} setLang={setLang} />
         </div>
       </div>
     );
@@ -388,7 +377,7 @@ export default function AffidavitCalculator() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <LegalDialog open={true} onAccept={() => setAppState("calc")} t={t} />
         <div className="fixed top-5 right-5 z-50">
-          <LangToggle onToggle={toggleLang} label={t.langBtn} />
+          <LangToggle lang={lang} setLang={setLang} />
         </div>
       </div>
     );
@@ -408,7 +397,7 @@ export default function AffidavitCalculator() {
             <span className="text-xs font-medium text-muted-foreground">{t.subtitle}</span>
           </div>
         </div>
-        <LangToggle onToggle={toggleLang} label={t.langBtn} />
+        <LangToggle lang={lang} setLang={setLang} />
       </header>
 
       <main className="flex-1 w-full max-w-lg mx-auto px-4 py-6 flex flex-col gap-4">
