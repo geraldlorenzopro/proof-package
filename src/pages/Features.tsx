@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { BarChart3, Calculator, Activity, FileText, CheckCircle, Clock, ChevronDown, Camera, FileCheck, DollarSign, Users } from 'lucide-react';
 import nerLogo from '@/assets/ner-logo.png';
 
@@ -76,9 +77,15 @@ export default function Features() {
                     <h2 className="font-semibold text-foreground text-sm mb-1">{tool.name}</h2>
                     <p className="text-xs text-muted-foreground leading-relaxed">{tool.description}</p>
                     <div className="flex items-center gap-3 mt-3">
-                      <a href={tool.href} {...(tool.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="text-xs font-medium text-accent hover:underline">
-                        Abrir herramienta →
-                      </a>
+                      {tool.href.startsWith('http') ? (
+                        <a href={tool.href} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-accent hover:underline">
+                          Abrir herramienta →
+                        </a>
+                      ) : (
+                        <Link to={tool.href} className="text-xs font-medium text-accent hover:underline">
+                          Abrir herramienta →
+                        </Link>
+                      )}
                       {hasFeatures && (
                         <button onClick={() => setExpanded(isExpanded ? null : tool.name)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
                           {isExpanded ? 'Menos' : 'Cómo funciona'}
