@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calculator } from 'lucide-react';
+import AffidavitCalculator from '@/components/AffidavitCalculator';
 
 export default function AffidavitTool() {
   const navigate = useNavigate();
@@ -13,13 +14,7 @@ export default function AffidavitTool() {
         <Calculator className="w-4 h-4 text-accent" />
         <span className="font-display text-xs tracking-wider text-accent">AFFIDAVIT CALCULATOR</span>
       </div>
-
-      <iframe
-        src="https://affidavit-ally.lovable.app/"
-        className="flex-1 w-full border-0"
-        title="Affidavit Calculator"
-        allow="clipboard-write"
-      />
+      <AffidavitCalculator />
     </div>
   );
 }
