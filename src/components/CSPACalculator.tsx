@@ -217,7 +217,7 @@ function LangToggle({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void 
           onClick={() => setLang(l)}
           className={cn(
             "text-xs font-semibold px-2 py-0.5 rounded-full transition-all",
-            lang === l ? "bg-jarvis text-background" : "text-muted-foreground hover:text-foreground"
+            lang === l ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
           )}
         >
           {l.toUpperCase()}
@@ -309,26 +309,26 @@ function WelcomeSplash({ onContinue, lang, setLang }: { onContinue: () => void; 
         className="relative z-10 flex flex-col items-center gap-7 cursor-pointer select-none px-10 py-12 max-w-sm w-full text-center"
         onClick={() => setShowDisclaimer(true)}
       >
-        <div className="w-20 h-20 rounded-2xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center animate-float">
-          <Scale className="w-10 h-10 text-jarvis" />
+        <div className="w-20 h-20 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center animate-float">
+          <Scale className="w-10 h-10 text-accent" />
         </div>
         <div>
           <p className="text-muted-foreground text-xs font-semibold uppercase tracking-[0.3em] mb-2">{t.platform}</p>
           <h1 className="font-bold leading-tight">
-            <span className="text-5xl font-display text-jarvis glow-text">CSPA</span>
+            <span className="text-5xl font-display text-accent glow-text-gold">CSPA</span>
             <br />
-            <span className="text-3xl text-accent glow-text-gold">Calculator</span>
+            <span className="text-3xl text-foreground">Calculator</span>
           </h1>
           <p className="text-muted-foreground text-sm mt-3">{t.subtitle}</p>
         </div>
-        <div className="flex items-center gap-2 bg-jarvis/10 border border-jarvis/20 rounded-full px-6 py-2.5 animate-glow-pulse">
-          <Scale className="w-4 h-4 text-jarvis" />
-          <span className="text-sm font-medium text-jarvis">{t.tapToStart}</span>
+        <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5 animate-glow-pulse">
+          <Scale className="w-4 h-4 text-accent" />
+          <span className="text-sm font-medium text-accent">{t.tapToStart}</span>
         </div>
       </div>
 
       <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
-        <DialogContent className="max-w-md bg-card border-jarvis/20">
+        <DialogContent className="max-w-md bg-card border-accent/20">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2 text-base text-foreground">
@@ -567,14 +567,14 @@ export default function CSPACalculator() {
     <div className="min-h-screen bg-background grid-bg flex flex-col">
       {/* Hero */}
       <div className="gradient-hero relative overflow-hidden shrink-0">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(195_100%_50%),_transparent_60%)]" />
+        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(ellipse_at_top_right,_hsl(43_85%_52%),_transparent_70%)] pointer-events-none" />
         <div className="relative z-10 max-w-4xl mx-auto px-6 py-6 text-center">
           <div className="flex justify-end mb-3">
             <LangToggle lang={lang} setLang={setLang} />
           </div>
-          <div className="inline-flex items-center gap-2 bg-jarvis/10 border border-jarvis/20 rounded-full px-4 py-1 mb-3">
-            <Scale className="w-3.5 h-3.5 text-jarvis" />
-            <span className="text-jarvis/80 text-xs font-medium tracking-wide">{t.cspa}</span>
+          <div className="inline-flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-1 mb-3">
+            <Scale className="w-3.5 h-3.5 text-accent" />
+            <span className="text-accent/80 text-xs font-medium tracking-wide">{t.cspa}</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">{t.heroTitle}</h1>
           <div className="mt-3 flex flex-col items-center gap-0.5 text-sm text-muted-foreground max-w-lg mx-auto">
@@ -626,12 +626,12 @@ export default function CSPACalculator() {
                 <Label className="text-foreground font-medium text-sm">{t.visaDate}</Label>
                 <div className={cn("h-10 rounded-md border px-3 flex items-center gap-2 text-sm",
                   loadingVisa ? "border-border bg-muted text-muted-foreground"
-                    : visaAutoInfo ? "border-jarvis/40 bg-jarvis/5 text-foreground"
+                    : visaAutoInfo ? "border-accent/40 bg-accent/5 text-foreground"
                     : "border-border bg-muted/40 text-muted-foreground")}>
                   {loadingVisa ? (
-                    <><Loader2 className="w-4 h-4 animate-spin shrink-0 text-jarvis" /><span>{t.consulting}</span></>
+                    <><Loader2 className="w-4 h-4 animate-spin shrink-0 text-accent" /><span>{t.consulting}</span></>
                   ) : visaAutoInfo && form.visaAvailableDate ? (
-                    <><Search className="w-4 h-4 shrink-0 text-jarvis" />
+                    <><Search className="w-4 h-4 shrink-0 text-accent" />
                     <span className="font-semibold">{new Date(form.visaAvailableDate + "T12:00:00").toLocaleDateString(lang === "es" ? "es-ES" : "en-US", { day: "2-digit", month: "long", year: "numeric" })}</span></>
                   ) : (
                     <span className="italic">{t.autoDetect}</span>
@@ -639,7 +639,7 @@ export default function CSPACalculator() {
                 </div>
                 {visaAutoInfo && !loadingVisa && (
                   <div className="space-y-0.5">
-                    <p className="text-xs text-jarvis font-medium">✅ {visaAutoInfo}</p>
+                    <p className="text-xs text-accent font-medium">✅ {visaAutoInfo}</p>
                     {pdBecameCurrent && form.approvalDate && form.approvalDate > pdBecameCurrent
                       ? <p className="text-xs font-medium text-accent">{t.cspaUsesApproval}</p>
                       : pdBecameCurrent && form.approvalDate
@@ -736,7 +736,7 @@ export default function CSPACalculator() {
             <Card className="glow-border bg-card">
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-center gap-2">
-                  <Info className="w-5 h-5 text-jarvis" />
+                  <Info className="w-5 h-5 text-accent" />
                   <h3 className="text-base font-semibold text-foreground">
                     {lang === "es" ? "Fórmula CSPA Especial" : "Special CSPA Formula"} — {form.category}
                   </h3>
@@ -790,8 +790,8 @@ export default function CSPACalculator() {
                         ? `Para categorías de empleo (${form.category}), CSPA aplica a los derivados (hijos del beneficiario principal). La fórmula es la misma que para categorías familiares: Edad biológica al momento de disponibilidad de visa − tiempo pendiente en USCIS.`
                         : `For employment categories (${form.category}), CSPA applies to derivatives (children of the principal beneficiary). The formula is the same as family categories: Biological age at visa availability − pending time at USCIS.`}
                     </p>
-                    <div className="bg-jarvis/10 border border-jarvis/20 rounded-lg px-3 py-2">
-                      <p className="text-xs font-semibold text-jarvis">
+                    <div className="bg-accent/10 border border-accent/20 rounded-lg px-3 py-2">
+                      <p className="text-xs font-semibold text-accent">
                         {lang === "es" ? "Usa la calculadora estándar para derivados EB" : "Use the standard calculator for EB derivatives"}
                       </p>
                     </div>
@@ -816,7 +816,7 @@ export default function CSPACalculator() {
 
       {/* Results Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-xl bg-card border-jarvis/20">
+        <DialogContent className="max-w-xl bg-card border-accent/20">
           <DialogHeader className="pb-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2 text-base">
@@ -873,7 +873,7 @@ export default function CSPACalculator() {
               </div>
 
               {result.bulletinInfo && (
-                <div className="rounded-lg border border-jarvis/20 bg-jarvis/5 px-3 py-2.5 flex items-start gap-2">
+                <div className="rounded-lg border border-accent/20 bg-accent/5 px-3 py-2.5 flex items-start gap-2">
                   <span className="text-base shrink-0">📌</span>
                   <div className="text-xs text-foreground leading-relaxed">
                     <span className="font-semibold">{t.controlling}</span>

@@ -34,8 +34,8 @@ export function EvidenceSummary({ items, lang = 'es' }: EvidenceSummaryProps) {
   const L = LABELS[lang];
 
   const sections = [
-    { label: L.photos, items: photos, Icon: FileImage, color: 'text-[hsl(var(--jarvis))]' },
-    { label: L.chats, items: chats, Icon: MessageSquare, color: 'text-[hsl(var(--step-done))]' },
+    { label: L.photos, items: photos, Icon: FileImage, color: 'text-accent' },
+    { label: L.chats, items: chats, Icon: MessageSquare, color: 'text-accent' },
     { label: L.others, items: others, Icon: FileText, color: 'text-accent' },
   ];
 
@@ -72,8 +72,8 @@ export function EvidenceSummary({ items, lang = 'es' }: EvidenceSummaryProps) {
 
 function StatCard({ value, label, accent, warn }: { value: number; label: string; accent?: boolean; warn?: boolean }) {
   return (
-    <div className={`rounded-lg p-3 text-center border ${accent ? 'border-[hsl(var(--step-done),0.3)] bg-[hsl(var(--step-done),0.08)]' : warn ? 'border-accent/30 bg-accent/5' : 'border-border bg-secondary/40'}`}>
-      <div className={`text-2xl font-bold ${accent ? 'text-[hsl(var(--step-done))]' : warn ? 'text-accent' : 'text-foreground'}`}>
+    <div className={`rounded-lg p-3 text-center border ${accent ? 'border-accent/30 bg-accent/8' : warn ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-secondary/40'}`}>
+      <div className={`text-2xl font-bold ${accent ? 'text-accent' : warn ? 'text-destructive' : 'text-foreground'}`}>
         {value}
       </div>
       <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
@@ -94,10 +94,10 @@ function SummaryRow({ item }: { item: EvidenceItem }) {
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-xs font-bold text-[hsl(var(--jarvis))]">{item.exhibit_number || '—'}</span>
+          <span className="text-xs font-bold text-accent">{item.exhibit_number || '—'}</span>
           {item.formComplete
-            ? <CheckCircle className="w-3.5 h-3.5 text-[hsl(var(--step-done))]" />
-            : <AlertCircle className="w-3.5 h-3.5 text-accent" />
+            ? <CheckCircle className="w-3.5 h-3.5 text-accent" />
+            : <AlertCircle className="w-3.5 h-3.5 text-muted-foreground" />
           }
           {item.event_date && <span className="text-xs text-muted-foreground">{formatDateDisplay(item.event_date, item.date_is_approximate)}</span>}
         </div>
