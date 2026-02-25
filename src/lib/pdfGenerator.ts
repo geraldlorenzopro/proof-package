@@ -127,6 +127,17 @@ export async function generateEvidencePDF(
   const chats = translatedItems.filter(i => i.type === 'chat');
   const others = translatedItems.filter(i => i.type === 'other');
 
+  // Re-assign exhibit numbers with dynamic section letters (only non-empty sections get letters)
+  const DYN_LETTERS = ['A', 'B', 'C', 'D', 'E'];
+  let dynIdx = 0;
+  for (const group of [photos, chats, others]) {
+    if (group.length === 0) continue;
+    const letter = DYN_LETTERS[dynIdx++];
+    group.forEach((item, i) => {
+      item.exhibit_number = `${letter}-${String(i + 1).padStart(2, '0')}`;
+    });
+  }
+
   // ── COVER PAGE ──────────────────────────────────────────────────────────────
   // Title
   drawGoldRule(doc, 40, 35);
@@ -172,10 +183,26 @@ export async function generateEvidencePDF(
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...GRAY);
+  // Build sections dynamically — letters assigned sequentially to non-empty sections
+  const SECTION_LETTERS = ['A', 'B', 'C', 'D', 'E'];
+  const sectionDefs = [
+    { title: 'Photographs', items: photos, isPhotos: true },
+    { title: 'Messages & Chats', items: chats, isPhotos: false },
+    { title: 'Other Supporting Documents', items: others, isPhotos: false },
+  ].filter(s => s.items.length > 0);
+
+  const sections = sectionDefs.map((s, i) => ({
+    label: `Section ${SECTION_LETTERS[i]} – ${s.title}`,
+    letter: SECTION_LETTERS[i],
+    items: s.items,
+    isPhotos: s.isPhotos,
+  }));
+
   let sy = summaryY;
-  if (photos.length > 0) { doc.text(`Section A – Photographs: ${photos.length} item${photos.length !== 1 ? 's' : ''}`, W / 2, sy, { align: 'center' }); sy += 7; }
-  if (chats.length > 0) { doc.text(`Section B – Messages & Chats: ${chats.length} item${chats.length !== 1 ? 's' : ''}`, W / 2, sy, { align: 'center' }); sy += 7; }
-  if (others.length > 0) { doc.text(`Section C – Other Documents: ${others.length} item${others.length !== 1 ? 's' : ''}`, W / 2, sy, { align: 'center' }); }
+  for (const sec of sections) {
+    doc.text(`${sec.label}: ${sec.items.length} item${sec.items.length !== 1 ? 's' : ''}`, W / 2, sy, { align: 'center' });
+    sy += 7;
+  }
 
   // ── TABLE OF CONTENTS ────────────────────────────────────────────────────────
   doc.addPage();
@@ -188,14 +215,8 @@ export async function generateEvidencePDF(
   drawGoldRule(doc, 27);
 
   let tocY = 42;
-  const sections = [
-    { label: 'Section A – Photographs', items: photos },
-    { label: 'Section B – Messages & Chats', items: chats },
-    { label: 'Section C – Other Supporting Documents', items: others },
-  ];
 
   sections.forEach(sec => {
-    if (sec.items.length === 0) return;
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...NAVY);
@@ -223,8 +244,6 @@ export async function generateEvidencePDF(
   const totalItems = translatedItems.length;
 
   for (const sec of sections) {
-    if (sec.items.length === 0) continue;
-
     // Section divider page
     doc.addPage();
     pageNum++;
@@ -248,8 +267,7 @@ export async function generateEvidencePDF(
     drawGoldRule(doc, H / 2 + 25, 35);
 
     // Photos: 4 per page in 2x2 grid. Chats/docs: 2 per page stacked.
-    if (sec === sections[0]) {
-      // Section A — Photos: 4 per page
+    if (sec.isPhotos) {
       for (let i = 0; i < sec.items.length; i += 4) {
         const pageItems = sec.items.slice(i, i + 4);
         itemIdx += pageItems.length;
@@ -259,7 +277,6 @@ export async function generateEvidencePDF(
         await renderPhotoGrid(doc, pageItems, caseInfo.compiled_date, pageNum, W, H);
       }
     } else {
-      // Section B/C — 2 per page stacked
       for (let i = 0; i < sec.items.length; i += 2) {
         const pageItems = sec.items.slice(i, i + 2);
         itemIdx += pageItems.length;

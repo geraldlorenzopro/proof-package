@@ -1,5 +1,4 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,23 +13,6 @@ const MAX_TOTAL_LENGTH = 10000;
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
-  }
-
-  // Require authentication
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ translated: {}, error: 'Authentication required' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
-    global: { headers: { Authorization: authHeader } },
-  });
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return new Response(JSON.stringify({ translated: {}, error: 'Invalid token' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   }
 
   try {
@@ -77,6 +59,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('Translation request:', entries.length, 'entries');
 
     const numbered = entries.map(([k, v], i) => `${i + 1}. [${k}]: ${v}`).join('\n');
 
@@ -126,19 +110,21 @@ Return ONLY lines in this exact format (no extra text):
     }
 
     if (response.status === 402) {
-      return new Response(JSON.stringify({ translated: {}, error: 'AI credits exhausted. Please add credits in Settings → Workspace → Usage.' }), {
+      return new Response(JSON.stringify({ translated: {}, error: 'AI credits exhausted.' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     if (!response.ok) {
+      const errText = await response.text();
+      console.error('AI gateway error:', response.status, errText);
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
     const data = await response.json();
     const rawOutput: string = data.choices?.[0]?.message?.content || '';
-    console.log('AI raw output:', rawOutput.substring(0, 500));
+    console.log('AI raw output:', rawOutput.substring(0, 800));
 
     // Parse numbered output back to key→translation map
     const translated: Record<string, string> = {};

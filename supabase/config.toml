@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.provision-account]
 verify_jwt = false
+
+[functions.translate-evidence]
+verify_jwt = false
