@@ -19,7 +19,7 @@ const liveTools = [
     name: 'Affidavit Calculator',
     description: 'Calcula requisitos financieros del I-864 basándose en las Poverty Guidelines más recientes.',
     icon: Calculator,
-    href: 'https://affidavit-ally.lovable.app/',
+    href: '/dashboard/affidavit',
     features: [
       { icon: DollarSign, text: 'Poverty Guidelines actualizadas automáticamente' },
       { icon: Users, text: 'Calcula según tamaño del household y co-sponsors' },
