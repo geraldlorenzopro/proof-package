@@ -91,10 +91,19 @@ export default function AdminPanel() {
       if (data?.error) {
         toast({ title: 'Error', description: data.error, variant: 'destructive' });
       } else {
-        toast({
-          title: 'Cuenta creada',
-          description: `Contraseña temporal: ${data.temp_password}`,
-        });
+        // Copy temp password to clipboard instead of showing it on screen
+        if (data.temp_password && navigator.clipboard) {
+          await navigator.clipboard.writeText(data.temp_password);
+          toast({
+            title: 'Cuenta creada',
+            description: 'Contraseña temporal copiada al portapapeles. Pégala en un lugar seguro.',
+          });
+        } else {
+          toast({
+            title: 'Cuenta creada',
+            description: 'Cuenta creada exitosamente.',
+          });
+        }
         setForm({ account_name: '', email: '', phone: '', plan: 'essential' });
         setShowForm(false);
         loadAccounts();
