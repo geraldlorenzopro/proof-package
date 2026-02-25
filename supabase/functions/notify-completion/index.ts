@@ -102,14 +102,33 @@ Deno.serve(async (req) => {
     // Fire webhook if configured
     let webhookResult = null;
     if (caseData.webhook_url) {
-      // Validate webhook URL
+      // Validate webhook URL and block SSRF
       try {
         const url = new URL(caseData.webhook_url);
         if (!['http:', 'https:'].includes(url.protocol)) {
           throw new Error('Invalid protocol');
         }
+        // Block private/internal IP ranges to prevent SSRF
+        const hostname = url.hostname.toLowerCase();
+        const blockedPatterns = [
+          /^localhost$/i,
+          /^127\./,
+          /^10\./,
+          /^172\.(1[6-9]|2\d|3[01])\./,
+          /^192\.168\./,
+          /^169\.254\./,
+          /^0\./,
+          /^\[::1\]$/,
+          /^\[fc/i,
+          /^\[fd/i,
+          /^\[fe80/i,
+          /^metadata\.google\.internal$/i,
+        ];
+        if (blockedPatterns.some(p => p.test(hostname))) {
+          throw new Error('Blocked destination');
+        }
       } catch {
-        webhookResult = { error: "Invalid webhook URL configured" };
+        webhookResult = { error: "Invalid or blocked webhook URL" };
         return new Response(
           JSON.stringify({ success: true, webhook: webhookResult, payload }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -117,11 +136,15 @@ Deno.serve(async (req) => {
       }
 
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
         const webhookResponse = await fetch(caseData.webhook_url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
+          signal: controller.signal,
         });
+        clearTimeout(timeout);
         webhookResult = {
           status: webhookResponse.status,
           ok: webhookResponse.ok,

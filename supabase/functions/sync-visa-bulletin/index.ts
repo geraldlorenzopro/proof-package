@@ -225,6 +225,41 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Require webhook secret or authenticated admin
+  const secret = req.headers.get('x-webhook-secret');
+  const expectedSecret = Deno.env.get('GHL_WEBHOOK_SECRET');
+  const authHeader = req.headers.get('Authorization');
+
+  let authorized = false;
+
+  // Option 1: webhook secret
+  if (secret && expectedSecret && secret === expectedSecret) {
+    authorized = true;
+  }
+
+  // Option 2: authenticated admin user
+  if (!authorized && authHeader?.startsWith('Bearer ')) {
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user } } = await sb.auth.getUser();
+    if (user) {
+      // Check admin role
+      const sbAdmin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      const { data: member } = await sbAdmin.from('account_members').select('role').eq('user_id', user.id).maybeSingle();
+      if (member && (member.role === 'owner' || member.role === 'admin')) {
+        authorized = true;
+      }
+    }
+  }
+
+  if (!authorized) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
     
