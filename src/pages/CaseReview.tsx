@@ -42,10 +42,20 @@ export default function CaseReview() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [pdfStatus, setPdfStatus] = useState('');
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadCase();
   }, [id]);
+
+  async function resolveSignedUrls(evidenceItems: EvidenceItem[]) {
+    const paths = evidenceItems.map(i => i.file_path);
+    if (paths.length === 0) return {};
+    const { data } = await supabase.storage.from('evidence-files').createSignedUrls(paths, 3600);
+    const map: Record<string, string> = {};
+    data?.forEach(item => { if (item.signedUrl) map[item.path] = item.signedUrl; });
+    return map;
+  }
 
   async function loadCase() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -67,12 +77,14 @@ export default function CaseReview() {
       .eq('case_id', id)
       .order('upload_order', { ascending: true });
 
-    setItems(evidenceData || []);
+    const evidence = evidenceData || [];
+    setItems(evidence);
+    setSignedUrls(await resolveSignedUrls(evidence));
     setLoading(false);
   }
 
   function getFileUrl(path: string) {
-    return supabase.storage.from('evidence-files').getPublicUrl(path).data.publicUrl;
+    return signedUrls[path] || '';
   }
 
   async function handleGeneratePDF() {

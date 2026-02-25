@@ -53,6 +53,7 @@ export default function ClientUpload() {
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -62,6 +63,15 @@ export default function ClientUpload() {
       Object.values(autoSaveTimers.current).forEach(clearTimeout);
     };
   }, [token]);
+
+  async function resolveSignedUrls(evidenceItems: EvidenceItem[]) {
+    const paths = evidenceItems.map(i => i.file_path);
+    if (paths.length === 0) return {};
+    const { data } = await supabase.storage.from('evidence-files').createSignedUrls(paths, 3600);
+    const map: Record<string, string> = {};
+    data?.forEach(item => { if (item.signedUrl) map[item.path] = item.signedUrl; });
+    return map;
+  }
 
   async function loadCase() {
     if (!token) { setNotFound(true); setLoading(false); return; }
@@ -81,7 +91,9 @@ export default function ClientUpload() {
       .select('*')
       .eq('case_id', caseId)
       .order('upload_order', { ascending: true });
-    setItems(data || []);
+    const evidence = data || [];
+    setItems(evidence);
+    setSignedUrls(await resolveSignedUrls(evidence));
     setLoading(false);
     await supabase.from('client_cases').update({ status: 'in_progress' }).eq('access_token', token);
   }
@@ -125,6 +137,10 @@ export default function ClientUpload() {
       if (inserted) newItems.push(inserted);
     }
 
+    if (newItems.length > 0) {
+      const newUrls = await resolveSignedUrls(newItems);
+      setSignedUrls(prev => ({ ...prev, ...newUrls }));
+    }
     setItems(prev => [...prev, ...newItems]);
     setUploading(false);
     setUploadProgress(0);
@@ -220,7 +236,7 @@ export default function ClientUpload() {
   const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
 
   function getFileUrl(path: string) {
-    return supabase.storage.from('evidence-files').getPublicUrl(path).data.publicUrl;
+    return signedUrls[path] || '';
   }
 
   function isPhoto(fileName: string) {
