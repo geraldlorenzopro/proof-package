@@ -141,6 +141,19 @@ export const T = {
     ],
   },
 
+  // Splash & Disclaimer
+  splashPlatform: { es: 'NER Immigration AI', en: 'NER Immigration AI' },
+  splashSubtitle: { es: 'Soluciones de Inmigración Inteligente', en: 'Intelligent Immigration Solutions' },
+  splashTap: { es: 'Toca para comenzar', en: 'Tap to start' },
+  disclaimerTitle: { es: 'Aviso Legal Importante', en: 'Important Legal Notice' },
+  disclaimerExclusive: { es: 'Esta herramienta es de uso exclusivo para profesionales de inmigración.', en: 'This tool is for exclusive use by immigration professionals.' },
+  disclaimerDesc: {
+    es: 'NER Photo Evidence Organizer es un módulo de apoyo técnico integrado en la plataforma NER Immigration AI. El PDF generado organiza evidencia fotográfica y no constituye asesoría legal.',
+    en: 'NER Photo Evidence Organizer is a technical support module integrated into the NER Immigration AI platform. The generated PDF organizes photographic evidence and does not constitute legal advice.',
+  },
+  disclaimerAccept: { es: 'Al continuar acepta los términos de uso.', en: 'By continuing you accept the terms of use.' },
+  disclaimerContinue: { es: 'Deseo Continuar', en: 'I Wish to Continue' },
+
   // Trust badges
   badge1: { es: 'Formato USCIS-friendly', en: 'USCIS-friendly format' },
   badge2: { es: 'Organización cronológica', en: 'Chronological organization' },

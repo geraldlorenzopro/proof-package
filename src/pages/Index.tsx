@@ -9,7 +9,7 @@ import { generateEvidencePDF } from '@/lib/pdfGenerator';
 import { t } from '@/lib/i18n';
 import {
   FileText, Upload, ClipboardList, Download, Scale, Shield, Clock, Globe,
-  ListChecks, AlertTriangle, X, Loader2
+  ListChecks, AlertTriangle, X, Loader2, ChevronRight, Camera
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -22,6 +22,114 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+
+const DISCLAIMER_BULLETS = {
+  es: [
+    "Esta herramienta organiza evidencia fotográfica; no genera ni interpreta documentos legales.",
+    "El PDF resultante no constituye asesoría legal ni de inmigración.",
+    "El usuario es responsable de la veracidad y relevancia de las fotos incluidas.",
+    "Siempre consulta con un abogado o representante de inmigración autorizado.",
+    "NER Immigration AI no se responsabiliza por decisiones tomadas con base en estos documentos.",
+  ],
+  en: [
+    "This tool organizes photographic evidence; it does not generate or interpret legal documents.",
+    "The resulting PDF does not constitute legal or immigration advice.",
+    "The user is responsible for the accuracy and relevance of the included photos.",
+    "Always consult with an authorized immigration attorney or representative.",
+    "NER Immigration AI is not responsible for decisions made based on these documents.",
+  ],
+};
+
+// ─── Welcome Splash ────────────────────────────────────────────────────────────
+function WelcomeSplash({ onContinue, lang, setLang }: { onContinue: () => void; lang: Lang; setLang: (l: Lang) => void }) {
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background grid-bg">
+      <div className="absolute top-0 right-0 w-72 h-72 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(195_100%_50%),_transparent_70%)] pointer-events-none" />
+
+      <div className="absolute top-4 right-4">
+        <button
+          onClick={() => setLang(lang === 'es' ? 'en' : 'es')}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-full transition-all border border-border"
+        >
+          <Globe className="w-3.5 h-3.5" />
+          {lang === 'es' ? 'English' : 'Español'}
+        </button>
+      </div>
+
+      <div
+        className="relative z-10 flex flex-col items-center gap-7 cursor-pointer select-none px-10 py-12 max-w-sm w-full text-center"
+        onClick={() => setShowDisclaimer(true)}
+      >
+        <div className="w-20 h-20 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center animate-float">
+          <Camera className="w-10 h-10 text-accent" />
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs font-semibold uppercase tracking-[0.3em] mb-2">{t('splashPlatform', lang)}</p>
+          <h1 className="font-bold leading-tight">
+            <span className="text-4xl font-display text-accent glow-text-gold">Photo Evidence</span>
+            <br />
+            <span className="text-3xl text-foreground">Organizer</span>
+          </h1>
+          <p className="text-muted-foreground text-sm mt-3">{t('splashSubtitle', lang)}</p>
+        </div>
+        <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5 animate-glow-pulse">
+          <Camera className="w-4 h-4 text-accent" />
+          <span className="text-sm font-medium text-accent">{t('splashTap', lang)}</span>
+        </div>
+      </div>
+
+      <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
+        <DialogContent className="max-w-md bg-card border-accent/20">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-base text-foreground">
+                <Shield className="w-5 h-5 text-accent" />
+                {t('disclaimerTitle', lang)}
+              </DialogTitle>
+              <button
+                onClick={() => setLang(lang === 'es' ? 'en' : 'es')}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-full transition-all border border-border"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                {lang === 'es' ? 'EN' : 'ES'}
+              </button>
+            </div>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-accent/10 border border-accent/20 rounded-xl p-4">
+              <p className="text-foreground text-sm leading-relaxed font-semibold mb-2">{t('disclaimerExclusive', lang)}</p>
+              <p className="text-muted-foreground text-sm leading-relaxed">{t('disclaimerDesc', lang)}</p>
+            </div>
+            <ul className="space-y-2 text-sm text-foreground/80">
+              {DISCLAIMER_BULLETS[lang].map((item, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-border pt-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">{t('disclaimerAccept', lang)}</p>
+              <Button onClick={onContinue} className="gradient-gold text-accent-foreground font-semibold px-6 shrink-0" size="sm">
+                {t('disclaimerContinue', lang)}
+                <ChevronRight className="ml-1 w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
 const STEPS = (lang: Lang) => [
   { id: 1, label: t('step1', lang), icon: ClipboardList },
@@ -31,6 +139,7 @@ const STEPS = (lang: Lang) => [
 ];
 
 export default function Index() {
+  const [accepted, setAccepted] = useState(false);
   const [lang, setLang] = useState<Lang>('es');
   const [step, setStep] = useState(1);
   const [caseInfo, setCaseInfo] = useState<CaseInfo>({
@@ -82,6 +191,8 @@ export default function Index() {
   const caseComplete = !!(caseInfo.petitioner_name && caseInfo.beneficiary_name);
   const pendingCount = numberedItems.filter(i => !i.formComplete).length;
   const completedCount = numberedItems.filter(i => i.formComplete).length;
+
+  if (!accepted) return <WelcomeSplash onContinue={() => setAccepted(true)} lang={lang} setLang={setLang} />;
 
   return (
     <div className="min-h-screen bg-background">
