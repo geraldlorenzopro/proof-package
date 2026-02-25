@@ -6,13 +6,18 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+const VALID_CATEGORIES = ['F1', 'F2A', 'F2B', 'F3', 'F4'];
+const VALID_CHARGEABILITIES = ['ALL', 'CHINA', 'INDIA', 'MEXICO', 'PHILIPPINES'];
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { priority_date, category, chargeability } = await req.json();
+    const body = await req.json();
+    const { priority_date, category, chargeability } = body;
 
     if (!priority_date || !category || !chargeability) {
       return new Response(
@@ -21,10 +26,43 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate types
+    if (typeof priority_date !== 'string' || typeof category !== 'string' || typeof chargeability !== 'string') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'All parameters must be strings' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate date format
+    if (!DATE_REGEX.test(priority_date)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid priority_date format. Use YYYY-MM-DD.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const pd = new Date(priority_date);
     if (isNaN(pd.getTime())) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid priority_date format' }),
+        JSON.stringify({ success: false, error: 'Invalid priority_date value' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const catUpper = category.toUpperCase().trim();
+    const charUpper = chargeability.toUpperCase().trim();
+
+    if (!VALID_CATEGORIES.includes(catUpper)) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!VALID_CHARGEABILITIES.includes(charUpper)) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Invalid chargeability. Must be one of: ${VALID_CHARGEABILITIES.join(', ')}` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -34,8 +72,8 @@ Deno.serve(async (req) => {
 
     const params = new URLSearchParams({
       select: 'bulletin_year,bulletin_month,final_action_date,is_current,raw_value',
-      category: `eq.${category.toUpperCase()}`,
-      chargeability: `eq.${chargeability.toUpperCase()}`,
+      category: `eq.${catUpper}`,
+      chargeability: `eq.${charUpper}`,
       order: 'bulletin_year.asc,bulletin_month.asc',
       limit: '600',
     });
@@ -74,13 +112,10 @@ Deno.serve(async (req) => {
         (row.bulletin_year === pdYear && row.bulletin_month >= pdMonth);
 
       if (!bulletinIsAfterOrSamePdMonth) return false;
-
       if (row.is_current) return true;
-
       if (row.final_action_date) {
         return row.final_action_date >= priorityDateStr;
       }
-
       return false;
     });
 
@@ -126,7 +161,7 @@ Deno.serve(async (req) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('get-visa-date error:', message);
     return new Response(
-      JSON.stringify({ success: false, error: message }),
+      JSON.stringify({ success: false, error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

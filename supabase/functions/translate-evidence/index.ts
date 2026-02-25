@@ -5,21 +5,55 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const MAX_TEXTS = 50;
+const MAX_KEY_LENGTH = 100;
+const MAX_VALUE_LENGTH = 2000;
+const MAX_TOTAL_LENGTH = 10000;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { texts } = await req.json() as { texts: Record<string, string> };
+    const body = await req.json();
+    const { texts } = body as { texts: Record<string, string> };
 
-    if (!texts || Object.keys(texts).length === 0) {
+    if (!texts || typeof texts !== 'object' || Array.isArray(texts)) {
+      return new Response(JSON.stringify({ translated: {}, error: 'Invalid input: texts must be an object' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const keys = Object.keys(texts);
+    if (keys.length === 0) {
       return new Response(JSON.stringify({ translated: {} }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const entries = Object.entries(texts).filter(([, v]) => v && v.trim().length > 0);
+    if (keys.length > MAX_TEXTS) {
+      return new Response(JSON.stringify({ translated: {}, error: `Too many texts. Maximum is ${MAX_TEXTS}.` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate and sanitize entries
+    const entries: [string, string][] = [];
+    let totalLength = 0;
+
+    for (const [k, v] of Object.entries(texts)) {
+      if (typeof k !== 'string' || typeof v !== 'string') continue;
+      if (k.length > MAX_KEY_LENGTH || v.length > MAX_VALUE_LENGTH) continue;
+      const trimmed = v.trim();
+      if (trimmed.length === 0) continue;
+      totalLength += trimmed.length;
+      if (totalLength > MAX_TOTAL_LENGTH) break;
+      entries.push([k, trimmed]);
+    }
+
     if (entries.length === 0) {
       return new Response(JSON.stringify({ translated: {} }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -108,7 +142,7 @@ Output format (exactly):
 
   } catch (err) {
     console.error('Translation error:', err);
-    return new Response(JSON.stringify({ translated: {}, error: String(err) }), {
+    return new Response(JSON.stringify({ translated: {}, error: 'Translation service error' }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
