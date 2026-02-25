@@ -3,7 +3,7 @@ import { EvidenceItem, CaseInfo } from '@/types/evidence';
 import { buildCaption, generateExhibitNumber } from './evidenceUtils';
 import { supabase } from '@/integrations/supabase/client';
 
-// ── AI Translation via Lovable AI (Gemini) ──────────────────────────────────
+// ── AI Translation (Gemini) ──────────────────────────────────
 async function translateItems(items: EvidenceItem[]): Promise<EvidenceItem[]> {
   const texts: Record<string, string> = {};
   for (const item of items) {
