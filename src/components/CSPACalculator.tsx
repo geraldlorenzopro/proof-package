@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, Loader2, Search, Shield, ExternalLink, TrendingDown, Info, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, Loader2, Search, Shield, ExternalLink, TrendingDown, Info, FileText, ArrowLeft } from "lucide-react";
 import { LangToggle } from '@/components/LangToggle';
 import RetrogradeTimeline from "@/components/RetrogradeTimeline";
 import SoughtToAcquireAlert from "@/components/SoughtToAcquireAlert";
@@ -349,6 +350,7 @@ function WelcomeSplash({ onContinue, lang, setLang }: { onContinue: () => void; 
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function CSPACalculator() {
+  const navigate = useNavigate();
   const [accepted, setAccepted] = useState(false);
   const [lang, setLang] = useState<Lang>("es");
   const t = T[lang];
@@ -551,7 +553,10 @@ export default function CSPACalculator() {
       <div className="gradient-hero relative overflow-hidden shrink-0">
         <div className="absolute inset-0 opacity-5 bg-[radial-gradient(ellipse_at_top_right,_hsl(43_85%_52%),_transparent_70%)] pointer-events-none" />
         <div className="relative z-10 max-w-4xl mx-auto px-6 py-6 text-center">
-          <div className="flex justify-end mb-3">
+          <div className="flex items-center justify-between mb-3">
+            <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-secondary/20 text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
             <LangToggle lang={lang} setLang={setLang} />
           </div>
           <div className="inline-flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-1 mb-3">

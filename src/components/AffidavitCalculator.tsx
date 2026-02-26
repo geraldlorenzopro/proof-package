@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   calculateSponsorCapacity,
   formatCurrency,
@@ -16,6 +17,7 @@ import {
   ChevronDown,
   Info,
   Shield,
+  ArrowLeft,
 } from "lucide-react";
 import { LangToggle } from '@/components/LangToggle';
 import {
@@ -313,6 +315,7 @@ function LegalDialog({ open, onAccept, t }: { open: boolean; onAccept: () => voi
 
 // ──────── Main Calculator ────────
 export default function AffidavitCalculator() {
+  const navigate = useNavigate();
   const [lang, setLang] = useState<Lang>("es");
   const t = T[lang];
 
@@ -389,6 +392,9 @@ export default function AffidavitCalculator() {
       {/* Header */}
       <header className="w-full px-4 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
           <div className="flex items-center justify-center rounded-xl w-10 h-10 bg-primary flex-shrink-0">
             <Shield size={20} className="text-accent" />
           </div>
