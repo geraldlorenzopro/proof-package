@@ -42,14 +42,11 @@ export default function AdminPanel() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { navigate('/auth', { replace: true }); return; }
 
-    // Check if user is owner/admin
-    const { data: member } = await supabase
-      .from('account_members')
-      .select('role')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    // Server-side role verification via RPC (SECURITY DEFINER function)
+    const { data: isOwner } = await supabase.rpc('has_account_role', { _user_id: user.id, _role: 'owner' });
+    const { data: isAdmin } = await supabase.rpc('has_account_role', { _user_id: user.id, _role: 'admin' });
 
-    if (!member || (member.role !== 'owner' && member.role !== 'admin')) {
+    if (!isOwner && !isAdmin) {
       navigate('/dashboard');
       toast({ title: 'Acceso denegado', description: 'No tienes permisos de administrador.', variant: 'destructive' });
       return;
@@ -91,12 +88,17 @@ export default function AdminPanel() {
       if (data?.error) {
         toast({ title: 'Error', description: data.error, variant: 'destructive' });
       } else {
-        // Copy temp password to clipboard instead of showing it on screen
+        // Copy temp password to clipboard with auto-clear for security
         if (data.temp_password && navigator.clipboard) {
           await navigator.clipboard.writeText(data.temp_password);
+          // Auto-clear clipboard after 30 seconds
+          setTimeout(() => {
+            navigator.clipboard.writeText('').catch(() => {});
+          }, 30000);
           toast({
             title: 'Cuenta creada',
-            description: 'Contraseña temporal copiada al portapapeles. Pégala en un lugar seguro.',
+            description: '🔐 Contraseña temporal copiada. Pégala en un lugar seguro — el portapapeles se borrará en 30 segundos.',
+            duration: 10000,
           });
         } else {
           toast({
