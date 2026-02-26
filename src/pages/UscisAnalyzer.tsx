@@ -342,8 +342,8 @@ export default function UscisAnalyzer() {
 
       // ── H1 ──
       if (trimmed.startsWith("# ") && !trimmed.startsWith("## ") && !trimmed.startsWith("### ")) {
-        checkSpace(35);
-        y += 5;
+        checkSpace(22);
+        y += 4;
         const text = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "").toUpperCase();
         pdf.setFontSize(12);
         pdf.setFont("helvetica", "bold");
@@ -358,12 +358,12 @@ export default function UscisAnalyzer() {
         pdf.setLineWidth(0.5);
         pdf.line(marginL, y, marginL + 45, y);
         pdf.setLineWidth(0.2);
-        y += 5;
+        y += 4;
       }
       // ── H2 (Numbered sections) ──
       else if (trimmed.startsWith("## ")) {
-        checkSpace(45);
-        y += 7;
+        checkSpace(25);
+        y += 5;
         sectionCounter++;
         const text = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "");
         const cleanText = text.replace(/^\d+\.\s*/, "");
@@ -387,12 +387,12 @@ export default function UscisAnalyzer() {
         pdf.setTextColor(15, 23, 42);
         const wrapped = pdf.splitTextToSize(cleanText.toUpperCase(), contentW - 14);
         pdf.text(wrapped, marginL + 12, y);
-        y += wrapped.length * 5 + 5;
+        y += wrapped.length * 5 + 4;
       }
       // ── H3 (Sub-sections) ──
       else if (trimmed.startsWith("### ")) {
-        checkSpace(30);
-        y += 4;
+        checkSpace(18);
+        y += 3;
         const text = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "");
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
@@ -402,7 +402,7 @@ export default function UscisAnalyzer() {
         pdf.rect(marginL, y - 2, 3, 0.8, "F");
         const wrapped = pdf.splitTextToSize(text, contentW - 6);
         pdf.text(wrapped, marginL + 6, y);
-        y += wrapped.length * 4.5 + 3;
+        y += wrapped.length * 4.5 + 2;
       }
       // ── Horizontal rule ──
       else if (trimmed === "---" || trimmed === "***") {
@@ -536,7 +536,7 @@ export default function UscisAnalyzer() {
       }
       // ── Empty line = paragraph spacing ──
       else {
-        y += 3;
+        y += 2;
       }
     }
 
