@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, Calculator, Activity, FileText, CheckCircle, Clock, ChevronDown, Camera, FileCheck, DollarSign, Users, FileSearch } from 'lucide-react';
+import { BarChart3, Calculator, Activity, FileText, CheckCircle, Clock, ChevronDown, Camera, FileCheck, DollarSign, Users, FileSearch, FlaskConical } from 'lucide-react';
 import nerLogo from '@/assets/ner-logo.png';
 
 const liveTools = [
@@ -37,6 +37,9 @@ const liveTools = [
       { icon: FileCheck, text: 'Genera un paquete PDF organizado cronológicamente' },
     ],
   },
+];
+
+const betaTools = [
   {
     name: 'USCIS Document Analyzer',
     description: 'Analiza documentos de USCIS (RFE, NOID, I-797, etc.) con IA y recibe un desglose estratégico punto por punto.',
@@ -124,6 +127,59 @@ export default function Features() {
           })}
         </div>
 
+        {/* ── BETA ── */}
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-jarvis mb-3 flex items-center gap-2">
+          <FlaskConical className="w-3.5 h-3.5" /> Beta
+        </h3>
+        <div className="grid gap-4 mb-8">
+          {betaTools.map((tool) => {
+            const Icon = tool.icon;
+            const hasFeatures = tool.features && tool.features.length > 0;
+            const isExpanded = expanded === tool.name;
+            return (
+              <div key={tool.name} className="rounded-xl border bg-card border-jarvis/30 p-5 transition-colors relative overflow-hidden">
+                <div className="absolute top-3 right-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-jarvis/15 text-jarvis border border-jarvis/30 rounded-full px-2.5 py-0.5">Beta</span>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="p-2.5 rounded-lg shrink-0 bg-jarvis/10 text-jarvis">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-semibold text-foreground text-sm mb-1">{tool.name}</h2>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{tool.description}</p>
+                    <div className="flex items-center gap-3 mt-3">
+                      <Link to={tool.href} className="text-xs font-medium text-jarvis hover:underline">
+                        Probar herramienta →
+                      </Link>
+                      {hasFeatures && (
+                        <button onClick={() => setExpanded(isExpanded ? null : tool.name)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                          {isExpanded ? 'Menos' : 'Cómo funciona'}
+                          <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {hasFeatures && isExpanded && (
+                  <div className="mt-4 pt-4 border-t border-border/50 space-y-3 ml-[52px]">
+                    {tool.features!.map((feature, i) => {
+                      const FIcon = feature.icon;
+                      return (
+                        <div key={i} className="flex items-start gap-3">
+                          <FIcon className="w-4 h-4 text-jarvis shrink-0 mt-0.5" />
+                          <span className="text-xs text-muted-foreground leading-relaxed">{feature.text}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── PRÓXIMAMENTE ── */}
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
           <Clock className="w-3.5 h-3.5" /> Próximamente
         </h3>
