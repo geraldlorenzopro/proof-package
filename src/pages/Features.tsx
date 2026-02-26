@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, Calculator, Activity, FileText, CheckCircle, Clock, ChevronDown, Camera, FileCheck, DollarSign, Users } from 'lucide-react';
+import { BarChart3, Calculator, Activity, FileText, CheckCircle, Clock, ChevronDown, Camera, FileCheck, DollarSign, Users, FileSearch } from 'lucide-react';
 import nerLogo from '@/assets/ner-logo.png';
 
 const liveTools = [
@@ -35,6 +35,17 @@ const liveTools = [
       { icon: Camera, text: 'Sube fotos y agrégales fecha, ubicación y descripción' },
       { icon: Users, text: 'Portal para que el cliente suba sus propias fotos' },
       { icon: FileCheck, text: 'Genera un paquete PDF organizado cronológicamente' },
+    ],
+  },
+  {
+    name: 'USCIS Document Analyzer',
+    description: 'Analiza documentos de USCIS (RFE, NOID, I-797, etc.) con IA y recibe un desglose estratégico punto por punto.',
+    icon: FileSearch,
+    href: '/dashboard/uscis-analyzer',
+    features: [
+      { icon: FileSearch, text: 'Análisis detallado de RFE, NOID, NOIR, NOTT y más' },
+      { icon: FileCheck, text: 'Desglose punto por punto con recomendaciones de evidencia' },
+      { icon: Users, text: 'Disponible en español e inglés' },
     ],
   },
 ];

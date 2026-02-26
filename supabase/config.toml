@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.client-file-ops]
 verify_jwt = false
+
+[functions.analyze-uscis-document]
+verify_jwt = false
