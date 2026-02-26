@@ -667,7 +667,7 @@ export default function UscisAnalyzer() {
                 <FileSearch className="w-4 h-4 text-accent" />
                 USCIS Document Analyzer
               </div>
-              <div className="w-16" />
+              <LangToggle lang={lang} setLang={setLang} />
             </div>
           </header>
 
