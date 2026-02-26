@@ -255,23 +255,23 @@ export default function UscisAnalyzer() {
 
     const addPage = () => {
       pdf.addPage();
-      y = 25;
+      y = 22;
       // Thin top accent line on continuation pages
-      pdf.setDrawColor(0, 170, 200);
-      pdf.setLineWidth(0.5);
-      pdf.line(marginL, 15, pageW - marginR, 15);
+      pdf.setDrawColor(15, 23, 42);
+      pdf.setLineWidth(0.4);
+      pdf.line(marginL, 14, pageW - marginR, 14);
+      pdf.setDrawColor(217, 168, 46);
       pdf.setLineWidth(0.2);
+      pdf.line(marginL, 14.8, pageW - marginR, 14.8);
     };
 
     const checkSpace = (needed: number) => {
-      if (y + needed > footerY - 5) addPage();
+      if (y + needed > footerY - 8) addPage();
     };
 
     // ── COVER HEADER ──
-    // Dark banner
     pdf.setFillColor(15, 23, 42);
     pdf.rect(0, 0, pageW, 42, "F");
-    // Gold accent bar
     pdf.setFillColor(217, 168, 46);
     pdf.rect(0, 42, pageW, 1.5, "F");
 
@@ -299,180 +299,186 @@ export default function UscisAnalyzer() {
     pdf.setFillColor(255, 251, 235);
     pdf.setDrawColor(217, 168, 46);
     pdf.setLineWidth(0.3);
-    const disclaimerLines = pdf.splitTextToSize(disclaimerText, contentW - 10);
-    const disclaimerH = disclaimerLines.length * 3.8 + 8;
+    pdf.setFontSize(7);
+    pdf.setFont("helvetica", "normal");
+    const disclaimerLines = pdf.splitTextToSize(disclaimerText, contentW - 14);
+    const disclaimerH = disclaimerLines.length * 3.6 + 10;
     pdf.roundedRect(marginL, y, contentW, disclaimerH, 1.5, 1.5, "FD");
     
-    pdf.setFontSize(7.5);
+    pdf.setFontSize(7);
     pdf.setFont("helvetica", "bold");
     pdf.setTextColor(146, 64, 14);
-    pdf.text("NOTA DE PRECISION PROFESIONAL", marginL + 5, y + 5);
+    pdf.text("NOTA DE PRECISION PROFESIONAL", marginL + 7, y + 5.5);
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(7);
-    pdf.text(disclaimerLines, marginL + 5, y + 10);
-    y += disclaimerH + 8;
+    pdf.setFontSize(6.8);
+    pdf.setTextColor(120, 80, 20);
+    pdf.text(disclaimerLines, marginL + 7, y + 10.5);
+    y += disclaimerH + 10;
 
     // ── CONTENT RENDERING ──
     const lines = result.split("\n");
 
-    // Helper: render text with inline bold segments
-    const renderTextWithBold = (text: string, x: number, currentY: number, maxW: number, fontSize: number, lineH: number): number => {
-      const cleanText = text.replace(/\*\*/g, "");
-      pdf.setFontSize(fontSize);
-      pdf.setFont("helvetica", "normal");
-      const wrapped = pdf.splitTextToSize(cleanText, maxW);
-      for (const wLine of wrapped) {
-        checkSpace(lineH);
-        pdf.text(wLine, x, y);
-        y += lineH;
+    // Skip the AI's own disclaimer/preamble lines
+    let startIdx = 0;
+    for (let i = 0; i < Math.min(lines.length, 15); i++) {
+      const t = lines[i].trim();
+      if (t.startsWith("IMPORTANTE:") || t.startsWith("Gracias por confiar") || 
+          t.startsWith("Claro,") || t.startsWith("Aqui") || t.startsWith("A continuacion") ||
+          t.startsWith("Como parte de nuestra") || t.startsWith("Has enviado correctamente") ||
+          t === "") {
+        startIdx = i + 1;
+      } else {
+        break;
       }
-      return y;
-    };
+    }
 
-    for (let i = 0; i < lines.length; i++) {
+    for (let i = startIdx; i < lines.length; i++) {
       const trimmed = lines[i].trim();
 
-      // Skip the AI preamble line
-      if (i === 0 && (trimmed.startsWith("Claro,") || trimmed.startsWith("Aqui") || trimmed.startsWith("A continuacion"))) {
-        continue;
-      }
-
       // ── H1 ──
-      if (trimmed.startsWith("# ")) {
+      if (trimmed.startsWith("# ") && !trimmed.startsWith("## ") && !trimmed.startsWith("### ")) {
         checkSpace(14);
-        y += 4;
-        const text = trimmed.replace(/^#+\s*/, "").replace(/[*#]/g, "").toUpperCase();
-        pdf.setFontSize(13);
+        y += 5;
+        const text = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "").toUpperCase();
+        pdf.setFontSize(12);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(15, 23, 42);
         const wrapped = pdf.splitTextToSize(text, contentW);
         for (const wLine of wrapped) {
           pdf.text(wLine, marginL, y);
-          y += 6;
+          y += 5.5;
         }
-        // Underline
+        // Gold underline
         pdf.setDrawColor(217, 168, 46);
-        pdf.setLineWidth(0.6);
-        pdf.line(marginL, y, marginL + 50, y);
+        pdf.setLineWidth(0.5);
+        pdf.line(marginL, y, marginL + 45, y);
         pdf.setLineWidth(0.2);
         y += 5;
       }
       // ── H2 (Numbered sections) ──
       else if (trimmed.startsWith("## ")) {
-        checkSpace(12);
-        y += 6;
+        checkSpace(14);
+        y += 7;
         sectionCounter++;
-        const text = trimmed.replace(/^#+\s*/, "").replace(/[*#]/g, "");
-        // Remove leading number if AI already added one
+        const text = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "");
         const cleanText = text.replace(/^\d+\.\s*/, "");
+        
+        // Light background band for section
+        pdf.setFillColor(245, 247, 250);
+        pdf.rect(marginL, y - 5, contentW, 9, "F");
         
         // Section number badge
         pdf.setFillColor(15, 23, 42);
-        pdf.roundedRect(marginL, y - 4, 7, 7, 1, 1, "F");
+        pdf.roundedRect(marginL + 2, y - 4.5, 7, 7, 1, 1, "F");
         pdf.setFontSize(8);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(255, 255, 255);
-        pdf.text(String(sectionCounter), marginL + 2.5, y + 0.5);
+        const numText = String(sectionCounter);
+        pdf.text(numText, marginL + 5.5 - pdf.getTextWidth(numText) / 2, y + 0.5);
 
         // Section title
-        pdf.setFontSize(11);
+        pdf.setFontSize(10);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(15, 23, 42);
-        const wrapped = pdf.splitTextToSize(cleanText.toUpperCase(), contentW - 12);
-        pdf.text(wrapped, marginL + 10, y);
-        y += wrapped.length * 5.5 + 4;
+        const wrapped = pdf.splitTextToSize(cleanText.toUpperCase(), contentW - 14);
+        pdf.text(wrapped, marginL + 12, y);
+        y += wrapped.length * 5 + 5;
       }
       // ── H3 (Sub-sections) ──
       else if (trimmed.startsWith("### ")) {
         checkSpace(10);
         y += 4;
-        const text = trimmed.replace(/^#+\s*/, "").replace(/[*#]/g, "");
-        pdf.setFontSize(9.5);
+        const text = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "");
+        pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(50, 60, 80);
-        const wrapped = pdf.splitTextToSize(text, contentW);
-        pdf.text(wrapped, marginL, y);
-        y += wrapped.length * 5 + 3;
+        pdf.setTextColor(40, 55, 85);
+        // Small accent dash before sub-header
+        pdf.setFillColor(217, 168, 46);
+        pdf.rect(marginL, y - 2, 3, 0.8, "F");
+        const wrapped = pdf.splitTextToSize(text, contentW - 6);
+        pdf.text(wrapped, marginL + 6, y);
+        y += wrapped.length * 4.5 + 3;
       }
       // ── Horizontal rule ──
       else if (trimmed === "---" || trimmed === "***") {
-        checkSpace(6);
-        y += 2;
-        pdf.setDrawColor(200, 205, 215);
+        checkSpace(8);
+        y += 3;
+        pdf.setDrawColor(210, 215, 225);
         pdf.setLineWidth(0.15);
         pdf.line(marginL, y, pageW - marginR, y);
         y += 5;
       }
       // ── Bullet points ──
       else if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("• ")) {
-        checkSpace(bulletLineH * 2);
         const text = trimmed.replace(/^[-*•]\s*/, "").replace(/\*\*/g, "");
+        const bulletIndent = marginL + 4;
+        const textIndent = marginL + 8;
+        const textWidth = contentW - 8;
+        
         pdf.setFontSize(8.5);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(40, 50, 70);
-
-        // Bullet dot
+        
+        const wrapped = pdf.splitTextToSize(text, textWidth);
+        checkSpace(wrapped.length * bulletLineH + 2);
+        
+        // Gold bullet dot (aligned to first line)
         pdf.setFillColor(217, 168, 46);
-        pdf.circle(marginL + 3, y - 1, 0.8, "F");
+        pdf.circle(bulletIndent, y - 1.2, 0.7, "F");
 
-        const wrapped = pdf.splitTextToSize(text, contentW - 10);
         for (const wLine of wrapped) {
           checkSpace(bulletLineH);
-          pdf.text(wLine, marginL + 7, y);
+          pdf.text(wLine, textIndent, y);
           y += bulletLineH;
         }
-        y += 1;
+        y += 1.5;
       }
       // ── Numbered list items ──
       else if (/^\d+\.\s/.test(trimmed)) {
-        checkSpace(bodyLineH * 2);
         const match = trimmed.match(/^(\d+)\.\s*(.*)/);
         if (match) {
           const num = match[1];
           const text = match[2].replace(/\*\*/g, "");
+          const numIndent = marginL + 2;
+          const textIndent = marginL + 9;
+          const textWidth = contentW - 10;
+          
           pdf.setFontSize(8.5);
           pdf.setFont("helvetica", "bold");
           pdf.setTextColor(15, 23, 42);
-          pdf.text(`${num}.`, marginL + 2, y);
+          pdf.text(`${num}.`, numIndent, y);
           pdf.setFont("helvetica", "normal");
           pdf.setTextColor(40, 50, 70);
-          const wrapped = pdf.splitTextToSize(text, contentW - 12);
+          const wrapped = pdf.splitTextToSize(text, textWidth);
+          checkSpace(wrapped.length * bodyLineH + 2);
           for (const wLine of wrapped) {
             checkSpace(bodyLineH);
-            pdf.text(wLine, marginL + 9, y);
+            pdf.text(wLine, textIndent, y);
             y += bodyLineH;
           }
-          y += 1.5;
+          y += 2;
         }
       }
-      // ── Body text with bold detection ──
+      // ── Body text with bold label detection ──
       else if (trimmed.length > 0) {
-        checkSpace(bodyLineH * 2);
-        
-        // Check if line is a label: "Key: Value" pattern (bold key)
+        // Check for "**Label:** Value" pattern
         const labelMatch = trimmed.match(/^\*\*(.+?):\*\*\s*(.*)/);
         if (labelMatch) {
+          checkSpace(bodyLineH * 2);
           const label = labelMatch[1];
           const value = labelMatch[2];
+          
+          // Bold label on its own line
           pdf.setFontSize(8.5);
           pdf.setFont("helvetica", "bold");
           pdf.setTextColor(15, 23, 42);
-          const labelW = pdf.getTextWidth(`${label}: `);
           pdf.text(`${label}:`, marginL, y);
-          pdf.setFont("helvetica", "normal");
-          pdf.setTextColor(40, 50, 70);
-          const remaining = contentW - labelW - 1;
-          if (remaining > 20) {
-            const wrapped = pdf.splitTextToSize(value, remaining);
-            pdf.text(wrapped[0] || "", marginL + labelW + 1, y);
-            y += bodyLineH;
-            for (let wi = 1; wi < wrapped.length; wi++) {
-              checkSpace(bodyLineH);
-              pdf.text(wrapped[wi], marginL + labelW + 1, y);
-              y += bodyLineH;
-            }
-          } else {
-            y += bodyLineH;
+          y += bodyLineH;
+          
+          // Value text indented slightly, all lines aligned
+          if (value.trim()) {
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(40, 50, 70);
             const wrapped = pdf.splitTextToSize(value, contentW - 4);
             for (const wLine of wrapped) {
               checkSpace(bodyLineH);
@@ -480,9 +486,36 @@ export default function UscisAnalyzer() {
               y += bodyLineH;
             }
           }
-          y += 1;
-        } else {
+          y += 2;
+        }
+        // Check for "Label: Value" without markdown bold (common in AI output)  
+        else if (/^[A-ZÁÉÍÓÚÑ][^:]{2,50}:\s+/.test(trimmed) && !trimmed.startsWith("http")) {
+          checkSpace(bodyLineH * 2);
+          const colonIdx = trimmed.indexOf(":");
+          const label = trimmed.substring(0, colonIdx);
+          const value = trimmed.substring(colonIdx + 1).trim();
+          
+          pdf.setFontSize(8.5);
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(15, 23, 42);
+          pdf.text(`${label}:`, marginL, y);
+          y += bodyLineH;
+          
+          if (value) {
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(40, 50, 70);
+            const wrapped = pdf.splitTextToSize(value, contentW - 4);
+            for (const wLine of wrapped) {
+              checkSpace(bodyLineH);
+              pdf.text(wLine, marginL + 4, y);
+              y += bodyLineH;
+            }
+          }
+          y += 2;
+        }
+        else {
           // Regular paragraph
+          checkSpace(bodyLineH * 2);
           const cleanText = trimmed.replace(/\*\*/g, "");
           pdf.setFontSize(8.5);
           pdf.setFont("helvetica", "normal");
@@ -493,7 +526,7 @@ export default function UscisAnalyzer() {
             pdf.text(wLine, marginL, y);
             y += bodyLineH;
           }
-          y += 2;
+          y += 2.5;
         }
       }
       // ── Empty line = paragraph spacing ──
@@ -506,15 +539,16 @@ export default function UscisAnalyzer() {
     const totalPages = pdf.getNumberOfPages();
     for (let p = 1; p <= totalPages; p++) {
       pdf.setPage(p);
-      // Footer line
+      // Footer separator
       pdf.setDrawColor(200, 205, 215);
       pdf.setLineWidth(0.15);
-      pdf.line(marginL, footerY - 2, pageW - marginR, footerY - 2);
+      pdf.line(marginL, footerY - 3, pageW - marginR, footerY - 3);
       // Footer text
       pdf.setFontSize(6.5);
       pdf.setTextColor(140, 150, 170);
-      pdf.text(`NER Immigration AI  |  Pagina ${p} de ${totalPages}`, marginL, footerY + 1);
-      pdf.text("Documento generado con fines educativos y organizativos.", pageW - marginR, footerY + 1, { align: "right" });
+      pdf.setFont("helvetica", "normal");
+      pdf.text(`NER Immigration AI  |  Pagina ${p} de ${totalPages}`, marginL, footerY);
+      pdf.text("Documento generado con fines educativos y organizativos.", pageW - marginR, footerY, { align: "right" });
     }
 
     const dateStr = new Date().toISOString().slice(0, 10);
