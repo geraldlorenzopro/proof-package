@@ -8,6 +8,7 @@ import NaturalizationSimulator from "@/components/NaturalizationSimulator";
 import MarriageImpactAlert from "@/components/MarriageImpactAlert";
 import CSPAProjectionSimulator from "@/components/CSPAProjectionSimulator";
 import { format } from "date-fns";
+import nerLogo from "@/assets/ner-logo.png";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -549,27 +550,20 @@ export default function CSPACalculator() {
 
   return (
     <div className="min-h-screen bg-background grid-bg flex flex-col">
-      {/* Hero */}
-      <div className="gradient-hero relative overflow-hidden shrink-0">
-        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(ellipse_at_top_right,_hsl(43_85%_52%),_transparent_70%)] pointer-events-none" />
-        <div className="relative z-10 max-w-4xl mx-auto px-6 py-6 text-center">
-          <div className="flex items-center justify-between mb-3">
-            <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-secondary/20 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <LangToggle lang={lang} setLang={setLang} />
+      {/* Sticky header */}
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-4xl mx-auto flex items-center justify-between h-14 px-4">
+          <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+            <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
+          </button>
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Scale className="w-4 h-4 text-accent" />
+            <span className="font-display text-xs tracking-wider text-accent">CSPA CALCULATOR</span>
           </div>
-          <div className="inline-flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-1 mb-3">
-            <Scale className="w-3.5 h-3.5 text-accent" />
-            <span className="text-accent/80 text-xs font-medium tracking-wide">{t.cspa}</span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">{t.heroTitle}</h1>
-          <div className="mt-3 flex flex-col items-center gap-0.5 text-sm text-muted-foreground max-w-lg mx-auto">
-            <span>{t.heroSub1}</span>
-            <span>{t.heroSub2}</span>
-          </div>
+          <LangToggle lang={lang} setLang={setLang} />
         </div>
-      </div>
+      </header>
 
       {/* Form */}
       <div className="flex-1 max-w-4xl w-full mx-auto px-6 py-6 pb-4">

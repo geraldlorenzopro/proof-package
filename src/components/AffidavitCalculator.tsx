@@ -25,8 +25,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
+  
 } from "@/components/ui/dialog";
+import nerLogo from "@/assets/ner-logo.png";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, Calculator } from "lucide-react";
 
 // ──────── i18n ────────
 type Lang = "es" | "en";
@@ -239,77 +242,74 @@ function toFilingStatus(fs: ExtFilingStatus): FilingStatus {
 
 // LangToggle imported from shared component
 
-// ──────── Splash Screen ────────
-function SplashScreen({ onStart, t }: { onStart: () => void; t: typeof T["es"] | typeof T["en"] }) {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-between bg-background">
-      <div className="w-full flex justify-end px-5 pt-5" />
-      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-6">
-        {/* Icon */}
-        <div className="flex items-center justify-center rounded-2xl p-5 bg-primary shadow-primary" style={{ width: 120, height: 120 }}>
-          <Shield size={56} className="text-accent" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground">
-            {t.splashTitle}
-          </h1>
-          <p className="text-base font-semibold text-accent">{t.splashSubtitle}</p>
-          <p className="text-sm mt-1 text-muted-foreground">I-864P · HHS 2025</p>
-        </div>
-        <button
-          onClick={onStart}
-          className="animate-pulse mt-2 px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider gradient-gold text-accent-foreground shadow-glow"
-        >
-          {t.splashBtn}
-        </button>
-      </div>
-      <div className="w-full pb-6 flex flex-col items-center gap-1">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="h-px w-12 bg-accent/50" />
-          <Shield size={13} className="text-accent" />
-          <div className="h-px w-12 bg-accent/50" />
-        </div>
-        <p className="text-xs text-muted-foreground">NER Immigration AI · 2025</p>
-      </div>
-    </div>
-  );
-}
+// ──────── Splash + Disclaimer (unified pattern) ────────
+function WelcomeSplash({ onContinue, lang, setLang, t }: { onContinue: () => void; lang: Lang; setLang: (l: Lang) => void; t: typeof T["es"] | typeof T["en"] }) {
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
 
-// ──────── Legal Disclaimer ────────
-function LegalDialog({ open, onAccept, t }: { open: boolean; onAccept: () => void; t: typeof T["es"] | typeof T["en"] }) {
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent
-        className="max-w-sm mx-auto rounded-2xl border-border bg-card"
-        onInteractOutside={(e) => e.preventDefault()}
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background grid-bg">
+      <div className="absolute top-0 right-0 w-72 h-72 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(43_85%_52%),_transparent_70%)] pointer-events-none" />
+
+      <div className="absolute top-4 right-4">
+        <LangToggle lang={lang} setLang={setLang} />
+      </div>
+
+      <div
+        className="relative z-10 flex flex-col items-center gap-7 cursor-pointer select-none px-10 py-12 max-w-sm w-full text-center"
+        onClick={() => setShowDisclaimer(true)}
       >
-        <DialogHeader className="items-center text-center gap-3 pt-2">
-          <div className="flex items-center justify-center rounded-full w-14 h-14 bg-primary/20">
-            <Shield size={28} className="text-accent" />
+        <div className="w-20 h-20 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center animate-float">
+          <Shield className="w-10 h-10 text-accent" />
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs font-semibold uppercase tracking-[0.3em] mb-2">NER IMMIGRATION AI</p>
+          <h1 className="font-bold leading-tight">
+            <span className="text-4xl font-display text-accent glow-text-gold">Affidavit</span>
+            <br />
+            <span className="text-3xl text-foreground">Calculator</span>
+          </h1>
+          <p className="text-muted-foreground text-sm mt-3">I-864P · HHS 2025</p>
+        </div>
+        <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5 animate-glow-pulse">
+          <Shield className="w-4 h-4 text-accent" />
+          <span className="text-sm font-medium text-accent">{t.splashBtn}</span>
+        </div>
+      </div>
+
+      <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
+        <DialogContent className="max-w-md bg-card border-accent/20">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-base text-foreground">
+                <Shield className="w-5 h-5 text-accent" />
+                {t.legalTitle}
+              </DialogTitle>
+              <LangToggle lang={lang} setLang={setLang} />
+            </div>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-accent/10 border border-accent/20 rounded-xl p-4">
+              <p className="text-foreground text-sm leading-relaxed font-semibold mb-2">{t.legalDesc}</p>
+            </div>
+            <ul className="space-y-2 text-sm text-foreground/80">
+              {t.legalBullets.map((bullet, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                  <span>{bullet}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-border pt-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">{lang === 'es' ? 'Al continuar acepta los terminos de uso.' : 'By continuing you accept the terms of use.'}</p>
+              <Button onClick={onContinue} className="gradient-gold text-accent-foreground font-semibold px-6 shrink-0" size="sm">
+                {t.legalBtn}
+                <ChevronRight className="ml-1 w-4 h-4" />
+              </Button>
+            </div>
           </div>
-          <DialogTitle className="text-lg font-extrabold text-foreground">
-            {t.legalTitle}
-          </DialogTitle>
-          <DialogDescription className="text-sm text-center text-muted-foreground">
-            {t.legalDesc}
-          </DialogDescription>
-        </DialogHeader>
-        <ul className="flex flex-col gap-2.5 mt-1 mb-2">
-          {t.legalBullets.map((bullet, i) => (
-            <li key={i} className="flex items-start gap-2.5 text-xs text-foreground/80">
-              <div className="flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-accent" />
-              {bullet}
-            </li>
-          ))}
-        </ul>
-        <button
-          onClick={onAccept}
-          className="w-full py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider gradient-gold text-accent-foreground"
-        >
-          {t.legalBtn}
-        </button>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 
@@ -362,27 +362,15 @@ export default function AffidavitCalculator() {
   const pct = sponsorType === "military" ? "100%" : "125%";
   const toggleLang = () => setLang(lang === "es" ? "en" : "es");
 
-  // ── Splash ──
-  if (appState === "splash") {
+  // ── Splash + Legal (unified) ──
+  if (appState === "splash" || appState === "legal") {
     return (
-      <div className="min-h-screen bg-background">
-        <SplashScreen onStart={() => setAppState("legal")} t={t} />
-        <div className="fixed top-5 right-5 z-10">
-          <LangToggle lang={lang} setLang={setLang} />
-        </div>
-      </div>
-    );
-  }
-
-  // ── Legal ──
-  if (appState === "legal") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <LegalDialog open={true} onAccept={() => setAppState("calc")} t={t} />
-        <div className="fixed top-5 right-5 z-50">
-          <LangToggle lang={lang} setLang={setLang} />
-        </div>
-      </div>
+      <WelcomeSplash
+        onContinue={() => setAppState("calc")}
+        lang={lang}
+        setLang={setLang}
+        t={t}
+      />
     );
   }
 
@@ -390,20 +378,18 @@ export default function AffidavitCalculator() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="w-full px-4 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-lg mx-auto flex items-center justify-between h-14 px-4">
+          <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
+            <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
           </button>
-          <div className="flex items-center justify-center rounded-xl w-10 h-10 bg-primary flex-shrink-0">
-            <Shield size={20} className="text-accent" />
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Calculator className="w-4 h-4 text-accent" />
+            <span className="font-display text-xs tracking-wider text-accent">AFFIDAVIT CALCULATOR</span>
           </div>
-          <div className="flex flex-col">
-            <span className="font-display text-xs tracking-wider text-accent">NER IMMIGRATION AI</span>
-            <span className="text-xs font-medium text-muted-foreground">{t.subtitle}</span>
-          </div>
+          <LangToggle lang={lang} setLang={setLang} />
         </div>
-        <LangToggle lang={lang} setLang={setLang} />
       </header>
 
       <main className="flex-1 w-full max-w-lg mx-auto px-4 py-6 flex flex-col gap-4">
