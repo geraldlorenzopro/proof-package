@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { X, Copy, Check, ArrowRight, User, Mail, Briefcase, Webhook } from 'lucide-react';
+import { X, Copy, Check, ArrowRight, User, Mail, Briefcase } from 'lucide-react';
 
 const CASE_TYPES = ['I-130', 'I-485', 'I-751', 'I-129F', 'N-400', 'DACA', 'TPS', 'Otro'];
 
@@ -15,7 +15,7 @@ export default function NewCaseModal({ onClose, onCreated }: Props) {
   const [caseType, setCaseType] = useState('I-130');
   const [petitionerName, setPetitionerName] = useState('');
   const [beneficiaryName, setBeneficiaryName] = useState('');
-  const [webhookUrl, setWebhookUrl] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState<any>(null);
   const [copied, setCopied] = useState(false);
@@ -34,7 +34,6 @@ export default function NewCaseModal({ onClose, onCreated }: Props) {
       case_type: caseType,
       petitioner_name: petitionerName || null,
       beneficiary_name: beneficiaryName || null,
-      webhook_url: webhookUrl || null,
     }).select().single();
 
     setLoading(false);
@@ -145,21 +144,8 @@ export default function NewCaseModal({ onClose, onCreated }: Props) {
                 </div>
               </div>
 
-              {/* GHL Webhook */}
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
-                  <Webhook className="w-3.5 h-3.5 inline mr-1" />
-                  Webhook de GHL (opcional)
-                </label>
-                <input
-                  type="url"
-                  value={webhookUrl}
-                  onChange={e => setWebhookUrl(e.target.value)}
-                  placeholder="https://services.leadconnectorhq.com/hooks/..."
-                  className="w-full border border-input bg-background rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <p className="text-xs text-muted-foreground/70 mt-1">Se notificará automáticamente cuando el cliente termine de subir evidencias</p>
-              </div>
+
+
             </div>
 
             <button
@@ -199,14 +185,13 @@ export default function NewCaseModal({ onClose, onCreated }: Props) {
                 }`}
               >
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? '¡Link copiado! Pégalo en tu template de GHL' : 'Copiar link para GHL / email'}
+                {copied ? '¡Link copiado!' : 'Copiar link'}
               </button>
             </div>
 
-            {/* GHL tip */}
             <div className="bg-secondary/50 border rounded-xl p-4 text-sm text-muted-foreground">
-              <p className="font-semibold text-foreground text-xs mb-1">💡 Tip para GoHighLevel</p>
-              <p className="text-xs">Pega este link en tu workflow de GHL como variable en el template de email. El cliente hace clic y empieza a subir de inmediato.</p>
+              <p className="font-semibold text-foreground text-xs mb-1">💡 Tip</p>
+              <p className="text-xs">Envía este link a tu cliente por email o mensaje. Al abrirlo podrá subir sus evidencias de inmediato.</p>
             </div>
 
             <button
