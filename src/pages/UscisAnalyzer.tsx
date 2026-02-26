@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download, Copy, Check } from "lucide-react";
+import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download, Copy, Check, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import nerLogo from "@/assets/ner-logo.png";
@@ -21,7 +23,15 @@ const DOCUMENT_TYPES = [
 
 const LANGUAGES = ["Español", "Inglés"];
 
-type Step = "welcome" | "type" | "language" | "upload" | "result";
+const DISCLAIMER_BULLETS = [
+  "Esta herramienta analiza documentos oficiales emitidos por USCIS; no genera ni interpreta documentos legales.",
+  "El analisis resultante no constituye asesoria legal ni de inmigracion.",
+  "El preparador de formularios es responsable de verificar minuciosamente cada detalle del documento original.",
+  "Siempre consulta con un abogado o representante de inmigracion autorizado.",
+  "NER Immigration AI no se responsabiliza por decisiones tomadas con base en estos analisis.",
+];
+
+type Step = "splash" | "upload" | "result";
 
 interface UploadedFile {
   name: string;
@@ -54,9 +64,10 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export default function UscisAnalyzer() {
-  const [step, setStep] = useState<Step>("welcome");
+  const [step, setStep] = useState<Step>("splash");
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [documentType, setDocumentType] = useState("");
-  const [language, setLanguage] = useState("");
+  const [language, setLanguage] = useState("Español");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [result, setResult] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -71,20 +82,13 @@ export default function UscisAnalyzer() {
     }
   }, [result]);
 
-  const handleSelectType = (type: string) => {
-    setDocumentType(type);
-    setStep("language");
-  };
-
-  const handleSelectLanguage = (lang: string) => {
-    setLanguage(lang);
+  const handleAcceptDisclaimer = () => {
+    setShowDisclaimer(false);
     setStep("upload");
   };
 
   const handleBack = () => {
-    if (step === "type") setStep("welcome");
-    else if (step === "language") setStep("type");
-    else if (step === "upload") setStep("language");
+    if (step === "upload") setStep("splash");
     else if (step === "result") {
       setResult("");
       setStep("upload");
@@ -219,9 +223,9 @@ export default function UscisAnalyzer() {
   };
 
   const handleReset = () => {
-    setStep("type");
+    setStep("upload");
     setDocumentType("");
-    setLanguage("");
+    setLanguage("Español");
     setUploadedFiles([]);
     setResult("");
     setCopied(false);
@@ -558,296 +562,297 @@ export default function UscisAnalyzer() {
     toast.success("PDF descargado exitosamente.");
   };
 
-  const stepNumber = step === "type" ? 1 : step === "language" ? 2 : step === "upload" ? 3 : 3;
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Sticky header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-3xl mx-auto flex items-center justify-between h-14 px-4">
-          <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
-          </Link>
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <FileSearch className="w-4 h-4 text-accent" />
-            USCIS Document Analyzer
-          </div>
-          <div className="w-16" />
-        </div>
-      </header>
+    <>
+      {/* ── SPLASH SCREEN ── */}
+      {step === "splash" && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background grid-bg">
+          <div className="absolute top-0 right-0 w-72 h-72 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--jarvis)),_transparent_70%)] pointer-events-none" />
 
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        {step !== "result" && step !== "welcome" && (
-          <div className="mb-6">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-              Paso {stepNumber} de 3
-            </p>
-            <div className="flex gap-1">
-              {[1, 2, 3].map((s) => (
-                <div key={s} className={`h-1 flex-1 rounded-full ${s <= stepNumber ? "bg-accent" : "bg-muted"}`} />
-              ))}
+          <div
+            className="relative z-10 flex flex-col items-center gap-7 cursor-pointer select-none px-10 py-12 max-w-sm w-full text-center"
+            onClick={() => setShowDisclaimer(true)}
+          >
+            <div className="w-20 h-20 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center animate-float">
+              <FileSearch className="w-10 h-10 text-accent" />
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs font-semibold uppercase tracking-[0.3em] mb-2">NER IMMIGRATION AI</p>
+              <h1 className="font-bold leading-tight">
+                <span className="text-4xl font-display text-accent glow-text-gold">USCIS Document</span>
+                <br />
+                <span className="text-3xl text-foreground">Analyzer</span>
+              </h1>
+              <p className="text-muted-foreground text-sm mt-3">Soluciones de Inmigracion Inteligente</p>
+            </div>
+            <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5">
+              <FileSearch className="w-4 h-4 text-accent" />
+              <span className="text-sm font-medium text-accent">Toca para comenzar</span>
             </div>
           </div>
-        )}
 
-        {/* Welcome / Disclaimer */}
-        {step === "welcome" && (
-          <div className="max-w-xl mx-auto text-center py-8">
-            <div className="flex justify-center mb-6">
-              <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center">
-                <FileSearch className="w-7 h-7 text-accent" />
+          {/* Disclaimer Modal */}
+          <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
+            <DialogContent className="max-w-md bg-card border-accent/20">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-base text-foreground">
+                  <Shield className="w-5 h-5 text-accent" />
+                  Aviso Legal Importante
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="bg-accent/10 border border-accent/20 rounded-xl p-4">
+                  <p className="text-foreground text-sm leading-relaxed font-semibold mb-2">Esta herramienta es de uso exclusivo para profesionales de inmigracion.</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">NER USCIS Document Analyzer es un modulo de apoyo tecnico integrado en la plataforma NER Immigration AI. El analisis generado no constituye asesoria legal.</p>
+                </div>
+                <ul className="space-y-2 text-sm text-foreground/80">
+                  {DISCLAIMER_BULLETS.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="mt-1 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="border-t border-border pt-3 flex items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">Al continuar acepta los terminos de uso.</p>
+                  <Button onClick={handleAcceptDisclaimer} className="gradient-gold text-accent-foreground font-semibold px-6 shrink-0" size="sm">
+                    Deseo Continuar
+                    <ChevronRight className="ml-1 w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-            <h1 className="text-2xl font-bold text-foreground mb-3">
-              USCIS Document Analyzer
-            </h1>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-6" style={{ textAlign: "justify" }}>
-              Esta herramienta analiza documentos oficiales emitidos por USCIS — como RFEs, NOIDs, denegaciones y aprobaciones — y genera un desglose claro y estructurado que cualquier preparador de formularios puede entender y utilizar como guia estrategica de apoyo.
-            </p>
-            <div className="rounded-lg border border-accent/20 bg-accent/5 p-4 mb-8 text-left">
-              <p className="text-xs font-semibold text-accent mb-2 uppercase tracking-wider">Nota de precision profesional</p>
-              <p className="text-xs text-muted-foreground leading-relaxed" style={{ textAlign: "justify" }}>
-                Los analisis generados por esta herramienta tienen fines educativos y organizativos. No constituyen asesoria legal ni interpretacion de ley migratoria. El preparador de formularios es responsable de verificar minuciosamente cada detalle del documento original antes de proceder con cualquier envio o respuesta.
-              </p>
-            </div>
-            <Button size="lg" onClick={() => setStep("type")} className="px-8">
-              Comenzar analisis
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </div>
-        )}
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
 
-        {/* Step 1: Document Type */}
-        {step === "type" && (
-          <div>
-            <h2 className="text-lg font-semibold text-foreground mb-1">
-              ¿Qué tipo de documento emitido por USCIS deseas analizar?
-            </h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              Selecciona el tipo de notificación que recibiste por parte de USCIS. Esto nos ayudará a personalizar el análisis.
-            </p>
-            <div className="space-y-2">
-              {DOCUMENT_TYPES.map((type) => (
-                <button
-                  key={type}
-                  onClick={() => handleSelectType(type)}
-                  className="w-full text-left px-4 py-3 rounded-lg border border-border bg-card hover:border-accent/50 hover:bg-accent/5 transition-colors flex items-center justify-between group"
-                >
-                  <span className="text-sm text-foreground">{type}</span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
-                </button>
-              ))}
+      {/* ── MAIN APP (upload + result) ── */}
+      {step !== "splash" && (
+        <div className="min-h-screen bg-background">
+          {/* Sticky header */}
+          <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="max-w-3xl mx-auto flex items-center justify-between h-14 px-4">
+              <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+                <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
+              </Link>
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <FileSearch className="w-4 h-4 text-accent" />
+                USCIS Document Analyzer
+              </div>
+              <div className="w-16" />
             </div>
-          </div>
-        )}
+          </header>
 
-        {/* Step 2: Language */}
-        {step === "language" && (
-          <div>
-            <h2 className="text-lg font-semibold text-foreground mb-1">
-              ¿En qué idioma deseas recibir el análisis?
-            </h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              Selecciona el idioma en el que prefieres que se te presente el análisis del documento.
-            </p>
-            <div className="space-y-2 mb-6">
-              {LANGUAGES.map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => handleSelectLanguage(lang)}
-                  className="w-full text-left px-4 py-3 rounded-lg border border-border bg-card hover:border-accent/50 hover:bg-accent/5 transition-colors flex items-center justify-between group"
-                >
-                  <span className="text-sm text-foreground">{lang}</span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
-                </button>
-              ))}
-            </div>
-            <Button variant="ghost" size="sm" onClick={handleBack}>
-              <ArrowLeft className="w-3 h-3 mr-1" /> Atrás
-            </Button>
-          </div>
-        )}
-
-        {/* Step 3: File Upload */}
-        {step === "upload" && (
-          <div>
-            <h2 className="text-lg font-semibold text-foreground mb-1">
-              Sube el documento emitido por USCIS
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Sube uno o varios archivos (PDF, JPG, PNG). Si el documento tiene varias páginas, puedes subir cada página como imagen o el PDF completo.
-            </p>
-            <div className="mb-2 flex gap-2 text-xs text-muted-foreground">
-              <span className="px-2 py-0.5 rounded bg-muted">{documentType}</span>
-              <span className="px-2 py-0.5 rounded bg-muted">{language}</span>
-            </div>
-
-            {/* Drop zone */}
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors mb-4 ${
-                isDragging
-                  ? "border-accent bg-accent/10"
-                  : "border-border hover:border-accent/50 hover:bg-accent/5"
-              }`}
-            >
-              <Upload className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
-              <p className="text-sm font-medium text-foreground mb-1">
-                Arrastra tus archivos aquí o haz clic para seleccionar
-              </p>
-              <p className="text-xs text-muted-foreground">
-                PDF, JPG, PNG, WebP — Máximo {MAX_FILES} archivos, 20MB cada uno
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.webp"
-                multiple
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files) processFiles(e.target.files);
-                  e.target.value = "";
-                }}
-              />
-            </div>
-
-            {/* File list */}
-            {uploadedFiles.length > 0 && (
-              <div className="space-y-2 mb-4">
-                {uploadedFiles.map((file, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border bg-card"
-                  >
-                    {file.type === "application/pdf" ? (
-                      <FileText className="w-4 h-4 text-red-400 shrink-0" />
-                    ) : (
-                      <Image className="w-4 h-4 text-blue-400 shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground truncate">{file.name}</p>
-                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                    </div>
-                    <button
-                      onClick={() => removeFile(i)}
-                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-                <p className="text-xs text-muted-foreground">
-                  {uploadedFiles.length} de {MAX_FILES} archivos
+          <div className="max-w-3xl mx-auto px-4 py-8">
+            {/* Upload Step */}
+            {step === "upload" && (
+              <div>
+                <h2 className="text-lg font-semibold text-foreground mb-1 text-center">
+                  Sube el documento emitido por USCIS
+                </h2>
+                <p className="text-sm text-muted-foreground mb-6 text-center">
+                  Selecciona el tipo de documento, idioma del analisis y sube los archivos.
                 </p>
+
+                {/* Type + Language selectors */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Tipo de documento</label>
+                    <Select value={documentType} onValueChange={setDocumentType}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecciona tipo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DOCUMENT_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Idioma del analisis</label>
+                    <Select value={language} onValueChange={setLanguage}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecciona idioma..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LANGUAGES.map((lang) => (
+                          <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Drop zone */}
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors mb-4 ${
+                    isDragging
+                      ? "border-accent bg-accent/10"
+                      : "border-border hover:border-accent/50 hover:bg-accent/5"
+                  }`}
+                >
+                  <Upload className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    Arrastra tus archivos aqui o haz clic para seleccionar
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    PDF, JPG, PNG, WebP — Maximo {MAX_FILES} archivos, 20MB cada uno
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files) processFiles(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+
+                {/* File list */}
+                {uploadedFiles.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    {uploadedFiles.map((file, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border bg-card"
+                      >
+                        {file.type === "application/pdf" ? (
+                          <FileText className="w-4 h-4 text-destructive/70 shrink-0" />
+                        ) : (
+                          <Image className="w-4 h-4 text-accent/70 shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground truncate">{file.name}</p>
+                          <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                        </div>
+                        <button
+                          onClick={() => removeFile(i)}
+                          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <p className="text-xs text-muted-foreground">
+                      {uploadedFiles.length} de {MAX_FILES} archivos
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={uploadedFiles.length === 0 || !documentType}
+                    className="px-8"
+                  >
+                    Analizar documento
+                  </Button>
+                </div>
               </div>
             )}
 
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={handleBack}>
-                <ArrowLeft className="w-3 h-3 mr-1" /> Atrás
-              </Button>
-              <Button onClick={handleSubmit} disabled={uploadedFiles.length === 0}>
-                Analizar documento
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Result (streaming) */}
-        {step === "result" && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
+            {/* Result (streaming) */}
+            {step === "result" && (
               <div>
-                <h2 className="text-lg font-semibold text-foreground">Análisis del documento</h2>
-                <div className="flex gap-2 text-xs text-muted-foreground mt-1">
-                  <span className="px-2 py-0.5 rounded bg-muted">{documentType}</span>
-                  <span className="px-2 py-0.5 rounded bg-muted">{language}</span>
-                  <span className="px-2 py-0.5 rounded bg-muted">{uploadedFiles.length} archivo(s)</span>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">Analisis del documento</h2>
+                    <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+                      <span className="px-2 py-0.5 rounded bg-muted">{documentType}</span>
+                      <span className="px-2 py-0.5 rounded bg-muted">{language}</span>
+                      <span className="px-2 py-0.5 rounded bg-muted">{uploadedFiles.length} archivo(s)</span>
+                    </div>
+                  </div>
+                  {!isLoading && result && (
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={handleCopy}>
+                        {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
+                        {copied ? "Copiado" : "Copiar"}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
+                        <Download className="w-3 h-3 mr-1" /> PDF
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={handleReset}>
+                        <RotateCcw className="w-3 h-3 mr-1" /> Nuevo
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  ref={resultRef}
+                  className="rounded-xl border bg-card p-6 max-h-[70vh] overflow-y-auto"
+                >
+                  {isLoading && !result && (
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-sm">Analizando documento con Ner Immigration AI...</span>
+                    </div>
+                  )}
+                  {result && (
+                    <div className="uscis-analysis-content">
+                      <ReactMarkdown
+                        components={{
+                          h1: ({ children }) => (
+                            <h1 className="text-xl font-bold text-foreground mt-8 mb-4 pb-2 border-b border-border first:mt-0">{children}</h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="text-lg font-bold text-foreground mt-8 mb-3 pb-1.5 border-b border-border/50">{children}</h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="text-base font-semibold text-foreground mt-6 mb-2">{children}</h3>
+                          ),
+                          p: ({ children }) => (
+                            <p className="text-sm leading-relaxed text-foreground/85 mb-4" style={{ textAlign: "justify" }}>{children}</p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="space-y-2 mb-4 ml-1">{children}</ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="space-y-2 mb-4 ml-1 list-decimal list-inside">{children}</ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className="text-sm leading-relaxed text-foreground/85 pl-2 flex gap-2">
+                              <span className="text-accent mt-0.5 shrink-0">•</span>
+                              <span>{children}</span>
+                            </li>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-foreground">{children}</strong>
+                          ),
+                          hr: () => (
+                            <hr className="my-6 border-border" />
+                          ),
+                          blockquote: ({ children }) => (
+                            <blockquote className="border-l-2 border-accent/50 pl-4 my-4 text-sm text-foreground/70 italic">{children}</blockquote>
+                          ),
+                        }}
+                      >
+                        {result}
+                      </ReactMarkdown>
+                    </div>
+                  )}
+                  {isLoading && result && (
+                    <div className="mt-4 flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span className="text-xs">Generando...</span>
+                    </div>
+                  )}
                 </div>
               </div>
-              {!isLoading && result && (
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleCopy}>
-                    {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
-                    {copied ? "Copiado" : "Copiar"}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
-                    <Download className="w-3 h-3 mr-1" /> PDF
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleReset}>
-                    <RotateCcw className="w-3 h-3 mr-1" /> Nuevo
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            <div
-              ref={resultRef}
-              className="rounded-xl border bg-card p-6 max-h-[70vh] overflow-y-auto"
-            >
-              {isLoading && !result && (
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="text-sm">Analizando documento con Ner Immigration AI...</span>
-                </div>
-              )}
-              {result && (
-                <div className="uscis-analysis-content">
-                  <ReactMarkdown
-                    components={{
-                      h1: ({ children }) => (
-                        <h1 className="text-xl font-bold text-foreground mt-8 mb-4 pb-2 border-b border-border first:mt-0">{children}</h1>
-                      ),
-                      h2: ({ children }) => (
-                        <h2 className="text-lg font-bold text-foreground mt-8 mb-3 pb-1.5 border-b border-border/50">{children}</h2>
-                      ),
-                      h3: ({ children }) => (
-                        <h3 className="text-base font-semibold text-foreground mt-6 mb-2">{children}</h3>
-                      ),
-                      p: ({ children }) => (
-                        <p className="text-sm leading-relaxed text-foreground/85 mb-4" style={{ textAlign: "justify" }}>{children}</p>
-                      ),
-                      ul: ({ children }) => (
-                        <ul className="space-y-2 mb-4 ml-1">{children}</ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol className="space-y-2 mb-4 ml-1 list-decimal list-inside">{children}</ol>
-                      ),
-                      li: ({ children }) => (
-                        <li className="text-sm leading-relaxed text-foreground/85 pl-2 flex gap-2">
-                          <span className="text-accent mt-0.5 shrink-0">•</span>
-                          <span>{children}</span>
-                        </li>
-                      ),
-                      strong: ({ children }) => (
-                        <strong className="font-semibold text-foreground">{children}</strong>
-                      ),
-                      hr: () => (
-                        <hr className="my-6 border-border" />
-                      ),
-                      blockquote: ({ children }) => (
-                        <blockquote className="border-l-2 border-accent/50 pl-4 my-4 text-sm text-foreground/70 italic">{children}</blockquote>
-                      ),
-                    }}
-                  >
-                    {result}
-                  </ReactMarkdown>
-                </div>
-              )}
-              {isLoading && result && (
-                <div className="mt-4 flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span className="text-xs">Generando...</span>
-                </div>
-              )}
-            </div>
+            )}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
