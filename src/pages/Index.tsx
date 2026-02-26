@@ -8,6 +8,7 @@ import { EvidenceItem, CaseInfo, Lang } from '@/types/evidence';
 import { generateExhibitNumber } from '@/lib/evidenceUtils';
 import { generateEvidencePDF } from '@/lib/pdfGenerator';
 import { t } from '@/lib/i18n';
+import nerLogo from '@/assets/ner-logo.png';
 import {
   FileText, Upload, ClipboardList, Download, Scale, Shield, Clock,
   ListChecks, AlertTriangle, X, Loader2, ChevronRight, Camera, ArrowLeft
@@ -187,46 +188,23 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Header */}
-      <header className="gradient-hero text-primary-foreground relative">
-        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 text-center">
-          <div className="absolute top-4 left-4">
-            <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-secondary/20 text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-            </button>
+      {/* Sticky header */}
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
+          <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+            <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
+          </button>
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Camera className="w-4 h-4 text-accent" />
+            <span className="font-display text-xs tracking-wider text-accent">PHOTO EVIDENCE ORGANIZER</span>
           </div>
-          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-accent/20 flex items-center justify-center">
-              <Scale className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
-            </div>
-            <span className="text-accent font-semibold text-xs sm:text-sm tracking-wide uppercase">{t('appName', lang)}</span>
-          </div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold mb-2 leading-tight">
-            {t('tagline', lang)}
-          </h1>
-          <p className="text-primary-foreground/70 text-sm max-w-xl mx-auto hidden sm:block">
-            {t('taglineDesc', lang)}
-          </p>
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-4 sm:mt-5">
-            {[
-              { icon: Shield, key: 'badge1' as const },
-              { icon: Clock, key: 'badge2' as const },
-              { icon: FileText, key: 'badge3' as const },
-            ].map(b => (
-              <div key={b.key} className="flex items-center gap-1.5 text-xs text-primary-foreground/80">
-                <b.icon className="w-3.5 h-3.5 text-accent" />
-                {t(b.key, lang)}
-              </div>
-            ))}
-          </div>
-          <div className="absolute top-4 right-4">
-            <LangToggle lang={lang} setLang={setLang} />
-          </div>
+          <LangToggle lang={lang} setLang={setLang} />
         </div>
       </header>
 
       {/* Step indicator */}
-      <div className="border-b bg-card sticky top-0 z-10 shadow-sm">
+      <div className="border-b bg-card sticky top-14 z-40 shadow-sm">
         <div className="max-w-5xl mx-auto px-2 sm:px-4">
           <div className="flex justify-center overflow-x-auto scrollbar-none">
             {steps.map((s) => {
