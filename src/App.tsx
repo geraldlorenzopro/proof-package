@@ -15,6 +15,7 @@ import ClientUpload from "./pages/ClientUpload";
 import CaseReview from "./pages/CaseReview";
 import AdminPanel from "./pages/AdminPanel";
 import Features from "./pages/Features";
+import UscisAnalyzer from "./pages/UscisAnalyzer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/upload/:token" element={<ClientUpload />} />
           <Route path="/dashboard/admin" element={<AdminPanel />} />
           <Route path="/case/:id" element={<CaseReview />} />
+          <Route path="/dashboard/uscis-analyzer" element={<UscisAnalyzer />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
