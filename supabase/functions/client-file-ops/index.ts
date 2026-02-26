@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const MAX_TOKEN_LENGTH = 128;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILES_PER_CASE = 50;
 
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -55,6 +56,19 @@ Deno.serve(async (req) => {
       });
       if (!caseId) {
         return jsonResponse({ error: "Invalid or expired token" }, 403);
+      }
+
+      // Check file count limit
+      const { count } = await supabase
+        .from("evidence_items")
+        .select("id", { count: "exact", head: true })
+        .eq("case_id", caseId);
+
+      if ((count ?? 0) >= MAX_FILES_PER_CASE) {
+        return jsonResponse(
+          { error: `Límite alcanzado: máximo ${MAX_FILES_PER_CASE} archivos por caso` },
+          400
+        );
       }
 
       // Generate safe server-side path
