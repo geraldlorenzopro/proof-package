@@ -5,17 +5,6 @@ import nerLogo from '@/assets/ner-logo.png';
 
 const liveTools = [
   {
-    name: 'CSPA Calculator',
-    description: 'Calcula la edad CSPA del beneficiario, determina elegibilidad y genera reportes PDF profesionales.',
-    icon: BarChart3,
-    href: '/dashboard/cspa',
-    features: [
-      { icon: Calculator, text: 'Cálculo automático de edad CSPA con datos del Visa Bulletin' },
-      { icon: FileCheck, text: 'Reportes PDF profesionales listos para el expediente' },
-      { icon: Activity, text: 'Simulador de naturalización y alertas de matrimonio' },
-    ],
-  },
-  {
     name: 'Affidavit Calculator',
     description: 'Calcula requisitos financieros del I-864 basándose en las Poverty Guidelines más recientes.',
     icon: Calculator,
@@ -40,6 +29,17 @@ const liveTools = [
 ];
 
 const betaTools = [
+  {
+    name: 'CSPA Calculator',
+    description: 'Calcula la edad CSPA del beneficiario, determina elegibilidad y genera reportes PDF profesionales.',
+    icon: BarChart3,
+    href: '/dashboard/cspa',
+    features: [
+      { icon: Calculator, text: 'Cálculo automático de edad CSPA con datos del Visa Bulletin' },
+      { icon: FileCheck, text: 'Reportes PDF profesionales listos para el expediente' },
+      { icon: Activity, text: 'Simulador de naturalización y alertas de matrimonio' },
+    ],
+  },
   {
     name: 'USCIS Document Analyzer',
     description: 'Analiza documentos de USCIS (RFE, NOID, I-797, etc.) con IA y recibe un desglose estratégico punto por punto.',
