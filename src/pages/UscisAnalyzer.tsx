@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import nerLogo from "@/assets/ner-logo.png";
 import jsPDF from "jspdf";
+import { LangToggle } from "@/components/LangToggle";
 
 const DOCUMENT_TYPES = [
   "Request for Evidence (RFE)",
@@ -23,13 +24,22 @@ const DOCUMENT_TYPES = [
 
 const LANGUAGES = ["Español", "Inglés"];
 
-const DISCLAIMER_BULLETS = [
-  "Esta herramienta analiza documentos oficiales emitidos por USCIS; no genera ni interpreta documentos legales.",
-  "El analisis resultante no constituye asesoria legal ni de inmigracion.",
-  "El preparador de formularios es responsable de verificar minuciosamente cada detalle del documento original.",
-  "Siempre consulta con un abogado o representante de inmigracion autorizado.",
-  "NER Immigration AI no se responsabiliza por decisiones tomadas con base en estos analisis.",
-];
+const DISCLAIMER_BULLETS: Record<string, string[]> = {
+  es: [
+    "Esta herramienta analiza documentos oficiales emitidos por USCIS; no genera ni interpreta documentos legales.",
+    "El analisis resultante no constituye asesoria legal ni de inmigracion.",
+    "El preparador de formularios es responsable de verificar minuciosamente cada detalle del documento original.",
+    "Siempre consulta con un abogado o representante de inmigracion autorizado.",
+    "NER Immigration AI no se responsabiliza por decisiones tomadas con base en estos analisis.",
+  ],
+  en: [
+    "This tool analyzes official documents issued by USCIS; it does not generate or interpret legal documents.",
+    "The resulting analysis does not constitute legal or immigration advice.",
+    "The form preparer is responsible for thoroughly verifying every detail of the original document.",
+    "Always consult with an attorney or authorized immigration representative.",
+    "NER Immigration AI is not responsible for decisions made based on these analyses.",
+  ],
+};
 
 type Step = "splash" | "upload" | "result";
 
@@ -66,6 +76,7 @@ function fileToBase64(file: File): Promise<string> {
 export default function UscisAnalyzer() {
   const [step, setStep] = useState<Step>("splash");
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [lang, setLang] = useState<'es' | 'en'>('es');
   const [documentType, setDocumentType] = useState("");
   const [language, setLanguage] = useState("Español");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -76,6 +87,10 @@ export default function UscisAnalyzer() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
 
+  // Sync lang toggle with language selector
+  useEffect(() => {
+    setLanguage(lang === 'es' ? 'Español' : 'Inglés');
+  }, [lang]);
   useEffect(() => {
     if (resultRef.current) {
       resultRef.current.scrollTop = resultRef.current.scrollHeight;
@@ -567,6 +582,9 @@ export default function UscisAnalyzer() {
       {/* ── SPLASH SCREEN ── */}
       {step === "splash" && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background grid-bg">
+          <div className="absolute top-4 right-4 z-20">
+            <LangToggle lang={lang} setLang={setLang} />
+          </div>
           <div className="absolute top-0 right-0 w-72 h-72 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--jarvis)),_transparent_70%)] pointer-events-none" />
 
           <div
@@ -583,11 +601,11 @@ export default function UscisAnalyzer() {
                 <br />
                 <span className="text-3xl text-foreground">Analyzer</span>
               </h1>
-              <p className="text-muted-foreground text-sm mt-3">Soluciones de Inmigracion Inteligente</p>
+              <p className="text-muted-foreground text-sm mt-3">{lang === 'es' ? 'Soluciones de Inmigracion Inteligente' : 'Intelligent Immigration Solutions'}</p>
             </div>
             <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5">
               <FileSearch className="w-4 h-4 text-accent" />
-              <span className="text-sm font-medium text-accent">Toca para comenzar</span>
+              <span className="text-sm font-medium text-accent">{lang === 'es' ? 'Toca para comenzar' : 'Tap to start'}</span>
             </div>
           </div>
 
@@ -595,18 +613,27 @@ export default function UscisAnalyzer() {
           <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
             <DialogContent className="max-w-md bg-card border-accent/20">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-base text-foreground">
-                  <Shield className="w-5 h-5 text-accent" />
-                  Aviso Legal Importante
+                <DialogTitle className="flex items-center justify-between text-base text-foreground">
+                  <span className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-accent" />
+                    {lang === 'es' ? 'Aviso Legal Importante' : 'Important Legal Notice'}
+                  </span>
+                  <LangToggle lang={lang} setLang={setLang} />
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="bg-accent/10 border border-accent/20 rounded-xl p-4">
-                  <p className="text-foreground text-sm leading-relaxed font-semibold mb-2">Esta herramienta es de uso exclusivo para profesionales de inmigracion.</p>
-                  <p className="text-muted-foreground text-sm leading-relaxed">NER USCIS Document Analyzer es un modulo de apoyo tecnico integrado en la plataforma NER Immigration AI. El analisis generado no constituye asesoria legal.</p>
+                  <p className="text-foreground text-sm leading-relaxed font-semibold mb-2">
+                    {lang === 'es' ? 'Esta herramienta es de uso exclusivo para profesionales de inmigracion.' : 'This tool is for exclusive use by immigration professionals.'}
+                  </p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {lang === 'es' 
+                      ? 'NER USCIS Document Analyzer es un modulo de apoyo tecnico integrado en la plataforma NER Immigration AI. El analisis generado no constituye asesoria legal.'
+                      : 'NER USCIS Document Analyzer is a technical support module integrated into the NER Immigration AI platform. The generated analysis does not constitute legal advice.'}
+                  </p>
                 </div>
                 <ul className="space-y-2 text-sm text-foreground/80">
-                  {DISCLAIMER_BULLETS.map((item, i) => (
+                  {DISCLAIMER_BULLETS[lang].map((item, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="mt-1 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
                       <span>{item}</span>
@@ -614,9 +641,9 @@ export default function UscisAnalyzer() {
                   ))}
                 </ul>
                 <div className="border-t border-border pt-3 flex items-center justify-between gap-3">
-                  <p className="text-xs text-muted-foreground">Al continuar acepta los terminos de uso.</p>
+                  <p className="text-xs text-muted-foreground">{lang === 'es' ? 'Al continuar acepta los terminos de uso.' : 'By continuing you accept the terms of use.'}</p>
                   <Button onClick={handleAcceptDisclaimer} className="gradient-gold text-accent-foreground font-semibold px-6 shrink-0" size="sm">
-                    Deseo Continuar
+                    {lang === 'es' ? 'Deseo Continuar' : 'Continue'}
                     <ChevronRight className="ml-1 w-4 h-4" />
                   </Button>
                 </div>
