@@ -67,35 +67,32 @@ export default function ClientUpload() {
   async function resolveSignedUrls(evidenceItems: EvidenceItem[]) {
     const paths = evidenceItems.map(i => i.file_path);
     if (paths.length === 0) return {};
-    const { data } = await supabase.storage.from('evidence-files').createSignedUrls(paths, 3600);
+    const { data } = await supabase.functions.invoke('client-file-ops', {
+      body: { action: 'signed-urls', token, paths },
+    });
     const map: Record<string, string> = {};
-    data?.forEach(item => { if (item.signedUrl) map[item.path] = item.signedUrl; });
+    data?.urls?.forEach((item: any) => { if (item.signedUrl) map[item.path] = item.signedUrl; });
     return map;
   }
 
   async function loadCase() {
     if (!token) { setNotFound(true); setLoading(false); return; }
-    const { data } = await supabase
-      .from('client_cases')
-      .select('id, client_name, case_type, petitioner_name, beneficiary_name, status')
-      .eq('access_token', token)
-      .single();
-    if (!data) { setNotFound(true); setLoading(false); return; }
-    setClientCase(data);
-    loadItems(data.id);
+    // @ts-ignore - RPC created in migration
+    const { data } = await supabase.rpc('get_case_by_token', { _token: token });
+    if (!data || data.length === 0) { setNotFound(true); setLoading(false); return; }
+    setClientCase(data[0]);
+    loadItems();
   }
 
-  async function loadItems(caseId: string) {
-    const { data } = await supabase
-      .from('evidence_items')
-      .select('*')
-      .eq('case_id', caseId)
-      .order('upload_order', { ascending: true });
+  async function loadItems() {
+    // @ts-ignore - RPC created in migration
+    const { data } = await supabase.rpc('get_evidence_by_token', { _token: token! });
     const evidence = data || [];
     setItems(evidence);
     setSignedUrls(await resolveSignedUrls(evidence));
     setLoading(false);
-    await supabase.from('client_cases').update({ status: 'in_progress' }).eq('access_token', token);
+    // @ts-ignore - RPC created in migration
+    await supabase.rpc('update_case_status_by_token', { _token: token!, _status: 'in_progress' });
   }
 
   const typeIcon: Record<string, React.ElementType> = {
@@ -112,7 +109,7 @@ export default function ClientUpload() {
   }
 
   async function handleFiles(files: File[]) {
-    if (!clientCase) return;
+    if (!clientCase || !token) return;
     setUploading(true);
     const newItems: EvidenceItem[] = [];
     const existingCount = items.length;
@@ -120,21 +117,31 @@ export default function ClientUpload() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       setUploadProgress(Math.round(((i + 1) / files.length) * 100));
-      const path = `${clientCase.id}/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
 
-      const { error } = await supabase.storage.from('evidence-files').upload(path, file);
-      if (error) continue;
+      const formData = new FormData();
+      formData.append('token', token);
+      formData.append('file', file);
+      formData.append('file_name', file.name);
+      formData.append('file_type', detectType(file.name));
+      formData.append('file_size', String(file.size));
+      formData.append('upload_order', String(existingCount + i));
 
-      const { data: inserted } = await supabase.from('evidence_items').insert({
-        case_id: clientCase.id,
-        file_name: file.name,
-        file_path: path,
-        file_type: detectType(file.name),
-        file_size: file.size,
-        upload_order: existingCount + i,
-      }).select().single();
-
-      if (inserted) newItems.push(inserted);
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/client-file-ops`,
+          {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+          }
+        );
+        const result = await response.json();
+        if (result.record) newItems.push(result.record);
+      } catch {
+        continue;
+      }
     }
 
     if (newItems.length > 0) {
@@ -160,15 +167,18 @@ export default function ClientUpload() {
         const item = current.find(i => i.id === id);
         if (item) {
           const isComplete = checkComplete(item);
-          supabase.from('evidence_items').update({
-            caption: item.caption,
-            participants: item.participants,
-            location: item.location,
-            platform: item.platform,
-            demonstrates: item.demonstrates,
-            notes: item.notes,
-            form_complete: isComplete,
-          }).eq('id', id).then(() => {
+          // @ts-ignore - RPC created in migration
+          supabase.rpc('update_evidence_by_token', {
+            _token: token!,
+            _evidence_id: id,
+            _caption: item.caption,
+            _participants: item.participants,
+            _location: item.location,
+            _platform: item.platform,
+            _demonstrates: item.demonstrates,
+            _notes: item.notes,
+            _form_complete: isComplete,
+          }).then(() => {
             setItems(prev => prev.map(i => i.id === id ? { ...i, form_complete: isComplete } : i));
           });
         }
@@ -185,10 +195,18 @@ export default function ClientUpload() {
       const item = updated.find(i => i.id === id);
       if (item) {
         const isComplete = checkComplete(item);
-        supabase.from('evidence_items').update({
-          ...updates,
-          form_complete: isComplete,
-        }).eq('id', id);
+        // @ts-ignore - RPC created in migration
+        supabase.rpc('update_evidence_by_token', {
+          _token: token!,
+          _evidence_id: id,
+          _caption: item.caption,
+          _participants: item.participants,
+          _location: item.location,
+          _platform: item.platform,
+          _demonstrates: item.demonstrates,
+          _notes: item.notes,
+          _form_complete: isComplete,
+        });
         return updated.map(i => i.id === id ? { ...i, form_complete: isComplete } : i);
       }
       return updated;
@@ -204,9 +222,17 @@ export default function ClientUpload() {
 
   async function deleteItem(id: string) {
     const item = items.find(i => i.id === id);
-    if (!item) return;
-    await supabase.from('evidence_items').delete().eq('id', id);
-    await supabase.storage.from('evidence-files').remove([item.file_path]);
+    if (!item || !token) return;
+    // @ts-ignore - RPC created in migration
+    const { data: filePath } = await supabase.rpc('delete_evidence_by_token', {
+      _token: token,
+      _evidence_id: id,
+    });
+    if (filePath) {
+      await supabase.functions.invoke('client-file-ops', {
+        body: { action: 'delete', token, path: filePath },
+      });
+    }
     setItems(prev => prev.filter(i => i.id !== id));
     if (expandedId === id) setExpandedId(null);
   }
@@ -214,8 +240,9 @@ export default function ClientUpload() {
   async function markCompleted() {
     setCompleting(true);
     try {
-      await supabase.from('client_cases').update({ status: 'completed' }).eq('access_token', token);
-      
+      // @ts-ignore - RPC created in migration
+      await supabase.rpc('update_case_status_by_token', { _token: token!, _status: 'completed' });
+
       // Fire GHL webhook
       try {
         await supabase.functions.invoke('notify-completion', {
