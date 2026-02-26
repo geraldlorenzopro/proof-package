@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download } from "lucide-react";
+import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -63,6 +63,7 @@ export default function UscisAnalyzer() {
   const [isDragging, setIsDragging] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (resultRef.current) {
@@ -222,6 +223,19 @@ export default function UscisAnalyzer() {
     setLanguage("");
     setUploadedFiles([]);
     setResult("");
+    setCopied(false);
+  };
+
+  const handleCopy = async () => {
+    if (!result) return;
+    try {
+      await navigator.clipboard.writeText(result);
+      setCopied(true);
+      toast.success("Análisis copiado al portapapeles.");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("No se pudo copiar. Intenta de nuevo.");
+    }
   };
 
   const handleDownloadPdf = () => {
@@ -264,7 +278,7 @@ export default function UscisAnalyzer() {
     pdf.roundedRect(marginL, y, contentW, 18, 2, 2, "F");
     pdf.setTextColor(146, 64, 14);
     pdf.setFontSize(7);
-    const disclaimer = "⚠️ Este análisis ha sido generado por Ner Immigration AI con fines educativos y organizativos. No constituye asesoría legal. El preparador de formularios es responsable de verificar cada detalle con el documento original.";
+    const disclaimer = "IMPORTANTE: Este análisis ha sido generado por Ner Immigration AI con fines educativos y organizativos. No constituye asesoría legal. El preparador de formularios es responsable de verificar cada detalle con el documento original.";
     const disclaimerLines = pdf.splitTextToSize(disclaimer, contentW - 8);
     pdf.text(disclaimerLines, marginL + 4, y + 5);
     y += 24;
@@ -521,6 +535,10 @@ export default function UscisAnalyzer() {
               </div>
               {!isLoading && result && (
                 <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleCopy}>
+                    {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
+                    {copied ? "Copiado" : "Copiar"}
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
                     <Download className="w-3 h-3 mr-1" /> PDF
                   </Button>
