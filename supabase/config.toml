@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.translate-evidence]
 verify_jwt = false
+
+[functions.client-file-ops]
+verify_jwt = false

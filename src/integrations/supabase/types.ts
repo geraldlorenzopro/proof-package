@@ -431,12 +431,76 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_evidence_by_token: {
+        Args: { _evidence_id: string; _token: string }
+        Returns: string
+      }
+      get_case_by_token: {
+        Args: { _token: string }
+        Returns: {
+          beneficiary_name: string
+          case_type: string
+          client_name: string
+          id: string
+          petitioner_name: string
+          status: string
+        }[]
+      }
+      get_case_id_by_token: { Args: { _token: string }; Returns: string }
+      get_evidence_by_token: {
+        Args: { _token: string }
+        Returns: {
+          caption: string | null
+          case_id: string
+          created_at: string
+          date_is_approximate: boolean | null
+          demonstrates: string | null
+          event_date: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          form_complete: boolean | null
+          id: string
+          location: string | null
+          notes: string | null
+          participants: string | null
+          platform: string | null
+          source_location: string | null
+          updated_at: string
+          upload_order: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "evidence_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_account_role: {
         Args: {
           _role: Database["public"]["Enums"]["account_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      update_case_status_by_token: {
+        Args: { _status: string; _token: string }
+        Returns: undefined
+      }
+      update_evidence_by_token: {
+        Args: {
+          _caption?: string
+          _demonstrates?: string
+          _evidence_id: string
+          _form_complete?: boolean
+          _location?: string
+          _notes?: string
+          _participants?: string
+          _platform?: string
+          _token: string
+        }
+        Returns: undefined
       }
       user_account_id: { Args: { _user_id: string }; Returns: string }
     }
