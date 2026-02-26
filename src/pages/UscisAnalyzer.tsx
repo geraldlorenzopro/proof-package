@@ -287,7 +287,7 @@ export default function UscisAnalyzer() {
     };
 
     const checkSpace = (needed: number) => {
-      if (y + needed > footerY - 8) addPage();
+      if (y + needed > footerY - 12) addPage();
     };
 
     // ── COVER HEADER ──
@@ -366,6 +366,7 @@ export default function UscisAnalyzer() {
         pdf.setTextColor(15, 23, 42);
         const wrapped = pdf.splitTextToSize(text, contentW);
         for (const wLine of wrapped) {
+          checkSpace(5.5);
           pdf.text(wLine, marginL, y);
           y += 5.5;
         }
@@ -402,8 +403,12 @@ export default function UscisAnalyzer() {
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(15, 23, 42);
         const wrapped = pdf.splitTextToSize(cleanText.toUpperCase(), contentW - 14);
-        pdf.text(wrapped, marginL + 12, y);
-        y += wrapped.length * 5 + 4;
+        for (const wLine of wrapped) {
+          checkSpace(5);
+          pdf.text(wLine, marginL + 12, y);
+          y += 5;
+        }
+        y += 4;
       }
       // ── H3 (Sub-sections) ──
       else if (trimmed.startsWith("### ")) {
@@ -417,8 +422,11 @@ export default function UscisAnalyzer() {
         pdf.setFillColor(217, 168, 46);
         pdf.rect(marginL, y - 2, 3, 0.8, "F");
         const wrapped = pdf.splitTextToSize(text, contentW - 6);
-        pdf.text(wrapped, marginL + 6, y);
-        y += wrapped.length * 4.5 + 2;
+        for (const wLine of wrapped) {
+          checkSpace(4.5);
+          pdf.text(wLine, marginL + 6, y);
+          y += 4.5;
+        }
       }
       // ── Horizontal rule ──
       else if (trimmed === "---" || trimmed === "***") {
