@@ -342,7 +342,7 @@ export default function UscisAnalyzer() {
 
       // ── H1 ──
       if (trimmed.startsWith("# ") && !trimmed.startsWith("## ") && !trimmed.startsWith("### ")) {
-        checkSpace(14);
+        checkSpace(35);
         y += 5;
         const text = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "").toUpperCase();
         pdf.setFontSize(12);
@@ -362,7 +362,7 @@ export default function UscisAnalyzer() {
       }
       // ── H2 (Numbered sections) ──
       else if (trimmed.startsWith("## ")) {
-        checkSpace(14);
+        checkSpace(45);
         y += 7;
         sectionCounter++;
         const text = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "");
@@ -391,7 +391,7 @@ export default function UscisAnalyzer() {
       }
       // ── H3 (Sub-sections) ──
       else if (trimmed.startsWith("### ")) {
-        checkSpace(10);
+        checkSpace(30);
         y += 4;
         const text = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "");
         pdf.setFontSize(9);
