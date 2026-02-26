@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw } from "lucide-react";
+import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import nerLogo from "@/assets/ner-logo.png";
+import jsPDF from "jspdf";
 
 const DOCUMENT_TYPES = [
   "Request for Evidence (RFE)",
@@ -21,16 +21,48 @@ const DOCUMENT_TYPES = [
 
 const LANGUAGES = ["Español", "Inglés"];
 
-type Step = "type" | "language" | "text" | "result";
+type Step = "type" | "language" | "upload" | "result";
+
+interface UploadedFile {
+  name: string;
+  type: string;
+  size: number;
+  base64: string;
+}
+
+const MAX_FILES = 10;
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic"];
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Extract base64 portion after the data URL prefix
+      resolve(result);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function UscisAnalyzer() {
   const [step, setStep] = useState<Step>("type");
   const [documentType, setDocumentType] = useState("");
   const [language, setLanguage] = useState("");
-  const [documentText, setDocumentText] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [result, setResult] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (resultRef.current) {
@@ -45,21 +77,72 @@ export default function UscisAnalyzer() {
 
   const handleSelectLanguage = (lang: string) => {
     setLanguage(lang);
-    setStep("text");
+    setStep("upload");
   };
 
   const handleBack = () => {
     if (step === "language") setStep("type");
-    else if (step === "text") setStep("language");
+    else if (step === "upload") setStep("language");
     else if (step === "result") {
       setResult("");
-      setStep("text");
+      setStep("upload");
     }
   };
 
+  const processFiles = useCallback(async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const remaining = MAX_FILES - uploadedFiles.length;
+
+    if (fileArray.length > remaining) {
+      toast.error(`Solo puedes subir ${MAX_FILES} archivos en total. Te quedan ${remaining} disponibles.`);
+      return;
+    }
+
+    for (const file of fileArray) {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        toast.error(`"${file.name}" no es un formato soportado. Usa PDF, JPG, PNG o WebP.`);
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`"${file.name}" excede el límite de 20MB.`);
+        continue;
+      }
+
+      try {
+        const base64 = await fileToBase64(file);
+        setUploadedFiles((prev) => [
+          ...prev,
+          { name: file.name, type: file.type, size: file.size, base64 },
+        ]);
+      } catch {
+        toast.error(`Error al procesar "${file.name}".`);
+      }
+    }
+  }, [uploadedFiles.length]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files.length) processFiles(e.dataTransfer.files);
+  }, [processFiles]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const removeFile = (index: number) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
-    if (!documentText.trim()) {
-      toast.error("Pega el contenido del documento para continuar.");
+    if (uploadedFiles.length === 0) {
+      toast.error("Sube al menos un archivo para continuar.");
       return;
     }
     setStep("result");
@@ -74,7 +157,15 @@ export default function UscisAnalyzer() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ documentType, language, documentText }),
+        body: JSON.stringify({
+          documentType,
+          language,
+          files: uploadedFiles.map((f) => ({
+            name: f.name,
+            type: f.type,
+            base64: f.base64,
+          })),
+        }),
       });
 
       if (!resp.ok) {
@@ -119,7 +210,7 @@ export default function UscisAnalyzer() {
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || "Error al analizar el documento");
-      if (!result) setStep("text");
+      if (!result) setStep("upload");
     } finally {
       setIsLoading(false);
     }
@@ -129,11 +220,122 @@ export default function UscisAnalyzer() {
     setStep("type");
     setDocumentType("");
     setLanguage("");
-    setDocumentText("");
+    setUploadedFiles([]);
     setResult("");
   };
 
-  const stepNumber = step === "type" ? 1 : step === "language" ? 2 : step === "text" ? 3 : 3;
+  const handleDownloadPdf = () => {
+    if (!result) return;
+
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const marginL = 20;
+    const marginR = 20;
+    const contentW = pageW - marginL - marginR;
+    const lineHeight = 5.5;
+    let y = 20;
+
+    const addPage = () => {
+      pdf.addPage();
+      y = 20;
+    };
+
+    const checkSpace = (needed: number) => {
+      if (y + needed > pageH - 20) addPage();
+    };
+
+    // Header
+    pdf.setFillColor(17, 24, 39);
+    pdf.rect(0, 0, pageW, 35, "F");
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(16);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("NER Immigration AI", marginL, 15);
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "normal");
+    pdf.text("USCIS Document Analysis Report", marginL, 22);
+    pdf.setFontSize(8);
+    pdf.text(`${documentType}  •  ${language}  •  ${new Date().toLocaleDateString()}`, marginL, 29);
+    y = 45;
+
+    // Disclaimer
+    pdf.setFillColor(254, 243, 199);
+    pdf.roundedRect(marginL, y, contentW, 18, 2, 2, "F");
+    pdf.setTextColor(146, 64, 14);
+    pdf.setFontSize(7);
+    const disclaimer = "⚠️ Este análisis ha sido generado por Ner Immigration AI con fines educativos y organizativos. No constituye asesoría legal. El preparador de formularios es responsable de verificar cada detalle con el documento original.";
+    const disclaimerLines = pdf.splitTextToSize(disclaimer, contentW - 8);
+    pdf.text(disclaimerLines, marginL + 4, y + 5);
+    y += 24;
+
+    // Content
+    pdf.setTextColor(31, 41, 55);
+    const lines = result.split("\n");
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      if (trimmed.startsWith("# ")) {
+        checkSpace(12);
+        pdf.setFontSize(14);
+        pdf.setFont("helvetica", "bold");
+        const text = trimmed.replace(/^#+\s*/, "").replace(/[*#]/g, "");
+        const wrapped = pdf.splitTextToSize(text, contentW);
+        pdf.text(wrapped, marginL, y);
+        y += wrapped.length * 7 + 3;
+      } else if (trimmed.startsWith("## ") || trimmed.startsWith("### ")) {
+        checkSpace(10);
+        const isH2 = trimmed.startsWith("## ");
+        pdf.setFontSize(isH2 ? 12 : 10);
+        pdf.setFont("helvetica", "bold");
+        const text = trimmed.replace(/^#+\s*/, "").replace(/[*#]/g, "");
+        const wrapped = pdf.splitTextToSize(text, contentW);
+        pdf.text(wrapped, marginL, y);
+        y += wrapped.length * (isH2 ? 6 : 5.5) + 2;
+      } else if (trimmed === "---") {
+        checkSpace(6);
+        pdf.setDrawColor(209, 213, 219);
+        pdf.line(marginL, y, pageW - marginR, y);
+        y += 4;
+      } else if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
+        checkSpace(lineHeight);
+        pdf.setFontSize(9);
+        pdf.setFont("helvetica", "normal");
+        const text = trimmed.replace(/^[-•]\s*/, "").replace(/\*\*/g, "");
+        const wrapped = pdf.splitTextToSize(`• ${text}`, contentW - 6);
+        pdf.text(wrapped, marginL + 4, y);
+        y += wrapped.length * lineHeight;
+      } else if (trimmed.length > 0) {
+        checkSpace(lineHeight);
+        pdf.setFontSize(9);
+        pdf.setFont("helvetica", "normal");
+        const text = trimmed.replace(/\*\*/g, "");
+        const wrapped = pdf.splitTextToSize(text, contentW);
+        pdf.text(wrapped, marginL, y);
+        y += wrapped.length * lineHeight;
+      } else {
+        y += 3;
+      }
+    }
+
+    // Footer on every page
+    const totalPages = pdf.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(7);
+      pdf.setTextColor(156, 163, 175);
+      pdf.text(`NER Immigration AI  •  Página ${i} de ${totalPages}`, marginL, pageH - 10);
+      pdf.text("Este documento es solo para fines educativos y organizativos.", pageW - marginR, pageH - 10, { align: "right" });
+    }
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const typeShort = documentType.match(/\(([^)]+)\)/)?.[1] || "DOC";
+    pdf.save(`NER_USCIS_Analysis_${typeShort}_${dateStr}.pdf`);
+    toast.success("PDF descargado exitosamente.");
+  };
+
+  const stepNumber = step === "type" ? 1 : step === "language" ? 2 : step === "upload" ? 3 : 3;
 
   return (
     <div className="min-h-screen bg-background">
@@ -217,30 +419,88 @@ export default function UscisAnalyzer() {
           </div>
         )}
 
-        {/* Step 3: Document Text */}
-        {step === "text" && (
+        {/* Step 3: File Upload */}
+        {step === "upload" && (
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-1">
-              Copia y pega aquí el texto completo del documento recibido por USCIS.
+              Sube el documento emitido por USCIS
             </h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Pega el contenido completo del documento que recibiste. Asegúrate de incluir fecha, número de recibo y texto completo.
+              Sube uno o varios archivos (PDF, JPG, PNG). Si el documento tiene varias páginas, puedes subir cada página como imagen o el PDF completo.
             </p>
             <div className="mb-2 flex gap-2 text-xs text-muted-foreground">
               <span className="px-2 py-0.5 rounded bg-muted">{documentType}</span>
               <span className="px-2 py-0.5 rounded bg-muted">{language}</span>
             </div>
-            <Textarea
-              value={documentText}
-              onChange={(e) => setDocumentText(e.target.value)}
-              placeholder="Pega aquí el texto completo del documento de USCIS..."
-              className="min-h-[250px] text-sm mb-4"
-            />
+
+            {/* Drop zone */}
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors mb-4 ${
+                isDragging
+                  ? "border-accent bg-accent/10"
+                  : "border-border hover:border-accent/50 hover:bg-accent/5"
+              }`}
+            >
+              <Upload className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
+              <p className="text-sm font-medium text-foreground mb-1">
+                Arrastra tus archivos aquí o haz clic para seleccionar
+              </p>
+              <p className="text-xs text-muted-foreground">
+                PDF, JPG, PNG, WebP — Máximo {MAX_FILES} archivos, 20MB cada uno
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) processFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+
+            {/* File list */}
+            {uploadedFiles.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {uploadedFiles.map((file, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border bg-card"
+                  >
+                    {file.type === "application/pdf" ? (
+                      <FileText className="w-4 h-4 text-red-400 shrink-0" />
+                    ) : (
+                      <Image className="w-4 h-4 text-blue-400 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-foreground truncate">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                    </div>
+                    <button
+                      onClick={() => removeFile(i)}
+                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">
+                  {uploadedFiles.length} de {MAX_FILES} archivos
+                </p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="sm" onClick={handleBack}>
                 <ArrowLeft className="w-3 h-3 mr-1" /> Atrás
               </Button>
-              <Button onClick={handleSubmit} disabled={!documentText.trim()}>
+              <Button onClick={handleSubmit} disabled={uploadedFiles.length === 0}>
                 Analizar documento
               </Button>
             </div>
@@ -256,12 +516,18 @@ export default function UscisAnalyzer() {
                 <div className="flex gap-2 text-xs text-muted-foreground mt-1">
                   <span className="px-2 py-0.5 rounded bg-muted">{documentType}</span>
                   <span className="px-2 py-0.5 rounded bg-muted">{language}</span>
+                  <span className="px-2 py-0.5 rounded bg-muted">{uploadedFiles.length} archivo(s)</span>
                 </div>
               </div>
               {!isLoading && result && (
-                <Button variant="outline" size="sm" onClick={handleReset}>
-                  <RotateCcw className="w-3 h-3 mr-1" /> Nuevo análisis
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
+                    <Download className="w-3 h-3 mr-1" /> PDF
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleReset}>
+                    <RotateCcw className="w-3 h-3 mr-1" /> Nuevo
+                  </Button>
+                </div>
               )}
             </div>
 

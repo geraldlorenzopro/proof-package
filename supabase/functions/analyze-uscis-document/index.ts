@@ -32,6 +32,12 @@ Como parte de nuestra inteligencia especializada, a continuación te entregamos 
 
 ---
 
+## 📎 ARCHIVOS RECIBIDOS:
+
+El usuario ha subido uno o varios archivos (PDF y/o imágenes) que contienen el documento emitido por USCIS. Debes analizar TODOS los archivos en conjunto como si fueran partes del mismo documento. Extrae todo el texto visible, tablas, fechas, números de recibo y cualquier instrucción.
+
+---
+
 ## 🔁 APLICA LA LÓGICA SEGÚN EL TIPO DE DOCUMENTO SELECCIONADO:
 
 ---
@@ -95,14 +101,41 @@ Si se menciona "RFE Response":
 
 ---
 
-### ⚖️ Referencias legales (si el RFE las contiene):
+### ⚖️ Referencias legales y normativas:
 
-Si el texto menciona alguna de las siguientes formas:
-- "v." (ej. *Seihoon v. Levy*)
-- "Matter of..."
-- "8 CFR", "§", "precedent", "case law", etc.
+**INSTRUCCIÓN CRÍTICA**: Para cada punto del análisis, cita la base legal aplicable usando las siguientes fuentes:
 
-Entonces:
+#### Immigration and Nationality Act (INA):
+- INA §201-203: Límites numéricos y asignación de visas por categoría
+- INA §204: Peticiones de inmigrante (I-130, I-140)
+- INA §207-208: Refugio y asilo
+- INA §212(a): Causales de inadmisibilidad
+- INA §214(b): Presunción de intención de inmigrante (no-inmigrantes)
+- INA §216: Residencia condicional (matrimonio < 2 años)
+- INA §237(a): Causales de deportabilidad
+- INA §240: Procedimientos de remoción
+- INA §245: Ajuste de estatus
+- INA §291: Carga de la prueba recae en el solicitante
+
+#### Code of Federal Regulations (8 CFR):
+- 8 CFR §103.2(b)(8): Procedimientos de RFE y tiempo de respuesta
+- 8 CFR §103.2(b)(11): Consecuencias de no responder un RFE
+- 8 CFR §204.2: Requisitos para peticiones familiares
+- 8 CFR §204.5: Requisitos para peticiones de empleo
+- 8 CFR §205.1: Revocación automática de peticiones
+- 8 CFR §212.7: Waivers de inadmisibilidad
+- 8 CFR §214.1: Requisitos generales de no-inmigrante
+- 8 CFR §245.1: Elegibilidad para ajuste de estatus
+
+#### USCIS Policy Manual (referencias clave):
+- Vol. 1: Políticas generales y procedimientos de adjudicación
+- Vol. 2: Ciudadanía y naturalización
+- Vol. 6: Ajuste de estatus (Parte A-J)
+- Vol. 7: Peticiones familiares
+- Vol. 9: Waivers y otros tipos de alivio
+- Vol. 12: Refugio y asilo
+
+**Cómo aplicar**: Si el RFE cita alguna referencia legal (ej. "v.", "Matter of...", "8 CFR", "§", "precedent", "case law"):
 1. Extrae literalmente cada referencia legal.
 2. Explica brevemente cómo USCIS la está aplicando en el contexto del caso.
 3. Relaciona esa referencia con el punto del análisis correspondiente.
@@ -129,6 +162,7 @@ Entonces:
 ### ⚠️ Riesgos si no se responde
 
 - Explica claramente que no responder puede causar una **denegación automática del caso**.
+- Cita 8 CFR §103.2(b)(11) y §103.2(b)(13) como fundamento.
 
 ---
 
@@ -148,7 +182,7 @@ Entonces:
 3. Evaluación del oficial (intención, evidencia, credibilidad, etc.)
 4. Ejemplos de evidencia
 5. Recomendaciones organizativas
-6. Riesgos si no se actúa
+6. Riesgos si no se actúa — cita INA §205(a) para revocaciones y 8 CFR §103.2(b)(16) para NOID
 7. Estrategia sugerida (educativa, no legal)
 
 ---
@@ -176,11 +210,23 @@ serve(async (req) => {
   }
 
   try {
-    const { documentType, language, documentText } = await req.json();
+    const body = await req.json();
+    const { documentType, language, files, documentText } = body;
 
-    if (!documentType || !language || !documentText) {
+    if (!documentType || !language) {
       return new Response(
-        JSON.stringify({ error: "Faltan campos requeridos: documentType, language, documentText" }),
+        JSON.stringify({ error: "Faltan campos requeridos: documentType, language" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Support both legacy text mode and new file upload mode
+    const hasFiles = Array.isArray(files) && files.length > 0;
+    const hasText = typeof documentText === "string" && documentText.trim().length > 0;
+
+    if (!hasFiles && !hasText) {
+      return new Response(
+        JSON.stringify({ error: "Debes enviar archivos o texto del documento." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -188,12 +234,30 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const userPrompt = `📌 Tipo de documento seleccionado: ${documentType}
+    // Build multimodal user content
+    const userContent: any[] = [
+      {
+        type: "text",
+        text: `📌 Tipo de documento seleccionado: ${documentType}\n\n🗣 Idioma solicitado para este análisis: ${language}\n\n📋 A continuación se adjuntan los archivos del documento de USCIS. Analiza todo el contenido visible en las imágenes y/o PDFs.`,
+      },
+    ];
 
-🗣 Idioma solicitado para este análisis: ${language}
+    if (hasFiles) {
+      for (const file of files) {
+        // file.base64 is a data URL like "data:image/jpeg;base64,..."
+        userContent.push({
+          type: "image_url",
+          image_url: { url: file.base64 },
+        });
+      }
+    }
 
-📋 Contenido completo del documento recibido:
-${documentText}`;
+    if (hasText) {
+      userContent.push({
+        type: "text",
+        text: `\n\n📋 Contenido de texto adicional del documento:\n${documentText}`,
+      });
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -205,7 +269,7 @@ ${documentText}`;
         model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
+          { role: "user", content: userContent },
         ],
         stream: true,
       }),
