@@ -30,6 +30,39 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Verify user belongs to an active NER account
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: membership } = await adminClient
+      .from('account_members')
+      .select('account_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!membership) {
+      return new Response(
+        JSON.stringify({ error: 'No account membership found' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify the account is active
+    const { data: account } = await adminClient
+      .from('ner_accounts')
+      .select('is_active')
+      .eq('id', membership.account_id)
+      .single();
+
+    if (!account?.is_active) {
+      return new Response(
+        JSON.stringify({ error: 'Account is not active' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const apiKey = Deno.env.get('GOOGLE_API_KEY');
     const clientId = Deno.env.get('GOOGLE_OAUTH_CLIENT_ID');
 
@@ -46,7 +79,7 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
