@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download, Copy, Check, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -74,6 +74,7 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export default function UscisAnalyzer() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("splash");
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [lang, setLang] = useState<'es' | 'en'>('es');
@@ -603,7 +604,7 @@ export default function UscisAnalyzer() {
               </h1>
               <p className="text-muted-foreground text-sm mt-3">{lang === 'es' ? 'Soluciones de Inmigracion Inteligente' : 'Intelligent Immigration Solutions'}</p>
             </div>
-            <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5">
+            <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5 animate-glow-pulse">
               <FileSearch className="w-4 h-4 text-accent" />
               <span className="text-sm font-medium text-accent">{lang === 'es' ? 'Toca para comenzar' : 'Tap to start'}</span>
             </div>
@@ -659,13 +660,13 @@ export default function UscisAnalyzer() {
           {/* Sticky header */}
           <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="max-w-3xl mx-auto flex items-center justify-between h-14 px-4">
-              <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ArrowLeft className="w-4 h-4" />
                 <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
-              </Link>
+              </button>
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <FileSearch className="w-4 h-4 text-accent" />
-                USCIS Document Analyzer
+              <FileSearch className="w-4 h-4 text-accent" />
+                <span className="font-display text-xs tracking-wider text-accent">USCIS DOCUMENT ANALYZER</span>
               </div>
               <LangToggle lang={lang} setLang={setLang} />
             </div>

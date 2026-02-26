@@ -248,7 +248,7 @@ function WelcomeSplash({ onContinue, lang, setLang, t }: { onContinue: () => voi
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background grid-bg">
-      <div className="absolute top-0 right-0 w-72 h-72 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(43_85%_52%),_transparent_70%)] pointer-events-none" />
+      <div className="absolute top-0 right-0 w-72 h-72 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--jarvis)),_transparent_70%)] pointer-events-none" />
 
       <div className="absolute top-4 right-4">
         <LangToggle lang={lang} setLang={setLang} />
