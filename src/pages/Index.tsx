@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FileUploadZone } from '@/components/FileUploadZone';
 import { EvidenceForm } from '@/components/EvidenceForm';
 import { EvidenceSummary } from '@/components/EvidenceSummary';
@@ -9,7 +10,7 @@ import { generateEvidencePDF } from '@/lib/pdfGenerator';
 import { t } from '@/lib/i18n';
 import {
   FileText, Upload, ClipboardList, Download, Scale, Shield, Clock,
-  ListChecks, AlertTriangle, X, Loader2, ChevronRight, Camera
+  ListChecks, AlertTriangle, X, Loader2, ChevronRight, Camera, ArrowLeft
 } from 'lucide-react';
 import { LangToggle } from '@/components/LangToggle';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -128,6 +129,7 @@ const STEPS = (lang: Lang) => [
 ];
 
 export default function Index() {
+  const navigate = useNavigate();
   const [accepted, setAccepted] = useState(false);
   const [lang, setLang] = useState<Lang>('es');
   const [step, setStep] = useState(1);
@@ -188,6 +190,11 @@ export default function Index() {
       {/* Hero Header */}
       <header className="gradient-hero text-primary-foreground relative">
         <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 text-center">
+          <div className="absolute top-4 left-4">
+            <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-secondary/20 text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          </div>
           <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-accent/20 flex items-center justify-center">
               <Scale className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
