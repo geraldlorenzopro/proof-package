@@ -21,7 +21,7 @@ const DOCUMENT_TYPES = [
 
 const LANGUAGES = ["Español", "Inglés"];
 
-type Step = "type" | "language" | "upload" | "result";
+type Step = "welcome" | "type" | "language" | "upload" | "result";
 
 interface UploadedFile {
   name: string;
@@ -54,7 +54,7 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export default function UscisAnalyzer() {
-  const [step, setStep] = useState<Step>("type");
+  const [step, setStep] = useState<Step>("welcome");
   const [documentType, setDocumentType] = useState("");
   const [language, setLanguage] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -82,7 +82,8 @@ export default function UscisAnalyzer() {
   };
 
   const handleBack = () => {
-    if (step === "language") setStep("type");
+    if (step === "type") setStep("welcome");
+    else if (step === "language") setStep("type");
     else if (step === "upload") setStep("language");
     else if (step === "result") {
       setResult("");
@@ -577,7 +578,7 @@ export default function UscisAnalyzer() {
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-8">
-        {step !== "result" && (
+        {step !== "result" && step !== "welcome" && (
           <div className="mb-6">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
               Paso {stepNumber} de 3
@@ -587,6 +588,33 @@ export default function UscisAnalyzer() {
                 <div key={s} className={`h-1 flex-1 rounded-full ${s <= stepNumber ? "bg-accent" : "bg-muted"}`} />
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Welcome / Disclaimer */}
+        {step === "welcome" && (
+          <div className="max-w-xl mx-auto text-center py-8">
+            <div className="flex justify-center mb-6">
+              <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center">
+                <FileSearch className="w-7 h-7 text-accent" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-foreground mb-3">
+              USCIS Document Analyzer
+            </h1>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6" style={{ textAlign: "justify" }}>
+              Esta herramienta analiza documentos oficiales emitidos por USCIS — como RFEs, NOIDs, denegaciones y aprobaciones — y genera un desglose claro y estructurado que cualquier preparador de formularios puede entender y utilizar como guia estrategica de apoyo.
+            </p>
+            <div className="rounded-lg border border-accent/20 bg-accent/5 p-4 mb-8 text-left">
+              <p className="text-xs font-semibold text-accent mb-2 uppercase tracking-wider">Nota de precision profesional</p>
+              <p className="text-xs text-muted-foreground leading-relaxed" style={{ textAlign: "justify" }}>
+                Los analisis generados por esta herramienta tienen fines educativos y organizativos. No constituyen asesoria legal ni interpretacion de ley migratoria. El preparador de formularios es responsable de verificar minuciosamente cada detalle del documento original antes de proceder con cualquier envio o respuesta.
+              </p>
+            </div>
+            <Button size="lg" onClick={() => setStep("type")} className="px-8">
+              Comenzar analisis
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
           </div>
         )}
 
@@ -781,7 +809,7 @@ export default function UscisAnalyzer() {
                         <h3 className="text-base font-semibold text-foreground mt-6 mb-2">{children}</h3>
                       ),
                       p: ({ children }) => (
-                        <p className="text-sm leading-relaxed text-foreground/85 mb-4">{children}</p>
+                        <p className="text-sm leading-relaxed text-foreground/85 mb-4" style={{ textAlign: "justify" }}>{children}</p>
                       ),
                       ul: ({ children }) => (
                         <ul className="space-y-2 mb-4 ml-1">{children}</ul>
