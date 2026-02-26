@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Download } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import nerLogo from "@/assets/ner-logo.png";
-import { supabase } from "@/integrations/supabase/client";
 
 const DOCUMENT_TYPES = [
   "Request for Evidence (RFE)",
@@ -25,7 +24,6 @@ const LANGUAGES = ["Español", "Inglés"];
 type Step = "type" | "language" | "text" | "result";
 
 export default function UscisAnalyzer() {
-  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("type");
   const [documentType, setDocumentType] = useState("");
   const [language, setLanguage] = useState("");
@@ -33,13 +31,6 @@ export default function UscisAnalyzer() {
   const [result, setResult] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
-
-  // Auth check
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) navigate("/auth");
-    });
-  }, [navigate]);
 
   useEffect(() => {
     if (resultRef.current) {
