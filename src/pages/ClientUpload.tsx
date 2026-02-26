@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Scale, Upload, CheckCircle, Clock, Image, MessageSquare, FileText, ChevronDown, ChevronUp, AlertCircle, ZoomIn, X, Trash2, Loader2, Heart, PartyPopper, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { compressImages, EVIDENCE_LIMIT_PER_CASE } from '@/lib/imageCompression';
+import { toast } from 'sonner';
 
 type EvidenceItem = {
   id: string;
@@ -108,15 +110,32 @@ export default function ClientUpload() {
     return 'photo';
   }
 
-  async function handleFiles(files: File[]) {
+  async function handleFiles(rawFiles: File[]) {
     if (!clientCase || !token) return;
-    setUploading(true);
-    const newItems: EvidenceItem[] = [];
-    const existingCount = items.length;
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+    const existingCount = items.length;
+    const remaining = EVIDENCE_LIMIT_PER_CASE - existingCount;
+
+    if (remaining <= 0) {
+      toast.error(`Límite alcanzado: máximo ${EVIDENCE_LIMIT_PER_CASE} archivos por caso.`);
+      return;
+    }
+
+    let filesToUpload = rawFiles.slice(0, remaining);
+    if (rawFiles.length > remaining) {
+      toast.warning(`Solo se subirán ${remaining} de ${rawFiles.length} archivos (límite: ${EVIDENCE_LIMIT_PER_CASE}).`);
+    }
+
+    setUploading(true);
+
+    // Compress images before upload
+    filesToUpload = await compressImages(filesToUpload);
+
+    const newItems: EvidenceItem[] = [];
+
+    for (let i = 0; i < filesToUpload.length; i++) {
+      const file = filesToUpload[i];
+      setUploadProgress(Math.round(((i + 1) / filesToUpload.length) * 100));
 
       const formData = new FormData();
       formData.append('token', token);
@@ -466,6 +485,9 @@ export default function ClientUpload() {
               <p className="text-sm text-muted-foreground">
                 Toca aquí o arrastra fotos, capturas de chat o documentos
               </p>
+              <p className="text-xs text-muted-foreground/50 mt-1">
+                {items.length} / {EVIDENCE_LIMIT_PER_CASE} archivos
+              </p>
               <div className="flex items-center justify-center gap-3 mt-3 text-xs text-muted-foreground/60">
                 <span>📷 Fotos</span>
                 <span>•</span>
@@ -483,7 +505,7 @@ export default function ClientUpload() {
             <p className="text-sm text-foreground font-medium mb-1">💡 ¿No sabes por dónde empezar?</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Sube fotos juntos (bodas, fiestas, viajes), capturas de WhatsApp, o cualquier documento que demuestre su relación. 
-              Puedes subir 1 o 100 a la vez — ¡tú decides!
+              Puedes subir hasta {EVIDENCE_LIMIT_PER_CASE} archivos.
             </p>
           </div>
         )}

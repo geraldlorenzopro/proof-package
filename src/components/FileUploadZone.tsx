@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Upload, FileImage, MessageSquare, FileText, X, CheckCircle } from 'lucide-react';
+import { Upload, FileImage, MessageSquare, FileText, X, CheckCircle, AlertTriangle } from 'lucide-react';
 import { EvidenceItem, EvidenceType, Lang } from '@/types/evidence';
 import { classifyFile } from '@/lib/evidenceUtils';
 import { t } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { EVIDENCE_LIMIT_PER_CASE } from '@/lib/imageCompression';
 // Google Drive picker available but disabled for now
 // import { useGoogleDrivePicker } from '@/hooks/useGoogleDrivePicker';
 
@@ -45,8 +46,12 @@ export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUpload
     other: t('typeOther', lang),
   };
 
+  const remaining = EVIDENCE_LIMIT_PER_CASE - existingCount;
+  const atLimit = remaining <= 0;
+
   const processFiles = (files: FileList | File[]) => {
-    const arr = Array.from(files);
+    if (atLimit) return;
+    const arr = Array.from(files).slice(0, remaining - previewing.length);
     const newItems = arr.map((file) => {
       const type = classifyFile(file);
       return { file, type, url: URL.createObjectURL(file) };
@@ -115,6 +120,12 @@ export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUpload
             <p className="text-sm text-muted-foreground mt-1">{t('uploadSub', lang)}</p>
           </div>
           <p className="text-xs text-muted-foreground">{t('uploadFormats', lang)}</p>
+          <p className="text-xs text-muted-foreground/50 mt-1">{existingCount} / {EVIDENCE_LIMIT_PER_CASE}</p>
+          {atLimit && (
+            <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+              <AlertTriangle className="w-3 h-3" /> Límite alcanzado
+            </p>
+          )}
         </div>
       </label>
 
