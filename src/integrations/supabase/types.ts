@@ -469,6 +469,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: { _tool_slug: string; _user_id: string }
+        Returns: Json
+      }
       delete_evidence_by_token: {
         Args: { _evidence_id: string; _token: string }
         Returns: string
@@ -515,6 +519,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_usage_stats: { Args: { _days?: number }; Returns: Json }
       has_account_role: {
         Args: {
           _role: Database["public"]["Enums"]["account_role"]
