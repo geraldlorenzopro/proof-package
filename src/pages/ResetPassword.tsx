@@ -65,35 +65,45 @@ export default function ResetPassword() {
 
   async function decideMfaOrReset(attempt = 0) {
     try {
-      // First check if user has any verified TOTP factors — this is the most reliable signal
-      const { data: factors } = await supabase.auth.mfa.listFactors();
+      console.log(`[ResetPassword] decideMfaOrReset attempt=${attempt}`);
+      
+      // First check if user has any verified TOTP factors
+      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+      console.log('[ResetPassword] listFactors result:', JSON.stringify(factors), 'error:', factorsError);
+      
       const totpFactor = factors?.totp?.find((f: any) => f.status === 'verified');
+      console.log('[ResetPassword] totpFactor:', totpFactor);
       
       if (totpFactor) {
         // Double-check AAL level
         const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        console.log('[ResetPassword] AAL data:', JSON.stringify(aalData));
+        
         if (aalData?.currentLevel === 'aal2') {
-          // Already elevated, skip MFA
+          console.log('[ResetPassword] Already at AAL2, skipping MFA');
           setPageState('reset');
           return;
         }
         // Needs MFA verification
+        console.log('[ResetPassword] Setting MFA state with factorId:', totpFactor.id);
         setMfaFactorId(totpFactor.id);
         setPageState('mfa');
         return;
       }
 
-      // No TOTP factors found — but might be a timing issue on first attempt
-      if (attempt < 2) {
-        await new Promise(r => setTimeout(r, 500));
+      // No TOTP factors found — might be timing issue
+      if (attempt < 3) {
+        console.log('[ResetPassword] No factors found, retrying in 1s...');
+        await new Promise(r => setTimeout(r, 1000));
         return decideMfaOrReset(attempt + 1);
       }
 
-      // No MFA factors after retries
+      console.log('[ResetPassword] No MFA factors after retries, showing reset form');
       setPageState('reset');
-    } catch {
-      if (attempt < 2) {
-        await new Promise(r => setTimeout(r, 500));
+    } catch (err) {
+      console.error('[ResetPassword] decideMfaOrReset error:', err);
+      if (attempt < 3) {
+        await new Promise(r => setTimeout(r, 1000));
         return decideMfaOrReset(attempt + 1);
       }
       setPageState('reset');
