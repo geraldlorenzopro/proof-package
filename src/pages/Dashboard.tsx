@@ -79,6 +79,10 @@ export default function Dashboard() {
   const [accountDetail, setAccountDetail] = useState<AccountDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
+  // Recent activity
+  const [recentActivity, setRecentActivity] = useState<{ tool_slug: string; action: string; created_at: string; account_name?: string }[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -101,10 +105,28 @@ export default function Dashboard() {
       supabase.from('account_app_access').select('app_id, account_id'),
     ]);
     setProfile(profileRes.data);
-    setAccounts(accountsRes.data || []);
+    const accts = accountsRes.data || [];
+    setAccounts(accts);
     setApps(appsRes.data || []);
     setAppAccess(accessRes.data || []);
     setLoading(false);
+
+    // Load recent activity
+    setLoadingActivity(true);
+    const { data: activityData } = await supabase
+      .from('tool_usage_logs')
+      .select('tool_slug, action, created_at, account_id')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (activityData) {
+      const enriched = activityData.map(a => {
+        const acc = accts.find(ac => ac.id === a.account_id);
+        return { tool_slug: a.tool_slug, action: a.action, created_at: a.created_at, account_name: acc?.account_name };
+      });
+      setRecentActivity(enriched);
+    }
+    setLoadingActivity(false);
   }
 
   async function handleLogout() {
@@ -225,6 +247,17 @@ export default function Dashboard() {
     completed: 'bg-emerald-500/20 text-emerald-400',
   };
 
+  function getTimeAgo(dateStr: string) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'ahora';
+    if (mins < 60) return `hace ${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `hace ${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    return `hace ${days}d`;
+  }
+
   return (
     <div className="min-h-screen bg-background grid-bg">
       {/* Mobile header */}
@@ -314,10 +347,11 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
+               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-8">
                 {[
                   { label: 'Subcuentas', value: accounts.length, icon: Building2, color: 'text-jarvis' },
                   { label: 'Activas', value: activeAccounts.length, icon: Power, color: 'text-emerald-400' },
+                  { label: 'Essential', value: planCounts['essential'] || 0, icon: Users, color: 'text-muted-foreground' },
                   { label: 'Plan Pro', value: planCounts['professional'] || 0, icon: Zap, color: 'text-jarvis' },
                   { label: 'Plan Elite', value: planCounts['elite'] || 0, icon: TrendingUp, color: 'text-accent' },
                 ].map((s, i) => (
@@ -377,7 +411,7 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <div className="glow-border-gold rounded-xl p-5 bg-card relative overflow-hidden">
+              <div className="glow-border-gold rounded-xl p-5 bg-card relative overflow-hidden mb-8">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl" />
                 <div className="relative flex items-center justify-between">
                   <div>
@@ -389,6 +423,47 @@ export default function Dashboard() {
                     Crear Subcuenta
                   </button>
                 </div>
+              </div>
+
+              {/* Activity Feed */}
+              <div>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="h-px flex-1 bg-gradient-to-r from-jarvis/30 to-transparent" />
+                  <h3 className="font-display text-xs tracking-[0.2em] text-jarvis/70 uppercase">Actividad Reciente</h3>
+                  <div className="h-px flex-1 bg-gradient-to-l from-jarvis/30 to-transparent" />
+                </div>
+
+                {loadingActivity ? (
+                  <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-jarvis" /></div>
+                ) : recentActivity.length === 0 ? (
+                  <div className="glow-border rounded-xl p-8 bg-card text-center">
+                    <BarChart3 className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
+                    <p className="text-sm text-muted-foreground">No hay actividad registrada aún</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recentActivity.map((event, i) => {
+                      const toolLabel: Record<string, string> = { cspa: 'CSPA Calculator', evidence: 'Evidence Tool', affidavit: 'Affidavit', 'uscis-analyzer': 'USCIS Analyzer' };
+                      const toolIcon = TOOL_ICONS[event.tool_slug] || '⚡';
+                      const timeAgo = getTimeAgo(event.created_at);
+                      return (
+                        <div key={i} className="glow-border rounded-xl p-3 bg-card flex items-center gap-3 animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
+                          <span className="text-lg">{toolIcon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground truncate">
+                              <span className="font-medium">{toolLabel[event.tool_slug] || event.tool_slug}</span>
+                              <span className="text-muted-foreground"> · {event.action}</span>
+                            </p>
+                            {event.account_name && (
+                              <p className="text-[10px] text-muted-foreground truncate">{event.account_name}</p>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">{timeAgo}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </>
           )}
