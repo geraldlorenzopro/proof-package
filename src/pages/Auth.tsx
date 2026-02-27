@@ -182,8 +182,11 @@ export default function Auth() {
                 onClick={async () => {
                   setError(''); setMessage(''); setLoading(true);
                   try {
+                    const siteUrl = window.location.origin.includes('lovableproject.com') 
+                      ? 'https://proof-package.lovable.app' 
+                      : window.location.origin;
                     const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-                      redirectTo: `${window.location.origin}/reset-password`,
+                      redirectTo: `${siteUrl}/reset-password`,
                     });
                     if (error) throw error;
                     setMessage('Si el correo existe, recibirás un enlace de recuperación.');
