@@ -2,7 +2,7 @@ import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL")!;
-const HUB_SECRET = Deno.env.get("NER_HUB_SECRET") || "723a427c81e392f7562de16e1dc29c84337b33cb2073335a24512797e6a7df04";
+const HUB_SECRET = Deno.env.get("NER_HUB_SECRET") || "3e0bfa6fd94f35a995545fe2130d6ab1e84f72c45f9d3585d38de605e5c04618";
 
 async function hmacSign(cid: string, ts: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
