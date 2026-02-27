@@ -63,22 +63,39 @@ export default function ResetPassword() {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function decideMfaOrReset() {
+  async function decideMfaOrReset(attempt = 0) {
     try {
-      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aalData && aalData.nextLevel === 'aal2' && aalData.currentLevel !== 'aal2') {
-        // User has MFA, needs to verify first
-        const { data: factors } = await supabase.auth.mfa.listFactors();
-        const totpFactor = factors?.totp?.find((f: any) => f.status === 'verified');
-        if (totpFactor) {
-          setMfaFactorId(totpFactor.id);
-          setPageState('mfa');
+      // First check if user has any verified TOTP factors — this is the most reliable signal
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totpFactor = factors?.totp?.find((f: any) => f.status === 'verified');
+      
+      if (totpFactor) {
+        // Double-check AAL level
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (aalData?.currentLevel === 'aal2') {
+          // Already elevated, skip MFA
+          setPageState('reset');
           return;
         }
+        // Needs MFA verification
+        setMfaFactorId(totpFactor.id);
+        setPageState('mfa');
+        return;
       }
-      // No MFA or already at AAL2
+
+      // No TOTP factors found — but might be a timing issue on first attempt
+      if (attempt < 2) {
+        await new Promise(r => setTimeout(r, 500));
+        return decideMfaOrReset(attempt + 1);
+      }
+
+      // No MFA factors after retries
       setPageState('reset');
     } catch {
+      if (attempt < 2) {
+        await new Promise(r => setTimeout(r, 500));
+        return decideMfaOrReset(attempt + 1);
+      }
       setPageState('reset');
     }
   }
