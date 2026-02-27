@@ -2,71 +2,36 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  LayoutDashboard, FileText, Calculator, Users, Scale,
-  ChevronRight, LogOut, FolderOpen, Activity, Clock,
-  CheckCircle, Zap, Shield, BarChart3, Menu, X, Settings
+  LayoutDashboard, Building2, BarChart3, Settings,
+  LogOut, Scale, Menu, X, Shield, Users, Zap,
+  TrendingUp, Power, Loader2
 } from 'lucide-react';
+import AdminAnalytics from '@/components/AdminAnalytics';
+import { Badge } from '@/components/ui/badge';
 
-const TOOLS = [
-  {
-    id: 'evidence',
-    name: 'Photo Evidence Organizer',
-    description: 'Organiza las fotos de tu caso en un paquete profesional listo para USCIS con descripciones y fechas.',
-    icon: FolderOpen,
-    route: '/dashboard/evidence',
-    status: 'active' as const,
-    color: 'jarvis',
-    stats: 'Generación de PDF + I-130',
-  },
-  {
-    id: 'affidavit',
-    name: 'Affidavit Calculator',
-    description: 'Calcula los requisitos financieros del Affidavit of Support (I-864) automáticamente.',
-    icon: Calculator,
-    route: '/dashboard/affidavit',
-    status: 'coming' as const,
-    color: 'gold',
-    stats: 'Poverty Guidelines 2025',
-  },
-  {
-    id: 'cspa',
-    name: 'CSPA Calculator',
-    description: 'Determina la edad CSPA del beneficiario y elegibilidad para protección.',
-    icon: BarChart3,
-    route: '/dashboard/cspa',
-    status: 'active' as const,
-    color: 'jarvis',
-    stats: 'Child Status Protection Act',
-  },
-  {
-    id: 'tracker',
-    name: 'Case Tracker',
-    description: 'Seguimiento en tiempo real del estatus de casos con notificaciones automáticas.',
-    icon: Activity,
-    route: '/dashboard/tracker',
-    status: 'coming' as const,
-    color: 'gold',
-    stats: 'Próximamente',
-  },
+const NAV_ITEMS = [
+  { label: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
+  { label: 'Subcuentas', icon: Building2, id: 'accounts' },
+  { label: 'Analytics', icon: BarChart3, id: 'analytics' },
+  { label: 'Configuración', icon: Settings, id: 'settings', route: '/dashboard/settings' },
 ];
 
-const BASE_NAV_ITEMS = [
-  { label: 'Hub Central', icon: LayoutDashboard, route: '/dashboard' },
-  { label: 'Mis Casos', icon: FileText, route: '/dashboard/cases' },
-  { label: 'Herramientas', icon: Zap, route: '/dashboard', section: 'tools' },
-];
-
-const ADMIN_NAV_ITEM = { label: 'Admin', icon: Shield, route: '/dashboard/admin' };
-const SETTINGS_NAV_ITEM = { label: 'Configuración', icon: Settings, route: '/dashboard/settings' };
+interface NerAccount {
+  id: string;
+  account_name: string;
+  plan: string;
+  is_active: boolean;
+  created_at: string;
+  ghl_contact_id: string | null;
+}
 
 export default function Dashboard() {
   const [profile, setProfile] = useState<{ full_name: string | null; firm_name: string | null } | null>(null);
-  const [caseStats, setCaseStats] = useState({ total: 0, pending: 0, completed: 0 });
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const [accounts, setAccounts] = useState<NerAccount[]>([]);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     checkAuth();
@@ -75,31 +40,27 @@ export default function Dashboard() {
   async function checkAuth() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      // Save current path so auth can redirect back
       sessionStorage.setItem('ner_auth_redirect', window.location.pathname);
       navigate('/auth', { replace: true });
       return;
     }
-    // Check admin role
+    // Verify owner/admin
     const { data: ownerCheck } = await supabase.rpc('has_account_role', { _user_id: user.id, _role: 'owner' });
     const { data: adminCheck } = await supabase.rpc('has_account_role', { _user_id: user.id, _role: 'admin' });
-    setIsAdmin(!!ownerCheck || !!adminCheck);
-
+    if (!ownerCheck && !adminCheck) {
+      navigate('/auth', { replace: true });
+      return;
+    }
     loadData(user.id);
   }
 
   async function loadData(userId: string) {
-    const [profileRes, casesRes] = await Promise.all([
-      supabase.from('profiles').select('full_name, firm_name, logo_url').eq('user_id', userId).single(),
-      supabase.from('client_cases').select('status').eq('professional_id', userId),
+    const [profileRes, accountsRes] = await Promise.all([
+      supabase.from('profiles').select('full_name, firm_name').eq('user_id', userId).single(),
+      supabase.from('ner_accounts').select('id, account_name, plan, is_active, created_at, ghl_contact_id').order('created_at', { ascending: false }),
     ]);
     setProfile(profileRes.data);
-    const cases = casesRes.data || [];
-    setCaseStats({
-      total: cases.length,
-      pending: cases.filter(c => c.status === 'pending' || c.status === 'in_progress').length,
-      completed: cases.filter(c => c.status === 'completed').length,
-    });
+    setAccounts(accountsRes.data || []);
     setLoading(false);
   }
 
@@ -109,6 +70,17 @@ export default function Dashboard() {
   }
 
   const currentTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const activeAccounts = accounts.filter(a => a.is_active);
+  const planCounts = accounts.reduce((acc, a) => {
+    acc[a.plan] = (acc[a.plan] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const planColors: Record<string, string> = {
+    essential: 'bg-muted text-muted-foreground',
+    professional: 'bg-jarvis/20 text-jarvis',
+    elite: 'bg-accent/20 text-accent',
+  };
 
   return (
     <div className="min-h-screen bg-background grid-bg">
@@ -123,7 +95,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Mobile sidebar overlay */}
+      {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
       )}
@@ -140,19 +112,26 @@ export default function Dashboard() {
             </div>
             <div>
               <h1 className="font-display text-sm font-bold tracking-wider text-jarvis glow-text">NER AI</h1>
-              <p className="text-[10px] text-sidebar-foreground/50 tracking-widest uppercase">Immigration Suite</p>
+              <p className="text-[10px] text-sidebar-foreground/50 tracking-widest uppercase">Owner Console</p>
             </div>
           </div>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 p-3 space-y-1">
-          {[...BASE_NAV_ITEMS, ...(isAdmin ? [ADMIN_NAV_ITEM] : []), SETTINGS_NAV_ITEM].map(item => {
-            const isActive = location.pathname === item.route;
+          {NAV_ITEMS.map(item => {
+            const isActive = activeSection === item.id;
             return (
               <button
-                key={item.label}
-                onClick={() => { navigate(item.route); setSidebarOpen(false); }}
+                key={item.id}
+                onClick={() => {
+                  if (item.route) {
+                    navigate(item.route);
+                  } else {
+                    setActiveSection(item.id);
+                  }
+                  setSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group
                   ${isActive
                     ? 'bg-jarvis/10 text-jarvis border border-jarvis/20'
@@ -176,6 +155,7 @@ export default function Dashboard() {
               <p className="text-xs font-medium text-sidebar-foreground truncate">{profile?.full_name || 'Cargando...'}</p>
               <p className="text-[10px] text-sidebar-foreground/40 truncate">{profile?.firm_name || ''}</p>
             </div>
+            <Shield className="w-3.5 h-3.5 text-jarvis/60" />
           </div>
           <button
             onClick={handleLogout}
@@ -191,100 +171,148 @@ export default function Dashboard() {
       <main className="lg:ml-64 pt-14 lg:pt-0 min-h-screen">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
-          {/* Top bar */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1 font-mono">{currentTime} · SISTEMA OPERATIVO</p>
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-                Bienvenido, <span className="text-jarvis glow-text">{profile?.full_name?.split(' ')[0] || '...'}</span>
-              </h2>
-            </div>
-            <div className="hidden sm:flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 status-pulse" />
-              <span className="text-xs text-muted-foreground">Todos los sistemas activos</span>
-            </div>
-          </div>
-
-          {/* Quick stats */}
-          <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-8">
-            {[
-              { label: 'Casos Totales', value: caseStats.total, icon: Users, color: 'text-jarvis' },
-              { label: 'En Proceso', value: caseStats.pending, icon: Clock, color: 'text-accent' },
-              { label: 'Completados', value: caseStats.completed, icon: CheckCircle, color: 'text-emerald-400' },
-            ].map((s, i) => (
-              <div key={s.label} className={`glow-border rounded-xl p-4 bg-card animate-slide-up`} style={{ animationDelay: `${i * 100}ms` }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <s.icon className={`w-4 h-4 ${s.color}`} />
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</span>
+          {activeSection === 'dashboard' && (
+            <>
+              {/* Top bar */}
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1 font-mono">{currentTime} · OWNER CONSOLE</p>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+                    Bienvenido, <span className="text-jarvis glow-text">{profile?.full_name?.split(' ')[0] || '...'}</span>
+                  </h2>
                 </div>
-                <span className={`font-display text-2xl sm:text-3xl font-bold ${s.color}`}>{loading ? '—' : s.value}</span>
+                <div className="hidden sm:flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 status-pulse" />
+                  <span className="text-xs text-muted-foreground">Todos los sistemas activos</span>
+                </div>
               </div>
-            ))}
-          </div>
 
-          {/* Tools section */}
-          <div className="mb-6">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="h-px flex-1 bg-gradient-to-r from-jarvis/30 to-transparent" />
-              <h3 className="font-display text-xs tracking-[0.2em] text-jarvis/70 uppercase">Herramientas</h3>
-              <div className="h-px flex-1 bg-gradient-to-l from-jarvis/30 to-transparent" />
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              {TOOLS.map((tool, i) => (
-                <button
-                  key={tool.id}
-                  onClick={() => {
-                    if (tool.status === 'active') navigate(tool.route);
-                  }}
-                  disabled={tool.status !== 'active'}
-                  className={`tool-card text-left p-5 sm:p-6 group animate-slide-up ${tool.status !== 'active' ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-                  style={{ animationDelay: `${(i + 3) * 100}ms` }}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-500
-                      ${tool.color === 'jarvis'
-                        ? 'bg-jarvis/10 border border-jarvis/20 group-hover:bg-jarvis/20 group-hover:shadow-glow'
-                        : 'bg-accent/10 border border-accent/20 group-hover:bg-accent/20'
-                      }`}
-                    >
-                      <tool.icon className={`w-5 h-5 ${tool.color === 'jarvis' ? 'text-jarvis' : 'text-accent'}`} />
+              {/* Global KPIs */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
+                {[
+                  { label: 'Subcuentas', value: accounts.length, icon: Building2, color: 'text-jarvis' },
+                  { label: 'Activas', value: activeAccounts.length, icon: Power, color: 'text-emerald-400' },
+                  { label: 'Plan Pro', value: planCounts['professional'] || 0, icon: Zap, color: 'text-jarvis' },
+                  { label: 'Plan Elite', value: planCounts['elite'] || 0, icon: TrendingUp, color: 'text-accent' },
+                ].map((s, i) => (
+                  <div key={s.label} className="glow-border rounded-xl p-4 bg-card animate-slide-up" style={{ animationDelay: `${i * 100}ms` }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <s.icon className={`w-4 h-4 ${s.color}`} />
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</span>
                     </div>
-                    {tool.status === 'active' ? (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-jarvis group-hover:translate-x-1 transition-all" />
-                    ) : (
-                      <span className="text-[10px] uppercase tracking-wider text-accent/70 border border-accent/20 rounded-full px-2 py-0.5">Próximo</span>
+                    <span className={`font-display text-2xl sm:text-3xl font-bold ${s.color}`}>{loading ? '—' : s.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Recent accounts */}
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="h-px flex-1 bg-gradient-to-r from-jarvis/30 to-transparent" />
+                  <h3 className="font-display text-xs tracking-[0.2em] text-jarvis/70 uppercase">Subcuentas Recientes</h3>
+                  <div className="h-px flex-1 bg-gradient-to-l from-jarvis/30 to-transparent" />
+                </div>
+
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin text-jarvis" />
+                  </div>
+                ) : accounts.length === 0 ? (
+                  <div className="glow-border rounded-xl p-8 bg-card text-center">
+                    <Building2 className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
+                    <p className="text-sm text-muted-foreground">No hay subcuentas creadas</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {accounts.slice(0, 5).map((acc, i) => (
+                      <div
+                        key={acc.id}
+                        className="glow-border rounded-xl p-4 bg-card flex items-center justify-between animate-slide-up cursor-pointer hover:border-jarvis/30 transition-colors"
+                        style={{ animationDelay: `${(i + 4) * 80}ms` }}
+                        onClick={() => setActiveSection('accounts')}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center border ${acc.is_active ? 'bg-jarvis/10 border-jarvis/20' : 'bg-muted border-border'}`}>
+                            <Building2 className={`w-4 h-4 ${acc.is_active ? 'text-jarvis' : 'text-muted-foreground'}`} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{acc.account_name}</p>
+                            <p className="text-[10px] text-muted-foreground">{new Date(acc.created_at).toLocaleDateString('es-ES')}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Badge className={planColors[acc.plan] || planColors.essential}>{acc.plan}</Badge>
+                          <div className={`w-2 h-2 rounded-full ${acc.is_active ? 'bg-emerald-500' : 'bg-destructive'}`} />
+                        </div>
+                      </div>
+                    ))}
+                    {accounts.length > 5 && (
+                      <button
+                        onClick={() => setActiveSection('accounts')}
+                        className="w-full text-center text-xs text-jarvis/70 hover:text-jarvis py-2 transition-colors"
+                      >
+                        Ver todas las subcuentas ({accounts.length})
+                      </button>
                     )}
                   </div>
-                  <h4 className="font-display text-sm font-semibold text-foreground mb-1 tracking-wide">{tool.name}</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed mb-3">{tool.description}</p>
-                  <div className="flex items-center gap-1.5">
-                    <Shield className={`w-3 h-3 ${tool.color === 'jarvis' ? 'text-jarvis/50' : 'text-accent/50'}`} />
-                    <span className="text-[10px] text-muted-foreground/60">{tool.stats}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick action */}
-          <div className="glow-border-gold rounded-xl p-5 bg-card relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl" />
-            <div className="relative flex items-center justify-between">
-              <div>
-                <h4 className="font-semibold text-foreground text-sm mb-1">¿Necesitas crear un caso rápido?</h4>
-                <p className="text-xs text-muted-foreground">Genera un link para tu cliente y comienza a recopilar evidencias.</p>
+                )}
               </div>
-              <button
-                onClick={() => navigate('/dashboard/cases')}
-                className="shrink-0 gradient-gold text-accent-foreground font-semibold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
-              >
-                Ir a Casos
-              </button>
+
+              {/* Quick action */}
+              <div className="glow-border-gold rounded-xl p-5 bg-card relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl" />
+                <div className="relative flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-foreground text-sm mb-1">¿Necesitas crear una subcuenta?</h4>
+                    <p className="text-xs text-muted-foreground">Provisiona una nueva cuenta con acceso al Hub.</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveSection('accounts')}
+                    className="shrink-0 gradient-gold text-accent-foreground font-semibold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
+                  >
+                    Ir a Subcuentas
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeSection === 'accounts' && (
+            <div>
+              <div className="mb-6">
+                <p className="text-xs text-muted-foreground mb-1 font-mono">GESTIÓN</p>
+                <h2 className="text-2xl font-bold text-foreground">Subcuentas</h2>
+              </div>
+              {/* Render the full Admin Panel content inline */}
+              <AdminPanelContent />
             </div>
-          </div>
+          )}
+
+          {activeSection === 'analytics' && (
+            <div>
+              <div className="mb-6">
+                <p className="text-xs text-muted-foreground mb-1 font-mono">MÉTRICAS</p>
+                <h2 className="text-2xl font-bold text-foreground">Analytics de Plataforma</h2>
+              </div>
+              <AdminAnalytics />
+            </div>
+          )}
         </div>
       </main>
+    </div>
+  );
+}
+
+// Inline admin panel content (extracted from AdminPanel page)
+function AdminPanelContent() {
+  const navigate = useNavigate();
+  // Redirect to the full admin panel for now
+  useEffect(() => {
+    navigate('/dashboard/admin');
+  }, []);
+  return (
+    <div className="flex justify-center py-12">
+      <Loader2 className="w-6 h-6 animate-spin text-jarvis" />
     </div>
   );
 }
