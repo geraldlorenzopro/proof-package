@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   LayoutDashboard, FileText, Calculator, Users, Scale,
   ChevronRight, LogOut, FolderOpen, Activity, Clock,
-  CheckCircle, Zap, Shield, BarChart3, Menu, X
+  CheckCircle, Zap, Shield, BarChart3, Menu, X, Settings
 } from 'lucide-react';
 
 const TOOLS = [
@@ -57,6 +57,7 @@ const BASE_NAV_ITEMS = [
 ];
 
 const ADMIN_NAV_ITEM = { label: 'Admin', icon: Shield, route: '/dashboard/admin' };
+const SETTINGS_NAV_ITEM = { label: 'Configuración', icon: Settings, route: '/dashboard/settings' };
 
 export default function Dashboard() {
   const [profile, setProfile] = useState<{ full_name: string | null; firm_name: string | null } | null>(null);
@@ -146,7 +147,7 @@ export default function Dashboard() {
 
         {/* Nav */}
         <nav className="flex-1 p-3 space-y-1">
-          {[...BASE_NAV_ITEMS, ...(isAdmin ? [ADMIN_NAV_ITEM] : [])].map(item => {
+          {[...BASE_NAV_ITEMS, ...(isAdmin ? [ADMIN_NAV_ITEM] : []), SETTINGS_NAV_ITEM].map(item => {
             const isActive = location.pathname === item.route;
             return (
               <button
