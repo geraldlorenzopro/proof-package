@@ -18,6 +18,7 @@ import Features from "./pages/Features";
 import UscisAnalyzer from "./pages/UscisAnalyzer";
 import HubPage from "./pages/HubPage";
 import Settings from "./pages/Settings";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/dashboard/uscis-analyzer" element={<UscisAnalyzer />} />
           <Route path="/hub" element={<HubPage />} />
           <Route path="/dashboard/settings" element={<Settings />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
