@@ -181,7 +181,13 @@ export default function MfaSetup() {
           </div>
 
           <div className="flex justify-center">
-            <div className="bg-white p-3 rounded-xl w-[172px] h-[172px] flex items-center justify-center [&_svg]:w-40 [&_svg]:h-40" dangerouslySetInnerHTML={{ __html: qrCode }} />
+            {qrCode.startsWith('<') ? (
+              <div className="bg-white p-3 rounded-xl w-[172px] h-[172px] flex items-center justify-center [&_svg]:w-40 [&_svg]:h-40" dangerouslySetInnerHTML={{ __html: qrCode }} />
+            ) : (
+              <div className="bg-white p-3 rounded-xl">
+                <img src={qrCode} alt="QR Code" className="w-40 h-40" />
+              </div>
+            )}
           </div>
 
           {/* Secret key */}
