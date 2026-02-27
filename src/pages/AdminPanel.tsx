@@ -48,7 +48,7 @@ export default function AdminPanel() {
 
   async function checkAdminAccess() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { navigate('/auth', { replace: true }); return; }
+    if (!user) { sessionStorage.setItem('ner_auth_redirect', window.location.pathname); navigate('/auth', { replace: true }); return; }
 
     const { data: isOwner } = await supabase.rpc('has_account_role', { _user_id: user.id, _role: 'owner' });
     const { data: isAdmin } = await supabase.rpc('has_account_role', { _user_id: user.id, _role: 'admin' });

@@ -71,7 +71,12 @@ export default function Dashboard() {
 
   async function checkAuth() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { navigate('/auth', { replace: true }); return; }
+    if (!user) {
+      // Save current path so auth can redirect back
+      sessionStorage.setItem('ner_auth_redirect', window.location.pathname);
+      navigate('/auth', { replace: true });
+      return;
+    }
     loadData(user.id);
   }
 

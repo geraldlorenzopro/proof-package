@@ -143,7 +143,13 @@ export default function HubPage() {
               return (
                 <button
                   key={app.id}
-                  onClick={() => route && navigate(route, { replace: true })}
+                  onClick={() => {
+                    if (route) {
+                      // Save hub return URL so tools can navigate back
+                      sessionStorage.setItem('ner_hub_return', window.location.href);
+                      navigate(route, { replace: true });
+                    }
+                  }}
                   disabled={!route}
                   className="tool-card text-left p-6 group cursor-pointer"
                 >
