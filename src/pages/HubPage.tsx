@@ -40,21 +40,24 @@ export default function HubPage() {
   const navigate = useNavigate();
 
   const cid = searchParams.get('cid');
+  const sig = searchParams.get('sig');
+  const ts = searchParams.get('ts');
 
   useEffect(() => {
-    if (!cid) {
-      setError('No se proporcionó un identificador de cuenta.');
+    if (!cid || !sig || !ts) {
+      setError('Enlace inválido o incompleto.');
       setLoading(false);
       return;
     }
-    resolveHub(cid);
-  }, [cid]);
+    resolveHub(cid, sig, ts);
+  }, [cid, sig, ts]);
 
-  async function resolveHub(contactId: string) {
+  async function resolveHub(contactId: string, signature: string, timestamp: string) {
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const params = new URLSearchParams({ cid: contactId, sig: signature, ts: timestamp });
       const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/resolve-hub?cid=${encodeURIComponent(contactId)}`,
+        `https://${projectId}.supabase.co/functions/v1/resolve-hub?${params.toString()}`,
         { headers: { 'Content-Type': 'application/json' } }
       );
       const json = await res.json();
