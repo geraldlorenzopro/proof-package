@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { trackToolUsage } from "@/lib/trackUsage";
 import CSPALeadCaptureModal from "@/components/CSPALeadCaptureModal";
 import { generateCSPAReport, type CSPAReportData } from "@/lib/cspaPdfGenerator";
 import { toast } from "@/hooks/use-toast";
@@ -497,6 +498,9 @@ export default function CSPACalculator() {
         biological_age_days: result.biologicalAge,
         bulletin_info: result.bulletinInfo || null,
       });
+
+      // Track usage
+      trackToolUsage("cspa-calculator", "generate_report", { category: form.category, chargeability: form.chargeability, qualifies: result.qualifies });
 
       // Generate PDF in the selected language
       const reportData: CSPAReportData = {

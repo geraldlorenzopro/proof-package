@@ -387,6 +387,44 @@ export type Database = {
         }
         Relationships: []
       }
+      tool_usage_logs: {
+        Row: {
+          account_id: string | null
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          tool_slug: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          tool_slug: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          tool_slug?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tool_usage_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visa_bulletin: {
         Row: {
           bulletin_month: number

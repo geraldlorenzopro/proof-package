@@ -9,6 +9,7 @@ import ReactMarkdown from "react-markdown";
 import nerLogo from "@/assets/ner-logo.png";
 import jsPDF from "jspdf";
 import { LangToggle } from "@/components/LangToggle";
+import { trackToolUsage } from "@/lib/trackUsage";
 
 const DOCUMENT_TYPES = [
   "Request for Evidence (RFE)",
@@ -170,6 +171,9 @@ export default function UscisAnalyzer() {
     setStep("result");
     setResult("");
     setIsLoading(true);
+
+    // Track usage
+    trackToolUsage("uscis-analyzer", "analyze", { documentType, fileCount: uploadedFiles.length });
 
     try {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-uscis-document`;
