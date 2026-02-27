@@ -16,6 +16,7 @@ import CaseReview from "./pages/CaseReview";
 import AdminPanel from "./pages/AdminPanel";
 import Features from "./pages/Features";
 import UscisAnalyzer from "./pages/UscisAnalyzer";
+import HubPage from "./pages/HubPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/dashboard/admin" element={<AdminPanel />} />
           <Route path="/case/:id" element={<CaseReview />} />
           <Route path="/dashboard/uscis-analyzer" element={<UscisAnalyzer />} />
+          <Route path="/hub" element={<HubPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
