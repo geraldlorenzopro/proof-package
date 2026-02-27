@@ -1,5 +1,11 @@
 import Index from './Index';
+import { HubBackButton } from '@/components/HubBackButton';
 
 export default function EvidenceTool() {
-  return <Index />;
+  return (
+    <>
+      <HubBackButton />
+      <Index />
+    </>
+  );
 }

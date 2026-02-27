@@ -1,5 +1,11 @@
 import CSPACalculator from '@/components/CSPACalculator';
+import { HubBackButton } from '@/components/HubBackButton';
 
 export default function CspaTool() {
-  return <CSPACalculator />;
+  return (
+    <>
+      <HubBackButton />
+      <CSPACalculator />
+    </>
+  );
 }

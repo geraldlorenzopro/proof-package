@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calculator, BarChart3, Activity, Lock } from 'lucide-react';
+import { HubBackButton } from '@/components/HubBackButton';
 
 interface PlaceholderToolProps {
   tool: 'affidavit' | 'cspa' | 'tracker';
@@ -48,6 +49,7 @@ export default function PlaceholderTool({ tool }: PlaceholderToolProps) {
 
   return (
     <div className="min-h-screen bg-background grid-bg lg:ml-64">
+      <HubBackButton />
       <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-md border-b border-border px-4 py-2 flex items-center gap-3">
         <button onClick={() => navigate('/dashboard')} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-4 h-4" />
