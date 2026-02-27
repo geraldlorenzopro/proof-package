@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useBackDestination } from '@/hooks/useBackDestination';
 import { FileUploadZone } from '@/components/FileUploadZone';
 import { EvidenceForm } from '@/components/EvidenceForm';
 import { EvidenceSummary } from '@/components/EvidenceSummary';
@@ -132,6 +133,7 @@ const STEPS = (lang: Lang) => [
 
 export default function Index() {
   const navigate = useNavigate();
+  const { destination: backDest, isHub } = useBackDestination();
   const [accepted, setAccepted] = useState(false);
   const [lang, setLang] = useState<Lang>('es');
   const [step, setStep] = useState(1);
@@ -193,9 +195,10 @@ export default function Index() {
       {/* Sticky header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
-          <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={() => navigate(backDest)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
+            {isHub ? <Shield className="w-4 h-4 text-jarvis" /> : <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />}
+            {isHub && <span className="text-xs">Hub</span>}
           </button>
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Camera className="w-4 h-4 text-accent" />

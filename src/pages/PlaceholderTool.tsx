@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calculator, BarChart3, Activity, Lock } from 'lucide-react';
-import { HubBackButton } from '@/components/HubBackButton';
+import { ArrowLeft, Calculator, BarChart3, Activity, Lock, Shield } from 'lucide-react';
+import { useBackDestination } from '@/hooks/useBackDestination';
+import nerLogo from '@/assets/ner-logo.png';
 
 interface PlaceholderToolProps {
   tool: 'affidavit' | 'cspa' | 'tracker';
@@ -44,15 +45,16 @@ const TOOLS = {
 
 export default function PlaceholderTool({ tool }: PlaceholderToolProps) {
   const navigate = useNavigate();
+  const { destination: backDest, isHub } = useBackDestination();
   const t = TOOLS[tool];
   const Icon = t.icon;
 
   return (
     <div className="min-h-screen bg-background grid-bg lg:ml-64">
-      <HubBackButton />
       <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-md border-b border-border px-4 py-2 flex items-center gap-3">
-        <button onClick={() => navigate('/dashboard')} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+        <button onClick={() => navigate(backDest)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
           <ArrowLeft className="w-4 h-4" />
+          {isHub ? <><Shield className="w-3.5 h-3.5 text-jarvis" /><span className="text-xs">Hub</span></> : <img src={nerLogo} alt="NER" className="h-4 brightness-0 invert" />}
         </button>
         <Icon className="w-4 h-4 text-accent" />
         <span className="font-display text-xs tracking-wider text-accent">{t.name.toUpperCase()}</span>
