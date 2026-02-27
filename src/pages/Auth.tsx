@@ -349,7 +349,7 @@ export default function Auth() {
                   <button
                     type="button"
                     onClick={() => { setForgotMode(true); setForgotEmail(email); setError(''); setMessage(''); }}
-                    className="text-sm text-primary hover:underline"
+                    className="text-sm text-accent hover:text-accent/80 hover:underline transition-colors"
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
