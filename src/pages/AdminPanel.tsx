@@ -8,8 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, Users, Building2, Loader2, BarChart3, Link2, Copy, Check, Pencil } from 'lucide-react';
+import {
+  ArrowLeft, Plus, Users, Building2, Loader2, BarChart3,
+  Link2, Copy, Check, Pencil, Shield, Power, ChevronDown, ChevronUp, Boxes
+} from 'lucide-react';
 import AdminAnalytics from '@/components/AdminAnalytics';
 
 interface NerAccount {
@@ -23,11 +27,26 @@ interface NerAccount {
   created_at: string;
 }
 
+interface HubApp {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+}
+
+interface AppAccess {
+  app_id: string;
+  account_id: string;
+}
+
 export default function AdminPanel() {
   const [accounts, setAccounts] = useState<NerAccount[]>([]);
+  const [apps, setApps] = useState<HubApp[]>([]);
+  const [appAccess, setAppAccess] = useState<AppAccess[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [expandedAccount, setExpandedAccount] = useState<string | null>(null);
   const [form, setForm] = useState({
     account_name: '',
     email: '',
@@ -39,6 +58,7 @@ export default function AdminPanel() {
   const [ghlInput, setGhlInput] = useState('');
   const [savingGhl, setSavingGhl] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [togglingActive, setTogglingActive] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -59,17 +79,41 @@ export default function AdminPanel() {
       return;
     }
 
-    loadAccounts();
+    loadData();
   }
 
-  async function loadAccounts() {
-    const { data } = await supabase
-      .from('ner_accounts')
-      .select('*')
-      .order('created_at', { ascending: false });
+  async function loadData() {
+    const [accountsRes, appsRes, accessRes] = await Promise.all([
+      supabase.from('ner_accounts').select('*').order('created_at', { ascending: false }),
+      supabase.from('hub_apps').select('id, name, slug, is_active'),
+      supabase.from('account_app_access').select('app_id, account_id'),
+    ]);
 
-    setAccounts(data || []);
+    setAccounts(accountsRes.data || []);
+    setApps(appsRes.data || []);
+    setAppAccess(accessRes.data || []);
     setLoading(false);
+  }
+
+  function getAccountApps(accountId: string) {
+    const appIds = appAccess.filter(a => a.account_id === accountId).map(a => a.app_id);
+    return apps.filter(app => appIds.includes(app.id));
+  }
+
+  async function handleToggleActive(acc: NerAccount) {
+    setTogglingActive(acc.id);
+    const { error } = await supabase
+      .from('ner_accounts')
+      .update({ is_active: !acc.is_active })
+      .eq('id', acc.id);
+
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: acc.is_active ? 'Cuenta desactivada' : 'Cuenta activada' });
+      await loadData();
+    }
+    setTogglingActive(null);
   }
 
   async function handleCreate() {
@@ -111,7 +155,7 @@ export default function AdminPanel() {
         }
         setForm({ account_name: '', email: '', phone: '', plan: 'essential', ghl_contact_id: '' });
         setShowForm(false);
-        loadAccounts();
+        loadData();
       }
     } catch (err: any) {
       toast({ title: 'Error', description: err.message || 'Error al crear cuenta', variant: 'destructive' });
@@ -126,6 +170,14 @@ export default function AdminPanel() {
     elite: 'bg-accent/20 text-accent',
   };
 
+  const TOOL_ICONS: Record<string, string> = {
+    evidence: '📂',
+    cspa: '📊',
+    affidavit: '📝',
+    'uscis-analyzer': '🔍',
+    tracker: '📡',
+  };
+
   return (
     <div className="min-h-screen bg-background grid-bg">
       <div className="max-w-5xl mx-auto px-4 py-8">
@@ -134,9 +186,13 @@ export default function AdminPanel() {
           <button onClick={() => navigate('/dashboard')} className="p-2 rounded-lg hover:bg-secondary transition-colors">
             <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold text-foreground">Panel de Administración</h1>
-            <p className="text-sm text-muted-foreground">Cuentas, analytics y control de plataforma</p>
+            <p className="text-sm text-muted-foreground">Cuentas, herramientas, analytics y control de plataforma</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-jarvis" />
+            <span className="text-xs text-jarvis font-mono">OWNER</span>
           </div>
         </div>
 
@@ -144,7 +200,7 @@ export default function AdminPanel() {
           <TabsList className="bg-secondary/50 border border-border">
             <TabsTrigger value="accounts" className="data-[state=active]:bg-jarvis/20 data-[state=active]:text-jarvis">
               <Building2 className="w-4 h-4 mr-2" />
-              Cuentas
+              Cuentas ({accounts.length})
             </TabsTrigger>
             <TabsTrigger value="analytics" className="data-[state=active]:bg-jarvis/20 data-[state=active]:text-jarvis">
               <BarChart3 className="w-4 h-4 mr-2" />
@@ -222,93 +278,159 @@ export default function AdminPanel() {
               </Card>
             ) : (
               <div className="space-y-3">
-                {accounts.map(acc => (
-                  <Card key={acc.id} className="glow-border hover:border-jarvis/30 transition-colors">
-                    <CardContent className="py-4 px-5 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center">
-                            <Building2 className="w-5 h-5 text-jarvis" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-foreground text-sm">{acc.account_name}</h3>
-                            <p className="text-xs text-muted-foreground">{new Date(acc.created_at).toLocaleDateString('es-ES')}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Badge className={planColors[acc.plan] || planColors.essential}>{acc.plan}</Badge>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Users className="w-3.5 h-3.5" />
-                            <span>{acc.max_users}</span>
-                          </div>
-                          <div className={`w-2 h-2 rounded-full ${acc.is_active ? 'bg-emerald-500' : 'bg-destructive'}`} />
-                        </div>
-                      </div>
+                {accounts.map(acc => {
+                  const accountApps = getAccountApps(acc.id);
+                  const isExpanded = expandedAccount === acc.id;
 
-                      {/* NER Contact ID row */}
-                      <div className="flex items-center gap-2 pl-14">
-                        <Link2 className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
-                        {editingGhl === acc.id ? (
-                          <>
-                            <Input
-                              value={ghlInput}
-                              onChange={e => setGhlInput(e.target.value)}
-                              placeholder="NER Contact ID"
-                              className="h-7 text-xs max-w-[220px]"
-                            />
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs text-jarvis"
-                              disabled={savingGhl}
-                              onClick={async () => {
-                                setSavingGhl(true);
-                                await supabase.functions.invoke('provision-account', {
-                                  body: { __update_ghl: true, account_id: acc.id, ghl_contact_id: ghlInput || null },
-                                });
-                                setEditingGhl(null);
-                                setSavingGhl(false);
-                                loadAccounts();
-                                toast({ title: 'GHL ID actualizado' });
-                              }}
-                            >
-                              {savingGhl ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">
-                              {acc.ghl_contact_id || '—sin vincular—'}
-                            </span>
-                            {acc.ghl_contact_id && (
-                              <button
-                                onClick={async () => {
-                                  await navigator.clipboard.writeText(
-                                    `https://ner.recursosmigratorios.com/hub?cid=${acc.ghl_contact_id}`
-                                  );
-                                  setCopiedId(acc.id);
-                                  setTimeout(() => setCopiedId(null), 2000);
-                                  toast({ title: 'URL copiada al portapapeles' });
-                                }}
-                                className="p-1 rounded hover:bg-secondary transition-colors"
-                                title="Copiar URL del Hub"
-                              >
-                                {copiedId === acc.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
-                              </button>
-                            )}
+                  return (
+                    <Card key={acc.id} className={`glow-border transition-colors ${!acc.is_active ? 'opacity-60' : 'hover:border-jarvis/30'}`}>
+                      <CardContent className="py-4 px-5 space-y-3">
+                        {/* Main row */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${acc.is_active ? 'bg-jarvis/10 border-jarvis/20' : 'bg-muted border-border'}`}>
+                              <Building2 className={`w-5 h-5 ${acc.is_active ? 'text-jarvis' : 'text-muted-foreground'}`} />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-foreground text-sm">{acc.account_name}</h3>
+                              <p className="text-xs text-muted-foreground">{new Date(acc.created_at).toLocaleDateString('es-ES')}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge className={planColors[acc.plan] || planColors.essential}>{acc.plan}</Badge>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Users className="w-3.5 h-3.5" />
+                              <span>{acc.max_users}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Boxes className="w-3.5 h-3.5" />
+                              <span>{accountApps.length}</span>
+                            </div>
+                            <div className={`w-2 h-2 rounded-full ${acc.is_active ? 'bg-emerald-500' : 'bg-destructive'}`} />
                             <button
-                              onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.ghl_contact_id || ''); }}
+                              onClick={() => setExpandedAccount(isExpanded ? null : acc.id)}
                               className="p-1 rounded hover:bg-secondary transition-colors"
-                              title="Editar NER Contact ID"
                             >
-                              <Pencil className="w-3 h-3 text-muted-foreground" />
+                              {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                             </button>
-                          </>
+                          </div>
+                        </div>
+
+                        {/* NER Contact ID row */}
+                        <div className="flex items-center gap-2 pl-14">
+                          <Link2 className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                          {editingGhl === acc.id ? (
+                            <>
+                              <Input
+                                value={ghlInput}
+                                onChange={e => setGhlInput(e.target.value)}
+                                placeholder="NER Contact ID"
+                                className="h-7 text-xs max-w-[220px]"
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-xs text-jarvis"
+                                disabled={savingGhl}
+                                onClick={async () => {
+                                  setSavingGhl(true);
+                                  await supabase.functions.invoke('provision-account', {
+                                    body: { __update_ghl: true, account_id: acc.id, ghl_contact_id: ghlInput || null },
+                                  });
+                                  setEditingGhl(null);
+                                  setSavingGhl(false);
+                                  loadData();
+                                  toast({ title: 'GHL ID actualizado' });
+                                }}
+                              >
+                                {savingGhl ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">
+                                {acc.ghl_contact_id || '—sin vincular—'}
+                              </span>
+                              {acc.ghl_contact_id && (
+                                <button
+                                  onClick={async () => {
+                                    await navigator.clipboard.writeText(
+                                      `https://ner.recursosmigratorios.com/hub?cid=${acc.ghl_contact_id}`
+                                    );
+                                    setCopiedId(acc.id);
+                                    setTimeout(() => setCopiedId(null), 2000);
+                                    toast({ title: 'URL copiada al portapapeles' });
+                                  }}
+                                  className="p-1 rounded hover:bg-secondary transition-colors"
+                                  title="Copiar URL del Hub"
+                                >
+                                  {copiedId === acc.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.ghl_contact_id || ''); }}
+                                className="p-1 rounded hover:bg-secondary transition-colors"
+                                title="Editar NER Contact ID"
+                              >
+                                <Pencil className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Expanded details */}
+                        {isExpanded && (
+                          <div className="pl-14 pt-2 space-y-4 border-t border-border/50 mt-2">
+                            {/* Tools assigned */}
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Herramientas asignadas</p>
+                              {accountApps.length === 0 ? (
+                                <p className="text-xs text-muted-foreground/60 italic">Ninguna herramienta asignada</p>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {accountApps.map(app => (
+                                    <Badge key={app.id} variant="outline" className="border-jarvis/20 text-foreground text-xs gap-1">
+                                      <span>{TOOL_ICONS[app.slug] || '🔧'}</span>
+                                      {app.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Account info */}
+                            <div className="grid grid-cols-2 gap-4 text-xs">
+                              <div>
+                                <span className="text-muted-foreground">Teléfono:</span>
+                                <span className="ml-2 text-foreground">{acc.phone || '—'}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Max usuarios:</span>
+                                <span className="ml-2 text-foreground">{acc.max_users}</span>
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-4 pt-1">
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={acc.is_active}
+                                  onCheckedChange={() => handleToggleActive(acc)}
+                                  disabled={togglingActive === acc.id}
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                  {togglingActive === acc.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin inline" />
+                                  ) : acc.is_active ? 'Activa' : 'Inactiva'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
