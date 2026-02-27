@@ -143,7 +143,7 @@ export default function HubPage() {
               return (
                 <button
                   key={app.id}
-                  onClick={() => route && navigate(route)}
+                  onClick={() => route && navigate(route, { replace: true })}
                   disabled={!route}
                   className="tool-card text-left p-6 group cursor-pointer"
                 >
