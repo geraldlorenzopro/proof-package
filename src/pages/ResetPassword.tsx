@@ -136,14 +136,10 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-      setPageState('success');
-      setTimeout(() => navigate('/auth', { replace: true }), 3000);
-    } catch (err: any) {
-      // FALLBACK: If upfront MFA detection failed, catch AAL2 error here
-      if (err.message?.includes('AAL2') || err.code === 'insufficient_aal') {
-        // Find the TOTP factor and redirect to MFA step
+      // ALWAYS check AAL level before attempting password update
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aalData && aalData.nextLevel === 'aal2' && aalData.currentLevel !== 'aal2') {
+        // Need MFA first — find factor and switch to MFA view
         const { data: factors } = await supabase.auth.mfa.listFactors();
         const totpFactor = factors?.totp?.find((f: any) => f.status === 'verified');
         if (totpFactor) {
@@ -154,6 +150,13 @@ export default function ResetPassword() {
           return;
         }
       }
+
+      // Either no MFA or already at AAL2 — proceed with update
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setPageState('success');
+      setTimeout(() => navigate('/auth', { replace: true }), 3000);
+    } catch (err: any) {
       setError(err.message || 'Error al actualizar la contraseña.');
     } finally {
       setLoading(false);
