@@ -195,9 +195,9 @@ export default function AdminPanel() {
                       </Select>
                     </div>
                     <div className="space-y-2 sm:col-span-2">
-                      <Label>GHL Contact ID</Label>
+                      <Label>NER Contact ID</Label>
                       <Input value={form.ghl_contact_id} onChange={e => setForm(p => ({ ...p, ghl_contact_id: e.target.value }))} placeholder="l9G97rwZhv1OFxQjAg5U (opcional)" />
-                      <p className="text-[10px] text-muted-foreground">Se usa para el Custom Menu Link en GoHighLevel</p>
+                      <p className="text-[10px] text-muted-foreground">Se usa para generar el enlace seguro del Hub</p>
                     </div>
                   </div>
                   <div className="flex justify-end gap-3 pt-2">
@@ -245,7 +245,7 @@ export default function AdminPanel() {
                         </div>
                       </div>
 
-                      {/* GHL Contact ID row */}
+                      {/* NER Contact ID row */}
                       <div className="flex items-center gap-2 pl-14">
                         <Link2 className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
                         {editingGhl === acc.id ? (
@@ -253,7 +253,7 @@ export default function AdminPanel() {
                             <Input
                               value={ghlInput}
                               onChange={e => setGhlInput(e.target.value)}
-                              placeholder="GHL Contact ID"
+                              placeholder="NER Contact ID"
                               className="h-7 text-xs max-w-[220px]"
                             />
                             <Button
@@ -299,7 +299,7 @@ export default function AdminPanel() {
                             <button
                               onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.ghl_contact_id || ''); }}
                               className="p-1 rounded hover:bg-secondary transition-colors"
-                              title="Editar GHL Contact ID"
+                              title="Editar NER Contact ID"
                             >
                               <Pencil className="w-3 h-3 text-muted-foreground" />
                             </button>
