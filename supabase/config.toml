@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.resolve-hub]
 verify_jwt = false
+
+[functions.hub-redirect]
+verify_jwt = false
