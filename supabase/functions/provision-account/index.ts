@@ -51,6 +51,31 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
+
+    // Handle GHL contact ID update (admin action)
+    if (body.__update_ghl && body.account_id) {
+      const ghlId = body.ghl_contact_id;
+      if (ghlId && (typeof ghlId !== 'string' || ghlId.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(ghlId))) {
+        return new Response(
+          JSON.stringify({ error: "Invalid ghl_contact_id format" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const { error: updateErr } = await supabaseAdmin
+        .from("ner_accounts")
+        .update({ ghl_contact_id: ghlId || null })
+        .eq("id", body.account_id);
+      if (updateErr) {
+        return new Response(
+          JSON.stringify({ error: "Failed to update", detail: updateErr.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { account_name, email, phone, plan, ghl_contact_id } = body;
 
     if (!account_name || !email) {

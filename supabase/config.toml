@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.analyze-uscis-document]
 verify_jwt = false
+
+[functions.resolve-hub]
+verify_jwt = false

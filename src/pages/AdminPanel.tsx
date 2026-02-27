@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, Users, Building2, Loader2, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Building2, Loader2, BarChart3, Link2, Copy, Check, Pencil } from 'lucide-react';
 import AdminAnalytics from '@/components/AdminAnalytics';
 
 interface NerAccount {
@@ -19,6 +19,7 @@ interface NerAccount {
   max_users: number;
   is_active: boolean;
   phone: string | null;
+  ghl_contact_id: string | null;
   created_at: string;
 }
 
@@ -32,7 +33,12 @@ export default function AdminPanel() {
     email: '',
     phone: '',
     plan: 'essential' as string,
+    ghl_contact_id: '',
   });
+  const [editingGhl, setEditingGhl] = useState<string | null>(null);
+  const [ghlInput, setGhlInput] = useState('');
+  const [savingGhl, setSavingGhl] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -80,6 +86,7 @@ export default function AdminPanel() {
           email: form.email,
           phone: form.phone || undefined,
           plan: form.plan,
+          ghl_contact_id: form.ghl_contact_id || undefined,
           source: 'admin',
         },
       });
@@ -102,7 +109,7 @@ export default function AdminPanel() {
         } else {
           toast({ title: 'Cuenta creada', description: 'Cuenta creada exitosamente.' });
         }
-        setForm({ account_name: '', email: '', phone: '', plan: 'essential' });
+        setForm({ account_name: '', email: '', phone: '', plan: 'essential', ghl_contact_id: '' });
         setShowForm(false);
         loadAccounts();
       }
@@ -187,6 +194,11 @@ export default function AdminPanel() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>GHL Contact ID</Label>
+                      <Input value={form.ghl_contact_id} onChange={e => setForm(p => ({ ...p, ghl_contact_id: e.target.value }))} placeholder="l9G97rwZhv1OFxQjAg5U (opcional)" />
+                      <p className="text-[10px] text-muted-foreground">Se usa para el Custom Menu Link en GoHighLevel</p>
+                    </div>
                   </div>
                   <div className="flex justify-end gap-3 pt-2">
                     <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
@@ -212,23 +224,87 @@ export default function AdminPanel() {
               <div className="space-y-3">
                 {accounts.map(acc => (
                   <Card key={acc.id} className="glow-border hover:border-jarvis/30 transition-colors">
-                    <CardContent className="flex items-center justify-between py-4 px-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center">
-                          <Building2 className="w-5 h-5 text-jarvis" />
+                    <CardContent className="py-4 px-5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center">
+                            <Building2 className="w-5 h-5 text-jarvis" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-foreground text-sm">{acc.account_name}</h3>
+                            <p className="text-xs text-muted-foreground">{new Date(acc.created_at).toLocaleDateString('es-ES')}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-foreground text-sm">{acc.account_name}</h3>
-                          <p className="text-xs text-muted-foreground">{new Date(acc.created_at).toLocaleDateString('es-ES')}</p>
+                        <div className="flex items-center gap-3">
+                          <Badge className={planColors[acc.plan] || planColors.essential}>{acc.plan}</Badge>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Users className="w-3.5 h-3.5" />
+                            <span>{acc.max_users}</span>
+                          </div>
+                          <div className={`w-2 h-2 rounded-full ${acc.is_active ? 'bg-emerald-500' : 'bg-destructive'}`} />
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Badge className={planColors[acc.plan] || planColors.essential}>{acc.plan}</Badge>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Users className="w-3.5 h-3.5" />
-                          <span>{acc.max_users}</span>
-                        </div>
-                        <div className={`w-2 h-2 rounded-full ${acc.is_active ? 'bg-emerald-500' : 'bg-destructive'}`} />
+
+                      {/* GHL Contact ID row */}
+                      <div className="flex items-center gap-2 pl-14">
+                        <Link2 className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                        {editingGhl === acc.id ? (
+                          <>
+                            <Input
+                              value={ghlInput}
+                              onChange={e => setGhlInput(e.target.value)}
+                              placeholder="GHL Contact ID"
+                              className="h-7 text-xs max-w-[220px]"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs text-jarvis"
+                              disabled={savingGhl}
+                              onClick={async () => {
+                                setSavingGhl(true);
+                                await supabase.functions.invoke('provision-account', {
+                                  body: { __update_ghl: true, account_id: acc.id, ghl_contact_id: ghlInput || null },
+                                });
+                                setEditingGhl(null);
+                                setSavingGhl(false);
+                                loadAccounts();
+                                toast({ title: 'GHL ID actualizado' });
+                              }}
+                            >
+                              {savingGhl ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">
+                              {acc.ghl_contact_id || '—sin vincular—'}
+                            </span>
+                            {acc.ghl_contact_id && (
+                              <button
+                                onClick={async () => {
+                                  await navigator.clipboard.writeText(
+                                    `https://ner.recursosmigratorios.com/hub?cid=${acc.ghl_contact_id}`
+                                  );
+                                  setCopiedId(acc.id);
+                                  setTimeout(() => setCopiedId(null), 2000);
+                                  toast({ title: 'URL copiada al portapapeles' });
+                                }}
+                                className="p-1 rounded hover:bg-secondary transition-colors"
+                                title="Copiar URL del Hub"
+                              >
+                                {copiedId === acc.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.ghl_contact_id || ''); }}
+                              className="p-1 rounded hover:bg-secondary transition-colors"
+                              title="Editar GHL Contact ID"
+                            >
+                              <Pencil className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
