@@ -15,10 +15,14 @@ export default function Auth() {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
-  // If already logged in, redirect to dashboard
+  // If already logged in, redirect to intended destination or dashboard
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) navigate('/dashboard', { replace: true });
+      if (user) {
+        const returnTo = sessionStorage.getItem('ner_auth_redirect') || '/dashboard';
+        sessionStorage.removeItem('ner_auth_redirect');
+        navigate(returnTo, { replace: true });
+      }
     });
   }, [navigate]);
 
@@ -32,7 +36,9 @@ export default function Auth() {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate('/dashboard', { replace: true });
+        const returnTo = sessionStorage.getItem('ner_auth_redirect') || '/dashboard';
+        sessionStorage.removeItem('ner_auth_redirect');
+        navigate(returnTo, { replace: true });
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
