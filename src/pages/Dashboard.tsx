@@ -73,6 +73,9 @@ export default function Dashboard() {
   const [savingGhl, setSavingGhl] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [togglingActive, setTogglingActive] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterPlan, setFilterPlan] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   // Detail view state
   const [viewingAccount, setViewingAccount] = useState<NerAccount | null>(null);
@@ -526,12 +529,53 @@ export default function Dashboard() {
                 </Card>
               )}
 
+              {/* Search & Filters */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Buscar por nombre..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full bg-card border border-border rounded-lg px-3 py-2 pl-9 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-jarvis/40 transition-colors"
+                  />
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <Select value={filterPlan} onValueChange={setFilterPlan}>
+                  <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="Plan" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los planes</SelectItem>
+                    <SelectItem value="essential">Essential</SelectItem>
+                    <SelectItem value="professional">Professional</SelectItem>
+                    <SelectItem value="elite">Elite</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="Estado" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="active">Activas</SelectItem>
+                    <SelectItem value="inactive">Inactivas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Account list */}
               {loading ? (
                 <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-jarvis" /></div>
-              ) : (
+              ) : (() => {
+                const filtered = accounts
+                  .filter(a => !searchQuery || a.account_name.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .filter(a => filterPlan === 'all' || a.plan === filterPlan)
+                  .filter(a => filterStatus === 'all' || (filterStatus === 'active' ? a.is_active : !a.is_active));
+                return filtered.length === 0 ? (
+                  <div className="glow-border rounded-xl p-8 bg-card text-center">
+                    <Building2 className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
+                    <p className="text-sm text-muted-foreground">No se encontraron cuentas con esos filtros</p>
+                  </div>
+                ) : (
                 <div className="space-y-3">
-                  {accounts.map(acc => {
+                  {filtered.map(acc => {
                     const accountApps = getAccountApps(acc.id);
                     const isExpanded = expandedAccount === acc.id;
                     return (
@@ -634,7 +678,8 @@ export default function Dashboard() {
                     );
                   })}
                 </div>
-              )}
+                );
+              })()}
             </>
           )}
 
