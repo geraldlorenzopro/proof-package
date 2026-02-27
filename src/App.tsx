@@ -13,7 +13,7 @@ import AffidavitTool from "./pages/AffidavitTool";
 import CspaTool from "./pages/CspaTool";
 import ClientUpload from "./pages/ClientUpload";
 import CaseReview from "./pages/CaseReview";
-import AdminPanel from "./pages/AdminPanel";
+// AdminPanel removed — consolidated into Dashboard
 import Features from "./pages/Features";
 import UscisAnalyzer from "./pages/UscisAnalyzer";
 import HubPage from "./pages/HubPage";
@@ -39,7 +39,7 @@ const App = () => (
           <Route path="/dashboard/cspa" element={<CspaTool />} />
           <Route path="/dashboard/tracker" element={<PlaceholderTool tool="tracker" />} />
           <Route path="/upload/:token" element={<ClientUpload />} />
-          <Route path="/dashboard/admin" element={<AdminPanel />} />
+          {/* Admin Panel consolidated into Dashboard */}
           <Route path="/case/:id" element={<CaseReview />} />
           <Route path="/dashboard/uscis-analyzer" element={<UscisAnalyzer />} />
           <Route path="/hub" element={<HubPage />} />
