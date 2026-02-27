@@ -50,18 +50,20 @@ const TOOLS = [
   },
 ];
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { label: 'Hub Central', icon: LayoutDashboard, route: '/dashboard' },
   { label: 'Mis Casos', icon: FileText, route: '/dashboard/cases' },
   { label: 'Herramientas', icon: Zap, route: '/dashboard', section: 'tools' },
-  { label: 'Admin', icon: Shield, route: '/dashboard/admin' },
 ];
+
+const ADMIN_NAV_ITEM = { label: 'Admin', icon: Shield, route: '/dashboard/admin' };
 
 export default function Dashboard() {
   const [profile, setProfile] = useState<{ full_name: string | null; firm_name: string | null } | null>(null);
   const [caseStats, setCaseStats] = useState({ total: 0, pending: 0, completed: 0 });
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -77,6 +79,11 @@ export default function Dashboard() {
       navigate('/auth', { replace: true });
       return;
     }
+    // Check admin role
+    const { data: ownerCheck } = await supabase.rpc('has_account_role', { _user_id: user.id, _role: 'owner' });
+    const { data: adminCheck } = await supabase.rpc('has_account_role', { _user_id: user.id, _role: 'admin' });
+    setIsAdmin(!!ownerCheck || !!adminCheck);
+
     loadData(user.id);
   }
 
@@ -139,7 +146,7 @@ export default function Dashboard() {
 
         {/* Nav */}
         <nav className="flex-1 p-3 space-y-1">
-          {NAV_ITEMS.map(item => {
+          {[...BASE_NAV_ITEMS, ...(isAdmin ? [ADMIN_NAV_ITEM] : [])].map(item => {
             const isActive = location.pathname === item.route;
             return (
               <button
