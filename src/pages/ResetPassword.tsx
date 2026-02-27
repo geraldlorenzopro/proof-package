@@ -17,6 +17,7 @@ export default function ResetPassword() {
   // MFA state
   const [mfaFactorId, setMfaFactorId] = useState('');
   const [mfaCode, setMfaCode] = useState('');
+  const [pendingPassword, setPendingPassword] = useState('');
 
   const navigate = useNavigate();
 
@@ -63,51 +64,21 @@ export default function ResetPassword() {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function decideMfaOrReset(attempt = 0) {
+  async function decideMfaOrReset() {
+    // Try to detect MFA upfront, but we also handle AAL2 errors on submit as fallback
     try {
-      console.log(`[ResetPassword] decideMfaOrReset attempt=${attempt}`);
-      
-      // First check if user has any verified TOTP factors
-      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
-      console.log('[ResetPassword] listFactors result:', JSON.stringify(factors), 'error:', factorsError);
-      
+      const { data: factors } = await supabase.auth.mfa.listFactors();
       const totpFactor = factors?.totp?.find((f: any) => f.status === 'verified');
-      console.log('[ResetPassword] totpFactor:', totpFactor);
-      
       if (totpFactor) {
-        // Double-check AAL level
         const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-        console.log('[ResetPassword] AAL data:', JSON.stringify(aalData));
-        
-        if (aalData?.currentLevel === 'aal2') {
-          console.log('[ResetPassword] Already at AAL2, skipping MFA');
-          setPageState('reset');
+        if (aalData?.currentLevel !== 'aal2') {
+          setMfaFactorId(totpFactor.id);
+          setPageState('mfa');
           return;
         }
-        // Needs MFA verification
-        console.log('[ResetPassword] Setting MFA state with factorId:', totpFactor.id);
-        setMfaFactorId(totpFactor.id);
-        setPageState('mfa');
-        return;
       }
-
-      // No TOTP factors found — might be timing issue
-      if (attempt < 3) {
-        console.log('[ResetPassword] No factors found, retrying in 1s...');
-        await new Promise(r => setTimeout(r, 1000));
-        return decideMfaOrReset(attempt + 1);
-      }
-
-      console.log('[ResetPassword] No MFA factors after retries, showing reset form');
-      setPageState('reset');
-    } catch (err) {
-      console.error('[ResetPassword] decideMfaOrReset error:', err);
-      if (attempt < 3) {
-        await new Promise(r => setTimeout(r, 1000));
-        return decideMfaOrReset(attempt + 1);
-      }
-      setPageState('reset');
-    }
+    } catch { /* fallback to reset form, MFA will be caught on submit */ }
+    setPageState('reset');
   }
 
   async function handleMfaVerify(e: React.FormEvent) {
@@ -129,7 +100,15 @@ export default function ResetPassword() {
       });
       if (verifyError) throw verifyError;
 
-      setPageState('reset');
+      // Now try updating the password automatically if we already have it
+      if (pendingPassword) {
+        const { error: updateError } = await supabase.auth.updateUser({ password: pendingPassword });
+        if (updateError) throw updateError;
+        setPageState('success');
+        setTimeout(() => navigate('/auth', { replace: true }), 3000);
+      } else {
+        setPageState('reset');
+      }
     } catch (err: any) {
       setError(
         err.message === 'Invalid TOTP code'
@@ -162,6 +141,19 @@ export default function ResetPassword() {
       setPageState('success');
       setTimeout(() => navigate('/auth', { replace: true }), 3000);
     } catch (err: any) {
+      // FALLBACK: If upfront MFA detection failed, catch AAL2 error here
+      if (err.message?.includes('AAL2') || err.code === 'insufficient_aal') {
+        // Find the TOTP factor and redirect to MFA step
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const totpFactor = factors?.totp?.find((f: any) => f.status === 'verified');
+        if (totpFactor) {
+          setPendingPassword(password);
+          setMfaFactorId(totpFactor.id);
+          setError('');
+          setPageState('mfa');
+          return;
+        }
+      }
       setError(err.message || 'Error al actualizar la contraseña.');
     } finally {
       setLoading(false);
