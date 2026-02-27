@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Save, Eye, EyeOff, User, Lock, Loader2, CheckCircle, Upload, X, Mail } from 'lucide-react';
+import PasswordStrengthMeter, { getPasswordScore } from '@/components/PasswordStrengthMeter';
+import MfaSetup from '@/components/MfaSetup';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
@@ -108,8 +110,8 @@ export default function Settings() {
   }
 
   async function handleChangePassword() {
-    if (newPassword.length < 8) {
-      toast.error('La nueva contraseña debe tener al menos 8 caracteres');
+    if (getPasswordScore(newPassword) < 5) {
+      toast.error('La contraseña no cumple todos los requisitos de seguridad');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -259,11 +261,12 @@ export default function Settings() {
             <div>
               <Label htmlFor="newPassword" className="text-xs text-muted-foreground mb-1.5 block">Nueva contraseña</Label>
               <div className="relative">
-                <Input id="newPassword" type={showNew ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mínimo 8 caracteres" className="bg-background border-border pr-10" />
+                <Input id="newPassword" type={showNew ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Ingresa una contraseña segura" className="bg-background border-border pr-10" />
                 <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <PasswordStrengthMeter password={newPassword} />
             </div>
             <div>
               <Label htmlFor="confirmPassword" className="text-xs text-muted-foreground mb-1.5 block">Confirmar contraseña</Label>
@@ -285,7 +288,7 @@ export default function Settings() {
 
             <button
               onClick={handleChangePassword}
-              disabled={changingPassword || newPassword.length < 8 || newPassword !== confirmPassword}
+              disabled={changingPassword || getPasswordScore(newPassword) < 5 || newPassword !== confirmPassword}
               className="bg-accent/10 border border-accent/20 text-accent font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-accent/20 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {changingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
@@ -293,6 +296,9 @@ export default function Settings() {
             </button>
           </div>
         </div>
+
+        {/* MFA Section */}
+        <MfaSetup />
       </div>
     </div>
   );
