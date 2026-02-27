@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
     }
 
     const valid = await verifyHmac(cid, ts, sig, hubSecret);
+    console.log("HMAC debug:", { cid, ts, sig: sig.substring(0, 8) + "...", valid, secretLen: hubSecret.length });
     if (!valid) {
       return new Response(
         JSON.stringify({ error: "Invalid signature" }),
