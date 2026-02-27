@@ -4,60 +4,82 @@ import { Lock, Eye, EyeOff, ArrowLeft, KeyRound, Loader2, CheckCircle, ShieldChe
 import { useNavigate } from 'react-router-dom';
 import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
 
+type PageState = 'loading' | 'invalid' | 'mfa' | 'reset' | 'success';
+
 export default function ResetPassword() {
+  const [pageState, setPageState] = useState<PageState>('loading');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [ready, setReady] = useState(false);
 
   // MFA state
-  const [needsMfa, setNeedsMfa] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState('');
   const [mfaCode, setMfaCode] = useState('');
-  const [mfaVerified, setMfaVerified] = useState(false);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash.includes('type=recovery')) {
-      setReady(true);
-    }
+    let handled = false;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (handled) return;
       if (event === 'PASSWORD_RECOVERY') {
-        setReady(true);
-        // Check if user has MFA enrolled
-        await checkMfaRequired();
+        handled = true;
+        await decideMfaOrReset();
       }
     });
 
-    // Also check on mount if already in recovery session
+    // Fallback: if hash has type=recovery, wait a moment for session to establish then check
+    const hash = window.location.hash;
     if (hash.includes('type=recovery')) {
-      checkMfaRequired();
+      const timer = setTimeout(async () => {
+        if (handled) return;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          handled = true;
+          await decideMfaOrReset();
+        } else {
+          setPageState('invalid');
+        }
+      }, 2000);
+      return () => {
+        clearTimeout(timer);
+        subscription.unsubscribe();
+      };
+    } else {
+      // No recovery token in URL — check if there's already a session (e.g. redirected)
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (session && !handled) {
+          handled = true;
+          await decideMfaOrReset();
+        } else if (!handled) {
+          setPageState('invalid');
+        }
+      });
     }
 
     return () => subscription.unsubscribe();
   }, []);
 
-  async function checkMfaRequired() {
+  async function decideMfaOrReset() {
     try {
       const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (aalData && aalData.nextLevel === 'aal2' && aalData.currentLevel !== 'aal2') {
+        // User has MFA, needs to verify first
         const { data: factors } = await supabase.auth.mfa.listFactors();
         const totpFactor = factors?.totp?.find((f: any) => f.status === 'verified');
         if (totpFactor) {
           setMfaFactorId(totpFactor.id);
-          setNeedsMfa(true);
+          setPageState('mfa');
+          return;
         }
-      } else if (aalData?.currentLevel === 'aal2') {
-        setMfaVerified(true);
       }
+      // No MFA or already at AAL2
+      setPageState('reset');
     } catch {
-      // If MFA check fails, proceed without — updateUser will catch it
+      setPageState('reset');
     }
   }
 
@@ -80,10 +102,13 @@ export default function ResetPassword() {
       });
       if (verifyError) throw verifyError;
 
-      setMfaVerified(true);
-      setNeedsMfa(false);
+      setPageState('reset');
     } catch (err: any) {
-      setError(err.message === 'Invalid TOTP code' ? 'Código incorrecto. Intenta de nuevo.' : (err.message || 'Error de verificación'));
+      setError(
+        err.message === 'Invalid TOTP code'
+          ? 'Código incorrecto. Intenta de nuevo.'
+          : (err.message || 'Error de verificación')
+      );
       setMfaCode('');
     } finally {
       setLoading(false);
@@ -107,7 +132,7 @@ export default function ResetPassword() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      setSuccess(true);
+      setPageState('success');
       setTimeout(() => navigate('/auth', { replace: true }), 3000);
     } catch (err: any) {
       setError(err.message || 'Error al actualizar la contraseña.');
@@ -121,22 +146,36 @@ export default function ResetPassword() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-2xl gradient-hero flex items-center justify-center mx-auto mb-4 shadow-primary">
-            {needsMfa ? (
+            {pageState === 'mfa' ? (
               <ShieldCheck className="w-7 h-7 text-accent" />
             ) : (
               <KeyRound className="w-7 h-7 text-accent" />
             )}
           </div>
           <h1 className="font-display text-2xl font-bold text-foreground">
-            {needsMfa ? 'Verificación 2FA' : 'Nueva Contraseña'}
+            {pageState === 'mfa' ? 'Verificación 2FA' : 'Nueva Contraseña'}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {needsMfa ? 'Verifica tu identidad antes de cambiar la contraseña' : 'Ingresa tu nueva contraseña segura'}
+            {pageState === 'mfa'
+              ? 'Verifica tu identidad antes de cambiar la contraseña'
+              : pageState === 'loading'
+                ? 'Preparando…'
+                : 'Ingresa tu nueva contraseña segura'}
           </p>
         </div>
 
         <div className="bg-card border border-border rounded-2xl shadow-card p-8">
-          {success ? (
+
+          {/* Loading */}
+          {pageState === 'loading' && (
+            <div className="text-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-accent mx-auto mb-3" />
+              <p className="text-muted-foreground text-sm">Verificando enlace de recuperación…</p>
+            </div>
+          )}
+
+          {/* Success */}
+          {pageState === 'success' && (
             <div className="text-center space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
                 <CheckCircle className="w-8 h-8 text-accent" />
@@ -144,7 +183,10 @@ export default function ResetPassword() {
               <p className="text-foreground font-semibold">¡Contraseña actualizada!</p>
               <p className="text-muted-foreground text-sm">Serás redirigido al inicio de sesión…</p>
             </div>
-          ) : !ready ? (
+          )}
+
+          {/* Invalid link */}
+          {pageState === 'invalid' && (
             <div className="text-center space-y-4">
               <p className="text-muted-foreground text-sm">
                 Este enlace no es válido o ha expirado. Solicita un nuevo enlace de recuperación.
@@ -157,8 +199,10 @@ export default function ResetPassword() {
                 Volver al inicio de sesión
               </button>
             </div>
-          ) : needsMfa && !mfaVerified ? (
-            /* MFA Verification Step */
+          )}
+
+          {/* MFA Step */}
+          {pageState === 'mfa' && (
             <form onSubmit={handleMfaVerify} className="space-y-5">
               <div className="text-center space-y-2 mb-2">
                 <div className="w-16 h-16 mx-auto rounded-2xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center">
@@ -206,8 +250,10 @@ export default function ResetPassword() {
                 )}
               </button>
             </form>
-          ) : (
-            /* Password Reset Form */
+          )}
+
+          {/* Password Reset Form */}
+          {pageState === 'reset' && (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
