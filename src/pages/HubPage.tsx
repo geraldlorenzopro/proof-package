@@ -147,7 +147,7 @@ export default function HubPage() {
                     if (route) {
                       // Save hub return URL so tools can navigate back
                       sessionStorage.setItem('ner_hub_return', window.location.pathname + window.location.search);
-                      navigate(route, { replace: true });
+                      navigate(route);
                     }
                   }}
                   disabled={!route}
