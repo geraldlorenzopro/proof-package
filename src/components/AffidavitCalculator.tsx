@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { trackToolUsage } from "@/lib/trackUsage";
 import {
   calculateSponsorCapacity,
   formatCurrency,
@@ -344,6 +345,7 @@ export default function AffidavitCalculator() {
     const res = calculateSponsorCapacity(incomeNum, toFilingStatus(filingStatus), depNum, region, sponsorType);
     setResult(res);
     setStep("result");
+    trackToolUsage("affidavit-calculator", "calculate", { filingStatus, region, sponsorType, dependents: depNum });
     setShowBreakdown(false);
   };
 

@@ -14,6 +14,7 @@ import {
   ListChecks, AlertTriangle, X, Loader2, ChevronRight, Camera, ArrowLeft
 } from 'lucide-react';
 import { LangToggle } from '@/components/LangToggle';
+import { trackToolUsage } from '@/lib/trackUsage';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
   AlertDialog,
@@ -171,6 +172,7 @@ export default function Index() {
     setGenerating(true);
     setShowConfirm(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    trackToolUsage("evidence-organizer", "generate_pdf", { itemCount: numberedItems.length });
     try {
       await generateEvidencePDF(numberedItems, caseInfo, (status) => setPdfStatus(status));
     } finally {
