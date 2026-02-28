@@ -430,50 +430,73 @@ export default function ChecklistGenerator() {
   // ── SPLASH ──
   if (step === "splash") {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden px-4">
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(202,138,4,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(202,138,4,0.03)_1px,transparent_1px)] bg-[size:32px_32px]" />
-        <div className="relative z-10 flex flex-col items-center gap-6 animate-fade-in">
-          <img src={nerLogo} alt="NER" className="h-14 w-auto opacity-90" />
-          <div className="relative">
-            <div className="absolute -inset-4 bg-yellow-500/10 rounded-full blur-xl animate-pulse" />
-            <ClipboardList className="w-16 h-16 text-yellow-500 relative" />
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight text-center">
-            Checklist Generator
-          </h1>
-          <p className="text-muted-foreground text-center max-w-md text-sm">
-            {lang === "es"
-              ? "Sube el reporte del USCIS Analyzer y genera un checklist de evidencias organizado e interactivo."
-              : "Upload the USCIS Analyzer report and generate an organized, interactive evidence checklist."}
-          </p>
-          <Button onClick={handleStart} className="bg-yellow-600 hover:bg-yellow-700 text-white px-8 py-3 rounded-xl text-base font-semibold mt-2">
-            {lang === "es" ? "Comenzar" : "Get Started"} <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background grid-bg">
         <div className="absolute top-4 right-4 z-20">
           <LangToggle lang={lang} setLang={setLang} />
+        </div>
+        <div className="absolute top-0 right-0 w-72 h-72 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--jarvis)),_transparent_70%)] pointer-events-none" />
+
+        <div
+          className="relative z-10 flex flex-col items-center gap-7 cursor-pointer select-none px-10 py-12 max-w-sm w-full text-center"
+          onClick={() => setShowDisclaimer(true)}
+        >
+          <div className="w-20 h-20 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center animate-float">
+            <ClipboardList className="w-10 h-10 text-accent" />
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs font-semibold uppercase tracking-[0.3em] mb-2">NER IMMIGRATION AI</p>
+            <h1 className="font-bold leading-tight">
+              <span className="text-4xl font-display text-accent glow-text-gold">Checklist</span>
+              <br />
+              <span className="text-3xl text-foreground">Generator</span>
+            </h1>
+            <p className="text-muted-foreground text-sm mt-3">{lang === 'es' ? 'Organiza tu evidencia de forma inteligente' : 'Organize your evidence intelligently'}</p>
+          </div>
+          <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5 animate-glow-pulse">
+            <ClipboardList className="w-4 h-4 text-accent" />
+            <span className="text-sm font-medium text-accent">{lang === 'es' ? 'Toca para comenzar' : 'Tap to start'}</span>
+          </div>
         </div>
 
         {/* Disclaimer Modal */}
         <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-md bg-card border-accent/20">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-yellow-500" />
-                {lang === "es" ? "Aviso Legal" : "Legal Disclaimer"}
+              <DialogTitle className="flex items-center justify-between text-base text-foreground">
+                <span className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-accent" />
+                  {lang === 'es' ? 'Aviso Legal Importante' : 'Important Legal Notice'}
+                </span>
+                <LangToggle lang={lang} setLang={setLang} />
               </DialogTitle>
             </DialogHeader>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              {DISCLAIMER_BULLETS[lang].map((b, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="text-yellow-500 shrink-0">•</span>
-                  {b}
-                </li>
-              ))}
-            </ul>
-            <Button onClick={handleAcceptDisclaimer} className="w-full bg-yellow-600 hover:bg-yellow-700 text-white mt-2">
-              {lang === "es" ? "Acepto y Continuar" : "Accept & Continue"}
-            </Button>
+            <div className="space-y-4">
+              <div className="bg-accent/10 border border-accent/20 rounded-xl p-4">
+                <p className="text-foreground text-sm leading-relaxed font-semibold mb-2">
+                  {lang === 'es' ? 'Esta herramienta es de uso exclusivo para profesionales de inmigracion.' : 'This tool is for exclusive use by immigration professionals.'}
+                </p>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {lang === 'es'
+                    ? 'NER Checklist Generator es un modulo de apoyo organizativo integrado en la plataforma NER Immigration AI. El checklist generado no constituye asesoria legal.'
+                    : 'NER Checklist Generator is an organizational support module integrated into the NER Immigration AI platform. The generated checklist does not constitute legal advice.'}
+                </p>
+              </div>
+              <ul className="space-y-2 text-sm text-foreground/80">
+                {DISCLAIMER_BULLETS[lang].map((b, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="border-t border-border pt-3 flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">{lang === 'es' ? 'Al continuar acepta los terminos de uso.' : 'By continuing you accept the terms of use.'}</p>
+                <Button onClick={handleAcceptDisclaimer} className="gradient-gold text-accent-foreground font-semibold px-6 shrink-0" size="sm">
+                  {lang === 'es' ? 'Deseo Continuar' : 'Continue'}
+                  <ChevronRight className="ml-1 w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
