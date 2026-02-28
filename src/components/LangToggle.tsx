@@ -1,11 +1,12 @@
+import { forwardRef } from 'react';
 import { Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Lang = 'es' | 'en';
 
-export function LangToggle({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
+export const LangToggle = forwardRef<HTMLDivElement, { lang: Lang; setLang: (l: Lang) => void }>(({ lang, setLang }, ref) => {
   return (
-    <div className="flex items-center gap-1 rounded-full border border-border bg-secondary/50 px-1.5 py-1">
+    <div ref={ref} className="flex items-center gap-1 rounded-full border border-border bg-secondary/50 px-1.5 py-1">
       <Globe className="w-3.5 h-3.5 mr-0.5 text-muted-foreground" />
       {(["es", "en"] as Lang[]).map((l) => (
         <button
@@ -21,4 +22,6 @@ export function LangToggle({ lang, setLang }: { lang: Lang; setLang: (l: Lang) =
       ))}
     </div>
   );
-}
+});
+
+LangToggle.displayName = "LangToggle";
