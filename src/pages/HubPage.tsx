@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, FolderOpen, Calculator, BarChart3, Activity, Shield, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Loader2, FolderOpen, Calculator, BarChart3, Activity, Shield, AlertTriangle, ChevronRight, Clock, FileSearch } from 'lucide-react';
 
 const ICON_MAP: Record<string, any> = {
   evidence: FolderOpen,
   cspa: BarChart3,
   affidavit: Calculator,
   tracker: Activity,
+  'uscis-analyzer': FileSearch,
+  'deadline-calculator': Clock,
 };
 
 const ROUTE_MAP: Record<string, string> = {
@@ -15,6 +17,8 @@ const ROUTE_MAP: Record<string, string> = {
   cspa: '/dashboard/cspa',
   affidavit: '/dashboard/affidavit',
   tracker: '/dashboard/tracker',
+  'uscis-analyzer': '/dashboard/uscis-analyzer',
+  'deadline-calculator': '/dashboard/deadlines',
 };
 
 interface HubApp {
