@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download, Copy, Check, Shield } from "lucide-react";
+import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download, Copy, Check, Shield, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -827,6 +827,43 @@ export default function UscisAnalyzer() {
                     </div>
                   )}
                 </div>
+
+                {/* ── DEADLINE BANNER ── */}
+                {!isLoading && result && (() => {
+                  const DEADLINE_MAP: Record<string, { days: number; basis: string }> = {
+                    "Request for Evidence (RFE)": { days: 87, basis: "8 CFR § 103.2(b)(8)(iv)" },
+                    "Request for Initial Evidence (RFIE)": { days: 87, basis: "8 CFR § 103.2(b)(8)(iv)" },
+                    "Notice of Intent to Deny (NOID)": { days: 33, basis: "8 CFR § 103.2(b)(8)(iv)" },
+                    "Notice of Intent to Revoke (NOIR)": { days: 33, basis: "8 CFR § 205.2(b)" },
+                    "Notice of Intent to Terminate (NOTT)": { days: 33, basis: "8 CFR § 204.6" },
+                  };
+                  const info = DEADLINE_MAP[documentType];
+                  if (!info) return null;
+                  const isShort = info.days <= 33;
+                  return (
+                    <div className={`rounded-xl border p-4 mb-4 flex items-start gap-3 ${isShort ? 'bg-destructive/10 border-destructive/30' : 'bg-accent/10 border-accent/30'}`}>
+                      <Clock className={`w-5 h-5 shrink-0 mt-0.5 ${isShort ? 'text-destructive' : 'text-accent'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold ${isShort ? 'text-destructive' : 'text-accent'}`}>
+                          {lang === 'es' 
+                            ? `⏰ Plazo de respuesta: ${info.days} días calendario` 
+                            : `⏰ Response deadline: ${info.days} calendar days`}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {lang === 'es' 
+                            ? `Contados desde la fecha de emisión del documento. Base legal: ${info.basis}` 
+                            : `Counted from the document issuance date. Legal basis: ${info.basis}`}
+                        </p>
+                        {isShort && (
+                          <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" />
+                            {lang === 'es' ? 'Plazo corto — actúe con urgencia.' : 'Short deadline — act urgently.'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div
                   ref={resultRef}
