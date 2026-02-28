@@ -375,7 +375,7 @@ export default function ChecklistGenerator() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,image/*"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*"
               className="hidden"
               onChange={(e) => handleFileSelect(e.target.files)}
             />
