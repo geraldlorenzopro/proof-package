@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download, Copy, Check, Shield, Clock, AlertTriangle } from "lucide-react";
+import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download, Copy, Check, Shield, Clock, AlertTriangle, History, Share2, PanelLeftClose, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,6 +10,10 @@ import nerLogo from "@/assets/ner-logo.png";
 import jsPDF from "jspdf";
 import { LangToggle } from "@/components/LangToggle";
 import { trackToolUsage } from "@/lib/trackUsage";
+import { supabase } from "@/integrations/supabase/client";
+import AnalysisHistory from "@/components/AnalysisHistory";
+import AnalysisSummaryCard, { detectUrgency } from "@/components/AnalysisSummaryCard";
+import EvidenceChecklist from "@/components/EvidenceChecklist";
 
 const DOCUMENT_TYPES = [
   "Request for Evidence (RFE)",
@@ -42,7 +46,7 @@ const DISCLAIMER_BULLETS: Record<string, string[]> = {
   ],
 };
 
-type Step = "splash" | "upload" | "result";
+type Step = "splash" | "upload" | "result" | "history";
 
 interface UploadedFile {
   name: string;
@@ -88,7 +92,10 @@ export default function UscisAnalyzer() {
   const resultRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
-
+  const [savedAnalysisId, setSavedAnalysisId] = useState<string | null>(null);
+  const [showSideBySide, setShowSideBySide] = useState(false);
+  const [savedChecklist, setSavedChecklist] = useState<any[]>([]);
+  const [shareToken, setShareToken] = useState<string | null>(null);
   // Sync lang toggle with language selector
   useEffect(() => {
     setLanguage(lang === 'es' ? 'Español' : 'Inglés');
@@ -108,6 +115,11 @@ export default function UscisAnalyzer() {
     if (step === "upload") setStep("splash");
     else if (step === "result") {
       setResult("");
+      setSavedAnalysisId(null);
+      setShareToken(null);
+      setSavedChecklist([]);
+      setStep("upload");
+    } else if (step === "history") {
       setStep("upload");
     }
   };
@@ -233,6 +245,34 @@ export default function UscisAnalyzer() {
           }
         }
       }
+
+      // Save to history
+      if (accumulated) {
+        try {
+          const { data: user } = await supabase.auth.getUser();
+          if (user?.user) {
+            const urgency = detectUrgency(documentType);
+            const { data: inserted, error: insertErr } = await supabase
+              .from("analysis_history" as any)
+              .insert({
+                user_id: user.user.id,
+                document_type: documentType,
+                language,
+                result_markdown: accumulated,
+                file_names: uploadedFiles.map((f) => f.name),
+                urgency_level: urgency,
+              } as any)
+              .select("id, share_token")
+              .single();
+            if (!insertErr && inserted) {
+              setSavedAnalysisId((inserted as any).id);
+              setShareToken((inserted as any).share_token);
+            }
+          }
+        } catch {
+          // Silent fail — analysis still shows
+        }
+      }
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || "Error al analizar el documento");
@@ -249,6 +289,32 @@ export default function UscisAnalyzer() {
     setUploadedFiles([]);
     setResult("");
     setCopied(false);
+    setSavedAnalysisId(null);
+    setShareToken(null);
+    setSavedChecklist([]);
+    setShowSideBySide(false);
+  };
+
+  const handleShare = async () => {
+    if (!shareToken) return;
+    const url = `${window.location.origin}/shared-analysis/${shareToken}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success(lang === 'es' ? 'Enlace copiado al portapapeles' : 'Link copied to clipboard');
+    } catch {
+      toast.error("Error");
+    }
+  };
+
+  const handleViewHistory = (record: any) => {
+    setDocumentType(record.document_type);
+    setLanguage(record.language);
+    setResult(record.result_markdown);
+    setSavedAnalysisId(record.id);
+    setShareToken(record.share_token);
+    setSavedChecklist(record.checklist || []);
+    setUploadedFiles([]);
+    setStep("result");
   };
 
   const handleCopy = async () => {
@@ -680,11 +746,29 @@ export default function UscisAnalyzer() {
               <FileSearch className="w-4 h-4 text-accent" />
                 <span className="font-display text-xs tracking-wider text-accent">USCIS DOCUMENT ANALYZER</span>
               </div>
-              <LangToggle lang={lang} setLang={setLang} />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setStep(step === "history" ? "upload" : "history")}
+                  className={`p-1.5 rounded-lg transition-colors ${step === "history" ? "bg-jarvis/20 text-jarvis" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                  title={lang === "es" ? "Historial" : "History"}
+                >
+                  <History className="w-4 h-4" />
+                </button>
+                <LangToggle lang={lang} setLang={setLang} />
+              </div>
             </div>
           </header>
 
           <div className="max-w-3xl mx-auto px-4 py-8">
+            {/* History Step */}
+            {step === "history" && (
+              <AnalysisHistory
+                lang={lang}
+                onViewAnalysis={handleViewHistory}
+                onClose={() => setStep("upload")}
+              />
+            )}
+
             {/* Upload Step */}
             {step === "upload" && (
               <div>
@@ -803,17 +887,27 @@ export default function UscisAnalyzer() {
             {/* Result (streaming) */}
             {step === "result" && (
               <div>
+                {/* Action bar */}
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-lg font-semibold text-foreground">Analisis del documento</h2>
-                    <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+                    <h2 className="text-lg font-semibold text-foreground">
+                      {lang === 'es' ? 'Análisis del documento' : 'Document Analysis'}
+                    </h2>
+                    <div className="flex gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
                       <span className="px-2 py-0.5 rounded bg-muted">{documentType}</span>
                       <span className="px-2 py-0.5 rounded bg-muted">{language}</span>
-                      <span className="px-2 py-0.5 rounded bg-muted">{uploadedFiles.length} archivo(s)</span>
+                      {uploadedFiles.length > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-muted">{uploadedFiles.length} archivo(s)</span>
+                      )}
                     </div>
                   </div>
                   {!isLoading && result && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5 flex-wrap justify-end">
+                      {shareToken && (
+                        <Button variant="outline" size="sm" onClick={handleShare} className="border-jarvis/30 text-jarvis hover:bg-jarvis/10">
+                          <Share2 className="w-3 h-3 mr-1" /> {lang === 'es' ? 'Compartir' : 'Share'}
+                        </Button>
+                      )}
                       <Button variant="outline" size="sm" onClick={handleCopy}>
                         {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
                         {copied ? "Copiado" : "Copiar"}
@@ -821,109 +915,141 @@ export default function UscisAnalyzer() {
                       <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
                         <Download className="w-3 h-3 mr-1" /> PDF
                       </Button>
+                      {uploadedFiles.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowSideBySide(!showSideBySide)}
+                          className={showSideBySide ? "border-jarvis/30 text-jarvis" : ""}
+                        >
+                          {showSideBySide ? <PanelLeftClose className="w-3 h-3 mr-1" /> : <PanelLeft className="w-3 h-3 mr-1" />}
+                          {lang === 'es' ? 'Original' : 'Original'}
+                        </Button>
+                      )}
                       <Button variant="outline" size="sm" onClick={handleReset}>
-                        <RotateCcw className="w-3 h-3 mr-1" /> Nuevo
+                        <RotateCcw className="w-3 h-3 mr-1" /> {lang === 'es' ? 'Nuevo' : 'New'}
                       </Button>
                     </div>
                   )}
                 </div>
 
-                {/* ── DEADLINE BANNER ── */}
-                {!isLoading && result && (() => {
-                  const DEADLINE_MAP: Record<string, { days: number; basis: string }> = {
-                    "Request for Evidence (RFE)": { days: 87, basis: "8 CFR § 103.2(b)(8)(iv)" },
-                    "Request for Initial Evidence (RFIE)": { days: 87, basis: "8 CFR § 103.2(b)(8)(iv)" },
-                    "Notice of Intent to Deny (NOID)": { days: 33, basis: "8 CFR § 103.2(b)(8)(iv)" },
-                    "Notice of Intent to Revoke (NOIR)": { days: 33, basis: "8 CFR § 205.2(b)" },
-                    "Notice of Intent to Terminate (NOTT)": { days: 33, basis: "8 CFR § 204.6" },
-                  };
-                  const info = DEADLINE_MAP[documentType];
-                  if (!info) return null;
-                  const isShort = info.days <= 33;
-                  return (
-                    <div className={`rounded-xl border p-4 mb-4 flex items-start gap-3 ${isShort ? 'bg-destructive/10 border-destructive/30' : 'bg-accent/10 border-accent/30'}`}>
-                      <Clock className={`w-5 h-5 shrink-0 mt-0.5 ${isShort ? 'text-destructive' : 'text-accent'}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold ${isShort ? 'text-destructive' : 'text-accent'}`}>
-                          {lang === 'es' 
-                            ? `⏰ Plazo de respuesta: ${info.days} días calendario` 
-                            : `⏰ Response deadline: ${info.days} calendar days`}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {lang === 'es' 
-                            ? `Contados desde la fecha de emisión del documento. Base legal: ${info.basis}` 
-                            : `Counted from the document issuance date. Legal basis: ${info.basis}`}
-                        </p>
-                        {isShort && (
-                          <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3" />
-                            {lang === 'es' ? 'Plazo corto — actúe con urgencia.' : 'Short deadline — act urgently.'}
-                          </p>
-                        )}
+                {/* ── EXECUTIVE SUMMARY CARD ── */}
+                {!isLoading && result && (
+                  <AnalysisSummaryCard
+                    documentType={documentType}
+                    fileCount={uploadedFiles.length}
+                    result={result}
+                    lang={lang}
+                  />
+                )}
+
+                {/* ── EVIDENCE CHECKLIST ── */}
+                {!isLoading && result && (
+                  <EvidenceChecklist
+                    analysisId={savedAnalysisId}
+                    result={result}
+                    lang={lang}
+                    initialChecklist={savedChecklist}
+                  />
+                )}
+
+                {/* ── SIDE-BY-SIDE or SINGLE VIEW ── */}
+                <div className={showSideBySide ? "grid grid-cols-2 gap-4" : ""}>
+                  {/* Original Document Panel */}
+                  {showSideBySide && uploadedFiles.length > 0 && (
+                    <div className="rounded-xl border bg-card p-4 max-h-[70vh] overflow-y-auto">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                        {lang === 'es' ? 'Documento Original' : 'Original Document'}
+                      </h3>
+                      <div className="space-y-3">
+                        {uploadedFiles.map((file, i) => (
+                          <div key={i}>
+                            {file.type.startsWith("image/") ? (
+                              <img
+                                src={file.base64}
+                                alt={file.name}
+                                className="w-full rounded-lg border border-border"
+                              />
+                            ) : (
+                              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+                                <FileText className="w-5 h-5 text-destructive/70" />
+                                <div>
+                                  <p className="text-sm text-foreground">{file.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {lang === 'es' ? 'Vista previa no disponible para PDF' : 'Preview not available for PDF'}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  );
-                })()}
+                  )}
 
-                <div
-                  ref={resultRef}
-                  className="rounded-xl border bg-card p-6 max-h-[70vh] overflow-y-auto"
-                >
-                  {isLoading && !result && (
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span className="text-sm">Analizando documento con Ner Immigration AI...</span>
-                    </div>
-                  )}
-                  {result && (
-                    <div className="uscis-analysis-content">
-                      <ReactMarkdown
-                        components={{
-                          h1: ({ children }) => (
-                            <h1 className="text-xl font-bold text-foreground mt-8 mb-4 pb-2 border-b border-border first:mt-0">{children}</h1>
-                          ),
-                          h2: ({ children }) => (
-                            <h2 className="text-lg font-bold text-foreground mt-8 mb-3 pb-1.5 border-b border-border/50">{children}</h2>
-                          ),
-                          h3: ({ children }) => (
-                            <h3 className="text-base font-semibold text-foreground mt-6 mb-2">{children}</h3>
-                          ),
-                          p: ({ children }) => (
-                            <p className="text-sm leading-relaxed text-foreground/85 mb-4" style={{ textAlign: "justify" }}>{children}</p>
-                          ),
-                          ul: ({ children }) => (
-                            <ul className="space-y-2 mb-4 ml-1">{children}</ul>
-                          ),
-                          ol: ({ children }) => (
-                            <ol className="space-y-2 mb-4 ml-1 list-decimal list-inside">{children}</ol>
-                          ),
-                          li: ({ children }) => (
-                            <li className="text-sm leading-relaxed text-foreground/85 pl-2 flex gap-2">
-                              <span className="text-accent mt-0.5 shrink-0">•</span>
-                              <span>{children}</span>
-                            </li>
-                          ),
-                          strong: ({ children }) => (
-                            <strong className="font-semibold text-foreground">{children}</strong>
-                          ),
-                          hr: () => (
-                            <hr className="my-6 border-border" />
-                          ),
-                          blockquote: ({ children }) => (
-                            <blockquote className="border-l-2 border-accent/50 pl-4 my-4 text-sm text-foreground/70 italic">{children}</blockquote>
-                          ),
-                        }}
-                      >
-                        {result}
-                      </ReactMarkdown>
-                    </div>
-                  )}
-                  {isLoading && result && (
-                    <div className="mt-4 flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      <span className="text-xs">Generando...</span>
-                    </div>
-                  )}
+                  {/* Analysis Result Panel */}
+                  <div
+                    ref={resultRef}
+                    className="rounded-xl border bg-card p-6 max-h-[70vh] overflow-y-auto"
+                  >
+                    {isLoading && !result && (
+                      <div className="flex items-center gap-3 text-muted-foreground">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span className="text-sm">
+                          {lang === 'es' ? 'Analizando documento con Ner Immigration AI...' : 'Analyzing document with Ner Immigration AI...'}
+                        </span>
+                      </div>
+                    )}
+                    {result && (
+                      <div className="uscis-analysis-content">
+                        <ReactMarkdown
+                          components={{
+                            h1: ({ children }) => (
+                              <h1 className="text-xl font-bold text-foreground mt-8 mb-4 pb-2 border-b border-border first:mt-0">{children}</h1>
+                            ),
+                            h2: ({ children }) => (
+                              <h2 className="text-lg font-bold text-foreground mt-8 mb-3 pb-1.5 border-b border-border/50">{children}</h2>
+                            ),
+                            h3: ({ children }) => (
+                              <h3 className="text-base font-semibold text-foreground mt-6 mb-2">{children}</h3>
+                            ),
+                            p: ({ children }) => (
+                              <p className="text-sm leading-relaxed text-foreground/85 mb-4" style={{ textAlign: "justify" }}>{children}</p>
+                            ),
+                            ul: ({ children }) => (
+                              <ul className="space-y-2 mb-4 ml-1">{children}</ul>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="space-y-2 mb-4 ml-1 list-decimal list-inside">{children}</ol>
+                            ),
+                            li: ({ children }) => (
+                              <li className="text-sm leading-relaxed text-foreground/85 pl-2 flex gap-2">
+                                <span className="text-accent mt-0.5 shrink-0">•</span>
+                                <span>{children}</span>
+                              </li>
+                            ),
+                            strong: ({ children }) => (
+                              <strong className="font-semibold text-foreground">{children}</strong>
+                            ),
+                            hr: () => (
+                              <hr className="my-6 border-border" />
+                            ),
+                            blockquote: ({ children }) => (
+                              <blockquote className="border-l-2 border-accent/50 pl-4 my-4 text-sm text-foreground/70 italic">{children}</blockquote>
+                            ),
+                          }}
+                        >
+                          {result}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                    {isLoading && result && (
+                      <div className="mt-4 flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span className="text-xs">{lang === 'es' ? 'Generando...' : 'Generating...'}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

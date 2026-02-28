@@ -16,6 +16,7 @@ import CaseReview from "./pages/CaseReview";
 // AdminPanel removed — consolidated into Dashboard
 import Features from "./pages/Features";
 import UscisAnalyzer from "./pages/UscisAnalyzer";
+import SharedAnalysis from "./pages/SharedAnalysis";
 import HubPage from "./pages/HubPage";
 import Settings from "./pages/Settings";
 import ResetPassword from "./pages/ResetPassword";
@@ -43,6 +44,7 @@ const App = () => (
           {/* Admin Panel consolidated into Dashboard */}
           <Route path="/case/:id" element={<CaseReview />} />
           <Route path="/dashboard/uscis-analyzer" element={<UscisAnalyzer />} />
+          <Route path="/shared-analysis/:token" element={<SharedAnalysis />} />
           <Route path="/hub" element={<HubPage />} />
           <Route path="/dashboard/settings" element={<Settings />} />
           <Route path="/reset-password" element={<ResetPassword />} />
