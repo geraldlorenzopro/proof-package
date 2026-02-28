@@ -21,6 +21,7 @@ import HubPage from "./pages/HubPage";
 import Settings from "./pages/Settings";
 import ResetPassword from "./pages/ResetPassword";
 import ChecklistGenerator from "./pages/ChecklistGenerator";
+import VawaScreener from "./pages/VawaScreener";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
           <Route path="/dashboard/settings" element={<Settings />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard/checklist" element={<ChecklistGenerator />} />
+          <Route path="/dashboard/vawa-screener" element={<VawaScreener />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
