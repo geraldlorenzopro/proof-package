@@ -82,6 +82,45 @@ export type Database = {
           },
         ]
       }
+      analysis_history: {
+        Row: {
+          checklist: Json | null
+          created_at: string
+          document_type: string
+          file_names: string[]
+          id: string
+          language: string
+          result_markdown: string
+          share_token: string | null
+          urgency_level: string | null
+          user_id: string
+        }
+        Insert: {
+          checklist?: Json | null
+          created_at?: string
+          document_type: string
+          file_names?: string[]
+          id?: string
+          language?: string
+          result_markdown: string
+          share_token?: string | null
+          urgency_level?: string | null
+          user_id: string
+        }
+        Update: {
+          checklist?: Json | null
+          created_at?: string
+          document_type?: string
+          file_names?: string[]
+          id?: string
+          language?: string
+          result_markdown?: string
+          share_token?: string | null
+          urgency_level?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bulletin_sync_log: {
         Row: {
           bulletin_month: number
@@ -518,6 +557,19 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_shared_analysis: {
+        Args: { _share_token: string }
+        Returns: {
+          checklist: Json
+          created_at: string
+          document_type: string
+          file_names: string[]
+          id: string
+          language: string
+          result_markdown: string
+          urgency_level: string
+        }[]
       }
       get_usage_stats: { Args: { _days?: number }; Returns: Json }
       has_account_role: {
