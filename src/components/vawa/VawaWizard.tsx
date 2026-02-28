@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { ChevronRight, ChevronLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,7 +58,7 @@ const ABUSE_TYPES = [
   { id: "child_threats", es: "Amenazas de quitar custodia de hijos", en: "Threats to remove child custody" },
 ];
 
-export default function VawaWizard({ lang, onComplete }: WizardProps) {
+const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }, ref) => {
   const [answers, setAnswers] = useState<VawaAnswers>(getDefaultAnswers());
   const [currentStep, setCurrentStep] = useState(0);
   const t = (es: string, en: string) => (lang === "es" ? es : en);
@@ -825,4 +825,7 @@ export default function VawaWizard({ lang, onComplete }: WizardProps) {
       </div>
     </div>
   );
-}
+});
+
+VawaWizard.displayName = "VawaWizard";
+export default VawaWizard;

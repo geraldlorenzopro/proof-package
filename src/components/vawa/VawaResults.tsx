@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { CheckCircle2, XCircle, AlertTriangle, Download, RotateCcw, Scale, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -33,7 +34,7 @@ const STATUS_CONFIG: Record<EligibilityStatus, { icon: typeof CheckCircle2; colo
   },
 };
 
-export default function VawaResults({ result, answers, lang, onReset }: ResultsProps) {
+const VawaResults = forwardRef<HTMLDivElement, ResultsProps>(({ result, answers, lang, onReset }, ref) => {
   const t = (es: string, en: string) => (lang === "es" ? es : en);
   const overall = STATUS_CONFIG[result.overall];
   const OverallIcon = overall.icon;
@@ -320,4 +321,7 @@ export default function VawaResults({ result, answers, lang, onReset }: ResultsP
       </div>
     </div>
   );
-}
+});
+
+VawaResults.displayName = "VawaResults";
+export default VawaResults;
