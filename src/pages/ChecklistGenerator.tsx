@@ -271,34 +271,7 @@ export default function ChecklistGenerator() {
       y += 3;
     }
 
-    // ── PROGRESS BAR ──
-    checkSpace(15);
-    pdf.setFontSize(8.5);
-    pdf.setFont("helvetica", "bold");
-    pdf.setTextColor(15, 23, 42);
-    pdf.text(`${lang === "es" ? "Progreso" : "Progress"}: ${checkedItems}/${totalItems} ${lang === "es" ? "completados" : "completed"} (${Math.round(progress)}%)`, marginL, y);
-    y += 4;
-    // Background bar
-    pdf.setFillColor(230, 232, 240);
-    pdf.roundedRect(marginL, y, contentW, 5, 2.5, 2.5, "F");
-    // Progress fill
-    if (progress > 0) {
-      pdf.setFillColor(217, 168, 46);
-      const fillW = Math.max(5, contentW * (progress / 100));
-      pdf.roundedRect(marginL, y, fillW, 5, 2.5, 2.5, "F");
-      // Percentage inside the bar
-      pdf.setFontSize(7);
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(255, 255, 255);
-      pdf.text(`${Math.round(progress)}%`, marginL + fillW / 2, y + 3.5, { align: "center" });
-    } else {
-      // Show 0% centered
-      pdf.setFontSize(7);
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(140, 150, 170);
-      pdf.text("0%", marginL + contentW / 2, y + 3.5, { align: "center" });
-    }
-    y += 12;
+    y += 3;
 
     // ── CATEGORIES ──
     for (const cat of checklist.categories) {
