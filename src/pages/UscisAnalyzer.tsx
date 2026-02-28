@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download, Copy, Check, Shield, Clock, AlertTriangle, History, Share2, PanelLeftClose, PanelLeft } from "lucide-react";
+import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download, Copy, Check, Shield, Clock, AlertTriangle, History, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,7 +13,7 @@ import { trackToolUsage } from "@/lib/trackUsage";
 import { supabase } from "@/integrations/supabase/client";
 import AnalysisHistory from "@/components/AnalysisHistory";
 import AnalysisSummaryCard, { detectUrgency } from "@/components/AnalysisSummaryCard";
-import EvidenceChecklist from "@/components/EvidenceChecklist";
+
 
 const DOCUMENT_TYPES = [
   "Request for Evidence (RFE)",
@@ -59,6 +59,28 @@ const MAX_FILES = 10;
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic"];
 
+function extractEvidenceFromMarkdown(text: string): string[] {
+  const items: string[] = [];
+  const lines = text.split("\n");
+  let inSection = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (/evidencia sugerida|evidence suggested|recomendaci[oó]n|recommendation|evidencia.*para responder|suggested evidence/i.test(trimmed)) {
+      inSection = true;
+      continue;
+    }
+    if (trimmed.startsWith("# ") || trimmed.startsWith("## ") || trimmed.startsWith("### ")) {
+      if (!/evidencia|evidence|recomendaci|recommendation/i.test(trimmed)) inSection = false;
+      continue;
+    }
+    if (inSection && (trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("• "))) {
+      const t = trimmed.replace(/^[-*•]\s*/, "").replace(/\*\*/g, "").trim();
+      if (t.length > 10 && t.length < 500) items.push(t);
+    }
+  }
+  return items;
+}
+
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -93,8 +115,6 @@ export default function UscisAnalyzer() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
   const [savedAnalysisId, setSavedAnalysisId] = useState<string | null>(null);
-  const [showSideBySide, setShowSideBySide] = useState(false);
-  const [savedChecklist, setSavedChecklist] = useState<any[]>([]);
   const [shareToken, setShareToken] = useState<string | null>(null);
   // Sync lang toggle with language selector
   useEffect(() => {
@@ -117,7 +137,6 @@ export default function UscisAnalyzer() {
       setResult("");
       setSavedAnalysisId(null);
       setShareToken(null);
-      setSavedChecklist([]);
       setStep("upload");
     } else if (step === "history") {
       setStep("upload");
@@ -291,8 +310,6 @@ export default function UscisAnalyzer() {
     setCopied(false);
     setSavedAnalysisId(null);
     setShareToken(null);
-    setSavedChecklist([]);
-    setShowSideBySide(false);
   };
 
   const handleShare = async () => {
@@ -312,7 +329,6 @@ export default function UscisAnalyzer() {
     setResult(record.result_markdown);
     setSavedAnalysisId(record.id);
     setShareToken(record.share_token);
-    setSavedChecklist(record.checklist || []);
     setUploadedFiles([]);
     setStep("result");
   };
@@ -650,6 +666,50 @@ export default function UscisAnalyzer() {
       pdf.text("Documento generado con fines educativos y organizativos.", pageW - marginR, footerY, { align: "right" });
     }
 
+    // ── SUGGESTED EVIDENCE SECTION (extracted from analysis) ──
+    const evidenceItems = extractEvidenceFromMarkdown(result);
+    if (evidenceItems.length > 0) {
+      checkSpace(25);
+      y += 5;
+      sectionCounter++;
+      
+      // Section header
+      pdf.setFillColor(245, 247, 250);
+      pdf.rect(marginL, y - 5, contentW, 9, "F");
+      pdf.setFillColor(15, 23, 42);
+      pdf.roundedRect(marginL + 2, y - 4.5, 7, 7, 1, 1, "F");
+      pdf.setFontSize(8);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(255, 255, 255);
+      const numStr = String(sectionCounter);
+      pdf.text(numStr, marginL + 5.5 - pdf.getTextWidth(numStr) / 2, y + 0.5);
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(15, 23, 42);
+      const evidenceTitle = language === "Español" ? "EVIDENCIA SUGERIDA" : "SUGGESTED EVIDENCE";
+      pdf.text(evidenceTitle, marginL + 12, y);
+      y += 8;
+
+      for (const evItem of evidenceItems) {
+        const bulletIndent = marginL + 4;
+        const textIndent = marginL + 8;
+        const textWidth = contentW - 8;
+        pdf.setFontSize(8.5);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(40, 50, 70);
+        const wrapped = pdf.splitTextToSize(evItem, textWidth);
+        checkSpace(wrapped.length * bulletLineH + 2);
+        pdf.setFillColor(217, 168, 46);
+        pdf.circle(bulletIndent, y - 1.2, 0.7, "F");
+        for (const wLine of wrapped) {
+          checkSpace(bulletLineH);
+          pdf.text(wLine, textIndent, y);
+          y += bulletLineH;
+        }
+        y += 1.5;
+      }
+    }
+
     const dateStr = new Date().toISOString().slice(0, 10);
     const typeShort = documentType.match(/\(([^)]+)\)/)?.[1] || "DOC";
     pdf.save(`NER_USCIS_Analysis_${typeShort}_${dateStr}.pdf`);
@@ -915,17 +975,6 @@ export default function UscisAnalyzer() {
                       <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
                         <Download className="w-3 h-3 mr-1" /> PDF
                       </Button>
-                      {uploadedFiles.length > 0 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowSideBySide(!showSideBySide)}
-                          className={showSideBySide ? "border-jarvis/30 text-jarvis" : ""}
-                        >
-                          {showSideBySide ? <PanelLeftClose className="w-3 h-3 mr-1" /> : <PanelLeft className="w-3 h-3 mr-1" />}
-                          {lang === 'es' ? 'Original' : 'Original'}
-                        </Button>
-                      )}
                       <Button variant="outline" size="sm" onClick={handleReset}>
                         <RotateCcw className="w-3 h-3 mr-1" /> {lang === 'es' ? 'Nuevo' : 'New'}
                       </Button>
@@ -943,52 +992,8 @@ export default function UscisAnalyzer() {
                   />
                 )}
 
-                {/* ── EVIDENCE CHECKLIST ── */}
-                {!isLoading && result && (
-                  <EvidenceChecklist
-                    analysisId={savedAnalysisId}
-                    result={result}
-                    lang={lang}
-                    initialChecklist={savedChecklist}
-                  />
-                )}
-
-                {/* ── SIDE-BY-SIDE or SINGLE VIEW ── */}
-                <div className={showSideBySide ? "grid grid-cols-2 gap-4" : ""}>
-                  {/* Original Document Panel */}
-                  {showSideBySide && uploadedFiles.length > 0 && (
-                    <div className="rounded-xl border bg-card p-4 max-h-[70vh] overflow-y-auto">
-                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                        {lang === 'es' ? 'Documento Original' : 'Original Document'}
-                      </h3>
-                      <div className="space-y-3">
-                        {uploadedFiles.map((file, i) => (
-                          <div key={i}>
-                            {file.type.startsWith("image/") ? (
-                              <img
-                                src={file.base64}
-                                alt={file.name}
-                                className="w-full rounded-lg border border-border"
-                              />
-                            ) : (
-                              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
-                                <FileText className="w-5 h-5 text-destructive/70" />
-                                <div>
-                                  <p className="text-sm text-foreground">{file.name}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {lang === 'es' ? 'Vista previa no disponible para PDF' : 'Preview not available for PDF'}
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Analysis Result Panel */}
-                  <div
+                {/* ── Analysis Result Panel ── */}
+                <div
                     ref={resultRef}
                     className="rounded-xl border bg-card p-6 max-h-[70vh] overflow-y-auto"
                   >
@@ -1050,7 +1055,6 @@ export default function UscisAnalyzer() {
                       </div>
                     )}
                   </div>
-                </div>
               </div>
             )}
           </div>
