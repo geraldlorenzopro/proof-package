@@ -1,10 +1,11 @@
 import { useState, forwardRef } from "react";
-import { ChevronRight, ChevronLeft, CheckCircle2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle2, User, Calendar, Globe, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { VawaAnswers, getDefaultAnswers } from "./vawaEngine";
 
@@ -137,42 +138,62 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
     switch (step) {
       case "client_info":
         return (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <Label>{t("Nombre Completo del Cliente", "Client Full Name")}</Label>
+              <Label className="flex items-center gap-2">
+                <User className="w-3.5 h-3.5 text-accent" />
+                {t("Nombre Completo del Cliente", "Client Full Name")}
+              </Label>
               <Input
                 value={answers.clientName}
                 onChange={(e) => update("clientName", e.target.value)}
-                placeholder={t("Ej: Carlos Eduardo Martinez", "E.g.: Carlos Eduardo Martinez")}
-                className="mt-1"
+                placeholder={t("Nombre y apellidos", "Full name")}
+                className="mt-1.5"
               />
             </div>
             <div>
-              <Label>{t("Fecha de Nacimiento", "Date of Birth")}</Label>
+              <Label className="flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5 text-accent" />
+                {t("Fecha de Nacimiento", "Date of Birth")}
+              </Label>
               <Input
                 type="date"
                 value={answers.clientDob}
                 onChange={(e) => update("clientDob", e.target.value)}
-                className="mt-1"
+                className="mt-1.5"
               />
+              <p className="text-xs text-muted-foreground mt-1">{t("Formato: mes/día/año", "Format: month/day/year")}</p>
             </div>
             <div>
-              <Label>{t("País de Nacimiento", "Country of Birth")}</Label>
+              <Label className="flex items-center gap-2">
+                <Globe className="w-3.5 h-3.5 text-accent" />
+                {t("País de Nacimiento", "Country of Birth")}
+              </Label>
               <Input
                 value={answers.countryOfBirth}
                 onChange={(e) => update("countryOfBirth", e.target.value)}
-                placeholder={t("Ej: Honduras", "E.g.: Honduras")}
-                className="mt-1"
+                placeholder={t("País donde nació el cliente", "Client's country of birth")}
+                className="mt-1.5"
               />
             </div>
             <div>
-              <Label>{t("Hijos (Nombre y edad)", "Children (Name and age)")}</Label>
-              <Input
+              <Label className="flex items-center gap-2">
+                <Users className="w-3.5 h-3.5 text-accent" />
+                {t("Hijos del Cliente", "Client's Children")}
+              </Label>
+              <Textarea
                 value={answers.childrenNames}
                 onChange={(e) => update("childrenNames", e.target.value)}
-                placeholder={t("Ej: Miguel, 5 años", "E.g.: Miguel, 5 years old")}
-                className="mt-1"
+                placeholder={t(
+                  "Indique nombre y edad de cada hijo/a (uno por línea)",
+                  "Enter each child's name and age (one per line)"
+                )}
+                className="mt-1.5 min-h-[80px]"
+                rows={3}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("Opcional — deje en blanco si no tiene hijos", "Optional — leave blank if no children")}
+              </p>
             </div>
           </div>
         );
@@ -431,17 +452,21 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
     </div>
   );
 
-  const renderChildDetails = () => (
+   const renderChildDetails = () => (
     <div className="space-y-4">
       <div>
-        <Label>{t("Edad actual del hijo/a", "Current age of the child")}</Label>
+        <Label className="flex items-center gap-2">
+          <Calendar className="w-3.5 h-3.5 text-accent" />
+          {t("Edad actual del hijo/a", "Current age of the child")}
+        </Label>
         <Input
           type="number"
           value={answers.childCurrentAge ?? ""}
           onChange={(e) => update("childCurrentAge", e.target.value ? parseInt(e.target.value) : null)}
-          className="mt-1 w-32"
+          className="mt-1.5 w-32"
           min={0}
           max={99}
+          placeholder={t("Edad", "Age")}
         />
       </div>
 
