@@ -4,12 +4,18 @@
  * INA §204(a)(1)(A)(iii)-(iv), §204(a)(1)(B)(ii)-(iii), 8 CFR §204.2(c)
  */
 
+export interface ChildInfo {
+  name: string;
+  age: number | null;
+}
+
 export interface VawaAnswers {
   // Client info
   clientName: string;
   clientDob: string;
   countryOfBirth: string;
-  childrenNames: string;
+  hasChildren: boolean | null;
+  children: ChildInfo[];
 
   // Step 1: Petitioner type
   petitionerType: "spouse" | "child" | "parent" | "";
@@ -99,7 +105,8 @@ export function getDefaultAnswers(): VawaAnswers {
     clientName: "",
     clientDob: "",
     countryOfBirth: "",
-    childrenNames: "",
+    hasChildren: null,
+    children: [],
     petitionerType: "",
     abuserStatus: "",
     lostStatusRelatedToAbuse: null,

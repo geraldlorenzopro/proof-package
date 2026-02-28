@@ -1,13 +1,13 @@
 import { useState, forwardRef } from "react";
-import { ChevronRight, ChevronLeft, CheckCircle2, User, Calendar, Globe, Users } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle2, User, Calendar, Globe, Users, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { VawaAnswers, getDefaultAnswers } from "./vawaEngine";
+import { VawaAnswers, ChildInfo, getDefaultAnswers } from "./vawaEngine";
 
 interface WizardProps {
   lang: "es" | "en";
@@ -176,24 +176,107 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
                 className="mt-1.5"
               />
             </div>
-            <div>
+            {/* Children dynamic section */}
+            <div className="space-y-3">
               <Label className="flex items-center gap-2">
                 <Users className="w-3.5 h-3.5 text-accent" />
-                {t("Hijos del Cliente", "Client's Children")}
+                {t("¿El cliente tiene hijos?", "Does the client have children?")}
               </Label>
-              <Textarea
-                value={answers.childrenNames}
-                onChange={(e) => update("childrenNames", e.target.value)}
-                placeholder={t(
-                  "Indique nombre y edad de cada hijo/a (uno por línea)",
-                  "Enter each child's name and age (one per line)"
-                )}
-                className="mt-1.5 min-h-[80px]"
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("Opcional — deje en blanco si no tiene hijos", "Optional — leave blank if no children")}
-              </p>
+              <RadioGroup
+                value={answers.hasChildren === null ? "" : answers.hasChildren ? "yes" : "no"}
+                onValueChange={(v) => {
+                  const has = v === "yes";
+                  update("hasChildren", has);
+                  if (!has) update("children", []);
+                  if (has && answers.children.length === 0) {
+                    update("children", [{ name: "", age: null }]);
+                  }
+                }}
+                className="flex gap-4"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="yes" id="hasChildren-yes" />
+                  <Label htmlFor="hasChildren-yes" className="cursor-pointer">{t("Sí", "Yes")}</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="no" id="hasChildren-no" />
+                  <Label htmlFor="hasChildren-no" className="cursor-pointer">{t("No", "No")}</Label>
+                </div>
+              </RadioGroup>
+
+              {answers.hasChildren && (
+                <div className="space-y-3 ml-1 pl-4 border-l-2 border-accent/30 mt-3">
+                  {answers.children.map((child, idx) => (
+                    <div key={idx} className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <Label className="text-xs text-muted-foreground">
+                          {t(`Hijo/a ${idx + 1}`, `Child ${idx + 1}`)}
+                        </Label>
+                        <Input
+                          value={child.name}
+                          onChange={(e) => {
+                            const updated = [...answers.children];
+                            updated[idx] = { ...updated[idx], name: e.target.value };
+                            update("children", updated);
+                          }}
+                          placeholder={t("Nombre", "Name")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="w-24">
+                        <Label className="text-xs text-muted-foreground">{t("Edad", "Age")}</Label>
+                        <Select
+                          value={child.age !== null ? String(child.age) : ""}
+                          onValueChange={(v) => {
+                            const updated = [...answers.children];
+                            updated[idx] = { ...updated[idx], age: parseInt(v) };
+                            update("children", updated);
+                          }}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="—" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from({ length: 31 }, (_, i) => (
+                              <SelectItem key={i} value={String(i)}>
+                                {i} {t("año" + (i !== 1 ? "s" : ""), "yr" + (i !== 1 ? "s" : ""))}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {answers.children.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={() => {
+                            const updated = answers.children.filter((_, i) => i !== idx);
+                            update("children", updated);
+                          }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  {answers.children.length < 10 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 text-accent hover:text-accent/80 text-xs"
+                      onClick={() => {
+                        update("children", [...answers.children, { name: "", age: null }]);
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      {t("Agregar otro hijo/a", "Add another child")}
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         );
