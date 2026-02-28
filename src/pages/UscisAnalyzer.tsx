@@ -12,7 +12,7 @@ import { LangToggle } from "@/components/LangToggle";
 import { trackToolUsage } from "@/lib/trackUsage";
 import { supabase } from "@/integrations/supabase/client";
 import AnalysisHistory from "@/components/AnalysisHistory";
-import AnalysisSummaryCard, { detectUrgency } from "@/components/AnalysisSummaryCard";
+import { detectUrgency } from "@/components/AnalysisSummaryCard";
 
 
 const DOCUMENT_TYPES = [
@@ -982,15 +982,6 @@ export default function UscisAnalyzer() {
                   )}
                 </div>
 
-                {/* ── EXECUTIVE SUMMARY CARD ── */}
-                {!isLoading && result && (
-                  <AnalysisSummaryCard
-                    documentType={documentType}
-                    fileCount={uploadedFiles.length}
-                    result={result}
-                    lang={lang}
-                  />
-                )}
 
                 {/* ── Analysis Result Panel ── */}
                 <div
