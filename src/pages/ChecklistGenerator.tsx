@@ -280,13 +280,25 @@ export default function ChecklistGenerator() {
     y += 4;
     // Background bar
     pdf.setFillColor(230, 232, 240);
-    pdf.roundedRect(marginL, y, contentW, 3, 1.5, 1.5, "F");
+    pdf.roundedRect(marginL, y, contentW, 5, 2.5, 2.5, "F");
     // Progress fill
     if (progress > 0) {
       pdf.setFillColor(217, 168, 46);
-      pdf.roundedRect(marginL, y, contentW * (progress / 100), 3, 1.5, 1.5, "F");
+      const fillW = Math.max(5, contentW * (progress / 100));
+      pdf.roundedRect(marginL, y, fillW, 5, 2.5, 2.5, "F");
+      // Percentage inside the bar
+      pdf.setFontSize(7);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(255, 255, 255);
+      pdf.text(`${Math.round(progress)}%`, marginL + fillW / 2, y + 3.5, { align: "center" });
+    } else {
+      // Show 0% centered
+      pdf.setFontSize(7);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(140, 150, 170);
+      pdf.text("0%", marginL + contentW / 2, y + 3.5, { align: "center" });
     }
-    y += 10;
+    y += 12;
 
     // ── CATEGORIES ──
     for (const cat of checklist.categories) {
@@ -364,9 +376,9 @@ export default function ChecklistGenerator() {
       sectionCounter++;
       y += 2;
 
-      pdf.setFillColor(254, 242, 242);
+      pdf.setFillColor(255, 251, 235);
       pdf.rect(marginL, y - 5, contentW, 9, "F");
-      pdf.setFillColor(220, 38, 38);
+      pdf.setFillColor(217, 168, 46);
       pdf.roundedRect(marginL + 2, y - 4.5, 7, 7, 1, 1, "F");
       pdf.setFontSize(8);
       pdf.setFont("helvetica", "bold");
@@ -376,7 +388,7 @@ export default function ChecklistGenerator() {
 
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(220, 38, 38);
+      pdf.setTextColor(15, 23, 42);
       pdf.text(lang === "es" ? "FECHAS LIMITE" : "DEADLINES", marginL + 12, y);
       y += 8;
 
@@ -384,7 +396,7 @@ export default function ChecklistGenerator() {
         checkSpace(bodyLineH * 2);
         pdf.setFontSize(8.5);
         pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(220, 38, 38);
+        pdf.setTextColor(180, 130, 20);
         pdf.text(dl.date || "—", marginL, y);
         y += bodyLineH;
         pdf.setFont("helvetica", "normal");
