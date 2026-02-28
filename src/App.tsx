@@ -20,6 +20,7 @@ import SharedAnalysis from "./pages/SharedAnalysis";
 import HubPage from "./pages/HubPage";
 import Settings from "./pages/Settings";
 import ResetPassword from "./pages/ResetPassword";
+import ChecklistGenerator from "./pages/ChecklistGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/hub" element={<HubPage />} />
           <Route path="/dashboard/settings" element={<Settings />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/dashboard/checklist" element={<ChecklistGenerator />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

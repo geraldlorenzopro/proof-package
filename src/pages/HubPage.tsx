@@ -17,6 +17,7 @@ const ROUTE_MAP: Record<string, string> = {
   affidavit: '/dashboard/affidavit',
   tracker: '/dashboard/tracker',
   'uscis-analyzer': '/dashboard/uscis-analyzer',
+  'checklist-generator': '/dashboard/checklist',
 };
 
 interface HubApp {
