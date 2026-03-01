@@ -37,27 +37,27 @@ const STEP_ORDER: WizardStep[] = [
 ];
 
 const STEP_LABELS: Record<WizardStep, { es: string; en: string }> = {
-  client_info: { es: "Información del Cliente", en: "Client Information" },
-  petitioner_type: { es: "Tipo de Peticionario", en: "Petitioner Type" },
-  abuser_status: { es: "Estatus del Abusador", en: "Abuser Status" },
-  relationship_details: { es: "Detalles de la Relación", en: "Relationship Details" },
-  abuse: { es: "Maltrato o Crueldad Extrema", en: "Battery or Extreme Cruelty" },
-  residence: { es: "Residencia con el Abusador", en: "Residence with Abuser" },
-  gmc: { es: "Buen Carácter Moral", en: "Good Moral Character" },
-  location: { es: "Ubicación Actual", en: "Current Location" },
+  client_info: { es: "¿Quién es el cliente?", en: "Who is the client?" },
+  petitioner_type: { es: "¿Cuál es la relación?", en: "What is the relationship?" },
+  abuser_status: { es: "Sobre el abusador", en: "About the abuser" },
+  relationship_details: { es: "Más sobre la relación", en: "More about the relationship" },
+  abuse: { es: "¿Qué pasó?", en: "What happened?" },
+  residence: { es: "¿Vivían juntos?", en: "Did they live together?" },
+  gmc: { es: "Historial del cliente", en: "Client's background" },
+  location: { es: "¿Dónde está ahora?", en: "Where are they now?" },
 };
 
 const ABUSE_TYPES = [
-  { id: "physical", es: "Violencia Física (golpes, empujones, patadas)", en: "Physical Violence (hitting, pushing, kicking)" },
-  { id: "sexual", es: "Abuso Sexual", en: "Sexual Abuse" },
-  { id: "emotional", es: "Crueldad Emocional / Psicológica", en: "Emotional / Psychological Cruelty" },
-  { id: "isolation", es: "Aislamiento (impedir contacto con familia/amigos)", en: "Isolation (preventing contact with family/friends)" },
-  { id: "economic", es: "Control Económico", en: "Economic Control" },
-  { id: "threats", es: "Amenazas de violencia o deportación", en: "Threats of violence or deportation" },
-  { id: "coercion", es: "Coerción / Control", en: "Coercion / Control" },
-  { id: "degradation", es: "Degradación, humillación", en: "Degradation, humiliation" },
-  { id: "denial", es: "Negar acceso a comida, atención médica", en: "Denying access to food, medical care" },
-  { id: "child_threats", es: "Amenazas de quitar custodia de hijos", en: "Threats to remove child custody" },
+  { id: "physical", es: "Le pegó, empujó o lastimó físicamente", en: "Hit, pushed, or physically hurt them" },
+  { id: "sexual", es: "Abuso sexual", en: "Sexual abuse" },
+  { id: "emotional", es: "Insultos, humillaciones o maltrato emocional", en: "Insults, humiliation, or emotional abuse" },
+  { id: "isolation", es: "No lo/la dejaba ver a su familia o amigos", en: "Wouldn't let them see family or friends" },
+  { id: "economic", es: "Controlaba todo el dinero", en: "Controlled all the money" },
+  { id: "threats", es: "Lo/la amenazaba con hacerle daño o deportarlo/a", en: "Threatened to hurt or deport them" },
+  { id: "coercion", es: "Lo/la obligaba a hacer cosas que no quería", en: "Forced them to do things they didn't want to" },
+  { id: "degradation", es: "Lo/la humillaba o rebajaba constantemente", en: "Constantly humiliated or degraded them" },
+  { id: "denial", es: "No le daba comida o no lo/la dejaba ir al doctor", en: "Denied food or wouldn't let them see a doctor" },
+  { id: "child_threats", es: "Amenazaba con quitarle los hijos", en: "Threatened to take the children away" },
 ];
 
 const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }, ref) => {
@@ -285,8 +285,8 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
           <div className="space-y-3">
             <Label className="text-sm font-medium">
               {t(
-                "¿Cuál es la relación del cliente con el abusador?",
-                "What is the client's relationship to the abuser?"
+                "¿Qué relación tiene el cliente con la persona que lo maltrata?",
+                "What is the client's relationship to the person who mistreats them?"
               )}
             </Label>
             <RadioGroup
@@ -298,34 +298,34 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
                 {
                   value: "spouse",
                   label: t(
-                    "Cónyuge — Esposo/a abusado/a por USC o LPR",
-                    "Spouse — Abused spouse of USC or LPR"
+                    "Es su esposo/a",
+                    "They are their spouse"
                   ),
                   desc: t(
-                    "Incluye ex-cónyuge si el divorcio fue dentro de 2 años y cónyuge cuyo hijo fue abusado",
-                    "Includes ex-spouse if divorce was within 2 years and spouse whose child was abused"
+                    "Están o estuvieron casados. Incluye ex-esposos si el divorcio fue reciente (menos de 2 años).",
+                    "They are or were married. Includes ex-spouses if the divorce was recent (less than 2 years)."
                   ),
                 },
                 {
                   value: "child",
                   label: t(
-                    "Hijo/a — Hijo/a abusado/a por padre/madre USC o LPR",
-                    "Child — Abused child of USC or LPR parent"
+                    "Es su hijo/a",
+                    "They are their child"
                   ),
                   desc: t(
-                    "Menor de 21 (o hasta 25 si el abuso causó el retraso). Debe estar soltero/a.",
-                    "Under 21 (or up to 25 if abuse caused delay). Must be unmarried."
+                    "El cliente es hijo/a del abusador. Generalmente debe ser menor de 21 años y soltero/a.",
+                    "The client is the abuser's child. Generally must be under 21 and unmarried."
                   ),
                 },
                 {
                   value: "parent",
                   label: t(
-                    "Padre/Madre — Padre/Madre abusado/a por hijo/a USC",
-                    "Parent — Abused parent of USC son/daughter"
+                    "Es su padre o madre",
+                    "They are their parent"
                   ),
                   desc: t(
-                    "El hijo/a abusivo debe ser ciudadano americano y tener 21+ años",
-                    "Abusive son/daughter must be USC and 21+ years old"
+                    "El cliente es padre/madre maltratado/a por su hijo/a adulto que es ciudadano americano.",
+                    "The client is a parent mistreated by their adult child who is a U.S. citizen."
                   ),
                 },
               ].map((opt) => (
@@ -353,18 +353,21 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
         return (
           <div className="space-y-3">
             <Label className="text-sm font-medium">
-              {t("¿Cuál es el estatus migratorio del abusador?", "What is the abuser's immigration status?")}
+              {t("¿El abusador tiene papeles en Estados Unidos?", "Does the abuser have legal status in the United States?")}
             </Label>
+            <p className="text-xs text-muted-foreground -mt-1">
+              {t("Esto es muy importante porque VAWA solo aplica si el abusador es ciudadano o residente.", "This is very important because VAWA only applies if the abuser is a citizen or resident.")}
+            </p>
             <RadioGroup
               value={answers.abuserStatus}
               onValueChange={(v) => update("abuserStatus", v as any)}
               className="space-y-3"
             >
               {[
-                { value: "usc", label: t("Ciudadano Americano (USC)", "U.S. Citizen (USC)") },
-                { value: "lpr", label: t("Residente Permanente Legal (LPR)", "Lawful Permanent Resident (LPR)") },
-                { value: "lost_status", label: t("Perdió o renunció al estatus de USC/LPR", "Lost or renounced USC/LPR status") },
-                { value: "never", label: t("Nunca fue USC ni LPR", "Never was USC or LPR") },
+                { value: "usc", label: t("Sí, es Ciudadano Americano", "Yes, they are a U.S. Citizen") },
+                { value: "lpr", label: t("Sí, es Residente Permanente (tiene green card)", "Yes, they are a Permanent Resident (has green card)") },
+                { value: "lost_status", label: t("Tenía papeles pero los perdió", "They had status but lost it") },
+                { value: "never", label: t("Nunca ha tenido papeles", "They have never had legal status") },
               ].map((opt) => (
                 <label
                   key={opt.value}
@@ -385,16 +388,16 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
               <div className="ml-4 pl-4 border-l-2 border-accent/30 space-y-3 mt-3">
                 {renderYesNo(
                   t(
-                    "¿La pérdida de estatus está relacionada con un incidente de abuso doméstico?",
-                    "Is the loss of status related to an incident of domestic violence?"
+                    "¿Perdió los papeles por algo relacionado con la violencia doméstica?",
+                    "Did they lose their status because of something related to the domestic violence?"
                   ),
                   answers.lostStatusRelatedToAbuse,
                   (v) => update("lostStatusRelatedToAbuse", v)
                 )}
                 {renderYesNo(
                   t(
-                    "¿La pérdida ocurrió dentro de los últimos 2 años?",
-                    "Did the loss occur within the last 2 years?"
+                    "¿Esto pasó hace menos de 2 años?",
+                    "Did this happen less than 2 years ago?"
                   ),
                   answers.lostStatusWithin2Years,
                   (v) => update("lostStatusWithin2Years", v)
@@ -405,12 +408,12 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
             {answers.abuserStatus === "never" && (
               <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm">
                 <p className="font-medium text-destructive">
-                  {t("⚠ No elegible para VAWA", "⚠ Not eligible for VAWA")}
+                  {t("⚠ No califica para VAWA", "⚠ Does not qualify for VAWA")}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs">
                   {t(
-                    "VAWA requiere que el abusador sea USC o LPR. Considere U-Visa como alternativa.",
-                    "VAWA requires the abuser to be a USC or LPR. Consider U-Visa as an alternative."
+                    "Para usar VAWA, el abusador necesita ser ciudadano o residente. Pero hay otras opciones como la visa U que podrían funcionar.",
+                    "To use VAWA, the abuser needs to be a citizen or resident. But there are other options like the U-Visa that might work."
                   )}
                 </p>
               </div>
@@ -445,7 +448,7 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
     <div className="space-y-4">
       <div className="space-y-3">
         <Label className="text-sm font-medium">
-          {t("¿Cuál es el estado actual del matrimonio?", "What is the current marital status?")}
+          {t("¿Están todavía casados?", "Are they still married?")}
         </Label>
         <RadioGroup
           value={answers.marriageStatus}
@@ -453,9 +456,9 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
           className="space-y-2"
         >
           {[
-            { value: "married", label: t("Actualmente casado/a con el abusador", "Currently married to the abuser") },
-            { value: "divorced", label: t("Divorciado/a del abusador", "Divorced from the abuser") },
-            { value: "death", label: t("El abusador falleció", "The abuser has died") },
+            { value: "married", label: t("Sí, todavía están casados", "Yes, they are still married") },
+            { value: "divorced", label: t("No, ya se divorciaron", "No, they are already divorced") },
+            { value: "death", label: t("El abusador falleció", "The abuser has passed away") },
           ].map((opt) => (
             <label key={opt.value} className={cn(
               "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
@@ -471,12 +474,12 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
       {answers.marriageStatus === "divorced" && (
         <div className="ml-4 pl-4 border-l-2 border-accent/30 space-y-3">
           {renderYesNo(
-            t("¿El divorcio ocurrió dentro de los últimos 2 años?", "Was the divorce within the last 2 years?"),
+            t("¿El divorcio fue hace menos de 2 años?", "Was the divorce less than 2 years ago?"),
             answers.divorceWithin2Years,
             (v) => update("divorceWithin2Years", v)
           )}
           {renderYesNo(
-            t("¿El divorcio está conectado al abuso?", "Is the divorce connected to the abuse?"),
+            t("¿Se divorciaron por culpa del maltrato?", "Did they divorce because of the abuse?"),
             answers.divorceRelatedToAbuse,
             (v) => update("divorceRelatedToAbuse", v)
           )}
@@ -486,7 +489,7 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
       {answers.marriageStatus === "death" && (
         <div className="ml-4 pl-4 border-l-2 border-accent/30 space-y-3">
           {renderYesNo(
-            t("¿El fallecimiento ocurrió dentro de los últimos 2 años?", "Did the death occur within the last 2 years?"),
+            t("¿Falleció hace menos de 2 años?", "Did they pass away less than 2 years ago?"),
             answers.deathWithin2Years,
             (v) => update("deathWithin2Years", v)
           )}
@@ -494,17 +497,17 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
       )}
 
       {renderYesNo(
-        t("¿El cliente se ha vuelto a casar?", "Has the client remarried?"),
+        t("¿El cliente se volvió a casar con otra persona?", "Has the client remarried someone else?"),
         answers.hasRemarried,
         (v) => update("hasRemarried", v),
         t(
-          "Si se vuelve a casar ANTES de la aprobación del I-360, la petición será denegada.",
-          "If they remarry BEFORE I-360 approval, the petition will be denied."
+          "Importante: si se casa de nuevo ANTES de que le aprueben el caso, se lo van a negar.",
+          "Important: if they remarry BEFORE the case is approved, it will be denied."
         )
       )}
 
       {renderYesNo(
-        t("¿El matrimonio es/fue legalmente válido?", "Is/was the marriage legally valid?"),
+        t("¿El matrimonio fue legal? (Se casaron legalmente)", "Was the marriage legal? (They were legally married)"),
         answers.marriageLegallyValid,
         (v) => update("marriageLegallyValid", v)
       )}
@@ -513,8 +516,8 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
         <div className="ml-4 pl-4 border-l-2 border-accent/30">
           {renderYesNo(
             t(
-              "¿El matrimonio es inválido SOLO por bigamia del abusador? (Intended Spouse)",
-              "Is the marriage invalid SOLELY due to the abuser's bigamy? (Intended Spouse)"
+              "¿El matrimonio es inválido porque el abusador ya estaba casado con otra persona?",
+              "Is the marriage invalid because the abuser was already married to someone else?"
             ),
             answers.intendedSpouse,
             (v) => update("intendedSpouse", v)
@@ -523,12 +526,12 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
       )}
 
       {renderYesNo(
-        t("¿El matrimonio fue de buena fe (bona fide)?", "Was the marriage entered into in good faith (bona fide)?"),
+        t("¿Se casaron de verdad, por amor? (No fue un arreglo solo por papeles)", "Did they marry for real, out of love? (It wasn't just for immigration papers)"),
         answers.marriageBonaFide,
         (v) => update("marriageBonaFide", v),
         t(
-          "¿Se conocían bien? ¿Vivían juntos? ¿Tenían finanzas compartidas? ¿La familia conocía el matrimonio?",
-          "Did they know each other well? Did they live together? Shared finances? Family aware of the marriage?"
+          "¿Se conocían bien? ¿Vivían juntos? ¿Compartían gastos? ¿La familia sabía del matrimonio?",
+          "Did they know each other well? Did they live together? Share expenses? Did family know about the marriage?"
         )
       )}
     </div>
@@ -553,7 +556,7 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
       </div>
 
       {renderYesNo(
-        t("¿Puede solicitar antes de cumplir 21 años?", "Can they file before turning 21?"),
+        t("¿Puede presentar el caso antes de cumplir 21 años?", "Can they file the case before turning 21?"),
         answers.canFileBefore21,
         (v) => {
           update("canFileBefore21", v);
@@ -565,8 +568,8 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
         <div className="ml-4 pl-4 border-l-2 border-accent/30">
           {renderYesNo(
             t(
-              "¿Tiene entre 21-25 y el abuso fue la razón central del retraso?",
-              "Is between 21-25 and abuse was the central reason for the delay?"
+              "¿Tiene entre 21 y 25 años, y no pudo presentar antes por culpa del maltrato?",
+              "Are they between 21-25, and couldn't file earlier because of the abuse?"
             ),
             answers.canFileBefore25WithAbuse,
             (v) => update("canFileBefore25WithAbuse", v)
@@ -575,15 +578,15 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
       )}
 
       {renderYesNo(
-        t("¿El hijo/a está soltero/a (unmarried)?", "Is the child unmarried?"),
+        t("¿Está soltero/a? (No se ha casado)", "Are they single? (Not married)"),
         answers.childIsUnmarried,
         (v) => update("childIsUnmarried", v),
-        t("Debe estar soltero/a al momento de solicitar y al momento de aprobación.", "Must be unmarried at filing and at approval.")
+        t("Para este tipo de caso, el hijo/a necesita estar soltero/a.", "For this type of case, the child needs to be single.")
       )}
 
       <div className="space-y-2">
         <Label className="text-sm font-medium">
-          {t("Tipo de relación padre-hijo", "Type of parent-child relationship")}
+          {t("¿Cómo es la relación entre el padre/madre y el hijo/a?", "What is the parent-child relationship?")}
         </Label>
         <RadioGroup
           value={answers.childRelationship}
@@ -591,12 +594,12 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
           className="space-y-2"
         >
           {[
-            { value: "bio_wedlock", label: t("Hijo biológico nacido en matrimonio", "Biological child born in wedlock") },
-            { value: "bio_out_mother", label: t("Hijo biológico fuera de matrimonio (madre)", "Biological child out of wedlock (mother)") },
-            { value: "bio_out_father_legit", label: t("Hijo biológico fuera de matrimonio (padre, legitimado)", "Biological child out of wedlock (father, legitimated)") },
-            { value: "bio_out_father_bonafide", label: t("Hijo biológico fuera de matrimonio (padre, relación bona fide)", "Biological child out of wedlock (father, bona fide relationship)") },
-            { value: "stepchild", label: t("Hijastro/a (matrimonio antes de los 18)", "Stepchild (marriage before 18)") },
-            { value: "adopted", label: t("Hijo/a adoptivo/a (antes de los 16)", "Adopted child (before 16)") },
+            { value: "bio_wedlock", label: t("Hijo/a biológico, los padres estaban casados", "Biological child, parents were married") },
+            { value: "bio_out_mother", label: t("Hijo/a biológico de la mamá (no estaban casados)", "Biological child of the mother (not married)") },
+            { value: "bio_out_father_legit", label: t("Hijo/a biológico del papá (reconocido legalmente)", "Biological child of the father (legally recognized)") },
+            { value: "bio_out_father_bonafide", label: t("Hijo/a biológico del papá (relación real padre-hijo)", "Biological child of the father (real parent-child bond)") },
+            { value: "stepchild", label: t("Hijastro/a (el matrimonio fue antes de los 18)", "Stepchild (marriage was before age 18)") },
+            { value: "adopted", label: t("Hijo/a adoptivo/a (adoptado antes de los 16)", "Adopted child (adopted before age 16)") },
           ].map((opt) => (
             <label key={opt.value} className={cn(
               "flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-all text-sm",
@@ -610,7 +613,7 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
       </div>
 
       {renderYesNo(
-        t("¿La relación padre-hijo actualmente existe?", "Does the parent-child relationship currently exist?"),
+        t("¿Actualmente existe una relación de padre/madre e hijo/a entre ellos?", "Does a parent-child relationship currently exist between them?"),
         answers.parentChildRelationshipExists,
         (v) => update("parentChildRelationshipExists", v)
       )}
@@ -620,39 +623,39 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
   const renderParentDetails = () => (
     <div className="space-y-4">
       {renderYesNo(
-        t("¿El hijo/a abusivo es Ciudadano Americano (USC)?", "Is the abusive son/daughter a U.S. Citizen (USC)?"),
+        t("¿El hijo/a que lo maltrata es Ciudadano Americano?", "Is the son/daughter who mistreats them a U.S. Citizen?"),
         answers.abuserIsUSC,
         (v) => update("abuserIsUSC", v),
         t(
-          "Solo los padres de hijos USC pueden auto-peticionar bajo VAWA. Hijos LPR no califican.",
-          "Only parents of USC children can self-petition under VAWA. LPR children do not qualify."
+          "Solo funciona si el hijo/a es ciudadano americano. Si solo tiene green card, no califica por esta vía.",
+          "This only works if the child is a U.S. citizen. If they only have a green card, this path doesn't apply."
         )
       )}
 
       {answers.abuserIsUSC === false && (
         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm">
           <p className="font-medium text-destructive">
-            {t("⚠ No elegible como padre/madre bajo VAWA", "⚠ Not eligible as parent under VAWA")}
+            {t("⚠ No califica por esta vía", "⚠ Does not qualify through this path")}
           </p>
           <p className="text-muted-foreground mt-1 text-xs">
-            {t("Considere U-Visa como alternativa.", "Consider U-Visa as an alternative.")}
+            {t("Pero hay otras opciones como la visa U que podrían servir.", "But there are other options like the U-Visa that might work.")}
           </p>
         </div>
       )}
 
       {renderYesNo(
-        t("¿El hijo/a abusivo tiene 21 años o más?", "Is the abusive son/daughter 21 years old or older?"),
+        t("¿El hijo/a que lo maltrata tiene 21 años o más?", "Is the son/daughter who mistreats them 21 years old or older?"),
         answers.abuserSonDaughterOver21,
         (v) => update("abuserSonDaughterOver21", v)
       )}
 
       {renderYesNo(
-        t("¿Es usted padre/madre para propósitos de inmigración?", "Are you a parent for immigration purposes?"),
+        t("¿El cliente es realmente el padre/madre del abusador?", "Is the client truly the parent of the abuser?"),
         answers.isParentForImmigration,
         (v) => update("isParentForImmigration", v),
         t(
-          "Padre biológico, padrastro/madrastra, o padre adoptivo del hijo/a abusivo.",
-          "Biological parent, stepparent, or adoptive parent of the abusive child."
+          "Puede ser padre/madre biológico, padrastro/madrastra, o padre/madre adoptivo.",
+          "Can be biological parent, stepparent, or adoptive parent."
         )
       )}
     </div>
@@ -662,8 +665,8 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
     <div className="space-y-4">
       {renderYesNo(
         t(
-          "¿El cliente fue sometido a maltrato físico (battery) o crueldad extrema por el abusador?",
-          "Was the client subjected to battery or extreme cruelty by the abuser?"
+          "¿El abusador le hizo daño físico al cliente, o lo trató con mucha crueldad?",
+          "Did the abuser physically hurt the client, or treat them with extreme cruelty?"
         ),
         answers.abuseOccurred,
         (v) => update("abuseOccurred", v)
@@ -673,7 +676,7 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
         <>
           <div className="space-y-2">
             <Label className="text-sm font-medium">
-              {t("Seleccione los tipos de abuso que aplican:", "Select the types of abuse that apply:")}
+              {t("¿Qué tipo de maltrato sufrió? (Marque todos los que apliquen)", "What type of mistreatment did they suffer? (Check all that apply)")}
             </Label>
             <div className="space-y-2">
               {ABUSE_TYPES.map((type) => (
@@ -705,8 +708,8 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
 
           {renderYesNo(
             t(
-              "¿El abuso ocurrió durante la relación calificante (matrimonio, relación padre-hijo, etc.)?",
-              "Did the abuse occur during the qualifying relationship (marriage, parent-child, etc.)?"
+              "¿El maltrato pasó mientras estaban en la relación (casados, viviendo juntos, etc.)?",
+              "Did the mistreatment happen while they were in the relationship (married, living together, etc.)?"
             ),
             answers.abuseDuringRelationship,
             (v) => update("abuseDuringRelationship", v)
@@ -720,14 +723,14 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
     <div className="space-y-4">
       {renderYesNo(
         t(
-          "¿El cliente alguna vez residió con el abusador?",
-          "Did the client ever reside with the abuser?"
+          "¿El cliente vivió alguna vez en la misma casa con el abusador?",
+          "Did the client ever live in the same home as the abuser?"
         ),
         answers.residedWithAbuser,
         (v) => update("residedWithAbuser", v),
         t(
-          "No se requiere un período mínimo de residencia. No es necesario que resida con el abusador al momento de solicitar.",
-          "No minimum period of residence required. Does not need to reside with abuser at time of filing."
+          "No importa por cuánto tiempo. Tampoco necesita estar viviendo con el abusador ahora mismo.",
+          "It doesn't matter for how long. They don't need to be living with the abuser right now either."
         )
       )}
 
@@ -735,8 +738,8 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
         <div className="ml-4 pl-4 border-l-2 border-accent/30">
           {renderYesNo(
             t(
-              "¿El abuso ocurrió durante un período de visita con el padre abusivo?",
-              "Did the abuse occur during a visitation period with the abusive parent?"
+              "¿El maltrato pasó cuando el hijo/a estaba de visita con el padre/madre abusivo?",
+              "Did the mistreatment happen while the child was visiting the abusive parent?"
             ),
             answers.childAbuseWhileResiding,
             (v) => update("childAbuseWhileResiding", v)
@@ -750,27 +753,27 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
         {t(
-          "USCIS evalúa el carácter moral del período de 3 años previo a la solicitud. INA §101(f)",
-          "USCIS evaluates moral character for the 3-year period prior to filing. INA §101(f)"
+          "Necesitamos saber si el cliente ha tenido problemas con la ley. Esto es importante para el caso.",
+          "We need to know if the client has had any problems with the law. This is important for the case."
         )}
       </p>
 
       <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
         <p className="text-xs font-semibold text-destructive mb-2">
-          {t("Barreras Permanentes (Permanent Bars)", "Permanent Bars")}
+          {t("Problemas graves (esto puede impedir el caso)", "Serious issues (this can block the case)")}
         </p>
         {renderYesNo(
           t(
-            "¿Ha sido condenado por un delito grave agravado (Aggravated Felony)?",
-            "Has the client been convicted of an aggravated felony?"
+            "¿Ha sido condenado por un crimen muy grave (como asesinato, tráfico de drogas, etc.)?",
+            "Have they been convicted of a very serious crime (like murder, drug trafficking, etc.)?"
           ),
           answers.aggravatedFelony,
           (v) => update("aggravatedFelony", v)
         )}
         {renderYesNo(
           t(
-            "¿Ha participado en persecución, genocidio, tortura o violaciones graves de libertad religiosa?",
-            "Has the client been involved in persecution, genocide, torture, or severe violations of religious freedom?"
+            "¿Ha participado en persecución, tortura o crímenes de guerra?",
+            "Have they been involved in persecution, torture, or war crimes?"
           ),
           answers.persecutionGenocide,
           (v) => update("persecutionGenocide", v)
@@ -780,36 +783,36 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
       {answers.aggravatedFelony === false && answers.persecutionGenocide === false && (
         <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
           <p className="text-xs font-semibold text-accent mb-2">
-            {t("Barreras Condicionales (Conditional Bars)", "Conditional Bars")}
+            {t("Otros problemas legales (se pueden resolver en algunos casos)", "Other legal issues (may be resolvable in some cases)")}
           </p>
           {renderYesNo(
             t(
-              "¿Tiene condenas por delitos que involucran bajeza moral (CIMTs)?",
-              "Any convictions for crimes involving moral turpitude (CIMTs)?"
+              "¿Tiene alguna condena por crimen menor (robo, fraude, etc.)?",
+              "Any convictions for minor crimes (theft, fraud, etc.)?"
             ),
             answers.crimesInvolvingMoralTurpitude,
             (v) => update("crimesInvolvingMoralTurpitude", v)
           )}
           {renderYesNo(
             t(
-              "¿Tiene violaciones relacionadas con sustancias controladas?",
-              "Any controlled substance violations?"
+              "¿Ha tenido problemas con drogas (uso, posesión o venta)?",
+              "Any drug-related issues (use, possession, or sales)?"
             ),
             answers.controlledSubstance,
             (v) => update("controlledSubstance", v)
           )}
           {renderYesNo(
             t(
-              "¿Ha estado encarcelado 180 días o más en total?",
-              "Has been incarcerated for 180 days or more total?"
+              "¿Ha estado preso/a por 6 meses o más en total?",
+              "Have they been in jail for 6 months or more total?"
             ),
             answers.incarceration180Days,
             (v) => update("incarceration180Days", v)
           )}
           {renderYesNo(
             t(
-              "¿Ha dado falso testimonio bajo juramento para obtener beneficios de inmigración?",
-              "Has given false testimony under oath to obtain immigration benefits?"
+              "¿Ha mentido bajo juramento para obtener beneficios de inmigración?",
+              "Have they lied under oath to get immigration benefits?"
             ),
             answers.falseTestimony,
             (v) => update("falseTestimony", v)
@@ -822,14 +825,14 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
             <div className="mt-3 ml-4 pl-4 border-l-2 border-accent/30">
               {renderYesNo(
                 t(
-                  "¿La conducta criminal está conectada con el abuso sufrido?",
-                  "Is the criminal conduct connected to the abuse suffered?"
+                  "¿Esos problemas con la ley fueron causados por el maltrato que sufrió?",
+                  "Were those legal problems caused by the abuse they suffered?"
                 ),
                 answers.gmcConditionalBarConnectedToAbuse,
                 (v) => update("gmcConditionalBarConnectedToAbuse", v),
                 t(
-                  "USCIS debe considerar si la conducta está conectada al abuso antes de determinar falta de buen carácter moral.",
-                  "USCIS must consider whether conduct is connected to abuse before determining lack of good moral character."
+                  "Si los problemas legales fueron consecuencia del abuso, inmigración debe tomarlo en cuenta a favor del cliente.",
+                  "If the legal issues were a consequence of the abuse, immigration must take that into account in the client's favor."
                 )
               )}
             </div>
@@ -842,7 +845,7 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
   const renderLocationStep = () => (
     <div className="space-y-4">
       {renderYesNo(
-        t("¿El cliente se encuentra actualmente en Estados Unidos?", "Is the client currently in the United States?"),
+        t("¿El cliente está en Estados Unidos ahora mismo?", "Is the client in the United States right now?"),
         answers.currentlyInUS,
         (v) => update("currentlyInUS", v)
       )}
@@ -850,7 +853,7 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
       {answers.currentlyInUS === false && (
         <div className="space-y-3 ml-4 pl-4 border-l-2 border-accent/30">
           <Label className="text-sm font-medium">
-            {t("¿Aplica alguna de las siguientes excepciones?", "Does any of the following exceptions apply?")}
+            {t("¿Aplica alguna de estas situaciones especiales?", "Does any of these special situations apply?")}
           </Label>
           <RadioGroup
             value={answers.outsideUSException}
@@ -858,10 +861,10 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
             className="space-y-2"
           >
             {[
-              { value: "gov", label: t("Abusador empleado por gobierno de EE.UU. en el extranjero", "Abuser employed by US government abroad") },
-              { value: "military", label: t("Abusador es militar de EE.UU. estacionado en el extranjero", "Abuser is US military stationed abroad") },
-              { value: "abuse_in_us", label: t("El abuso ocurrió en Estados Unidos", "The abuse occurred in the United States") },
-              { value: "none", label: t("Ninguna excepción aplica", "No exception applies") },
+              { value: "gov", label: t("El abusador trabaja para el gobierno de EE.UU. en otro país", "The abuser works for the US government in another country") },
+              { value: "military", label: t("El abusador es militar de EE.UU. en otro país", "The abuser is US military stationed in another country") },
+              { value: "abuse_in_us", label: t("El maltrato pasó cuando estaban en Estados Unidos", "The abuse happened when they were in the United States") },
+              { value: "none", label: t("Ninguna de las anteriores", "None of the above") },
             ].map((opt) => (
               <label key={opt.value} className={cn(
                 "flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-all text-sm",
