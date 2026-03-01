@@ -1,6 +1,5 @@
 import { useState, forwardRef } from "react";
 import { ChevronRight, ChevronLeft, CheckCircle2, User, Calendar as CalendarIcon, Globe, Users, Plus, Trash2 } from "lucide-react";
-import { format, parse, isValid } from "date-fns";
 import { useStepHistory } from "@/hooks/useStepHistory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +7,6 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { VawaAnswers, ChildInfo, getDefaultAnswers } from "./vawaEngine";
 
@@ -158,38 +155,62 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
                 <CalendarIcon className="w-3.5 h-3.5 text-accent" />
                 {t("Fecha de Nacimiento", "Date of Birth")}
               </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal mt-1.5",
-                      !answers.clientDob && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {answers.clientDob
-                      ? (() => {
-                          const parsed = parse(answers.clientDob, "yyyy-MM-dd", new Date());
-                          return isValid(parsed) ? format(parsed, "PPP") : answers.clientDob;
-                        })()
-                      : t("Seleccionar fecha", "Select date")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={answers.clientDob ? parse(answers.clientDob, "yyyy-MM-dd", new Date()) : undefined}
-                    onSelect={(date) => update("clientDob", date ? format(date, "yyyy-MM-dd") : "")}
-                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                    captionLayout="dropdown-buttons"
-                    fromYear={1940}
-                    toYear={new Date().getFullYear()}
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="flex gap-2 mt-1.5">
+                <Select
+                  value={answers.clientDob ? answers.clientDob.split("-")[1] : ""}
+                  onValueChange={(month) => {
+                    const parts = (answers.clientDob || "--").split("-");
+                    update("clientDob", `${parts[0] || ""}-${month}-${parts[2] || ""}`);
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder={t("Mes", "Month")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      t("Enero", "January"), t("Febrero", "February"), t("Marzo", "March"),
+                      t("Abril", "April"), t("Mayo", "May"), t("Junio", "June"),
+                      t("Julio", "July"), t("Agosto", "August"), t("Septiembre", "September"),
+                      t("Octubre", "October"), t("Noviembre", "November"), t("Diciembre", "December"),
+                    ].map((name, i) => (
+                      <SelectItem key={i} value={String(i + 1).padStart(2, "0")}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={answers.clientDob ? answers.clientDob.split("-")[2] : ""}
+                  onValueChange={(day) => {
+                    const parts = (answers.clientDob || "--").split("-");
+                    update("clientDob", `${parts[0] || ""}-${parts[1] || ""}-${day}`);
+                  }}
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue placeholder={t("Día", "Day")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 31 }, (_, i) => (
+                      <SelectItem key={i + 1} value={String(i + 1).padStart(2, "0")}>{i + 1}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={answers.clientDob ? answers.clientDob.split("-")[0] : ""}
+                  onValueChange={(year) => {
+                    const parts = (answers.clientDob || "--").split("-");
+                    update("clientDob", `${year}-${parts[1] || ""}-${parts[2] || ""}`);
+                  }}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue placeholder={t("Año", "Year")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: new Date().getFullYear() - 1939 }, (_, i) => {
+                      const y = new Date().getFullYear() - i;
+                      return <SelectItem key={y} value={String(y)}>{y}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div>
               <Label className="flex items-center gap-2">
@@ -569,7 +590,7 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
     <div className="space-y-4">
       <div>
         <Label className="flex items-center gap-2">
-          <Calendar className="w-3.5 h-3.5 text-accent" />
+          <CalendarIcon className="w-3.5 h-3.5 text-accent" />
           {t("Edad actual del hijo/a", "Current age of the child")}
         </Label>
         <Input
