@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useStepHistory } from '@/hooks/useStepHistory';
 import { useNavigate } from 'react-router-dom';
 import { useBackDestination } from '@/hooks/useBackDestination';
 import { FileUploadZone } from '@/components/FileUploadZone';
@@ -136,7 +137,24 @@ export default function Index() {
   const { destination: backDest, isHub } = useBackDestination();
   const [accepted, setAccepted] = useState(false);
   const [lang, setLang] = useState<Lang>('es');
-  const [step, setStep] = useState(1);
+  const [step, setStepRaw] = useState(1);
+  const { goNext: stepForward, goBack: stepBackward } = useStepHistory(step - 1, (s) => {
+    if (typeof s === 'function') {
+      setStepRaw(prev => (s as (p: number) => number)(prev - 1) + 1);
+    } else {
+      setStepRaw(s + 1);
+    }
+  }, 3);
+
+  const setStep = useCallback((target: number) => {
+    if (target > step) {
+      // Push history entries for each forward step
+      for (let i = step; i < target; i++) {
+        window.history.pushState({ wizardStep: i }, '');
+      }
+    }
+    setStepRaw(target);
+  }, [step]);
   const [caseInfo, setCaseInfo] = useState<CaseInfo>({
     petitioner_name: '',
     beneficiary_name: '',
