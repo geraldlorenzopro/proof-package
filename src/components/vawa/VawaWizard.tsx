@@ -882,45 +882,32 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Step indicator - Tab style matching Photo Evidence */}
-      <div className="border-b bg-card shadow-sm">
-        <div className="max-w-5xl mx-auto px-2 sm:px-4">
-          <div className="flex justify-center overflow-x-auto scrollbar-none">
-            {STEP_ORDER.map((s, i) => {
-              const isActive = i === currentStep;
-              const isDone = i < currentStep;
-              return (
-                <button
-                  key={s}
-                  onClick={() => { if (isDone) { setCurrentStep(i); } }}
-                  className={cn(
-                    "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap flex-shrink-0",
-                    isActive ? "border-accent text-accent" : isDone ? "border-accent/50 text-accent/70 cursor-pointer" : "border-transparent text-muted-foreground cursor-default"
-                  )}
-                >
-                  <div className={cn(
-                    "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0",
-                    isActive ? "bg-accent text-accent-foreground" : isDone ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
-                  )}>
-                    {isDone ? "✓" : i + 1}
-                  </div>
-                  <span className="hidden sm:block">{STEP_LABELS[s][lang]}</span>
-                </button>
-              );
-            })}
+      {/* Progress bar */}
+      <div className="border-b border-border bg-card/80 backdrop-blur-sm">
+        <div className="max-w-2xl mx-auto px-4 pt-4 pb-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-accent">
+              {t(`Paso ${currentStep + 1} de ${STEP_ORDER.length}`, `Step ${currentStep + 1} of ${STEP_ORDER.length}`)}
+            </span>
+            <span className="text-xs text-muted-foreground font-medium">
+              {Math.round(((currentStep + 1) / STEP_ORDER.length) * 100)}%
+            </span>
           </div>
+          <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full gradient-gold transition-all duration-500 ease-out"
+              style={{ width: `${((currentStep + 1) / STEP_ORDER.length) * 100}%` }}
+            />
+          </div>
+          <p className="text-sm font-semibold text-foreground mt-2.5">
+            {STEP_LABELS[step][lang]}
+          </p>
         </div>
       </div>
 
       {/* Step content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-6">
-          <div className="mb-4">
-            <h2 className="text-lg font-bold text-foreground">{STEP_LABELS[step][lang]}</h2>
-            <p className="text-xs text-muted-foreground">
-              {t(`Paso ${currentStep + 1} de ${STEP_ORDER.length}`, `Step ${currentStep + 1} of ${STEP_ORDER.length}`)}
-            </p>
-          </div>
           {renderStep()}
         </div>
       </div>
