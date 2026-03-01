@@ -882,56 +882,67 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Step indicator */}
-      <div className="flex items-center gap-1 px-2 py-3 overflow-x-auto">
-        {STEP_ORDER.map((s, i) => (
-          <div key={s} className="flex items-center gap-1 shrink-0">
-            <div
-              className={cn(
-                "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all",
-                i < currentStep
-                  ? "bg-[hsl(var(--step-done))] text-white"
-                  : i === currentStep
-                  ? "bg-[hsl(var(--step-active))] text-white shadow-[0_0_12px_hsl(var(--step-active)/0.4)]"
-                  : "bg-[hsl(var(--step-pending))] text-muted-foreground"
-              )}
-            >
-              {i < currentStep ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
-            </div>
-            {i < STEP_ORDER.length - 1 && (
-              <div className={cn("w-4 h-0.5", i < currentStep ? "bg-[hsl(var(--step-done))]" : "bg-border")} />
-            )}
+      {/* Step indicator - Tab style matching Photo Evidence */}
+      <div className="border-b bg-card shadow-sm">
+        <div className="max-w-5xl mx-auto px-2 sm:px-4">
+          <div className="flex justify-center overflow-x-auto scrollbar-none">
+            {STEP_ORDER.map((s, i) => {
+              const isActive = i === currentStep;
+              const isDone = i < currentStep;
+              return (
+                <button
+                  key={s}
+                  onClick={() => { if (isDone) { setCurrentStep(i); } }}
+                  className={cn(
+                    "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap flex-shrink-0",
+                    isActive ? "border-accent text-accent" : isDone ? "border-accent/50 text-accent/70 cursor-pointer" : "border-transparent text-muted-foreground cursor-default"
+                  )}
+                >
+                  <div className={cn(
+                    "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0",
+                    isActive ? "bg-accent text-accent-foreground" : isDone ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
+                  )}>
+                    {isDone ? "✓" : i + 1}
+                  </div>
+                  <span className="hidden sm:block">{STEP_LABELS[s][lang]}</span>
+                </button>
+              );
+            })}
           </div>
-        ))}
-      </div>
-
-      {/* Step label */}
-      <div className="px-4 pb-2">
-        <h2 className="text-lg font-bold text-foreground">{STEP_LABELS[step][lang]}</h2>
-        <p className="text-xs text-muted-foreground">
-          {t(`Paso ${currentStep + 1} de ${STEP_ORDER.length}`, `Step ${currentStep + 1} of ${STEP_ORDER.length}`)}
-        </p>
+        </div>
       </div>
 
       {/* Step content */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">{renderStep()}</div>
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 py-6">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-foreground">{STEP_LABELS[step][lang]}</h2>
+            <p className="text-xs text-muted-foreground">
+              {t(`Paso ${currentStep + 1} de ${STEP_ORDER.length}`, `Step ${currentStep + 1} of ${STEP_ORDER.length}`)}
+            </p>
+          </div>
+          {renderStep()}
+        </div>
+      </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between p-4 border-t border-border">
-        <Button variant="ghost" onClick={goBack} disabled={currentStep === 0} className="gap-1">
-          <ChevronLeft className="w-4 h-4" />
-          {t("Atrás", "Back")}
-        </Button>
-        <Button
-          onClick={goNext}
-          disabled={!canGoNext()}
-          className="gap-1 bg-accent text-accent-foreground hover:bg-accent/90"
-        >
-          {currentStep === STEP_ORDER.length - 1
-            ? t("Ver Resultados", "View Results")
-            : t("Siguiente", "Next")}
-          <ChevronRight className="w-4 h-4" />
-        </Button>
+      <div className="border-t border-border">
+        <div className="max-w-2xl mx-auto flex items-center justify-between p-4">
+          <Button variant="ghost" onClick={goBack} disabled={currentStep === 0} className="gap-1">
+            <ChevronLeft className="w-4 h-4" />
+            {t("Atrás", "Back")}
+          </Button>
+          <Button
+            onClick={goNext}
+            disabled={!canGoNext()}
+            className="gap-1 gradient-gold text-accent-foreground font-semibold"
+          >
+            {currentStep === STEP_ORDER.length - 1
+              ? t("Ver Resultados", "View Results")
+              : t("Siguiente", "Next")}
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
