@@ -1,5 +1,6 @@
 import { useState, forwardRef } from "react";
 import { ChevronRight, ChevronLeft, CheckCircle2, User, Calendar, Globe, Users, Plus, Trash2 } from "lucide-react";
+import { useStepHistory } from "@/hooks/useStepHistory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +65,8 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
   const [currentStep, setCurrentStep] = useState(0);
   const t = (es: string, en: string) => (lang === "es" ? es : en);
 
+  const { goNext: historyNext, goBack } = useStepHistory(currentStep, setCurrentStep, STEP_ORDER.length - 1);
+
   const step = STEP_ORDER[currentStep];
 
   const update = <K extends keyof VawaAnswers>(key: K, val: VawaAnswers[K]) => {
@@ -98,14 +101,10 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
 
   const goNext = () => {
     if (currentStep < STEP_ORDER.length - 1) {
-      setCurrentStep((p) => p + 1);
+      historyNext();
     } else {
       onComplete(answers);
     }
-  };
-
-  const goBack = () => {
-    if (currentStep > 0) setCurrentStep((p) => p - 1);
   };
 
   const renderYesNo = (
