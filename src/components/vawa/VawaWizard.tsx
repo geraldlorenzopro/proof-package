@@ -1,5 +1,6 @@
 import { useState, forwardRef } from "react";
-import { ChevronRight, ChevronLeft, CheckCircle2, User, Calendar, Globe, Users, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle2, User, Calendar as CalendarIcon, Globe, Users, Plus, Trash2 } from "lucide-react";
+import { format, parse, isValid } from "date-fns";
 import { useStepHistory } from "@/hooks/useStepHistory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { VawaAnswers, ChildInfo, getDefaultAnswers } from "./vawaEngine";
 
@@ -152,16 +155,41 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
             </div>
             <div>
               <Label className="flex items-center gap-2">
-                <Calendar className="w-3.5 h-3.5 text-accent" />
+                <CalendarIcon className="w-3.5 h-3.5 text-accent" />
                 {t("Fecha de Nacimiento", "Date of Birth")}
               </Label>
-              <Input
-                type="date"
-                value={answers.clientDob}
-                onChange={(e) => update("clientDob", e.target.value)}
-                className="mt-1.5"
-              />
-              <p className="text-xs text-muted-foreground mt-1">{t("Formato: mes/día/año", "Format: month/day/year")}</p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal mt-1.5",
+                      !answers.clientDob && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {answers.clientDob
+                      ? (() => {
+                          const parsed = parse(answers.clientDob, "yyyy-MM-dd", new Date());
+                          return isValid(parsed) ? format(parsed, "PPP") : answers.clientDob;
+                        })()
+                      : t("Seleccionar fecha", "Select date")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={answers.clientDob ? parse(answers.clientDob, "yyyy-MM-dd", new Date()) : undefined}
+                    onSelect={(date) => update("clientDob", date ? format(date, "yyyy-MM-dd") : "")}
+                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                    captionLayout="dropdown-buttons"
+                    fromYear={1940}
+                    toYear={new Date().getFullYear()}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <Label className="flex items-center gap-2">
