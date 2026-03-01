@@ -308,6 +308,24 @@ const VawaResults = forwardRef<HTMLDivElement, ResultsProps>(({ result, answers,
         </div>
       )}
 
+      {/* Disclaimer */}
+      <div className="p-4 rounded-lg border border-border bg-muted/30">
+        <div className="flex items-start gap-2">
+          <Scale className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              {t("Aviso Legal", "Legal Disclaimer")}
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {t(
+                "Esta evaluación es orientativa y no constituye asesoría legal. Los resultados se basan en la información proporcionada y no garantizan la aprobación del caso. Consulte siempre con un abogado de inmigración autorizado antes de tomar decisiones legales.",
+                "This assessment is for informational purposes only and does not constitute legal advice. Results are based on the information provided and do not guarantee case approval. Always consult with an authorized immigration attorney before making legal decisions."
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Actions */}
       <div className="flex flex-wrap gap-3 pt-2">
         <Button onClick={handleDownloadPdf} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Shield, ChevronRight, Scale } from "lucide-react";
+import { ArrowLeft, Shield, ChevronRight, Scale, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import nerLogo from "@/assets/ner-logo.png";
@@ -10,9 +10,10 @@ import { trackToolUsage } from "@/lib/trackUsage";
 import { toast } from "sonner";
 import VawaWizard from "@/components/vawa/VawaWizard";
 import VawaResults from "@/components/vawa/VawaResults";
+import VawaTestRunner from "@/components/vawa/VawaTestRunner";
 import { VawaAnswers, evaluateEligibility, EligibilityResult } from "@/components/vawa/vawaEngine";
 
-type Step = "splash" | "wizard" | "result";
+type Step = "splash" | "wizard" | "result" | "test";
 
 const DISCLAIMER_BULLETS: Record<string, string[]> = {
   es: [
@@ -114,6 +115,14 @@ export default function VawaScreener() {
             {t("Comenzar Evaluación", "Start Assessment")}
             <ChevronRight className="w-5 h-5" />
           </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setStep("test")}
+            className="mt-3 gap-2 text-muted-foreground hover:text-accent text-xs"
+          >
+            <FlaskConical className="w-3.5 h-3.5" />
+            {t("Modo de Prueba", "Test Mode")}
+          </Button>
         </div>
 
         {/* Disclaimer Modal */}
@@ -141,6 +150,31 @@ export default function VawaScreener() {
             </Button>
           </DialogContent>
         </Dialog>
+      </div>
+    );
+  }
+
+  // ── TEST MODE ──
+  if (step === "test") {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-card/80 backdrop-blur border-b border-border">
+          <button
+            onClick={() => setStep("splash")}
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-accent transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {t("Volver", "Back")}
+          </button>
+          <div className="flex items-center gap-2">
+            <FlaskConical className="w-4 h-4 text-accent" />
+            <span className="text-sm font-bold text-foreground font-[Orbitron]">{t("Pruebas", "Tests")}</span>
+          </div>
+          <LangToggle lang={lang} setLang={setLang} />
+        </header>
+        <div className="flex-1 overflow-y-auto">
+          <VawaTestRunner lang={lang} onClose={() => setStep("splash")} />
+        </div>
       </div>
     );
   }
