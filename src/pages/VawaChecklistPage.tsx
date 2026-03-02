@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Save, ClipboardList } from "lucide-react";
+import { ArrowLeft, Save, ClipboardList, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import VawaChecklist from "@/components/vawa/VawaChecklist";
 import { generateChecklist, ChecklistCategory } from "@/components/vawa/vawaChecklistEngine";
-import { VawaAnswers, getDefaultAnswers } from "@/components/vawa/vawaEngine";
+import { VawaAnswers, getDefaultAnswers, evaluateEligibility } from "@/components/vawa/vawaEngine";
+import { generateScreenerPdf } from "@/lib/vawaScreenerPdf";
 
 export default function VawaChecklistPage() {
   const navigate = useNavigate();
@@ -100,8 +101,17 @@ export default function VawaChecklistPage() {
   const createCase = async () => {
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast.error(t(
+          "Debes iniciar sesión para guardar casos. Redirigiendo...",
+          "You must be logged in to save cases. Redirecting..."
+        ));
+        setTimeout(() => navigate("/auth"), 1500);
+        setSaving(false);
+        return;
+      }
+      const user = session.user;
 
       const { data, error } = await supabase
         .from("vawa_cases")
@@ -138,6 +148,17 @@ export default function VawaChecklistPage() {
       const totalItems = categories.reduce((sum, cat) => sum + cat.items.length, 0);
       const completedItems = Object.values(progress).filter(Boolean).length;
       const isComplete = completedItems === totalItems;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast.error(t(
+          "Sesión expirada. Inicia sesión nuevamente.",
+          "Session expired. Please log in again."
+        ));
+        setTimeout(() => navigate("/auth"), 1500);
+        setSaving(false);
+        return;
+      }
 
       const { error } = await supabase
         .from("vawa_cases")
@@ -209,6 +230,10 @@ export default function VawaChecklistPage() {
           onNotesChange={setNotes}
           onSave={handleSave}
           saving={saving}
+          onDownloadScreener={() => {
+            const result = evaluateEligibility(answers);
+            generateScreenerPdf(answers, result);
+          }}
         />
       </div>
 
