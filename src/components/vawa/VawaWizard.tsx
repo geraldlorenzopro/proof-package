@@ -588,20 +588,39 @@ const VawaWizard = forwardRef<HTMLDivElement, WizardProps>(({ lang, onComplete }
 
    const renderChildDetails = () => (
     <div className="space-y-4">
-      <div>
+      <div className="space-y-2">
         <Label className="flex items-center gap-2">
           <CalendarIcon className="w-3.5 h-3.5 text-accent" />
           {t("Edad actual del hijo/a", "Current age of the child")}
         </Label>
-        <Input
-          type="number"
-          value={answers.childCurrentAge ?? ""}
-          onChange={(e) => update("childCurrentAge", e.target.value ? parseInt(e.target.value) : null)}
-          className="mt-1.5 w-32"
-          min={0}
-          max={99}
-          placeholder={t("Edad", "Age")}
-        />
+        <Select
+          value={answers.childCurrentAge !== null ? String(answers.childCurrentAge) : ""}
+          onValueChange={(v) => update("childCurrentAge", parseInt(v))}
+        >
+          <SelectTrigger className="mt-1.5 w-40">
+            <SelectValue placeholder={t("Seleccionar edad", "Select age")} />
+          </SelectTrigger>
+          <SelectContent>
+            {Array.from({ length: 26 }, (_, i) => (
+              <SelectItem key={i} value={String(i)}>
+                {i} {t(i !== 1 ? "años" : "año", i !== 1 ? "years" : "year")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {answers.childCurrentAge !== null && answers.childCurrentAge >= 21 && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm mt-2">
+            <p className="font-medium text-destructive">
+              {t("⚠ Puede que no califique como 'hijo/a'", "⚠ May not qualify as a 'child'")}
+            </p>
+            <p className="text-muted-foreground mt-1 text-xs">
+              {t(
+                "Bajo la ley de inmigración, un 'hijo/a' generalmente debe ser menor de 21 años y soltero/a. Si tiene 21 o más, podría calificar si no pudo presentar antes por culpa del maltrato (hasta los 25 años).",
+                "Under immigration law, a 'child' generally must be under 21 and unmarried. If they are 21 or older, they may still qualify if they couldn't file earlier because of the abuse (up to age 25)."
+              )}
+            </p>
+          </div>
+        )}
       </div>
 
       {renderYesNo(
