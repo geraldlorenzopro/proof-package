@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
-import { CheckCircle2, XCircle, AlertTriangle, Download, RotateCcw, Scale, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { CheckCircle2, XCircle, AlertTriangle, Download, RotateCcw, Scale, FileText, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { EligibilityResult, EligibilityStatus, VawaAnswers } from "./vawaEngine";
@@ -35,6 +36,7 @@ const STATUS_CONFIG: Record<EligibilityStatus, { icon: typeof CheckCircle2; colo
 };
 
 const VawaResults = forwardRef<HTMLDivElement, ResultsProps>(({ result, answers, lang, onReset }, ref) => {
+  const navigate = useNavigate();
   const t = (es: string, en: string) => (lang === "es" ? es : en);
   const overall = STATUS_CONFIG[result.overall];
   const OverallIcon = overall.icon;
@@ -328,7 +330,17 @@ const VawaResults = forwardRef<HTMLDivElement, ResultsProps>(({ result, answers,
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3 pt-2">
-        <Button onClick={handleDownloadPdf} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+        <Button
+          onClick={() => {
+            sessionStorage.setItem("vawa_checklist_data", JSON.stringify({ answers, result }));
+            navigate("/dashboard/vawa-checklist");
+          }}
+          className="gap-2 gradient-gold text-accent-foreground font-semibold"
+        >
+          <ClipboardList className="w-4 h-4" />
+          {t("Generar Checklist de Documentos", "Generate Document Checklist")}
+        </Button>
+        <Button onClick={handleDownloadPdf} variant="outline" className="gap-2">
           <Download className="w-4 h-4" />
           {t("Descargar PDF", "Download PDF")}
         </Button>

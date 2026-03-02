@@ -464,6 +464,48 @@ export type Database = {
           },
         ]
       }
+      vawa_cases: {
+        Row: {
+          checklist_notes: Json
+          checklist_progress: Json
+          client_email: string | null
+          client_name: string
+          created_at: string
+          id: string
+          professional_id: string
+          screener_answers: Json
+          screener_result: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          checklist_notes?: Json
+          checklist_progress?: Json
+          client_email?: string | null
+          client_name: string
+          created_at?: string
+          id?: string
+          professional_id: string
+          screener_answers?: Json
+          screener_result?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          checklist_notes?: Json
+          checklist_progress?: Json
+          client_email?: string | null
+          client_name?: string
+          created_at?: string
+          id?: string
+          professional_id?: string
+          screener_answers?: Json
+          screener_result?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       visa_bulletin: {
         Row: {
           bulletin_month: number
