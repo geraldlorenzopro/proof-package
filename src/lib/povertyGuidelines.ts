@@ -1,5 +1,6 @@
-// 2025 HHS Poverty Guidelines for Affidavit of Support (I-864P)
-// Effective March 1, 2025
+// 2026 HHS Poverty Guidelines for Affidavit of Support (I-864P)
+// Effective March 1, 2026
+// Source: https://www.uscis.gov/i-864p (Last reviewed 02/27/2026)
 
 export type Region = "contiguous" | "alaska" | "hawaii";
 export type SponsorType = "regular" | "military";
@@ -14,32 +15,32 @@ export const REGION_LABELS: Record<Region, string> = {
 // 125% Guidelines (for all other sponsors — non-military)
 const GUIDELINES_125: Record<Region, { base: number[]; additional: number }> = {
   contiguous: {
-    base: [26437, 33312, 40187, 47062, 53937, 60812, 67687],
-    additional: 6875,
+    base: [27050, 34150, 41250, 48350, 55450, 62550, 69650],
+    additional: 7100,
   },
   alaska: {
-    base: [33037, 41637, 50237, 58837, 67437, 76037, 84637],
-    additional: 8600,
+    base: [33813, 42688, 51563, 60438, 69313, 78188, 87063],
+    additional: 8875,
   },
   hawaii: {
-    base: [30400, 38313, 46225, 54137, 62050, 69963, 77875],
-    additional: 7913,
+    base: [31113, 39275, 47438, 55600, 63763, 71925, 80088],
+    additional: 8163,
   },
 };
 
 // 100% Guidelines (for military sponsors petitioning spouse or child)
 const GUIDELINES_100: Record<Region, { base: number[]; additional: number }> = {
   contiguous: {
-    base: [21150, 26650, 32150, 37650, 43150, 48650, 54150],
-    additional: 5500,
+    base: [21640, 27320, 33000, 38680, 44360, 50040, 55720],
+    additional: 5680,
   },
   alaska: {
-    base: [26430, 33310, 40190, 47070, 53950, 60830, 67710],
-    additional: 6880,
+    base: [27050, 34150, 41250, 48350, 55450, 62550, 69650],
+    additional: 7100,
   },
   hawaii: {
-    base: [24320, 30650, 36980, 43310, 49640, 55970, 62300],
-    additional: 6330,
+    base: [24890, 31420, 37950, 44480, 51010, 57540, 64070],
+    additional: 6530,
   },
 };
 
