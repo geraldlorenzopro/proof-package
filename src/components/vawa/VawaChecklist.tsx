@@ -19,9 +19,10 @@ interface Props {
   onNotesChange: (notes: Record<string, string>) => void;
   onSave?: () => void;
   saving?: boolean;
+  onDownloadScreener?: () => void;
 }
 
-export default function VawaChecklist({ categories, answers, lang, progress, onProgressChange, notes, onNotesChange, onSave, saving }: Props) {
+export default function VawaChecklist({ categories, answers, lang, progress, onProgressChange, notes, onNotesChange, onSave, saving, onDownloadScreener }: Props) {
   const t = (es: string, en: string) => (lang === "es" ? es : en);
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
@@ -346,8 +347,14 @@ export default function VawaChecklist({ categories, answers, lang, progress, onP
         )}
         <Button variant="outline" onClick={handleExportPdf} className="gap-2">
           <Download className="w-4 h-4" />
-          {t("Exportar PDF", "Export PDF")}
+          {t("Exportar Checklist PDF", "Export Checklist PDF")}
         </Button>
+        {onDownloadScreener && (
+          <Button variant="outline" onClick={onDownloadScreener} className="gap-2">
+            <FileText className="w-4 h-4" />
+            {t("Descargar Screening PDF", "Download Screening PDF")}
+          </Button>
+        )}
       </div>
     </div>
   );
