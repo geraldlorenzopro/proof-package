@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Scale, Save, ClipboardList } from "lucide-react";
+import { ArrowLeft, Save, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,7 @@ import { VawaAnswers, getDefaultAnswers } from "@/components/vawa/vawaEngine";
 
 export default function VawaChecklistPage() {
   const navigate = useNavigate();
-  const { destination, isHub } = useBackDestination();
+  const { destination } = useBackDestination();
   const [searchParams] = useSearchParams();
   const caseId = searchParams.get("case");
   
@@ -26,6 +26,7 @@ export default function VawaChecklistPage() {
   const [answers, setAnswers] = useState<VawaAnswers>(getDefaultAnswers());
   const [categories, setCategories] = useState<ChecklistCategory[]>([]);
   const [progress, setProgress] = useState<Record<string, boolean>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [currentCaseId, setCurrentCaseId] = useState<string | null>(caseId);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [clientName, setClientName] = useState("");
@@ -33,12 +34,10 @@ export default function VawaChecklistPage() {
 
   const t = (es: string, en: string) => (lang === "es" ? es : en);
 
-  // Load case if ID provided
   useEffect(() => {
     if (caseId) {
       loadCase(caseId);
     } else {
-      // Check if answers passed via sessionStorage
       const stored = sessionStorage.getItem("vawa_checklist_data");
       if (stored) {
         try {
@@ -73,6 +72,7 @@ export default function VawaChecklistPage() {
       setAnswers(a);
       setCategories(generateChecklist(a));
       setProgress((data.checklist_progress as Record<string, boolean>) || {});
+      setNotes((data.checklist_notes as Record<string, string>) || {});
       setClientName(data.client_name);
       setClientEmail(data.client_email || "");
       setCurrentCaseId(id);
@@ -87,7 +87,6 @@ export default function VawaChecklistPage() {
 
   const handleSave = async () => {
     if (!currentCaseId) {
-      // First save — need client name
       if (!clientName.trim()) {
         setShowSaveDialog(true);
         return;
@@ -113,6 +112,7 @@ export default function VawaChecklistPage() {
           screener_answers: answers as any,
           screener_result: null,
           checklist_progress: progress as any,
+          checklist_notes: notes as any,
           status: "checklist",
         })
         .select("id")
@@ -121,8 +121,6 @@ export default function VawaChecklistPage() {
       if (error) throw error;
       setCurrentCaseId(data.id);
       toast.success(t("Caso guardado", "Case saved"));
-      
-      // Update URL without reload
       window.history.replaceState(null, "", `/dashboard/vawa-checklist?case=${data.id}`);
     } catch (err: any) {
       console.error("Error creating case:", err);
@@ -145,6 +143,7 @@ export default function VawaChecklistPage() {
         .from("vawa_cases")
         .update({
           checklist_progress: progress as any,
+          checklist_notes: notes as any,
           status: isComplete ? "completed" : "checklist",
         })
         .eq("id", currentCaseId);
@@ -180,7 +179,6 @@ export default function VawaChecklistPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
           <button
@@ -200,7 +198,6 @@ export default function VawaChecklistPage() {
         </div>
       </header>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto max-w-3xl mx-auto w-full">
         <VawaChecklist
           categories={categories}
@@ -208,12 +205,13 @@ export default function VawaChecklistPage() {
           lang={lang}
           progress={progress}
           onProgressChange={setProgress}
+          notes={notes}
+          onNotesChange={setNotes}
           onSave={handleSave}
           saving={saving}
         />
       </div>
 
-      {/* Save Dialog */}
       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
         <DialogContent className="max-w-sm">
           <DialogHeader>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { CheckCircle2, Circle, ChevronDown, ChevronRight, Info, Download, Save, FileText } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, ChevronRight, Info, Download, Save, FileText, MessageSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { ChecklistCategory } from "./vawaChecklistEngine";
@@ -14,13 +15,16 @@ interface Props {
   lang: "es" | "en";
   progress: Record<string, boolean>;
   onProgressChange: (progress: Record<string, boolean>) => void;
+  notes: Record<string, string>;
+  onNotesChange: (notes: Record<string, string>) => void;
   onSave?: () => void;
   saving?: boolean;
 }
 
-export default function VawaChecklist({ categories, answers, lang, progress, onProgressChange, onSave, saving }: Props) {
+export default function VawaChecklist({ categories, answers, lang, progress, onProgressChange, notes, onNotesChange, onSave, saving }: Props) {
   const t = (es: string, en: string) => (lang === "es" ? es : en);
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
 
   // Auto-expand first incomplete category on mount
   useEffect(() => {
@@ -34,6 +38,16 @@ export default function VawaChecklist({ categories, answers, lang, progress, onP
 
   const toggleItem = (itemId: string) => {
     onProgressChange({ ...progress, [itemId]: !progress[itemId] });
+  };
+
+  const handleNoteChange = (itemId: string, value: string) => {
+    if (value.trim()) {
+      onNotesChange({ ...notes, [itemId]: value });
+    } else {
+      const next = { ...notes };
+      delete next[itemId];
+      onNotesChange(next);
+    }
   };
 
   const totalItems = useMemo(() => categories.reduce((sum, cat) => sum + cat.items.length, 0), [categories]);
@@ -111,8 +125,9 @@ export default function VawaChecklist({ categories, answers, lang, progress, onP
 
       // Items
       for (const item of cat.items) {
-        checkSpace(10);
+        checkSpace(14);
         const checked = progress[item.id];
+        const itemNote = notes[item.id];
         
         // Checkbox
         if (checked) {
@@ -139,6 +154,20 @@ export default function VawaChecklist({ categories, answers, lang, progress, onP
           pdf.setTextColor(160, 160, 160);
           pdf.text(item.legalRef, mL + 10, y);
           y += 3;
+        }
+
+        // Note in PDF
+        if (itemNote) {
+          checkSpace(8);
+          pdf.setFillColor(255, 250, 235);
+          const noteTextLines = pdf.splitTextToSize(`📝 ${itemNote}`, cW - 18);
+          const noteBlockH = noteTextLines.length * 3 + 3;
+          pdf.roundedRect(mL + 10, y - 1, cW - 14, noteBlockH, 1, 1, "F");
+          pdf.setFontSize(6.5);
+          pdf.setFont("helvetica", "italic");
+          pdf.setTextColor(120, 100, 50);
+          pdf.text(noteTextLines, mL + 12, y + 1.5);
+          y += noteBlockH + 1;
         }
       }
       y += 3;
@@ -225,34 +254,79 @@ export default function VawaChecklist({ categories, answers, lang, progress, onP
 
                   {cat.items.map(item => {
                     const checked = progress[item.id];
+                    const itemNote = notes[item.id];
+                    const isNoteActive = activeNoteId === item.id;
+
                     return (
-                      <button
-                        key={item.id}
-                        onClick={() => toggleItem(item.id)}
-                        className={cn(
-                          "w-full flex items-start gap-2.5 p-2 rounded-md text-left transition-colors",
-                          checked ? "bg-accent/5" : "hover:bg-muted/50"
-                        )}
-                      >
-                        {checked ? (
-                          <CheckCircle2 className="w-4 h-4 text-accent mt-0.5 shrink-0" />
-                        ) : (
-                          <Circle className="w-4 h-4 text-muted-foreground/40 mt-0.5 shrink-0" />
-                        )}
-                        <div className="min-w-0">
-                          <span className={cn("text-xs leading-relaxed", checked ? "text-muted-foreground line-through" : "text-foreground")}>
-                            {item.text[lang]}
-                          </span>
-                          {item.detail && (
-                            <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-relaxed">
-                              {item.detail[lang]}
-                            </p>
-                          )}
-                          {item.legalRef && (
-                            <p className="text-[10px] text-muted-foreground/50 font-mono mt-0.5">{item.legalRef}</p>
-                          )}
+                      <div key={item.id} className={cn("rounded-md transition-colors", checked ? "bg-accent/5" : "hover:bg-muted/50")}>
+                        <div className="flex items-start gap-2.5 p-2">
+                          {/* Checkbox */}
+                          <button onClick={() => toggleItem(item.id)} className="mt-0.5 shrink-0">
+                            {checked ? (
+                              <CheckCircle2 className="w-4 h-4 text-accent" />
+                            ) : (
+                              <Circle className="w-4 h-4 text-muted-foreground/40" />
+                            )}
+                          </button>
+
+                          {/* Content */}
+                          <div className="min-w-0 flex-1">
+                            <span className={cn("text-xs leading-relaxed", checked ? "text-muted-foreground line-through" : "text-foreground")}>
+                              {item.text[lang]}
+                            </span>
+                            {item.detail && (
+                              <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-relaxed">
+                                {item.detail[lang]}
+                              </p>
+                            )}
+                            {item.legalRef && (
+                              <p className="text-[10px] text-muted-foreground/50 font-mono mt-0.5">{item.legalRef}</p>
+                            )}
+
+                            {/* Existing note badge */}
+                            {itemNote && !isNoteActive && (
+                              <button
+                                onClick={() => setActiveNoteId(item.id)}
+                                className="mt-1 flex items-center gap-1 px-2 py-0.5 rounded bg-accent/10 border border-accent/20 text-[10px] text-accent hover:bg-accent/20 transition-colors"
+                              >
+                                <MessageSquare className="w-2.5 h-2.5" />
+                                <span className="truncate max-w-[180px]">{itemNote}</span>
+                              </button>
+                            )}
+
+                            {/* Note editor */}
+                            {isNoteActive && (
+                              <div className="mt-1.5 space-y-1">
+                                <Textarea
+                                  value={itemNote || ""}
+                                  onChange={e => handleNoteChange(item.id, e.target.value)}
+                                  placeholder={t("Ej: Pendiente traducción...", "E.g.: Pending translation...")}
+                                  className="text-xs min-h-[48px] resize-none bg-muted/30 border-accent/20 focus:border-accent/50"
+                                  rows={2}
+                                />
+                                <button
+                                  onClick={() => setActiveNoteId(null)}
+                                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  {t("Cerrar", "Close")}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Note toggle button */}
+                          <button
+                            onClick={() => setActiveNoteId(isNoteActive ? null : item.id)}
+                            className={cn(
+                              "mt-0.5 shrink-0 p-1 rounded transition-colors",
+                              itemNote ? "text-accent hover:bg-accent/10" : "text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted/50"
+                            )}
+                            title={t("Agregar nota", "Add note")}
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                          </button>
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
