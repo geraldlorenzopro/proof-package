@@ -350,10 +350,7 @@ export async function fillI765Pdf(data: I765Data) {
     setCheck(form, P.pt5_rep_no, !data.preparerRepExtends);
   }
 
-  // Flatten so fields are not editable in the output
-  form.flatten();
-
-  // Save and download
+  // Save and download (fields remain editable for review/corrections)
   const filledBytes = await pdf.save();
   const blob = new Blob([filledBytes as unknown as ArrayBuffer], { type: "application/pdf" });
   const url = URL.createObjectURL(blob);
