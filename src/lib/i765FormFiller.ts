@@ -1,4 +1,4 @@
-import { PDFDocument, PDFTextField, PDFCheckBox, PDFForm } from "pdf-lib";
+import { PDFDocument, PDFTextField, PDFCheckBox, PDFForm, PDFName, PDFDict, PDFBool } from "pdf-lib";
 import { I765Data, ELIGIBILITY_CATEGORIES } from "@/components/smartforms/i765Schema";
 import { buildPageData } from "@/lib/i765Barcode";
 
@@ -70,6 +70,14 @@ const P = {
   line2a_family:     /Page1\[0\]\.Line2a_FamilyName\[0\]/,
   line2b_given:      /Page1\[0\]\.Line2b_GivenName\[0\]/,
   line2c_middle:     /Page1\[0\]\.Line2c_MiddleName\[0\]/,
+  // Other Names — second entry (Line 3, index [0])
+  line3a_family_0:   /Page1\[0\]\.Line3a_FamilyName\[0\]/,
+  line3b_given_0:    /Page1\[0\]\.Line3b_GivenName\[0\]/,
+  line3c_middle_0:   /Page1\[0\]\.Line3c_MiddleName\[0\]/,
+  // Other Names — third entry (Line 3, index [1])
+  line3a_family_1:   /Page1\[0\]\.Line3a_FamilyName\[1\]/,
+  line3b_given_1:    /Page1\[0\]\.Line3b_GivenName\[1\]/,
+  line3c_middle_1:   /Page1\[0\]\.Line3c_MiddleName\[1\]/,
 
   // Page 2 — Mailing address (Pt2Line5 = mailing)
   line4a_careof:     /Page2\[0\]\.Line4a_InCareofName\[0\]/,
@@ -222,6 +230,14 @@ export async function fillI765Pdf(data: I765Data) {
   setText(form, P.line2a_family, data.otherNames?.[0]?.lastName);
   setText(form, P.line2b_given, data.otherNames?.[0]?.firstName);
   setText(form, P.line2c_middle, data.otherNames?.[0]?.middleName);
+  // Other Names — second entry
+  setText(form, P.line3a_family_0, data.otherNames?.[1]?.lastName);
+  setText(form, P.line3b_given_0, data.otherNames?.[1]?.firstName);
+  setText(form, P.line3c_middle_0, data.otherNames?.[1]?.middleName);
+  // Other Names — third entry
+  setText(form, P.line3a_family_1, data.otherNames?.[2]?.lastName);
+  setText(form, P.line3b_given_1, data.otherNames?.[2]?.firstName);
+  setText(form, P.line3c_middle_1, data.otherNames?.[2]?.middleName);
 
   // A-Number & USCIS Account
   setText(form, P.line7_alien, data.aNumber?.replace(/^A-?/i, ""));
@@ -383,6 +399,13 @@ export async function fillI765Pdf(data: I765Data) {
     }
   } catch (e) {
     console.warn("Barcode field population failed (non-fatal):", e);
+  }
+
+  // Set NeedAppearances so the PDF viewer renders field text natively
+  // instead of pdf-lib drawing/embedding its own font glyphs
+  const acroForm = pdf.catalog.lookup(PDFName.of('AcroForm'), PDFDict);
+  if (acroForm) {
+    acroForm.set(PDFName.of('NeedAppearances'), PDFBool.True);
   }
 
   // Save and download (fields remain editable for review/corrections)
