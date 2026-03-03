@@ -47,8 +47,8 @@ export default function PdfFieldInspector() {
       }
     }
 
-    inspect("/forms/Gerald_L_s_I-765.pdf", setFields1, setError1);
-    inspect("/forms/i-765_2-2.pdf", setFields2, setError2);
+    inspect("/forms/I765_UPD.pdf", setFields1, setError1);
+    inspect("/forms/Gerald_L_s_I-765.pdf", setFields2, setError2);
   }, []);
 
   const renderTable = (fields: FieldInfo[], error: string, title: string) => (
@@ -72,8 +72,8 @@ export default function PdfFieldInspector() {
   return (
     <div className="p-4 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">PDF AcroForm Field Inspector</h1>
-      {renderTable(fields1, error1, "Gerald_L_s_I-765.pdf (Docketwise filled)")}
-      {renderTable(fields2, error2, "i-765_2-2.pdf (blank)")}
+      {renderTable(fields1, error1, "I765_UPD.pdf (AcroForm convertido)")}
+      {renderTable(fields2, error2, "Gerald_L_s_I-765.pdf (Docketwise filled)")}
     </div>
   );
 }
