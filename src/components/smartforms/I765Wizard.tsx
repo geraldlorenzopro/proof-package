@@ -19,6 +19,8 @@ interface Props {
   onSave: (data: I765Data, status: "draft" | "completed") => void;
   onFillUSCIS?: (data: I765Data) => void;
   saving?: boolean;
+  /** When true, shows preparer/interpreter fields (hidden from clients in public mode) */
+  isProfessional?: boolean;
 }
 
 // ─── Field helpers ───
@@ -38,7 +40,7 @@ const StateSelect = ({ value, onChange }: { value: string; onChange: (v: string)
 
 const inputCls = "bg-secondary/60 border-border/50 focus:border-accent/60";
 
-export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, saving }: Props) {
+export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, saving, isProfessional = true }: Props) {
   const [data, setData] = useState<I765Data>({ ...defaultI765Data, ...initialData });
   const [stepIdx, setStepIdx] = useState(0);
   const [hasOtherName, setHasOtherName] = useState(() => !!(initialData?.otherNames?.length));
@@ -155,13 +157,29 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     </div>
   );
 
+  const AptTypeSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="bg-secondary/60 border-border/50 w-24"><SelectValue placeholder="—" /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="apt">Apt.</SelectItem>
+        <SelectItem value="ste">Ste.</SelectItem>
+        <SelectItem value="flr">Flr.</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
   const renderAddress = () => (
     <div className="space-y-5">
       <h3 className="text-lg font-semibold text-accent">{t("Where do you receive your mail?", "¿Dónde recibes tu correo?")}</h3>
       <Field label={t("In Care Of", "A/C de")}><Input className={inputCls} value={data.mailingCareOf} onChange={e => set("mailingCareOf", e.target.value)} /></Field>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.mailingStreet} onChange={e => set("mailingStreet", e.target.value)} /></Field>
-        <Field label="Apt/Ste/Flr"><Input className={inputCls} value={data.mailingApt} onChange={e => set("mailingApt", e.target.value)} /></Field>
+        <Field label="Apt/Ste/Flr">
+          <div className="flex gap-2">
+            <AptTypeSelect value={data.mailingAptType} onChange={v => set("mailingAptType", v as I765Data["mailingAptType"])} />
+            <Input className={cn(inputCls, "flex-1")} value={data.mailingApt} onChange={e => set("mailingApt", e.target.value)} placeholder="#" />
+          </div>
+        </Field>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.mailingCity} onChange={e => set("mailingCity", e.target.value)} /></Field>
@@ -181,7 +199,12 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           <p className="text-xs text-muted-foreground font-medium mt-3">{t("U.S. Physical Address", "Dirección Física en EE.UU.")}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.physicalStreet} onChange={e => set("physicalStreet", e.target.value)} /></Field>
-            <Field label="Apt/Ste/Flr"><Input className={inputCls} value={data.physicalApt} onChange={e => set("physicalApt", e.target.value)} /></Field>
+            <Field label="Apt/Ste/Flr">
+              <div className="flex gap-2">
+                <AptTypeSelect value={data.physicalAptType} onChange={v => set("physicalAptType", v as I765Data["physicalAptType"])} />
+                <Input className={cn(inputCls, "flex-1")} value={data.physicalApt} onChange={e => set("physicalApt", e.target.value)} placeholder="#" />
+              </div>
+            </Field>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.physicalCity} onChange={e => set("physicalCity", e.target.value)} /></Field>
@@ -334,6 +357,15 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderPreparer = () => (
     <div className="space-y-5">
+      {isProfessional && (
+        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 mb-2">
+          <p className="text-xs text-accent font-medium">
+            {t("⚙️ Professional-only section — This information will NOT be visible to the client.",
+               "⚙️ Sección solo para profesionales — Esta información NO será visible para el cliente.")}
+          </p>
+        </div>
+      )}
+
       {data.interpreterUsed && (
         <>
           <h3 className="text-lg font-semibold text-accent">{t("Interpreter Information", "Datos del Intérprete")}</h3>
@@ -377,6 +409,12 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Checkbox checked={data.preparerIsAttorney} onCheckedChange={v => set("preparerIsAttorney", !!v)} id="is-atty" />
             <Label htmlFor="is-atty" className="text-sm cursor-pointer">{t("I am an attorney or accredited representative", "Soy abogado o representante acreditado")}</Label>
           </div>
+          {data.preparerIsAttorney && (
+            <div className="flex items-center gap-2">
+              <Checkbox checked={data.preparerRepExtends} onCheckedChange={v => set("preparerRepExtends", !!v)} id="rep-extends" />
+              <Label htmlFor="rep-extends" className="text-sm cursor-pointer">{t("My representation extends beyond this form", "Mi representación se extiende más allá de este formulario")}</Label>
+            </div>
+          )}
         </>
       )}
 
@@ -416,11 +454,11 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           {isLast ? (
             <div className="flex gap-2 flex-wrap">
               {onFillUSCIS && (
-                <Button variant="outline" onClick={() => onFillUSCIS(data)} className="gap-2 border-accent/40 text-accent hover:bg-accent/10">
+                <Button variant="outline" onClick={() => onFillUSCIS({ ...data, ssn: ssnFull || data.ssn })} className="gap-2 border-accent/40 text-accent hover:bg-accent/10">
                   <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">{t("Fill USCIS PDF", "Llenar PDF USCIS")}</span>
                 </Button>
               )}
-              <Button onClick={() => onSave(data, "completed")} disabled={saving} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button onClick={() => { onSave({ ...data, ssn: ssnFull || data.ssn }, "completed"); }} disabled={saving} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
                 <FileText className="w-4 h-4" /> <span className="hidden sm:inline">{t("Complete & Generate PDF", "Completar y Generar PDF")}</span>
               </Button>
             </div>
