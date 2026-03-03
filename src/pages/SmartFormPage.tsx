@@ -105,8 +105,8 @@ export default function SmartFormPage() {
       }
 
       if (status === "completed") {
+        // Use the original formData (with full SSN) for PDF generation
         generateI765Pdf(formData, firmName || undefined);
-        toast({ title: lang === "es" ? "✅ Formulario completado" : "✅ Form completed", description: lang === "es" ? "PDF generado y datos guardados" : "PDF generated and data saved" });
       } else {
         toast({ title: lang === "es" ? "💾 Borrador guardado" : "💾 Draft saved" });
       }

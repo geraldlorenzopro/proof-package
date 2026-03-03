@@ -24,10 +24,15 @@ function findField(form: PDFForm, pattern: RegExp) {
 function setText(form: PDFForm, pattern: RegExp, value: string | undefined | null) {
   if (!value) return;
   const field = findField(form, pattern);
-  if (field && field instanceof PDFTextField) {
+  if (!field) return;
+  // Use instanceof first, then fallback to constructor name check for subclasses
+  if (field instanceof PDFTextField) {
     const maxLen = field.getMaxLength();
     const safeValue = maxLen !== undefined ? value.slice(0, maxLen) : value;
     field.setText(safeValue);
+  } else if (field.constructor.name.includes("PDFTextField")) {
+    // Barcode fields may be a subclass not recognized by instanceof
+    try { (field as PDFTextField).setText(value); } catch {}
   }
 }
 
