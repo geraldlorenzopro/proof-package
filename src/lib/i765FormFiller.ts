@@ -24,15 +24,20 @@ function findField(form: PDFForm, pattern: RegExp) {
 function setText(form: PDFForm, pattern: RegExp, value: string | undefined | null) {
   if (!value) return;
   const field = findField(form, pattern);
-  if (!field) return;
-  // Use instanceof first, then fallback to constructor name check for subclasses
+  if (!field) {
+    console.warn(`[i765] No field found for pattern: ${pattern.source}`);
+    return;
+  }
   if (field instanceof PDFTextField) {
     const maxLen = field.getMaxLength();
     const safeValue = maxLen !== undefined ? value.slice(0, maxLen) : value;
     field.setText(safeValue);
-  } else if (field.constructor.name.includes("PDFTextField")) {
-    // Barcode fields may be a subclass not recognized by instanceof
-    try { (field as PDFTextField).setText(value); } catch {}
+  } else {
+    // Barcode or other text-like fields — try setting text directly via acroField
+    console.log(`[i765] Field ${field.getName()} is ${field.constructor.name}, attempting setText`);
+    try { (field as any).setText(value); } catch (e) {
+      console.warn(`[i765] setText failed on ${field.getName()}:`, e);
+    }
   }
 }
 
@@ -40,8 +45,14 @@ function setText(form: PDFForm, pattern: RegExp, value: string | undefined | nul
 function setCheck(form: PDFForm, pattern: RegExp, checked: boolean) {
   if (!checked) return;
   const field = findField(form, pattern);
-  if (field && field instanceof PDFCheckBox) {
+  if (!field) {
+    console.warn(`[i765] No checkbox found for pattern: ${pattern.source}`);
+    return;
+  }
+  if (field instanceof PDFCheckBox) {
     field.check();
+  } else {
+    console.warn(`[i765] Field ${field.getName()} is ${field.constructor.name}, not PDFCheckBox`);
   }
 }
 
@@ -88,8 +99,10 @@ const P = {
   line4a_careof:     /Page2\[0\]\.Line4a_InCareofName\[0\]/,
   line4b_street:     /Page2\[0\]\.Line4b_StreetNumberName\[0\]/,
   pt2l5_apt:         /Page2\[0\]\.Pt2Line5_AptSteFlrNumber\[0\]/,
-  pt2l5_unit_apt:    /Page2\[0\]\.Pt2Line5_Unit\[0\]/,
-  pt2l5_unit_ste:    /Page2\[0\]\.Pt2Line5_Unit\[1\]/,
+  // NOTE: In Docketwise XFA exports, checkbox indices may not match visual order.
+  // Testing indicates: [0]=Ste, [1]=Apt, [2]=Flr for this template.
+  pt2l5_unit_apt:    /Page2\[0\]\.Pt2Line5_Unit\[1\]/,
+  pt2l5_unit_ste:    /Page2\[0\]\.Pt2Line5_Unit\[0\]/,
   pt2l5_unit_flr:    /Page2\[0\]\.Pt2Line5_Unit\[2\]/,
   pt2l5_city:        /Page2\[0\]\.Pt2Line5_CityOrTown\[0\]/,
   pt2l5_state:       /Page2\[0\]\.Pt2Line5_State\[0\]/,
@@ -102,8 +115,8 @@ const P = {
   // Physical address (Pt2Line7 = physical)
   pt2l7_street:      /Page2\[0\]\.Pt2Line7_StreetNumberName\[0\]/,
   pt2l7_apt:         /Page2\[0\]\.Pt2Line7_AptSteFlrNumber\[0\]/,
-  pt2l7_unit_apt:    /Page2\[0\]\.Pt2Line7_Unit\[0\]/,
-  pt2l7_unit_ste:    /Page2\[0\]\.Pt2Line7_Unit\[1\]/,
+  pt2l7_unit_apt:    /Page2\[0\]\.Pt2Line7_Unit\[1\]/,
+  pt2l7_unit_ste:    /Page2\[0\]\.Pt2Line7_Unit\[0\]/,
   pt2l7_unit_flr:    /Page2\[0\]\.Pt2Line7_Unit\[2\]/,
   pt2l7_city:        /Page2\[0\]\.Pt2Line7_CityOrTown\[0\]/,
   pt2l7_state:       /Page2\[0\]\.Pt2Line7_State\[0\]/,
@@ -394,13 +407,31 @@ export async function fillI765Pdf(data: I765Data) {
   }
 
   // ── Populate native PDF417 barcode fields with pipe-delimited data ──
-  // The template has barcode text fields: #pageSet[0].Page1[N].PDF417BarCode1[0]
-  // Adobe Acrobat's JS engine reads these to render barcodes when opened.
+  // Discover all barcode fields first for debugging
+  const allFields = form.getFields();
+  const barcodeFields = allFields.filter(f => f.getName().toLowerCase().includes("barcode") || f.getName().includes("PDF417"));
+  console.log("[i765] Barcode fields found:", barcodeFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
+  
+  // Also log Unit checkbox fields for debugging
+  const unitFields = allFields.filter(f => f.getName().includes("Unit"));
+  console.log("[i765] Unit fields found:", unitFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
+
+  // Also log SSN fields
+  const ssnFields = allFields.filter(f => f.getName().toLowerCase().includes("ssn") || f.getName().includes("12b"));
+  console.log("[i765] SSN fields found:", ssnFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
+
   try {
-    for (let page = 0; page < 7; page++) {
-      const barcodePattern = new RegExp(`#pageSet\\[0\\]\\.Page1\\[${page}\\]\\.PDF417BarCode1\\[0\\]`);
-      const barcodeData = buildPageData(page + 1, data);
-      setText(form, barcodePattern, barcodeData);
+    for (const bf of barcodeFields) {
+      // Determine page number from field name
+      const pageMatch = bf.getName().match(/Page\d?\[?(\d+)\]?/i);
+      const pageIdx = pageMatch ? parseInt(pageMatch[1]) : -1;
+      if (pageIdx >= 0 && pageIdx < 7) {
+        const barcodeData = buildPageData(pageIdx + 1, data);
+        console.log(`[i765] Setting barcode for page ${pageIdx + 1}: ${barcodeData.substring(0, 50)}...`);
+        try { (bf as any).setText(barcodeData); } catch (e) {
+          console.warn(`[i765] Barcode setText failed for ${bf.getName()}:`, e);
+        }
+      }
     }
   } catch (e) {
     console.warn("Barcode field population failed (non-fatal):", e);
