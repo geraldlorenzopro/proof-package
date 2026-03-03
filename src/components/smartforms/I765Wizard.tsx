@@ -44,7 +44,11 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const [data, setData] = useState<I765Data>({ ...defaultI765Data, ...initialData });
   const [stepIdx, setStepIdx] = useState(0);
   const [hasOtherName, setHasOtherName] = useState(() => !!(initialData?.otherNames?.length));
-  const [ssnFull, setSsnFull] = useState(() => initialData?.ssn || "");
+  // If SSN from DB is masked (***-**-XXXX), don't use it — user must re-enter
+  const [ssnFull, setSsnFull] = useState(() => {
+    const saved = initialData?.ssn || "";
+    return saved.startsWith("***") ? "" : saved;
+  });
   const [ssnFocused, setSsnFocused] = useState(false);
   const step = I765_STEPS[stepIdx];
   const { setWizardNav } = useSmartFormsContext();
