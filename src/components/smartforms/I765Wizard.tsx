@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { ChevronRight, ChevronLeft, Save, FileText, CheckCircle2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, Save, FileText, CheckCircle2, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ interface Props {
   lang: "en" | "es";
   initialData?: Partial<I765Data>;
   onSave: (data: I765Data, status: "draft" | "completed") => void;
+  onFillUSCIS?: (data: I765Data) => void;
   saving?: boolean;
 }
 
@@ -36,7 +37,7 @@ const StateSelect = ({ value, onChange }: { value: string; onChange: (v: string)
 
 const inputCls = "bg-secondary/60 border-border/50 focus:border-accent/60";
 
-export default function I765Wizard({ lang, initialData, onSave, saving }: Props) {
+export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, saving }: Props) {
   const [data, setData] = useState<I765Data>({ ...defaultI765Data, ...initialData });
   const [stepIdx, setStepIdx] = useState(0);
   const step = I765_STEPS[stepIdx];
@@ -368,9 +369,16 @@ export default function I765Wizard({ lang, initialData, onSave, saving }: Props)
             <Save className="w-4 h-4" /> {t("Save Draft", "Guardar Borrador")}
           </Button>
           {isLast ? (
-            <Button onClick={() => onSave(data, "completed")} disabled={saving} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
-              <FileText className="w-4 h-4" /> {t("Complete & Generate PDF", "Completar y Generar PDF")}
-            </Button>
+            <div className="flex gap-2">
+              {onFillUSCIS && (
+                <Button variant="outline" onClick={() => onFillUSCIS(data)} className="gap-2 border-accent/40 text-accent hover:bg-accent/10">
+                  <FileDown className="w-4 h-4" /> {t("Fill USCIS PDF", "Llenar PDF USCIS")}
+                </Button>
+              )}
+              <Button onClick={() => onSave(data, "completed")} disabled={saving} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+                <FileText className="w-4 h-4" /> {t("Complete & Generate PDF", "Completar y Generar PDF")}
+              </Button>
+            </div>
           ) : (
             <Button onClick={next} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
               {t("Next", "Siguiente")} <ChevronRight className="w-4 h-4" />
