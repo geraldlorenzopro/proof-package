@@ -165,14 +165,14 @@ export const I765_STEPS: I765Step[] = [
 ];
 
 export const I765_STEP_LABELS: Record<I765Step, { en: string; es: string }> = {
-  reason:      { en: "Reason for Applying",   es: "Razón de la Solicitud" },
-  personal:    { en: "Personal Information",   es: "Información Personal" },
-  address:     { en: "Address",                es: "Dirección" },
-  background:  { en: "Background",             es: "Antecedentes" },
-  arrival:     { en: "Last Arrival",            es: "Última Entrada" },
-  eligibility: { en: "Eligibility Category",   es: "Categoría de Elegibilidad" },
-  statement:   { en: "Applicant Statement",    es: "Declaración" },
-  preparer:    { en: "Preparer / Interpreter", es: "Preparador / Intérprete" },
+  reason:      { en: "What do you need?",        es: "¿Qué necesitas?" },
+  personal:    { en: "About You",                es: "Sobre Ti" },
+  address:     { en: "Where You Live",           es: "Dónde Vives" },
+  background:  { en: "Your Background",          es: "Tu Historia" },
+  arrival:     { en: "Your Arrival",             es: "Tu Llegada" },
+  eligibility: { en: "Your Situation",           es: "Tu Situación" },
+  statement:   { en: "Contact & Preferences",   es: "Contacto y Preferencias" },
+  preparer:    { en: "Who Helped You",           es: "¿Quién te ayudó?" },
 };
 
 export const US_STATES = [
