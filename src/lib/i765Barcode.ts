@@ -1,12 +1,12 @@
 /**
- * Native USCIS 2D barcode (PDF417) generator for Form I-765.
+ * USCIS 2D barcode data builder for Form I-765.
  *
  * Based on USCIS 2D Barcode Requirements spec:
- * Each page encodes form fields as pipe-delimited values in a PDF417 barcode.
+ * Each page encodes form fields as pipe-delimited values.
+ * The template PDF has native PDF417BarCode fields that Adobe Acrobat's
+ * JavaScript engine uses to render the visual barcode.
  * Header: FormType|RevisionDate|PageNumber|Field1|Field2|...
  */
-// @ts-ignore - bwip-js browser module
-import bwipjs from "bwip-js";
 import { I765Data, ELIGIBILITY_CATEGORIES } from "@/components/smartforms/i765Schema";
 
 const FORM_TYPE = "I-765";
@@ -25,7 +25,7 @@ function s(val: string | undefined | null): string {
 }
 
 /** Build barcode data per page as pipe-delimited string */
-function buildPageData(pageNum: number, data: I765Data): string {
+export function buildPageData(pageNum: number, data: I765Data): string {
   const header = [FORM_TYPE, FORM_REVISION, String(pageNum)];
 
   switch (pageNum) {
@@ -155,48 +155,3 @@ function buildPageData(pageNum: number, data: I765Data): string {
   }
 }
 
-/**
- * Generate a PDF417 barcode as PNG bytes for a specific page.
- */
-export async function generatePageBarcode(pageNum: number, data: I765Data): Promise<Uint8Array> {
-  const barcodeData = buildPageData(pageNum, data);
-
-  // Create an offscreen canvas
-  const canvas = document.createElement("canvas");
-
-  // Use bwip-js to render the PDF417 barcode
-  bwipjs.toCanvas(canvas, {
-    bcid: "pdf417",
-    text: barcodeData,
-    scale: 2,
-    height: 8,
-    columns: 10,
-    rowmult: 2,
-    eclevel: 3,
-    includetext: false,
-  });
-
-  // Convert canvas to PNG blob
-  return new Promise<Uint8Array>((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) { reject(new Error("Failed to create barcode blob")); return; }
-      blob.arrayBuffer().then(ab => resolve(new Uint8Array(ab)));
-    }, "image/png");
-  });
-}
-
-/**
- * Generate barcodes for all pages (1-7).
- */
-export async function generateAllBarcodes(data: I765Data): Promise<Map<number, Uint8Array>> {
-  const barcodes = new Map<number, Uint8Array>();
-  for (let page = 1; page <= 7; page++) {
-    try {
-      const png = await generatePageBarcode(page, data);
-      barcodes.set(page, png);
-    } catch (e) {
-      console.warn(`Failed to generate barcode for page ${page}:`, e);
-    }
-  }
-  return barcodes;
-}
