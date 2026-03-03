@@ -1,5 +1,6 @@
-import { PDFDocument, PDFTextField, PDFCheckBox, PDFForm } from "pdf-lib";
+import { PDFDocument, PDFTextField, PDFCheckBox, PDFForm, rgb } from "pdf-lib";
 import { I765Data, ELIGIBILITY_CATEGORIES } from "@/components/smartforms/i765Schema";
+import { generateAllBarcodes } from "@/lib/i765Barcode";
 
 /**
  * Template PDF with AcroForm fields (Docketwise-exported).
@@ -350,6 +351,33 @@ export async function fillI765Pdf(data: I765Data) {
     setCheck(form, P.pt5_not_attorney, !data.preparerIsAttorney);
     setCheck(form, P.pt5_rep_extends, data.preparerRepExtends);
     setCheck(form, P.pt5_rep_no, !data.preparerRepExtends);
+  }
+
+  // ── Generate and embed PDF417 barcodes per page ──
+  try {
+    const barcodes = await generateAllBarcodes(data);
+    const pages = pdf.getPages();
+    for (const [pageNum, pngBytes] of barcodes) {
+      const pageIdx = pageNum - 1;
+      if (pageIdx >= 0 && pageIdx < pages.length) {
+        const pngImage = await pdf.embedPng(pngBytes);
+        const page = pages[pageIdx];
+        const { width } = page.getSize();
+        // Scale barcode to fit ~60% of page width, centered at bottom
+        const barcodeWidth = width * 0.45;
+        const barcodeHeight = (pngImage.height / pngImage.width) * barcodeWidth;
+        const x = (width - barcodeWidth) / 2;
+        const y = 18; // ~18pt from bottom edge
+        page.drawImage(pngImage, {
+          x,
+          y,
+          width: barcodeWidth,
+          height: barcodeHeight,
+        });
+      }
+    }
+  } catch (e) {
+    console.warn("Barcode generation failed (non-fatal):", e);
   }
 
   // Save and download (fields remain editable for review/corrections)
