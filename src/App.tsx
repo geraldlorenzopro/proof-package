@@ -23,6 +23,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ChecklistGenerator from "./pages/ChecklistGenerator";
 import VawaScreener from "./pages/VawaScreener";
 import VawaChecklistPage from "./pages/VawaChecklistPage";
+import SmartFormsList from "./pages/SmartFormsList";
 import SmartFormPage from "./pages/SmartFormPage";
 import NotFound from "./pages/NotFound";
 
@@ -55,7 +56,9 @@ const App = () => (
           <Route path="/dashboard/checklist" element={<ChecklistGenerator />} />
           <Route path="/dashboard/vawa-screener" element={<VawaScreener />} />
           <Route path="/dashboard/vawa-checklist" element={<VawaChecklistPage />} />
-          <Route path="/dashboard/smart-forms" element={<SmartFormPage />} />
+          <Route path="/dashboard/smart-forms" element={<SmartFormsList />} />
+          <Route path="/dashboard/smart-forms/new" element={<SmartFormPage />} />
+          <Route path="/dashboard/smart-forms/:id" element={<SmartFormPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
