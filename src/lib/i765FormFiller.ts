@@ -126,7 +126,7 @@ function setUncheck(form: PDFForm, pattern: RegExp) {
         acroField.dict.set(PDFName.of("V"), PDFName.of("Off"));
         acroField.dict.set(PDFName.of("AS"), PDFName.of("Off"));
       }
-    } catch {}
+    } catch { }
   }
 }
 
@@ -143,141 +143,141 @@ function fmtDate(d: string | undefined | null): string {
 
 const P = {
   // Page 1 — Part 1 & header
-  line1a_family:     /Page1\[0\]\.Line1a_FamilyName\[0\]/,
-  line1b_given:      /Page1\[0\]\.Line1b_GivenName\[0\]/,
-  line1c_middle:     /Page1\[0\]\.Line1c_MiddleName\[0\]/,
-  part1_initial:     /Page1\[0\]\.Part1_Checkbox\[0\]/,
+  line1a_family: /Page1\[0\]\.Line1a_FamilyName\[0\]/,
+  line1b_given: /Page1\[0\]\.Line1b_GivenName\[0\]/,
+  line1c_middle: /Page1\[0\]\.Line1c_MiddleName\[0\]/,
+  part1_initial: /Page1\[0\]\.Part1_Checkbox\[0\]/,
   part1_replacement: /Page1\[0\]\.Part1_Checkbox\[1\]/,
-  part1_renewal:     /Page1\[0\]\.Part1_Checkbox\[2\]/,
-  line2a_family:     /Page1\[0\]\.Line2a_FamilyName\[0\]/,
-  line2b_given:      /Page1\[0\]\.Line2b_GivenName\[0\]/,
-  line2c_middle:     /Page1\[0\]\.Line2c_MiddleName\[0\]/,
+  part1_renewal: /Page1\[0\]\.Part1_Checkbox\[2\]/,
+  line2a_family: /Page1\[0\]\.Line2a_FamilyName\[0\]/,
+  line2b_given: /Page1\[0\]\.Line2b_GivenName\[0\]/,
+  line2c_middle: /Page1\[0\]\.Line2c_MiddleName\[0\]/,
   // Other Names — second entry (Line 3, index [0])
-  line3a_family_0:   /Page1\[0\]\.Line3a_FamilyName\[0\]/,
-  line3b_given_0:    /Page1\[0\]\.Line3b_GivenName\[0\]/,
-  line3c_middle_0:   /Page1\[0\]\.Line3c_MiddleName\[0\]/,
+  line3a_family_0: /Page1\[0\]\.Line3a_FamilyName\[0\]/,
+  line3b_given_0: /Page1\[0\]\.Line3b_GivenName\[0\]/,
+  line3c_middle_0: /Page1\[0\]\.Line3c_MiddleName\[0\]/,
   // Other Names — third entry (Line 3, index [1])
-  line3a_family_1:   /Page1\[0\]\.Line3a_FamilyName\[1\]/,
-  line3b_given_1:    /Page1\[0\]\.Line3b_GivenName\[1\]/,
-  line3c_middle_1:   /Page1\[0\]\.Line3c_MiddleName\[1\]/,
+  line3a_family_1: /Page1\[0\]\.Line3a_FamilyName\[1\]/,
+  line3b_given_1: /Page1\[0\]\.Line3b_GivenName\[1\]/,
+  line3c_middle_1: /Page1\[0\]\.Line3c_MiddleName\[1\]/,
 
   // Page 2 — Mailing address (Pt2Line5 = mailing)
-  line4a_careof:     /Page2\[0\]\.Line4a_InCareofName\[0\]/,
-  line4b_street:     /Page2\[0\]\.Line4b_StreetNumberName\[0\]/,
-  pt2l5_apt:         /Page2\[0\]\.Pt2Line5_AptSteFlrNumber\[0\]/,
+  line4a_careof: /Page2\[0\]\.Line4a_InCareofName\[0\]/,
+  line4b_street: /Page2\[0\]\.Line4b_StreetNumberName\[0\]/,
+  pt2l5_apt: /Page2\[0\]\.Pt2Line5_AptSteFlrNumber\[0\]/,
   // NOTE: In Docketwise XFA exports, checkbox indices may not match visual order.
   // Testing indicates: [0]=Ste, [1]=Apt, [2]=Flr for this template.
-  pt2l5_unit_apt:    /Page2\[0\]\.Pt2Line5_Unit\[0\]/,
-  pt2l5_unit_ste:    /Page2\[0\]\.Pt2Line5_Unit\[1\]/,
-  pt2l5_unit_flr:    /Page2\[0\]\.Pt2Line5_Unit\[2\]/,
-  pt2l5_city:        /Page2\[0\]\.Pt2Line5_CityOrTown\[0\]/,
-  pt2l5_state:       /Page2\[0\]\.Pt2Line5_State\[0\]/,
-  pt2l5_zip:         /Page2\[0\]\.Pt2Line5_ZipCode\[0\]/,
+  pt2l5_unit_apt: /Page2\[0\]\.Pt2Line5_Unit\[0\]/,
+  pt2l5_unit_ste: /Page2\[0\]\.Pt2Line5_Unit\[1\]/,
+  pt2l5_unit_flr: /Page2\[0\]\.Pt2Line5_Unit\[2\]/,
+  pt2l5_city: /Page2\[0\]\.Pt2Line5_CityOrTown\[0\]/,
+  pt2l5_state: /Page2\[0\]\.Pt2Line5_State\[0\]/,
+  pt2l5_zip: /Page2\[0\]\.Pt2Line5_ZipCode\[0\]/,
 
   // Same address checkbox
-  pt2l5_same_yes:    /Page2\[0\]\.Part2Line5_Checkbox\[0\]/,
-  pt2l5_same_no:     /Page2\[0\]\.Part2Line5_Checkbox\[1\]/,
+  pt2l5_same_yes: /Page2\[0\]\.Part2Line5_Checkbox\[0\]/,
+  pt2l5_same_no: /Page2\[0\]\.Part2Line5_Checkbox\[1\]/,
 
   // Physical address (Pt2Line7 = physical)
-  pt2l7_street:      /Page2\[0\]\.Pt2Line7_StreetNumberName\[0\]/,
-  pt2l7_apt:         /Page2\[0\]\.Pt2Line7_AptSteFlrNumber\[0\]/,
-  pt2l7_unit_apt:    /Page2\[0\]\.Pt2Line7_Unit\[0\]/,
-  pt2l7_unit_ste:    /Page2\[0\]\.Pt2Line7_Unit\[1\]/,
-  pt2l7_unit_flr:    /Page2\[0\]\.Pt2Line7_Unit\[2\]/,
-  pt2l7_city:        /Page2\[0\]\.Pt2Line7_CityOrTown\[0\]/,
-  pt2l7_state:       /Page2\[0\]\.Pt2Line7_State\[0\]/,
-  pt2l7_zip:         /Page2\[0\]\.Pt2Line7_ZipCode\[0\]/,
+  pt2l7_street: /Page2\[0\]\.Pt2Line7_StreetNumberName\[0\]/,
+  pt2l7_apt: /Page2\[0\]\.Pt2Line7_AptSteFlrNumber\[0\]/,
+  pt2l7_unit_apt: /Page2\[0\]\.Pt2Line7_Unit\[0\]/,
+  pt2l7_unit_ste: /Page2\[0\]\.Pt2Line7_Unit\[1\]/,
+  pt2l7_unit_flr: /Page2\[0\]\.Pt2Line7_Unit\[2\]/,
+  pt2l7_city: /Page2\[0\]\.Pt2Line7_CityOrTown\[0\]/,
+  pt2l7_state: /Page2\[0\]\.Pt2Line7_State\[0\]/,
+  pt2l7_zip: /Page2\[0\]\.Pt2Line7_ZipCode\[0\]/,
 
   // A-Number, USCIS Account, SSN
-  line7_alien:       /Page2\[0\]\.Line7_AlienNumber\[0\]/,
-  line8_elis:        /Page2\[0\]\.Line8_ElisAccountNumber\[0\]/,
-  line12b_ssn:       /Page2\[0\]\.Line12b_SSN\[0\]/,
+  line7_alien: /Page2\[0\]\.Line7_AlienNumber\[0\]/,
+  line8_elis: /Page2\[0\]\.Line8_ElisAccountNumber\[0\]/,
+  line12b_ssn: /Page2\[0\]\.Line12b_SSN\[0\]/,
 
   // Sex
-  line9_male:        /Page2\[0\]\.Line9_Checkbox\[0\]/,
-  line9_female:      /Page2\[0\]\.Line9_Checkbox\[1\]/,
+  line9_male: /Page2\[0\]\.Line9_Checkbox\[0\]/,
+  line9_female: /Page2\[0\]\.Line9_Checkbox\[1\]/,
 
   // Marital status
-  line10_single:     /Page2\[0\]\.Line10_Checkbox\[0\]/,
-  line10_married:    /Page2\[0\]\.Line10_Checkbox\[1\]/,
-  line10_divorced:   /Page2\[0\]\.Line10_Checkbox\[2\]/,
-  line10_widowed:    /Page2\[0\]\.Line10_Checkbox\[3\]/,
+  line10_single: /Page2\[0\]\.Line10_Checkbox\[0\]/,
+  line10_married: /Page2\[0\]\.Line10_Checkbox\[1\]/,
+  line10_divorced: /Page2\[0\]\.Line10_Checkbox\[2\]/,
+  line10_widowed: /Page2\[0\]\.Line10_Checkbox\[3\]/,
 
   // Previously filed
-  line19_yes:        /Page2\[0\]\.Line19_Checkbox\[0\]/,
-  line19_no:         /Page2\[0\]\.Line19_Checkbox\[1\]/,
+  line19_yes: /Page2\[0\]\.Line19_Checkbox\[0\]/,
+  line19_no: /Page2\[0\]\.Line19_Checkbox\[1\]/,
 
   // Country of citizenship
-  line17a_country1:  /Page2\[0\]\.Line17a_CountryOfBirth\[0\]/,
-  line17b_country2:  /Page2\[0\]\.Line17b_CountryOfBirth\[0\]/,
+  line17a_country1: /Page2\[0\]\.Line17a_CountryOfBirth\[0\]/,
+  line17b_country2: /Page2\[0\]\.Line17b_CountryOfBirth\[0\]/,
 
   // Page 3 — Birth, arrival, eligibility
-  line18a_city:      /Page3\[0\]\.Line18a_CityTownOfBirth\[0\]/,
-  line18b_state:     /Page3\[0\]\.Line18b_CityTownOfBirth\[0\]/,
-  line18c_country:   /Page3\[0\]\.Line18c_CountryOfBirth\[0\]/,
-  line19_dob:        /Page3\[0\]\.Line19_DOB\[0\]/,
-  line20a_i94:       /Page3\[0\]\.Line20a_I94Number\[0\]/,
-  line20b_passport:  /Page3\[0\]\.Line20b_Passport\[0\]/,
+  line18a_city: /Page3\[0\]\.Line18a_CityTownOfBirth\[0\]/,
+  line18b_state: /Page3\[0\]\.Line18b_CityTownOfBirth\[0\]/,
+  line18c_country: /Page3\[0\]\.Line18c_CountryOfBirth\[0\]/,
+  line19_dob: /Page3\[0\]\.Line19_DOB\[0\]/,
+  line20a_i94: /Page3\[0\]\.Line20a_I94Number\[0\]/,
+  line20b_passport: /Page3\[0\]\.Line20b_Passport\[0\]/,
   line20c_traveldoc: /Page3\[0\]\.Line20c_TravelDoc\[0\]/,
-  line20d_country:   /Page3\[0\]\.Line20d_CountryOfIssuance\[0\]/,
-  line20e_exp:       /Page3\[0\]\.Line20e_ExpDate\[0\]/,
-  line21_lastentry:  /Page3\[0\]\.Line21_DateOfLastEntry\[0\]/,
-  place_entry:       /Page3\[0\]\.place_entry\[0\]/,
-  line23_status:     /Page3\[0\]\.Line23_StatusLastEntry\[0\]/,
-  line24_current:    /Page3\[0\]\.Line24_CurrentStatus\[0\]/,
+  line20d_country: /Page3\[0\]\.Line20d_CountryOfIssuance\[0\]/,
+  line20e_exp: /Page3\[0\]\.Line20e_ExpDate\[0\]/,
+  line21_lastentry: /Page3\[0\]\.Line21_DateOfLastEntry\[0\]/,
+  place_entry: /Page3\[0\]\.place_entry\[0\]/,
+  line23_status: /Page3\[0\]\.Line23_StatusLastEntry\[0\]/,
+  line24_current: /Page3\[0\]\.Line24_CurrentStatus\[0\]/,
 
   // Eligibility category (sections in #area)
-  section_1:         /Page3\[0\]\.#area\[1\]\.section_1\[0\]/,
-  section_2:         /Page3\[0\]\.#area\[1\]\.section_2\[0\]/,
-  section_3:         /Page3\[0\]\.#area\[1\]\.section_3\[0\]/,
+  section_1: /Page3\[0\]\.#area\[1\]\.section_1\[0\]/,
+  section_2: /Page3\[0\]\.#area\[1\]\.section_2\[0\]/,
+  section_3: /Page3\[0\]\.#area\[1\]\.section_3\[0\]/,
 
   // Receipt numbers
-  line28_receipt:    /Page3\[0\]\.Line28_ReceiptNumber\[0\]/,
-  line30a_receipt:   /Page3\[0\]\.Line18a_Receipt\[0\]\.Line30a_ReceiptNumber\[0\]/,
+  line28_receipt: /Page3\[0\]\.Line28_ReceiptNumber\[0\]/,
+  line30a_receipt: /Page3\[0\]\.Line18a_Receipt\[0\]\.Line30a_ReceiptNumber\[0\]/,
 
   // Yes/No questions
-  line29_yes:        /Page3\[0\]\.PtLine29_YesNo\[0\]/,
-  line29_no:         /Page3\[0\]\.PtLine29_YesNo\[1\]/,
-  line30b_yes:       /Page3\[0\]\.PtLine30b_YesNo\[0\]/,
-  line30b_no:        /Page3\[0\]\.PtLine30b_YesNo\[1\]/,
+  line29_yes: /Page3\[0\]\.PtLine29_YesNo\[0\]/,
+  line29_no: /Page3\[0\]\.PtLine29_YesNo\[1\]/,
+  line30b_yes: /Page3\[0\]\.PtLine30b_YesNo\[0\]/,
+  line30b_no: /Page3\[0\]\.PtLine30b_YesNo\[1\]/,
 
   // Page 4 — Part 3: Applicant Statement
   pt3_reads_english: /Page4\[0\]\.Pt3Line1Checkbox\[0\]/,
-  pt3_interpreter:   /Page4\[0\]\.Pt3Line1Checkbox\[1\]/,
-  pt3_language:      /Page4\[0\]\.Pt3Line1b_Language\[0\]/,
-  pt3_preparer:      /Page4\[0\]\.Part3_Checkbox\[0\]/,
-  pt3_phone:         /Page4\[0\]\.Pt3Line3_DaytimePhoneNumber1\[0\]/,
-  pt3_mobile:        /Page4\[0\]\.Pt3Line4_MobileNumber1\[0\]/,
-  pt3_email:         /Page4\[0\]\.Pt3Line5_Email\[0\]/,
+  pt3_interpreter: /Page4\[0\]\.Pt3Line1Checkbox\[1\]/,
+  pt3_language: /Page4\[0\]\.Pt3Line1b_Language\[0\]/,
+  pt3_preparer: /Page4\[0\]\.Part3_Checkbox\[0\]/,
+  pt3_phone: /Page4\[0\]\.Pt3Line3_DaytimePhoneNumber1\[0\]/,
+  pt3_mobile: /Page4\[0\]\.Pt3Line4_MobileNumber1\[0\]/,
+  pt3_email: /Page4\[0\]\.Pt3Line5_Email\[0\]/,
 
   // Part 4: Interpreter (Page 4-5)
-  pt4_family:        /Page4\[0\]\.Pt4Line1a_InterpreterFamilyName\[0\]/,
-  pt4_given:         /Page4\[0\]\.Pt4Line1b_InterpreterGivenName\[0\]/,
-  pt4_org:           /Page4\[0\]\.Pt4Line2_InterpreterBusinessorOrg\[0\]/,
-  pt4_phone:         /Page5\[0\]\.Pt4Line4_InterpreterDaytimeTelephone\[0\]/,
-  pt4_mobile:        /Page5\[0\]\.Pt4Line5_MobileNumber\[0\]/,
-  pt4_email:         /Page5\[0\]\.Pt4Line6_Email\[0\]/,
-  pt4_language:      /Page5\[0\]\.Part4_NameofLanguage\[0\]/,
+  pt4_family: /Page4\[0\]\.Pt4Line1a_InterpreterFamilyName\[0\]/,
+  pt4_given: /Page4\[0\]\.Pt4Line1b_InterpreterGivenName\[0\]/,
+  pt4_org: /Page4\[0\]\.Pt4Line2_InterpreterBusinessorOrg\[0\]/,
+  pt4_phone: /Page5\[0\]\.Pt4Line4_InterpreterDaytimeTelephone\[0\]/,
+  pt4_mobile: /Page5\[0\]\.Pt4Line5_MobileNumber\[0\]/,
+  pt4_email: /Page5\[0\]\.Pt4Line6_Email\[0\]/,
+  pt4_language: /Page5\[0\]\.Part4_NameofLanguage\[0\]/,
 
   // Part 5: Preparer (Page 5-6)
-  pt5_family:        /Page5\[0\]\.Pt5Line1a_PreparerFamilyName\[0\]/,
-  pt5_given:         /Page5\[0\]\.Pt5Line1b_PreparerGivenName\[0\]/,
-  pt5_org:           /Page5\[0\]\.Pt5Line2_BusinessName\[0\]/,
-  pt5_street:        /Page5\[0\]\.Pt5Line3a_StreetNumberName\[0\]/,
-  pt5_apt:           /Page5\[0\]\.Pt5Line3b_AptSteFlrNumber\[0\]/,
-  pt5_city:          /Page5\[0\]\.Pt5Line3c_CityOrTown\[0\]/,
-  pt5_state:         /Page5\[0\]\.Pt5Line3d_State\[0\]/,
-  pt5_zip:           /Page5\[0\]\.Pt5Line3e_ZipCode\[0\]/,
-  pt5_province:      /Page5\[0\]\.Pt5Line3f_Province\[0\]/,
-  pt5_postal:        /Page5\[0\]\.Pt5Line3g_PostalCode\[0\]/,
-  pt5_country:       /Page5\[0\]\.Pt5Line3h_Country\[0\]/,
-  pt5_phone:         /Page5\[0\]\.Pt5Line4_DaytimePhoneNumber1\[0\]/,
-  pt5_fax:           /Page5\[0\]\.Pt5Line5_PreparerFaxNumber\[0\]/,
-  pt5_email:         /Page5\[0\]\.Pt5Line6_Email\[0\]/,
-  pt5_is_attorney:   /Page6\[0\]\.Part5Line7_Checkbox\[0\]/,
-  pt5_not_attorney:  /Page6\[0\]\.Part5Line7_Checkbox\[1\]/,
-  pt5_rep_extends:   /Page6\[0\]\.Part5Line7b_Checkbox\[0\]/,
-  pt5_rep_no:        /Page6\[0\]\.Part5Line7b_Checkbox\[1\]/,
+  pt5_family: /Page5\[0\]\.Pt5Line1a_PreparerFamilyName\[0\]/,
+  pt5_given: /Page5\[0\]\.Pt5Line1b_PreparerGivenName\[0\]/,
+  pt5_org: /Page5\[0\]\.Pt5Line2_BusinessName\[0\]/,
+  pt5_street: /Page5\[0\]\.Pt5Line3a_StreetNumberName\[0\]/,
+  pt5_apt: /Page5\[0\]\.Pt5Line3b_AptSteFlrNumber\[0\]/,
+  pt5_city: /Page5\[0\]\.Pt5Line3c_CityOrTown\[0\]/,
+  pt5_state: /Page5\[0\]\.Pt5Line3d_State\[0\]/,
+  pt5_zip: /Page5\[0\]\.Pt5Line3e_ZipCode\[0\]/,
+  pt5_province: /Page5\[0\]\.Pt5Line3f_Province\[0\]/,
+  pt5_postal: /Page5\[0\]\.Pt5Line3g_PostalCode\[0\]/,
+  pt5_country: /Page5\[0\]\.Pt5Line3h_Country\[0\]/,
+  pt5_phone: /Page5\[0\]\.Pt5Line4_DaytimePhoneNumber1\[0\]/,
+  pt5_fax: /Page5\[0\]\.Pt5Line5_PreparerFaxNumber\[0\]/,
+  pt5_email: /Page5\[0\]\.Pt5Line6_Email\[0\]/,
+  pt5_is_attorney: /Page6\[0\]\.Part5Line7_Checkbox\[0\]/,
+  pt5_not_attorney: /Page6\[0\]\.Part5Line7_Checkbox\[1\]/,
+  pt5_rep_extends: /Page6\[0\]\.Part5Line7b_Checkbox\[0\]/,
+  pt5_rep_no: /Page6\[0\]\.Part5Line7b_Checkbox\[1\]/,
 };
 
 // ─── Clear all fields before filling ────────────────────────────
@@ -295,14 +295,14 @@ function clearAllFields(form: PDFForm) {
           acroField.dict.set(PDFName.of("V"), PDFName.of("Off"));
           acroField.dict.set(PDFName.of("AS"), PDFName.of("Off"));
         }
-      } catch {}
+      } catch { }
     } else if (isTextField(field)) {
       try {
         const acroField = (field as any).acroField;
         if (acroField?.dict) {
           acroField.dict.set(PDFName.of("V"), PDFString.of(""));
         }
-      } catch {}
+      } catch { }
     }
   }
 }
@@ -492,7 +492,7 @@ export async function fillI765Pdf(data: I765Data) {
   const allFields = form.getFields();
   const barcodeFields = allFields.filter(f => f.getName().toLowerCase().includes("barcode") || f.getName().includes("PDF417"));
   console.log("[i765] Barcode fields found:", barcodeFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
-  
+
   // Also log Unit checkbox fields for debugging
   const unitFields = allFields.filter(f => f.getName().includes("Unit"));
   console.log("[i765] Unit fields found:", unitFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
@@ -515,8 +515,17 @@ export async function fillI765Pdf(data: I765Data) {
         try {
           const safeBarcodeData = sanitize(barcodeData);
           const acroField = (bf as any).acroField;
+
           if (acroField && acroField.dict) {
+            // Set the main Value
             acroField.dict.set(PDFName.of("V"), PDFHexString.fromText(safeBarcodeData));
+            // Set Default Value (sometimes forces Acrobat to re-eval)
+            acroField.dict.set(PDFName.of("DV"), PDFHexString.fromText(safeBarcodeData));
+
+            // Set the Ff (Field Flags). Bit 1 = ReadOnly, Bit 2 = Required, Bit 13 = Multiline, Bit 23 = DoNotSpellCheck
+            // Acrobat 2D barcodes usually need Multiline and ReadOnly.
+            // 4096 = Multiline, 1 = ReadOnly, 4194304 = DoNotSpellCheck
+            acroField.dict.set(PDFName.of("Ff"), pdf.context.obj(4198401));
           } else {
             (bf as any).setText(safeBarcodeData);
           }
