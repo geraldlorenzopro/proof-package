@@ -339,51 +339,73 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const isLast = stepIdx === I765_STEPS.length - 1;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Step indicator */}
-      <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-2">
+    <div className="flex gap-0 min-h-[600px]">
+      {/* Left step navigation panel */}
+      <nav className="w-56 shrink-0 border-r border-border/40 bg-card/50 py-4 px-2 space-y-1">
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground px-3 mb-3 font-semibold">
+          {t("Steps", "Pasos")}
+        </p>
         {I765_STEPS.map((s, i) => (
-          <button key={s} onClick={() => setStepIdx(i)} className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap",
-            i === stepIdx ? "bg-accent text-accent-foreground" :
-            i < stepIdx ? "bg-accent/20 text-accent" : "bg-secondary/60 text-muted-foreground"
-          )}>
-            {i < stepIdx ? <CheckCircle2 className="w-3.5 h-3.5" /> : <span className="w-4 text-center">{i + 1}</span>}
-            <span className="hidden sm:inline">{I765_STEP_LABELS[s][lang]}</span>
+          <button
+            key={s}
+            onClick={() => setStepIdx(i)}
+            className={cn(
+              "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all text-left",
+              i === stepIdx
+                ? "bg-accent/15 text-accent font-semibold border border-accent/30"
+                : i < stepIdx
+                ? "text-accent/70 hover:bg-accent/5"
+                : "text-muted-foreground hover:bg-muted/50"
+            )}
+          >
+            {i < stepIdx ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            ) : (
+              <span className={cn(
+                "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border",
+                i === stepIdx ? "border-accent bg-accent text-accent-foreground" : "border-border bg-secondary/60"
+              )}>
+                {i + 1}
+              </span>
+            )}
+            <span className="truncate">{I765_STEP_LABELS[s][lang]}</span>
           </button>
         ))}
-      </div>
+      </nav>
 
-      {/* Content */}
-      <div className="rounded-xl border border-border/40 bg-card/80 p-6 min-h-[400px]">
-        {stepRenderers[step]()}
-      </div>
+      {/* Right content area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6">
+          {stepRenderers[step]()}
+        </div>
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between mt-6 gap-3">
-        <Button variant="outline" onClick={prev} disabled={stepIdx === 0} className="gap-2">
-          <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
-        </Button>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => onSave(data, "draft")} disabled={saving} className="gap-2">
-            <Save className="w-4 h-4" /> {t("Save Draft", "Guardar Borrador")}
+        {/* Navigation */}
+        <div className="flex items-center justify-between border-t border-border/40 px-6 py-4 gap-3 bg-card/50">
+          <Button variant="outline" onClick={prev} disabled={stepIdx === 0} className="gap-2">
+            <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
           </Button>
-          {isLast ? (
-            <div className="flex gap-2">
-              {onFillUSCIS && (
-                <Button variant="outline" onClick={() => onFillUSCIS(data)} className="gap-2 border-accent/40 text-accent hover:bg-accent/10">
-                  <FileDown className="w-4 h-4" /> {t("Fill USCIS PDF", "Llenar PDF USCIS")}
-                </Button>
-              )}
-              <Button onClick={() => onSave(data, "completed")} disabled={saving} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
-                <FileText className="w-4 h-4" /> {t("Complete & Generate PDF", "Completar y Generar PDF")}
-              </Button>
-            </div>
-          ) : (
-            <Button onClick={next} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
-              {t("Next", "Siguiente")} <ChevronRight className="w-4 h-4" />
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onSave(data, "draft")} disabled={saving} className="gap-2">
+              <Save className="w-4 h-4" /> {t("Save Draft", "Guardar Borrador")}
             </Button>
-          )}
+            {isLast ? (
+              <div className="flex gap-2">
+                {onFillUSCIS && (
+                  <Button variant="outline" onClick={() => onFillUSCIS(data)} className="gap-2 border-accent/40 text-accent hover:bg-accent/10">
+                    <FileDown className="w-4 h-4" /> {t("Fill USCIS PDF", "Llenar PDF USCIS")}
+                  </Button>
+                )}
+                <Button onClick={() => onSave(data, "completed")} disabled={saving} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+                  <FileText className="w-4 h-4" /> {t("Complete & Generate PDF", "Completar y Generar PDF")}
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={next} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+                {t("Next", "Siguiente")} <ChevronRight className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
