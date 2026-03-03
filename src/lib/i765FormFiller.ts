@@ -1,4 +1,4 @@
-import { PDFDocument, PDFTextField, PDFCheckBox, PDFForm, PDFName, PDFDict, PDFBool } from "pdf-lib";
+import { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, PDFForm, PDFName, PDFDict, PDFBool, PDFHexString, PDFString } from "pdf-lib";
 import { I765Data, ELIGIBILITY_CATEGORIES } from "@/components/smartforms/i765Schema";
 import { buildPageData } from "@/lib/i765Barcode";
 
@@ -20,7 +20,23 @@ function findField(form: PDFForm, pattern: RegExp) {
   return null;
 }
 
-/** Set a text field value by regex pattern, respecting maxLength */
+/** Check if field is a text field (handles PDFTextField and PDFTextField2 subtypes) */
+function isTextField(field: any): boolean {
+  return field instanceof PDFTextField || field.constructor.name.includes("PDFTextField");
+}
+
+/** Check if field is a checkbox (handles PDFCheckBox and PDFCheckBox2 subtypes) */
+function isCheckBox(field: any): boolean {
+  return field instanceof PDFCheckBox || field.constructor.name.includes("PDFCheckBox");
+}
+
+/** Check if field is a dropdown (handles PDFDropdown and PDFDropdown2 subtypes) */
+function isDropdown(field: any): boolean {
+  return field instanceof PDFDropdown || field.constructor.name.includes("PDFDropdown");
+}
+
+/** Set a text field value by regex pattern, respecting maxLength.
+ *  Also handles Dropdown fields (select) and barcode text fields. */
 function setText(form: PDFForm, pattern: RegExp, value: string | undefined | null) {
   if (!value) return;
   const field = findField(form, pattern);
@@ -32,12 +48,33 @@ function setText(form: PDFForm, pattern: RegExp, value: string | undefined | nul
     const maxLen = field.getMaxLength();
     const safeValue = maxLen !== undefined ? value.slice(0, maxLen) : value;
     field.setText(safeValue);
-  } else {
-    // Barcode or other text-like fields — try setting text directly via acroField
-    console.log(`[i765] Field ${field.getName()} is ${field.constructor.name}, attempting setText`);
-    try { (field as any).setText(value); } catch (e) {
-      console.warn(`[i765] setText failed on ${field.getName()}:`, e);
+  } else if (isDropdown(field)) {
+    // Dropdown fields need .select() — cast through PDFDropdown or use (as any)
+    try { (field as PDFDropdown).select(value); } catch {
+      // If the value isn't in the option list, try setting it as a raw value
+      try {
+        const acroField = (field as any).acroField;
+        if (acroField && acroField.dict) {
+          acroField.dict.set(PDFName.of("V"), PDFString.of(value));
+        }
+      } catch (e2) {
+        console.warn(`[i765] Dropdown set failed on ${field.getName()}:`, e2);
+      }
     }
+  } else if (isTextField(field)) {
+    // PDFTextField2 subclass — set value directly via PDF dictionary
+    try {
+      const acroField = (field as any).acroField;
+      if (acroField && acroField.dict) {
+        acroField.dict.set(PDFName.of("V"), PDFString.of(value));
+      } else {
+        (field as any).setText(value);
+      }
+    } catch (e) {
+      console.warn(`[i765] setText fallback failed on ${field.getName()}:`, e);
+    }
+  } else {
+    console.warn(`[i765] Unhandled field type ${field.constructor.name} for ${field.getName()}`);
   }
 }
 
@@ -51,6 +88,18 @@ function setCheck(form: PDFForm, pattern: RegExp, checked: boolean) {
   }
   if (field instanceof PDFCheckBox) {
     field.check();
+  } else if (isCheckBox(field)) {
+    // PDFCheckBox2 — use acroField to check
+    try {
+      const acroField = (field as any).acroField;
+      if (acroField && acroField.dict) {
+        // Standard AcroForm checkbox: set /V and /AS to /Yes
+        acroField.dict.set(PDFName.of("V"), PDFName.of("1"));
+        acroField.dict.set(PDFName.of("AS"), PDFName.of("1"));
+      }
+    } catch (e) {
+      console.warn(`[i765] Check fallback failed on ${field.getName()}:`, e);
+    }
   } else {
     console.warn(`[i765] Field ${field.getName()} is ${field.constructor.name}, not PDFCheckBox`);
   }
@@ -59,8 +108,17 @@ function setCheck(form: PDFForm, pattern: RegExp, checked: boolean) {
 /** Uncheck a checkbox */
 function setUncheck(form: PDFForm, pattern: RegExp) {
   const field = findField(form, pattern);
-  if (field && field instanceof PDFCheckBox) {
+  if (!field) return;
+  if (field instanceof PDFCheckBox) {
     field.uncheck();
+  } else if (isCheckBox(field)) {
+    try {
+      const acroField = (field as any).acroField;
+      if (acroField && acroField.dict) {
+        acroField.dict.set(PDFName.of("V"), PDFName.of("Off"));
+        acroField.dict.set(PDFName.of("AS"), PDFName.of("Off"));
+      }
+    } catch {}
   }
 }
 
@@ -101,8 +159,8 @@ const P = {
   pt2l5_apt:         /Page2\[0\]\.Pt2Line5_AptSteFlrNumber\[0\]/,
   // NOTE: In Docketwise XFA exports, checkbox indices may not match visual order.
   // Testing indicates: [0]=Ste, [1]=Apt, [2]=Flr for this template.
-  pt2l5_unit_apt:    /Page2\[0\]\.Pt2Line5_Unit\[1\]/,
-  pt2l5_unit_ste:    /Page2\[0\]\.Pt2Line5_Unit\[0\]/,
+  pt2l5_unit_apt:    /Page2\[0\]\.Pt2Line5_Unit\[0\]/,
+  pt2l5_unit_ste:    /Page2\[0\]\.Pt2Line5_Unit\[1\]/,
   pt2l5_unit_flr:    /Page2\[0\]\.Pt2Line5_Unit\[2\]/,
   pt2l5_city:        /Page2\[0\]\.Pt2Line5_CityOrTown\[0\]/,
   pt2l5_state:       /Page2\[0\]\.Pt2Line5_State\[0\]/,
@@ -115,8 +173,8 @@ const P = {
   // Physical address (Pt2Line7 = physical)
   pt2l7_street:      /Page2\[0\]\.Pt2Line7_StreetNumberName\[0\]/,
   pt2l7_apt:         /Page2\[0\]\.Pt2Line7_AptSteFlrNumber\[0\]/,
-  pt2l7_unit_apt:    /Page2\[0\]\.Pt2Line7_Unit\[1\]/,
-  pt2l7_unit_ste:    /Page2\[0\]\.Pt2Line7_Unit\[0\]/,
+  pt2l7_unit_apt:    /Page2\[0\]\.Pt2Line7_Unit\[0\]/,
+  pt2l7_unit_ste:    /Page2\[0\]\.Pt2Line7_Unit\[1\]/,
   pt2l7_unit_flr:    /Page2\[0\]\.Pt2Line7_Unit\[2\]/,
   pt2l7_city:        /Page2\[0\]\.Pt2Line7_CityOrTown\[0\]/,
   pt2l7_state:       /Page2\[0\]\.Pt2Line7_State\[0\]/,
@@ -222,6 +280,21 @@ function clearAllFields(form: PDFForm) {
       field.setText("");
     } else if (field instanceof PDFCheckBox) {
       field.uncheck();
+    } else if (isCheckBox(field)) {
+      try {
+        const acroField = (field as any).acroField;
+        if (acroField?.dict) {
+          acroField.dict.set(PDFName.of("V"), PDFName.of("Off"));
+          acroField.dict.set(PDFName.of("AS"), PDFName.of("Off"));
+        }
+      } catch {}
+    } else if (isTextField(field)) {
+      try {
+        const acroField = (field as any).acroField;
+        if (acroField?.dict) {
+          acroField.dict.set(PDFName.of("V"), PDFString.of(""));
+        }
+      } catch {}
     }
   }
 }
@@ -428,8 +501,16 @@ export async function fillI765Pdf(data: I765Data) {
       if (pageIdx >= 0 && pageIdx < 7) {
         const barcodeData = buildPageData(pageIdx + 1, data);
         console.log(`[i765] Setting barcode for page ${pageIdx + 1}: ${barcodeData.substring(0, 50)}...`);
-        try { (bf as any).setText(barcodeData); } catch (e) {
-          console.warn(`[i765] Barcode setText failed for ${bf.getName()}:`, e);
+        try {
+          // PDFTextField2 doesn't have setText — set value directly via dictionary
+          const acroField = (bf as any).acroField;
+          if (acroField && acroField.dict) {
+            acroField.dict.set(PDFName.of("V"), PDFString.of(barcodeData));
+          } else {
+            (bf as any).setText(barcodeData);
+          }
+        } catch (e) {
+          console.warn(`[i765] Barcode set failed for ${bf.getName()}:`, e);
         }
       }
     }
