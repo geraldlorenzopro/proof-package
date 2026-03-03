@@ -333,6 +333,69 @@ export type Database = {
           },
         ]
       }
+      form_submissions: {
+        Row: {
+          account_id: string
+          case_id: string | null
+          client_email: string | null
+          client_name: string | null
+          created_at: string
+          form_data: Json
+          form_type: string
+          form_version: string
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          case_id?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          form_data?: Json
+          form_type?: string
+          form_version?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          case_id?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          form_data?: Json
+          form_type?: string
+          form_version?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_submissions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hub_apps: {
         Row: {
           created_at: string
