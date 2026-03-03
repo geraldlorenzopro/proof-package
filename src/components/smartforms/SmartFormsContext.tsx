@@ -5,23 +5,27 @@ interface WizardNav {
   steps: I765Step[];
   currentStep: number;
   setStep: (idx: number) => void;
-  lang: "en" | "es";
 }
 
 interface SmartFormsContextType {
   wizardNav: WizardNav | null;
   setWizardNav: (nav: WizardNav | null) => void;
+  lang: "en" | "es";
+  setLang: (lang: "en" | "es") => void;
 }
 
 const SmartFormsContext = createContext<SmartFormsContextType>({
   wizardNav: null,
   setWizardNav: () => {},
+  lang: "es",
+  setLang: () => {},
 });
 
 export function SmartFormsProvider({ children }: { children: ReactNode }) {
   const [wizardNav, setWizardNav] = useState<WizardNav | null>(null);
+  const [lang, setLang] = useState<"en" | "es">("es");
   return (
-    <SmartFormsContext.Provider value={{ wizardNav, setWizardNav }}>
+    <SmartFormsContext.Provider value={{ wizardNav, setWizardNav, lang, setLang }}>
       {children}
     </SmartFormsContext.Provider>
   );
