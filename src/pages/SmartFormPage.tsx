@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import I765Wizard from "@/components/smartforms/I765Wizard";
 import { I765Data } from "@/components/smartforms/i765Schema";
 import { generateI765Pdf } from "@/lib/i765PdfGenerator";
+import { fillI765Pdf, discoverI765Fields } from "@/lib/i765FormFiller";
 
 export default function SmartFormPage() {
   const navigate = useNavigate();
@@ -111,6 +112,17 @@ export default function SmartFormPage() {
     }
   };
 
+  const handleFillUSCIS = async (formData: I765Data) => {
+    try {
+      // First discover fields to help with debugging (logged to console)
+      await discoverI765Fields();
+      await fillI765Pdf(formData);
+      toast({ title: lang === "es" ? "✅ PDF USCIS generado" : "✅ USCIS PDF generated", description: lang === "es" ? "Formulario oficial I-765 llenado con los datos" : "Official I-765 form filled with data" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   if (!loaded) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -141,7 +153,7 @@ export default function SmartFormPage() {
 
       {/* Wizard */}
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <I765Wizard lang={lang} initialData={initialData} onSave={handleSave} saving={saving} />
+        <I765Wizard lang={lang} initialData={initialData} onSave={handleSave} onFillUSCIS={handleFillUSCIS} saving={saving} />
       </div>
     </div>
   );
