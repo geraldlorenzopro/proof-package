@@ -41,6 +41,7 @@ const inputCls = "bg-secondary/60 border-border/50 focus:border-accent/60";
 export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, saving }: Props) {
   const [data, setData] = useState<I765Data>({ ...defaultI765Data, ...initialData });
   const [stepIdx, setStepIdx] = useState(0);
+  const [hasOtherName, setHasOtherName] = useState(() => !!(initialData?.otherLastName || initialData?.otherFirstName));
   const step = I765_STEPS[stepIdx];
   const { setWizardNav } = useSmartFormsContext();
 
@@ -90,11 +91,21 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.firstName} onChange={e => set("firstName", e.target.value)} /></Field>
         <Field label={t("Middle Name", "Segundo Nombre")}><Input className={inputCls} value={data.middleName} onChange={e => set("middleName", e.target.value)} /></Field>
       </div>
-      <p className="text-xs text-muted-foreground mt-4">{t("Have you ever used a different name?", "¿Has usado algún otro nombre?")}</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label={t("Other Last Name", "Otro Apellido")}><Input className={inputCls} value={data.otherLastName} onChange={e => set("otherLastName", e.target.value)} /></Field>
-        <Field label={t("Other First Name", "Otro Nombre")}><Input className={inputCls} value={data.otherFirstName} onChange={e => set("otherFirstName", e.target.value)} /></Field>
+      <div className="flex items-center gap-2 pt-2">
+        <Checkbox checked={hasOtherName} onCheckedChange={v => {
+          setHasOtherName(!!v);
+          if (!v) { set("otherLastName", ""); set("otherFirstName", ""); }
+        }} id="has-other-name" />
+        <Label htmlFor="has-other-name" className="text-sm cursor-pointer">
+          {t("Yes, I've used a different name before", "Sí, he usado otro nombre antes")}
+        </Label>
       </div>
+      {hasOtherName && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label={t("Other Last Name", "Otro Apellido")}><Input className={inputCls} value={data.otherLastName} onChange={e => set("otherLastName", e.target.value)} /></Field>
+          <Field label={t("Other First Name", "Otro Nombre")}><Input className={inputCls} value={data.otherFirstName} onChange={e => set("otherFirstName", e.target.value)} /></Field>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
         <Field label="A-Number"><Input className={inputCls} value={data.aNumber} onChange={e => set("aNumber", e.target.value)} placeholder="A-" /></Field>
         <Field label="USCIS Online Account #"><Input className={inputCls} value={data.uscisAccountNumber} onChange={e => set("uscisAccountNumber", e.target.value)} /></Field>
@@ -349,8 +360,8 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
-      <div className="flex-1 overflow-auto p-4 md:p-6 flex items-start md:items-center justify-center">
-        <div className="max-w-2xl w-full">
+      <div className="flex-1 overflow-auto p-4 md:p-6 md:py-12 flex items-start justify-center">
+        <div className="max-w-2xl w-full my-auto">
           {stepRenderers[step]()}
         </div>
       </div>
