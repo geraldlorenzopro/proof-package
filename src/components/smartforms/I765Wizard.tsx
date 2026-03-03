@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { ChevronRight, ChevronLeft, Save, FileText, CheckCircle2, FileDown } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { ChevronRight, ChevronLeft, Save, FileText, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { useSmartFormsContext } from "./SmartFormsContext";
 import {
   I765Data, defaultI765Data, I765Step, I765_STEPS, I765_STEP_LABELS,
   US_STATES, ELIGIBILITY_CATEGORIES,
@@ -41,8 +42,15 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const [data, setData] = useState<I765Data>({ ...defaultI765Data, ...initialData });
   const [stepIdx, setStepIdx] = useState(0);
   const step = I765_STEPS[stepIdx];
+  const { setWizardNav } = useSmartFormsContext();
 
   const t = useCallback((en: string, es: string) => lang === "es" ? es : en, [lang]);
+
+  // Register wizard nav in layout context
+  useEffect(() => {
+    setWizardNav({ steps: I765_STEPS, currentStep: stepIdx, setStep: setStepIdx, lang });
+    return () => setWizardNav(null);
+  }, [stepIdx, lang, setWizardNav]);
 
   const set = <K extends keyof I765Data>(key: K, value: I765Data[K]) =>
     setData(prev => ({ ...prev, [key]: value }));
@@ -339,73 +347,37 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const isLast = stepIdx === I765_STEPS.length - 1;
 
   return (
-    <div className="flex gap-0 min-h-[600px]">
-      {/* Left step navigation panel */}
-      <nav className="w-56 shrink-0 border-r border-border/40 bg-card/50 py-4 px-2 space-y-1">
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground px-3 mb-3 font-semibold">
-          {t("Steps", "Pasos")}
-        </p>
-        {I765_STEPS.map((s, i) => (
-          <button
-            key={s}
-            onClick={() => setStepIdx(i)}
-            className={cn(
-              "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all text-left",
-              i === stepIdx
-                ? "bg-accent/15 text-accent font-semibold border border-accent/30"
-                : i < stepIdx
-                ? "text-accent/70 hover:bg-accent/5"
-                : "text-muted-foreground hover:bg-muted/50"
-            )}
-          >
-            {i < stepIdx ? (
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-            ) : (
-              <span className={cn(
-                "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border",
-                i === stepIdx ? "border-accent bg-accent text-accent-foreground" : "border-border bg-secondary/60"
-              )}>
-                {i + 1}
-              </span>
-            )}
-            <span className="truncate">{I765_STEP_LABELS[s][lang]}</span>
-          </button>
-        ))}
-      </nav>
-
-      {/* Right content area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-6">
+    <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 overflow-auto p-4 md:p-6">
+        <div className="max-w-2xl mx-auto">
           {stepRenderers[step]()}
         </div>
+      </div>
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between border-t border-border/40 px-6 py-4 gap-3 bg-card/50">
-          <Button variant="outline" onClick={prev} disabled={stepIdx === 0} className="gap-2">
-            <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
+      <div className="flex items-center justify-between border-t border-border/40 px-4 md:px-6 py-4 gap-3 bg-card/50">
+        <Button variant="outline" onClick={prev} disabled={stepIdx === 0} className="gap-2">
+          <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
+        </Button>
+        <div className="flex gap-2 flex-wrap justify-end">
+          <Button variant="outline" onClick={() => onSave(data, "draft")} disabled={saving} className="gap-2">
+            <Save className="w-4 h-4" /> <span className="hidden sm:inline">{t("Save Draft", "Guardar Borrador")}</span>
           </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onSave(data, "draft")} disabled={saving} className="gap-2">
-              <Save className="w-4 h-4" /> {t("Save Draft", "Guardar Borrador")}
-            </Button>
-            {isLast ? (
-              <div className="flex gap-2">
-                {onFillUSCIS && (
-                  <Button variant="outline" onClick={() => onFillUSCIS(data)} className="gap-2 border-accent/40 text-accent hover:bg-accent/10">
-                    <FileDown className="w-4 h-4" /> {t("Fill USCIS PDF", "Llenar PDF USCIS")}
-                  </Button>
-                )}
-                <Button onClick={() => onSave(data, "completed")} disabled={saving} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
-                  <FileText className="w-4 h-4" /> {t("Complete & Generate PDF", "Completar y Generar PDF")}
+          {isLast ? (
+            <div className="flex gap-2 flex-wrap">
+              {onFillUSCIS && (
+                <Button variant="outline" onClick={() => onFillUSCIS(data)} className="gap-2 border-accent/40 text-accent hover:bg-accent/10">
+                  <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">{t("Fill USCIS PDF", "Llenar PDF USCIS")}</span>
                 </Button>
-              </div>
-            ) : (
-              <Button onClick={next} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
-                {t("Next", "Siguiente")} <ChevronRight className="w-4 h-4" />
+              )}
+              <Button onClick={() => onSave(data, "completed")} disabled={saving} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+                <FileText className="w-4 h-4" /> <span className="hidden sm:inline">{t("Complete & Generate PDF", "Completar y Generar PDF")}</span>
               </Button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <Button onClick={next} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+              {t("Next", "Siguiente")} <ChevronRight className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
     </div>
