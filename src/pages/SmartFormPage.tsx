@@ -131,14 +131,12 @@ export default function SmartFormPage() {
 
   return (
     <div className="min-h-full bg-background">
-      {/* Wizard */}
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-accent" />
-            <h1 className="text-lg font-bold">I-765</h1>
-            <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full font-medium">EAD</span>
-            {!isNew && <span className="text-xs text-muted-foreground">· Editando</span>}
+            <h1 className="text-lg font-bold">{lang === "es" ? "Cuestionario de Permiso de Trabajo" : "Work Permit Questionnaire"}</h1>
+            {!isNew && <span className="text-xs text-muted-foreground">· {lang === "es" ? "Editando" : "Editing"}</span>}
           </div>
           <Button variant="ghost" size="sm" onClick={() => setLang(l => l === "es" ? "en" : "es")} className="gap-1.5 text-xs">
             <Globe className="w-4 h-4" /> {lang === "es" ? "EN" : "ES"}

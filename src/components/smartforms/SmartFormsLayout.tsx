@@ -55,7 +55,7 @@ function MobileStepDrawer() {
             <SheetHeader className="p-4 border-b border-border/40">
               <SheetTitle className="text-sm flex items-center gap-2">
                 <FileText className="w-4 h-4 text-accent" />
-                Pasos del formulario
+                Secciones del cuestionario
               </SheetTitle>
             </SheetHeader>
             <div className="p-3 space-y-1">
@@ -166,7 +166,7 @@ function SmartFormsSidebar() {
         {wizardNav && !collapsed && (
           <SidebarGroup>
             <SidebarGroupLabel className="flex items-center justify-between">
-              <span>Formulario I-765</span>
+              <span>Cuestionario</span>
               <span className="text-[10px] text-accent font-bold">{Math.round(progress)}%</span>
             </SidebarGroupLabel>
             <SidebarGroupContent>

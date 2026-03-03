@@ -61,12 +61,13 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   // ─── Step renderers ───
   const renderReason = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent">Part 1 – {t("Reason for Applying", "Razón de la Solicitud")}</h3>
+      <h3 className="text-lg font-semibold text-accent">{t("What do you need?", "¿Qué necesitas?")}</h3>
+      <p className="text-sm text-muted-foreground">{t("Select the option that best describes your situation", "Selecciona la opción que mejor describe tu situación")}</p>
       <RadioGroup value={data.reasonForApplying} onValueChange={v => set("reasonForApplying", v as I765Data["reasonForApplying"])}>
         {[
-          { v: "initial", en: "Initial permission to accept employment", es: "Permiso inicial para aceptar empleo" },
-          { v: "replacement", en: "Replacement of lost/stolen/damaged EAD", es: "Reemplazo de EAD perdido/robado/dañado" },
-          { v: "renewal", en: "Renewal of my permission to accept employment", es: "Renovación de mi permiso de empleo" },
+          { v: "initial", en: "I need a work permit for the first time", es: "Necesito un permiso de trabajo por primera vez" },
+          { v: "replacement", en: "I lost or need to replace my work permit", es: "Perdí o necesito reemplazar mi permiso de trabajo" },
+          { v: "renewal", en: "I need to renew my work permit", es: "Necesito renovar mi permiso de trabajo" },
         ].map(o => (
           <label key={o.v} className={cn(
             "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all",
@@ -82,14 +83,14 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderPersonal = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent">Part 2 – {t("Personal Information", "Información Personal")}</h3>
-      <p className="text-xs text-muted-foreground">{t("Your Full Legal Name", "Su Nombre Legal Completo")}</p>
+      <h3 className="text-lg font-semibold text-accent">{t("Tell us about yourself", "Cuéntanos sobre ti")}</h3>
+      <p className="text-xs text-muted-foreground">{t("Your full legal name as it appears on your documents", "Tu nombre legal completo tal como aparece en tus documentos")}</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Last Name", "Apellido")}><Input className={inputCls} value={data.lastName} onChange={e => set("lastName", e.target.value)} /></Field>
         <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.firstName} onChange={e => set("firstName", e.target.value)} /></Field>
         <Field label={t("Middle Name", "Segundo Nombre")}><Input className={inputCls} value={data.middleName} onChange={e => set("middleName", e.target.value)} /></Field>
       </div>
-      <p className="text-xs text-muted-foreground mt-4">{t("Other Names Used (aliases, maiden name)", "Otros Nombres Usados (alias, nombre de soltera)")}</p>
+      <p className="text-xs text-muted-foreground mt-4">{t("Have you ever used a different name?", "¿Has usado algún otro nombre?")}</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label={t("Other Last Name", "Otro Apellido")}><Input className={inputCls} value={data.otherLastName} onChange={e => set("otherLastName", e.target.value)} /></Field>
         <Field label={t("Other First Name", "Otro Nombre")}><Input className={inputCls} value={data.otherFirstName} onChange={e => set("otherFirstName", e.target.value)} /></Field>
@@ -106,7 +107,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderAddress = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent">{t("U.S. Mailing Address", "Dirección Postal en EE.UU.")}</h3>
+      <h3 className="text-lg font-semibold text-accent">{t("Where do you receive your mail?", "¿Dónde recibes tu correo?")}</h3>
       <Field label={t("In Care Of", "A/C de")}><Input className={inputCls} value={data.mailingCareOf} onChange={e => set("mailingCareOf", e.target.value)} /></Field>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.mailingStreet} onChange={e => set("mailingStreet", e.target.value)} /></Field>
@@ -144,7 +145,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderBackground = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent">{t("Background Information", "Información de Antecedentes")}</h3>
+      <h3 className="text-lg font-semibold text-accent">{t("A little more about you", "Un poco más sobre ti")}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label={t("Sex", "Sexo")}>
           <RadioGroup value={data.sex} onValueChange={v => set("sex", v as "male" | "female")} className="flex gap-4">
@@ -184,7 +185,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderArrival = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent">{t("Last Arrival in the United States", "Última Entrada a los Estados Unidos")}</h3>
+      <h3 className="text-lg font-semibold text-accent">{t("When did you arrive in the U.S.?", "¿Cuándo llegaste a EE.UU.?")}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="I-94 #"><Input className={inputCls} value={data.i94Number} onChange={e => set("i94Number", e.target.value)} /></Field>
         <Field label={t("Passport Number", "Número de Pasaporte")}><Input className={inputCls} value={data.passportNumber} onChange={e => set("passportNumber", e.target.value)} /></Field>
@@ -207,8 +208,8 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderEligibility = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent">{t("Eligibility Category", "Categoría de Elegibilidad")}</h3>
-      <p className="text-xs text-muted-foreground">{t("Select the eligibility category that applies to your case", "Seleccione la categoría de elegibilidad que aplica a su caso")}</p>
+      <h3 className="text-lg font-semibold text-accent">{t("What's your current situation?", "¿Cuál es tu situación actual?")}</h3>
+      <p className="text-xs text-muted-foreground">{t("This helps us determine the right category for your case", "Esto nos ayuda a determinar la categoría correcta para tu caso")}</p>
       <Select value={data.eligibilityCategory} onValueChange={v => set("eligibilityCategory", v)}>
         <SelectTrigger className="bg-secondary/60 border-border/50"><SelectValue placeholder={t("Select category", "Seleccionar categoría")} /></SelectTrigger>
         <SelectContent>
@@ -257,7 +258,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderStatement = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent">Part 3 – {t("Applicant's Statement", "Declaración del Solicitante")}</h3>
+      <h3 className="text-lg font-semibold text-accent">{t("How can we reach you?", "¿Cómo te contactamos?")}</h3>
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Checkbox checked={data.applicantCanReadEnglish} onCheckedChange={v => { set("applicantCanReadEnglish", !!v); if (v) set("interpreterUsed", false); }} id="can-read" />
@@ -285,7 +286,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     <div className="space-y-5">
       {data.interpreterUsed && (
         <>
-          <h3 className="text-lg font-semibold text-accent">Part 4 – {t("Interpreter", "Intérprete")}</h3>
+          <h3 className="text-lg font-semibold text-accent">{t("Interpreter Information", "Datos del Intérprete")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label={t("Last Name", "Apellido")}><Input className={inputCls} value={data.interpreterLastName} onChange={e => set("interpreterLastName", e.target.value)} /></Field>
             <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.interpreterFirstName} onChange={e => set("interpreterFirstName", e.target.value)} /></Field>
@@ -302,7 +303,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
       {data.preparerUsed && (
         <>
-          <h3 className="text-lg font-semibold text-accent">Part 5 – {t("Preparer", "Preparador")}</h3>
+          <h3 className="text-lg font-semibold text-accent">{t("Who prepared this for you?", "¿Quién te ayudó a preparar esto?")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label={t("Last Name", "Apellido")}><Input className={inputCls} value={data.preparerLastName} onChange={e => set("preparerLastName", e.target.value)} /></Field>
             <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.preparerFirstName} onChange={e => set("preparerFirstName", e.target.value)} /></Field>
