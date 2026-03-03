@@ -35,10 +35,17 @@ function isDropdown(field: any): boolean {
   return field instanceof PDFDropdown || field.constructor.name.includes("PDFDropdown");
 }
 
+/** Strip control characters that WinAnsi cannot encode */
+function sanitize(v: string): string {
+  // Remove all C0/C1 control chars except common whitespace (tab, newline, carriage return)
+  return v.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, "");
+}
+
 /** Set a text field value by regex pattern, respecting maxLength.
  *  Also handles Dropdown fields (select) and barcode text fields. */
 function setText(form: PDFForm, pattern: RegExp, value: string | undefined | null) {
   if (!value) return;
+  value = sanitize(value);
   const field = findField(form, pattern);
   if (!field) {
     console.warn(`[i765] No field found for pattern: ${pattern.source}`);
@@ -64,11 +71,12 @@ function setText(form: PDFForm, pattern: RegExp, value: string | undefined | nul
   } else if (isTextField(field)) {
     // PDFTextField2 subclass — set value directly via PDF dictionary
     try {
+      const safeVal = sanitize(value);
       const acroField = (field as any).acroField;
       if (acroField && acroField.dict) {
-        acroField.dict.set(PDFName.of("V"), PDFString.of(value));
+        acroField.dict.set(PDFName.of("V"), PDFHexString.fromText(safeVal));
       } else {
-        (field as any).setText(value);
+        (field as any).setText(safeVal);
       }
     } catch (e) {
       console.warn(`[i765] setText fallback failed on ${field.getName()}:`, e);
@@ -503,11 +511,13 @@ export async function fillI765Pdf(data: I765Data) {
         console.log(`[i765] Setting barcode for page ${pageIdx + 1}: ${barcodeData.substring(0, 50)}...`);
         try {
           // PDFTextField2 doesn't have setText — set value directly via dictionary
+          // Use PDFHexString to avoid WinAnsi encoding issues with control chars
+          const safeBarcodeData = sanitize(barcodeData);
           const acroField = (bf as any).acroField;
           if (acroField && acroField.dict) {
-            acroField.dict.set(PDFName.of("V"), PDFString.of(barcodeData));
+            acroField.dict.set(PDFName.of("V"), PDFHexString.fromText(safeBarcodeData));
           } else {
-            (bf as any).setText(barcodeData);
+            (bf as any).setText(safeBarcodeData);
           }
         } catch (e) {
           console.warn(`[i765] Barcode set failed for ${bf.getName()}:`, e);
