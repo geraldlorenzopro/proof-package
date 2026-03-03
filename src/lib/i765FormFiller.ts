@@ -290,11 +290,29 @@ export async function fillI765Pdf(data: I765Data) {
   setText(form, P.line24_current, data.currentStatus);
 
   // ── Eligibility Category ──
-  const catLabel = ELIGIBILITY_CATEGORIES.find(c => c.value === data.eligibilityCategory)?.label || "";
-  // The eligibility section fields are text fields in the converted form
-  setText(form, P.section_1, data.eligibilityCategory);
-  setText(form, P.section_2, data.eligibilityCategorySpecific || catLabel);
-
+  // Parse eligibility category like "(c)(8)" or "(c)(17)(iii)" into parts
+  const catValue = data.eligibilityCategory || "";
+  if (catValue && catValue !== "other") {
+    // Extract parts from format like (c)(8) or (c)(17)(iii)
+    const parts = catValue.match(/\(([^)]+)\)/g) || [];
+    const part1 = parts[0]?.replace(/[()]/g, "") || ""; // letter e.g. "c"
+    const part2 = parts[1]?.replace(/[()]/g, "") || ""; // number e.g. "8"
+    const part3 = parts[2]?.replace(/[()]/g, "") || ""; // sub e.g. "iii"
+    setText(form, P.section_1, part1);
+    setText(form, P.section_2, part2);
+    setText(form, P.section_3, part3);
+  } else if (catValue === "other" && data.eligibilityCategorySpecific) {
+    // For "other", parse the user-entered category if it matches (x)(y) format
+    const parts = data.eligibilityCategorySpecific.match(/\(([^)]+)\)/g) || [];
+    if (parts.length >= 2) {
+      setText(form, P.section_1, parts[0]?.replace(/[()]/g, "") || "");
+      setText(form, P.section_2, parts[1]?.replace(/[()]/g, "") || "");
+      setText(form, P.section_3, parts[2]?.replace(/[()]/g, "") || "");
+    } else {
+      // Free text — put in section_1
+      setText(form, P.section_1, data.eligibilityCategorySpecific);
+    }
+  }
   // Receipt numbers for specific categories
   if (data.h1bReceiptNumber) {
     setText(form, P.line28_receipt, data.h1bReceiptNumber);
