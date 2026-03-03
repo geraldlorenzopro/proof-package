@@ -503,15 +503,16 @@ export async function fillI765Pdf(data: I765Data) {
 
   try {
     for (const bf of barcodeFields) {
-      // Determine page number from field name
-      const pageMatch = bf.getName().match(/Page(\d+)/i);
-      const pageNumber = pageMatch ? parseInt(pageMatch[1], 10) : -1;
+      // Barcode field names follow: #pageSet[0].Page1[X].PDF417BarCode1[0]
+      // where X is the 0-based page index (0=page1, 1=page2, ... 6=page7)
+      const fieldName = bf.getName();
+      const pageIdxMatch = fieldName.match(/Page1\[(\d+)\]\.PDF417/i);
+      const pageIndex = pageIdxMatch ? parseInt(pageIdxMatch[1], 10) : -1;
+      const pageNumber = pageIndex + 1; // Convert 0-based to 1-based
       if (pageNumber >= 1 && pageNumber <= 7) {
         const barcodeData = buildPageData(pageNumber, data);
-        console.log(`[i765] Setting barcode for page ${pageNumber}: ${barcodeData.substring(0, 50)}...`);
+        console.log(`[i765] Setting barcode for page ${pageNumber} (field: ${fieldName.substring(0, 60)}): ${barcodeData.substring(0, 80)}...`);
         try {
-          // PDFTextField2 doesn't have setText — set value directly via dictionary
-          // Use PDFHexString to avoid WinAnsi encoding issues with control chars
           const safeBarcodeData = sanitize(barcodeData);
           const acroField = (bf as any).acroField;
           if (acroField && acroField.dict) {
@@ -522,6 +523,8 @@ export async function fillI765Pdf(data: I765Data) {
         } catch (e) {
           console.warn(`[i765] Barcode set failed for ${bf.getName()}:`, e);
         }
+      } else {
+        console.warn(`[i765] Could not determine page for barcode field: ${fieldName}`);
       }
     }
   } catch (e) {
