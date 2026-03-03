@@ -26,6 +26,7 @@ import VawaChecklistPage from "./pages/VawaChecklistPage";
 import SmartFormsList from "./pages/SmartFormsList";
 import SmartFormPage from "./pages/SmartFormPage";
 import NotFound from "./pages/NotFound";
+import PdfFieldInspector from "./pages/PdfFieldInspector";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
           <Route path="/dashboard/smart-forms" element={<SmartFormsList />} />
           <Route path="/dashboard/smart-forms/new" element={<SmartFormPage />} />
           <Route path="/dashboard/smart-forms/:id" element={<SmartFormPage />} />
+          <Route path="/debug/pdf-fields" element={<PdfFieldInspector />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
