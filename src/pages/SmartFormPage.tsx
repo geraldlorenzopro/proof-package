@@ -130,29 +130,20 @@ export default function SmartFormPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border/40 bg-card/50">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/smart-forms")} className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-accent" />
-              <h1 className="text-lg font-bold">NER Smart Forms</h1>
-              <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full font-medium">I-765</span>
-              {!isNew && <span className="text-xs text-muted-foreground">· Editando</span>}
-            </div>
+    <div className="min-h-full bg-background">
+      {/* Wizard */}
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-accent" />
+            <h1 className="text-lg font-bold">I-765</h1>
+            <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full font-medium">EAD</span>
+            {!isNew && <span className="text-xs text-muted-foreground">· Editando</span>}
           </div>
           <Button variant="ghost" size="sm" onClick={() => setLang(l => l === "es" ? "en" : "es")} className="gap-1.5 text-xs">
             <Globe className="w-4 h-4" /> {lang === "es" ? "EN" : "ES"}
           </Button>
         </div>
-      </div>
-
-      {/* Wizard */}
-      <div className="max-w-5xl mx-auto px-4 py-8">
         <I765Wizard lang={lang} initialData={initialData} onSave={handleSave} onFillUSCIS={handleFillUSCIS} saving={saving} />
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FileText, Plus, ArrowLeft, Search, Copy, Trash2, Pencil,
+  FileText, Plus, Search, Copy, Trash2, Pencil,
   Download, MoreHorizontal, Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -148,29 +148,23 @@ export default function SmartFormsList() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border/40 bg-card/50">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-accent" />
-                <h1 className="text-xl font-bold">NER Smart Forms</h1>
-              </div>
-              <p className="text-xs text-muted-foreground ml-7">Formularios inteligentes para USCIS</p>
+    <div className="min-h-full bg-background">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* Page title + action */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-accent" />
+              <h1 className="text-xl font-bold">Formularios</h1>
             </div>
+            <p className="text-xs text-muted-foreground ml-7">Formularios inteligentes para USCIS</p>
           </div>
           <Button onClick={() => navigate("/dashboard/smart-forms/new")} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="w-4 h-4" /> Nuevo Formulario
           </Button>
         </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
+
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {(["all", "draft", "completed", "sent"] as const).map(st => (

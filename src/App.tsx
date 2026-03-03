@@ -25,6 +25,7 @@ import VawaScreener from "./pages/VawaScreener";
 import VawaChecklistPage from "./pages/VawaChecklistPage";
 import SmartFormsList from "./pages/SmartFormsList";
 import SmartFormPage from "./pages/SmartFormPage";
+import SmartFormsLayout from "./components/smartforms/SmartFormsLayout";
 import NotFound from "./pages/NotFound";
 import PdfFieldInspector from "./pages/PdfFieldInspector";
 
@@ -57,9 +58,11 @@ const App = () => (
           <Route path="/dashboard/checklist" element={<ChecklistGenerator />} />
           <Route path="/dashboard/vawa-screener" element={<VawaScreener />} />
           <Route path="/dashboard/vawa-checklist" element={<VawaChecklistPage />} />
-          <Route path="/dashboard/smart-forms" element={<SmartFormsList />} />
-          <Route path="/dashboard/smart-forms/new" element={<SmartFormPage />} />
-          <Route path="/dashboard/smart-forms/:id" element={<SmartFormPage />} />
+          <Route path="/dashboard/smart-forms" element={<SmartFormsLayout />}>
+            <Route index element={<SmartFormsList />} />
+            <Route path="new" element={<SmartFormPage />} />
+            <Route path=":id" element={<SmartFormPage />} />
+          </Route>
           <Route path="/debug/pdf-fields" element={<PdfFieldInspector />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
