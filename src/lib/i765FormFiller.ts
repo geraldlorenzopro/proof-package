@@ -1,6 +1,6 @@
-import { PDFDocument, PDFTextField, PDFCheckBox, PDFForm, rgb } from "pdf-lib";
+import { PDFDocument, PDFTextField, PDFCheckBox, PDFForm } from "pdf-lib";
 import { I765Data, ELIGIBILITY_CATEGORIES } from "@/components/smartforms/i765Schema";
-import { generateAllBarcodes } from "@/lib/i765Barcode";
+import { buildPageData } from "@/lib/i765Barcode";
 
 /**
  * Template PDF with AcroForm fields (Docketwise-exported).
@@ -371,31 +371,17 @@ export async function fillI765Pdf(data: I765Data) {
     setCheck(form, P.pt5_rep_no, !data.preparerRepExtends);
   }
 
-  // ── Generate and embed PDF417 barcodes per page ──
+  // ── Populate native PDF417 barcode fields with pipe-delimited data ──
+  // The template has barcode text fields: #pageSet[0].Page1[N].PDF417BarCode1[0]
+  // Adobe Acrobat's JS engine reads these to render barcodes when opened.
   try {
-    const barcodes = await generateAllBarcodes(data);
-    const pages = pdf.getPages();
-    for (const [pageNum, pngBytes] of barcodes) {
-      const pageIdx = pageNum - 1;
-      if (pageIdx >= 0 && pageIdx < pages.length) {
-        const pngImage = await pdf.embedPng(pngBytes);
-        const page = pages[pageIdx];
-        const { width } = page.getSize();
-        // Scale barcode to fit ~60% of page width, centered at bottom
-        const barcodeWidth = width * 0.45;
-        const barcodeHeight = (pngImage.height / pngImage.width) * barcodeWidth;
-        const x = (width - barcodeWidth) / 2;
-        const y = 18; // ~18pt from bottom edge
-        page.drawImage(pngImage, {
-          x,
-          y,
-          width: barcodeWidth,
-          height: barcodeHeight,
-        });
-      }
+    for (let page = 0; page < 7; page++) {
+      const barcodePattern = new RegExp(`#pageSet\\[0\\]\\.Page1\\[${page}\\]\\.PDF417BarCode1\\[0\\]`);
+      const barcodeData = buildPageData(page + 1, data);
+      setText(form, barcodePattern, barcodeData);
     }
   } catch (e) {
-    console.warn("Barcode generation failed (non-fatal):", e);
+    console.warn("Barcode field population failed (non-fatal):", e);
   }
 
   // Save and download (fields remain editable for review/corrections)
