@@ -48,9 +48,9 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   // Register wizard nav in layout context
   useEffect(() => {
-    setWizardNav({ steps: I765_STEPS, currentStep: stepIdx, setStep: setStepIdx, lang });
+    setWizardNav({ steps: I765_STEPS, currentStep: stepIdx, setStep: setStepIdx });
     return () => setWizardNav(null);
-  }, [stepIdx, lang, setWizardNav]);
+  }, [stepIdx, setWizardNav]);
 
   const set = <K extends keyof I765Data>(key: K, value: I765Data[K]) =>
     setData(prev => ({ ...prev, [key]: value }));
@@ -349,8 +349,8 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
-      <div className="flex-1 overflow-auto p-4 md:p-6">
-        <div className="max-w-2xl mx-auto">
+      <div className="flex-1 overflow-auto p-4 md:p-6 flex items-start md:items-center justify-center">
+        <div className="max-w-2xl w-full">
           {stepRenderers[step]()}
         </div>
       </div>

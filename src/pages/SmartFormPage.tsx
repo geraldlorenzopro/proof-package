@@ -1,20 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Globe } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import I765Wizard from "@/components/smartforms/I765Wizard";
 import { I765Data } from "@/components/smartforms/i765Schema";
 import { generateI765Pdf } from "@/lib/i765PdfGenerator";
 import { fillI765Pdf, discoverI765Fields } from "@/lib/i765FormFiller";
+import { useSmartFormsContext } from "@/components/smartforms/SmartFormsContext";
 
 export default function SmartFormPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isNew = !id || id === "new";
 
-  const [lang, setLang] = useState<"en" | "es">("es");
+  const { lang } = useSmartFormsContext();
   const [saving, setSaving] = useState(false);
   const [submissionId, setSubmissionId] = useState<string | null>(isNew ? null : id!);
   const [initialData, setInitialData] = useState<Partial<I765Data>>({});
@@ -131,12 +130,6 @@ export default function SmartFormPage() {
 
   return (
     <div className="min-h-full bg-background flex flex-col">
-      {/* Lang toggle — compact top-right bar, only functional element */}
-      <div className="flex justify-end px-4 pt-3 pb-1">
-        <Button variant="ghost" size="sm" onClick={() => setLang(l => l === "es" ? "en" : "es")} className="gap-1.5 text-xs">
-          <Globe className="w-4 h-4" /> {lang === "es" ? "EN" : "ES"}
-        </Button>
-      </div>
       <I765Wizard lang={lang} initialData={initialData} onSave={handleSave} onFillUSCIS={handleFillUSCIS} saving={saving} />
     </div>
   );

@@ -1,5 +1,6 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { FileText, List, Plus, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { LangToggle } from "@/components/LangToggle";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -38,7 +39,8 @@ function MobileStepDrawer() {
   const { wizardNav } = useSmartFormsContext();
   if (!wizardNav) return null;
 
-  const { steps, currentStep, setStep, lang } = wizardNav;
+  const { steps, currentStep, setStep } = wizardNav;
+  const { lang } = useSmartFormsContext();
   const progress = ((currentStep + 1) / steps.length) * 100;
 
   return (
@@ -100,7 +102,7 @@ function SmartFormsSidebar() {
   const navigate = useNavigate();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { wizardNav } = useSmartFormsContext();
+  const { wizardNav, lang } = useSmartFormsContext();
 
   const progress = wizardNav
     ? ((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100
@@ -198,7 +200,7 @@ function SmartFormsSidebar() {
                             {i + 1}
                           </span>
                         )}
-                        <span className="truncate">{I765_STEP_LABELS[s][wizardNav.lang]}</span>
+                        <span className="truncate">{I765_STEP_LABELS[s][lang]}</span>
                       </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -212,6 +214,18 @@ function SmartFormsSidebar() {
   );
 }
 
+function LayoutHeader() {
+  const { wizardNav, lang, setLang } = useSmartFormsContext();
+  return (
+    <header className="h-11 flex items-center justify-between border-b border-border/40 bg-card/50 px-3 shrink-0">
+      <SidebarTrigger className="text-muted-foreground hidden md:flex" />
+      {wizardNav && (
+        <LangToggle lang={lang} setLang={setLang} />
+      )}
+    </header>
+  );
+}
+
 export default function SmartFormsLayout() {
   return (
     <SmartFormsProvider>
@@ -221,9 +235,7 @@ export default function SmartFormsLayout() {
             <SmartFormsSidebar />
           </div>
           <div className="flex-1 flex flex-col min-w-0">
-            <header className="h-11 flex items-center border-b border-border/40 bg-card/50 px-3 shrink-0">
-              <SidebarTrigger className="text-muted-foreground hidden md:flex" />
-            </header>
+            <LayoutHeader />
             <MobileStepDrawer />
             <main className="flex-1 overflow-auto">
               <Outlet />
