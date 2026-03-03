@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileText, ArrowLeft, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -130,20 +130,14 @@ export default function SmartFormPage() {
   );
 
   return (
-    <div className="min-h-full bg-background">
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-accent" />
-            <h1 className="text-lg font-bold">{lang === "es" ? "Cuestionario de Permiso de Trabajo" : "Work Permit Questionnaire"}</h1>
-            {!isNew && <span className="text-xs text-muted-foreground">· {lang === "es" ? "Editando" : "Editing"}</span>}
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => setLang(l => l === "es" ? "en" : "es")} className="gap-1.5 text-xs">
-            <Globe className="w-4 h-4" /> {lang === "es" ? "EN" : "ES"}
-          </Button>
-        </div>
-        <I765Wizard lang={lang} initialData={initialData} onSave={handleSave} onFillUSCIS={handleFillUSCIS} saving={saving} />
+    <div className="min-h-full bg-background flex flex-col">
+      {/* Lang toggle — compact top-right bar, only functional element */}
+      <div className="flex justify-end px-4 pt-3 pb-1">
+        <Button variant="ghost" size="sm" onClick={() => setLang(l => l === "es" ? "en" : "es")} className="gap-1.5 text-xs">
+          <Globe className="w-4 h-4" /> {lang === "es" ? "EN" : "ES"}
+        </Button>
       </div>
+      <I765Wizard lang={lang} initialData={initialData} onSave={handleSave} onFillUSCIS={handleFillUSCIS} saving={saving} />
     </div>
   );
 }

@@ -30,7 +30,7 @@ import {
 
 const navItems = [
   { title: "Formularios", url: "/dashboard/smart-forms", icon: List, end: true },
-  { title: "Nuevo I-765", url: "/dashboard/smart-forms/new", icon: Plus, end: true },
+  { title: "Nuevo Cuestionario", url: "/dashboard/smart-forms/new", icon: Plus, end: true },
 ];
 
 /* ── Mobile step drawer (shown only on small screens when wizard is active) ── */
