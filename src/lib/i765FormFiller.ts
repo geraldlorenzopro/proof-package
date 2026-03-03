@@ -1,211 +1,357 @@
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, PDFTextField, PDFCheckBox, PDFForm } from "pdf-lib";
 import { I765Data, ELIGIBILITY_CATEGORIES } from "@/components/smartforms/i765Schema";
 
-const I765_PDF_URL = "/forms/i-765.pdf";
-
 /**
- * Fill the official USCIS I-765 PDF by overlaying text on the correct coordinates.
- * This approach works even with encrypted PDFs since we embed pages as-is
- * and draw text on top rather than relying on AcroForm fields.
+ * Template PDF with AcroForm fields (Docketwise-exported).
+ * Field names follow the pattern: form1[0].PageN[0].SemanticName[idx]<random_hash>
+ * We match fields using regex on the semantic prefix, ignoring the hash suffix.
  */
-export async function fillI765Pdf(data: I765Data) {
-  const pdfBytes = await fetch(I765_PDF_URL).then(r => r.arrayBuffer());
-  
-  let srcPdf: PDFDocument;
-  try {
-    srcPdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
-  } catch {
-    srcPdf = await PDFDocument.load(pdfBytes);
+const TEMPLATE_PDF_URL = "/forms/Gerald_L_s_I-765.pdf";
+
+// ─── Helpers ──────────────────────────────────────────────────────
+
+/** Find a field by semantic prefix regex. Returns first match or null. */
+function findField(form: PDFForm, pattern: RegExp) {
+  const fields = form.getFields();
+  for (const f of fields) {
+    if (pattern.test(f.getName())) return f;
   }
+  return null;
+}
 
-  // Create a fresh PDF and copy pages from the original
-  const pdf = await PDFDocument.create();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
+/** Set a text field value by regex pattern */
+function setText(form: PDFForm, pattern: RegExp, value: string | undefined | null) {
+  if (!value) return;
+  const field = findField(form, pattern);
+  if (field && field instanceof PDFTextField) {
+    field.setText(value);
+  }
+}
 
-  // Copy all pages from source
-  const pageIndices = srcPdf.getPageIndices();
-  const copiedPages = await pdf.copyPages(srcPdf, pageIndices);
-  copiedPages.forEach(page => pdf.addPage(page));
+/** Check a checkbox field by regex pattern */
+function setCheck(form: PDFForm, pattern: RegExp, checked: boolean) {
+  if (!checked) return;
+  const field = findField(form, pattern);
+  if (field && field instanceof PDFCheckBox) {
+    field.check();
+  }
+}
 
-  const pages = pdf.getPages();
-  const fontSize = 9;
-  const smallFont = 7.5;
-  const color = rgb(0, 0, 0);
-  const checkMark = "X";
+/** Uncheck a checkbox */
+function setUncheck(form: PDFForm, pattern: RegExp) {
+  const field = findField(form, pattern);
+  if (field && field instanceof PDFCheckBox) {
+    field.uncheck();
+  }
+}
 
-  // Helper: draw text at position (x from left, y from TOP of page)
-  const drawText = (pageIdx: number, x: number, yFromTop: number, text: string | undefined | null, size = fontSize) => {
-    if (!text || pageIdx >= pages.length) return;
-    const page = pages[pageIdx];
-    const { height } = page.getSize();
-    page.drawText(text, { x, y: height - yFromTop, size, font, color });
-  };
+/** Format date from YYYY-MM-DD to MM/DD/YYYY */
+function fmtDate(d: string | undefined | null): string {
+  if (!d) return "";
+  const [y, m, day] = d.split("-");
+  return `${m}/${day}/${y}`;
+}
 
-  // Helper: draw check mark
-  const drawCheck = (pageIdx: number, x: number, yFromTop: number, checked: boolean) => {
-    if (!checked || pageIdx >= pages.length) return;
-    const page = pages[pageIdx];
-    const { height } = page.getSize();
-    page.drawText(checkMark, { x, y: height - yFromTop, size: 10, font: boldFont, color });
-  };
+// ─── Field Pattern Map ──────────────────────────────────────────
+// Each regex matches the semantic prefix of the XFA-converted AcroForm field name.
+// The [0-9a-z]+ at the end absorbs the random hash suffix.
 
-  // Format date from YYYY-MM-DD to MM/DD/YYYY
-  const fmtDate = (d: string) => {
-    if (!d) return "";
-    const [y, m, day] = d.split("-");
-    return `${m}/${day}/${y}`;
-  };
+const P = {
+  // Page 1 — Part 1 & header
+  line1a_family:     /Page1\[0\]\.Line1a_FamilyName\[0\]/,
+  line1b_given:      /Page1\[0\]\.Line1b_GivenName\[0\]/,
+  line1c_middle:     /Page1\[0\]\.Line1c_MiddleName\[0\]/,
+  part1_initial:     /Page1\[0\]\.Part1_Checkbox\[0\]/,
+  part1_replacement: /Page1\[0\]\.Part1_Checkbox\[1\]/,
+  part1_renewal:     /Page1\[0\]\.Part1_Checkbox\[2\]/,
+  line2a_family:     /Page1\[0\]\.Line2a_FamilyName\[0\]/,
+  line2b_given:      /Page1\[0\]\.Line2b_GivenName\[0\]/,
+  line2c_middle:     /Page1\[0\]\.Line2c_MiddleName\[0\]/,
 
-  // ══════════════════════════════════════════════════════
-  // PAGE 1 — Part 1 & Part 2 (top section)
-  // ══════════════════════════════════════════════════════
-  // Note: Coordinates are approximate and based on the I-765 (08/25/21 edition).
-  // They may need fine-tuning after visual inspection.
-
-  // Part 1: Reason for applying (checkboxes)
-  drawCheck(0, 36, 195, data.reasonForApplying === "initial");
-  drawCheck(0, 36, 213, data.reasonForApplying === "replacement");
-  drawCheck(0, 36, 231, data.reasonForApplying === "renewal");
-
-  // Part 2: Information About You
-  // 1.a Family Name
-  drawText(0, 200, 298, data.lastName);
-  // 1.b Given Name
-  drawText(0, 200, 318, data.firstName);
-  // 1.c Middle Name
-  drawText(0, 200, 338, data.middleName);
-
-  // 2.a Other Last Name
-  drawText(0, 200, 371, data.otherLastName);
-  // 2.b Other First Name
-  drawText(0, 200, 391, data.otherFirstName);
-
-  // A-Number (right column, top)
-  drawText(0, 430, 298, data.aNumber?.replace(/^A-?/i, ""));
-  // USCIS Online Account Number
-  drawText(0, 430, 338, data.uscisAccountNumber);
-
-  // Mailing address
-  // In Care Of
-  drawText(0, 200, 441, data.mailingCareOf);
-  // Street
-  drawText(0, 200, 461, data.mailingStreet);
-  // Apt/Ste/Flr
-  drawCheck(0, 400, 475, data.mailingAptType === "apt" || !!data.mailingApt);
-  drawText(0, 470, 461, data.mailingApt);
-  // City
-  drawText(0, 200, 501, data.mailingCity);
-  // State
-  drawText(0, 400, 501, data.mailingState);
-  // ZIP
-  drawText(0, 500, 501, data.mailingZip);
+  // Page 2 — Mailing address (Pt2Line5 = mailing)
+  line4a_careof:     /Page2\[0\]\.Line4a_InCareofName\[0\]/,
+  line4b_street:     /Page2\[0\]\.Line4b_StreetNumberName\[0\]/,
+  pt2l5_apt:         /Page2\[0\]\.Pt2Line5_AptSteFlrNumber\[0\]/,
+  pt2l5_unit_apt:    /Page2\[0\]\.Pt2Line5_Unit\[0\]/,
+  pt2l5_unit_ste:    /Page2\[0\]\.Pt2Line5_Unit\[1\]/,
+  pt2l5_unit_flr:    /Page2\[0\]\.Pt2Line5_Unit\[2\]/,
+  pt2l5_city:        /Page2\[0\]\.Pt2Line5_CityOrTown\[0\]/,
+  pt2l5_state:       /Page2\[0\]\.Pt2Line5_State\[0\]/,
+  pt2l5_zip:         /Page2\[0\]\.Pt2Line5_ZipCode\[0\]/,
 
   // Same address checkbox
-  drawCheck(0, 36, 530, data.sameAddress);
+  pt2l5_same_yes:    /Page2\[0\]\.Part2Line5_Checkbox\[0\]/,
+  pt2l5_same_no:     /Page2\[0\]\.Part2Line5_Checkbox\[1\]/,
 
-  // SSN
-  drawText(0, 430, 391, data.ssn);
+  // Physical address (Pt2Line7 = physical)
+  pt2l7_street:      /Page2\[0\]\.Pt2Line7_StreetNumberName\[0\]/,
+  pt2l7_apt:         /Page2\[0\]\.Pt2Line7_AptSteFlrNumber\[0\]/,
+  pt2l7_unit_apt:    /Page2\[0\]\.Pt2Line7_Unit\[0\]/,
+  pt2l7_unit_ste:    /Page2\[0\]\.Pt2Line7_Unit\[1\]/,
+  pt2l7_unit_flr:    /Page2\[0\]\.Pt2Line7_Unit\[2\]/,
+  pt2l7_city:        /Page2\[0\]\.Pt2Line7_CityOrTown\[0\]/,
+  pt2l7_state:       /Page2\[0\]\.Pt2Line7_State\[0\]/,
+  pt2l7_zip:         /Page2\[0\]\.Pt2Line7_ZipCode\[0\]/,
 
-  // ══════════════════════════════════════════════════════
-  // PAGE 2 — Physical Address, Background, Arrival
-  // ══════════════════════════════════════════════════════
-  if (!data.sameAddress) {
-    drawText(1, 200, 82, data.physicalStreet);
-    drawText(1, 470, 82, data.physicalApt);
-    drawText(1, 200, 118, data.physicalCity);
-    drawText(1, 400, 118, data.physicalState);
-    drawText(1, 500, 118, data.physicalZip);
-  }
+  // A-Number, USCIS Account, SSN
+  line7_alien:       /Page2\[0\]\.Line7_AlienNumber\[0\]/,
+  line8_elis:        /Page2\[0\]\.Line8_ElisAccountNumber\[0\]/,
+  line12b_ssn:       /Page2\[0\]\.Line12b_SSN\[0\]/,
 
   // Sex
-  drawCheck(1, 36, 177, data.sex === "male");
-  drawCheck(1, 100, 177, data.sex === "female");
+  line9_male:        /Page2\[0\]\.Line9_Checkbox\[0\]/,
+  line9_female:      /Page2\[0\]\.Line9_Checkbox\[1\]/,
 
-  // Marital Status
-  drawCheck(1, 36, 202, data.maritalStatus === "single");
-  drawCheck(1, 100, 202, data.maritalStatus === "married");
-  drawCheck(1, 175, 202, data.maritalStatus === "divorced");
-  drawCheck(1, 250, 202, data.maritalStatus === "widowed");
+  // Marital status
+  line10_single:     /Page2\[0\]\.Line10_Checkbox\[0\]/,
+  line10_married:    /Page2\[0\]\.Line10_Checkbox\[1\]/,
+  line10_divorced:   /Page2\[0\]\.Line10_Checkbox\[2\]/,
+  line10_widowed:    /Page2\[0\]\.Line10_Checkbox\[3\]/,
 
   // Previously filed
-  drawCheck(1, 400, 202, data.previouslyFiled);
-  drawCheck(1, 450, 202, !data.previouslyFiled);
+  line19_yes:        /Page2\[0\]\.Line19_Checkbox\[0\]/,
+  line19_no:         /Page2\[0\]\.Line19_Checkbox\[1\]/,
 
-  // Country of Citizenship
-  drawText(1, 200, 234, data.countryOfCitizenship1);
-  drawText(1, 200, 254, data.countryOfCitizenship2);
+  // Country of citizenship
+  line17a_country1:  /Page2\[0\]\.Line17a_CountryOfBirth\[0\]/,
+  line17b_country2:  /Page2\[0\]\.Line17b_CountryOfBirth\[0\]/,
 
-  // Place of Birth
-  drawText(1, 200, 289, data.cityOfBirth);
-  drawText(1, 200, 309, data.stateOfBirth);
-  drawText(1, 200, 329, data.countryOfBirth);
+  // Page 3 — Birth, arrival, eligibility
+  line18a_city:      /Page3\[0\]\.Line18a_CityTownOfBirth\[0\]/,
+  line18b_state:     /Page3\[0\]\.Line18b_CityTownOfBirth\[0\]/,
+  line18c_country:   /Page3\[0\]\.Line18c_CountryOfBirth\[0\]/,
+  line19_dob:        /Page3\[0\]\.Line19_DOB\[0\]/,
+  line20a_i94:       /Page3\[0\]\.Line20a_I94Number\[0\]/,
+  line20b_passport:  /Page3\[0\]\.Line20b_Passport\[0\]/,
+  line20c_traveldoc: /Page3\[0\]\.Line20c_TravelDoc\[0\]/,
+  line20d_country:   /Page3\[0\]\.Line20d_CountryOfIssuance\[0\]/,
+  line20e_exp:       /Page3\[0\]\.Line20e_ExpDate\[0\]/,
+  line21_lastentry:  /Page3\[0\]\.Line21_DateOfLastEntry\[0\]/,
+  place_entry:       /Page3\[0\]\.place_entry\[0\]/,
+  line23_status:     /Page3\[0\]\.Line23_StatusLastEntry\[0\]/,
+  line24_current:    /Page3\[0\]\.Line24_CurrentStatus\[0\]/,
 
-  // Date of Birth
-  drawText(1, 430, 329, fmtDate(data.dateOfBirth));
+  // Eligibility category (sections in #area)
+  section_1:         /Page3\[0\]\.#area\[1\]\.section_1\[0\]/,
+  section_2:         /Page3\[0\]\.#area\[1\]\.section_2\[0\]/,
+  section_3:         /Page3\[0\]\.#area\[1\]\.section_3\[0\]/,
 
-  // I-94 Number
-  drawText(1, 200, 382, data.i94Number);
-  // Passport #
-  drawText(1, 200, 402, data.passportNumber);
-  // Travel Doc #
-  drawText(1, 200, 422, data.travelDocNumber);
-  // Country issued passport
-  drawText(1, 200, 442, data.passportCountry);
-  // Passport Expiration
-  drawText(1, 430, 442, fmtDate(data.passportExpiration));
-  // Date of last arrival
-  drawText(1, 200, 462, fmtDate(data.lastArrivalDate));
-  // Place of last arrival
-  drawText(1, 430, 462, data.lastArrivalPlace);
-  // Status at arrival
-  drawText(1, 200, 497, data.statusAtArrival);
-  // Current status
-  drawText(1, 200, 517, data.currentStatus);
+  // Receipt numbers
+  line28_receipt:    /Page3\[0\]\.Line28_ReceiptNumber\[0\]/,
+  line30a_receipt:   /Page3\[0\]\.Line18a_Receipt\[0\]\.Line30a_ReceiptNumber\[0\]/,
 
-  // ══════════════════════════════════════════════════════
-  // PAGE 3 — Eligibility Category
-  // ══════════════════════════════════════════════════════
-  const catLabel = ELIGIBILITY_CATEGORIES.find(c => c.value === data.eligibilityCategory)?.label || data.eligibilityCategorySpecific || "";
-  drawText(2, 200, 95, data.eligibilityCategory);
-  drawText(2, 200, 115, catLabel, smallFont);
+  // Yes/No questions
+  line29_yes:        /Page3\[0\]\.PtLine29_YesNo\[0\]/,
+  line29_no:         /Page3\[0\]\.PtLine29_YesNo\[1\]/,
+  line30b_yes:       /Page3\[0\]\.PtLine30b_YesNo\[0\]/,
+  line30b_no:        /Page3\[0\]\.PtLine30b_YesNo\[1\]/,
 
-  // Contact info (Part 3)
-  drawText(2, 200, 510, data.applicantPhone);
-  drawText(2, 200, 530, data.applicantMobile);
-  drawText(2, 200, 550, data.applicantEmail);
+  // Page 4 — Part 3: Applicant Statement
+  pt3_reads_english: /Page4\[0\]\.Pt3Line1Checkbox\[0\]/,
+  pt3_interpreter:   /Page4\[0\]\.Pt3Line1Checkbox\[1\]/,
+  pt3_language:      /Page4\[0\]\.Pt3Line1b_Language\[0\]/,
+  pt3_preparer:      /Page4\[0\]\.Part3_Checkbox\[0\]/,
+  pt3_phone:         /Page4\[0\]\.Pt3Line3_DaytimePhoneNumber1\[0\]/,
+  pt3_mobile:        /Page4\[0\]\.Pt3Line4_MobileNumber1\[0\]/,
+  pt3_email:         /Page4\[0\]\.Pt3Line5_Email\[0\]/,
 
-  // Applicant statement checkboxes
-  drawCheck(2, 36, 450, data.applicantCanReadEnglish);
-  drawCheck(2, 36, 470, data.interpreterUsed);
-  drawCheck(2, 36, 490, data.preparerUsed);
+  // Part 4: Interpreter (Page 4-5)
+  pt4_family:        /Page4\[0\]\.Pt4Line1a_InterpreterFamilyName\[0\]/,
+  pt4_given:         /Page4\[0\]\.Pt4Line1b_InterpreterGivenName\[0\]/,
+  pt4_org:           /Page4\[0\]\.Pt4Line2_InterpreterBusinessorOrg\[0\]/,
+  pt4_phone:         /Page5\[0\]\.Pt4Line4_InterpreterDaytimeTelephone\[0\]/,
+  pt4_mobile:        /Page5\[0\]\.Pt4Line5_MobileNumber\[0\]/,
+  pt4_email:         /Page5\[0\]\.Pt4Line6_Email\[0\]/,
+  pt4_language:      /Page5\[0\]\.Part4_NameofLanguage\[0\]/,
 
-  // ══════════════════════════════════════════════════════
-  // PAGE 4+ — Interpreter & Preparer (if present)
-  // ══════════════════════════════════════════════════════
-  if (data.interpreterUsed && pages.length > 3) {
-    drawText(3, 200, 120, data.interpreterLastName);
-    drawText(3, 200, 140, data.interpreterFirstName);
-    drawText(3, 200, 160, data.interpreterOrg);
-    drawText(3, 200, 310, data.interpreterPhone);
-    drawText(3, 200, 330, data.interpreterMobile);
-    drawText(3, 200, 350, data.interpreterEmail);
-    drawText(3, 200, 370, data.interpreterLanguage);
+  // Part 5: Preparer (Page 5-6)
+  pt5_family:        /Page5\[0\]\.Pt5Line1a_PreparerFamilyName\[0\]/,
+  pt5_given:         /Page5\[0\]\.Pt5Line1b_PreparerGivenName\[0\]/,
+  pt5_org:           /Page5\[0\]\.Pt5Line2_BusinessName\[0\]/,
+  pt5_street:        /Page5\[0\]\.Pt5Line3a_StreetNumberName\[0\]/,
+  pt5_apt:           /Page5\[0\]\.Pt5Line3b_AptSteFlrNumber\[0\]/,
+  pt5_city:          /Page5\[0\]\.Pt5Line3c_CityOrTown\[0\]/,
+  pt5_state:         /Page5\[0\]\.Pt5Line3d_State\[0\]/,
+  pt5_zip:           /Page5\[0\]\.Pt5Line3e_ZipCode\[0\]/,
+  pt5_province:      /Page5\[0\]\.Pt5Line3f_Province\[0\]/,
+  pt5_postal:        /Page5\[0\]\.Pt5Line3g_PostalCode\[0\]/,
+  pt5_country:       /Page5\[0\]\.Pt5Line3h_Country\[0\]/,
+  pt5_phone:         /Page5\[0\]\.Pt5Line4_DaytimePhoneNumber1\[0\]/,
+  pt5_fax:           /Page5\[0\]\.Pt5Line5_PreparerFaxNumber\[0\]/,
+  pt5_email:         /Page5\[0\]\.Pt5Line6_Email\[0\]/,
+  pt5_is_attorney:   /Page6\[0\]\.Part5Line7_Checkbox\[0\]/,
+  pt5_not_attorney:  /Page6\[0\]\.Part5Line7_Checkbox\[1\]/,
+  pt5_rep_extends:   /Page6\[0\]\.Part5Line7b_Checkbox\[0\]/,
+  pt5_rep_no:        /Page6\[0\]\.Part5Line7b_Checkbox\[1\]/,
+};
+
+// ─── Clear all fields before filling ────────────────────────────
+
+function clearAllFields(form: PDFForm) {
+  for (const field of form.getFields()) {
+    if (field instanceof PDFTextField) {
+      field.setText("");
+    } else if (field instanceof PDFCheckBox) {
+      field.uncheck();
+    }
+  }
+}
+
+// ─── Main fill function ─────────────────────────────────────────
+
+export async function fillI765Pdf(data: I765Data) {
+  const pdfBytes = await fetch(TEMPLATE_PDF_URL).then(r => r.arrayBuffer());
+  const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+  const form = pdf.getForm();
+
+  // Clear all existing values from the template
+  clearAllFields(form);
+
+  // ── Part 1: Reason for Applying ──
+  setCheck(form, P.part1_initial, data.reasonForApplying === "initial");
+  setCheck(form, P.part1_replacement, data.reasonForApplying === "replacement");
+  setCheck(form, P.part1_renewal, data.reasonForApplying === "renewal");
+
+  // ── Part 2: Personal Info ──
+  setText(form, P.line1a_family, data.lastName);
+  setText(form, P.line1b_given, data.firstName);
+  setText(form, P.line1c_middle, data.middleName);
+  setText(form, P.line2a_family, data.otherLastName);
+  setText(form, P.line2b_given, data.otherFirstName);
+
+  // A-Number & USCIS Account
+  setText(form, P.line7_alien, data.aNumber?.replace(/^A-?/i, ""));
+  setText(form, P.line8_elis, data.uscisAccountNumber);
+  setText(form, P.line12b_ssn, data.ssn);
+
+  // ── Mailing Address ──
+  setText(form, P.line4a_careof, data.mailingCareOf);
+  setText(form, P.line4b_street, data.mailingStreet);
+  setText(form, P.pt2l5_apt, data.mailingApt);
+  setCheck(form, P.pt2l5_unit_apt, data.mailingAptType === "apt");
+  setCheck(form, P.pt2l5_unit_ste, data.mailingAptType === "ste");
+  setCheck(form, P.pt2l5_unit_flr, data.mailingAptType === "flr");
+  setText(form, P.pt2l5_city, data.mailingCity);
+  setText(form, P.pt2l5_state, data.mailingState);
+  setText(form, P.pt2l5_zip, data.mailingZip);
+
+  // ── Same Address ──
+  setCheck(form, P.pt2l5_same_yes, data.sameAddress);
+  setCheck(form, P.pt2l5_same_no, !data.sameAddress);
+
+  // ── Physical Address ──
+  if (!data.sameAddress) {
+    setText(form, P.pt2l7_street, data.physicalStreet);
+    setText(form, P.pt2l7_apt, data.physicalApt);
+    setCheck(form, P.pt2l7_unit_apt, data.physicalAptType === "apt");
+    setCheck(form, P.pt2l7_unit_ste, data.physicalAptType === "ste");
+    setCheck(form, P.pt2l7_unit_flr, data.physicalAptType === "flr");
+    setText(form, P.pt2l7_city, data.physicalCity);
+    setText(form, P.pt2l7_state, data.physicalState);
+    setText(form, P.pt2l7_zip, data.physicalZip);
   }
 
-  if (data.preparerUsed && pages.length > 4) {
-    drawText(4, 200, 120, data.preparerLastName);
-    drawText(4, 200, 140, data.preparerFirstName);
-    drawText(4, 200, 160, data.preparerOrg);
-    drawText(4, 200, 200, data.preparerStreet);
-    drawText(4, 470, 200, data.preparerApt);
-    drawText(4, 200, 235, data.preparerCity);
-    drawText(4, 400, 235, data.preparerState);
-    drawText(4, 500, 235, data.preparerZip);
-    drawText(4, 200, 310, data.preparerPhone);
-    drawText(4, 200, 330, data.preparerMobile);
-    drawText(4, 200, 350, data.preparerEmail);
+  // ── Sex ──
+  setCheck(form, P.line9_male, data.sex === "male");
+  setCheck(form, P.line9_female, data.sex === "female");
+
+  // ── Marital Status ──
+  setCheck(form, P.line10_single, data.maritalStatus === "single");
+  setCheck(form, P.line10_married, data.maritalStatus === "married");
+  setCheck(form, P.line10_divorced, data.maritalStatus === "divorced");
+  setCheck(form, P.line10_widowed, data.maritalStatus === "widowed");
+
+  // ── Previously Filed ──
+  setCheck(form, P.line19_yes, data.previouslyFiled);
+  setCheck(form, P.line19_no, !data.previouslyFiled);
+
+  // ── Country of Citizenship ──
+  setText(form, P.line17a_country1, data.countryOfCitizenship1);
+  setText(form, P.line17b_country2, data.countryOfCitizenship2);
+
+  // ── Place of Birth ──
+  setText(form, P.line18a_city, data.cityOfBirth);
+  setText(form, P.line18b_state, data.stateOfBirth);
+  setText(form, P.line18c_country, data.countryOfBirth);
+  setText(form, P.line19_dob, fmtDate(data.dateOfBirth));
+
+  // ── Arrival Info ──
+  setText(form, P.line20a_i94, data.i94Number);
+  setText(form, P.line20b_passport, data.passportNumber);
+  setText(form, P.line20c_traveldoc, data.travelDocNumber);
+  setText(form, P.line20d_country, data.passportCountry);
+  setText(form, P.line20e_exp, fmtDate(data.passportExpiration));
+  setText(form, P.line21_lastentry, fmtDate(data.lastArrivalDate));
+  setText(form, P.place_entry, data.lastArrivalPlace);
+  setText(form, P.line23_status, data.statusAtArrival);
+  setText(form, P.line24_current, data.currentStatus);
+
+  // ── Eligibility Category ──
+  const catLabel = ELIGIBILITY_CATEGORIES.find(c => c.value === data.eligibilityCategory)?.label || "";
+  // The eligibility section fields are text fields in the converted form
+  setText(form, P.section_1, data.eligibilityCategory);
+  setText(form, P.section_2, data.eligibilityCategorySpecific || catLabel);
+
+  // Receipt numbers for specific categories
+  if (data.h1bReceiptNumber) {
+    setText(form, P.line28_receipt, data.h1bReceiptNumber);
   }
+  if (data.i140ReceiptNumber) {
+    setText(form, P.line30a_receipt, data.i140ReceiptNumber);
+  }
+
+  // Arrested questions
+  if (data.c8EverArrested !== null) {
+    setCheck(form, P.line29_yes, data.c8EverArrested === true);
+    setCheck(form, P.line29_no, data.c8EverArrested === false);
+  }
+  if (data.c35EverArrested !== null) {
+    setCheck(form, P.line30b_yes, data.c35EverArrested === true);
+    setCheck(form, P.line30b_no, data.c35EverArrested === false);
+  }
+
+  // ── Part 3: Applicant Statement ──
+  setCheck(form, P.pt3_reads_english, data.applicantCanReadEnglish);
+  setCheck(form, P.pt3_interpreter, data.interpreterUsed);
+  setCheck(form, P.pt3_preparer, data.preparerUsed);
+  setText(form, P.pt3_phone, data.applicantPhone);
+  setText(form, P.pt3_mobile, data.applicantMobile);
+  setText(form, P.pt3_email, data.applicantEmail);
+
+  // ── Part 4: Interpreter ──
+  if (data.interpreterUsed) {
+    setText(form, P.pt4_family, data.interpreterLastName);
+    setText(form, P.pt4_given, data.interpreterFirstName);
+    setText(form, P.pt4_org, data.interpreterOrg);
+    setText(form, P.pt4_phone, data.interpreterPhone);
+    setText(form, P.pt4_mobile, data.interpreterMobile);
+    setText(form, P.pt4_email, data.interpreterEmail);
+    setText(form, P.pt4_language, data.interpreterLanguage);
+  }
+
+  // ── Part 5: Preparer ──
+  if (data.preparerUsed) {
+    setText(form, P.pt5_family, data.preparerLastName);
+    setText(form, P.pt5_given, data.preparerFirstName);
+    setText(form, P.pt5_org, data.preparerOrg);
+    setText(form, P.pt5_street, data.preparerStreet);
+    setText(form, P.pt5_apt, data.preparerApt);
+    setText(form, P.pt5_city, data.preparerCity);
+    setText(form, P.pt5_state, data.preparerState);
+    setText(form, P.pt5_zip, data.preparerZip);
+    setText(form, P.pt5_province, data.preparerProvince);
+    setText(form, P.pt5_postal, data.preparerPostalCode);
+    setText(form, P.pt5_country, data.preparerCountry);
+    setText(form, P.pt5_phone, data.preparerPhone);
+    setText(form, P.pt5_email, data.preparerEmail);
+    setCheck(form, P.pt5_is_attorney, data.preparerIsAttorney);
+    setCheck(form, P.pt5_not_attorney, !data.preparerIsAttorney);
+    setCheck(form, P.pt5_rep_extends, data.preparerRepExtends);
+    setCheck(form, P.pt5_rep_no, !data.preparerRepExtends);
+  }
+
+  // Flatten so fields are not editable in the output
+  form.flatten();
 
   // Save and download
   const filledBytes = await pdf.save();
@@ -220,18 +366,18 @@ export async function fillI765Pdf(data: I765Data) {
 }
 
 /**
- * Debug: discover fields in the PDF (may fail on encrypted PDFs).
+ * Debug: discover fields in the template PDF.
  */
 export async function discoverI765Fields() {
   try {
-    const pdfBytes = await fetch(I765_PDF_URL).then(r => r.arrayBuffer());
+    const pdfBytes = await fetch(TEMPLATE_PDF_URL).then(r => r.arrayBuffer());
     const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
     const form = pdf.getForm();
     const fields = form.getFields();
     console.table(fields.map(f => ({ name: f.getName(), type: f.constructor.name })));
     return fields.map(f => ({ name: f.getName(), type: f.constructor.name }));
   } catch (e) {
-    console.warn("Could not discover fields (PDF may be encrypted):", e);
+    console.warn("Could not discover fields:", e);
     return [];
   }
 }
