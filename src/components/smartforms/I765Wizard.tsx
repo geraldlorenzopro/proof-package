@@ -41,7 +41,9 @@ const inputCls = "bg-secondary/60 border-border/50 focus:border-accent/60";
 export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, saving }: Props) {
   const [data, setData] = useState<I765Data>({ ...defaultI765Data, ...initialData });
   const [stepIdx, setStepIdx] = useState(0);
-  const [hasOtherName, setHasOtherName] = useState(() => !!(initialData?.otherLastName || initialData?.otherFirstName));
+  const [hasOtherName, setHasOtherName] = useState(() => !!(initialData?.otherNames?.length));
+  const [ssnFull, setSsnFull] = useState(() => initialData?.ssn || "");
+  const [ssnFocused, setSsnFocused] = useState(false);
   const step = I765_STEPS[stepIdx];
   const { setWizardNav } = useSmartFormsContext();
 
@@ -94,16 +96,38 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       <div className="flex items-center gap-2 pt-2">
         <Checkbox checked={hasOtherName} onCheckedChange={v => {
           setHasOtherName(!!v);
-          if (!v) { set("otherLastName", ""); set("otherFirstName", ""); }
+          if (!v) set("otherNames", []);
         }} id="has-other-name" />
         <Label htmlFor="has-other-name" className="text-sm cursor-pointer">
           {t("Yes, I've used a different name before", "Sí, he usado otro nombre antes")}
         </Label>
       </div>
       {hasOtherName && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label={t("Other Last Name", "Otro Apellido")}><Input className={inputCls} value={data.otherLastName} onChange={e => set("otherLastName", e.target.value)} /></Field>
-          <Field label={t("Other First Name", "Otro Nombre")}><Input className={inputCls} value={data.otherFirstName} onChange={e => set("otherFirstName", e.target.value)} /></Field>
+        <div className="space-y-3">
+          {(data.otherNames.length === 0 ? [{ lastName: "", firstName: "", middleName: "" }] : data.otherNames).map((n, i) => (
+            <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+              <Field label={`${t("Last Name", "Apellido")} ${i + 1}`}><Input className={inputCls} value={n.lastName} onChange={e => {
+                const arr = [...(data.otherNames.length ? data.otherNames : [{ lastName: "", firstName: "", middleName: "" }])];
+                arr[i] = { ...arr[i], lastName: e.target.value };
+                set("otherNames", arr);
+              }} /></Field>
+              <Field label={`${t("First Name", "Nombre")} ${i + 1}`}><Input className={inputCls} value={n.firstName} onChange={e => {
+                const arr = [...(data.otherNames.length ? data.otherNames : [{ lastName: "", firstName: "", middleName: "" }])];
+                arr[i] = { ...arr[i], firstName: e.target.value };
+                set("otherNames", arr);
+              }} /></Field>
+              <Field label={`${t("Middle", "Segundo")} ${i + 1}`}><Input className={inputCls} value={n.middleName} onChange={e => {
+                const arr = [...(data.otherNames.length ? data.otherNames : [{ lastName: "", firstName: "", middleName: "" }])];
+                arr[i] = { ...arr[i], middleName: e.target.value };
+                set("otherNames", arr);
+              }} /></Field>
+            </div>
+          ))}
+          {data.otherNames.length < 3 && (
+            <Button type="button" variant="ghost" size="sm" onClick={() => set("otherNames", [...(data.otherNames.length ? data.otherNames : [{ lastName: "", firstName: "", middleName: "" }]), { lastName: "", firstName: "", middleName: "" }])}>
+              + {t("Add another name", "Agregar otro nombre")}
+            </Button>
+          )}
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -111,7 +135,22 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         <Field label="USCIS Online Account #"><Input className={inputCls} value={data.uscisAccountNumber} onChange={e => set("uscisAccountNumber", e.target.value)} /></Field>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="SSN"><Input className={inputCls} value={data.ssn} onChange={e => set("ssn", e.target.value)} placeholder="XXX-XX-XXXX" /></Field>
+        <Field label="SSN">
+          <Input
+            className={inputCls}
+            type={ssnFocused ? "text" : "password"}
+            value={ssnFull}
+            onChange={e => { setSsnFull(e.target.value); set("ssn", e.target.value); }}
+            onFocus={() => setSsnFocused(true)}
+            onBlur={() => setSsnFocused(false)}
+            placeholder="XXX-XX-XXXX"
+          />
+          {ssnFull.length >= 4 && !ssnFocused && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("Showing", "Mostrando")}: ***-**-{ssnFull.slice(-4)}
+            </p>
+          )}
+        </Field>
       </div>
     </div>
   );

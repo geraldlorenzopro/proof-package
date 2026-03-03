@@ -9,9 +9,8 @@ export interface I765Data {
   firstName: string;
   middleName: string;
 
-  // Other Names Used
-  otherLastName: string;
-  otherFirstName: string;
+  // Other Names Used (up to 3 per official form)
+  otherNames: Array<{ lastName: string; firstName: string; middleName: string }>;
 
   // Mailing Address
   mailingCareOf: string;
@@ -118,7 +117,7 @@ export interface I765Data {
 export const defaultI765Data: I765Data = {
   reasonForApplying: "",
   lastName: "", firstName: "", middleName: "",
-  otherLastName: "", otherFirstName: "",
+  otherNames: [],
   mailingCareOf: "", mailingStreet: "", mailingApt: "", mailingAptType: "",
   mailingCity: "", mailingState: "", mailingZip: "",
   sameAddress: true,

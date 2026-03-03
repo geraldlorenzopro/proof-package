@@ -37,10 +37,9 @@ export function buildPageData(pageNum: number, data: I765Data): string {
       return [...header,
         reason,
         s(data.lastName), s(data.firstName), s(data.middleName),
-        s(data.otherLastName), s(data.otherFirstName), "",
-        // Lines 3 and 4 (other names) - map if available
-        "", "", "", // 3a, 3b, 3c (other names set 2 — not in our schema currently)
-        "", "", "", // 4a, 4b, 4c
+        s(data.otherNames?.[0]?.lastName || ""), s(data.otherNames?.[0]?.firstName || ""), s(data.otherNames?.[0]?.middleName || ""),
+        s(data.otherNames?.[1]?.lastName || ""), s(data.otherNames?.[1]?.firstName || ""), s(data.otherNames?.[1]?.middleName || ""),
+        s(data.otherNames?.[2]?.lastName || ""), s(data.otherNames?.[2]?.firstName || ""), s(data.otherNames?.[2]?.middleName || ""),
       ].join("|");
     }
 
