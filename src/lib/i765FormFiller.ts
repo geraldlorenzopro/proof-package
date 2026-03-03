@@ -10,20 +10,23 @@ const I765_PDF_URL = "/forms/i-765.pdf";
  */
 export async function fillI765Pdf(data: I765Data) {
   const pdfBytes = await fetch(I765_PDF_URL).then(r => r.arrayBuffer());
-  const srcPdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+  
+  let srcPdf: PDFDocument;
+  try {
+    srcPdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+  } catch {
+    srcPdf = await PDFDocument.load(pdfBytes);
+  }
 
-  // Create a fresh PDF and embed pages from the original
+  // Create a fresh PDF and copy pages from the original
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-  const srcPages = await pdf.embedPages(srcPdf.getPages());
-
-  for (const embeddedPage of srcPages) {
-    const { width, height } = embeddedPage;
-    const page = pdf.addPage([width, height]);
-    page.drawPage(embeddedPage);
-  }
+  // Copy all pages from source
+  const pageIndices = srcPdf.getPageIndices();
+  const copiedPages = await pdf.copyPages(srcPdf, pageIndices);
+  copiedPages.forEach(page => pdf.addPage(page));
 
   const pages = pdf.getPages();
   const fontSize = 9;
