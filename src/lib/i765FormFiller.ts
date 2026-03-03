@@ -504,11 +504,11 @@ export async function fillI765Pdf(data: I765Data) {
   try {
     for (const bf of barcodeFields) {
       // Determine page number from field name
-      const pageMatch = bf.getName().match(/Page\d?\[?(\d+)\]?/i);
-      const pageIdx = pageMatch ? parseInt(pageMatch[1]) : -1;
-      if (pageIdx >= 0 && pageIdx < 7) {
-        const barcodeData = buildPageData(pageIdx + 1, data);
-        console.log(`[i765] Setting barcode for page ${pageIdx + 1}: ${barcodeData.substring(0, 50)}...`);
+      const pageMatch = bf.getName().match(/Page(\d+)/i);
+      const pageNumber = pageMatch ? parseInt(pageMatch[1], 10) : -1;
+      if (pageNumber >= 1 && pageNumber <= 7) {
+        const barcodeData = buildPageData(pageNumber, data);
+        console.log(`[i765] Setting barcode for page ${pageNumber}: ${barcodeData.substring(0, 50)}...`);
         try {
           // PDFTextField2 doesn't have setText — set value directly via dictionary
           // Use PDFHexString to avoid WinAnsi encoding issues with control chars
