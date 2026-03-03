@@ -79,7 +79,7 @@ export function generateI765Pdf(data: I765Data, firmName?: string) {
   // ─── Part 2: Personal ───
   sectionHeader("PART 2 — Personal Information");
   fieldRow("Full Name", `${data.lastName}, ${data.firstName} ${data.middleName}`.trim());
-  if (data.otherLastName || data.otherFirstName) fieldRow("Other Names", `${data.otherLastName} ${data.otherFirstName}`.trim());
+  if (data.otherNames?.length) data.otherNames.forEach((n, i) => fieldRow(`Other Name ${i + 1}`, `${n.lastName} ${n.firstName} ${n.middleName}`.trim()));
   fieldRow("A-Number", data.aNumber);
   fieldRow("USCIS Account #", data.uscisAccountNumber);
   fieldRow("SSN", data.ssn);

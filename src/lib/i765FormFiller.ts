@@ -219,8 +219,9 @@ export async function fillI765Pdf(data: I765Data) {
   setText(form, P.line1a_family, data.lastName);
   setText(form, P.line1b_given, data.firstName);
   setText(form, P.line1c_middle, data.middleName);
-  setText(form, P.line2a_family, data.otherLastName);
-  setText(form, P.line2b_given, data.otherFirstName);
+  setText(form, P.line2a_family, data.otherNames?.[0]?.lastName);
+  setText(form, P.line2b_given, data.otherNames?.[0]?.firstName);
+  setText(form, P.line2c_middle, data.otherNames?.[0]?.middleName);
 
   // A-Number & USCIS Account
   setText(form, P.line7_alien, data.aNumber?.replace(/^A-?/i, ""));
