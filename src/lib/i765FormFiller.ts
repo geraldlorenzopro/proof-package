@@ -19,12 +19,14 @@ function findField(form: PDFForm, pattern: RegExp) {
   return null;
 }
 
-/** Set a text field value by regex pattern */
+/** Set a text field value by regex pattern, respecting maxLength */
 function setText(form: PDFForm, pattern: RegExp, value: string | undefined | null) {
   if (!value) return;
   const field = findField(form, pattern);
   if (field && field instanceof PDFTextField) {
-    field.setText(value);
+    const maxLen = field.getMaxLength();
+    const safeValue = maxLen !== undefined ? value.slice(0, maxLen) : value;
+    field.setText(safeValue);
   }
 }
 
