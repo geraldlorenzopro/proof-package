@@ -9,7 +9,7 @@ const I765_PDF_URL = "/forms/i-765.pdf";
  */
 export async function discoverI765Fields() {
   const pdfBytes = await fetch(I765_PDF_URL).then(r => r.arrayBuffer());
-  const pdf = await PDFDocument.load(pdfBytes);
+  const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const form = pdf.getForm();
   const fields = form.getFields();
   console.table(fields.map(f => ({
@@ -26,7 +26,7 @@ export async function discoverI765Fields() {
  */
 export async function fillI765Pdf(data: I765Data) {
   const pdfBytes = await fetch(I765_PDF_URL).then(r => r.arrayBuffer());
-  const pdf = await PDFDocument.load(pdfBytes);
+  const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const form = pdf.getForm();
 
   // Helper: safely set text field
