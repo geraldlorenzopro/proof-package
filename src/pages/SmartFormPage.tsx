@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FileText, ArrowLeft, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,9 +10,12 @@ import { generateI765Pdf } from "@/lib/i765PdfGenerator";
 
 export default function SmartFormPage() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isNew = !id || id === "new";
+
   const [lang, setLang] = useState<"en" | "es">("es");
   const [saving, setSaving] = useState(false);
-  const [submissionId, setSubmissionId] = useState<string | null>(null);
+  const [submissionId, setSubmissionId] = useState<string | null>(isNew ? null : id!);
   const [initialData, setInitialData] = useState<Partial<I765Data>>({});
   const [firmName, setFirmName] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -30,27 +33,25 @@ export default function SmartFormPage() {
         .maybeSingle();
       if (profile?.firm_name) setFirmName(profile.firm_name);
 
-      // Check for existing draft (most recent)
-      const accountId = await getAccountId(session.user.id);
-      if (accountId) {
-        const { data: draft } = await supabase
+      // If editing existing submission, load it
+      if (!isNew && id) {
+        const { data: sub, error } = await supabase
           .from("form_submissions")
           .select("id, form_data")
-          .eq("account_id", accountId)
-          .eq("form_type", "i-765")
-          .eq("status", "draft")
-          .order("updated_at", { ascending: false })
-          .limit(1)
+          .eq("id", id)
           .maybeSingle();
-        if (draft) {
-          setSubmissionId(draft.id);
-          setInitialData(draft.form_data as Partial<I765Data>);
+        if (error || !sub) {
+          toast({ title: "Error", description: "Formulario no encontrado", variant: "destructive" });
+          navigate("/dashboard/smart-forms");
+          return;
         }
+        setSubmissionId(sub.id);
+        setInitialData(sub.form_data as Partial<I765Data>);
       }
       setLoaded(true);
     };
     init();
-  }, [navigate]);
+  }, [navigate, id, isNew]);
 
   const getAccountId = async (userId: string): Promise<string | null> => {
     const { data } = await supabase.rpc("user_account_id", { _user_id: userId });
@@ -77,7 +78,7 @@ export default function SmartFormPage() {
         client_email: formData.applicantEmail || null,
       };
 
-      if (submissionId) {
+      if (submissionId && !isNew) {
         const { error } = await supabase
           .from("form_submissions")
           .update(payload)
@@ -90,7 +91,11 @@ export default function SmartFormPage() {
           .select("id")
           .single();
         if (error) throw error;
-        if (inserted) setSubmissionId(inserted.id);
+        if (inserted) {
+          setSubmissionId(inserted.id);
+          // Replace URL so subsequent saves update rather than insert
+          window.history.replaceState(null, "", `/dashboard/smart-forms/${inserted.id}`);
+        }
       }
 
       if (status === "completed") {
@@ -118,13 +123,14 @@ export default function SmartFormPage() {
       <div className="border-b border-border/40 bg-card/50">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/smart-forms")} className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-accent" />
               <h1 className="text-lg font-bold">NER Smart Forms</h1>
               <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full font-medium">I-765</span>
+              {!isNew && <span className="text-xs text-muted-foreground">· Editando</span>}
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={() => setLang(l => l === "es" ? "en" : "es")} className="gap-1.5 text-xs">
