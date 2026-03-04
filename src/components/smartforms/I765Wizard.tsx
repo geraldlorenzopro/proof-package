@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, Search, User, CheckCircle2 } from "lucide-react";
@@ -136,6 +136,10 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const [clientProfiles, setClientProfiles] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(initialBeneficiaryId || null);
   const [clientSearch, setClientSearch] = useState("");
+  const [clientCount, setClientCount] = useState(0);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [accountIdRef, setAccountIdRef] = useState<string | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const t = useCallback((en: string, es: string) => lang === "es" ? es : en, [lang]);
 
@@ -148,15 +152,22 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       setProfileData(prof);
       setProfileLoaded(true);
 
-      // Load client profiles for this account
+      // Load client profiles for this account (initial batch + count)
       const { data: accountId } = await supabase.rpc("user_account_id", { _user_id: user.id });
       if (accountId) {
+        setAccountIdRef(accountId);
+        const { count } = await supabase
+          .from("client_profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("account_id", accountId);
+        setClientCount(count || 0);
+
         const { data: clients } = await supabase
           .from("client_profiles")
           .select("id, first_name, last_name, middle_name, email, phone, mobile_phone, dob, gender, marital_status, a_number, ssn_last4, country_of_birth, city_of_birth, province_of_birth, country_of_citizenship, address_street, address_apt, address_city, address_state, address_zip, mailing_street, mailing_apt, mailing_city, mailing_state, mailing_zip, mailing_same_as_physical, i94_number, passport_number, passport_country, passport_expiration, class_of_admission, immigration_status, place_of_last_entry, date_of_last_entry")
           .eq("account_id", accountId)
           .order("last_name", { ascending: true })
-          .limit(3000);
+          .limit(50);
         if (clients) setClientProfiles(clients);
       }
     };
@@ -243,14 +254,32 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const next = () => stepIdx < visibleSteps.length - 1 && setStepIdx(stepIdx + 1);
   const prev = () => stepIdx > 0 && setStepIdx(stepIdx - 1);
 
-  // Filtered client list
-  const filteredClients = useMemo(() => {
-    if (!clientSearch.trim()) return clientProfiles;
-    const q = clientSearch.toLowerCase();
-    return clientProfiles.filter(c =>
-      `${c.first_name || ""} ${c.last_name || ""} ${c.email || ""}`.toLowerCase().includes(q)
-    );
-  }, [clientProfiles, clientSearch]);
+  // Server-side search when typing
+  useEffect(() => {
+    if (!accountIdRef) return;
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      const q = clientSearch.trim().toLowerCase();
+      let query = supabase
+        .from("client_profiles")
+        .select("id, first_name, last_name, middle_name, email, phone, mobile_phone, dob, gender, marital_status, a_number, ssn_last4, country_of_birth, city_of_birth, province_of_birth, country_of_citizenship, address_street, address_apt, address_city, address_state, address_zip, mailing_street, mailing_apt, mailing_city, mailing_state, mailing_zip, mailing_same_as_physical, i94_number, passport_number, passport_country, passport_expiration, class_of_admission, immigration_status, place_of_last_entry, date_of_last_entry")
+        .eq("account_id", accountIdRef)
+        .order("last_name", { ascending: true })
+        .limit(50);
+
+      if (q) {
+        query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`);
+      }
+
+      const { data: clients } = await query;
+      if (clients) setClientProfiles(clients);
+      setSearchLoading(false);
+    }, 300);
+
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
+  }, [clientSearch, accountIdRef]);
 
   // Auto-fill from selected client profile (beneficiary)
   const selectClient = (clientId: string) => {
@@ -363,23 +392,30 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               {t("Beneficiary (Applicant)", "Beneficiario (Aplicante)")}
             </p>
             <p className="text-xs text-muted-foreground">{t("The person applying for the work permit", "La persona que solicita el permiso de trabajo")}</p>
-            {clientProfiles.length > 0 ? (
+            {(clientProfiles.length > 0 || clientCount > 0) ? (
               <>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
                     className="bg-secondary/60 border-border/50 pl-8 text-sm"
-                    placeholder={t("Search...", "Buscar...")}
+                    placeholder={t(`Search ${clientCount.toLocaleString()} contacts...`, `Buscar en ${clientCount.toLocaleString()} contactos...`)}
                     value={clientSearch}
                     onChange={e => setClientSearch(e.target.value)}
                   />
+                  {searchLoading && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="w-3.5 h-3.5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                    </div>
+                  )}
                 </div>
                 <div className="max-h-52 overflow-y-auto rounded-lg border border-border/20 divide-y divide-border/10">
-                  {filteredClients.length === 0 ? (
-                    <p className="text-xs text-muted-foreground p-3 text-center">{t("No results", "Sin resultados")}</p>
+                  {clientProfiles.length === 0 ? (
+                    <p className="text-xs text-muted-foreground p-3 text-center">
+                      {searchLoading ? t("Searching...", "Buscando...") : t("No results — try a different search", "Sin resultados — intenta otra búsqueda")}
+                    </p>
                   ) : (
                     <>
-                      {filteredClients.slice(0, 50).map(c => (
+                      {clientProfiles.map(c => (
                         <button
                           key={c.id}
                           type="button"
@@ -393,12 +429,13 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                           <span className="flex-1 truncate font-medium">
                             {c.last_name || ""}{c.last_name && c.first_name ? ", " : ""}{c.first_name || ""}
                           </span>
+                          <span className="text-xs text-muted-foreground truncate max-w-[120px]">{c.email || ""}</span>
                           {selectedClientId === c.id && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
                         </button>
                       ))}
-                      {filteredClients.length > 50 && (
+                      {clientProfiles.length >= 50 && (
                         <p className="text-xs text-muted-foreground p-2 text-center">
-                          {t(`Showing 50 of ${filteredClients.length} — type to filter`, `Mostrando 50 de ${filteredClients.length} — escribe para filtrar`)}
+                          {t(`Showing first 50 of ${clientCount.toLocaleString()} — type to narrow results`, `Mostrando primeros 50 de ${clientCount.toLocaleString()} — escribe para filtrar`)}
                         </p>
                       )}
                     </>
