@@ -171,21 +171,23 @@ function TopNavBar() {
 
       {/* Wizard progress bar + step label */}
       {wizardNav && (
-        <div className="px-3 pb-2 space-y-1">
+        <div className="px-4 pb-3 pt-1 space-y-1.5">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] text-muted-foreground">
-              <span className="font-bold text-accent">{wizardNav.currentStep + 1}</span>
-              <span className="text-border mx-1">/</span>
-              <span>{wizardNav.steps.length}</span>
-              <span className="mx-1.5">·</span>
-              <span>{I765_STEP_LABELS[wizardNav.steps[wizardNav.currentStep]][lang]}</span>
+            <p className="text-sm text-foreground">
+              <span className="font-bold text-accent text-base">{wizardNav.currentStep + 1}</span>
+              <span className="text-muted-foreground mx-1.5">/</span>
+              <span className="text-muted-foreground">{wizardNav.steps.length}</span>
+              <span className="mx-2 text-border">·</span>
+              <span className="font-medium">{I765_STEP_LABELS[wizardNav.steps[wizardNav.currentStep]][lang]}</span>
             </p>
-            <p className="text-[10px] text-muted-foreground">{Math.round(((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100)}%</p>
+            <span className="text-xs font-semibold text-accent">{Math.round(((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100)}%</span>
           </div>
-          <Progress
-            value={((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100}
-            className="h-1"
-          />
+          <div className="relative h-2.5 w-full rounded-full bg-secondary overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-accent to-accent/70 transition-all duration-500 ease-out"
+              style={{ width: `${((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100}%` }}
+            />
+          </div>
         </div>
       )}
     </header>
