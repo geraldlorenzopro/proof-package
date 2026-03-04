@@ -878,7 +878,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-border/40 px-4 md:px-6 py-3 gap-3 bg-card/80 backdrop-blur-sm shrink-0">
+      <div className="flex items-center justify-between border-t border-border/40 px-4 md:px-6 py-3 gap-3 bg-card/80 backdrop-blur-sm shrink-0 sticky bottom-0 z-20">
         <Button variant="outline" onClick={prev} disabled={stepIdx === 0} className="gap-2">
           <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
         </Button>
