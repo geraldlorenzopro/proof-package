@@ -145,9 +145,10 @@ function fmtDate(d: string | undefined | null): string {
 
 const P = {
   // Page 1 — Header (Attorney/Rep block)
-  g28_checkbox: /Page1\[0\]\.Pt1Checkbox_G28\[0\]/,
-  atty_bar_number: /Page1\[0\]\.AttyBarNumber\[0\]/,
-  atty_uscis_account: /Page1\[0\]\.AttyUscisAccount\[0\]/,
+  // Actual field names from XFA conversion use "Attorney-Rep" prefix
+  g28_checkbox: /Page1\[0\]\.Attorney-Rep\[0\]\.CheckBox1\[0\]/,
+  atty_bar_number: /Page1\[0\]\.Attorney-Rep\[0\]\.attorneyBarNumber\[0\]/,
+  atty_uscis_account: /Page1\[0\]\.Attorney-Rep\[0\]\.USCISELISAcctNumber\[0\]/,
 
   // Page 1 — Part 1 & Part 2 names
   line1a_family: /Page1\[0\]\.Line1a_FamilyName\[0\]/,
@@ -159,37 +160,37 @@ const P = {
   line2a_family: /Page1\[0\]\.Line2a_FamilyName\[0\]/,
   line2b_given: /Page1\[0\]\.Line2b_GivenName\[0\]/,
   line2c_middle: /Page1\[0\]\.Line2c_MiddleName\[0\]/,
-  // Other Names — second entry (Line 3, index [0])
-  line3a_family_0: /Page1\[0\]\.Line3a_FamilyName\[0\]/,
-  line3b_given_0: /Page1\[0\]\.Line3b_GivenName\[0\]/,
-  line3c_middle_0: /Page1\[0\]\.Line3c_MiddleName\[0\]/,
-  // Other Names — third entry (Line 3, index [1])
-  line3a_family_1: /Page1\[0\]\.Line3a_FamilyName\[1\]/,
-  line3b_given_1: /Page1\[0\]\.Line3b_GivenName\[1\]/,
-  line3c_middle_1: /Page1\[0\]\.Line3c_MiddleName\[1\]/,
+  // Other Names — XFA indices are SWAPPED: [1]=item 3, [0]=item 4
+  line3a_family_item3: /Page1\[0\]\.Line3a_FamilyName\[1\]/,
+  line3b_given_item3: /Page1\[0\]\.Line3b_GivenName\[1\]/,
+  line3c_middle_item3: /Page1\[0\]\.Line3c_MiddleName\[1\]/,
+  line3a_family_item4: /Page1\[0\]\.Line3a_FamilyName\[0\]/,
+  line3b_given_item4: /Page1\[0\]\.Line3b_GivenName\[0\]/,
+  line3c_middle_item4: /Page1\[0\]\.Line3c_MiddleName\[0\]/,
 
   // Page 2 — Mailing address (Pt2Line5 = mailing)
   line4a_careof: /Page2\[0\]\.Line4a_InCareofName\[0\]/,
   line4b_street: /Page2\[0\]\.Line4b_StreetNumberName\[0\]/,
   pt2l5_apt: /Page2\[0\]\.Pt2Line5_AptSteFlrNumber\[0\]/,
-  // Unit type checkboxes: [0]=Apt, [1]=Ste, [2]=Flr (matches USCIS order)
-  pt2l5_unit_apt: /Page2\[0\]\.Pt2Line5_Unit\[0\]/,
-  pt2l5_unit_ste: /Page2\[0\]\.Pt2Line5_Unit\[1\]/,
-  pt2l5_unit_flr: /Page2\[0\]\.Pt2Line5_Unit\[2\]/,
+  // Unit type checkboxes: XFA indices are shifted — [0]=Ste, [1]=Flr, [2]=Apt
+  pt2l5_unit_ste: /Page2\[0\]\.Pt2Line5_Unit\[0\]/,
+  pt2l5_unit_flr: /Page2\[0\]\.Pt2Line5_Unit\[1\]/,
+  pt2l5_unit_apt: /Page2\[0\]\.Pt2Line5_Unit\[2\]/,
   pt2l5_city: /Page2\[0\]\.Pt2Line5_CityOrTown\[0\]/,
   pt2l5_state: /Page2\[0\]\.Pt2Line5_State\[0\]/,
   pt2l5_zip: /Page2\[0\]\.Pt2Line5_ZipCode\[0\]/,
 
-  // Same address checkbox
-  pt2l5_same_yes: /Page2\[0\]\.Part2Line5_Checkbox\[0\]/,
-  pt2l5_same_no: /Page2\[0\]\.Part2Line5_Checkbox\[1\]/,
+  // Same address checkbox: XFA swapped — [0]=No, [1]=Yes
+  pt2l5_same_no: /Page2\[0\]\.Part2Line5_Checkbox\[0\]/,
+  pt2l5_same_yes: /Page2\[0\]\.Part2Line5_Checkbox\[1\]/,
 
   // Physical address (Pt2Line7 = physical)
   pt2l7_street: /Page2\[0\]\.Pt2Line7_StreetNumberName\[0\]/,
   pt2l7_apt: /Page2\[0\]\.Pt2Line7_AptSteFlrNumber\[0\]/,
-  pt2l7_unit_apt: /Page2\[0\]\.Pt2Line7_Unit\[0\]/,
-  pt2l7_unit_ste: /Page2\[0\]\.Pt2Line7_Unit\[1\]/,
-  pt2l7_unit_flr: /Page2\[0\]\.Pt2Line7_Unit\[2\]/,
+  // XFA shifted: [0]=Ste, [1]=Flr, [2]=Apt
+  pt2l7_unit_ste: /Page2\[0\]\.Pt2Line7_Unit\[0\]/,
+  pt2l7_unit_flr: /Page2\[0\]\.Pt2Line7_Unit\[1\]/,
+  pt2l7_unit_apt: /Page2\[0\]\.Pt2Line7_Unit\[2\]/,
   pt2l7_city: /Page2\[0\]\.Pt2Line7_CityOrTown\[0\]/,
   pt2l7_state: /Page2\[0\]\.Pt2Line7_State\[0\]/,
   pt2l7_zip: /Page2\[0\]\.Pt2Line7_ZipCode\[0\]/,
@@ -199,19 +200,19 @@ const P = {
   line8_elis: /Page2\[0\]\.Line8_ElisAccountNumber\[0\]/,
   line12b_ssn: /Page2\[0\]\.Line12b_SSN\[0\]/,
 
-  // Sex
-  line9_male: /Page2\[0\]\.Line9_Checkbox\[0\]/,
-  line9_female: /Page2\[0\]\.Line9_Checkbox\[1\]/,
+  // Sex: XFA swapped — [0]=Female, [1]=Male
+  line9_female: /Page2\[0\]\.Line9_Checkbox\[0\]/,
+  line9_male: /Page2\[0\]\.Line9_Checkbox\[1\]/,
 
-  // Marital status
-  line10_single: /Page2\[0\]\.Line10_Checkbox\[0\]/,
-  line10_married: /Page2\[0\]\.Line10_Checkbox\[1\]/,
-  line10_divorced: /Page2\[0\]\.Line10_Checkbox\[2\]/,
-  line10_widowed: /Page2\[0\]\.Line10_Checkbox\[3\]/,
+  // Marital status: XFA reversed — [0]=Widowed, [1]=Divorced, [2]=Married, [3]=Single
+  line10_widowed: /Page2\[0\]\.Line10_Checkbox\[0\]/,
+  line10_divorced: /Page2\[0\]\.Line10_Checkbox\[1\]/,
+  line10_married: /Page2\[0\]\.Line10_Checkbox\[2\]/,
+  line10_single: /Page2\[0\]\.Line10_Checkbox\[3\]/,
 
-  // Previously filed
-  line19_yes: /Page2\[0\]\.Line19_Checkbox\[0\]/,
-  line19_no: /Page2\[0\]\.Line19_Checkbox\[1\]/,
+  // Previously filed: XFA swapped — [0]=No, [1]=Yes
+  line19_no: /Page2\[0\]\.Line19_Checkbox\[0\]/,
+  line19_yes: /Page2\[0\]\.Line19_Checkbox\[1\]/,
 
   // Country of citizenship
   line17a_country1: /Page2\[0\]\.Line17a_CountryOfBirth\[0\]/,
@@ -248,8 +249,9 @@ const P = {
   line30b_no: /Page3\[0\]\.PtLine30b_YesNo\[1\]/,
 
   // Page 4 — Part 3: Applicant Statement
-  pt3_reads_english: /Page4\[0\]\.Pt3Line1Checkbox\[0\]/,
-  pt3_interpreter: /Page4\[0\]\.Pt3Line1Checkbox\[1\]/,
+  // XFA swapped: [0]=interpreter(1.b), [1]=reads_english(1.a)
+  pt3_interpreter: /Page4\[0\]\.Pt3Line1Checkbox\[0\]/,
+  pt3_reads_english: /Page4\[0\]\.Pt3Line1Checkbox\[1\]/,
   pt3_language: /Page4\[0\]\.Pt3Line1b_Language\[0\]/,
   pt3_preparer: /Page4\[0\]\.Part3_Checkbox\[0\]/,
   pt3_phone: /Page4\[0\]\.Pt3Line3_DaytimePhoneNumber1\[0\]/,
@@ -260,16 +262,22 @@ const P = {
   pt4_family: /Page4\[0\]\.Pt4Line1a_InterpreterFamilyName\[0\]/,
   pt4_given: /Page4\[0\]\.Pt4Line1b_InterpreterGivenName\[0\]/,
   pt4_org: /Page4\[0\]\.Pt4Line2_InterpreterBusinessorOrg\[0\]/,
-  pt4_street: /Page4\[0\]\.Pt4Line3a_StreetNumberName\[0\]/,
-  pt4_apt: /Page4\[0\]\.Pt4Line3b_AptSteFlrNumber\[0\]/,
-  pt4_city: /Page4\[0\]\.Pt4Line3c_CityOrTown\[0\]/,
-  pt4_state: /Page4\[0\]\.Pt4Line3d_State\[0\]/,
-  pt4_zip: /Page4\[0\]\.Pt4Line3e_ZipCode\[0\]/,
+  // Interpreter address uses Pt6Line3* fields on Page 5 (XFA naming quirk)
+  pt4_street: /Page5\[0\]\.Pt6Line3a_StreetNumberName\[0\]/,
+  pt4_apt: /Page5\[0\]\.Pt6Line3b_AptSteFlrNumber\[0\]/,
+  pt4_unit_apt: /Page5\[0\]\.Pt6Line3b_Unit\[2\]/,
+  pt4_unit_ste: /Page5\[0\]\.Pt6Line3b_Unit\[0\]/,
+  pt4_unit_flr: /Page5\[0\]\.Pt6Line3b_Unit\[1\]/,
+  pt4_city: /Page5\[0\]\.Pt6Line3c_CityOrTown\[0\]/,
+  pt4_state: /Page5\[0\]\.Pt6Line3d_State\[0\]/,
+  pt4_zip: /Page5\[0\]\.Pt6Line3e_ZipCode\[0\]/,
   pt4_phone: /Page5\[0\]\.Pt4Line4_InterpreterDaytimeTelephone\[0\]/,
   pt4_mobile: /Page5\[0\]\.Pt4Line5_MobileNumber\[0\]/,
   pt4_email: /Page5\[0\]\.Pt4Line6_Email\[0\]/,
   pt4_language: /Page5\[0\]\.Part4_NameofLanguage\[0\]/,
-  pt4_province: /Page5\[0\]\.Pt4Line3f_Province\[0\]/,
+  pt4_province: /Page5\[0\]\.Pt6Line3f_Province\[0\]/,
+  pt4_postal: /Page5\[0\]\.Pt6Line3g_PostalCode\[0\]/,
+  pt4_country: /Page5\[0\]\.Pt6Line3h_Country\[0\]/,
 
   // Part 5: Preparer (Page 5-6)
   pt5_family: /Page5\[0\]\.Pt5Line1a_PreparerFamilyName\[0\]/,
@@ -277,6 +285,9 @@ const P = {
   pt5_org: /Page5\[0\]\.Pt5Line2_BusinessName\[0\]/,
   pt5_street: /Page5\[0\]\.Pt5Line3a_StreetNumberName\[0\]/,
   pt5_apt: /Page5\[0\]\.Pt5Line3b_AptSteFlrNumber\[0\]/,
+  pt5_unit_apt: /Page5\[0\]\.Pt5Line3b_Unit\[2\]/,
+  pt5_unit_ste: /Page5\[0\]\.Pt5Line3b_Unit\[0\]/,
+  pt5_unit_flr: /Page5\[0\]\.Pt5Line3b_Unit\[1\]/,
   pt5_city: /Page5\[0\]\.Pt5Line3c_CityOrTown\[0\]/,
   pt5_state: /Page5\[0\]\.Pt5Line3d_State\[0\]/,
   pt5_zip: /Page5\[0\]\.Pt5Line3e_ZipCode\[0\]/,
@@ -286,10 +297,12 @@ const P = {
   pt5_phone: /Page5\[0\]\.Pt5Line4_DaytimePhoneNumber1\[0\]/,
   pt5_fax: /Page5\[0\]\.Pt5Line5_PreparerFaxNumber\[0\]/,
   pt5_email: /Page5\[0\]\.Pt5Line6_Email\[0\]/,
-  pt5_is_attorney: /Page6\[0\]\.Part5Line7_Checkbox\[0\]/,
-  pt5_not_attorney: /Page6\[0\]\.Part5Line7_Checkbox\[1\]/,
-  pt5_rep_extends: /Page6\[0\]\.Part5Line7b_Checkbox\[0\]/,
-  pt5_rep_no: /Page6\[0\]\.Part5Line7b_Checkbox\[1\]/,
+  // XFA swapped: [0]=not attorney(7.a), [1]=is attorney(7.b)
+  pt5_not_attorney: /Page6\[0\]\.Part5Line7_Checkbox\[0\]/,
+  pt5_is_attorney: /Page6\[0\]\.Part5Line7_Checkbox\[1\]/,
+  // XFA swapped: [0]=does not extend, [1]=extends
+  pt5_rep_no: /Page6\[0\]\.Part5Line7b_Checkbox\[0\]/,
+  pt5_rep_extends: /Page6\[0\]\.Part5Line7b_Checkbox\[1\]/,
 };
 
 // ─── Clear all fields before filling ────────────────────────────
@@ -346,14 +359,14 @@ export async function fillI765Pdf(data: I765Data) {
   setText(form, P.line2a_family, data.otherNames?.[0]?.lastName);
   setText(form, P.line2b_given, data.otherNames?.[0]?.firstName);
   setText(form, P.line2c_middle, data.otherNames?.[0]?.middleName);
-  // Other Names — second entry
-  setText(form, P.line3a_family_0, data.otherNames?.[1]?.lastName);
-  setText(form, P.line3b_given_0, data.otherNames?.[1]?.firstName);
-  setText(form, P.line3c_middle_0, data.otherNames?.[1]?.middleName);
-  // Other Names — third entry
-  setText(form, P.line3a_family_1, data.otherNames?.[2]?.lastName);
-  setText(form, P.line3b_given_1, data.otherNames?.[2]?.firstName);
-  setText(form, P.line3c_middle_1, data.otherNames?.[2]?.middleName);
+  // Other Names — second entry (item 3)
+  setText(form, P.line3a_family_item3, data.otherNames?.[1]?.lastName);
+  setText(form, P.line3b_given_item3, data.otherNames?.[1]?.firstName);
+  setText(form, P.line3c_middle_item3, data.otherNames?.[1]?.middleName);
+  // Other Names — third entry (item 4)
+  setText(form, P.line3a_family_item4, data.otherNames?.[2]?.lastName);
+  setText(form, P.line3b_given_item4, data.otherNames?.[2]?.firstName);
+  setText(form, P.line3c_middle_item4, data.otherNames?.[2]?.middleName);
 
   // A-Number & USCIS Account
   setText(form, P.line7_alien, data.aNumber?.replace(/^A-?/i, ""));
