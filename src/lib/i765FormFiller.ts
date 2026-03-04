@@ -236,6 +236,7 @@ const P = {
   place_entry: /Page3\[0\]\.place_entry\[0\]/,
   line23_status: /Page3\[0\]\.Line23_StatusLastEntry\[0\]/,
   line24_current: /Page3\[0\]\.Line24_CurrentStatus\[0\]/,
+  line26_sevis: /Page3\[0\]\.Line26_SevisNumber\[0\]/,
 
   // Eligibility category (sections in #area)
   section_1: /Page3\[0\]\.#area\[1\]\.section_1\[0\]/,
@@ -478,6 +479,7 @@ export async function fillI765Pdf(data: I765Data) {
   setText(form, P.place_entry, data.lastArrivalPlace);
   setText(form, P.line23_status, data.statusAtArrival);
   setText(form, P.line24_current, data.currentStatus);
+  setText(form, P.line26_sevis, data.sevisNumber);
 
   // ── Eligibility Category ──
   // Parse eligibility category like "(c)(8)" or "(c)(17)(iii)" into parts

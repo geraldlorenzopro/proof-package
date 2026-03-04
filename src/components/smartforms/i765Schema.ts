@@ -66,6 +66,7 @@ export interface I765Data {
   lastArrivalPlace: string;
   statusAtArrival: string;
   currentStatus: string;
+  sevisNumber: string;
 
   // Eligibility
   eligibilityCategory: string;
@@ -145,7 +146,7 @@ export const defaultI765Data: I765Data = {
   cityOfBirth: "", stateOfBirth: "", countryOfBirth: "", dateOfBirth: "",
   i94Number: "", passportNumber: "", travelDocNumber: "",
   passportCountry: "", passportExpiration: "",
-  lastArrivalDate: "", lastArrivalPlace: "", statusAtArrival: "", currentStatus: "",
+  lastArrivalDate: "", lastArrivalPlace: "", statusAtArrival: "", currentStatus: "", sevisNumber: "",
   eligibilityCategory: "", eligibilityCategorySpecific: "",
   h1bReceiptNumber: "",
   c8EverArrested: null,
