@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, Search, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -848,14 +849,21 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     <div className="flex-1 flex flex-col min-h-0">
       <div className="flex-1 overflow-auto p-4 md:p-6 md:py-8">
         <div className="max-w-2xl w-full mx-auto">
-          <button
-            type="button"
-            onClick={() => navigate("/dashboard/smart-forms")}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-            {t("Back to forms panel", "Volver al panel de formularios")}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => navigate("/dashboard/smart-forms")}
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                {t("Back to forms panel", "Volver al panel de formularios")}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {t("Make sure to save your draft before leaving", "Asegúrate de guardar el borrador antes de salir")}
+            </TooltipContent>
+          </Tooltip>
           {stepRenderers[step]()}
         </div>
       </div>
