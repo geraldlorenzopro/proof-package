@@ -85,9 +85,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const validPlans = ["essential", "professional", "elite"];
+    const validPlans = ["essential", "professional", "elite", "enterprise"];
     const selectedPlan = validPlans.includes(plan) ? plan : "essential";
-    const maxUsersMap: Record<string, number> = { essential: 1, professional: 3, elite: 10 };
+    const maxUsersMap: Record<string, number> = { essential: 1, professional: 3, elite: 5, enterprise: 50 };
 
     // supabaseAdmin already created above
 
@@ -171,13 +171,15 @@ Deno.serve(async (req) => {
         essential: ["evidence"],
         professional: ["evidence", "cspa"],
         elite: apps.map((a) => a.slug),
+        enterprise: apps.map((a) => a.slug),
       };
 
       // Seat limits per plan per tool (0 = unlimited)
       const planSeats: Record<string, Record<string, number>> = {
         essential: { evidence: 1, cspa: 1, "smart-forms": 1, vawa: 1 },
         professional: { evidence: 3, cspa: 3, "smart-forms": 3, vawa: 3 },
-        elite: { evidence: 0, cspa: 0, "smart-forms": 0, vawa: 0 }, // unlimited
+        elite: { evidence: 5, cspa: 5, "smart-forms": 5, vawa: 5 },
+        enterprise: { evidence: 0, cspa: 0, "smart-forms": 0, vawa: 0 }, // custom / unlimited
       };
 
       const allowedSlugs = planApps[selectedPlan] || ["evidence"];
