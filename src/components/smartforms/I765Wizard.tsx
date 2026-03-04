@@ -840,14 +840,14 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const isLast = stepIdx === visibleSteps.length - 1;
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
-      <div className="flex-1 overflow-auto p-4 md:p-6 md:py-12 flex items-start justify-center">
-        <div className="max-w-2xl w-full my-auto">
+    <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 overflow-auto p-4 md:p-6 md:py-8">
+        <div className="max-w-2xl w-full mx-auto">
           {stepRenderers[step]()}
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-border/40 px-4 md:px-6 py-4 gap-3 bg-card/50">
+      <div className="flex items-center justify-between border-t border-border/40 px-4 md:px-6 py-3 gap-3 bg-card/80 backdrop-blur-sm shrink-0">
         <Button variant="outline" onClick={prev} disabled={stepIdx === 0} className="gap-2">
           <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
         </Button>
