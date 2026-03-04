@@ -353,7 +353,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     ];
 
     return (
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div className="text-center space-y-1.5">
           <h3 className="text-xl font-bold text-accent">{t("Set up this case", "Configura este caso")}</h3>
           <p className="text-sm text-muted-foreground">{t("Quick setup before starting the questionnaire", "Configuración rápida antes de iniciar el cuestionario")}</p>
@@ -396,30 +396,54 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           </p>
         )}
 
-        {/* Language + send to client */}
-        <div className="rounded-xl border border-border/30 p-4 space-y-4">
-          <p className="text-sm font-bold text-foreground">{t("Language", "Idioma")}</p>
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-2.5">
-              <Checkbox checked={data.applicantCanReadEnglish} onCheckedChange={v => { set("applicantCanReadEnglish", !!v); if (v) set("interpreterUsed", false); }} id="can-read" />
-              <Label htmlFor="can-read" className="text-sm cursor-pointer">{t("Can read English", "Puede leer inglés")}</Label>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <Checkbox checked={data.interpreterUsed} onCheckedChange={v => { set("interpreterUsed", !!v); if (v) set("applicantCanReadEnglish", false); }} id="interpreter" />
-              <Label htmlFor="interpreter" className="text-sm cursor-pointer">{t("Uses interpreter", "Usa intérprete")}</Label>
+        {/* Language + Send to client — side by side */}
+        <div className="grid md:grid-cols-2 gap-3">
+          {/* Language */}
+          <div className="rounded-xl border border-border/30 p-4 space-y-3">
+            <p className="text-sm font-bold text-foreground flex items-center gap-2">
+              📝 {t("Applicant's Language", "Idioma del Aplicante")}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => { set("applicantCanReadEnglish", true); set("interpreterUsed", false); }}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-all",
+                  data.applicantCanReadEnglish
+                    ? "border-accent bg-accent/10 text-accent font-medium"
+                    : "border-border/30 text-muted-foreground hover:border-border/60"
+                )}
+              >
+                {data.applicantCanReadEnglish && <Check className="w-3.5 h-3.5 shrink-0" />}
+                {t("Reads English", "Lee inglés")}
+              </button>
+              <button
+                type="button"
+                onClick={() => { set("interpreterUsed", true); set("applicantCanReadEnglish", false); }}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-all",
+                  data.interpreterUsed
+                    ? "border-accent bg-accent/10 text-accent font-medium"
+                    : "border-border/30 text-muted-foreground hover:border-border/60"
+                )}
+              >
+                {data.interpreterUsed && <Check className="w-3.5 h-3.5 shrink-0" />}
+                {t("Uses interpreter", "Usa intérprete")}
+              </button>
             </div>
           </div>
 
-          {/* Send to client toggle */}
+          {/* Send to client */}
           {isProfessional && (
-            <div className="border-t border-border/20 pt-3 space-y-2.5">
-              <div className="flex items-center gap-2.5">
-                <Checkbox checked={sendToClient} onCheckedChange={v => setSendToClient(!!v)} id="send-client" />
-                <Label htmlFor="send-client" className="text-sm cursor-pointer font-medium">
-                  {t("Send questionnaire to client?", "¿Enviar cuestionario al cliente?")}
-                </Label>
-              </div>
-              {sendToClient && (
+            <div className="rounded-xl border border-border/30 p-4 space-y-3">
+              <p className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-accent" />
+                {t("Client Questionnaire", "Cuestionario del Cliente")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("Generate a link so the client can fill their info remotely", "Genera un enlace para que el cliente complete sus datos desde su dispositivo")}
+              </p>
+              {sendToClient ? (
                 <ClientLinkSection
                   lang={lang}
                   shareToken={shareToken}
@@ -430,6 +454,16 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                   }}
                   t={t}
                 />
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSendToClient(true)}
+                  className="gap-2 w-full"
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  {t("Generate Client Link", "Generar Enlace para Cliente")}
+                </Button>
               )}
             </div>
           )}
