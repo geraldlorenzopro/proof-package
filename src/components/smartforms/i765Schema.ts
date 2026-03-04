@@ -96,6 +96,7 @@ export interface I765Data {
   interpreterOrg: string;
   interpreterStreet: string;
   interpreterApt: string;
+  interpreterAptType: "apt" | "ste" | "flr" | "";
   interpreterCity: string;
   interpreterState: string;
   interpreterZip: string;
@@ -111,6 +112,7 @@ export interface I765Data {
   preparerOrg: string;
   preparerStreet: string;
   preparerApt: string;
+  preparerAptType: "apt" | "ste" | "flr" | "";
   preparerCity: string;
   preparerState: string;
   preparerZip: string;
@@ -153,12 +155,12 @@ export const defaultI765Data: I765Data = {
   applicantPhone: "", applicantMobile: "", applicantEmail: "",
   interpreterSameAsPreparer: false,
   interpreterLastName: "", interpreterFirstName: "", interpreterOrg: "",
-  interpreterStreet: "", interpreterApt: "", interpreterCity: "",
+  interpreterStreet: "", interpreterApt: "", interpreterAptType: "" as "" | "apt" | "ste" | "flr", interpreterCity: "",
   interpreterState: "", interpreterZip: "",
   interpreterPhone: "", interpreterMobile: "", interpreterEmail: "", interpreterLanguage: "",
   interpreterProvince: "",
   preparerLastName: "", preparerFirstName: "", preparerOrg: "",
-  preparerStreet: "", preparerApt: "", preparerCity: "",
+  preparerStreet: "", preparerApt: "", preparerAptType: "" as "" | "apt" | "ste" | "flr", preparerCity: "",
   preparerState: "", preparerZip: "", preparerProvince: "", preparerPostalCode: "",
   preparerCountry: "", preparerPhone: "", preparerMobile: "", preparerEmail: "",
   preparerIsAttorney: false, preparerRepExtends: false,

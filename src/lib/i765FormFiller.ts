@@ -517,6 +517,10 @@ export async function fillI765Pdf(data: I765Data) {
     setText(form, P.pt4_org, intSame ? data.preparerOrg : data.interpreterOrg);
     setText(form, P.pt4_street, intSame ? data.preparerStreet : data.interpreterStreet);
     setText(form, P.pt4_apt, intSame ? data.preparerApt : data.interpreterApt);
+    const intAptType = intSame ? (data as any).preparerAptType : (data as any).interpreterAptType;
+    setCheck(form, P.pt4_unit_apt, intAptType === "apt");
+    setCheck(form, P.pt4_unit_ste, intAptType === "ste");
+    setCheck(form, P.pt4_unit_flr, intAptType === "flr");
     setText(form, P.pt4_city, intSame ? data.preparerCity : data.interpreterCity);
     setText(form, P.pt4_state, intSame ? data.preparerState : data.interpreterState);
     setText(form, P.pt4_zip, intSame ? data.preparerZip : data.interpreterZip);
@@ -541,6 +545,9 @@ export async function fillI765Pdf(data: I765Data) {
     setText(form, P.pt5_org, data.preparerOrg);
     setText(form, P.pt5_street, data.preparerStreet);
     setText(form, P.pt5_apt, data.preparerApt);
+    setCheck(form, P.pt5_unit_apt, (data as any).preparerAptType === "apt");
+    setCheck(form, P.pt5_unit_ste, (data as any).preparerAptType === "ste");
+    setCheck(form, P.pt5_unit_flr, (data as any).preparerAptType === "flr");
     setText(form, P.pt5_city, data.preparerCity);
     setText(form, P.pt5_state, data.preparerState);
     setText(form, P.pt5_zip, data.preparerZip);
