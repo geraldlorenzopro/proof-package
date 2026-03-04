@@ -947,7 +947,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
           </Button>
           {/* Auto-save status indicator */}
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
             {autoSaveStatus === "saving" && (
               <>
                 <Loader2 className="w-3 h-3 animate-spin text-accent" />
