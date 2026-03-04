@@ -511,21 +511,24 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderStatement = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent">{t("How can we reach you?", "¿Cómo te contactamos?")}</h3>
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Checkbox checked={data.applicantCanReadEnglish} onCheckedChange={v => { set("applicantCanReadEnglish", !!v); if (v) set("interpreterUsed", false); }} id="can-read" />
-          <Label htmlFor="can-read" className="text-sm cursor-pointer">{t("I can read and understand English", "Puedo leer y entender inglés")}</Label>
+      <h3 className="text-lg font-semibold text-accent">{t("Your Contact Info", "Tu Información de Contacto")}</h3>
+      {/* Only show interpreter/preparer checkboxes when NOT professional (config already handles it) */}
+      {!isProfessional && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Checkbox checked={data.applicantCanReadEnglish} onCheckedChange={v => { set("applicantCanReadEnglish", !!v); if (v) set("interpreterUsed", false); }} id="can-read" />
+            <Label htmlFor="can-read" className="text-sm cursor-pointer">{t("I can read and understand English", "Puedo leer y entender inglés")}</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox checked={data.interpreterUsed} onCheckedChange={v => { set("interpreterUsed", !!v); if (v) set("applicantCanReadEnglish", false); }} id="interpreter" />
+            <Label htmlFor="interpreter" className="text-sm cursor-pointer">{t("An interpreter read this application to me", "Un intérprete me leyó esta solicitud")}</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox checked={data.preparerUsed} onCheckedChange={v => set("preparerUsed", !!v)} id="preparer" />
+            <Label htmlFor="preparer" className="text-sm cursor-pointer">{t("A preparer prepared this application for me", "Un preparador preparó esta solicitud para mí")}</Label>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Checkbox checked={data.interpreterUsed} onCheckedChange={v => { set("interpreterUsed", !!v); if (v) set("applicantCanReadEnglish", false); }} id="interpreter" />
-          <Label htmlFor="interpreter" className="text-sm cursor-pointer">{t("An interpreter read this application to me", "Un intérprete me leyó esta solicitud")}</Label>
-        </div>
-        <div className="flex items-center gap-2">
-          <Checkbox checked={data.preparerUsed} onCheckedChange={v => set("preparerUsed", !!v)} id="preparer" />
-          <Label htmlFor="preparer" className="text-sm cursor-pointer">{t("A preparer prepared this application for me", "Un preparador preparó esta solicitud para mí")}</Label>
-        </div>
-      </div>
+      )}
       <p className="text-xs text-muted-foreground font-medium">{t("Contact Information", "Información de Contacto")}</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Daytime Phone", "Teléfono de Día")}><Input className={inputCls} value={data.applicantPhone} onChange={e => set("applicantPhone", e.target.value)} /></Field>
