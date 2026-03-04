@@ -1,4 +1,6 @@
-import { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, PDFForm, PDFName, PDFDict, PDFBool, PDFHexString, PDFString } from "pdf-lib";
+import { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, PDFForm, PDFName, PDFDict, PDFBool, PDFHexString, PDFString, PDFArray, PDFNumber } from "pdf-lib";
+// @ts-ignore - bwip-js has no type declarations
+import bwipjs from "bwip-js";
 import { I765Data, ELIGIBILITY_CATEGORIES } from "@/components/smartforms/i765Schema";
 import { buildPageData } from "@/lib/i765Barcode";
 
@@ -487,8 +489,7 @@ export async function fillI765Pdf(data: I765Data) {
     setCheck(form, P.pt5_rep_no, !data.preparerRepExtends);
   }
 
-  // ── Populate native PDF417 barcode fields with pipe-delimited data ──
-  // Discover all barcode fields first for debugging
+  // ── Generate PDF417 barcode IMAGES and embed them on each page ──
   const allFields = form.getFields();
   const barcodeFields = allFields.filter(f => f.getName().toLowerCase().includes("barcode") || f.getName().includes("PDF417"));
   console.log("[i765] Barcode fields found:", barcodeFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
@@ -502,42 +503,83 @@ export async function fillI765Pdf(data: I765Data) {
   console.log("[i765] SSN fields found:", ssnFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
 
   try {
+    const pages = pdf.getPages();
+
     for (const bf of barcodeFields) {
-      // Barcode field names follow: #pageSet[0].Page1[X].PDF417BarCode1[0]
-      // where X is the 0-based page index (0=page1, 1=page2, ... 6=page7)
       const fieldName = bf.getName();
       const pageIdxMatch = fieldName.match(/Page1\[(\d+)\]\.PDF417/i);
       const pageIndex = pageIdxMatch ? parseInt(pageIdxMatch[1], 10) : -1;
-      const pageNumber = pageIndex + 1; // Convert 0-based to 1-based
-      if (pageNumber >= 1 && pageNumber <= 7) {
+      const pageNumber = pageIndex + 1;
+
+      if (pageNumber >= 1 && pageNumber <= 7 && pageIndex < pages.length) {
         const barcodeData = buildPageData(pageNumber, data);
-        console.log(`[i765] Setting barcode for page ${pageNumber} (field: ${fieldName.substring(0, 60)}): ${barcodeData.substring(0, 80)}...`);
+        console.log(`[i765] Generating PDF417 image for page ${pageNumber}: ${barcodeData.substring(0, 80)}...`);
+
         try {
+          // Generate PDF417 barcode image using bwip-js
+          const canvas = document.createElement("canvas");
+          bwipjs.toCanvas(canvas, {
+            bcid: "pdf417",
+            text: barcodeData,
+            scale: 2,
+            columns: 8,
+            rowmult: 2,
+            eclevel: 5,
+          });
+
+          // Convert canvas to PNG bytes
+          const pngDataUrl = canvas.toDataURL("image/png");
+          const pngBase64 = pngDataUrl.split(",")[1];
+          const pngBytes = Uint8Array.from(atob(pngBase64), c => c.charCodeAt(0));
+
+          // Embed PNG into PDF
+          const pngImage = await pdf.embedPng(pngBytes);
+
+          // Get the barcode field's position from its widget annotation Rect
+          let x = 36, y = 36, width = 200, height = 50;
+          try {
+            const acroField = (bf as any).acroField;
+            if (acroField) {
+              const widgets = acroField.getWidgets?.() || [];
+              const widget = widgets[0] || acroField;
+              const rectObj = widget.dict?.lookup?.(PDFName.of("Rect")) || widget.dict?.get?.(PDFName.of("Rect"));
+              if (rectObj instanceof PDFArray) {
+                const r = rectObj;
+                const x1 = (r.get(0) as PDFNumber)?.asNumber?.() ?? 0;
+                const y1 = (r.get(1) as PDFNumber)?.asNumber?.() ?? 0;
+                const x2 = (r.get(2) as PDFNumber)?.asNumber?.() ?? 200;
+                const y2 = (r.get(3) as PDFNumber)?.asNumber?.() ?? 50;
+                x = Math.min(x1, x2);
+                y = Math.min(y1, y2);
+                width = Math.abs(x2 - x1);
+                height = Math.abs(y2 - y1);
+                console.log(`[i765] Barcode rect for page ${pageNumber}: x=${x}, y=${y}, w=${width}, h=${height}`);
+              }
+            }
+          } catch (e) {
+            console.warn(`[i765] Could not read barcode rect, using defaults`, e);
+          }
+
+          // Draw the barcode image on the correct page
+          const page = pages[pageIndex];
+          page.drawImage(pngImage, { x, y, width, height });
+          console.log(`[i765] ✅ PDF417 barcode image embedded on page ${pageNumber}`);
+
+          // Also set the text value in the field for USCIS data extraction
           const safeBarcodeData = sanitize(barcodeData);
-          const acroField = (bf as any).acroField;
-
-          if (acroField && acroField.dict) {
-            // Set the main Value
-            acroField.dict.set(PDFName.of("V"), PDFHexString.fromText(safeBarcodeData));
-            // Set Default Value (sometimes forces Acrobat to re-eval)
-            acroField.dict.set(PDFName.of("DV"), PDFHexString.fromText(safeBarcodeData));
-
-            // Set the Ff (Field Flags). Bit 1 = ReadOnly, Bit 2 = Required, Bit 13 = Multiline, Bit 23 = DoNotSpellCheck
-            // Acrobat 2D barcodes usually need Multiline and ReadOnly.
-            // 4096 = Multiline, 1 = ReadOnly, 4194304 = DoNotSpellCheck
-            acroField.dict.set(PDFName.of("Ff"), pdf.context.obj(4198401));
-          } else {
-            (bf as any).setText(safeBarcodeData);
+          const acroField2 = (bf as any).acroField;
+          if (acroField2?.dict) {
+            acroField2.dict.set(PDFName.of("V"), PDFHexString.fromText(safeBarcodeData));
           }
         } catch (e) {
-          console.warn(`[i765] Barcode set failed for ${bf.getName()}:`, e);
+          console.warn(`[i765] Barcode image generation failed for page ${pageNumber}:`, e);
         }
       } else {
         console.warn(`[i765] Could not determine page for barcode field: ${fieldName}`);
       }
     }
   } catch (e) {
-    console.warn("Barcode field population failed (non-fatal):", e);
+    console.warn("Barcode generation failed (non-fatal):", e);
   }
 
   // Set NeedAppearances so the PDF viewer renders field text natively
