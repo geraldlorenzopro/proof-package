@@ -142,8 +142,32 @@ export default function SmartFormsList() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Cargando formularios...</div>
+    <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-accent" />
+            <h1 className="text-xl font-bold">Formularios</h1>
+          </div>
+          <p className="text-xs text-muted-foreground ml-7">Cargando formularios...</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {[1,2,3,4].map(i => (
+          <div key={i} className="rounded-lg border border-border/30 bg-card/50 p-3 animate-pulse">
+            <div className="h-8 w-12 bg-muted rounded mb-1" />
+            <div className="h-3 w-16 bg-muted rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="space-y-3">
+        {[1,2,3].map(i => (
+          <div key={i} className="rounded-lg border border-border/30 bg-card/50 p-4 animate-pulse">
+            <div className="h-4 w-48 bg-muted rounded mb-2" />
+            <div className="h-3 w-32 bg-muted rounded" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 
