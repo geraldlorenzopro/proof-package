@@ -35,6 +35,10 @@ interface HubData {
   account_name: string;
   plan: string;
   apps: HubApp[];
+  auth_token?: {
+    token_hash: string;
+    email: string;
+  } | null;
 }
 
 export default function HubPage() {
@@ -42,6 +46,7 @@ export default function HubPage() {
   const [data, setData] = useState<HubData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
   const navigate = useNavigate();
 
   const cid = searchParams.get('cid');
@@ -57,6 +62,25 @@ export default function HubPage() {
     resolveHub(cid, sig, ts);
   }, [cid, sig, ts]);
 
+  async function establishSession(authToken: { token_hash: string; email: string }) {
+    try {
+      // Use verifyOtp to establish a real Supabase Auth session from the magic link token
+      const { error: otpErr } = await supabase.auth.verifyOtp({
+        token_hash: authToken.token_hash,
+        type: 'magiclink',
+      });
+      if (otpErr) {
+        console.error('Auto-login OTP error:', otpErr.message);
+      } else {
+        console.log('Auto-login session established successfully');
+      }
+    } catch (err) {
+      console.error('Auto-login failed:', err);
+    } finally {
+      setAuthReady(true);
+    }
+  }
+
   async function resolveHub(contactId: string, signature: string, timestamp: string) {
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
@@ -69,12 +93,19 @@ export default function HubPage() {
 
       if (!res.ok) {
         setError(json.error || 'Error al resolver la cuenta.');
+        setLoading(false);
       } else {
         setData(json);
+        // Establish transparent auth session if token is available
+        if (json.auth_token) {
+          await establishSession(json.auth_token);
+        } else {
+          setAuthReady(true);
+        }
+        setLoading(false);
       }
     } catch (err: any) {
       setError('Error de conexión. Intente de nuevo.');
-    } finally {
       setLoading(false);
     }
   }
@@ -130,6 +161,12 @@ export default function HubPage() {
               {data.plan}
             </span>
           </p>
+          {/* Auth status indicator (subtle) */}
+          {!authReady && (
+            <p className="text-[10px] text-muted-foreground/40 mt-2 flex items-center justify-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" /> Preparando sesión...
+            </p>
+          )}
         </div>
 
         {/* Tools */}
@@ -155,8 +192,8 @@ export default function HubPage() {
                       navigate(route);
                     }
                   }}
-                  disabled={!route}
-                  className="tool-card text-left p-6 group cursor-pointer"
+                  disabled={!route || !authReady}
+                  className="tool-card text-left p-6 group cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="w-11 h-11 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center group-hover:bg-jarvis/20 group-hover:shadow-glow transition-all duration-500">
