@@ -233,6 +233,48 @@ function SeatGuardedContent() {
   const seat = useAppSeat("smart-forms");
   const { destination: backDest } = useBackDestination();
 
+  // Show confirmation dialog when seats are full
+  if (seat.pendingKick) {
+    const oldest = seat.pendingKick.occupants[0];
+    return (
+      <Dialog open>
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-yellow-500">
+              <AlertTriangle className="w-5 h-5" />
+              Asientos ocupados
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-2">
+              <p>
+                Todos los asientos de esta herramienta están en uso
+                ({seat.pendingKick.occupants.length}/{seat.pendingKick.maxSeats}).
+              </p>
+              <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Sesión activa:</p>
+                {seat.pendingKick.occupants.map((o, i) => (
+                  <p key={i} className="text-sm font-medium text-foreground">
+                    {o.display_name}
+                  </p>
+                ))}
+              </div>
+              <p className="text-sm">
+                ¿Deseas sacar a <span className="font-semibold text-foreground">{oldest.display_name}</span> y tomar su asiento?
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 mt-2">
+            <Button variant="outline" onClick={() => { seat.cancelKick(); navigate(backDest); }} className="flex-1">
+              Cancelar
+            </Button>
+            <Button onClick={seat.confirmKick} className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white">
+              Sí, tomar asiento
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   // Show kicked modal
   if (seat.kicked) {
     return (

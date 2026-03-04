@@ -884,6 +884,10 @@ export type Database = {
         Args: { _app_slug: string; _user_id: string }
         Returns: Json
       }
+      check_app_seat_status: {
+        Args: { _app_slug: string; _user_id: string }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: { _tool_slug: string; _user_id: string }
         Returns: Json
