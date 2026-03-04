@@ -1,6 +1,11 @@
 // I-765 Form Schema — maps every field from the official USCIS Form I-765 (Edition 08/21/25)
 
 export interface I765Data {
+  // Page 1 Header — Attorney/Rep block
+  g28Attached: boolean;
+  attorneyBarNumber: string;
+  attorneyUscisAccountNumber: string;
+
   // Case Configuration (Step 0 — professional only)
   formPreparedBy: "attorney" | "preparer" | "applicant" | "";
 
@@ -97,6 +102,7 @@ export interface I765Data {
   interpreterMobile: string;
   interpreterEmail: string;
   interpreterLanguage: string;
+  interpreterProvince: string;
 
   // Part 5: Preparer
   preparerLastName: string;
@@ -118,6 +124,9 @@ export interface I765Data {
 }
 
 export const defaultI765Data: I765Data = {
+  g28Attached: false,
+  attorneyBarNumber: "",
+  attorneyUscisAccountNumber: "",
   formPreparedBy: "",
   reasonForApplying: "",
   lastName: "", firstName: "", middleName: "",
@@ -145,6 +154,7 @@ export const defaultI765Data: I765Data = {
   interpreterStreet: "", interpreterApt: "", interpreterCity: "",
   interpreterState: "", interpreterZip: "",
   interpreterPhone: "", interpreterMobile: "", interpreterEmail: "", interpreterLanguage: "",
+  interpreterProvince: "",
   preparerLastName: "", preparerFirstName: "", preparerOrg: "",
   preparerStreet: "", preparerApt: "", preparerCity: "",
   preparerState: "", preparerZip: "", preparerProvince: "", preparerPostalCode: "",

@@ -144,7 +144,12 @@ function fmtDate(d: string | undefined | null): string {
 // The [0-9a-z]+ at the end absorbs the random hash suffix.
 
 const P = {
-  // Page 1 — Part 1 & header
+  // Page 1 — Header (Attorney/Rep block)
+  g28_checkbox: /Page1\[0\]\.Pt1Checkbox_G28\[0\]/,
+  atty_bar_number: /Page1\[0\]\.AttyBarNumber\[0\]/,
+  atty_uscis_account: /Page1\[0\]\.AttyUscisAccount\[0\]/,
+
+  // Page 1 — Part 1 & Part 2 names
   line1a_family: /Page1\[0\]\.Line1a_FamilyName\[0\]/,
   line1b_given: /Page1\[0\]\.Line1b_GivenName\[0\]/,
   line1c_middle: /Page1\[0\]\.Line1c_MiddleName\[0\]/,
@@ -264,6 +269,7 @@ const P = {
   pt4_mobile: /Page5\[0\]\.Pt4Line5_MobileNumber\[0\]/,
   pt4_email: /Page5\[0\]\.Pt4Line6_Email\[0\]/,
   pt4_language: /Page5\[0\]\.Part4_NameofLanguage\[0\]/,
+  pt4_province: /Page5\[0\]\.Pt4Line3f_Province\[0\]/,
 
   // Part 5: Preparer (Page 5-6)
   pt5_family: /Page5\[0\]\.Pt5Line1a_PreparerFamilyName\[0\]/,
@@ -322,6 +328,11 @@ export async function fillI765Pdf(data: I765Data) {
 
   // Clear all existing values from the template
   clearAllFields(form);
+
+  // ── Page 1 Header: Attorney/Rep block ──
+  setCheck(form, P.g28_checkbox, data.g28Attached);
+  setText(form, P.atty_bar_number, data.attorneyBarNumber);
+  setText(form, P.atty_uscis_account, data.attorneyUscisAccountNumber);
 
   // ── Part 1: Reason for Applying ──
   setCheck(form, P.part1_initial, data.reasonForApplying === "initial");
@@ -471,6 +482,7 @@ export async function fillI765Pdf(data: I765Data) {
     setText(form, P.pt4_city, data.interpreterCity);
     setText(form, P.pt4_state, data.interpreterState);
     setText(form, P.pt4_zip, data.interpreterZip);
+    setText(form, P.pt4_province, data.interpreterProvince);
     setText(form, P.pt4_phone, data.interpreterPhone);
     setText(form, P.pt4_mobile, data.interpreterMobile);
     setText(form, P.pt4_email, data.interpreterEmail);
