@@ -18,6 +18,84 @@ async function verifyHmac(cid: string, ts: string, sig: string, secret: string):
   return expected === sig;
 }
 
+/**
+ * Find or create a Supabase Auth user for the given NER account.
+ * Returns { user_id, access_token, refresh_token } for transparent session.
+ */
+async function getOrCreateHubUser(
+  supabaseAdmin: any,
+  accountId: string,
+  accountName: string
+) {
+  // 1. Check if there's already a member linked to this account
+  const { data: existingMember } = await supabaseAdmin
+    .from("account_members")
+    .select("user_id")
+    .eq("account_id", accountId)
+    .limit(1)
+    .maybeSingle();
+
+  let userId: string;
+
+  if (existingMember?.user_id) {
+    userId = existingMember.user_id;
+    console.log("Found existing user for account:", userId);
+  } else {
+    // 2. Create a new Auth user with a deterministic hub email
+    const hubEmail = `hub-${accountId}@hub.ner.internal`;
+    const randomPassword = crypto.randomUUID() + crypto.randomUUID();
+
+    const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+      email: hubEmail,
+      password: randomPassword,
+      email_confirm: true, // auto-confirm
+      user_metadata: { hub_account: true, account_name: accountName },
+    });
+
+    if (createErr) {
+      // User might already exist (race condition) — try to find by email
+      const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+      const found = listData?.users?.find((u: any) => u.email === hubEmail);
+      if (!found) throw new Error(`Failed to create hub user: ${createErr.message}`);
+      userId = found.id;
+    } else {
+      userId = newUser.user.id;
+    }
+
+    // 3. Link to account_members
+    const { error: memberErr } = await supabaseAdmin.from("account_members").upsert(
+      { account_id: accountId, user_id: userId, role: "member" },
+      { onConflict: "account_id,user_id" }
+    );
+    if (memberErr) console.error("Failed to link member:", memberErr);
+
+    // 4. Create a basic profile
+    await supabaseAdmin.from("profiles").upsert(
+      { user_id: userId, full_name: accountName },
+      { onConflict: "user_id" }
+    );
+
+    console.log("Created new hub user:", userId);
+  }
+
+  // 5. Generate a magic link for this user to create a session
+  const hubEmail = `hub-${accountId}@hub.ner.internal`;
+  const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+    type: "magiclink",
+    email: hubEmail,
+  });
+
+  if (linkErr || !linkData) {
+    throw new Error(`Failed to generate session link: ${linkErr?.message}`);
+  }
+
+  return {
+    user_id: userId,
+    token_hash: linkData.properties.hashed_token,
+    email: hubEmail,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -36,7 +114,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate HMAC signature
     if (!sig || !ts) {
       return new Response(
         JSON.stringify({ error: "Missing signature or timestamp" }),
@@ -44,7 +121,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Reject timestamps older than 5 minutes
     const tsNum = parseInt(ts, 10);
     if (isNaN(tsNum) || Math.abs(Date.now() - tsNum) > 5 * 60 * 1000) {
       return new Response(
@@ -102,7 +178,7 @@ Deno.serve(async (req) => {
       .select("app_id")
       .eq("account_id", account.id);
 
-    const appIds = (accessRows || []).map((r) => r.app_id);
+    const appIds = (accessRows || []).map((r: any) => r.app_id);
 
     let apps: { id: string; name: string; slug: string; icon: string | null; description: string | null }[] = [];
     if (appIds.length > 0) {
@@ -114,12 +190,24 @@ Deno.serve(async (req) => {
       apps = hubApps || [];
     }
 
+    // --- AUTO-LOGIN: Generate transparent session ---
+    let auth_token: { token_hash: string; email: string } | null = null;
+    try {
+      const result = await getOrCreateHubUser(supabaseAdmin, account.id, account.account_name);
+      auth_token = { token_hash: result.token_hash, email: result.email };
+      console.log("Auto-login token generated for account:", account.id);
+    } catch (authErr) {
+      console.error("Auto-login failed (non-blocking):", authErr);
+      // Non-blocking: Hub still works, just without auto-login
+    }
+
     return new Response(
       JSON.stringify({
         account_id: account.id,
         account_name: account.account_name,
         plan: account.plan,
         apps,
+        auth_token,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
