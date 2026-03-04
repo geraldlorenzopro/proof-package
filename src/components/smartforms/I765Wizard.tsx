@@ -421,16 +421,18 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                           type="button"
                           onClick={() => selectClient(c.id)}
                           className={cn(
-                            "w-full text-left px-3 py-2 flex items-center gap-2 transition-colors text-sm",
+                            "w-full text-left px-3 py-2 flex flex-col gap-0.5 transition-colors text-sm",
                             selectedClientId === c.id ? "bg-accent/10 text-accent" : "hover:bg-secondary/60"
                           )}
                         >
-                          <User className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-                          <span className="flex-1 truncate font-medium">
-                            {c.last_name || ""}{c.last_name && c.first_name ? ", " : ""}{c.first_name || ""}
+                          <span className="flex items-center gap-2">
+                            <User className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                            <span className="flex-1 truncate font-medium">
+                              {c.last_name || ""}{c.last_name && c.first_name ? ", " : ""}{c.first_name || ""}
+                            </span>
+                            {selectedClientId === c.id && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
                           </span>
-                          <span className="text-xs text-muted-foreground truncate max-w-[120px]">{c.email || ""}</span>
-                          {selectedClientId === c.id && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
+                          {c.email && <span className="text-xs text-muted-foreground pl-5.5 truncate">{c.email}</span>}
                         </button>
                       ))}
                       {clientProfiles.length >= 50 && (
