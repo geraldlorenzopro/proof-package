@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, FolderOpen, Calculator, BarChart3, Activity, Shield, AlertTriangle, ChevronRight, FileSearch, FileText } from 'lucide-react';
+import { Loader2, FolderOpen, Calculator, BarChart3, Activity, Shield, AlertTriangle, ChevronRight, FileSearch, FileText, RefreshCw } from 'lucide-react';
 
 const ICON_MAP: Record<string, any> = {
   evidence: FolderOpen,
@@ -165,7 +165,15 @@ export default function HubPage() {
     <div className="min-h-screen bg-background grid-bg">
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
         {/* Header */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-10 relative">
+          {/* Refresh button — top right */}
+          <button
+            onClick={() => window.location.reload()}
+            className="absolute top-0 right-0 p-2 rounded-lg text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10 transition-all duration-300"
+            title="Refrescar"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center">
               <Shield className="w-5 h-5 text-jarvis" />
