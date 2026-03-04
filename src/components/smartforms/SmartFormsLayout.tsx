@@ -88,7 +88,6 @@ function TopNavBar() {
 
   const navItems = [
     { label: "Formularios", path: "/dashboard/smart-forms", icon: List, end: true },
-    { label: "Nuevo", path: "/dashboard/smart-forms/new", icon: Plus, end: true },
   ];
 
   const isActive = (path: string, end: boolean) => {
