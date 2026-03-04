@@ -848,13 +848,21 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     <div className="flex-1 flex flex-col min-h-0">
       <div className="flex-1 overflow-auto p-4 md:p-6 md:py-8">
         <div className="max-w-2xl w-full mx-auto">
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard/smart-forms")}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            {t("Back to forms panel", "Volver al panel de formularios")}
+          </button>
           {stepRenderers[step]()}
         </div>
       </div>
 
       <div className="flex items-center justify-between border-t border-border/40 px-4 md:px-6 py-3 gap-3 bg-card/80 backdrop-blur-sm shrink-0">
-        <Button variant="outline" onClick={() => stepIdx === 0 ? navigate("/dashboard/smart-forms") : prev()} className="gap-2">
-          <ChevronLeft className="w-4 h-4" /> {stepIdx === 0 ? t("Forms", "Formularios") : t("Back", "Atrás")}
+        <Button variant="outline" onClick={prev} disabled={stepIdx === 0} className="gap-2">
+          <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
         </Button>
         <div className="flex gap-2 flex-wrap justify-end">
           <Button variant="outline" onClick={() => onSave(data, "draft")} disabled={saving} className="gap-2">
