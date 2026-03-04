@@ -176,7 +176,7 @@ export const I765_STEP_LABELS: Record<I765Step, { en: string; es: string }> = {
   background:  { en: "Your Background",          es: "Tu Historia" },
   arrival:     { en: "Your Arrival",             es: "Tu Llegada" },
   eligibility: { en: "Your Situation",           es: "Tu Situación" },
-  statement:   { en: "Contact & Preferences",   es: "Contacto y Preferencias" },
+  statement:   { en: "Your Contact Info",        es: "Tu Información de Contacto" },
   preparer:    { en: "Who Helped You",           es: "¿Quién te ayudó?" },
 };
 
