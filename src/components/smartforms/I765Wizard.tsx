@@ -760,7 +760,12 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               <Field label={t("Organization", "Organización")}><Input className={inputCls} value={data.interpreterOrg} onChange={e => set("interpreterOrg", e.target.value)} /></Field>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.interpreterStreet} onChange={e => set("interpreterStreet", e.target.value)} /></Field>
-                <Field label="Apt/Ste/Flr"><Input className={inputCls} value={data.interpreterApt} onChange={e => set("interpreterApt", e.target.value)} /></Field>
+                <Field label="Apt/Ste/Flr">
+                  <div className="flex gap-2">
+                    <AptTypeSelect value={data.interpreterAptType} onChange={v => set("interpreterAptType", v as I765Data["interpreterAptType"])} />
+                    <Input className={cn(inputCls, "flex-1")} value={data.interpreterApt} onChange={e => set("interpreterApt", e.target.value)} placeholder="#" />
+                  </div>
+                </Field>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.interpreterCity} onChange={e => set("interpreterCity", e.target.value)} /></Field>
@@ -789,7 +794,12 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           <Field label={t("Organization", "Organización")}><Input className={inputCls} value={data.preparerOrg} onChange={e => set("preparerOrg", e.target.value)} /></Field>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.preparerStreet} onChange={e => set("preparerStreet", e.target.value)} /></Field>
-            <Field label="Apt/Ste/Flr"><Input className={inputCls} value={data.preparerApt} onChange={e => set("preparerApt", e.target.value)} /></Field>
+            <Field label="Apt/Ste/Flr">
+              <div className="flex gap-2">
+                <AptTypeSelect value={data.preparerAptType} onChange={v => set("preparerAptType", v as I765Data["preparerAptType"])} />
+                <Input className={cn(inputCls, "flex-1")} value={data.preparerApt} onChange={e => set("preparerApt", e.target.value)} placeholder="#" />
+              </div>
+            </Field>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.preparerCity} onChange={e => set("preparerCity", e.target.value)} /></Field>
