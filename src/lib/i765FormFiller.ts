@@ -204,11 +204,11 @@ const P = {
   line9_female: /Page2\[0\]\.Line9_Checkbox\[0\]/,
   line9_male: /Page2\[0\]\.Line9_Checkbox\[1\]/,
 
-  // Marital status: XFA reversed — [0]=Widowed, [1]=Divorced, [2]=Married, [3]=Single
+  // Marital status: XFA reversed — [0]=Widowed, [1]=Divorced, [2]=Single, [3]=Married
   line10_widowed: /Page2\[0\]\.Line10_Checkbox\[0\]/,
   line10_divorced: /Page2\[0\]\.Line10_Checkbox\[1\]/,
-  line10_married: /Page2\[0\]\.Line10_Checkbox\[2\]/,
-  line10_single: /Page2\[0\]\.Line10_Checkbox\[3\]/,
+  line10_single: /Page2\[0\]\.Line10_Checkbox\[2\]/,
+  line10_married: /Page2\[0\]\.Line10_Checkbox\[3\]/,
 
   // Previously filed: XFA swapped — [0]=No, [1]=Yes
   line19_no: /Page2\[0\]\.Line19_Checkbox\[0\]/,
@@ -487,18 +487,20 @@ export async function fillI765Pdf(data: I765Data) {
 
   // ── Part 4: Interpreter ──
   if (data.interpreterUsed) {
-    setText(form, P.pt4_family, data.interpreterLastName);
-    setText(form, P.pt4_given, data.interpreterFirstName);
-    setText(form, P.pt4_org, data.interpreterOrg);
-    setText(form, P.pt4_street, data.interpreterStreet);
-    setText(form, P.pt4_apt, data.interpreterApt);
-    setText(form, P.pt4_city, data.interpreterCity);
-    setText(form, P.pt4_state, data.interpreterState);
-    setText(form, P.pt4_zip, data.interpreterZip);
-    setText(form, P.pt4_province, data.interpreterProvince);
-    setText(form, P.pt4_phone, data.interpreterPhone);
-    setText(form, P.pt4_mobile, data.interpreterMobile);
-    setText(form, P.pt4_email, data.interpreterEmail);
+    // If "same as preparer" is checked, copy preparer data to interpreter PDF fields
+    const intSame = data.interpreterSameAsPreparer && data.preparerUsed;
+    setText(form, P.pt4_family, intSame ? data.preparerLastName : data.interpreterLastName);
+    setText(form, P.pt4_given, intSame ? data.preparerFirstName : data.interpreterFirstName);
+    setText(form, P.pt4_org, intSame ? data.preparerOrg : data.interpreterOrg);
+    setText(form, P.pt4_street, intSame ? data.preparerStreet : data.interpreterStreet);
+    setText(form, P.pt4_apt, intSame ? data.preparerApt : data.interpreterApt);
+    setText(form, P.pt4_city, intSame ? data.preparerCity : data.interpreterCity);
+    setText(form, P.pt4_state, intSame ? data.preparerState : data.interpreterState);
+    setText(form, P.pt4_zip, intSame ? data.preparerZip : data.interpreterZip);
+    setText(form, P.pt4_province, intSame ? data.preparerProvince : data.interpreterProvince);
+    setText(form, P.pt4_phone, intSame ? data.preparerPhone : data.interpreterPhone);
+    setText(form, P.pt4_mobile, intSame ? data.preparerMobile : data.interpreterMobile);
+    setText(form, P.pt4_email, intSame ? data.preparerEmail : data.interpreterEmail);
     setText(form, P.pt4_language, data.interpreterLanguage);
   }
 

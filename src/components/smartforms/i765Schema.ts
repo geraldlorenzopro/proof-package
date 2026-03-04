@@ -90,6 +90,7 @@ export interface I765Data {
   applicantEmail: string;
 
   // Part 4: Interpreter
+  interpreterSameAsPreparer: boolean;
   interpreterLastName: string;
   interpreterFirstName: string;
   interpreterOrg: string;
@@ -150,6 +151,7 @@ export const defaultI765Data: I765Data = {
   c35EverArrested: null,
   applicantCanReadEnglish: true, interpreterUsed: false, preparerUsed: false,
   applicantPhone: "", applicantMobile: "", applicantEmail: "",
+  interpreterSameAsPreparer: false,
   interpreterLastName: "", interpreterFirstName: "", interpreterOrg: "",
   interpreterStreet: "", interpreterApt: "", interpreterCity: "",
   interpreterState: "", interpreterZip: "",

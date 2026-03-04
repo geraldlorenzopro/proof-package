@@ -630,6 +630,7 @@ export type Database = {
           attorney_name: string | null
           attorney_phone: string | null
           attorney_state: string | null
+          attorney_uscis_account: string | null
           attorney_zip: string | null
           created_at: string
           firm_name: string | null
@@ -659,6 +660,7 @@ export type Database = {
           attorney_name?: string | null
           attorney_phone?: string | null
           attorney_state?: string | null
+          attorney_uscis_account?: string | null
           attorney_zip?: string | null
           created_at?: string
           firm_name?: string | null
@@ -688,6 +690,7 @@ export type Database = {
           attorney_name?: string | null
           attorney_phone?: string | null
           attorney_state?: string | null
+          attorney_uscis_account?: string | null
           attorney_zip?: string | null
           created_at?: string
           firm_name?: string | null
