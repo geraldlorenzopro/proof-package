@@ -113,21 +113,22 @@ Deno.serve(async (req) => {
     }
 
     // Map GHL contact fields to client_profiles
-    // Handles both custom payload format and GHL native webhook format
+    // Native webhook field names confirmed from GHL official merge fields:
+    // first_name, last_name, email, phone, address1, city, state, postal_code, country, date_of_birth
     const profileData: Record<string, unknown> = {
       account_id: account.id,
       created_by: createdBy,
       email,
-      first_name: contact.firstName || contact.first_name || contact.contactFirstName || null,
-      last_name: contact.lastName || contact.last_name || contact.contactLastName || null,
-      phone: contact.phone || contact.contact_phone || null,
-      mobile_phone: contact.phone || contact.contact_phone || null,
-      address_street: contact.address1 || contact.addressStreet || contact.contact_address1 || null,
-      address_city: contact.city || contact.addressCity || contact.contact_city || null,
-      address_state: contact.state || contact.addressState || contact.contact_state || null,
-      address_zip: contact.postalCode || contact.addressZip || contact.contact_postal_code || null,
-      address_country: contact.country || contact.contact_country || "US",
-      dob: contact.dateOfBirth || contact.dob || contact.date_of_birth || null,
+      first_name: contact.first_name || contact.firstName || null,
+      last_name: contact.last_name || contact.lastName || null,
+      phone: contact.phone || contact.phone_raw || null,
+      mobile_phone: contact.phone || contact.phone_raw || null,
+      address_street: contact.address1 || contact.addressStreet || null,
+      address_city: contact.city || contact.addressCity || null,
+      address_state: contact.state || contact.addressState || null,
+      address_zip: contact.postal_code || contact.postalCode || contact.addressZip || null,
+      address_country: contact.country || "US",
+      dob: contact.date_of_birth || contact.dateOfBirth || contact.dob || null,
       updated_at: new Date().toISOString(),
     };
 
