@@ -168,12 +168,10 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       const nameParts = (p.attorney_name || "").trim().split(/\s+/);
       const firstName = nameParts[0] || "";
       const lastName = nameParts.slice(1).join(" ") || "";
-      // Compose bar number for Page 1 header: "STATE BARNUMBER"
-      const barNum = [p.attorney_bar_state, p.attorney_bar_number].filter(Boolean).join(" ");
       setData(prev => ({
         ...prev,
         g28Attached: true,
-        attorneyBarNumber: barNum,
+        attorneyBarNumber: p.attorney_bar_number || "",
         attorneyUscisAccountNumber: prev.attorneyUscisAccountNumber || p.attorney_uscis_account || "",
         preparerUsed: true,
         preparerIsAttorney: true,
