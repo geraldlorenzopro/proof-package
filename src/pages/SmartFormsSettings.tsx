@@ -86,7 +86,8 @@ export default function SmartFormsSettings() {
   async function handleSave() {
     if (!userId) return;
     setSaving(true);
-    const { error } = await supabase.from('profiles').update({
+    const payload = {
+      user_id: userId,
       attorney_name: attorneyName.trim() || null,
       attorney_bar_number: attorneyBarNumber.trim() || null,
       attorney_bar_state: attorneyBarState.trim() || null,
@@ -108,9 +109,14 @@ export default function SmartFormsSettings() {
       preparer_phone: preparerPhone.trim() || null,
       preparer_email: preparerEmail.trim() || null,
       preparer_fax: preparerFax.trim() || null,
-    } as any).eq('user_id', userId);
-    if (error) toast.error('Error al guardar');
-    else toast.success('Datos guardados');
+    } as any;
+    const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'user_id' });
+    if (error) {
+      console.error('Save error:', error);
+      toast.error('Error al guardar');
+    } else {
+      toast.success('Datos guardados');
+    }
     setSaving(false);
   }
 
