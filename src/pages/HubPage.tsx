@@ -54,12 +54,31 @@ export default function HubPage() {
   const ts = searchParams.get('ts');
 
   useEffect(() => {
-    if (!cid || !sig || !ts) {
-      setError('Enlace inválido o incompleto.');
-      setLoading(false);
+    // If we have HMAC params, resolve fresh from server
+    if (cid && sig && ts) {
+      resolveHub(cid, sig, ts);
       return;
     }
-    resolveHub(cid, sig, ts);
+
+    // Otherwise, try to restore from cached session (returning from a tool)
+    const cached = sessionStorage.getItem('ner_hub_data');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as HubData;
+        setData(parsed);
+        // Re-establish auth session if token available
+        if (parsed.auth_token) {
+          establishSession(parsed.auth_token);
+        } else {
+          setAuthReady(true);
+        }
+        setLoading(false);
+        return;
+      } catch { /* fall through */ }
+    }
+
+    setError('Enlace inválido o incompleto.');
+    setLoading(false);
   }, [cid, sig, ts]);
 
   async function establishSession(authToken: { access_token: string; refresh_token: string }) {
@@ -95,6 +114,8 @@ export default function HubPage() {
         setLoading(false);
       } else {
         setData(json);
+        // Cache hub data so returning from tools doesn't need fresh HMAC
+        sessionStorage.setItem('ner_hub_data', JSON.stringify(json));
         // Establish transparent auth session if token is available
         if (json.auth_token) {
           await establishSession(json.auth_token);
@@ -187,7 +208,7 @@ export default function HubPage() {
                   onClick={() => {
                     if (route) {
                       // Save hub return URL so tools can navigate back
-                      sessionStorage.setItem('ner_hub_return', window.location.pathname + window.location.search);
+                      sessionStorage.setItem('ner_hub_return', '/hub');
                       navigate(route);
                     }
                   }}
