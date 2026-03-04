@@ -56,7 +56,9 @@ export default function SmartFormPage() {
   }, [navigate, id, isNew]);
 
   const getAccountId = async (userId: string): Promise<string | null> => {
-    const { data } = await supabase.rpc("user_account_id", { _user_id: userId });
+    const { data, error } = await supabase.rpc("user_account_id", { _user_id: userId });
+    console.log("[SmartForm] getAccountId result:", { userId, data, error });
+    if (error) console.error("[SmartForm] getAccountId error:", error);
     return data as string | null;
   };
 
