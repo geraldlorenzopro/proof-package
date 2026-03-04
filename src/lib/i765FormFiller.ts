@@ -565,11 +565,21 @@ export async function fillI765Pdf(data: I765Data) {
           page.drawImage(pngImage, { x, y, width, height });
           console.log(`[i765] ✅ PDF417 barcode image embedded on page ${pageNumber}`);
 
-          // Also set the text value in the field for USCIS data extraction
+          // Hide the text field so its text doesn't render over the barcode image
+          // Set field value for USCIS data extraction, but make it invisible
           const safeBarcodeData = sanitize(barcodeData);
           const acroField2 = (bf as any).acroField;
           if (acroField2?.dict) {
             acroField2.dict.set(PDFName.of("V"), PDFHexString.fromText(safeBarcodeData));
+            // Move the field's widget off-screen so the text is not visible
+            const widgets2 = acroField2.getWidgets?.() || [];
+            const w2 = widgets2[0] || acroField2;
+            if (w2?.dict) {
+              // Set Rect to zero-size at origin (effectively hidden)
+              w2.dict.set(PDFName.of("Rect"), pdf.context.obj([0, 0, 0, 0]));
+              // Also set Hidden flag (bit 2 of /F annotation flags)
+              w2.dict.set(PDFName.of("F"), pdf.context.obj(2));
+            }
           }
         } catch (e) {
           console.warn(`[i765] Barcode image generation failed for page ${pageNumber}:`, e);
