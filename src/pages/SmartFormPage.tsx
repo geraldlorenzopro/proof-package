@@ -86,7 +86,7 @@ export default function SmartFormPage() {
         client_email: formData.applicantEmail || null,
       };
 
-      if (submissionId && !isNew) {
+      if (submissionId) {
         const { error } = await supabase
           .from("form_submissions")
           .update(payload)
