@@ -1,7 +1,6 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { FileText, List, Plus, ArrowLeft, CheckCircle2, Shield, Settings } from "lucide-react";
 import { LangToggle } from "@/components/LangToggle";
-import { NavLink } from "@/components/NavLink";
 import { useBackDestination } from "@/hooks/useBackDestination";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -10,31 +9,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { SmartFormsProvider, useSmartFormsContext } from "./SmartFormsContext";
 import { I765_STEP_LABELS } from "./i765Schema";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar";
-import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-
-const navItems = [
-  { title: "Formularios", url: "/dashboard/smart-forms", icon: List, end: true },
-  { title: "Nuevo Cuestionario", url: "/dashboard/smart-forms/new", icon: Plus, end: true },
-  { title: "Configuración", url: "/dashboard/settings", icon: Settings, end: false },
-];
 
 /* ── Mobile step drawer (shown only on small screens when wizard is active) ── */
 function MobileStepDrawer() {
@@ -99,139 +79,104 @@ function MobileStepDrawer() {
   );
 }
 
-/* ── Desktop sidebar ── */
-function SmartFormsSidebar() {
+/* ── Top navigation bar ── */
+function TopNavBar() {
   const navigate = useNavigate();
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
-  const { wizardNav, lang } = useSmartFormsContext();
+  const location = useLocation();
+  const { wizardNav, lang, setLang } = useSmartFormsContext();
   const { destination: backDest, isHub } = useBackDestination();
 
-  const progress = wizardNav
-    ? ((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100
-    : 0;
+  const navItems = [
+    { label: "Formularios", path: "/dashboard/smart-forms", icon: List, end: true },
+    { label: "Nuevo", path: "/dashboard/smart-forms/new", icon: Plus, end: true },
+  ];
+
+  const isActive = (path: string, end: boolean) => {
+    if (end) return location.pathname === path;
+    return location.pathname.startsWith(path);
+  };
+
+  const isSettingsActive = location.pathname === "/dashboard/smart-forms/settings";
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/40">
-      <SidebarContent className="pt-4">
-        {/* Back button — Hub-aware */}
-        <div className="px-3 mb-4">
-          <Button
-            variant="ghost"
-            size={collapsed ? "icon" : "sm"}
-            onClick={() => navigate(backDest)}
-            className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-4 h-4 shrink-0" />
-            {!collapsed && (
-              isHub ? (
-                <span className="text-xs flex items-center gap-1">
-                  <Shield className="w-3.5 h-3.5 text-jarvis" /> Hub
-                </span>
-              ) : (
-                <span className="text-xs">Dashboard</span>
-              )
-            )}
-          </Button>
-        </div>
+    <header className="sticky top-0 z-30 border-b border-border/40 bg-card/80 backdrop-blur-sm">
+      <div className="flex items-center h-12 px-3 gap-2">
+        {/* Back button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(backDest)}
+          className="gap-1.5 text-muted-foreground hover:text-foreground shrink-0 px-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          {isHub ? (
+            <span className="text-xs flex items-center gap-1">
+              <Shield className="w-3.5 h-3.5 text-accent" /> Hub
+            </span>
+          ) : (
+            <span className="text-xs">Dashboard</span>
+          )}
+        </Button>
+
+        {/* Divider */}
+        <div className="w-px h-5 bg-border/60 shrink-0" />
 
         {/* Branding */}
-        {!collapsed && (
-          <div className="px-4 mb-4">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-accent" />
-              <span className="font-bold text-sm">Smart Forms</span>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5 ml-7">Formularios USCIS</p>
-          </div>
-        )}
-        {collapsed && (
-          <div className="flex justify-center mb-4">
-            <FileText className="w-5 h-5 text-accent" />
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0 mr-2">
+          <FileText className="w-4 h-4 text-accent" />
+          <span className="font-bold text-sm hidden sm:inline">Smart Forms</span>
+        </div>
 
-        {/* Main nav */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Navegación</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.end}
-                      className="hover:bg-muted/50"
-                      activeClassName="bg-accent/15 text-accent font-medium"
-                    >
-                      <item.icon className="mr-2 h-4 w-4 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Nav tabs */}
+        <nav className="flex items-center gap-0.5">
+          {navItems.map((item) => (
+            <Button
+              key={item.path}
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(item.path)}
+              className={cn(
+                "gap-1.5 text-xs px-3 h-8 rounded-lg transition-all",
+                isActive(item.path, item.end)
+                  ? "bg-accent/15 text-accent font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <item.icon className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{item.label}</span>
+            </Button>
+          ))}
+        </nav>
 
-        {/* Wizard steps — only when a wizard is active */}
-        {wizardNav && !collapsed && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="flex items-center justify-between">
-              <span>Cuestionario</span>
-              <span className="text-[10px] text-accent font-bold">{Math.round(progress)}%</span>
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <div className="px-3 mb-2">
-                <Progress value={progress} className="h-1.5" />
-              </div>
-              <SidebarMenu>
-                {wizardNav.steps.map((s, i) => (
-                  <SidebarMenuItem key={s}>
-                    <SidebarMenuButton asChild>
-                      <button
-                        onClick={() => wizardNav.setStep(i)}
-                        className={cn(
-                          "w-full flex items-center gap-2.5 text-xs transition-all text-left",
-                          i === wizardNav.currentStep
-                            ? "bg-accent/15 text-accent font-semibold"
-                            : i < wizardNav.currentStep
-                            ? "text-accent/70 hover:bg-accent/5"
-                            : "text-muted-foreground hover:bg-muted/50"
-                        )}
-                      >
-                        {i < wizardNav.currentStep ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                        ) : (
-                          <span className={cn(
-                            "w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 border",
-                            i === wizardNav.currentStep ? "border-accent bg-accent text-accent-foreground" : "border-border bg-secondary/60"
-                          )}>
-                            {i + 1}
-                          </span>
-                        )}
-                        <span className="truncate">{I765_STEP_LABELS[s][lang]}</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-      </SidebarContent>
-    </Sidebar>
-  );
-}
+        {/* Spacer */}
+        <div className="flex-1" />
 
-function LayoutHeader() {
-  const { wizardNav, lang, setLang } = useSmartFormsContext();
-  return (
-    <header className="h-11 flex items-center justify-between border-b border-border/40 bg-card/50 px-3 shrink-0">
-      <SidebarTrigger className="text-muted-foreground hidden md:flex" />
+        {/* Lang toggle (only in wizard) */}
+        {wizardNav && <LangToggle lang={lang} setLang={setLang} />}
+
+        {/* Settings gear */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/dashboard/smart-forms/settings")}
+          className={cn(
+            "w-8 h-8 shrink-0",
+            isSettingsActive ? "text-accent" : "text-muted-foreground hover:text-foreground"
+          )}
+          title="Configuración"
+        >
+          <Settings className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Wizard progress bar (thin, below nav) */}
       {wizardNav && (
-        <LangToggle lang={lang} setLang={setLang} />
+        <div className="px-3 pb-1.5">
+          <Progress
+            value={((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100}
+            className="h-1"
+          />
+        </div>
       )}
     </header>
   );
@@ -240,20 +185,13 @@ function LayoutHeader() {
 export default function SmartFormsLayout() {
   return (
     <SmartFormsProvider>
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
-          <div className="hidden md:block">
-            <SmartFormsSidebar />
-          </div>
-          <div className="flex-1 flex flex-col min-w-0">
-            <LayoutHeader />
-            <MobileStepDrawer />
-            <main className="flex-1 overflow-auto">
-              <Outlet />
-            </main>
-          </div>
-        </div>
-      </SidebarProvider>
+      <div className="min-h-screen flex flex-col w-full">
+        <TopNavBar />
+        <MobileStepDrawer />
+        <main className="flex-1 overflow-auto">
+          <Outlet />
+        </main>
+      </div>
     </SmartFormsProvider>
   );
 }
