@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, Search, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,6 +115,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const [data, setData] = useState<I765Data>({ ...defaultI765Data, ...initialData });
   const visibleSteps = isProfessional ? I765_STEPS : I765_STEPS.filter(s => s !== "caseConfig");
   const [stepIdx, setStepIdx] = useState(0);
+  const navigate = useNavigate();
   const [hasOtherName, setHasOtherName] = useState(() => !!(initialData?.otherNames?.length));
   const [ssnFull, setSsnFull] = useState(() => initialData?.ssn || "");
   const [ssnFocused, setSsnFocused] = useState(false);
@@ -851,8 +853,8 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       </div>
 
       <div className="flex items-center justify-between border-t border-border/40 px-4 md:px-6 py-3 gap-3 bg-card/80 backdrop-blur-sm shrink-0">
-        <Button variant="outline" onClick={prev} disabled={stepIdx === 0} className="gap-2">
-          <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
+        <Button variant="outline" onClick={() => stepIdx === 0 ? navigate("/dashboard/smart-forms") : prev()} className="gap-2">
+          <ChevronLeft className="w-4 h-4" /> {stepIdx === 0 ? t("Forms", "Formularios") : t("Back", "Atrás")}
         </Button>
         <div className="flex gap-2 flex-wrap justify-end">
           <Button variant="outline" onClick={() => onSave(data, "draft")} disabled={saving} className="gap-2">
