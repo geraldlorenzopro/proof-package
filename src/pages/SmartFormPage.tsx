@@ -153,7 +153,7 @@ export default function SmartFormPage() {
   );
 
   return (
-    <div className="min-h-full bg-background flex flex-col">
+    <div className="flex-1 flex flex-col min-h-0">
       <I765Wizard
         lang={lang}
         initialData={initialData}
