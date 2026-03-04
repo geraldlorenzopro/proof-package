@@ -1,0 +1,1 @@
+ALTER TYPE public.ner_plan ADD VALUE IF NOT EXISTS 'enterprise';
