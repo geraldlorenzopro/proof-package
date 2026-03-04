@@ -168,8 +168,13 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       const nameParts = (p.attorney_name || "").trim().split(/\s+/);
       const firstName = nameParts[0] || "";
       const lastName = nameParts.slice(1).join(" ") || "";
+      // Compose bar number for Page 1 header: "STATE BARNUMBER"
+      const barNum = [p.attorney_bar_state, p.attorney_bar_number].filter(Boolean).join(" ");
       setData(prev => ({
         ...prev,
+        g28Attached: true,
+        attorneyBarNumber: barNum,
+        attorneyUscisAccountNumber: prev.attorneyUscisAccountNumber || "",
         preparerUsed: true,
         preparerIsAttorney: true,
         preparerFirstName: firstName,
@@ -190,6 +195,9 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       const lastName = nameParts.slice(1).join(" ") || "";
       setData(prev => ({
         ...prev,
+        g28Attached: false,
+        attorneyBarNumber: "",
+        attorneyUscisAccountNumber: "",
         preparerUsed: true,
         preparerIsAttorney: false,
         preparerFirstName: firstName,
@@ -207,6 +215,9 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     } else if (data.formPreparedBy === "applicant") {
       setData(prev => ({
         ...prev,
+        g28Attached: false,
+        attorneyBarNumber: "",
+        attorneyUscisAccountNumber: "",
         preparerUsed: false,
         preparerIsAttorney: false,
         preparerFirstName: "", preparerLastName: "", preparerOrg: "",
@@ -739,10 +750,11 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.interpreterStreet} onChange={e => set("interpreterStreet", e.target.value)} /></Field>
             <Field label="Apt/Ste/Flr"><Input className={inputCls} value={data.interpreterApt} onChange={e => set("interpreterApt", e.target.value)} /></Field>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.interpreterCity} onChange={e => set("interpreterCity", e.target.value)} /></Field>
             <Field label={t("State", "Estado")}><StateSelect value={data.interpreterState} onChange={v => set("interpreterState", v)} /></Field>
             <Field label="ZIP"><Input className={inputCls} value={data.interpreterZip} onChange={e => set("interpreterZip", e.target.value)} /></Field>
+            <Field label={t("Province", "Provincia")}><Input className={inputCls} value={data.interpreterProvince} onChange={e => set("interpreterProvince", e.target.value)} /></Field>
           </div>
           <Field label={t("Language", "Idioma")}><Input className={inputCls} value={data.interpreterLanguage} onChange={e => set("interpreterLanguage", e.target.value)} /></Field>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
