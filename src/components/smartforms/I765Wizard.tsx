@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, Search, User, CheckCircle2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, Search, User, CheckCircle2, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -144,6 +144,9 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const [searchLoading, setSearchLoading] = useState(false);
   const [accountIdRef, setAccountIdRef] = useState<string | null>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedRef = useRef<string>("");
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const t = useCallback((en: string, es: string) => lang === "es" ? es : en, [lang]);
 
@@ -251,6 +254,36 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     setWizardNav({ steps: visibleSteps, currentStep: stepIdx, setStep: setStepIdx });
     return () => setWizardNav(null);
   }, [stepIdx, setWizardNav, visibleSteps]);
+
+  // Auto-save debounced (5s after last change)
+  useEffect(() => {
+    if (!isProfessional) return; // Don't auto-save in client mode
+    const dataStr = JSON.stringify(data);
+    if (dataStr === lastSavedRef.current) return; // No changes
+    
+    if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      setAutoSaveStatus("saving");
+      try {
+        await onSave(data, "draft");
+        lastSavedRef.current = JSON.stringify(data);
+        setAutoSaveStatus("saved");
+        setTimeout(() => setAutoSaveStatus("idle"), 3000);
+      } catch {
+        setAutoSaveStatus("error");
+        setTimeout(() => setAutoSaveStatus("idle"), 4000);
+      }
+    }, 5000);
+
+    return () => { if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current); };
+  }, [data, isProfessional]);
+
+  // Initialize lastSavedRef with initial data
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      lastSavedRef.current = JSON.stringify({ ...defaultI765Data, ...initialData });
+    }
+  }, []);
 
   const set = <K extends keyof I765Data>(key: K, value: I765Data[K]) =>
     setData(prev => ({ ...prev, [key]: value }));
@@ -903,22 +936,39 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           >
             <ChevronLeft className="w-3.5 h-3.5" />
             {t("Back to forms panel", "Volver al panel de formularios")}
-            <span className="text-xs text-accent/80 italic ml-1">
-              ({t("save draft first", "guarda el borrador primero")})
-            </span>
           </button>
           {stepRenderers[step]()}
         </div>
       </div>
 
       <div className="flex items-center justify-between border-t border-border/40 px-4 md:px-6 py-3 gap-3 bg-card/80 backdrop-blur-sm shrink-0 sticky bottom-0 z-20">
-        <Button variant="outline" onClick={prev} disabled={stepIdx === 0} className="gap-2">
-          <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
-        </Button>
-        <div className="flex gap-2 flex-wrap justify-end">
-          <Button variant="outline" onClick={() => onSave(data, "draft")} disabled={saving} className="gap-2">
-            <Save className="w-4 h-4" /> <span className="hidden sm:inline">{t("Save Draft", "Guardar Borrador")}</span>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={prev} disabled={stepIdx === 0} className="gap-2">
+            <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
           </Button>
+          {/* Auto-save status indicator */}
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
+            {autoSaveStatus === "saving" && (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin text-accent" />
+                <span>{t("Saving...", "Guardando...")}</span>
+              </>
+            )}
+            {autoSaveStatus === "saved" && (
+              <>
+                <Cloud className="w-3 h-3 text-accent" />
+                <span className="text-accent">{t("Draft saved", "Borrador guardado")}</span>
+              </>
+            )}
+            {autoSaveStatus === "error" && (
+              <>
+                <CloudOff className="w-3 h-3 text-destructive" />
+                <span className="text-destructive">{t("Save failed", "Error al guardar")}</span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2 flex-wrap justify-end">
           {isLast ? (
             <Button onClick={() => setPdfDialogOpen(true)} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
               <FileText className="w-4 h-4" /> <span className="hidden sm:inline">{t("Generate PDF", "Generar PDF")}</span>
