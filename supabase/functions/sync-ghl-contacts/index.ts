@@ -39,23 +39,33 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
+    // Log full payload for debugging (remove after confirming format)
+    console.log("GHL webhook payload:", JSON.stringify(body).slice(0, 2000));
+
     // GHL native webhook sends data in different formats:
     // Custom payload: { locationId, contact: {...} }
     // Native webhook: flat payload with location_id / locationId and contact fields at root
-    const locationId = body.location?.id || body.locationId || body.location_id;
+    const locationId = body.location?.id || body.locationId || body.location_id || body.companyId;
     
     // Contact can be nested or flat (native webhook sends fields at root level)
     const contact = body.contact || body;
 
     if (!locationId) {
+      console.error("No location ID found in payload keys:", Object.keys(body));
       return new Response(
         JSON.stringify({ error: "Missing location ID" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const email = (contact.email || contact.contact_email || "").trim();
+    // GHL native webhook may use various field names for email
+    const email = (
+      contact.email || contact.contact_email || contact.Email ||
+      body.email || body.contact_email || ""
+    ).trim();
+    
     if (!email || email.length < 3) {
+      console.error("No email found. Contact keys:", Object.keys(contact), "Body keys:", Object.keys(body));
       return new Response(
         JSON.stringify({ error: "Missing or invalid contact email" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
