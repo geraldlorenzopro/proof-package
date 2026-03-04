@@ -116,12 +116,47 @@ export default function SmartFormPage() {
   };
 
   const handleFillUSCIS = async (formData: I765Data) => {
+    // Auto-save as completed before generating PDF
+    setSaving(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const accountId = await getAccountId(session.user.id);
+        if (accountId) {
+          const payload = {
+            account_id: accountId,
+            user_id: session.user.id,
+            form_type: "i-765" as string,
+            form_version: "08/21/25",
+            status: "completed" as const,
+            form_data: JSON.parse(JSON.stringify(formData)),
+            client_name: `${formData.lastName}, ${formData.firstName}`.trim() || null,
+            client_email: formData.applicantEmail || null,
+          };
+
+          if (submissionId) {
+            await supabase.from("form_submissions").update(payload).eq("id", submissionId);
+          } else {
+            const { data: inserted } = await supabase
+              .from("form_submissions")
+              .insert(payload)
+              .select("id, share_token")
+              .single();
+            if (inserted) {
+              setSubmissionId(inserted.id);
+              setShareToken((inserted as any).share_token || null);
+              window.history.replaceState(null, "", `/dashboard/smart-forms/${inserted.id}`);
+            }
+          }
+        }
+      }
+
       await discoverI765Fields();
       await fillI765Pdf(formData);
-      toast({ title: lang === "es" ? "✅ PDF USCIS generado" : "✅ USCIS PDF generated", description: lang === "es" ? "Formulario oficial I-765 llenado con los datos" : "Official I-765 form filled with data" });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
