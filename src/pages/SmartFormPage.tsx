@@ -106,7 +106,7 @@ export default function SmartFormPage() {
         // Use the original formData (with full SSN) for PDF generation
         generateI765Pdf(formData, firmName || undefined);
       } else {
-        toast({ title: lang === "es" ? "💾 Borrador guardado" : "💾 Draft saved" });
+        toast({ title: lang === "es" ? "💾 Borrador guardado" : "💾 Draft saved", duration: 2000 });
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

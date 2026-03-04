@@ -1,13 +1,14 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, Search, User } from "lucide-react";
+import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, Search, User, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useSmartFormsContext } from "./SmartFormsContext";
@@ -441,8 +442,8 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderReason = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent">{t("What do you need?", "¿Qué necesitas?")}</h3>
-      <p className="text-sm text-muted-foreground">{t("Select the option that best describes your situation", "Selecciona la opción que mejor describe tu situación")}</p>
+      <h3 className="text-lg font-semibold text-accent text-center">{t("What do you need?", "¿Qué necesitas?")}</h3>
+      <p className="text-sm text-muted-foreground text-center">{t("Select the option that best describes your situation", "Selecciona la opción que mejor describe tu situación")}</p>
       <RadioGroup value={data.reasonForApplying} onValueChange={v => set("reasonForApplying", v as I765Data["reasonForApplying"])}>
         {[
           { v: "initial", en: "I need a work permit for the first time", es: "Necesito un permiso de trabajo por primera vez" },
@@ -463,8 +464,8 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderPersonal = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent">{t("Tell us about yourself", "Cuéntanos sobre ti")}</h3>
-      <p className="text-xs text-muted-foreground">{t("Your full legal name as it appears on your documents", "Tu nombre legal completo tal como aparece en tus documentos")}</p>
+      <h3 className="text-lg font-semibold text-accent text-center">{t("Tell us about yourself", "Cuéntanos sobre ti")}</h3>
+      <p className="text-xs text-muted-foreground text-center">{t("Your full legal name as it appears on your documents", "Tu nombre legal completo tal como aparece en tus documentos")}</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Last Name", "Apellido")}><Input className={inputCls} value={data.lastName} onChange={e => set("lastName", e.target.value)} /></Field>
         <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.firstName} onChange={e => set("firstName", e.target.value)} /></Field>
@@ -543,7 +544,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderAddress = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent">{t("Where do you receive your mail?", "¿Dónde recibes tu correo?")}</h3>
+      <h3 className="text-lg font-semibold text-accent text-center">{t("Where do you receive your mail?", "¿Dónde recibes tu correo?")}</h3>
       <Field label={t("In Care Of", "A/C de")}><Input className={inputCls} value={data.mailingCareOf} onChange={e => set("mailingCareOf", e.target.value)} /></Field>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.mailingStreet} onChange={e => set("mailingStreet", e.target.value)} /></Field>
@@ -591,7 +592,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderBackground = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent">{t("A little more about you", "Un poco más sobre ti")}</h3>
+      <h3 className="text-lg font-semibold text-accent text-center">{t("A little more about you", "Un poco más sobre ti")}</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Sex", "Sexo")}>
           <RadioGroup value={data.sex} onValueChange={v => set("sex", v as "male" | "female")} className="flex gap-4 pt-1">
@@ -630,7 +631,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderArrival = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent">{t("When did you arrive in the U.S.?", "¿Cuándo llegaste a EE.UU.?")}</h3>
+      <h3 className="text-lg font-semibold text-accent text-center">{t("When did you arrive in the U.S.?", "¿Cuándo llegaste a EE.UU.?")}</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label="I-94 #"><Input className={inputCls} value={data.i94Number} onChange={e => set("i94Number", e.target.value)} /></Field>
         <Field label={t("Passport #", "# Pasaporte")}><Input className={inputCls} value={data.passportNumber} onChange={e => set("passportNumber", e.target.value)} /></Field>
@@ -652,8 +653,8 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderEligibility = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent">{t("What's your current situation?", "¿Cuál es tu situación actual?")}</h3>
-      <p className="text-xs text-muted-foreground">{t("This helps us determine the right category for your case", "Esto nos ayuda a determinar la categoría correcta para tu caso")}</p>
+      <h3 className="text-lg font-semibold text-accent text-center">{t("What's your current situation?", "¿Cuál es tu situación actual?")}</h3>
+      <p className="text-xs text-muted-foreground text-center">{t("This helps us determine the right category for your case", "Esto nos ayuda a determinar la categoría correcta para tu caso")}</p>
       <Select value={data.eligibilityCategory} onValueChange={v => set("eligibilityCategory", v)}>
         <SelectTrigger className="bg-secondary/60 border-border/50"><SelectValue placeholder={t("Select category", "Seleccionar categoría")} /></SelectTrigger>
         <SelectContent>
@@ -702,7 +703,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderStatement = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent">{t("Your Contact Info", "Tu Información de Contacto")}</h3>
+      <h3 className="text-lg font-semibold text-accent text-center">{t("Your Contact Info", "Tu Información de Contacto")}</h3>
       {!isProfessional && (
         <div className="rounded-lg border border-accent/30 bg-accent/5 p-3">
           <p className="text-xs text-muted-foreground">
@@ -734,7 +735,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
       {data.interpreterUsed && (
         <>
-          <h3 className="text-lg font-semibold text-accent">{t("Interpreter Information", "Datos del Intérprete")}</h3>
+          <h3 className="text-lg font-semibold text-accent text-center">{t("Interpreter Information", "Datos del Intérprete")}</h3>
           {data.preparerUsed && (
             <div className="flex items-center gap-2 p-3 rounded-lg border border-border/40 bg-secondary/20">
               <Checkbox checked={data.interpreterSameAsPreparer} onCheckedChange={v => set("interpreterSameAsPreparer", !!v)} id="int-same" />
@@ -785,7 +786,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
       {data.preparerUsed && (
         <>
-          <h3 className="text-lg font-semibold text-accent">{t("Who prepared this for you?", "¿Quién te ayudó a preparar esto?")}</h3>
+          <h3 className="text-lg font-semibold text-accent text-center">{t("Who prepared this for you?", "¿Quién te ayudó a preparar esto?")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label={t("Last Name", "Apellido")}><Input className={inputCls} value={data.preparerLastName} onChange={e => set("preparerLastName", e.target.value)} /></Field>
             <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.preparerFirstName} onChange={e => set("preparerFirstName", e.target.value)} /></Field>
@@ -841,6 +842,23 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const isLast = stepIdx === visibleSteps.length - 1;
 
+  // PDF dialog state
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [lastPdfType, setLastPdfType] = useState<"uscis" | "summary" | null>(null);
+
+  const handleGeneratePdf = (type: "uscis" | "summary") => {
+    setPdfDialogOpen(false);
+    setLastPdfType(type);
+    if (type === "uscis" && onFillUSCIS) {
+      onFillUSCIS({ ...data, ssn: ssnFull || data.ssn });
+    } else {
+      onSave({ ...data, ssn: ssnFull || data.ssn }, "completed");
+    }
+    // Show success dialog after a short delay for the PDF to generate
+    setTimeout(() => setSuccessDialogOpen(true), 800);
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <div className="flex-1 overflow-auto p-4 md:p-6 md:py-8">
@@ -869,16 +887,9 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Save className="w-4 h-4" /> <span className="hidden sm:inline">{t("Save Draft", "Guardar Borrador")}</span>
           </Button>
           {isLast ? (
-            <div className="flex gap-2 flex-wrap">
-              {onFillUSCIS && (
-                <Button variant="outline" onClick={() => onFillUSCIS({ ...data, ssn: ssnFull || data.ssn })} className="gap-2 border-accent/40 text-accent hover:bg-accent/10">
-                  <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">{t("Fill USCIS PDF", "Llenar PDF USCIS")}</span>
-                </Button>
-              )}
-              <Button onClick={() => { onSave({ ...data, ssn: ssnFull || data.ssn }, "completed"); }} disabled={saving} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
-                <FileText className="w-4 h-4" /> <span className="hidden sm:inline">{t("Complete & Generate PDF", "Completar y Generar PDF")}</span>
-              </Button>
-            </div>
+            <Button onClick={() => setPdfDialogOpen(true)} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+              <FileText className="w-4 h-4" /> <span className="hidden sm:inline">{t("Generate PDF", "Generar PDF")}</span>
+            </Button>
           ) : (
             <Button onClick={next} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
               {t("Next", "Siguiente")} <ChevronRight className="w-4 h-4" />
@@ -886,6 +897,82 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           )}
         </div>
       </div>
+
+      {/* PDF Type Selector Dialog */}
+      <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">{t("Generate PDF", "Generar PDF")}</DialogTitle>
+            <DialogDescription className="text-center">
+              {t("Choose the type of document you want to generate", "Elige el tipo de documento que deseas generar")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 pt-2">
+            {onFillUSCIS && (
+              <button
+                type="button"
+                onClick={() => handleGeneratePdf("uscis")}
+                className="flex items-start gap-4 p-4 rounded-xl border border-border/40 hover:border-accent/60 hover:bg-accent/5 transition-all text-left cursor-pointer"
+              >
+                <FileDown className="w-6 h-6 text-accent shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-sm">{t("Official USCIS PDF", "PDF Oficial USCIS")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t("Fills the official I-765 form template with all data", "Llena la plantilla oficial del formulario I-765 con todos los datos")}
+                  </p>
+                </div>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => handleGeneratePdf("summary")}
+              className="flex items-start gap-4 p-4 rounded-xl border border-border/40 hover:border-accent/60 hover:bg-accent/5 transition-all text-left cursor-pointer"
+            >
+              <FileText className="w-6 h-6 text-accent shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-sm">{t("Client Summary PDF", "PDF Resumen del Cliente")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t("A clean summary with all the client's information", "Un resumen limpio con toda la información del cliente")}
+                </p>
+              </div>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Dialog after PDF generation */}
+      <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <div className="flex flex-col items-center text-center gap-4 py-4">
+            <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-accent" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-bold">{t("PDF Generated!", "¡PDF Generado!")}</h3>
+              <p className="text-sm text-muted-foreground">
+                {lastPdfType === "uscis"
+                  ? t("The official USCIS I-765 has been downloaded.", "El I-765 oficial de USCIS ha sido descargado.")
+                  : t("The client summary PDF has been downloaded.", "El PDF resumen del cliente ha sido descargado.")}
+              </p>
+            </div>
+            <div className="flex gap-3 w-full pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => { setSuccessDialogOpen(false); }}
+              >
+                {t("Keep editing", "Seguir editando")}
+              </Button>
+              <Button
+                className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={() => { setSuccessDialogOpen(false); navigate("/dashboard/smart-forms"); }}
+              >
+                {t("Go to panel", "Ir al panel")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
