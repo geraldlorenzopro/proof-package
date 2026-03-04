@@ -192,7 +192,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                 <span className="text-sm font-medium">{t("Preparer", "Preparador")}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {t("A non-attorney preparer assisted (requires G-28)", "Un preparador no-abogado asistió (requiere G-28)")}
+                {t("A non-attorney preparer assisted (no G-28 needed)", "Un preparador no-abogado asistió (no requiere G-28)")}
               </p>
               {hasPreparerData ? (
                 <p className="text-xs text-accent mt-2">✓ {p.preparer_name}</p>
