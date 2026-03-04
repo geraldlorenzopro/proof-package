@@ -18,6 +18,7 @@ export default function SmartFormPage() {
   const [submissionId, setSubmissionId] = useState<string | null>(isNew ? null : id!);
   const [initialData, setInitialData] = useState<Partial<I765Data>>({});
   const [firmName, setFirmName] = useState<string | null>(null);
+  const [shareToken, setShareToken] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function SmartFormPage() {
       if (!isNew && id) {
         const { data: sub, error } = await supabase
           .from("form_submissions")
-          .select("id, form_data")
+          .select("id, form_data, share_token")
           .eq("id", id)
           .maybeSingle();
         if (error || !sub) {
@@ -47,6 +48,7 @@ export default function SmartFormPage() {
         }
         setSubmissionId(sub.id);
         setInitialData(sub.form_data as Partial<I765Data>);
+        setShareToken((sub as any).share_token || null);
       }
       setLoaded(true);
     };
@@ -94,12 +96,12 @@ export default function SmartFormPage() {
         const { data: inserted, error } = await supabase
           .from("form_submissions")
           .insert(payload)
-          .select("id")
+          .select("id, share_token")
           .single();
         if (error) throw error;
         if (inserted) {
           setSubmissionId(inserted.id);
-          // Replace URL so subsequent saves update rather than insert
+          setShareToken((inserted as any).share_token || null);
           window.history.replaceState(null, "", `/dashboard/smart-forms/${inserted.id}`);
         }
       }
@@ -119,13 +121,29 @@ export default function SmartFormPage() {
 
   const handleFillUSCIS = async (formData: I765Data) => {
     try {
-      // First discover fields to help with debugging (logged to console)
       await discoverI765Fields();
       await fillI765Pdf(formData);
       toast({ title: lang === "es" ? "✅ PDF USCIS generado" : "✅ USCIS PDF generated", description: lang === "es" ? "Formulario oficial I-765 llenado con los datos" : "Official I-765 form filled with data" });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
+  };
+
+  const handleRequestShareToken = async (): Promise<string | null> => {
+    // If already have a token, return it
+    if (shareToken) return shareToken;
+    // If already saved, fetch the token
+    if (submissionId) {
+      const { data: row } = await supabase
+        .from("form_submissions")
+        .select("share_token")
+        .eq("id", submissionId)
+        .maybeSingle();
+      const token = (row as any)?.share_token || null;
+      if (token) setShareToken(token);
+      return token;
+    }
+    return null;
   };
 
   if (!loaded) return (
@@ -136,7 +154,15 @@ export default function SmartFormPage() {
 
   return (
     <div className="min-h-full bg-background flex flex-col">
-      <I765Wizard lang={lang} initialData={initialData} onSave={handleSave} onFillUSCIS={handleFillUSCIS} saving={saving} />
+      <I765Wizard
+        lang={lang}
+        initialData={initialData}
+        onSave={handleSave}
+        onFillUSCIS={handleFillUSCIS}
+        saving={saving}
+        shareToken={shareToken}
+        onRequestShareToken={handleRequestShareToken}
+      />
     </div>
   );
 }

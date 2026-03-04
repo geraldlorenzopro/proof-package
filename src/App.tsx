@@ -26,6 +26,7 @@ import VawaChecklistPage from "./pages/VawaChecklistPage";
 import SmartFormsList from "./pages/SmartFormsList";
 import SmartFormPage from "./pages/SmartFormPage";
 import SmartFormsLayout from "./components/smartforms/SmartFormsLayout";
+import ClientQuestionnaire from "./pages/ClientQuestionnaire";
 import NotFound from "./pages/NotFound";
 import PdfFieldInspector from "./pages/PdfFieldInspector";
 
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/dashboard/cspa" element={<CspaTool />} />
           <Route path="/dashboard/tracker" element={<PlaceholderTool tool="tracker" />} />
           <Route path="/upload/:token" element={<ClientUpload />} />
+          <Route path="/q/:token" element={<ClientQuestionnaire />} />
           {/* Admin Panel consolidated into Dashboard */}
           <Route path="/case/:id" element={<CaseReview />} />
           <Route path="/dashboard/uscis-analyzer" element={<UscisAnalyzer />} />

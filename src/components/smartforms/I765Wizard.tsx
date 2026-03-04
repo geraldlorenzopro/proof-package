@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle } from "lucide-react";
+import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,10 @@ interface Props {
   saving?: boolean;
   /** When true, shows preparer/interpreter fields (hidden from clients in public mode) */
   isProfessional?: boolean;
+  /** Share token for generating client link */
+  shareToken?: string | null;
+  /** Callback to save draft first (returns share token) */
+  onRequestShareToken?: () => Promise<string | null>;
 }
 
 // ─── Field helpers ───
@@ -41,7 +45,72 @@ const StateSelect = ({ value, onChange }: { value: string; onChange: (v: string)
 
 const inputCls = "bg-secondary/60 border-border/50 focus:border-accent/60";
 
-export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, saving, isProfessional = true }: Props) {
+// ─── Client Link Section (inside caseConfig) ───
+function ClientLinkSection({ lang, shareToken, onRequestShareToken, t }: {
+  lang: "en" | "es";
+  shareToken?: string | null;
+  onRequestShareToken?: () => Promise<string | null>;
+  t: (en: string, es: string) => string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [localToken, setLocalToken] = useState(shareToken || null);
+
+  useEffect(() => { if (shareToken) setLocalToken(shareToken); }, [shareToken]);
+
+  const clientUrl = localToken ? `${window.location.origin}/q/${localToken}` : null;
+
+  const handleGenerate = async () => {
+    if (!onRequestShareToken) return;
+    setGenerating(true);
+    const token = await onRequestShareToken();
+    if (token) setLocalToken(token);
+    setGenerating(false);
+  };
+
+  const handleCopy = () => {
+    if (!clientUrl) return;
+    navigator.clipboard.writeText(clientUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="border-t border-border/30 pt-4 mt-2 space-y-3">
+      <p className="text-sm font-medium text-foreground flex items-center gap-2">
+        <Link2 className="w-4 h-4 text-accent" />
+        {t("Send to Client", "Enviar al Cliente")}
+      </p>
+      <p className="text-xs text-muted-foreground">
+        {t("Generate a secure link so the client can complete the questionnaire on their own.",
+           "Genera un enlace seguro para que el cliente complete el cuestionario por su cuenta.")}
+      </p>
+      {clientUrl ? (
+        <div className="flex items-center gap-2">
+          <Input
+            readOnly
+            value={clientUrl}
+            className="bg-secondary/60 border-border/50 text-xs font-mono flex-1"
+            onClick={handleCopy}
+          />
+          <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5 shrink-0">
+            {copied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? t("Copied!", "¡Copiado!") : t("Copy", "Copiar")}
+          </Button>
+        </div>
+      ) : (
+        <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating} className="gap-2">
+          <Link2 className="w-4 h-4" />
+          {generating
+            ? t("Saving draft...", "Guardando borrador...")
+            : t("Generate Client Link", "Generar Enlace para Cliente")}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, saving, isProfessional = true, shareToken, onRequestShareToken }: Props) {
   const [data, setData] = useState<I765Data>({ ...defaultI765Data, ...initialData });
   const visibleSteps = isProfessional ? I765_STEPS : I765_STEPS.filter(s => s !== "caseConfig");
   const [stepIdx, setStepIdx] = useState(0);
@@ -253,6 +322,22 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Label htmlFor="interpreter" className="text-sm cursor-pointer">{t("An interpreter will be used", "Se utilizará un intérprete")}</Label>
           </div>
         </div>
+
+        {/* Send link to client */}
+        {isProfessional && (
+          <ClientLinkSection
+            lang={lang}
+            shareToken={shareToken}
+            onRequestShareToken={async () => {
+              // Save draft first, then get token
+              onSave(data, "draft");
+              // Small delay to let save complete
+              await new Promise(r => setTimeout(r, 1000));
+              return onRequestShareToken ? onRequestShareToken() : null;
+            }}
+            t={t}
+          />
+        )}
       </div>
     );
   };

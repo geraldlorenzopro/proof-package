@@ -489,6 +489,7 @@ export type Database = {
           form_version: string
           id: string
           notes: string | null
+          share_token: string | null
           status: string
           updated_at: string
           user_id: string
@@ -505,6 +506,7 @@ export type Database = {
           form_version?: string
           id?: string
           notes?: string | null
+          share_token?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -521,6 +523,7 @@ export type Database = {
           form_version?: string
           id?: string
           notes?: string | null
+          share_token?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -879,6 +882,18 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_form_by_token: {
+        Args: { _token: string }
+        Returns: {
+          client_email: string
+          client_name: string
+          form_data: Json
+          form_type: string
+          form_version: string
+          id: string
+          status: string
+        }[]
+      }
       get_shared_analysis: {
         Args: { _share_token: string }
         Returns: {
@@ -914,6 +929,16 @@ export type Database = {
           _notes?: string
           _participants?: string
           _platform?: string
+          _token: string
+        }
+        Returns: undefined
+      }
+      update_form_by_token: {
+        Args: {
+          _client_email?: string
+          _client_name?: string
+          _form_data: Json
+          _status?: string
           _token: string
         }
         Returns: undefined
