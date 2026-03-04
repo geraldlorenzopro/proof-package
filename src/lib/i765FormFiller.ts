@@ -603,6 +603,13 @@ export async function fillI765Pdf(data: I765Data) {
   const ssnFields = allFields.filter(f => f.getName().toLowerCase().includes("ssn") || f.getName().includes("12b"));
   console.log("[i765] SSN fields found:", ssnFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
 
+  // Log SEVIS / Page3 fields for discovery
+  const sevisFields = allFields.filter(f => f.getName().toLowerCase().includes("sevis") || f.getName().includes("Line26") || f.getName().includes("SEVISID"));
+  console.log("[i765] SEVIS fields found:", sevisFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
+  // Log ALL Page3 fields for full discovery
+  const page3Fields = allFields.filter(f => f.getName().includes("Page3"));
+  console.log("[i765] ALL Page3 fields:", page3Fields.map(f => f.getName()));
+
   try {
     const pages = pdf.getPages();
 
