@@ -53,6 +53,10 @@ function setText(form: PDFForm, pattern: RegExp, value: string | undefined | nul
     console.warn(`[i765] No field found for pattern: ${pattern.source}`);
     return;
   }
+  // Debug Part 5 address fields
+  if (pattern.source.includes("Pt5Line3")) {
+    console.log(`[i765] Setting Pt5 address field: ${field.getName()} (${field.constructor.name}) = "${value}"`);
+  }
   if (field instanceof PDFTextField) {
     const maxLen = field.getMaxLength();
     const safeValue = maxLen !== undefined ? value.slice(0, maxLen) : value;
@@ -506,6 +510,13 @@ export async function fillI765Pdf(data: I765Data) {
 
   // ── Part 5: Preparer ──
   if (data.preparerUsed) {
+    console.log("[i765] Part 5 preparer data:", {
+      street: data.preparerStreet,
+      city: data.preparerCity,
+      state: data.preparerState,
+      zip: data.preparerZip,
+      name: `${data.preparerFirstName} ${data.preparerLastName}`,
+    });
     setText(form, P.pt5_family, data.preparerLastName);
     setText(form, P.pt5_given, data.preparerFirstName);
     setText(form, P.pt5_org, data.preparerOrg);
