@@ -199,6 +199,149 @@ export type Database = {
         }
         Relationships: []
       }
+      client_profiles: {
+        Row: {
+          a_number: string | null
+          account_id: string
+          address_apt: string | null
+          address_city: string | null
+          address_country: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
+          city_of_birth: string | null
+          class_of_admission: string | null
+          country_of_birth: string | null
+          country_of_citizenship: string | null
+          created_at: string
+          created_by: string
+          date_of_last_entry: string | null
+          dob: string | null
+          email: string | null
+          first_name: string | null
+          gender: string | null
+          i94_number: string | null
+          id: string
+          immigration_status: string | null
+          last_name: string | null
+          mailing_apt: string | null
+          mailing_city: string | null
+          mailing_country: string | null
+          mailing_same_as_physical: boolean | null
+          mailing_state: string | null
+          mailing_street: string | null
+          mailing_zip: string | null
+          marital_status: string | null
+          middle_name: string | null
+          mobile_phone: string | null
+          notes: string | null
+          passport_country: string | null
+          passport_expiration: string | null
+          passport_number: string | null
+          phone: string | null
+          place_of_last_entry: string | null
+          province_of_birth: string | null
+          ssn_last4: string | null
+          updated_at: string
+        }
+        Insert: {
+          a_number?: string | null
+          account_id: string
+          address_apt?: string | null
+          address_city?: string | null
+          address_country?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          city_of_birth?: string | null
+          class_of_admission?: string | null
+          country_of_birth?: string | null
+          country_of_citizenship?: string | null
+          created_at?: string
+          created_by: string
+          date_of_last_entry?: string | null
+          dob?: string | null
+          email?: string | null
+          first_name?: string | null
+          gender?: string | null
+          i94_number?: string | null
+          id?: string
+          immigration_status?: string | null
+          last_name?: string | null
+          mailing_apt?: string | null
+          mailing_city?: string | null
+          mailing_country?: string | null
+          mailing_same_as_physical?: boolean | null
+          mailing_state?: string | null
+          mailing_street?: string | null
+          mailing_zip?: string | null
+          marital_status?: string | null
+          middle_name?: string | null
+          mobile_phone?: string | null
+          notes?: string | null
+          passport_country?: string | null
+          passport_expiration?: string | null
+          passport_number?: string | null
+          phone?: string | null
+          place_of_last_entry?: string | null
+          province_of_birth?: string | null
+          ssn_last4?: string | null
+          updated_at?: string
+        }
+        Update: {
+          a_number?: string | null
+          account_id?: string
+          address_apt?: string | null
+          address_city?: string | null
+          address_country?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          city_of_birth?: string | null
+          class_of_admission?: string | null
+          country_of_birth?: string | null
+          country_of_citizenship?: string | null
+          created_at?: string
+          created_by?: string
+          date_of_last_entry?: string | null
+          dob?: string | null
+          email?: string | null
+          first_name?: string | null
+          gender?: string | null
+          i94_number?: string | null
+          id?: string
+          immigration_status?: string | null
+          last_name?: string | null
+          mailing_apt?: string | null
+          mailing_city?: string | null
+          mailing_country?: string | null
+          mailing_same_as_physical?: boolean | null
+          mailing_state?: string | null
+          mailing_street?: string | null
+          mailing_zip?: string | null
+          marital_status?: string | null
+          middle_name?: string | null
+          mobile_phone?: string | null
+          notes?: string | null
+          passport_country?: string | null
+          passport_expiration?: string | null
+          passport_number?: string | null
+          phone?: string | null
+          place_of_last_entry?: string | null
+          province_of_birth?: string | null
+          ssn_last4?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_profiles_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cspa_calculations: {
         Row: {
           approval_date: string | null
@@ -339,6 +482,7 @@ export type Database = {
           case_id: string | null
           client_email: string | null
           client_name: string | null
+          client_profile_id: string | null
           created_at: string
           form_data: Json
           form_type: string
@@ -354,6 +498,7 @@ export type Database = {
           case_id?: string | null
           client_email?: string | null
           client_name?: string | null
+          client_profile_id?: string | null
           created_at?: string
           form_data?: Json
           form_type?: string
@@ -369,6 +514,7 @@ export type Database = {
           case_id?: string | null
           client_email?: string | null
           client_name?: string | null
+          client_profile_id?: string | null
           created_at?: string
           form_data?: Json
           form_type?: string
@@ -392,6 +538,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -464,27 +617,90 @@ export type Database = {
       }
       profiles: {
         Row: {
+          attorney_address: string | null
+          attorney_bar_number: string | null
+          attorney_bar_state: string | null
+          attorney_city: string | null
+          attorney_country: string | null
+          attorney_email: string | null
+          attorney_fax: string | null
+          attorney_name: string | null
+          attorney_phone: string | null
+          attorney_state: string | null
+          attorney_zip: string | null
           created_at: string
           firm_name: string | null
           full_name: string | null
           id: string
           logo_url: string | null
+          preparer_address: string | null
+          preparer_business_name: string | null
+          preparer_city: string | null
+          preparer_country: string | null
+          preparer_email: string | null
+          preparer_fax: string | null
+          preparer_name: string | null
+          preparer_phone: string | null
+          preparer_state: string | null
+          preparer_zip: string | null
           user_id: string
         }
         Insert: {
+          attorney_address?: string | null
+          attorney_bar_number?: string | null
+          attorney_bar_state?: string | null
+          attorney_city?: string | null
+          attorney_country?: string | null
+          attorney_email?: string | null
+          attorney_fax?: string | null
+          attorney_name?: string | null
+          attorney_phone?: string | null
+          attorney_state?: string | null
+          attorney_zip?: string | null
           created_at?: string
           firm_name?: string | null
           full_name?: string | null
           id?: string
           logo_url?: string | null
+          preparer_address?: string | null
+          preparer_business_name?: string | null
+          preparer_city?: string | null
+          preparer_country?: string | null
+          preparer_email?: string | null
+          preparer_fax?: string | null
+          preparer_name?: string | null
+          preparer_phone?: string | null
+          preparer_state?: string | null
+          preparer_zip?: string | null
           user_id: string
         }
         Update: {
+          attorney_address?: string | null
+          attorney_bar_number?: string | null
+          attorney_bar_state?: string | null
+          attorney_city?: string | null
+          attorney_country?: string | null
+          attorney_email?: string | null
+          attorney_fax?: string | null
+          attorney_name?: string | null
+          attorney_phone?: string | null
+          attorney_state?: string | null
+          attorney_zip?: string | null
           created_at?: string
           firm_name?: string | null
           full_name?: string | null
           id?: string
           logo_url?: string | null
+          preparer_address?: string | null
+          preparer_business_name?: string | null
+          preparer_city?: string | null
+          preparer_country?: string | null
+          preparer_email?: string | null
+          preparer_fax?: string | null
+          preparer_name?: string | null
+          preparer_phone?: string | null
+          preparer_state?: string | null
+          preparer_zip?: string | null
           user_id?: string
         }
         Relationships: []
