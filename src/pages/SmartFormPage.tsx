@@ -20,6 +20,7 @@ export default function SmartFormPage() {
   const [firmName, setFirmName] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [beneficiaryProfileId, setBeneficiaryProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -38,7 +39,7 @@ export default function SmartFormPage() {
       if (!isNew && id) {
         const { data: sub, error } = await supabase
           .from("form_submissions")
-          .select("id, form_data, share_token")
+          .select("id, form_data, share_token, beneficiary_profile_id")
           .eq("id", id)
           .maybeSingle();
         if (error || !sub) {
@@ -49,6 +50,7 @@ export default function SmartFormPage() {
         setSubmissionId(sub.id);
         setInitialData(sub.form_data as Partial<I765Data>);
         setShareToken((sub as any).share_token || null);
+        setBeneficiaryProfileId((sub as any).beneficiary_profile_id || null);
       }
       setLoaded(true);
     };
@@ -80,6 +82,7 @@ export default function SmartFormPage() {
         form_data: JSON.parse(JSON.stringify(formData)),
         client_name: `${formData.lastName}, ${formData.firstName}`.trim() || null,
         client_email: formData.applicantEmail || null,
+        beneficiary_profile_id: beneficiaryProfileId,
       };
 
       if (submissionId) {
@@ -132,6 +135,7 @@ export default function SmartFormPage() {
             form_data: JSON.parse(JSON.stringify(formData)),
             client_name: `${formData.lastName}, ${formData.firstName}`.trim() || null,
             client_email: formData.applicantEmail || null,
+            beneficiary_profile_id: beneficiaryProfileId,
           };
 
           if (submissionId) {
@@ -193,6 +197,8 @@ export default function SmartFormPage() {
         saving={saving}
         shareToken={shareToken}
         onRequestShareToken={handleRequestShareToken}
+        onBeneficiarySelect={setBeneficiaryProfileId}
+        initialBeneficiaryId={beneficiaryProfileId}
       />
     </div>
   );

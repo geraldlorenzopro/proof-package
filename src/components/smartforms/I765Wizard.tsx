@@ -29,6 +29,10 @@ interface Props {
   shareToken?: string | null;
   /** Callback to save draft first (returns share token) */
   onRequestShareToken?: () => Promise<string | null>;
+  /** Callback when beneficiary profile is selected */
+  onBeneficiarySelect?: (profileId: string | null) => void;
+  /** Initial beneficiary profile ID (for editing existing forms) */
+  initialBeneficiaryId?: string | null;
 }
 
 // ─── Field helpers ───
@@ -113,7 +117,7 @@ function ClientLinkSection({ lang, shareToken, onRequestShareToken, t }: {
   );
 }
 
-export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, saving, isProfessional = true, shareToken, onRequestShareToken }: Props) {
+export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, saving, isProfessional = true, shareToken, onRequestShareToken, onBeneficiarySelect, initialBeneficiaryId }: Props) {
   const [data, setData] = useState<I765Data>({ ...defaultI765Data, ...initialData });
   const visibleSteps = isProfessional ? I765_STEPS : I765_STEPS.filter(s => s !== "caseConfig");
   const [stepIdx, setStepIdx] = useState(0);
@@ -130,7 +134,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   // Client profiles for selector
   const [clientProfiles, setClientProfiles] = useState<any[]>([]);
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(initialBeneficiaryId || null);
   const [clientSearch, setClientSearch] = useState("");
 
   const t = useCallback((en: string, es: string) => lang === "es" ? es : en, [lang]);
@@ -247,11 +251,12 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     );
   }, [clientProfiles, clientSearch]);
 
-  // Auto-fill from selected client profile
+  // Auto-fill from selected client profile (beneficiary)
   const selectClient = (clientId: string) => {
     const c = clientProfiles.find(cp => cp.id === clientId);
     if (!c) return;
     setSelectedClientId(clientId);
+    onBeneficiarySelect?.(clientId);
     setData(prev => ({
       ...prev,
       firstName: c.first_name || prev.firstName,
@@ -354,8 +359,9 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           <div className="rounded-xl border border-border/30 p-4 space-y-3">
             <p className="text-sm font-bold text-foreground flex items-center gap-2">
               <User className="w-4 h-4 text-accent" />
-              {t("Client", "Cliente")}
+              {t("Beneficiary (Applicant)", "Beneficiario (Aplicante)")}
             </p>
+            <p className="text-xs text-muted-foreground">{t("The person applying for the work permit", "La persona que solicita el permiso de trabajo")}</p>
             {clientProfiles.length > 0 ? (
               <>
                 <div className="relative">
