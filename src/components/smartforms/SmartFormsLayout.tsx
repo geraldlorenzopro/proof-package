@@ -1,7 +1,8 @@
 import { Outlet, useNavigate } from "react-router-dom";
-import { FileText, List, Plus, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { FileText, List, Plus, ArrowLeft, CheckCircle2, Shield, Settings } from "lucide-react";
 import { LangToggle } from "@/components/LangToggle";
 import { NavLink } from "@/components/NavLink";
+import { useBackDestination } from "@/hooks/useBackDestination";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ import {
 const navItems = [
   { title: "Formularios", url: "/dashboard/smart-forms", icon: List, end: true },
   { title: "Nuevo Cuestionario", url: "/dashboard/smart-forms/new", icon: Plus, end: true },
+  { title: "Configuración", url: "/dashboard/settings", icon: Settings, end: false },
 ];
 
 /* ── Mobile step drawer (shown only on small screens when wizard is active) ── */
@@ -103,6 +105,7 @@ function SmartFormsSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { wizardNav, lang } = useSmartFormsContext();
+  const { destination: backDest, isHub } = useBackDestination();
 
   const progress = wizardNav
     ? ((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100
@@ -111,16 +114,24 @@ function SmartFormsSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40">
       <SidebarContent className="pt-4">
-        {/* Back to dashboard */}
+        {/* Back button — Hub-aware */}
         <div className="px-3 mb-4">
           <Button
             variant="ghost"
             size={collapsed ? "icon" : "sm"}
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate(backDest)}
             className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-4 h-4 shrink-0" />
-            {!collapsed && <span className="text-xs">Dashboard</span>}
+            {!collapsed && (
+              isHub ? (
+                <span className="text-xs flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5 text-jarvis" /> Hub
+                </span>
+              ) : (
+                <span className="text-xs">Dashboard</span>
+              )
+            )}
           </Button>
         </div>
 
