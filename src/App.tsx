@@ -25,6 +25,7 @@ import VawaScreener from "./pages/VawaScreener";
 import VawaChecklistPage from "./pages/VawaChecklistPage";
 import SmartFormsList from "./pages/SmartFormsList";
 import SmartFormPage from "./pages/SmartFormPage";
+import SmartFormsSettings from "./pages/SmartFormsSettings";
 import SmartFormsLayout from "./components/smartforms/SmartFormsLayout";
 import ClientQuestionnaire from "./pages/ClientQuestionnaire";
 import NotFound from "./pages/NotFound";
@@ -63,6 +64,7 @@ const App = () => (
           <Route path="/dashboard/smart-forms" element={<SmartFormsLayout />}>
             <Route index element={<SmartFormsList />} />
             <Route path="new" element={<SmartFormPage />} />
+            <Route path="settings" element={<SmartFormsSettings />} />
             <Route path=":id" element={<SmartFormPage />} />
           </Route>
           <Route path="/debug/pdf-fields" element={<PdfFieldInspector />} />
