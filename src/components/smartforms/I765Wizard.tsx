@@ -75,25 +75,29 @@ function ClientLinkSection({ lang, shareToken, onRequestShareToken, t }: {
     setGenerating(false);
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!clientUrl) return;
-    navigator.clipboard.writeText(clientUrl);
+    try {
+      await navigator.clipboard.writeText(clientUrl);
+    } catch {
+      // Fallback for iframes / insecure contexts
+      const ta = document.createElement("textarea");
+      ta.value = clientUrl;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="border-t border-border/30 pt-4 mt-2 space-y-3">
-      <p className="text-sm font-medium text-foreground flex items-center gap-2">
-        <Link2 className="w-4 h-4 text-accent" />
-        {t("Send to Client", "Enviar al Cliente")}
-      </p>
-      <p className="text-xs text-muted-foreground">
-        {t("Generate a secure link so the client can complete the questionnaire on their own.",
-           "Genera un enlace seguro para que el cliente complete el cuestionario por su cuenta.")}
-      </p>
+    <div className="space-y-3 text-center">
       {clientUrl ? (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 max-w-md mx-auto">
           <Input
             readOnly
             value={clientUrl}
@@ -106,7 +110,7 @@ function ClientLinkSection({ lang, shareToken, onRequestShareToken, t }: {
           </Button>
         </div>
       ) : (
-        <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating} className="gap-2">
+        <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating} className="gap-2 mx-auto">
           <Link2 className="w-4 h-4" />
           {generating
             ? t("Saving draft...", "Guardando borrador...")
