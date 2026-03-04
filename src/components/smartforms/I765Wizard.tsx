@@ -462,7 +462,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   );
 
   const renderPersonal = () => (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <h3 className="text-lg font-semibold text-accent">{t("Tell us about yourself", "Cuéntanos sobre ti")}</h3>
       <p className="text-xs text-muted-foreground">{t("Your full legal name as it appears on your documents", "Tu nombre legal completo tal como aparece en tus documentos")}</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -470,7 +470,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.firstName} onChange={e => set("firstName", e.target.value)} /></Field>
         <Field label={t("Middle Name", "Segundo Nombre")}><Input className={inputCls} value={data.middleName} onChange={e => set("middleName", e.target.value)} /></Field>
       </div>
-      <div className="flex items-center gap-2 pt-2">
+      <div className="flex items-center gap-2">
         <Checkbox checked={hasOtherName} onCheckedChange={v => {
           setHasOtherName(!!v);
           if (!v) set("otherNames", []);
@@ -507,11 +507,9 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           )}
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label="A-Number"><Input className={inputCls} value={data.aNumber} onChange={e => set("aNumber", e.target.value)} placeholder="A-" /></Field>
         <Field label="USCIS Online Account #"><Input className={inputCls} value={data.uscisAccountNumber} onChange={e => set("uscisAccountNumber", e.target.value)} /></Field>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="SSN">
           <Input
             className={inputCls}
@@ -544,7 +542,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   );
 
   const renderAddress = () => (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <h3 className="text-lg font-semibold text-accent">{t("Where do you receive your mail?", "¿Dónde recibes tu correo?")}</h3>
       <Field label={t("In Care Of", "A/C de")}><Input className={inputCls} value={data.mailingCareOf} onChange={e => set("mailingCareOf", e.target.value)} /></Field>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -592,13 +590,13 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   );
 
   const renderBackground = () => (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <h3 className="text-lg font-semibold text-accent">{t("A little more about you", "Un poco más sobre ti")}</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Sex", "Sexo")}>
-          <RadioGroup value={data.sex} onValueChange={v => set("sex", v as "male" | "female")} className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="male" />{t("Male", "Masculino")}</label>
-            <label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="female" />{t("Female", "Femenino")}</label>
+          <RadioGroup value={data.sex} onValueChange={v => set("sex", v as "male" | "female")} className="flex gap-4 pt-1">
+            <label className="flex items-center gap-2 cursor-pointer text-sm"><RadioGroupItem value="male" />{t("Male", "M")}</label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm"><RadioGroupItem value="female" />{t("Female", "F")}</label>
           </RadioGroup>
         </Field>
         <Field label={t("Marital Status", "Estado Civil")}>
@@ -612,45 +610,43 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             </SelectContent>
           </Select>
         </Field>
-      </div>
-      <div className="flex items-center gap-2">
-        <Checkbox checked={data.previouslyFiled} onCheckedChange={v => set("previouslyFiled", !!v)} id="prev-filed" />
-        <Label htmlFor="prev-filed" className="text-sm cursor-pointer">{t("Have you previously filed Form I-765?", "¿Ha presentado anteriormente el Formulario I-765?")}</Label>
+        <Field label={t("Date of Birth", "Fecha de Nacimiento")}><Input type="date" className={inputCls} value={data.dateOfBirth} onChange={e => set("dateOfBirth", e.target.value)} /></Field>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label={t("Country of Citizenship", "País de Ciudadanía")}><Input className={inputCls} value={data.countryOfCitizenship1} onChange={e => set("countryOfCitizenship1", e.target.value)} /></Field>
         <Field label={t("2nd Country (if any)", "2do País (si aplica)")}><Input className={inputCls} value={data.countryOfCitizenship2} onChange={e => set("countryOfCitizenship2", e.target.value)} /></Field>
       </div>
-      <p className="text-xs text-muted-foreground font-medium">{t("Place of Birth", "Lugar de Nacimiento")}</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Field label={t("City/Town", "Ciudad/Pueblo")}><Input className={inputCls} value={data.cityOfBirth} onChange={e => set("cityOfBirth", e.target.value)} /></Field>
+        <Field label={t("Birth City/Town", "Ciudad/Pueblo Nacimiento")}><Input className={inputCls} value={data.cityOfBirth} onChange={e => set("cityOfBirth", e.target.value)} /></Field>
         <Field label={t("State/Province", "Estado/Provincia")}><Input className={inputCls} value={data.stateOfBirth} onChange={e => set("stateOfBirth", e.target.value)} /></Field>
         <Field label={t("Country", "País")}><Input className={inputCls} value={data.countryOfBirth} onChange={e => set("countryOfBirth", e.target.value)} /></Field>
       </div>
-      <Field label={t("Date of Birth", "Fecha de Nacimiento")}><Input type="date" className={cn(inputCls, "max-w-xs")} value={data.dateOfBirth} onChange={e => set("dateOfBirth", e.target.value)} /></Field>
+      <div className="flex items-center gap-2">
+        <Checkbox checked={data.previouslyFiled} onCheckedChange={v => set("previouslyFiled", !!v)} id="prev-filed" />
+        <Label htmlFor="prev-filed" className="text-sm cursor-pointer">{t("Have you previously filed Form I-765?", "¿Ha presentado anteriormente el Formulario I-765?")}</Label>
+      </div>
     </div>
   );
 
   const renderArrival = () => (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <h3 className="text-lg font-semibold text-accent">{t("When did you arrive in the U.S.?", "¿Cuándo llegaste a EE.UU.?")}</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label="I-94 #"><Input className={inputCls} value={data.i94Number} onChange={e => set("i94Number", e.target.value)} /></Field>
-        <Field label={t("Passport Number", "Número de Pasaporte")}><Input className={inputCls} value={data.passportNumber} onChange={e => set("passportNumber", e.target.value)} /></Field>
+        <Field label={t("Passport #", "# Pasaporte")}><Input className={inputCls} value={data.passportNumber} onChange={e => set("passportNumber", e.target.value)} /></Field>
+        <Field label={t("Travel Doc #", "# Doc. Viaje")}><Input className={inputCls} value={data.travelDocNumber} onChange={e => set("travelDocNumber", e.target.value)} /></Field>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label={t("Travel Document #", "# Documento de Viaje")}><Input className={inputCls} value={data.travelDocNumber} onChange={e => set("travelDocNumber", e.target.value)} /></Field>
-        <Field label={t("Country that Issued Passport", "País que Emitió el Pasaporte")}><Input className={inputCls} value={data.passportCountry} onChange={e => set("passportCountry", e.target.value)} /></Field>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Field label={t("Issuing Country", "País Emisor")}><Input className={inputCls} value={data.passportCountry} onChange={e => set("passportCountry", e.target.value)} /></Field>
+        <Field label={t("Passport Exp.", "Venc. Pasaporte")}><Input type="date" className={inputCls} value={data.passportExpiration} onChange={e => set("passportExpiration", e.target.value)} /></Field>
+        <Field label={t("Last Arrival Date", "Fecha Última Entrada")}><Input type="date" className={inputCls} value={data.lastArrivalDate} onChange={e => set("lastArrivalDate", e.target.value)} /></Field>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label={t("Passport Expiration", "Vencimiento del Pasaporte")}><Input type="date" className={inputCls} value={data.passportExpiration} onChange={e => set("passportExpiration", e.target.value)} /></Field>
-        <Field label={t("Date of Last Arrival", "Fecha de Última Entrada")}><Input type="date" className={inputCls} value={data.lastArrivalDate} onChange={e => set("lastArrivalDate", e.target.value)} /></Field>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Field label={t("Place of Arrival", "Lugar de Entrada")}><Input className={inputCls} value={data.lastArrivalPlace} onChange={e => set("lastArrivalPlace", e.target.value)} /></Field>
+        <Field label={t("Status at Arrival", "Estatus al Entrar")}><Input className={inputCls} value={data.statusAtArrival} onChange={e => set("statusAtArrival", e.target.value)} placeholder="e.g. B-2, F-1" /></Field>
+        <Field label={t("Current Status", "Estatus Actual")}><Input className={inputCls} value={data.currentStatus} onChange={e => set("currentStatus", e.target.value)} placeholder="e.g. B-2, parolee" /></Field>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label={t("Place of Last Arrival", "Lugar de Última Entrada")}><Input className={inputCls} value={data.lastArrivalPlace} onChange={e => set("lastArrivalPlace", e.target.value)} /></Field>
-        <Field label={t("Immigration Status at Arrival", "Estatus Migratorio al Entrar")}><Input className={inputCls} value={data.statusAtArrival} onChange={e => set("statusAtArrival", e.target.value)} placeholder="e.g. B-2, F-1" /></Field>
-      </div>
-      <Field label={t("Current Immigration Status", "Estatus Migratorio Actual")}><Input className={inputCls} value={data.currentStatus} onChange={e => set("currentStatus", e.target.value)} placeholder="e.g. B-2, parolee, deferred action" /></Field>
+      <Field label={t("SEVIS Number (if any)", "Número SEVIS (si aplica)")}><Input className={cn(inputCls, "max-w-xs")} value={data.sevisNumber} onChange={e => set("sevisNumber", e.target.value)} placeholder="N-" /></Field>
     </div>
   );
 
