@@ -36,50 +36,58 @@ async function getOrCreateHubUser(
     .maybeSingle();
 
   let userId: string;
+  const hubEmail = `hub-${accountId}@hub.ner.internal`;
 
-  if (existingMember?.user_id) {
-    userId = existingMember.user_id;
-    console.log("Found existing user for account:", userId);
+  // Always ensure the hub user exists
+  let hubUserId: string | null = null;
+
+  // Try to find existing hub user by email
+  const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+  const foundHub = listData?.users?.find((u: any) => u.email === hubEmail);
+
+  if (foundHub) {
+    hubUserId = foundHub.id;
   } else {
-    // 2. Create a new Auth user with a deterministic hub email
-    const hubEmail = `hub-${accountId}@hub.ner.internal`;
+    // Create hub user
     const randomPassword = crypto.randomUUID() + crypto.randomUUID();
-
     const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email: hubEmail,
       password: randomPassword,
-      email_confirm: true, // auto-confirm
+      email_confirm: true,
       user_metadata: { hub_account: true, account_name: accountName },
     });
 
     if (createErr) {
-      // User might already exist (race condition) — try to find by email
-      const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-      const found = listData?.users?.find((u: any) => u.email === hubEmail);
-      if (!found) throw new Error(`Failed to create hub user: ${createErr.message}`);
-      userId = found.id;
-    } else {
-      userId = newUser.user.id;
+      throw new Error(`Failed to create hub user: ${createErr.message}`);
     }
-
-    // 3. Link to account_members
-    const { error: memberErr } = await supabaseAdmin.from("account_members").upsert(
-      { account_id: accountId, user_id: userId, role: "member" },
-      { onConflict: "account_id,user_id" }
-    );
-    if (memberErr) console.error("Failed to link member:", memberErr);
-
-    // 4. Create a basic profile
-    await supabaseAdmin.from("profiles").upsert(
-      { user_id: userId, full_name: accountName },
-      { onConflict: "user_id" }
-    );
-
-    console.log("Created new hub user:", userId);
+    hubUserId = newUser.user.id;
+    console.log("Created new hub user:", hubUserId);
   }
 
+  userId = hubUserId;
+
+  // Always ensure hub user is in account_members
+  const { error: memberErr } = await supabaseAdmin.from("account_members").upsert(
+    { account_id: accountId, user_id: userId, role: "member" },
+    { onConflict: "account_id,user_id" }
+  );
+  if (memberErr) {
+    console.error("Failed to link member:", memberErr);
+    // Fallback: try insert ignoring conflict
+    await supabaseAdmin.from("account_members").insert(
+      { account_id: accountId, user_id: userId, role: "member" }
+    );
+  }
+
+  // Ensure profile exists
+  await supabaseAdmin.from("profiles").upsert(
+    { user_id: userId, full_name: accountName },
+    { onConflict: "user_id" }
+  );
+
+  console.log("Hub user ready:", userId);
+
   // 5. Generate a magic link and verify it server-side to get real session tokens
-  const hubEmail = `hub-${accountId}@hub.ner.internal`;
   const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
     type: "magiclink",
     email: hubEmail,
