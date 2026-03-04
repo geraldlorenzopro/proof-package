@@ -178,6 +178,48 @@ export function useAppSeat(appSlug: string | null): SeatStatus & {
     await supabase.rpc("release_app_seat", { _user_id: user.id, _app_slug: appSlug });
   }, [appSlug]);
 
+  // Realtime subscription to detect instant kicks
+  useEffect(() => {
+    if (!appSlug) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const setupRealtime = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      channel = supabase
+        .channel(`seat-${appSlug}-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'app_active_sessions',
+          },
+          (payload) => {
+            // If the deleted row belongs to this user, they got kicked
+            const old = payload.old as { user_id?: string };
+            if (old.user_id === user.id && mountedRef.current) {
+              setStatus(prev => ({ ...prev, granted: false, kicked: true, reason: 'kicked', pendingKick: null }));
+              if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+              }
+            }
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtime();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [appSlug]);
+
   useEffect(() => {
     mountedRef.current = true;
     if (appSlug) {
