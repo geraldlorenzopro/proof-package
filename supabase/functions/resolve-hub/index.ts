@@ -19,24 +19,25 @@ async function verifyHmac(payload: string, sig: string, secret: string): Promise
 
 /**
  * Find or create a Supabase Auth user for a specific staff member or account.
- * If userId (GHL user.id) is provided, creates a unique user per staff.
+ * If userEmail (GHL user.email) is provided, creates a unique user per staff.
  * Otherwise falls back to shared account user (backward compat).
  */
 async function getOrCreateHubUser(
   supabaseAdmin: any,
   accountId: string,
   accountName: string,
-  ghlUserId?: string | null,
   ghlUserEmail?: string | null,
   ghlUserName?: string | null,
   maxUsers?: number
 ) {
   // Determine unique email for this hub user
-  const hubEmail = ghlUserId
-    ? `hub-${ghlUserId}@hub.ner.internal`
+  // For staff: use a deterministic hash of their email to create internal user
+  // For shared: use account ID
+  const hubEmail = ghlUserEmail
+    ? `hub-staff-${ghlUserEmail.replace(/[^a-zA-Z0-9]/g, "_")}@hub.ner.internal`
     : `hub-${accountId}@hub.ner.internal`;
 
-  const displayName = ghlUserName || accountName;
+  const displayName = ghlUserName || ghlUserEmail || accountName;
 
   // Try to find existing hub user by email
   const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
@@ -48,7 +49,7 @@ async function getOrCreateHubUser(
     hubUserId = foundHub.id;
   } else {
     // If this is a new staff user, check max_users limit
-    if (ghlUserId && maxUsers && maxUsers > 0) {
+    if (ghlUserEmail && maxUsers && maxUsers > 0) {
       const { count } = await supabaseAdmin
         .from("account_members")
         .select("id", { count: "exact", head: true })
@@ -68,8 +69,8 @@ async function getOrCreateHubUser(
       user_metadata: {
         hub_account: true,
         account_name: accountName,
-        ghl_user_id: ghlUserId || null,
         ghl_user_email: ghlUserEmail || null,
+        ghl_user_name: ghlUserName || null,
       },
     });
 
@@ -77,11 +78,10 @@ async function getOrCreateHubUser(
       throw new Error(`Failed to create hub user: ${createErr.message}`);
     }
     hubUserId = newUser.user.id;
-    console.log("Created new hub user:", hubUserId, "for GHL user:", ghlUserId || "shared");
+    console.log("Created new hub user:", hubUserId, "for staff:", ghlUserEmail || "shared");
   }
 
   // Ensure hub user is in account_members
-  // For staff with ghlUserId, role is "member". For shared/owner, keep existing or set "member".
   const { error: memberErr } = await supabaseAdmin.from("account_members").upsert(
     { account_id: accountId, user_id: hubUserId, role: "member" },
     { onConflict: "account_id,user_id" }
@@ -149,21 +149,12 @@ Deno.serve(async (req) => {
     const cid = url.searchParams.get("cid");
     const sig = url.searchParams.get("sig");
     const ts = url.searchParams.get("ts");
-    const uid = url.searchParams.get("uid");       // GHL user.id (staff)
-    const uemail = url.searchParams.get("uemail");  // GHL user.email
+    const uemail = url.searchParams.get("uemail");  // GHL user.email (staff identifier)
     const uname = url.searchParams.get("uname");    // GHL user.name
 
     if (!cid || cid.length < 5 || cid.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(cid)) {
       return new Response(
         JSON.stringify({ error: "Invalid or missing cid parameter" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Validate uid if present
-    if (uid && (uid.length < 3 || uid.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(uid))) {
-      return new Response(
-        JSON.stringify({ error: "Invalid uid parameter" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -192,9 +183,9 @@ Deno.serve(async (req) => {
     }
 
     // HMAC payload matches what hub-redirect generated
-    const hmacPayload = uid ? `${cid}:${uid}:${ts}` : `${cid}:${ts}`;
+    const hmacPayload = uemail ? `${cid}:${uemail}:${ts}` : `${cid}:${ts}`;
     const valid = await verifyHmac(hmacPayload, sig, hubSecret);
-    console.log("HMAC debug:", { cid, uid: uid || "none", ts, sig: sig.substring(0, 8) + "...", valid });
+    console.log("HMAC debug:", { cid, uemail: uemail || "none", ts, sig: sig.substring(0, 8) + "...", valid });
     if (!valid) {
       return new Response(
         JSON.stringify({ error: "Invalid signature" }),
@@ -248,23 +239,22 @@ Deno.serve(async (req) => {
 
     // --- AUTO-LOGIN: Generate transparent session ---
     let auth_token: { access_token: string; refresh_token: string } | null = null;
-    let staff_info: { ghl_user_id: string; display_name: string } | null = null;
+    let staff_info: { ghl_user_email: string; display_name: string } | null = null;
 
     try {
       const result = await getOrCreateHubUser(
         supabaseAdmin,
         account.id,
         account.account_name,
-        uid,
         uemail,
         uname,
         account.max_users
       );
       auth_token = { access_token: result.access_token, refresh_token: result.refresh_token };
-      if (uid) {
-        staff_info = { ghl_user_id: uid, display_name: uname || uemail || uid };
+      if (uemail) {
+        staff_info = { ghl_user_email: uemail, display_name: uname || uemail };
       }
-      console.log("Auto-login token generated for account:", account.id, "staff:", uid || "shared");
+      console.log("Auto-login token generated for account:", account.id, "staff:", uemail || "shared");
     } catch (authErr: any) {
       const errMsg = String(authErr?.message || authErr);
       if (errMsg.startsWith("LIMIT_EXCEEDED:")) {
