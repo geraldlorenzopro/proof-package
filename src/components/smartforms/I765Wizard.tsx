@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { ChevronRight, ChevronLeft, Save, FileText, FileDown } from "lucide-react";
+import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { useSmartFormsContext } from "./SmartFormsContext";
 import {
   I765Data, defaultI765Data, I765Step, I765_STEPS, I765_STEP_LABELS,
@@ -44,7 +45,6 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const [data, setData] = useState<I765Data>({ ...defaultI765Data, ...initialData });
   const [stepIdx, setStepIdx] = useState(0);
   const [hasOtherName, setHasOtherName] = useState(() => !!(initialData?.otherNames?.length));
-  // If SSN from DB is masked (***-**-XXXX), don't use it — user must re-enter
   const [ssnFull, setSsnFull] = useState(() => {
     const saved = initialData?.ssn || "";
     return saved.startsWith("***") ? "" : saved;
@@ -53,7 +53,80 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const step = I765_STEPS[stepIdx];
   const { setWizardNav } = useSmartFormsContext();
 
+  // Attorney/Preparer profile data from Settings
+  const [profileData, setProfileData] = useState<any>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
   const t = useCallback((en: string, es: string) => lang === "es" ? es : en, [lang]);
+
+  // Load attorney/preparer profile data
+  useEffect(() => {
+    const loadProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: prof } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
+      setProfileData(prof);
+      setProfileLoaded(true);
+    };
+    if (isProfessional) loadProfile();
+    else setProfileLoaded(true);
+  }, [isProfessional]);
+
+  // Auto-populate preparer fields when formPreparedBy changes
+  useEffect(() => {
+    if (!profileData || !data.formPreparedBy) return;
+    const p = profileData as any;
+
+    if (data.formPreparedBy === "attorney") {
+      // Split attorney name into first/last (best effort)
+      const nameParts = (p.attorney_name || "").trim().split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+      setData(prev => ({
+        ...prev,
+        preparerUsed: true,
+        preparerIsAttorney: true,
+        preparerFirstName: firstName,
+        preparerLastName: lastName,
+        preparerOrg: prev.preparerOrg || "",
+        preparerStreet: p.attorney_address || "",
+        preparerCity: p.attorney_city || "",
+        preparerState: p.attorney_state || "",
+        preparerZip: p.attorney_zip || "",
+        preparerCountry: p.attorney_country || "US",
+        preparerPhone: p.attorney_phone || "",
+        preparerEmail: p.attorney_email || "",
+      }));
+    } else if (data.formPreparedBy === "preparer") {
+      const nameParts = (p.preparer_name || "").trim().split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+      setData(prev => ({
+        ...prev,
+        preparerUsed: true,
+        preparerIsAttorney: false,
+        preparerFirstName: firstName,
+        preparerLastName: lastName,
+        preparerOrg: p.preparer_business_name || "",
+        preparerStreet: p.preparer_address || "",
+        preparerCity: p.preparer_city || "",
+        preparerState: p.preparer_state || "",
+        preparerZip: p.preparer_zip || "",
+        preparerCountry: p.preparer_country || "US",
+        preparerPhone: p.preparer_phone || "",
+        preparerEmail: p.preparer_email || "",
+      }));
+    } else if (data.formPreparedBy === "applicant") {
+      setData(prev => ({
+        ...prev,
+        preparerUsed: false,
+        preparerIsAttorney: false,
+        preparerFirstName: "", preparerLastName: "", preparerOrg: "",
+        preparerStreet: "", preparerCity: "", preparerState: "", preparerZip: "",
+        preparerCountry: "", preparerPhone: "", preparerEmail: "",
+      }));
+    }
+  }, [data.formPreparedBy, profileData]);
 
   // Register wizard nav in layout context
   useEffect(() => {
@@ -68,6 +141,108 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const prev = () => stepIdx > 0 && setStepIdx(stepIdx - 1);
 
   // ─── Step renderers ───
+  const renderCaseConfig = () => {
+    const p = profileData as any;
+    const hasAttorneyData = p?.attorney_name;
+    const hasPreparerData = p?.preparer_name;
+
+    return (
+      <div className="space-y-5">
+        <h3 className="text-lg font-semibold text-accent">{t("Who is completing this form?", "¿Quién completa este formulario?")}</h3>
+        <p className="text-sm text-muted-foreground">
+          {t("This determines whether a G-28 is needed and auto-fills the preparer section.",
+             "Esto determina si se necesita un G-28 y llena automáticamente la sección del preparador.")}
+        </p>
+
+        <RadioGroup value={data.formPreparedBy} onValueChange={v => set("formPreparedBy", v as I765Data["formPreparedBy"])}>
+          {/* Attorney option */}
+          <label className={cn(
+            "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all",
+            data.formPreparedBy === "attorney" ? "border-accent/60 bg-accent/5" : "border-border/30 hover:border-border/60"
+          )}>
+            <RadioGroupItem value="attorney" className="mt-0.5" />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <Scale className="w-4 h-4 text-accent" />
+                <span className="text-sm font-medium">{t("Attorney", "Abogado")}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("An attorney is representing the applicant (requires G-28)", "Un abogado representa al aplicante (requiere G-28)")}
+              </p>
+              {hasAttorneyData ? (
+                <p className="text-xs text-accent mt-2">✓ {p.attorney_name} — Bar #{p.attorney_bar_number || "N/A"}</p>
+              ) : (
+                <p className="text-xs text-destructive mt-2 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {t("No attorney data in Settings", "No hay datos de abogado en Settings")}
+                </p>
+              )}
+            </div>
+          </label>
+
+          {/* Preparer option */}
+          <label className={cn(
+            "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all",
+            data.formPreparedBy === "preparer" ? "border-accent/60 bg-accent/5" : "border-border/30 hover:border-border/60"
+          )}>
+            <RadioGroupItem value="preparer" className="mt-0.5" />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <FileEdit className="w-4 h-4 text-accent" />
+                <span className="text-sm font-medium">{t("Preparer", "Preparador")}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("A non-attorney preparer assisted (requires G-28)", "Un preparador no-abogado asistió (requiere G-28)")}
+              </p>
+              {hasPreparerData ? (
+                <p className="text-xs text-accent mt-2">✓ {p.preparer_name}</p>
+              ) : (
+                <p className="text-xs text-destructive mt-2 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {t("No preparer data in Settings", "No hay datos de preparador en Settings")}
+                </p>
+              )}
+            </div>
+          </label>
+
+          {/* Applicant option */}
+          <label className={cn(
+            "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all",
+            data.formPreparedBy === "applicant" ? "border-accent/60 bg-accent/5" : "border-border/30 hover:border-border/60"
+          )}>
+            <RadioGroupItem value="applicant" className="mt-0.5" />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-accent" />
+                <span className="text-sm font-medium">{t("The applicant themselves", "El propio aplicante")}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("No preparer or attorney involved (no G-28 needed)", "Sin preparador ni abogado (no se necesita G-28)")}
+              </p>
+            </div>
+          </label>
+        </RadioGroup>
+
+        {data.formPreparedBy && data.formPreparedBy !== "applicant" && !hasAttorneyData && data.formPreparedBy === "attorney" && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+            <p className="text-xs text-destructive">
+              {t("⚠️ Please go to Settings → Attorney / Preparer tab to add your attorney information first.",
+                 "⚠️ Por favor ve a Settings → pestaña Abogado / Preparador para agregar la información del abogado primero.")}
+            </p>
+          </div>
+        )}
+        {data.formPreparedBy === "preparer" && !hasPreparerData && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+            <p className="text-xs text-destructive">
+              {t("⚠️ Please go to Settings → Attorney / Preparer tab to add your preparer information first.",
+                 "⚠️ Por favor ve a Settings → pestaña Abogado / Preparador para agregar la información del preparador primero.")}
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderReason = () => (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-accent">{t("What do you need?", "¿Qué necesitas?")}</h3>
@@ -432,6 +607,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   );
 
   const stepRenderers: Record<I765Step, () => JSX.Element> = {
+    caseConfig: renderCaseConfig,
     reason: renderReason, personal: renderPersonal, address: renderAddress,
     background: renderBackground, arrival: renderArrival, eligibility: renderEligibility,
     statement: renderStatement, preparer: renderPreparer,
