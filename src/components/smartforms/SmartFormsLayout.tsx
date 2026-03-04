@@ -170,30 +170,52 @@ function TopNavBar() {
         </Button>
       </div>
 
-      {/* Wizard progress — distinct visual zone */}
+      {/* Wizard progress — clickable step navigator */}
       {wizardNav && (
-        <div className="px-4 py-3 bg-secondary/40 border-b border-border/30 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-accent text-accent-foreground text-sm font-bold">
-                {wizardNav.currentStep + 1}
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-foreground leading-tight">
-                  {I765_STEP_LABELS[wizardNav.steps[wizardNav.currentStep]][lang]}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {lang === "es" ? "Paso" : "Step"} {wizardNav.currentStep + 1} {lang === "es" ? "de" : "of"} {wizardNav.steps.length}
-                </p>
-              </div>
-            </div>
-            <span className="text-sm font-bold text-accent">{Math.round(((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100)}%</span>
+        <div className="px-4 py-3 bg-secondary/40 border-b border-border/30 space-y-2.5">
+          {/* Step pills — click to jump */}
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
+            {wizardNav.steps.map((s, i) => {
+              const isCurrent = i === wizardNav.currentStep;
+              const isCompleted = i < wizardNav.currentStep;
+              return (
+                <button
+                  key={s}
+                  onClick={() => wizardNav.setStep(i)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all shrink-0",
+                    isCurrent
+                      ? "bg-accent/15 text-accent font-semibold border border-accent/40 shadow-sm"
+                      : isCompleted
+                      ? "text-accent/70 hover:bg-accent/10 cursor-pointer"
+                      : "text-muted-foreground hover:bg-muted/60 cursor-pointer"
+                  )}
+                  title={I765_STEP_LABELS[s][lang]}
+                >
+                  {isCompleted ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  ) : (
+                    <span className={cn(
+                      "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border",
+                      isCurrent ? "border-accent bg-accent text-accent-foreground" : "border-border bg-secondary/60"
+                    )}>
+                      {i + 1}
+                    </span>
+                  )}
+                  <span className="hidden md:inline">{I765_STEP_LABELS[s][lang]}</span>
+                </button>
+              );
+            })}
           </div>
-          <div className="relative h-2.5 w-full rounded-full bg-secondary overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-accent to-accent/60 transition-all duration-500 ease-out"
-              style={{ width: `${((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100}%` }}
-            />
+          {/* Progress bar */}
+          <div className="flex items-center gap-3">
+            <div className="relative h-2 w-full rounded-full bg-secondary overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-accent to-accent/60 transition-all duration-500 ease-out"
+                style={{ width: `${((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-accent shrink-0">{Math.round(((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100)}%</span>
           </div>
         </div>
       )}
