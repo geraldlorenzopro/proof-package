@@ -240,6 +240,19 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             </p>
           </div>
         )}
+
+        {/* Language & Interpreter preferences */}
+        <div className="border-t border-border/30 pt-4 mt-2 space-y-3">
+          <p className="text-sm font-medium text-foreground">{t("Applicant's Language", "Idioma del Aplicante")}</p>
+          <div className="flex items-center gap-2">
+            <Checkbox checked={data.applicantCanReadEnglish} onCheckedChange={v => { set("applicantCanReadEnglish", !!v); if (v) set("interpreterUsed", false); }} id="can-read" />
+            <Label htmlFor="can-read" className="text-sm cursor-pointer">{t("The applicant can read and understand English", "El aplicante puede leer y entender inglés")}</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox checked={data.interpreterUsed} onCheckedChange={v => { set("interpreterUsed", !!v); if (v) set("applicantCanReadEnglish", false); }} id="interpreter" />
+            <Label htmlFor="interpreter" className="text-sm cursor-pointer">{t("An interpreter will be used", "Se utilizará un intérprete")}</Label>
+          </div>
+        </div>
       </div>
     );
   };
@@ -512,24 +525,16 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const renderStatement = () => (
     <div className="space-y-5">
       <h3 className="text-lg font-semibold text-accent">{t("Your Contact Info", "Tu Información de Contacto")}</h3>
-      {/* Only show interpreter/preparer checkboxes when NOT professional (config already handles it) */}
       {!isProfessional && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Checkbox checked={data.applicantCanReadEnglish} onCheckedChange={v => { set("applicantCanReadEnglish", !!v); if (v) set("interpreterUsed", false); }} id="can-read" />
-            <Label htmlFor="can-read" className="text-sm cursor-pointer">{t("I can read and understand English", "Puedo leer y entender inglés")}</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={data.interpreterUsed} onCheckedChange={v => { set("interpreterUsed", !!v); if (v) set("applicantCanReadEnglish", false); }} id="interpreter" />
-            <Label htmlFor="interpreter" className="text-sm cursor-pointer">{t("An interpreter read this application to me", "Un intérprete me leyó esta solicitud")}</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={data.preparerUsed} onCheckedChange={v => set("preparerUsed", !!v)} id="preparer" />
-            <Label htmlFor="preparer" className="text-sm cursor-pointer">{t("A preparer prepared this application for me", "Un preparador preparó esta solicitud para mí")}</Label>
-          </div>
+        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3">
+          <p className="text-xs text-muted-foreground">
+            📋 {t(
+              "This questionnaire is a data collection tool provided by your legal office. It is NOT the official USCIS form and does not constitute legal advice. Your attorney/preparer will review all information before submitting the official application.",
+              "Este cuestionario es una herramienta de recopilación de datos proporcionada por tu oficina legal. NO es el formulario oficial de USCIS y no constituye asesoría legal. Tu abogado/preparador revisará toda la información antes de presentar la solicitud oficial."
+            )}
+          </p>
         </div>
       )}
-      <p className="text-xs text-muted-foreground font-medium">{t("Contact Information", "Información de Contacto")}</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Daytime Phone", "Teléfono de Día")}><Input className={inputCls} value={data.applicantPhone} onChange={e => set("applicantPhone", e.target.value)} /></Field>
         <Field label={t("Mobile Phone", "Celular")}><Input className={inputCls} value={data.applicantMobile} onChange={e => set("applicantMobile", e.target.value)} /></Field>
