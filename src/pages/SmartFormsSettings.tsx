@@ -1,11 +1,26 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, Loader2, Scale, FileText } from 'lucide-react';
+import { Save, Loader2, Scale, FileText, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+
+// ── Stable Field component (outside render to prevent focus loss) ──
+function SettingsField({ label, value, onChange, placeholder, type = "text" }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
+}) {
+  return (
+    <div>
+      <Label className="text-xs text-muted-foreground mb-1.5 block">{label}</Label>
+      <Input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="bg-background border-border" />
+    </div>
+  );
+}
 
 export default function SmartFormsSettings() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -107,17 +122,25 @@ export default function SmartFormsSettings() {
     );
   }
 
-  const Field = ({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) => (
-    <div>
-      <Label className="text-xs text-muted-foreground mb-1.5 block">{label}</Label>
-      <Input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="bg-background border-border" />
-    </div>
-  );
-
   return (
     <div className="px-4 py-6 h-full">
-      <h1 className="text-xl font-bold text-foreground mb-1">Configuración</h1>
-      <p className="text-sm text-muted-foreground mb-5">Datos legales para formularios USCIS</p>
+      {/* Header with back navigation */}
+      <div className="flex items-center gap-3 mb-5">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/dashboard/smart-forms')}
+          className="gap-1.5 text-muted-foreground hover:text-foreground px-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-xs">Formularios</span>
+        </Button>
+        <div className="w-px h-5 bg-border/60" />
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Configuración</h1>
+          <p className="text-sm text-muted-foreground">Datos legales para formularios USCIS</p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Attorney */}
@@ -132,17 +155,17 @@ export default function SmartFormsSettings() {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2"><Field label="Nombre completo" value={attorneyName} onChange={setAttorneyName} placeholder="Ej. María García López" /></div>
-            <Field label="State Bar Number" value={attorneyBarNumber} onChange={setAttorneyBarNumber} placeholder="Ej. 123456" />
-            <Field label="Bar State" value={attorneyBarState} onChange={setAttorneyBarState} placeholder="Ej. FL" />
-            <div className="sm:col-span-2"><Field label="Dirección" value={attorneyAddress} onChange={setAttorneyAddress} placeholder="Dirección de la oficina" /></div>
-            <Field label="Ciudad" value={attorneyCity} onChange={setAttorneyCity} placeholder="Ciudad" />
-            <Field label="Estado" value={attorneyState} onChange={setAttorneyState} placeholder="Estado" />
-            <Field label="ZIP Code" value={attorneyZip} onChange={setAttorneyZip} placeholder="ZIP" />
-            <Field label="País" value={attorneyCountry} onChange={setAttorneyCountry} placeholder="US" />
-            <Field label="Teléfono" value={attorneyPhone} onChange={setAttorneyPhone} placeholder="(555) 123-4567" type="tel" />
-            <Field label="Email" value={attorneyEmail} onChange={setAttorneyEmail} placeholder="attorney@firm.com" type="email" />
-            <Field label="Fax" value={attorneyFax} onChange={setAttorneyFax} placeholder="(555) 123-4568" type="tel" />
+            <div className="sm:col-span-2"><SettingsField label="Nombre completo" value={attorneyName} onChange={setAttorneyName} placeholder="Ej. María García López" /></div>
+            <SettingsField label="State Bar Number" value={attorneyBarNumber} onChange={setAttorneyBarNumber} placeholder="Ej. 123456" />
+            <SettingsField label="Bar State" value={attorneyBarState} onChange={setAttorneyBarState} placeholder="Ej. FL" />
+            <div className="sm:col-span-2"><SettingsField label="Dirección" value={attorneyAddress} onChange={setAttorneyAddress} placeholder="Dirección de la oficina" /></div>
+            <SettingsField label="Ciudad" value={attorneyCity} onChange={setAttorneyCity} placeholder="Ciudad" />
+            <SettingsField label="Estado" value={attorneyState} onChange={setAttorneyState} placeholder="Estado" />
+            <SettingsField label="ZIP Code" value={attorneyZip} onChange={setAttorneyZip} placeholder="ZIP" />
+            <SettingsField label="País" value={attorneyCountry} onChange={setAttorneyCountry} placeholder="US" />
+            <SettingsField label="Teléfono" value={attorneyPhone} onChange={setAttorneyPhone} placeholder="(555) 123-4567" type="tel" />
+            <SettingsField label="Email" value={attorneyEmail} onChange={setAttorneyEmail} placeholder="attorney@firm.com" type="email" />
+            <SettingsField label="Fax" value={attorneyFax} onChange={setAttorneyFax} placeholder="(555) 123-4568" type="tel" />
           </div>
         </div>
 
@@ -158,16 +181,16 @@ export default function SmartFormsSettings() {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2"><Field label="Nombre completo" value={preparerName} onChange={setPreparerName} placeholder="Ej. Juan Pérez" /></div>
-            <div className="sm:col-span-2"><Field label="Negocio / organización" value={preparerBusinessName} onChange={setPreparerBusinessName} placeholder="Ej. Immigration Services LLC" /></div>
-            <div className="sm:col-span-2"><Field label="Dirección" value={preparerAddress} onChange={setPreparerAddress} placeholder="Dirección de la oficina" /></div>
-            <Field label="Ciudad" value={preparerCity} onChange={setPreparerCity} placeholder="Ciudad" />
-            <Field label="Estado" value={preparerState} onChange={setPreparerState} placeholder="Estado" />
-            <Field label="ZIP Code" value={preparerZip} onChange={setPreparerZip} placeholder="ZIP" />
-            <Field label="País" value={preparerCountry} onChange={setPreparerCountry} placeholder="US" />
-            <Field label="Teléfono" value={preparerPhone} onChange={setPreparerPhone} placeholder="(555) 123-4567" type="tel" />
-            <Field label="Email" value={preparerEmail} onChange={setPreparerEmail} placeholder="preparer@firm.com" type="email" />
-            <Field label="Fax" value={preparerFax} onChange={setPreparerFax} placeholder="(555) 123-4568" type="tel" />
+            <div className="sm:col-span-2"><SettingsField label="Nombre completo" value={preparerName} onChange={setPreparerName} placeholder="Ej. Juan Pérez" /></div>
+            <div className="sm:col-span-2"><SettingsField label="Negocio / organización" value={preparerBusinessName} onChange={setPreparerBusinessName} placeholder="Ej. Immigration Services LLC" /></div>
+            <div className="sm:col-span-2"><SettingsField label="Dirección" value={preparerAddress} onChange={setPreparerAddress} placeholder="Dirección de la oficina" /></div>
+            <SettingsField label="Ciudad" value={preparerCity} onChange={setPreparerCity} placeholder="Ciudad" />
+            <SettingsField label="Estado" value={preparerState} onChange={setPreparerState} placeholder="Estado" />
+            <SettingsField label="ZIP Code" value={preparerZip} onChange={setPreparerZip} placeholder="ZIP" />
+            <SettingsField label="País" value={preparerCountry} onChange={setPreparerCountry} placeholder="US" />
+            <SettingsField label="Teléfono" value={preparerPhone} onChange={setPreparerPhone} placeholder="(555) 123-4567" type="tel" />
+            <SettingsField label="Email" value={preparerEmail} onChange={setPreparerEmail} placeholder="preparer@firm.com" type="email" />
+            <SettingsField label="Fax" value={preparerFax} onChange={setPreparerFax} placeholder="(555) 123-4568" type="tel" />
           </div>
         </div>
       </div>
