@@ -293,32 +293,32 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     ];
 
     return (
-      <div className="space-y-4">
-        <div className="text-center space-y-1">
-          <h3 className="text-lg font-semibold text-accent">{t("Set up this case", "Configura este caso")}</h3>
-          <p className="text-xs text-muted-foreground">{t("Quick setup before starting the questionnaire", "Configuración rápida antes de iniciar el cuestionario")}</p>
+      <div className="space-y-5">
+        <div className="text-center space-y-1.5">
+          <h3 className="text-xl font-bold text-accent">{t("Set up this case", "Configura este caso")}</h3>
+          <p className="text-sm text-muted-foreground">{t("Quick setup before starting the questionnaire", "Configuración rápida antes de iniciar el cuestionario")}</p>
         </div>
 
         {/* Role selector — compact cards in a row */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-3">
           {roles.map(r => (
             <button
               key={r.value}
               type="button"
               onClick={() => set("formPreparedBy", r.value)}
               className={cn(
-                "flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all cursor-pointer",
+                "flex flex-col items-center gap-2 p-4 rounded-xl border text-center transition-all cursor-pointer",
                 data.formPreparedBy === r.value
-                  ? "border-accent bg-accent/10 ring-1 ring-accent/30"
+                  ? "border-accent bg-accent/10 ring-1 ring-accent/30 shadow-md shadow-accent/10"
                   : "border-border/30 hover:border-border/60 hover:bg-secondary/40"
               )}
             >
-              <r.icon className={cn("w-5 h-5", data.formPreparedBy === r.value ? "text-accent" : "text-muted-foreground")} />
-              <span className="text-xs font-semibold">{r.label}</span>
-              <span className="text-[10px] text-muted-foreground leading-tight">{r.desc}</span>
-              {r.name && r.ok && <span className="text-[10px] text-accent truncate max-w-full">✓ {r.name}</span>}
+              <r.icon className={cn("w-6 h-6", data.formPreparedBy === r.value ? "text-accent" : "text-muted-foreground")} />
+              <span className="text-sm font-bold">{r.label}</span>
+              <span className="text-xs text-muted-foreground leading-tight">{r.desc}</span>
+              {r.name && r.ok && <span className="text-xs text-accent truncate max-w-full">✓ {r.name}</span>}
               {!r.ok && r.value !== "applicant" && (
-                <span className="text-[10px] text-destructive flex items-center gap-0.5"><AlertCircle className="w-2.5 h-2.5" />{t("Not set", "Sin datos")}</span>
+                <span className="text-xs text-destructive flex items-center gap-0.5"><AlertCircle className="w-3 h-3" />{t("Not set", "Sin datos")}</span>
               )}
             </button>
           ))}
@@ -326,12 +326,12 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
         {/* Warning if missing data */}
         {data.formPreparedBy === "attorney" && !hasAttorneyData && (
-          <p className="text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded-lg px-3 py-2">
+          <p className="text-sm text-destructive bg-destructive/5 border border-destructive/20 rounded-lg px-4 py-2.5">
             ⚠️ {t("Add attorney info in Settings first.", "Agrega los datos del abogado en Settings primero.")}
           </p>
         )}
         {data.formPreparedBy === "preparer" && !hasPreparerData && (
-          <p className="text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded-lg px-3 py-2">
+          <p className="text-sm text-destructive bg-destructive/5 border border-destructive/20 rounded-lg px-4 py-2.5">
             ⚠️ {t("Add preparer info in Settings first.", "Agrega los datos del preparador en Settings primero.")}
           </p>
         )}
@@ -339,72 +339,72 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         {/* Two-column row: Client selector + Language/Client Link */}
         <div className="grid md:grid-cols-2 gap-3">
           {/* Left: Client selector */}
-          <div className="rounded-xl border border-border/30 p-3 space-y-2">
-            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-accent" />
+          <div className="rounded-xl border border-border/30 p-4 space-y-3">
+            <p className="text-sm font-bold text-foreground flex items-center gap-2">
+              <User className="w-4 h-4 text-accent" />
               {t("Client", "Cliente")}
             </p>
             {clientProfiles.length > 0 ? (
               <>
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
-                    className="bg-secondary/60 border-border/50 pl-7 text-xs h-8"
+                    className="bg-secondary/60 border-border/50 pl-8 text-sm"
                     placeholder={t("Search...", "Buscar...")}
                     value={clientSearch}
                     onChange={e => setClientSearch(e.target.value)}
                   />
                 </div>
-                <div className="max-h-32 overflow-y-auto rounded-lg border border-border/20 divide-y divide-border/10">
+                <div className="max-h-36 overflow-y-auto rounded-lg border border-border/20 divide-y divide-border/10">
                   {filteredClients.length === 0 ? (
-                    <p className="text-[10px] text-muted-foreground p-2 text-center">{t("No results", "Sin resultados")}</p>
+                    <p className="text-xs text-muted-foreground p-3 text-center">{t("No results", "Sin resultados")}</p>
                   ) : filteredClients.slice(0, 5).map(c => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => selectClient(c.id)}
                       className={cn(
-                        "w-full text-left px-2.5 py-1.5 flex items-center gap-2 transition-colors text-xs",
+                        "w-full text-left px-3 py-2 flex items-center gap-2 transition-colors text-sm",
                         selectedClientId === c.id ? "bg-accent/10 text-accent" : "hover:bg-secondary/60"
                       )}
                     >
-                      <User className="w-3 h-3 shrink-0 text-muted-foreground" />
+                      <User className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
                       <span className="flex-1 truncate font-medium">
                         {c.last_name || ""}{c.last_name && c.first_name ? ", " : ""}{c.first_name || ""}
                       </span>
-                      {selectedClientId === c.id && <Check className="w-3 h-3 text-accent shrink-0" />}
+                      {selectedClientId === c.id && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
                     </button>
                   ))}
                 </div>
                 {selectedClientId && (
-                  <p className="text-[10px] text-accent flex items-center gap-1"><Check className="w-2.5 h-2.5" />{t("Data loaded", "Datos cargados")}</p>
+                  <p className="text-xs text-accent flex items-center gap-1"><Check className="w-3 h-3" />{t("Data loaded", "Datos cargados")}</p>
                 )}
               </>
             ) : (
-              <p className="text-[10px] text-muted-foreground italic">{t("No clients yet. Fill manually.", "Sin clientes. Llena manualmente.")}</p>
+              <p className="text-sm text-muted-foreground italic">{t("No clients yet. Fill manually.", "Sin clientes. Llena manualmente.")}</p>
             )}
           </div>
 
           {/* Right: Language + send to client */}
-          <div className="rounded-xl border border-border/30 p-3 space-y-3">
-            <p className="text-xs font-semibold text-foreground">{t("Language", "Idioma")}</p>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
+          <div className="rounded-xl border border-border/30 p-4 space-y-4">
+            <p className="text-sm font-bold text-foreground">{t("Language", "Idioma")}</p>
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2.5">
                 <Checkbox checked={data.applicantCanReadEnglish} onCheckedChange={v => { set("applicantCanReadEnglish", !!v); if (v) set("interpreterUsed", false); }} id="can-read" />
-                <Label htmlFor="can-read" className="text-xs cursor-pointer">{t("Can read English", "Puede leer inglés")}</Label>
+                <Label htmlFor="can-read" className="text-sm cursor-pointer">{t("Can read English", "Puede leer inglés")}</Label>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <Checkbox checked={data.interpreterUsed} onCheckedChange={v => { set("interpreterUsed", !!v); if (v) set("applicantCanReadEnglish", false); }} id="interpreter" />
-                <Label htmlFor="interpreter" className="text-xs cursor-pointer">{t("Uses interpreter", "Usa intérprete")}</Label>
+                <Label htmlFor="interpreter" className="text-sm cursor-pointer">{t("Uses interpreter", "Usa intérprete")}</Label>
               </div>
             </div>
 
             {/* Send to client toggle */}
             {isProfessional && (
-              <div className="border-t border-border/20 pt-2 space-y-2">
-                <div className="flex items-center gap-2">
+              <div className="border-t border-border/20 pt-3 space-y-2.5">
+                <div className="flex items-center gap-2.5">
                   <Checkbox checked={sendToClient} onCheckedChange={v => setSendToClient(!!v)} id="send-client" />
-                  <Label htmlFor="send-client" className="text-xs cursor-pointer font-medium">
+                  <Label htmlFor="send-client" className="text-sm cursor-pointer font-medium">
                     {t("Send questionnaire to client?", "¿Enviar cuestionario al cliente?")}
                   </Label>
                 </div>
