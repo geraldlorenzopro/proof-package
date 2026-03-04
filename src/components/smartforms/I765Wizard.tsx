@@ -155,7 +155,8 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           .from("client_profiles")
           .select("id, first_name, last_name, middle_name, email, phone, mobile_phone, dob, gender, marital_status, a_number, ssn_last4, country_of_birth, city_of_birth, province_of_birth, country_of_citizenship, address_street, address_apt, address_city, address_state, address_zip, mailing_street, mailing_apt, mailing_city, mailing_state, mailing_zip, mailing_same_as_physical, i94_number, passport_number, passport_country, passport_expiration, class_of_admission, immigration_status, place_of_last_entry, date_of_last_entry")
           .eq("account_id", accountId)
-          .order("last_name", { ascending: true });
+          .order("last_name", { ascending: true })
+          .limit(3000);
         if (clients) setClientProfiles(clients);
       }
     };
@@ -373,26 +374,35 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                     onChange={e => setClientSearch(e.target.value)}
                   />
                 </div>
-                <div className="max-h-36 overflow-y-auto rounded-lg border border-border/20 divide-y divide-border/10">
+                <div className="max-h-52 overflow-y-auto rounded-lg border border-border/20 divide-y divide-border/10">
                   {filteredClients.length === 0 ? (
                     <p className="text-xs text-muted-foreground p-3 text-center">{t("No results", "Sin resultados")}</p>
-                  ) : filteredClients.slice(0, 5).map(c => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => selectClient(c.id)}
-                      className={cn(
-                        "w-full text-left px-3 py-2 flex items-center gap-2 transition-colors text-sm",
-                        selectedClientId === c.id ? "bg-accent/10 text-accent" : "hover:bg-secondary/60"
+                  ) : (
+                    <>
+                      {filteredClients.slice(0, 50).map(c => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => selectClient(c.id)}
+                          className={cn(
+                            "w-full text-left px-3 py-2 flex items-center gap-2 transition-colors text-sm",
+                            selectedClientId === c.id ? "bg-accent/10 text-accent" : "hover:bg-secondary/60"
+                          )}
+                        >
+                          <User className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                          <span className="flex-1 truncate font-medium">
+                            {c.last_name || ""}{c.last_name && c.first_name ? ", " : ""}{c.first_name || ""}
+                          </span>
+                          {selectedClientId === c.id && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
+                        </button>
+                      ))}
+                      {filteredClients.length > 50 && (
+                        <p className="text-xs text-muted-foreground p-2 text-center">
+                          {t(`Showing 50 of ${filteredClients.length} — type to filter`, `Mostrando 50 de ${filteredClients.length} — escribe para filtrar`)}
+                        </p>
                       )}
-                    >
-                      <User className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-                      <span className="flex-1 truncate font-medium">
-                        {c.last_name || ""}{c.last_name && c.first_name ? ", " : ""}{c.first_name || ""}
-                      </span>
-                      {selectedClientId === c.id && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
-                    </button>
-                  ))}
+                    </>
+                  )}
                 </div>
                 {selectedClientId && (
                   <p className="text-xs text-accent flex items-center gap-1"><Check className="w-3 h-3" />{t("Data loaded", "Datos cargados")}</p>
