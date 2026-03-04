@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FileText, Plus, Search, Copy, Trash2, Pencil,
   Download, MoreHorizontal, Clock, CheckCircle2,
   Send, Sparkles, Lock, ArrowRight, X, Briefcase,
   Users, Home, Plane, DollarSign, Shield, BookOpen,
-  Scale,
+  Scale, User, Check, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -67,27 +67,20 @@ const CATEGORY_ICONS: Record<string, typeof Briefcase> = {
 };
 
 const FORMS_CATALOG: FormCatalogItem[] = [
-  // Empleo
   { slug: "i-765", name: "I-765", fullName: "Application for Employment Authorization", description: "Permiso de trabajo (EAD)", category: "Empleo", status: "available" },
   { slug: "i-140", name: "I-140", fullName: "Immigrant Petition for Alien Workers", description: "Petición de inmigrante trabajador", category: "Empleo", status: "coming_soon" },
-  // Familia
   { slug: "i-130", name: "I-130", fullName: "Petition for Alien Relative", description: "Petición de familiar extranjero", category: "Familia", status: "coming_soon" },
   { slug: "i-130a", name: "I-130A", fullName: "Supplemental Information for Spouse Beneficiary", description: "Suplemento para cónyuge beneficiario", category: "Familia", status: "coming_soon" },
   { slug: "i-129f", name: "I-129F", fullName: "Petition for Alien Fiancé(e)", description: "Visa K-1 para prometido(a)", category: "Familia", status: "coming_soon" },
   { slug: "i-751", name: "I-751", fullName: "Petition to Remove Conditions on Residence", description: "Remover condiciones de residencia", category: "Familia", status: "coming_soon" },
-  // Residencia
   { slug: "i-485", name: "I-485", fullName: "Application to Register Permanent Residence", description: "Ajuste de estatus", category: "Residencia", status: "coming_soon" },
   { slug: "ar-11", name: "AR-11", fullName: "Alien's Change of Address Card", description: "Cambio de dirección", category: "Residencia", status: "coming_soon" },
   { slug: "i-90", name: "I-90", fullName: "Application to Replace Permanent Resident Card", description: "Renovar / reemplazar Green Card", category: "Renovación", status: "coming_soon" },
-  // Viaje
   { slug: "i-131", name: "I-131", fullName: "Application for Travel Document", description: "Advance Parole y documentos de viaje", category: "Viaje", status: "coming_soon" },
-  // Soporte
   { slug: "i-864", name: "I-864", fullName: "Affidavit of Support Under Section 213A", description: "Declaración jurada de manutención", category: "Soporte", status: "coming_soon" },
   { slug: "i-864a", name: "I-864A", fullName: "Contract Between Sponsor and Household Member", description: "Contrato co-patrocinador", category: "Soporte", status: "coming_soon" },
-  // Asilo / Protección
   { slug: "i-589", name: "I-589", fullName: "Application for Asylum and for Withholding of Removal", description: "Solicitud de asilo", category: "Asilo / Protección", status: "coming_soon" },
   { slug: "i-821", name: "I-821", fullName: "Application for Temporary Protected Status", description: "Estatus de Protección Temporal (TPS)", category: "Asilo / Protección", status: "coming_soon" },
-  // Ciudadanía
   { slug: "n-400", name: "N-400", fullName: "Application for Naturalization", description: "Solicitud de ciudadanía", category: "Ciudadanía", status: "coming_soon" },
 ];
 
@@ -104,16 +97,28 @@ export default function SmartFormsList() {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState("");
 
+  // Beneficiary selection modal
+  const [selectedForm, setSelectedForm] = useState<FormCatalogItem | null>(null);
+  const [beneficiaryModalOpen, setBeneficiaryModalOpen] = useState(false);
+  const [clientProfiles, setClientProfiles] = useState<any[]>([]);
+  const [clientCount, setClientCount] = useState(0);
+  const [clientSearch, setClientSearch] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState<string | null>(null);
+  const [accountIdRef, setAccountIdRef] = useState<string | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { navigate("/auth"); return; }
-    const [profileRes, subsRes] = await Promise.all([
+    const [profileRes, subsRes, accRes] = await Promise.all([
       supabase.from("profiles").select("firm_name").eq("user_id", session.user.id).maybeSingle(),
       supabase.from("form_submissions")
         .select("id, form_type, status, client_name, client_email, form_data, created_at, updated_at")
         .order("updated_at", { ascending: false }),
+      supabase.rpc("user_account_id", { _user_id: session.user.id }),
     ]);
     if (profileRes.data?.firm_name) setFirmName(profileRes.data.firm_name);
     if (subsRes.error) {
@@ -121,8 +126,49 @@ export default function SmartFormsList() {
     } else {
       setSubmissions((subsRes.data as unknown as Submission[]) || []);
     }
+    if (accRes.data) {
+      setAccountIdRef(accRes.data as string);
+      // Load client count
+      const { count } = await supabase
+        .from("client_profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("account_id", accRes.data as string);
+      setClientCount(count || 0);
+    }
     setLoading(false);
   };
+
+  // Search clients for beneficiary modal
+  useEffect(() => {
+    if (!accountIdRef || !beneficiaryModalOpen) return;
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      const q = clientSearch.trim().toLowerCase();
+      let query = supabase
+        .from("client_profiles")
+        .select("id, first_name, last_name, email")
+        .eq("account_id", accountIdRef)
+        .order("last_name", { ascending: true })
+        .limit(50);
+      if (q) {
+        query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`);
+      }
+      const { data: clients } = await query;
+      if (clients) setClientProfiles(clients);
+      setSearchLoading(false);
+    }, 300);
+
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
+  }, [clientSearch, accountIdRef, beneficiaryModalOpen]);
+
+  // Load initial clients when modal opens
+  useEffect(() => {
+    if (beneficiaryModalOpen && accountIdRef && clientProfiles.length === 0) {
+      setClientSearch("");
+    }
+  }, [beneficiaryModalOpen]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -170,10 +216,33 @@ export default function SmartFormsList() {
   const handleFormClick = (form: FormCatalogItem) => {
     if (form.status === "available") {
       setCatalogOpen(false);
-      navigate("/dashboard/smart-forms/new");
+      setSelectedForm(form);
+      setSelectedBeneficiaryId(null);
+      setClientSearch("");
+      setBeneficiaryModalOpen(true);
     } else {
       toast({ title: `${form.name} — Próximamente`, description: "Este formulario estará disponible pronto." });
     }
+  };
+
+  const handleProceedToForm = () => {
+    setBeneficiaryModalOpen(false);
+    navigate("/dashboard/smart-forms/new", {
+      state: {
+        formType: selectedForm?.slug,
+        beneficiaryId: selectedBeneficiaryId,
+      },
+    });
+  };
+
+  const handleSkipBeneficiary = () => {
+    setBeneficiaryModalOpen(false);
+    navigate("/dashboard/smart-forms/new", {
+      state: {
+        formType: selectedForm?.slug,
+        beneficiaryId: null,
+      },
+    });
   };
 
   // Filtering
@@ -293,7 +362,6 @@ export default function SmartFormsList() {
           </div>
         ) : (
           <div className="rounded-xl border border-border/40 overflow-hidden bg-card/50">
-            {/* Table header */}
             <div className="hidden md:grid grid-cols-[1fr_1fr_100px_100px_100px_44px] gap-4 px-4 py-2.5 bg-secondary/50 text-[11px] text-muted-foreground uppercase tracking-wider font-medium border-b border-border/20">
               <span>Cliente</span>
               <span>Formulario</span>
@@ -369,15 +437,13 @@ export default function SmartFormsList() {
           </div>
         )}
 
-        {/* ═══════ NEW FORM CATALOG MODAL ═══════ */}
+        {/* ═══════ CATALOG MODAL ═══════ */}
         <Dialog open={catalogOpen} onOpenChange={setCatalogOpen}>
           <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col p-0 gap-0">
             <DialogHeader className="px-5 pt-5 pb-3">
               <DialogTitle className="text-lg font-bold">Nuevo Formulario</DialogTitle>
-              <p className="text-xs text-muted-foreground">Selecciona el formulario USCIS que deseas completar</p>
+              <DialogDescription className="text-xs text-muted-foreground">Selecciona el formulario USCIS que deseas completar</DialogDescription>
             </DialogHeader>
-
-            {/* Search inside modal */}
             <div className="px-5 pb-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -390,8 +456,6 @@ export default function SmartFormsList() {
                 />
               </div>
             </div>
-
-            {/* Categorized list */}
             <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4">
               {groupedCatalog.map(group => {
                 const CatIcon = CATEGORY_ICONS[group.category] || FileText;
@@ -399,9 +463,7 @@ export default function SmartFormsList() {
                   <div key={group.category}>
                     <div className="flex items-center gap-2 mb-2">
                       <CatIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        {group.category}
-                      </span>
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{group.category}</span>
                     </div>
                     <div className="space-y-1">
                       {group.forms.map(form => {
@@ -412,16 +474,12 @@ export default function SmartFormsList() {
                             onClick={() => handleFormClick(form)}
                             className={cn(
                               "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
-                              isAvailable
-                                ? "hover:bg-accent/10 cursor-pointer group"
-                                : "opacity-50 cursor-default"
+                              isAvailable ? "hover:bg-accent/10 cursor-pointer group" : "opacity-50 cursor-default"
                             )}
                           >
                             <div className={cn(
                               "w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
-                              isAvailable
-                                ? "bg-accent/15 text-accent"
-                                : "bg-muted/50 text-muted-foreground"
+                              isAvailable ? "bg-accent/15 text-accent" : "bg-muted/50 text-muted-foreground"
                             )}>
                               {form.name}
                             </div>
@@ -432,9 +490,7 @@ export default function SmartFormsList() {
                             {isAvailable ? (
                               <ArrowRight className="w-4 h-4 text-accent opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                             ) : (
-                              <span className="text-[10px] text-muted-foreground/60 bg-muted/40 px-2 py-0.5 rounded-full shrink-0">
-                                Próximo
-                              </span>
+                              <span className="text-[10px] text-muted-foreground/60 bg-muted/40 px-2 py-0.5 rounded-full shrink-0">Próximo</span>
                             )}
                           </button>
                         );
@@ -443,12 +499,113 @@ export default function SmartFormsList() {
                   </div>
                 );
               })}
-
               {groupedCatalog.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                  No se encontraron formularios
+                <div className="text-center py-8 text-muted-foreground text-sm">No se encontraron formularios</div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ═══════ BENEFICIARY SELECTION MODAL ═══════ */}
+        <Dialog open={beneficiaryModalOpen} onOpenChange={setBeneficiaryModalOpen}>
+          <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col p-0 gap-0">
+            <DialogHeader className="px-5 pt-5 pb-2">
+              <div className="flex items-center gap-2 mb-1">
+                {selectedForm && (
+                  <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">
+                    {selectedForm.name}
+                  </span>
+                )}
+              </div>
+              <DialogTitle className="text-lg font-bold">Selecciona el Beneficiario</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Elige el contacto que será el aplicante principal de este formulario
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Search */}
+            <div className="px-5 py-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  className="pl-9 h-9 bg-secondary/50 border-border/40 text-sm"
+                  placeholder={`Buscar en ${clientCount.toLocaleString()} contactos...`}
+                  value={clientSearch}
+                  onChange={e => setClientSearch(e.target.value)}
+                  autoFocus
+                />
+                {searchLoading && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-3.5 h-3.5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Client list */}
+            <div className="flex-1 overflow-y-auto px-5 min-h-0">
+              {clientProfiles.length === 0 && clientCount === 0 ? (
+                <div className="text-center py-8">
+                  <User className="w-8 h-8 mx-auto text-muted-foreground/20 mb-2" />
+                  <p className="text-sm text-muted-foreground">Sin contactos registrados</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Puedes continuar y llenar los datos manualmente</p>
+                </div>
+              ) : clientProfiles.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">
+                    {searchLoading ? "Buscando..." : "Sin resultados — intenta otra búsqueda"}
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-border/20 divide-y divide-border/10 mb-2">
+                  {clientProfiles.map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setSelectedBeneficiaryId(selectedBeneficiaryId === c.id ? null : c.id)}
+                      className={cn(
+                        "w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors text-sm",
+                        selectedBeneficiaryId === c.id ? "bg-accent/10" : "hover:bg-secondary/60"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold",
+                        selectedBeneficiaryId === c.id ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+                      )}>
+                        {(c.first_name?.[0] || "").toUpperCase()}{(c.last_name?.[0] || "").toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {c.last_name || ""}{c.last_name && c.first_name ? ", " : ""}{c.first_name || ""}
+                        </p>
+                        {c.email && <p className="text-xs text-muted-foreground truncate">{c.email}</p>}
+                      </div>
+                      {selectedBeneficiaryId === c.id && (
+                        <Check className="w-4 h-4 text-accent shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                  {clientProfiles.length >= 50 && (
+                    <p className="text-xs text-muted-foreground p-2 text-center">
+                      Mostrando primeros 50 de {clientCount.toLocaleString()} — escribe para filtrar
+                    </p>
+                  )}
                 </div>
               )}
+            </div>
+
+            {/* Footer actions */}
+            <div className="flex items-center justify-between px-5 py-4 border-t border-border/20">
+              <Button variant="ghost" size="sm" onClick={handleSkipBeneficiary} className="text-muted-foreground">
+                Llenar manualmente
+              </Button>
+              <Button
+                onClick={handleProceedToForm}
+                disabled={!selectedBeneficiaryId}
+                className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
+              >
+                Continuar <ChevronRight className="w-4 h-4" />
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

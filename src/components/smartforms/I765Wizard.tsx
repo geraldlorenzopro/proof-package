@@ -281,6 +281,19 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, [clientSearch, accountIdRef]);
 
+  // Auto-select beneficiary if passed from navigation (new forms)
+  const autoSelectedRef = useRef(false);
+  useEffect(() => {
+    if (autoSelectedRef.current) return;
+    if (initialBeneficiaryId && clientProfiles.length > 0 && !initialData?.firstName) {
+      const found = clientProfiles.find(c => c.id === initialBeneficiaryId);
+      if (found) {
+        autoSelectedRef.current = true;
+        selectClient(initialBeneficiaryId);
+      }
+    }
+  }, [clientProfiles, initialBeneficiaryId]);
+
   // Auto-fill from selected client profile (beneficiary)
   const selectClient = (clientId: string) => {
     const c = clientProfiles.find(cp => cp.id === clientId);
@@ -383,113 +396,43 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           </p>
         )}
 
-        {/* Two-column row: Client selector + Language/Client Link */}
-        <div className="grid md:grid-cols-2 gap-3">
-          {/* Left: Client selector */}
-          <div className="rounded-xl border border-border/30 p-4 space-y-3">
-            <p className="text-sm font-bold text-foreground flex items-center gap-2">
-              <User className="w-4 h-4 text-accent" />
-              {t("Beneficiary (Applicant)", "Beneficiario (Aplicante)")}
-            </p>
-            <p className="text-xs text-muted-foreground">{t("The person applying for the work permit", "La persona que solicita el permiso de trabajo")}</p>
-            {(clientProfiles.length > 0 || clientCount > 0) ? (
-              <>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <Input
-                    className="bg-secondary/60 border-border/50 pl-8 text-sm"
-                    placeholder={t(`Search ${clientCount.toLocaleString()} contacts...`, `Buscar en ${clientCount.toLocaleString()} contactos...`)}
-                    value={clientSearch}
-                    onChange={e => setClientSearch(e.target.value)}
-                  />
-                  {searchLoading && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div className="w-3.5 h-3.5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
-                    </div>
-                  )}
-                </div>
-                <div className="max-h-52 overflow-y-auto rounded-lg border border-border/20 divide-y divide-border/10">
-                  {clientProfiles.length === 0 ? (
-                    <p className="text-xs text-muted-foreground p-3 text-center">
-                      {searchLoading ? t("Searching...", "Buscando...") : t("No results — try a different search", "Sin resultados — intenta otra búsqueda")}
-                    </p>
-                  ) : (
-                    <>
-                      {clientProfiles.map(c => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => selectClient(c.id)}
-                          className={cn(
-                            "w-full text-left px-3 py-2 flex flex-col gap-0.5 transition-colors text-sm",
-                            selectedClientId === c.id ? "bg-accent/10 text-accent" : "hover:bg-secondary/60"
-                          )}
-                        >
-                          <span className="flex items-center gap-2">
-                            <User className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-                            <span className="flex-1 truncate font-medium">
-                              {c.last_name || ""}{c.last_name && c.first_name ? ", " : ""}{c.first_name || ""}
-                            </span>
-                            {selectedClientId === c.id && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
-                          </span>
-                          {c.email && <span className="text-xs text-muted-foreground pl-5.5 truncate">{c.email}</span>}
-                        </button>
-                      ))}
-                      {clientProfiles.length >= 50 && (
-                        <p className="text-xs text-muted-foreground p-2 text-center">
-                          {t(`Showing first 50 of ${clientCount.toLocaleString()} — type to narrow results`, `Mostrando primeros 50 de ${clientCount.toLocaleString()} — escribe para filtrar`)}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-                {selectedClientId && (
-                  <p className="text-xs text-accent flex items-center gap-1"><Check className="w-3 h-3" />{t("Data loaded", "Datos cargados")}</p>
-                )}
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">{t("No clients yet. Fill manually.", "Sin clientes. Llena manualmente.")}</p>
-            )}
-          </div>
-
-          {/* Right: Language + send to client */}
-          <div className="rounded-xl border border-border/30 p-4 space-y-4">
-            <p className="text-sm font-bold text-foreground">{t("Language", "Idioma")}</p>
-            <div className="space-y-2.5">
-              <div className="flex items-center gap-2.5">
-                <Checkbox checked={data.applicantCanReadEnglish} onCheckedChange={v => { set("applicantCanReadEnglish", !!v); if (v) set("interpreterUsed", false); }} id="can-read" />
-                <Label htmlFor="can-read" className="text-sm cursor-pointer">{t("Can read English", "Puede leer inglés")}</Label>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Checkbox checked={data.interpreterUsed} onCheckedChange={v => { set("interpreterUsed", !!v); if (v) set("applicantCanReadEnglish", false); }} id="interpreter" />
-                <Label htmlFor="interpreter" className="text-sm cursor-pointer">{t("Uses interpreter", "Usa intérprete")}</Label>
-              </div>
+        {/* Language + send to client */}
+        <div className="rounded-xl border border-border/30 p-4 space-y-4">
+          <p className="text-sm font-bold text-foreground">{t("Language", "Idioma")}</p>
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2.5">
+              <Checkbox checked={data.applicantCanReadEnglish} onCheckedChange={v => { set("applicantCanReadEnglish", !!v); if (v) set("interpreterUsed", false); }} id="can-read" />
+              <Label htmlFor="can-read" className="text-sm cursor-pointer">{t("Can read English", "Puede leer inglés")}</Label>
             </div>
-
-            {/* Send to client toggle */}
-            {isProfessional && (
-              <div className="border-t border-border/20 pt-3 space-y-2.5">
-                <div className="flex items-center gap-2.5">
-                  <Checkbox checked={sendToClient} onCheckedChange={v => setSendToClient(!!v)} id="send-client" />
-                  <Label htmlFor="send-client" className="text-sm cursor-pointer font-medium">
-                    {t("Send questionnaire to client?", "¿Enviar cuestionario al cliente?")}
-                  </Label>
-                </div>
-                {sendToClient && (
-                  <ClientLinkSection
-                    lang={lang}
-                    shareToken={shareToken}
-                    onRequestShareToken={async () => {
-                      onSave(data, "draft");
-                      await new Promise(r => setTimeout(r, 1000));
-                      return onRequestShareToken ? onRequestShareToken() : null;
-                    }}
-                    t={t}
-                  />
-                )}
-              </div>
-            )}
+            <div className="flex items-center gap-2.5">
+              <Checkbox checked={data.interpreterUsed} onCheckedChange={v => { set("interpreterUsed", !!v); if (v) set("applicantCanReadEnglish", false); }} id="interpreter" />
+              <Label htmlFor="interpreter" className="text-sm cursor-pointer">{t("Uses interpreter", "Usa intérprete")}</Label>
+            </div>
           </div>
+
+          {/* Send to client toggle */}
+          {isProfessional && (
+            <div className="border-t border-border/20 pt-3 space-y-2.5">
+              <div className="flex items-center gap-2.5">
+                <Checkbox checked={sendToClient} onCheckedChange={v => setSendToClient(!!v)} id="send-client" />
+                <Label htmlFor="send-client" className="text-sm cursor-pointer font-medium">
+                  {t("Send questionnaire to client?", "¿Enviar cuestionario al cliente?")}
+                </Label>
+              </div>
+              {sendToClient && (
+                <ClientLinkSection
+                  lang={lang}
+                  shareToken={shareToken}
+                  onRequestShareToken={async () => {
+                    onSave(data, "draft");
+                    await new Promise(r => setTimeout(r, 1000));
+                    return onRequestShareToken ? onRequestShareToken() : null;
+                  }}
+                  t={t}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
     );

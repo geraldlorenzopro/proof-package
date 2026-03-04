@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import I765Wizard from "@/components/smartforms/I765Wizard";
@@ -10,8 +10,12 @@ import { useSmartFormsContext } from "@/components/smartforms/SmartFormsContext"
 
 export default function SmartFormPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const isNew = !id || id === "new";
+
+  // Read beneficiary from navigation state (passed from SmartFormsList)
+  const navState = location.state as { beneficiaryId?: string | null; formType?: string } | null;
 
   const { lang } = useSmartFormsContext();
   const [saving, setSaving] = useState(false);
@@ -20,7 +24,7 @@ export default function SmartFormPage() {
   const [firmName, setFirmName] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [beneficiaryProfileId, setBeneficiaryProfileId] = useState<string | null>(null);
+  const [beneficiaryProfileId, setBeneficiaryProfileId] = useState<string | null>(navState?.beneficiaryId || null);
 
   useEffect(() => {
     const init = async () => {
