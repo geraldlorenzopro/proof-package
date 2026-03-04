@@ -39,6 +39,10 @@ interface HubData {
     access_token: string;
     refresh_token: string;
   } | null;
+  staff_info?: {
+    ghl_user_id: string;
+    display_name: string;
+  } | null;
 }
 
 export default function HubPage() {
@@ -159,6 +163,7 @@ export default function HubPage() {
     essential: 'text-muted-foreground border-border',
     professional: 'text-jarvis border-jarvis/30',
     elite: 'text-accent border-accent/30',
+    enterprise: 'text-yellow-400 border-yellow-400/30',
   };
 
   return (
@@ -183,6 +188,11 @@ export default function HubPage() {
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
             Bienvenido, <span className="text-jarvis glow-text">{data.account_name}</span>
           </h2>
+          {data.staff_info && (
+            <p className="text-sm text-muted-foreground mb-1">
+              Sesión de <span className="text-foreground font-medium">{data.staff_info.display_name}</span>
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             Plan{' '}
             <span className={`inline-block border rounded-full px-2 py-0.5 text-xs uppercase tracking-wider ${planColors[data.plan] || planColors.essential}`}>

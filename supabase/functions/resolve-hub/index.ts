@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
-async function verifyHmac(cid: string, ts: string, sig: string, secret: string): Promise<boolean> {
+async function verifyHmac(payload: string, sig: string, secret: string): Promise<boolean> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
@@ -10,8 +10,7 @@ async function verifyHmac(cid: string, ts: string, sig: string, secret: string):
     false,
     ["sign"]
   );
-  const data = encoder.encode(`${cid}:${ts}`);
-  const signature = await crypto.subtle.sign("HMAC", key, data);
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
   const expected = Array.from(new Uint8Array(signature))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -19,75 +18,90 @@ async function verifyHmac(cid: string, ts: string, sig: string, secret: string):
 }
 
 /**
- * Find or create a Supabase Auth user for the given NER account.
- * Returns { user_id, access_token, refresh_token } for transparent session.
+ * Find or create a Supabase Auth user for a specific staff member or account.
+ * If userId (GHL user.id) is provided, creates a unique user per staff.
+ * Otherwise falls back to shared account user (backward compat).
  */
 async function getOrCreateHubUser(
   supabaseAdmin: any,
   accountId: string,
-  accountName: string
+  accountName: string,
+  ghlUserId?: string | null,
+  ghlUserEmail?: string | null,
+  ghlUserName?: string | null,
+  maxUsers?: number
 ) {
-  // 1. Check if there's already a member linked to this account
-  const { data: existingMember } = await supabaseAdmin
-    .from("account_members")
-    .select("user_id")
-    .eq("account_id", accountId)
-    .limit(1)
-    .maybeSingle();
+  // Determine unique email for this hub user
+  const hubEmail = ghlUserId
+    ? `hub-${ghlUserId}@hub.ner.internal`
+    : `hub-${accountId}@hub.ner.internal`;
 
-  let userId: string;
-  const hubEmail = `hub-${accountId}@hub.ner.internal`;
-
-  // Always ensure the hub user exists
-  let hubUserId: string | null = null;
+  const displayName = ghlUserName || accountName;
 
   // Try to find existing hub user by email
   const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
   const foundHub = listData?.users?.find((u: any) => u.email === hubEmail);
 
+  let hubUserId: string;
+
   if (foundHub) {
     hubUserId = foundHub.id;
   } else {
-    // Create hub user
+    // If this is a new staff user, check max_users limit
+    if (ghlUserId && maxUsers && maxUsers > 0) {
+      const { count } = await supabaseAdmin
+        .from("account_members")
+        .select("id", { count: "exact", head: true })
+        .eq("account_id", accountId);
+
+      if (count !== null && count >= maxUsers) {
+        throw new Error(`LIMIT_EXCEEDED:${maxUsers}`);
+      }
+    }
+
+    // Create new hub user
     const randomPassword = crypto.randomUUID() + crypto.randomUUID();
     const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email: hubEmail,
       password: randomPassword,
       email_confirm: true,
-      user_metadata: { hub_account: true, account_name: accountName },
+      user_metadata: {
+        hub_account: true,
+        account_name: accountName,
+        ghl_user_id: ghlUserId || null,
+        ghl_user_email: ghlUserEmail || null,
+      },
     });
 
     if (createErr) {
       throw new Error(`Failed to create hub user: ${createErr.message}`);
     }
     hubUserId = newUser.user.id;
-    console.log("Created new hub user:", hubUserId);
+    console.log("Created new hub user:", hubUserId, "for GHL user:", ghlUserId || "shared");
   }
 
-  userId = hubUserId;
-
-  // Always ensure hub user is in account_members
+  // Ensure hub user is in account_members
+  // For staff with ghlUserId, role is "member". For shared/owner, keep existing or set "member".
   const { error: memberErr } = await supabaseAdmin.from("account_members").upsert(
-    { account_id: accountId, user_id: userId, role: "member" },
+    { account_id: accountId, user_id: hubUserId, role: "member" },
     { onConflict: "account_id,user_id" }
   );
   if (memberErr) {
     console.error("Failed to link member:", memberErr);
-    // Fallback: try insert ignoring conflict
     await supabaseAdmin.from("account_members").insert(
-      { account_id: accountId, user_id: userId, role: "member" }
+      { account_id: accountId, user_id: hubUserId, role: "member" }
     );
   }
 
   // Ensure profile exists
   await supabaseAdmin.from("profiles").upsert(
-    { user_id: userId, full_name: accountName },
+    { user_id: hubUserId, full_name: displayName },
     { onConflict: "user_id" }
   );
 
-  console.log("Hub user ready:", userId);
+  console.log("Hub user ready:", hubUserId);
 
-  // 5. Generate a magic link and verify it server-side to get real session tokens
+  // Generate session tokens via magic link + server-side verify
   const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
     type: "magiclink",
     email: hubEmail,
@@ -97,7 +111,6 @@ async function getOrCreateHubUser(
     throw new Error(`Failed to generate session link: ${linkErr?.message}`);
   }
 
-  // Verify the OTP server-side to get actual session tokens
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const verifyRes = await fetch(`${supabaseUrl}/auth/v1/verify`, {
@@ -120,7 +133,7 @@ async function getOrCreateHubUser(
   const session = await verifyRes.json();
 
   return {
-    user_id: userId,
+    user_id: hubUserId,
     access_token: session.access_token,
     refresh_token: session.refresh_token,
   };
@@ -136,10 +149,21 @@ Deno.serve(async (req) => {
     const cid = url.searchParams.get("cid");
     const sig = url.searchParams.get("sig");
     const ts = url.searchParams.get("ts");
+    const uid = url.searchParams.get("uid");       // GHL user.id (staff)
+    const uemail = url.searchParams.get("uemail");  // GHL user.email
+    const uname = url.searchParams.get("uname");    // GHL user.name
 
     if (!cid || cid.length < 5 || cid.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(cid)) {
       return new Response(
         JSON.stringify({ error: "Invalid or missing cid parameter" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate uid if present
+    if (uid && (uid.length < 3 || uid.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(uid))) {
+      return new Response(
+        JSON.stringify({ error: "Invalid uid parameter" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -167,8 +191,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    const valid = await verifyHmac(cid, ts, sig, hubSecret);
-    console.log("HMAC debug:", { cid, ts, sig: sig.substring(0, 8) + "...", valid, secretLen: hubSecret.length });
+    // HMAC payload matches what hub-redirect generated
+    const hmacPayload = uid ? `${cid}:${uid}:${ts}` : `${cid}:${ts}`;
+    const valid = await verifyHmac(hmacPayload, sig, hubSecret);
+    console.log("HMAC debug:", { cid, uid: uid || "none", ts, sig: sig.substring(0, 8) + "...", valid });
     if (!valid) {
       return new Response(
         JSON.stringify({ error: "Invalid signature" }),
@@ -222,13 +248,37 @@ Deno.serve(async (req) => {
 
     // --- AUTO-LOGIN: Generate transparent session ---
     let auth_token: { access_token: string; refresh_token: string } | null = null;
+    let staff_info: { ghl_user_id: string; display_name: string } | null = null;
+
     try {
-      const result = await getOrCreateHubUser(supabaseAdmin, account.id, account.account_name);
+      const result = await getOrCreateHubUser(
+        supabaseAdmin,
+        account.id,
+        account.account_name,
+        uid,
+        uemail,
+        uname,
+        account.max_users
+      );
       auth_token = { access_token: result.access_token, refresh_token: result.refresh_token };
-      console.log("Auto-login token generated for account:", account.id);
-    } catch (authErr) {
+      if (uid) {
+        staff_info = { ghl_user_id: uid, display_name: uname || uemail || uid };
+      }
+      console.log("Auto-login token generated for account:", account.id, "staff:", uid || "shared");
+    } catch (authErr: any) {
+      const errMsg = String(authErr?.message || authErr);
+      if (errMsg.startsWith("LIMIT_EXCEEDED:")) {
+        const max = errMsg.split(":")[1];
+        return new Response(
+          JSON.stringify({
+            error: "staff_limit_exceeded",
+            message: `Tu plan permite máximo ${max} usuarios. Contacta al administrador para actualizar tu plan.`,
+            max_users: Number(max),
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       console.error("Auto-login failed (non-blocking):", authErr);
-      // Non-blocking: Hub still works, just without auto-login
     }
 
     return new Response(
@@ -238,6 +288,7 @@ Deno.serve(async (req) => {
         plan: account.plan,
         apps,
         auth_token,
+        staff_info,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
