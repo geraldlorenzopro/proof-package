@@ -278,196 +278,152 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   };
 
   // ─── Step renderers ───
+  // State for "send to client" toggle
+  const [sendToClient, setSendToClient] = useState(false);
+
   const renderCaseConfig = () => {
     const p = profileData as any;
     const hasAttorneyData = p?.attorney_name;
     const hasPreparerData = p?.preparer_name;
 
+    const roles = [
+      { value: "attorney" as const, icon: Scale, label: t("Attorney", "Abogado"), desc: t("Requires G-28", "Requiere G-28"), ok: hasAttorneyData, name: p?.attorney_name },
+      { value: "preparer" as const, icon: FileEdit, label: t("Preparer", "Preparador"), desc: t("No G-28 needed", "No requiere G-28"), ok: hasPreparerData, name: p?.preparer_name },
+      { value: "applicant" as const, icon: UserCheck, label: t("Self-filed", "El aplicante"), desc: t("No preparer", "Sin preparador"), ok: true, name: null },
+    ];
+
     return (
-      <div className="space-y-5">
-        <h3 className="text-lg font-semibold text-accent">{t("Who is completing this form?", "¿Quién completa este formulario?")}</h3>
-        <p className="text-sm text-muted-foreground">
-          {t("This determines whether a G-28 is needed and auto-fills the preparer section.",
-             "Esto determina si se necesita un G-28 y llena automáticamente la sección del preparador.")}
-        </p>
+      <div className="space-y-4">
+        <div className="text-center space-y-1">
+          <h3 className="text-lg font-semibold text-accent">{t("Set up this case", "Configura este caso")}</h3>
+          <p className="text-xs text-muted-foreground">{t("Quick setup before starting the questionnaire", "Configuración rápida antes de iniciar el cuestionario")}</p>
+        </div>
 
-        <RadioGroup value={data.formPreparedBy} onValueChange={v => set("formPreparedBy", v as I765Data["formPreparedBy"])}>
-          {/* Attorney option */}
-          <label className={cn(
-            "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all",
-            data.formPreparedBy === "attorney" ? "border-accent/60 bg-accent/5" : "border-border/30 hover:border-border/60"
-          )}>
-            <RadioGroupItem value="attorney" className="mt-0.5" />
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <Scale className="w-4 h-4 text-accent" />
-                <span className="text-sm font-medium">{t("Attorney", "Abogado")}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("An attorney is representing the applicant (requires G-28)", "Un abogado representa al aplicante (requiere G-28)")}
-              </p>
-              {hasAttorneyData ? (
-                <p className="text-xs text-accent mt-2">✓ {p.attorney_name} — Bar #{p.attorney_bar_number || "N/A"}</p>
-              ) : (
-                <p className="text-xs text-destructive mt-2 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  {t("No attorney data in Settings", "No hay datos de abogado en Settings")}
-                </p>
+        {/* Role selector — compact cards in a row */}
+        <div className="grid grid-cols-3 gap-2">
+          {roles.map(r => (
+            <button
+              key={r.value}
+              type="button"
+              onClick={() => set("formPreparedBy", r.value)}
+              className={cn(
+                "flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all cursor-pointer",
+                data.formPreparedBy === r.value
+                  ? "border-accent bg-accent/10 ring-1 ring-accent/30"
+                  : "border-border/30 hover:border-border/60 hover:bg-secondary/40"
               )}
-            </div>
-          </label>
-
-          {/* Preparer option */}
-          <label className={cn(
-            "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all",
-            data.formPreparedBy === "preparer" ? "border-accent/60 bg-accent/5" : "border-border/30 hover:border-border/60"
-          )}>
-            <RadioGroupItem value="preparer" className="mt-0.5" />
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <FileEdit className="w-4 h-4 text-accent" />
-                <span className="text-sm font-medium">{t("Preparer", "Preparador")}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("A non-attorney preparer assisted (no G-28 needed)", "Un preparador no-abogado asistió (no requiere G-28)")}
-              </p>
-              {hasPreparerData ? (
-                <p className="text-xs text-accent mt-2">✓ {p.preparer_name}</p>
-              ) : (
-                <p className="text-xs text-destructive mt-2 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  {t("No preparer data in Settings", "No hay datos de preparador en Settings")}
-                </p>
+            >
+              <r.icon className={cn("w-5 h-5", data.formPreparedBy === r.value ? "text-accent" : "text-muted-foreground")} />
+              <span className="text-xs font-semibold">{r.label}</span>
+              <span className="text-[10px] text-muted-foreground leading-tight">{r.desc}</span>
+              {r.name && r.ok && <span className="text-[10px] text-accent truncate max-w-full">✓ {r.name}</span>}
+              {!r.ok && r.value !== "applicant" && (
+                <span className="text-[10px] text-destructive flex items-center gap-0.5"><AlertCircle className="w-2.5 h-2.5" />{t("Not set", "Sin datos")}</span>
               )}
-            </div>
-          </label>
+            </button>
+          ))}
+        </div>
 
-          {/* Applicant option */}
-          <label className={cn(
-            "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all",
-            data.formPreparedBy === "applicant" ? "border-accent/60 bg-accent/5" : "border-border/30 hover:border-border/60"
-          )}>
-            <RadioGroupItem value="applicant" className="mt-0.5" />
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-accent" />
-                <span className="text-sm font-medium">{t("The applicant themselves", "El propio aplicante")}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("No preparer or attorney involved (no G-28 needed)", "Sin preparador ni abogado (no se necesita G-28)")}
-              </p>
-            </div>
-          </label>
-        </RadioGroup>
-
-        {data.formPreparedBy && data.formPreparedBy !== "applicant" && !hasAttorneyData && data.formPreparedBy === "attorney" && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-            <p className="text-xs text-destructive">
-              {t("⚠️ Please go to Settings → Attorney / Preparer tab to add your attorney information first.",
-                 "⚠️ Por favor ve a Settings → pestaña Abogado / Preparador para agregar la información del abogado primero.")}
-            </p>
-          </div>
+        {/* Warning if missing data */}
+        {data.formPreparedBy === "attorney" && !hasAttorneyData && (
+          <p className="text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded-lg px-3 py-2">
+            ⚠️ {t("Add attorney info in Settings first.", "Agrega los datos del abogado en Settings primero.")}
+          </p>
         )}
         {data.formPreparedBy === "preparer" && !hasPreparerData && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-            <p className="text-xs text-destructive">
-              {t("⚠️ Please go to Settings → Attorney / Preparer tab to add your preparer information first.",
-                 "⚠️ Por favor ve a Settings → pestaña Abogado / Preparador para agregar la información del preparador primero.")}
-            </p>
-          </div>
+          <p className="text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded-lg px-3 py-2">
+            ⚠️ {t("Add preparer info in Settings first.", "Agrega los datos del preparador en Settings primero.")}
+          </p>
         )}
 
-        {/* Client selector */}
-        <div className="border-t border-border/30 pt-4 mt-2 space-y-3">
-          <p className="text-sm font-medium text-foreground flex items-center gap-2">
-            <User className="w-4 h-4 text-accent" />
-            {t("Select Client", "Seleccionar Cliente")}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {t("Choose an existing client to auto-fill their information.",
-               "Selecciona un cliente existente para pre-llenar su información.")}
-          </p>
-          {clientProfiles.length > 0 ? (
-            <>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  className="bg-secondary/60 border-border/50 pl-9 text-sm"
-                  placeholder={t("Search by name or email...", "Buscar por nombre o email...")}
-                  value={clientSearch}
-                  onChange={e => setClientSearch(e.target.value)}
-                />
-              </div>
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-border/30 divide-y divide-border/20">
-                {filteredClients.length === 0 ? (
-                  <p className="text-xs text-muted-foreground p-3 text-center">{t("No clients found", "No se encontraron clientes")}</p>
-                ) : filteredClients.map(c => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => selectClient(c.id)}
-                    className={cn(
-                      "w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors text-sm",
-                      selectedClientId === c.id
-                        ? "bg-accent/10 text-accent"
-                        : "hover:bg-secondary/60"
-                    )}
-                  >
-                    <User className="w-4 h-4 shrink-0 text-muted-foreground" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">
+        {/* Two-column row: Client selector + Language/Client Link */}
+        <div className="grid md:grid-cols-2 gap-3">
+          {/* Left: Client selector */}
+          <div className="rounded-xl border border-border/30 p-3 space-y-2">
+            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-accent" />
+              {t("Client", "Cliente")}
+            </p>
+            {clientProfiles.length > 0 ? (
+              <>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                  <Input
+                    className="bg-secondary/60 border-border/50 pl-7 text-xs h-8"
+                    placeholder={t("Search...", "Buscar...")}
+                    value={clientSearch}
+                    onChange={e => setClientSearch(e.target.value)}
+                  />
+                </div>
+                <div className="max-h-32 overflow-y-auto rounded-lg border border-border/20 divide-y divide-border/10">
+                  {filteredClients.length === 0 ? (
+                    <p className="text-[10px] text-muted-foreground p-2 text-center">{t("No results", "Sin resultados")}</p>
+                  ) : filteredClients.slice(0, 5).map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => selectClient(c.id)}
+                      className={cn(
+                        "w-full text-left px-2.5 py-1.5 flex items-center gap-2 transition-colors text-xs",
+                        selectedClientId === c.id ? "bg-accent/10 text-accent" : "hover:bg-secondary/60"
+                      )}
+                    >
+                      <User className="w-3 h-3 shrink-0 text-muted-foreground" />
+                      <span className="flex-1 truncate font-medium">
                         {c.last_name || ""}{c.last_name && c.first_name ? ", " : ""}{c.first_name || ""}
-                        {!c.last_name && !c.first_name && <span className="text-muted-foreground italic">{t("No name", "Sin nombre")}</span>}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">{c.email || c.phone || ""}</p>
-                    </div>
-                    {selectedClientId === c.id && <Check className="w-4 h-4 text-accent shrink-0" />}
-                  </button>
-                ))}
+                      </span>
+                      {selectedClientId === c.id && <Check className="w-3 h-3 text-accent shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+                {selectedClientId && (
+                  <p className="text-[10px] text-accent flex items-center gap-1"><Check className="w-2.5 h-2.5" />{t("Data loaded", "Datos cargados")}</p>
+                )}
+              </>
+            ) : (
+              <p className="text-[10px] text-muted-foreground italic">{t("No clients yet. Fill manually.", "Sin clientes. Llena manualmente.")}</p>
+            )}
+          </div>
+
+          {/* Right: Language + send to client */}
+          <div className="rounded-xl border border-border/30 p-3 space-y-3">
+            <p className="text-xs font-semibold text-foreground">{t("Language", "Idioma")}</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <Checkbox checked={data.applicantCanReadEnglish} onCheckedChange={v => { set("applicantCanReadEnglish", !!v); if (v) set("interpreterUsed", false); }} id="can-read" />
+                <Label htmlFor="can-read" className="text-xs cursor-pointer">{t("Can read English", "Puede leer inglés")}</Label>
               </div>
-              {selectedClientId && (
-                <p className="text-xs text-accent flex items-center gap-1">
-                  <Check className="w-3 h-3" />
-                  {t("Client data loaded. Fields have been pre-filled.", "Datos del cliente cargados. Los campos se han pre-llenado.")}
-                </p>
-              )}
-            </>
-          ) : (
-            <p className="text-xs text-muted-foreground italic">
-              {t("No client profiles found. You can still fill the form manually.",
-                 "No se encontraron perfiles de clientes. Puedes llenar el formulario manualmente.")}
-            </p>
-          )}
-        </div>
+              <div className="flex items-center gap-2">
+                <Checkbox checked={data.interpreterUsed} onCheckedChange={v => { set("interpreterUsed", !!v); if (v) set("applicantCanReadEnglish", false); }} id="interpreter" />
+                <Label htmlFor="interpreter" className="text-xs cursor-pointer">{t("Uses interpreter", "Usa intérprete")}</Label>
+              </div>
+            </div>
 
-        {/* Language & Interpreter preferences */}
-        <div className="border-t border-border/30 pt-4 mt-2 space-y-3">
-          <p className="text-sm font-medium text-foreground">{t("Applicant's Language", "Idioma del Aplicante")}</p>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={data.applicantCanReadEnglish} onCheckedChange={v => { set("applicantCanReadEnglish", !!v); if (v) set("interpreterUsed", false); }} id="can-read" />
-            <Label htmlFor="can-read" className="text-sm cursor-pointer">{t("The applicant can read and understand English", "El aplicante puede leer y entender inglés")}</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={data.interpreterUsed} onCheckedChange={v => { set("interpreterUsed", !!v); if (v) set("applicantCanReadEnglish", false); }} id="interpreter" />
-            <Label htmlFor="interpreter" className="text-sm cursor-pointer">{t("An interpreter will be used", "Se utilizará un intérprete")}</Label>
+            {/* Send to client toggle */}
+            {isProfessional && (
+              <div className="border-t border-border/20 pt-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={sendToClient} onCheckedChange={v => setSendToClient(!!v)} id="send-client" />
+                  <Label htmlFor="send-client" className="text-xs cursor-pointer font-medium">
+                    {t("Send questionnaire to client?", "¿Enviar cuestionario al cliente?")}
+                  </Label>
+                </div>
+                {sendToClient && (
+                  <ClientLinkSection
+                    lang={lang}
+                    shareToken={shareToken}
+                    onRequestShareToken={async () => {
+                      onSave(data, "draft");
+                      await new Promise(r => setTimeout(r, 1000));
+                      return onRequestShareToken ? onRequestShareToken() : null;
+                    }}
+                    t={t}
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Send link to client */}
-        {isProfessional && (
-          <ClientLinkSection
-            lang={lang}
-            shareToken={shareToken}
-            onRequestShareToken={async () => {
-              // Save draft first, then get token
-              onSave(data, "draft");
-              // Small delay to let save complete
-              await new Promise(r => setTimeout(r, 1000));
-              return onRequestShareToken ? onRequestShareToken() : null;
-            }}
-            t={t}
-          />
-        )}
       </div>
     );
   };

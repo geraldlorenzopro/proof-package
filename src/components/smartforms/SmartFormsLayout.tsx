@@ -169,9 +169,19 @@ function TopNavBar() {
         </Button>
       </div>
 
-      {/* Wizard progress bar (thin, below nav) */}
+      {/* Wizard progress bar + step label */}
       {wizardNav && (
-        <div className="px-3 pb-1.5">
+        <div className="px-3 pb-2 space-y-1">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] text-muted-foreground">
+              <span className="font-bold text-accent">{wizardNav.currentStep + 1}</span>
+              <span className="text-border mx-1">/</span>
+              <span>{wizardNav.steps.length}</span>
+              <span className="mx-1.5">·</span>
+              <span>{I765_STEP_LABELS[wizardNav.steps[wizardNav.currentStep]][lang]}</span>
+            </p>
+            <p className="text-[10px] text-muted-foreground">{Math.round(((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100)}%</p>
+          </div>
           <Progress
             value={((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100}
             className="h-1"
