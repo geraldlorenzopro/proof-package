@@ -93,11 +93,43 @@ async function getOrCreateHubUser(
     );
   }
 
-  // Ensure profile exists
-  await supabaseAdmin.from("profiles").upsert(
-    { user_id: hubUserId, full_name: displayName },
-    { onConflict: "user_id" }
-  );
+  // Ensure profile exists — copy firm data from existing account member if available
+  const { data: existingProfile } = await supabaseAdmin
+    .from("profiles")
+    .select("*")
+    .eq("user_id", hubUserId)
+    .maybeSingle();
+
+  if (!existingProfile) {
+    // Try to copy attorney/preparer data from an existing member's profile
+    const { data: existingMembers } = await supabaseAdmin
+      .from("account_members")
+      .select("user_id")
+      .eq("account_id", accountId)
+      .neq("user_id", hubUserId)
+      .limit(1);
+
+    let firmProfile: Record<string, any> = { user_id: hubUserId, full_name: displayName };
+
+    if (existingMembers && existingMembers.length > 0) {
+      const { data: sourceProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("firm_name, logo_url, attorney_name, attorney_bar_number, attorney_bar_state, attorney_address, attorney_city, attorney_state, attorney_zip, attorney_country, attorney_phone, attorney_fax, attorney_email, attorney_uscis_account, preparer_name, preparer_business_name, preparer_address, preparer_city, preparer_state, preparer_zip, preparer_country, preparer_phone, preparer_fax, preparer_email")
+        .eq("user_id", existingMembers[0].user_id)
+        .maybeSingle();
+
+      if (sourceProfile) {
+        // Copy firm-level data to new staff member
+        firmProfile = { ...firmProfile, ...sourceProfile };
+        console.log("Copied firm profile data from existing member to new staff");
+      }
+    }
+
+    await supabaseAdmin.from("profiles").insert(firmProfile);
+  } else {
+    // Profile exists, just update display name
+    await supabaseAdmin.from("profiles").update({ full_name: displayName }).eq("user_id", hubUserId);
+  }
 
   console.log("Hub user ready:", hubUserId);
 
