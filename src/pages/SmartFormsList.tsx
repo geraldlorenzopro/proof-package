@@ -399,7 +399,7 @@ export default function SmartFormsList() {
                     </span>
                   </div>
                   <div>
-                    <Badge variant={cfg.variant} className="text-[11px] gap-1">
+                    <Badge variant={cfg.variant} className="text-xs gap-1.5 px-3 py-1">
                       <StatusIcon className="w-3 h-3" />
                       {cfg.labelEs}
                     </Badge>
