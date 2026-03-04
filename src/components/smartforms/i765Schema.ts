@@ -1,6 +1,9 @@
 // I-765 Form Schema — maps every field from the official USCIS Form I-765 (Edition 08/21/25)
 
 export interface I765Data {
+  // Case Configuration (Step 0 — professional only)
+  formPreparedBy: "attorney" | "preparer" | "applicant" | "";
+
   // Part 1: Reason for Applying
   reasonForApplying: "initial" | "replacement" | "renewal" | "";
 
@@ -115,6 +118,7 @@ export interface I765Data {
 }
 
 export const defaultI765Data: I765Data = {
+  formPreparedBy: "",
   reasonForApplying: "",
   lastName: "", firstName: "", middleName: "",
   otherNames: [],
@@ -149,6 +153,7 @@ export const defaultI765Data: I765Data = {
 };
 
 export type I765Step =
+  | "caseConfig"
   | "reason"
   | "personal"
   | "address"
@@ -159,11 +164,12 @@ export type I765Step =
   | "preparer";
 
 export const I765_STEPS: I765Step[] = [
-  "reason", "personal", "address", "background",
+  "caseConfig", "reason", "personal", "address", "background",
   "arrival", "eligibility", "statement", "preparer",
 ];
 
 export const I765_STEP_LABELS: Record<I765Step, { en: string; es: string }> = {
+  caseConfig:  { en: "Case Setup",               es: "Configuración" },
   reason:      { en: "What do you need?",        es: "¿Qué necesitas?" },
   personal:    { en: "About You",                es: "Sobre Ti" },
   address:     { en: "Where You Live",           es: "Dónde Vives" },
