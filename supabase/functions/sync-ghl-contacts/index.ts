@@ -39,8 +39,12 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    // GHL webhook payload fields
-    const locationId = body.location?.id || body.locationId;
+    // GHL native webhook sends data in different formats:
+    // Custom payload: { locationId, contact: {...} }
+    // Native webhook: flat payload with location_id / locationId and contact fields at root
+    const locationId = body.location?.id || body.locationId || body.location_id;
+    
+    // Contact can be nested or flat (native webhook sends fields at root level)
     const contact = body.contact || body;
 
     if (!locationId) {
@@ -50,7 +54,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const email = contact.email?.trim();
+    const email = (contact.email || contact.contact_email || "").trim();
     if (!email || email.length < 3) {
       return new Response(
         JSON.stringify({ error: "Missing or invalid contact email" }),
@@ -98,20 +102,21 @@ Deno.serve(async (req) => {
     }
 
     // Map GHL contact fields to client_profiles
+    // Handles both custom payload format and GHL native webhook format
     const profileData: Record<string, unknown> = {
       account_id: account.id,
       created_by: createdBy,
       email,
-      first_name: contact.firstName || contact.first_name || null,
-      last_name: contact.lastName || contact.last_name || null,
-      phone: contact.phone || null,
-      mobile_phone: contact.phone || null,
-      address_street: contact.address1 || contact.addressStreet || null,
-      address_city: contact.city || contact.addressCity || null,
-      address_state: contact.state || contact.addressState || null,
-      address_zip: contact.postalCode || contact.addressZip || null,
-      address_country: contact.country || "US",
-      dob: contact.dateOfBirth || contact.dob || null,
+      first_name: contact.firstName || contact.first_name || contact.contactFirstName || null,
+      last_name: contact.lastName || contact.last_name || contact.contactLastName || null,
+      phone: contact.phone || contact.contact_phone || null,
+      mobile_phone: contact.phone || contact.contact_phone || null,
+      address_street: contact.address1 || contact.addressStreet || contact.contact_address1 || null,
+      address_city: contact.city || contact.addressCity || contact.contact_city || null,
+      address_state: contact.state || contact.addressState || contact.contact_state || null,
+      address_zip: contact.postalCode || contact.addressZip || contact.contact_postal_code || null,
+      address_country: contact.country || contact.contact_country || "US",
+      dob: contact.dateOfBirth || contact.dob || contact.date_of_birth || null,
       updated_at: new Date().toISOString(),
     };
 
