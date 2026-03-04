@@ -294,17 +294,15 @@ export default function SmartFormsList() {
       <div className="max-w-5xl mx-auto px-4 py-6">
 
         {/* ═══════ HEADER ═══════ */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center">
-              <Sparkles className="w-4.5 h-4.5 text-accent" />
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <FileText className="w-5 h-5 text-accent" />
+              <h1 className="text-xl font-bold tracking-tight">Formularios</h1>
             </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Smart Forms</h1>
-              <p className="text-xs text-muted-foreground">
-                {submissions.length} formulario{submissions.length !== 1 ? "s" : ""}
-              </p>
-            </div>
+            <p className="text-xs text-muted-foreground mt-0.5 ml-7.5">
+              Formularios inteligentes para USCIS
+            </p>
           </div>
           <Button
             onClick={() => setCatalogOpen(true)}
@@ -314,34 +312,44 @@ export default function SmartFormsList() {
           </Button>
         </div>
 
-        {/* ═══════ SEARCH BAR + FILTERS ═══════ */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-5">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              className="pl-10 bg-secondary/50 border-border/40 h-10 text-sm"
-              placeholder="Buscar por cliente, email o tipo de formulario..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-1.5 bg-secondary/40 rounded-xl p-1 shrink-0">
-            {(["all", "draft", "completed", "sent"] as const).map(st => (
-              <button
-                key={st}
-                onClick={() => setFilterStatus(st)}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                  filterStatus === st
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {st === "all" ? "Todos" : STATUS_CONFIG[st]?.labelEs || st}
-                <span className="ml-1.5 text-xs opacity-60">{counts[st]}</span>
-              </button>
-            ))}
-          </div>
+        {/* ═══════ STAT CARDS (filters) ═══════ */}
+        <div className="grid grid-cols-4 gap-3 mb-5">
+          {([
+            { key: "all", label: "Total" },
+            { key: "draft", label: "Borrador" },
+            { key: "completed", label: "Completado" },
+            { key: "sent", label: "Enviado" },
+          ] as const).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setFilterStatus(key)}
+              className={cn(
+                "rounded-xl border px-4 py-3 text-left transition-all cursor-pointer",
+                filterStatus === key
+                  ? "border-accent bg-accent/10 shadow-sm shadow-accent/10"
+                  : "border-border/30 bg-card/50 hover:border-border/60"
+              )}
+            >
+              <p className={cn(
+                "text-2xl font-bold",
+                filterStatus === key ? "text-accent" : "text-foreground"
+              )}>
+                {counts[key]}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+            </button>
+          ))}
+        </div>
+
+        {/* ═══════ SEARCH BAR ═══════ */}
+        <div className="relative mb-5">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            className="pl-10 bg-secondary/50 border-border/40 h-10 text-sm"
+            placeholder="Buscar por cliente, email o tipo de formulario..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         </div>
 
         {/* ═══════ SUBMISSIONS TABLE ═══════ */}
@@ -385,12 +393,9 @@ export default function SmartFormsList() {
                     <p className="font-medium text-sm truncate">{sub.client_name || "Sin nombre"}</p>
                     <p className="text-xs text-muted-foreground truncate">{sub.client_email || "—"}</p>
                   </div>
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="shrink-0 inline-flex flex-col items-center justify-center text-[10px] font-bold text-accent bg-accent/15 border border-accent/20 w-10 h-10 rounded-md tracking-wide leading-tight text-center whitespace-pre">
-                      {(() => { const m = sub.form_type.match(/^([a-z]+)-(.+)$/i); return m ? `${m[1].toUpperCase()}-\n${m[2]}` : sub.form_type.toUpperCase(); })()}
-                    </span>
-                    <span className="text-xs text-muted-foreground truncate">
-                      {catalogItem?.fullName || sub.form_type.toUpperCase()}
+                  <div className="min-w-0">
+                    <span className="text-sm text-foreground font-medium">
+                      {sub.form_type.toUpperCase()}{sub.form_type === "i-765" ? " (EAD)" : catalogItem ? ` (${catalogItem.category})` : ""}
                     </span>
                   </div>
                   <div>
@@ -408,7 +413,7 @@ export default function SmartFormsList() {
                   <div onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
