@@ -325,20 +325,20 @@ export default function SmartFormsList() {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex gap-1 bg-secondary/40 rounded-lg p-0.5 shrink-0">
+          <div className="flex gap-1.5 bg-secondary/40 rounded-xl p-1 shrink-0">
             {(["all", "draft", "completed", "sent"] as const).map(st => (
               <button
                 key={st}
                 onClick={() => setFilterStatus(st)}
                 className={cn(
-                  "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                  "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                   filterStatus === st
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {st === "all" ? "Todos" : STATUS_CONFIG[st]?.labelEs || st}
-                <span className="ml-1 text-[10px] opacity-60">{counts[st]}</span>
+                <span className="ml-1.5 text-xs opacity-60">{counts[st]}</span>
               </button>
             ))}
           </div>
@@ -385,12 +385,12 @@ export default function SmartFormsList() {
                     <p className="font-medium text-sm truncate">{sub.client_name || "Sin nombre"}</p>
                     <p className="text-xs text-muted-foreground truncate">{sub.client_email || "—"}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">
-                      {sub.form_type.toUpperCase()}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="shrink-0 inline-flex flex-col items-center justify-center text-[10px] font-bold text-accent bg-accent/15 border border-accent/20 w-10 h-10 rounded-md tracking-wide leading-tight text-center whitespace-pre">
+                      {(() => { const m = sub.form_type.match(/^([a-z]+)-(.+)$/i); return m ? `${m[1].toUpperCase()}-\n${m[2]}` : sub.form_type.toUpperCase(); })()}
                     </span>
-                    <span className="text-xs text-muted-foreground truncate hidden lg:inline">
-                      {catalogItem?.fullName || ""}
+                    <span className="text-xs text-muted-foreground truncate">
+                      {catalogItem?.fullName || sub.form_type.toUpperCase()}
                     </span>
                   </div>
                   <div>
