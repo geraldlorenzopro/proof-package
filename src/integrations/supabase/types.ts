@@ -524,16 +524,17 @@ export type Database = {
       form_submissions: {
         Row: {
           account_id: string
+          beneficiary_profile_id: string | null
           case_id: string | null
           client_email: string | null
           client_name: string | null
-          client_profile_id: string | null
           created_at: string
           form_data: Json
           form_type: string
           form_version: string
           id: string
           notes: string | null
+          petitioner_profile_id: string | null
           share_token: string | null
           status: string
           updated_at: string
@@ -541,16 +542,17 @@ export type Database = {
         }
         Insert: {
           account_id: string
+          beneficiary_profile_id?: string | null
           case_id?: string | null
           client_email?: string | null
           client_name?: string | null
-          client_profile_id?: string | null
           created_at?: string
           form_data?: Json
           form_type?: string
           form_version?: string
           id?: string
           notes?: string | null
+          petitioner_profile_id?: string | null
           share_token?: string | null
           status?: string
           updated_at?: string
@@ -558,16 +560,17 @@ export type Database = {
         }
         Update: {
           account_id?: string
+          beneficiary_profile_id?: string | null
           case_id?: string | null
           client_email?: string | null
           client_name?: string | null
-          client_profile_id?: string | null
           created_at?: string
           form_data?: Json
           form_type?: string
           form_version?: string
           id?: string
           notes?: string | null
+          petitioner_profile_id?: string | null
           share_token?: string | null
           status?: string
           updated_at?: string
@@ -590,7 +593,14 @@ export type Database = {
           },
           {
             foreignKeyName: "form_submissions_client_profile_id_fkey"
-            columns: ["client_profile_id"]
+            columns: ["beneficiary_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_petitioner_profile_id_fkey"
+            columns: ["petitioner_profile_id"]
             isOneToOne: false
             referencedRelation: "client_profiles"
             referencedColumns: ["id"]
