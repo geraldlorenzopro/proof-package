@@ -946,27 +946,29 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           <Button variant="outline" onClick={prev} disabled={stepIdx === 0} className="gap-2">
             <ChevronLeft className="w-4 h-4" /> {t("Back", "Atrás")}
           </Button>
-          {/* Auto-save status indicator */}
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
-            {autoSaveStatus === "saving" && (
-              <>
-                <Loader2 className="w-3 h-3 animate-spin text-accent" />
-                <span>{t("Saving...", "Guardando...")}</span>
-              </>
-            )}
-            {autoSaveStatus === "saved" && (
-              <>
-                <Cloud className="w-3 h-3 text-accent" />
-                <span className="text-accent">{t("Draft saved", "Borrador guardado")}</span>
-              </>
-            )}
-            {autoSaveStatus === "error" && (
-              <>
-                <CloudOff className="w-3 h-3 text-destructive" />
-                <span className="text-destructive">{t("Save failed", "Error al guardar")}</span>
-              </>
-            )}
-          </div>
+          {/* Auto-save status indicator - hidden on small screens to avoid blocking buttons */}
+          {autoSaveStatus !== "idle" && (
+            <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground">
+              {autoSaveStatus === "saving" && (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin text-accent" />
+                  <span>{t("Saving...", "Guardando...")}</span>
+                </>
+              )}
+              {autoSaveStatus === "saved" && (
+                <>
+                  <Cloud className="w-3 h-3 text-accent" />
+                  <span className="text-accent">{t("Saved", "Guardado")}</span>
+                </>
+              )}
+              {autoSaveStatus === "error" && (
+                <>
+                  <CloudOff className="w-3 h-3 text-destructive" />
+                  <span className="text-destructive">{t("Error", "Error")}</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
           {isLast ? (
