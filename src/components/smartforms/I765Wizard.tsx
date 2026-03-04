@@ -856,7 +856,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           >
             <ChevronLeft className="w-3.5 h-3.5" />
             {t("Back to forms panel", "Volver al panel de formularios")}
-            <span className="text-xs text-muted-foreground/60 italic ml-1">
+            <span className="text-xs text-accent/80 italic ml-1">
               ({t("save draft first", "guarda el borrador primero")})
             </span>
           </button>

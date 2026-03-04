@@ -60,21 +60,19 @@ export default function SmartFormsList() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { navigate("/auth"); return; }
 
-    // Load firm name
-    const { data: profile } = await supabase
-      .from("profiles").select("firm_name").eq("user_id", session.user.id).maybeSingle();
-    if (profile?.firm_name) setFirmName(profile.firm_name);
+    // Parallel fetch for speed
+    const [profileRes, subsRes] = await Promise.all([
+      supabase.from("profiles").select("firm_name").eq("user_id", session.user.id).maybeSingle(),
+      supabase.from("form_submissions")
+        .select("id, form_type, status, client_name, client_email, form_data, created_at, updated_at")
+        .order("updated_at", { ascending: false }),
+    ]);
 
-    // Load submissions
-    const { data, error } = await supabase
-      .from("form_submissions")
-      .select("id, form_type, status, client_name, client_email, form_data, created_at, updated_at")
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (profileRes.data?.firm_name) setFirmName(profileRes.data.firm_name);
+    if (subsRes.error) {
+      toast({ title: "Error", description: subsRes.error.message, variant: "destructive" });
     } else {
-      setSubmissions((data as unknown as Submission[]) || []);
+      setSubmissions((subsRes.data as unknown as Submission[]) || []);
     }
     setLoading(false);
   };
