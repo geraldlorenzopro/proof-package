@@ -115,65 +115,69 @@ export default function SmartFormsSettings() {
   );
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="px-4 py-6 h-full">
       <h1 className="text-xl font-bold text-foreground mb-1">Configuración</h1>
-      <p className="text-sm text-muted-foreground mb-6">Datos legales para formularios USCIS</p>
+      <p className="text-sm text-muted-foreground mb-5">Datos legales para formularios USCIS</p>
 
-      {/* Attorney */}
-      <div className="glow-border rounded-xl p-6 bg-card mb-6">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
-            <Scale className="w-4 h-4 text-accent" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Attorney */}
+        <div className="glow-border rounded-xl p-5 bg-card">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+              <Scale className="w-4 h-4 text-accent" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground text-sm">Datos del Abogado</h2>
+              <p className="text-[11px] text-muted-foreground">Para formularios que requieran G-28</p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-semibold text-foreground text-sm">Datos del Abogado</h2>
-            <p className="text-xs text-muted-foreground">Se usarán automáticamente en formularios que requieran G-28</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2"><Field label="Nombre completo" value={attorneyName} onChange={setAttorneyName} placeholder="Ej. María García López" /></div>
+            <Field label="State Bar Number" value={attorneyBarNumber} onChange={setAttorneyBarNumber} placeholder="Ej. 123456" />
+            <Field label="Bar State" value={attorneyBarState} onChange={setAttorneyBarState} placeholder="Ej. FL" />
+            <div className="sm:col-span-2"><Field label="Dirección" value={attorneyAddress} onChange={setAttorneyAddress} placeholder="Dirección de la oficina" /></div>
+            <Field label="Ciudad" value={attorneyCity} onChange={setAttorneyCity} placeholder="Ciudad" />
+            <Field label="Estado" value={attorneyState} onChange={setAttorneyState} placeholder="Estado" />
+            <Field label="ZIP Code" value={attorneyZip} onChange={setAttorneyZip} placeholder="ZIP" />
+            <Field label="País" value={attorneyCountry} onChange={setAttorneyCountry} placeholder="US" />
+            <Field label="Teléfono" value={attorneyPhone} onChange={setAttorneyPhone} placeholder="(555) 123-4567" type="tel" />
+            <Field label="Email" value={attorneyEmail} onChange={setAttorneyEmail} placeholder="attorney@firm.com" type="email" />
+            <Field label="Fax" value={attorneyFax} onChange={setAttorneyFax} placeholder="(555) 123-4568" type="tel" />
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2"><Field label="Nombre completo del Abogado" value={attorneyName} onChange={setAttorneyName} placeholder="Ej. María García López" /></div>
-          <Field label="State Bar Number" value={attorneyBarNumber} onChange={setAttorneyBarNumber} placeholder="Ej. 123456" />
-          <Field label="Bar State" value={attorneyBarState} onChange={setAttorneyBarState} placeholder="Ej. FL" />
-          <div className="sm:col-span-2"><Field label="Dirección" value={attorneyAddress} onChange={setAttorneyAddress} placeholder="Dirección de la oficina" /></div>
-          <Field label="Ciudad" value={attorneyCity} onChange={setAttorneyCity} placeholder="Ciudad" />
-          <Field label="Estado" value={attorneyState} onChange={setAttorneyState} placeholder="Estado" />
-          <Field label="ZIP Code" value={attorneyZip} onChange={setAttorneyZip} placeholder="ZIP" />
-          <Field label="País" value={attorneyCountry} onChange={setAttorneyCountry} placeholder="US" />
-          <Field label="Teléfono" value={attorneyPhone} onChange={setAttorneyPhone} placeholder="(555) 123-4567" type="tel" />
-          <Field label="Email" value={attorneyEmail} onChange={setAttorneyEmail} placeholder="attorney@firm.com" type="email" />
-          <Field label="Fax" value={attorneyFax} onChange={setAttorneyFax} placeholder="(555) 123-4568" type="tel" />
+
+        {/* Preparer */}
+        <div className="glow-border rounded-xl p-5 bg-card">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+              <FileText className="w-4 h-4 text-accent" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground text-sm">Datos del Preparador</h2>
+              <p className="text-[11px] text-muted-foreground">Solo si no es abogado quien prepara</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2"><Field label="Nombre completo" value={preparerName} onChange={setPreparerName} placeholder="Ej. Juan Pérez" /></div>
+            <div className="sm:col-span-2"><Field label="Negocio / organización" value={preparerBusinessName} onChange={setPreparerBusinessName} placeholder="Ej. Immigration Services LLC" /></div>
+            <div className="sm:col-span-2"><Field label="Dirección" value={preparerAddress} onChange={setPreparerAddress} placeholder="Dirección de la oficina" /></div>
+            <Field label="Ciudad" value={preparerCity} onChange={setPreparerCity} placeholder="Ciudad" />
+            <Field label="Estado" value={preparerState} onChange={setPreparerState} placeholder="Estado" />
+            <Field label="ZIP Code" value={preparerZip} onChange={setPreparerZip} placeholder="ZIP" />
+            <Field label="País" value={preparerCountry} onChange={setPreparerCountry} placeholder="US" />
+            <Field label="Teléfono" value={preparerPhone} onChange={setPreparerPhone} placeholder="(555) 123-4567" type="tel" />
+            <Field label="Email" value={preparerEmail} onChange={setPreparerEmail} placeholder="preparer@firm.com" type="email" />
+            <Field label="Fax" value={preparerFax} onChange={setPreparerFax} placeholder="(555) 123-4568" type="tel" />
+          </div>
         </div>
       </div>
 
-      {/* Preparer */}
-      <div className="glow-border rounded-xl p-6 bg-card mb-6">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
-            <FileText className="w-4 h-4 text-accent" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-foreground text-sm">Datos del Preparador</h2>
-            <p className="text-xs text-muted-foreground">Solo si el formulario es preparado por alguien que no es abogado</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2"><Field label="Nombre completo del Preparador" value={preparerName} onChange={setPreparerName} placeholder="Ej. Juan Pérez" /></div>
-          <div className="sm:col-span-2"><Field label="Nombre del negocio / organización" value={preparerBusinessName} onChange={setPreparerBusinessName} placeholder="Ej. Immigration Services LLC" /></div>
-          <div className="sm:col-span-2"><Field label="Dirección" value={preparerAddress} onChange={setPreparerAddress} placeholder="Dirección de la oficina" /></div>
-          <Field label="Ciudad" value={preparerCity} onChange={setPreparerCity} placeholder="Ciudad" />
-          <Field label="Estado" value={preparerState} onChange={setPreparerState} placeholder="Estado" />
-          <Field label="ZIP Code" value={preparerZip} onChange={setPreparerZip} placeholder="ZIP" />
-          <Field label="País" value={preparerCountry} onChange={setPreparerCountry} placeholder="US" />
-          <Field label="Teléfono" value={preparerPhone} onChange={setPreparerPhone} placeholder="(555) 123-4567" type="tel" />
-          <Field label="Email" value={preparerEmail} onChange={setPreparerEmail} placeholder="preparer@firm.com" type="email" />
-          <Field label="Fax" value={preparerFax} onChange={setPreparerFax} placeholder="(555) 123-4568" type="tel" />
-        </div>
+      <div className="mt-5">
+        <button onClick={handleSave} disabled={saving} className="gradient-gold text-accent-foreground font-semibold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Guardar cambios
+        </button>
       </div>
-
-      <button onClick={handleSave} disabled={saving} className="gradient-gold text-accent-foreground font-semibold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50">
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-        Guardar cambios
-      </button>
     </div>
   );
 }
