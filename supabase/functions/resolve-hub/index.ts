@@ -78,7 +78,7 @@ async function getOrCreateHubUser(
     console.log("Created new hub user:", userId);
   }
 
-  // 5. Generate a magic link for this user to create a session
+  // 5. Generate a magic link and verify it server-side to get real session tokens
   const hubEmail = `hub-${accountId}@hub.ner.internal`;
   const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
     type: "magiclink",
@@ -89,10 +89,32 @@ async function getOrCreateHubUser(
     throw new Error(`Failed to generate session link: ${linkErr?.message}`);
   }
 
+  // Verify the OTP server-side to get actual session tokens
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const verifyRes = await fetch(`${supabaseUrl}/auth/v1/verify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": anonKey,
+    },
+    body: JSON.stringify({
+      type: "magiclink",
+      token_hash: linkData.properties.hashed_token,
+    }),
+  });
+
+  if (!verifyRes.ok) {
+    const errText = await verifyRes.text();
+    throw new Error(`OTP verification failed: ${errText}`);
+  }
+
+  const session = await verifyRes.json();
+
   return {
     user_id: userId,
-    token_hash: linkData.properties.hashed_token,
-    email: hubEmail,
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
   };
 }
 
@@ -191,10 +213,10 @@ Deno.serve(async (req) => {
     }
 
     // --- AUTO-LOGIN: Generate transparent session ---
-    let auth_token: { token_hash: string; email: string } | null = null;
+    let auth_token: { access_token: string; refresh_token: string } | null = null;
     try {
       const result = await getOrCreateHubUser(supabaseAdmin, account.id, account.account_name);
-      auth_token = { token_hash: result.token_hash, email: result.email };
+      auth_token = { access_token: result.access_token, refresh_token: result.refresh_token };
       console.log("Auto-login token generated for account:", account.id);
     } catch (authErr) {
       console.error("Auto-login failed (non-blocking):", authErr);

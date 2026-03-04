@@ -36,8 +36,8 @@ interface HubData {
   plan: string;
   apps: HubApp[];
   auth_token?: {
-    token_hash: string;
-    email: string;
+    access_token: string;
+    refresh_token: string;
   } | null;
 }
 
@@ -62,15 +62,14 @@ export default function HubPage() {
     resolveHub(cid, sig, ts);
   }, [cid, sig, ts]);
 
-  async function establishSession(authToken: { token_hash: string; email: string }) {
+  async function establishSession(authToken: { access_token: string; refresh_token: string }) {
     try {
-      // Use verifyOtp to establish a real Supabase Auth session from the magic link token
-      const { error: otpErr } = await supabase.auth.verifyOtp({
-        token_hash: authToken.token_hash,
-        type: 'magiclink',
+      const { error: sessionErr } = await supabase.auth.setSession({
+        access_token: authToken.access_token,
+        refresh_token: authToken.refresh_token,
       });
-      if (otpErr) {
-        console.error('Auto-login OTP error:', otpErr.message);
+      if (sessionErr) {
+        console.error('Auto-login session error:', sessionErr.message);
       } else {
         console.log('Auto-login session established successfully');
       }
