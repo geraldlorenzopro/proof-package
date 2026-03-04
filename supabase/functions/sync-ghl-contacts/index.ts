@@ -47,8 +47,9 @@ Deno.serve(async (req) => {
     // Native webhook: flat payload with location_id / locationId and contact fields at root
     const locationId = body.location?.id || body.locationId || body.location_id || body.companyId;
     
-    // Contact can be nested or flat (native webhook sends fields at root level)
-    const contact = body.contact || body;
+    // GHL native webhook puts contact data at root; body.contact contains only attribution data.
+    // Use body.contact only if it has actual contact fields (custom payload format).
+    const contact = (body.contact?.email || body.contact?.firstName) ? body.contact : body;
 
     if (!locationId) {
       console.error("No location ID found in payload keys:", Object.keys(body));
