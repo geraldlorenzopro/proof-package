@@ -396,78 +396,75 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           </p>
         )}
 
-        {/* Language + Send to client — side by side */}
-        <div className="grid md:grid-cols-2 gap-3">
-          {/* Language */}
-          <div className="rounded-xl border border-border/30 p-4 space-y-3">
-            <p className="text-sm font-bold text-foreground flex items-center gap-2">
-              📝 {t("Applicant's Language", "Idioma del Aplicante")}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => { set("applicantCanReadEnglish", true); set("interpreterUsed", false); }}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-all",
-                  data.applicantCanReadEnglish
-                    ? "border-accent bg-accent/10 text-accent font-medium"
-                    : "border-border/30 text-muted-foreground hover:border-border/60"
-                )}
-              >
-                {data.applicantCanReadEnglish && <Check className="w-3.5 h-3.5 shrink-0" />}
-                {t("Reads English", "Lee inglés")}
-              </button>
-              <button
-                type="button"
-                onClick={() => { set("interpreterUsed", true); set("applicantCanReadEnglish", false); }}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-all",
-                  data.interpreterUsed
-                    ? "border-accent bg-accent/10 text-accent font-medium"
-                    : "border-border/30 text-muted-foreground hover:border-border/60"
-                )}
-              >
-                {data.interpreterUsed && <Check className="w-3.5 h-3.5 shrink-0" />}
-                {t("Uses interpreter", "Usa intérprete")}
-              </button>
-            </div>
-          </div>
-
-          {/* Send to client */}
-          {isProfessional && (
-            <div className="rounded-xl border border-border/30 p-4 space-y-3">
-              <p className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Link2 className="w-4 h-4 text-accent" />
-                {t("Client Questionnaire", "Cuestionario del Cliente")}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {t("Generate a link so the client can fill their info remotely", "Genera un enlace para que el cliente complete sus datos desde su dispositivo")}
-              </p>
-              {sendToClient ? (
-                <ClientLinkSection
-                  lang={lang}
-                  shareToken={shareToken}
-                  onRequestShareToken={async () => {
-                    onSave(data, "draft");
-                    await new Promise(r => setTimeout(r, 1000));
-                    return onRequestShareToken ? onRequestShareToken() : null;
-                  }}
-                  t={t}
-                />
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSendToClient(true)}
-                  className="gap-2 w-full"
-                >
-                  <Link2 className="w-3.5 h-3.5" />
-                  {t("Generate Client Link", "Generar Enlace para Cliente")}
-                </Button>
+        {/* Language — inline centered */}
+        <div className="rounded-xl border border-border/30 p-4 space-y-3 text-center">
+          <p className="text-sm font-bold text-foreground">
+            📝 {t("Applicant's Language", "Idioma del Aplicante")}
+          </p>
+          <div className="flex justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => { set("applicantCanReadEnglish", true); set("interpreterUsed", false); }}
+              className={cn(
+                "flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-all min-w-[140px]",
+                data.applicantCanReadEnglish
+                  ? "border-accent bg-accent/10 text-accent font-medium"
+                  : "border-border/30 text-muted-foreground hover:border-border/60"
               )}
-            </div>
-          )}
+            >
+              {data.applicantCanReadEnglish && <Check className="w-3.5 h-3.5 shrink-0" />}
+              {t("Reads English", "Lee inglés")}
+            </button>
+            <button
+              type="button"
+              onClick={() => { set("interpreterUsed", true); set("applicantCanReadEnglish", false); }}
+              className={cn(
+                "flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-all min-w-[140px]",
+                data.interpreterUsed
+                  ? "border-accent bg-accent/10 text-accent font-medium"
+                  : "border-border/30 text-muted-foreground hover:border-border/60"
+              )}
+            >
+              {data.interpreterUsed && <Check className="w-3.5 h-3.5 shrink-0" />}
+              {t("Uses interpreter", "Usa intérprete")}
+            </button>
+          </div>
         </div>
+
+        {/* Send to client — centered */}
+        {isProfessional && (
+          <div className="rounded-xl border border-border/30 p-4 space-y-3 text-center">
+            <p className="text-sm font-bold text-foreground flex items-center justify-center gap-2">
+              <Link2 className="w-4 h-4 text-accent" />
+              {t("Client Questionnaire", "Cuestionario del Cliente")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("Generate a link so the client can fill their info remotely", "Genera un enlace para que el cliente complete sus datos desde su dispositivo")}
+            </p>
+            {sendToClient ? (
+              <ClientLinkSection
+                lang={lang}
+                shareToken={shareToken}
+                onRequestShareToken={async () => {
+                  onSave(data, "draft");
+                  await new Promise(r => setTimeout(r, 1000));
+                  return onRequestShareToken ? onRequestShareToken() : null;
+                }}
+                t={t}
+              />
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSendToClient(true)}
+                className="gap-2 mx-auto"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                {t("Generate Client Link", "Generar Enlace para Cliente")}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     );
   };
