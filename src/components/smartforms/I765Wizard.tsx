@@ -181,6 +181,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         preparerZip: p.attorney_zip || "",
         preparerCountry: p.attorney_country || "US",
         preparerPhone: p.attorney_phone || "",
+        preparerMobile: p.attorney_fax || "", // Fax field on official form
         preparerEmail: p.attorney_email || "",
       }));
     } else if (data.formPreparedBy === "preparer") {
@@ -200,6 +201,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         preparerZip: p.preparer_zip || "",
         preparerCountry: p.preparer_country || "US",
         preparerPhone: p.preparer_phone || "",
+        preparerMobile: p.preparer_fax || "", // Fax field on official form
         preparerEmail: p.preparer_email || "",
       }));
     } else if (data.formPreparedBy === "applicant") {
@@ -733,6 +735,15 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.interpreterFirstName} onChange={e => set("interpreterFirstName", e.target.value)} /></Field>
           </div>
           <Field label={t("Organization", "Organización")}><Input className={inputCls} value={data.interpreterOrg} onChange={e => set("interpreterOrg", e.target.value)} /></Field>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.interpreterStreet} onChange={e => set("interpreterStreet", e.target.value)} /></Field>
+            <Field label="Apt/Ste/Flr"><Input className={inputCls} value={data.interpreterApt} onChange={e => set("interpreterApt", e.target.value)} /></Field>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.interpreterCity} onChange={e => set("interpreterCity", e.target.value)} /></Field>
+            <Field label={t("State", "Estado")}><StateSelect value={data.interpreterState} onChange={v => set("interpreterState", v)} /></Field>
+            <Field label="ZIP"><Input className={inputCls} value={data.interpreterZip} onChange={e => set("interpreterZip", e.target.value)} /></Field>
+          </div>
           <Field label={t("Language", "Idioma")}><Input className={inputCls} value={data.interpreterLanguage} onChange={e => set("interpreterLanguage", e.target.value)} /></Field>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label={t("Phone", "Teléfono")}><Input className={inputCls} value={data.interpreterPhone} onChange={e => set("interpreterPhone", e.target.value)} /></Field>
@@ -761,7 +772,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label={t("Phone", "Teléfono")}><Input className={inputCls} value={data.preparerPhone} onChange={e => set("preparerPhone", e.target.value)} /></Field>
-            <Field label={t("Mobile", "Celular")}><Input className={inputCls} value={data.preparerMobile} onChange={e => set("preparerMobile", e.target.value)} /></Field>
+            <Field label="Fax"><Input className={inputCls} value={data.preparerMobile} onChange={e => set("preparerMobile", e.target.value)} /></Field>
             <Field label="Email"><Input className={inputCls} value={data.preparerEmail} onChange={e => set("preparerEmail", e.target.value)} /></Field>
           </div>
           <div className="flex items-center gap-2">
