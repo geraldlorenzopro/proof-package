@@ -273,7 +273,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         setAutoSaveStatus("error");
         setTimeout(() => setAutoSaveStatus("idle"), 4000);
       }
-    }, 5000);
+    }, 1500);
 
     return () => { if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current); };
   }, [data, isProfessional]);
