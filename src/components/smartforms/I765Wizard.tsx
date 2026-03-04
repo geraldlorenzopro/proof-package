@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check } from "lucide-react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, Search, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -127,9 +127,14 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const [profileData, setProfileData] = useState<any>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
 
+  // Client profiles for selector
+  const [clientProfiles, setClientProfiles] = useState<any[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [clientSearch, setClientSearch] = useState("");
+
   const t = useCallback((en: string, es: string) => lang === "es" ? es : en, [lang]);
 
-  // Load attorney/preparer profile data
+  // Load attorney/preparer profile data + client profiles
   useEffect(() => {
     const loadProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -137,6 +142,17 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       const { data: prof } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
       setProfileData(prof);
       setProfileLoaded(true);
+
+      // Load client profiles for this account
+      const { data: accountId } = await supabase.rpc("user_account_id", { _user_id: user.id });
+      if (accountId) {
+        const { data: clients } = await supabase
+          .from("client_profiles")
+          .select("id, first_name, last_name, middle_name, email, phone, mobile_phone, dob, gender, marital_status, a_number, ssn_last4, country_of_birth, city_of_birth, province_of_birth, country_of_citizenship, address_street, address_apt, address_city, address_state, address_zip, mailing_street, mailing_apt, mailing_city, mailing_state, mailing_zip, mailing_same_as_physical, i94_number, passport_number, passport_country, passport_expiration, class_of_admission, immigration_status, place_of_last_entry, date_of_last_entry")
+          .eq("account_id", accountId)
+          .order("last_name", { ascending: true });
+        if (clients) setClientProfiles(clients);
+      }
     };
     if (isProfessional) loadProfile();
     else setProfileLoaded(true);
@@ -209,6 +225,57 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const next = () => stepIdx < visibleSteps.length - 1 && setStepIdx(stepIdx + 1);
   const prev = () => stepIdx > 0 && setStepIdx(stepIdx - 1);
+
+  // Filtered client list
+  const filteredClients = useMemo(() => {
+    if (!clientSearch.trim()) return clientProfiles;
+    const q = clientSearch.toLowerCase();
+    return clientProfiles.filter(c =>
+      `${c.first_name || ""} ${c.last_name || ""} ${c.email || ""}`.toLowerCase().includes(q)
+    );
+  }, [clientProfiles, clientSearch]);
+
+  // Auto-fill from selected client profile
+  const selectClient = (clientId: string) => {
+    const c = clientProfiles.find(cp => cp.id === clientId);
+    if (!c) return;
+    setSelectedClientId(clientId);
+    setData(prev => ({
+      ...prev,
+      firstName: c.first_name || prev.firstName,
+      lastName: c.last_name || prev.lastName,
+      middleName: c.middle_name || prev.middleName,
+      dateOfBirth: c.dob || prev.dateOfBirth,
+      sex: c.gender === "male" ? "male" : c.gender === "female" ? "female" : prev.sex,
+      maritalStatus: c.marital_status || prev.maritalStatus,
+      aNumber: c.a_number || prev.aNumber,
+      countryOfBirth: c.country_of_birth || prev.countryOfBirth,
+      cityOfBirth: c.city_of_birth || prev.cityOfBirth,
+      stateOfBirth: c.province_of_birth || prev.stateOfBirth,
+      countryOfCitizenship1: c.country_of_citizenship || prev.countryOfCitizenship1,
+      mailingStreet: c.address_street || prev.mailingStreet,
+      mailingApt: c.address_apt || prev.mailingApt,
+      mailingCity: c.address_city || prev.mailingCity,
+      mailingState: c.address_state || prev.mailingState,
+      mailingZip: c.address_zip || prev.mailingZip,
+      sameAddress: c.mailing_same_as_physical !== false,
+      physicalStreet: c.mailing_same_as_physical === false ? (c.mailing_street || "") : prev.physicalStreet,
+      physicalCity: c.mailing_same_as_physical === false ? (c.mailing_city || "") : prev.physicalCity,
+      physicalState: c.mailing_same_as_physical === false ? (c.mailing_state || "") : prev.physicalState,
+      physicalZip: c.mailing_same_as_physical === false ? (c.mailing_zip || "") : prev.physicalZip,
+      applicantEmail: c.email || prev.applicantEmail,
+      applicantPhone: c.phone || prev.applicantPhone,
+      applicantMobile: c.mobile_phone || prev.applicantMobile,
+      i94Number: c.i94_number || prev.i94Number,
+      passportNumber: c.passport_number || prev.passportNumber,
+      passportCountry: c.passport_country || prev.passportCountry,
+      passportExpiration: c.passport_expiration || prev.passportExpiration,
+      statusAtArrival: c.class_of_admission || prev.statusAtArrival,
+      currentStatus: c.immigration_status || prev.currentStatus,
+      lastArrivalPlace: c.place_of_last_entry || prev.lastArrivalPlace,
+      lastArrivalDate: c.date_of_last_entry || prev.lastArrivalDate,
+    }));
+  };
 
   // ─── Step renderers ───
   const renderCaseConfig = () => {
@@ -309,6 +376,69 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             </p>
           </div>
         )}
+
+        {/* Client selector */}
+        <div className="border-t border-border/30 pt-4 mt-2 space-y-3">
+          <p className="text-sm font-medium text-foreground flex items-center gap-2">
+            <User className="w-4 h-4 text-accent" />
+            {t("Select Client", "Seleccionar Cliente")}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {t("Choose an existing client to auto-fill their information.",
+               "Selecciona un cliente existente para pre-llenar su información.")}
+          </p>
+          {clientProfiles.length > 0 ? (
+            <>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  className="bg-secondary/60 border-border/50 pl-9 text-sm"
+                  placeholder={t("Search by name or email...", "Buscar por nombre o email...")}
+                  value={clientSearch}
+                  onChange={e => setClientSearch(e.target.value)}
+                />
+              </div>
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-border/30 divide-y divide-border/20">
+                {filteredClients.length === 0 ? (
+                  <p className="text-xs text-muted-foreground p-3 text-center">{t("No clients found", "No se encontraron clientes")}</p>
+                ) : filteredClients.map(c => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => selectClient(c.id)}
+                    className={cn(
+                      "w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors text-sm",
+                      selectedClientId === c.id
+                        ? "bg-accent/10 text-accent"
+                        : "hover:bg-secondary/60"
+                    )}
+                  >
+                    <User className="w-4 h-4 shrink-0 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">
+                        {c.last_name || ""}{c.last_name && c.first_name ? ", " : ""}{c.first_name || ""}
+                        {!c.last_name && !c.first_name && <span className="text-muted-foreground italic">{t("No name", "Sin nombre")}</span>}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{c.email || c.phone || ""}</p>
+                    </div>
+                    {selectedClientId === c.id && <Check className="w-4 h-4 text-accent shrink-0" />}
+                  </button>
+                ))}
+              </div>
+              {selectedClientId && (
+                <p className="text-xs text-accent flex items-center gap-1">
+                  <Check className="w-3 h-3" />
+                  {t("Client data loaded. Fields have been pre-filled.", "Datos del cliente cargados. Los campos se han pre-llenado.")}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground italic">
+              {t("No client profiles found. You can still fill the form manually.",
+                 "No se encontraron perfiles de clientes. Puedes llenar el formulario manualmente.")}
+            </p>
+          )}
+        </div>
 
         {/* Language & Interpreter preferences */}
         <div className="border-t border-border/30 pt-4 mt-2 space-y-3">
