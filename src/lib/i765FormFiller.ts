@@ -376,7 +376,25 @@ export async function fillI765Pdf(data: I765Data) {
   // A-Number & USCIS Account
   setText(form, P.line7_alien, data.aNumber?.replace(/^A-?/i, ""));
   setText(form, P.line8_elis, data.uscisAccountNumber);
-  setText(form, P.line12b_ssn, data.ssn);
+
+  // SSN: clear the password flag so digits display instead of asterisks
+  const ssnField = findField(form, P.line12b_ssn);
+  if (ssnField && data.ssn) {
+    try {
+      const acroField = (ssnField as any).acroField;
+      if (acroField?.dict) {
+        const ffRaw = acroField.dict.get(PDFName.of("Ff"));
+        const ff = ffRaw instanceof PDFNumber ? ffRaw.asNumber() : (typeof ffRaw?.numberValue === "function" ? ffRaw.numberValue() : 0);
+        // Bit 14 (0x2000) = password flag — clear it
+        if (ff & 0x2000) {
+          acroField.dict.set(PDFName.of("Ff"), PDFNumber.of(ff & ~0x2000));
+        }
+      }
+    } catch (e) {
+      console.warn("[i765] Could not clear SSN password flag:", e);
+    }
+    setText(form, P.line12b_ssn, data.ssn);
+  }
 
   // ── Mailing Address ──
   setText(form, P.line4a_careof, data.mailingCareOf);
