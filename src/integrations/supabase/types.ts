@@ -20,18 +20,21 @@ export type Database = {
           app_id: string
           granted_at: string
           id: string
+          max_seats: number
         }
         Insert: {
           account_id: string
           app_id: string
           granted_at?: string
           id?: string
+          max_seats?: number
         }
         Update: {
           account_id?: string
           app_id?: string
           granted_at?: string
           id?: string
+          max_seats?: number
         }
         Relationships: [
           {
@@ -120,6 +123,48 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      app_active_sessions: {
+        Row: {
+          account_id: string
+          app_id: string
+          created_at: string
+          id: string
+          last_heartbeat: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          app_id: string
+          created_at?: string
+          id?: string
+          last_heartbeat?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          app_id?: string
+          created_at?: string
+          id?: string
+          last_heartbeat?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_active_sessions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_active_sessions_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "hub_apps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bulletin_sync_log: {
         Row: {
@@ -835,6 +880,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acquire_app_seat: {
+        Args: { _app_slug: string; _user_id: string }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: { _tool_slug: string; _user_id: string }
         Returns: Json
@@ -917,6 +966,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      heartbeat_app_seat: {
+        Args: { _app_slug: string; _user_id: string }
+        Returns: Json
+      }
+      release_app_seat: {
+        Args: { _app_slug: string; _user_id: string }
+        Returns: undefined
       }
       update_case_status_by_token: {
         Args: { _status: string; _token: string }

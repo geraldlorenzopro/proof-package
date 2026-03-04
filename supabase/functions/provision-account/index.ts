@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
       role: "owner",
     });
 
-    // 5. Grant app access based on plan
+    // 5. Grant app access based on plan with seat limits
     const { data: apps } = await supabaseAdmin
       .from("hub_apps")
       .select("id, slug")
@@ -172,12 +172,25 @@ Deno.serve(async (req) => {
         professional: ["evidence", "cspa"],
         elite: apps.map((a) => a.slug),
       };
+
+      // Seat limits per plan per tool (0 = unlimited)
+      const planSeats: Record<string, Record<string, number>> = {
+        essential: { evidence: 1, cspa: 1, "smart-forms": 1, vawa: 1 },
+        professional: { evidence: 3, cspa: 3, "smart-forms": 3, vawa: 3 },
+        elite: { evidence: 0, cspa: 0, "smart-forms": 0, vawa: 0 }, // unlimited
+      };
+
       const allowedSlugs = planApps[selectedPlan] || ["evidence"];
+      const seatConfig = planSeats[selectedPlan] || planSeats.essential;
       const grantApps = apps.filter((a) => allowedSlugs.includes(a.slug));
 
       if (grantApps.length > 0) {
         await supabaseAdmin.from("account_app_access").insert(
-          grantApps.map((a) => ({ account_id: account.id, app_id: a.id }))
+          grantApps.map((a) => ({
+            account_id: account.id,
+            app_id: a.id,
+            max_seats: seatConfig[a.slug] ?? 1,
+          }))
         );
       }
     }

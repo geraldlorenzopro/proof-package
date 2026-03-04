@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { FileText, List, Plus, ArrowLeft, CheckCircle2, Shield, Settings } from "lucide-react";
+import { FileText, List, Plus, ArrowLeft, CheckCircle2, Shield, Settings, AlertTriangle } from "lucide-react";
 import { LangToggle } from "@/components/LangToggle";
 import { useBackDestination } from "@/hooks/useBackDestination";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,14 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SmartFormsProvider, useSmartFormsContext } from "./SmartFormsContext";
 import { I765_STEP_LABELS } from "./i765Schema";
+import { useAppSeat } from "@/hooks/useAppSeat";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -220,15 +228,66 @@ function TopNavBar() {
   );
 }
 
+function SeatGuardedContent() {
+  const navigate = useNavigate();
+  const seat = useAppSeat("smart-forms");
+  const { destination: backDest } = useBackDestination();
+
+  // Show kicked modal
+  if (seat.kicked) {
+    return (
+      <Dialog open>
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Sesión finalizada
+            </DialogTitle>
+            <DialogDescription>
+              Otro usuario ha iniciado sesión en esta herramienta y tu asiento ha sido liberado.
+              Contacta a tu administrador si necesitas más accesos simultáneos.
+            </DialogDescription>
+          </DialogHeader>
+          <Button onClick={() => navigate(backDest)} className="w-full mt-2">
+            Volver al inicio
+          </Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // No access
+  if (!seat.loading && !seat.granted && seat.reason === "no_access") {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center space-y-3 max-w-md">
+          <AlertTriangle className="w-10 h-10 text-destructive mx-auto" />
+          <h2 className="text-lg font-bold">Sin acceso</h2>
+          <p className="text-sm text-muted-foreground">
+            Tu plan actual no incluye acceso a Smart Forms. Contacta a tu administrador para actualizar tu plan.
+          </p>
+          <Button variant="outline" onClick={() => navigate(backDest)}>Volver</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <TopNavBar />
+      <MobileStepDrawer />
+      <main className="flex-1 flex flex-col min-h-0">
+        <Outlet />
+      </main>
+    </>
+  );
+}
+
 export default function SmartFormsLayout() {
   return (
     <SmartFormsProvider>
       <div className="min-h-screen flex flex-col w-full">
-        <TopNavBar />
-        <MobileStepDrawer />
-        <main className="flex-1 flex flex-col min-h-0">
-          <Outlet />
-        </main>
+        <SeatGuardedContent />
       </div>
     </SmartFormsProvider>
   );
