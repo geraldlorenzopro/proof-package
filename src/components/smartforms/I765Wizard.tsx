@@ -43,6 +43,7 @@ const inputCls = "bg-secondary/60 border-border/50 focus:border-accent/60";
 
 export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, saving, isProfessional = true }: Props) {
   const [data, setData] = useState<I765Data>({ ...defaultI765Data, ...initialData });
+  const visibleSteps = isProfessional ? I765_STEPS : I765_STEPS.filter(s => s !== "caseConfig");
   const [stepIdx, setStepIdx] = useState(0);
   const [hasOtherName, setHasOtherName] = useState(() => !!(initialData?.otherNames?.length));
   const [ssnFull, setSsnFull] = useState(() => {
@@ -50,7 +51,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     return saved.startsWith("***") ? "" : saved;
   });
   const [ssnFocused, setSsnFocused] = useState(false);
-  const step = I765_STEPS[stepIdx];
+  const step = visibleSteps[stepIdx];
   const { setWizardNav } = useSmartFormsContext();
 
   // Attorney/Preparer profile data from Settings
@@ -130,14 +131,14 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   // Register wizard nav in layout context
   useEffect(() => {
-    setWizardNav({ steps: I765_STEPS, currentStep: stepIdx, setStep: setStepIdx });
+    setWizardNav({ steps: visibleSteps, currentStep: stepIdx, setStep: setStepIdx });
     return () => setWizardNav(null);
-  }, [stepIdx, setWizardNav]);
+  }, [stepIdx, setWizardNav, visibleSteps]);
 
   const set = <K extends keyof I765Data>(key: K, value: I765Data[K]) =>
     setData(prev => ({ ...prev, [key]: value }));
 
-  const next = () => stepIdx < I765_STEPS.length - 1 && setStepIdx(stepIdx + 1);
+  const next = () => stepIdx < visibleSteps.length - 1 && setStepIdx(stepIdx + 1);
   const prev = () => stepIdx > 0 && setStepIdx(stepIdx - 1);
 
   // ─── Step renderers ───
@@ -613,7 +614,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     statement: renderStatement, preparer: renderPreparer,
   };
 
-  const isLast = stepIdx === I765_STEPS.length - 1;
+  const isLast = stepIdx === visibleSteps.length - 1;
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
