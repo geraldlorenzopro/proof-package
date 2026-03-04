@@ -377,17 +377,38 @@ export async function fillI765Pdf(data: I765Data) {
   setText(form, P.line7_alien, data.aNumber?.replace(/^A-?/i, ""));
   setText(form, P.line8_elis, data.uscisAccountNumber);
 
-  // SSN: clear the password flag so digits display instead of asterisks
+  // SSN: clear the password flag on field AND all widget annotations so digits display
   const ssnField = findField(form, P.line12b_ssn);
   if (ssnField && data.ssn) {
     try {
       const acroField = (ssnField as any).acroField;
       if (acroField?.dict) {
-        const ffRaw = acroField.dict.get(PDFName.of("Ff"));
-        const ff = ffRaw instanceof PDFNumber ? ffRaw.asNumber() : (typeof ffRaw?.numberValue === "function" ? ffRaw.numberValue() : 0);
-        // Bit 14 (0x2000) = password flag — clear it
-        if (ff & 0x2000) {
-          acroField.dict.set(PDFName.of("Ff"), PDFNumber.of(ff & ~0x2000));
+        // Helper to clear bit 14 (0x2000 = password) from /Ff on a dict
+        const clearPwBit = (d: PDFDict) => {
+          const ffRaw = d.get(PDFName.of("Ff"));
+          const ff = ffRaw instanceof PDFNumber ? ffRaw.asNumber() : (typeof (ffRaw as any)?.numberValue === "function" ? (ffRaw as any).numberValue() : 0);
+          if (ff & 0x2000) {
+            d.set(PDFName.of("Ff"), PDFNumber.of(ff & ~0x2000));
+          }
+          // Also remove cached appearance so viewer regenerates it
+          d.delete(PDFName.of("AP"));
+        };
+
+        // Clear on the field itself
+        clearPwBit(acroField.dict);
+
+        // Clear on all widget annotations (Kids array)
+        const kids = acroField.dict.get(PDFName.of("Kids"));
+        if (kids instanceof PDFArray) {
+          for (let i = 0; i < kids.size(); i++) {
+            const kidRef = kids.get(i);
+            const kidDict = (kidRef as any)?.dict || (pdf as any).context?.lookup(kidRef);
+            if (kidDict instanceof PDFDict) {
+              clearPwBit(kidDict);
+            } else if (kidDict && typeof kidDict.get === "function") {
+              clearPwBit(kidDict as PDFDict);
+            }
+          }
         }
       }
     } catch (e) {
@@ -559,8 +580,12 @@ export async function fillI765Pdf(data: I765Data) {
     setText(form, P.pt5_email, data.preparerEmail);
     setCheck(form, P.pt5_is_attorney, data.preparerIsAttorney);
     setCheck(form, P.pt5_not_attorney, !data.preparerIsAttorney);
-    setCheck(form, P.pt5_rep_extends, data.preparerRepExtends);
-    setCheck(form, P.pt5_rep_no, !data.preparerRepExtends);
+    // "extends/does not extend" only applies to attorneys (7.b)
+    if (data.preparerIsAttorney) {
+      setCheck(form, P.pt5_rep_extends, data.preparerRepExtends);
+      setCheck(form, P.pt5_rep_no, !data.preparerRepExtends);
+    }
+    // When not attorney, leave 7.b completely unchecked
   }
 
   // ── Generate PDF417 barcode IMAGES and embed them on each page ──
