@@ -167,8 +167,7 @@ const P = {
   line4a_careof: /Page2\[0\]\.Line4a_InCareofName\[0\]/,
   line4b_street: /Page2\[0\]\.Line4b_StreetNumberName\[0\]/,
   pt2l5_apt: /Page2\[0\]\.Pt2Line5_AptSteFlrNumber\[0\]/,
-  // NOTE: In Docketwise XFA exports, checkbox indices may not match visual order.
-  // Testing indicates: [0]=Ste, [1]=Apt, [2]=Flr for this template.
+  // Unit type checkboxes: [0]=Apt, [1]=Ste, [2]=Flr (matches USCIS order)
   pt2l5_unit_apt: /Page2\[0\]\.Pt2Line5_Unit\[0\]/,
   pt2l5_unit_ste: /Page2\[0\]\.Pt2Line5_Unit\[1\]/,
   pt2l5_unit_flr: /Page2\[0\]\.Pt2Line5_Unit\[2\]/,
@@ -256,6 +255,11 @@ const P = {
   pt4_family: /Page4\[0\]\.Pt4Line1a_InterpreterFamilyName\[0\]/,
   pt4_given: /Page4\[0\]\.Pt4Line1b_InterpreterGivenName\[0\]/,
   pt4_org: /Page4\[0\]\.Pt4Line2_InterpreterBusinessorOrg\[0\]/,
+  pt4_street: /Page4\[0\]\.Pt4Line3a_StreetNumberName\[0\]/,
+  pt4_apt: /Page4\[0\]\.Pt4Line3b_AptSteFlrNumber\[0\]/,
+  pt4_city: /Page4\[0\]\.Pt4Line3c_CityOrTown\[0\]/,
+  pt4_state: /Page4\[0\]\.Pt4Line3d_State\[0\]/,
+  pt4_zip: /Page4\[0\]\.Pt4Line3e_ZipCode\[0\]/,
   pt4_phone: /Page5\[0\]\.Pt4Line4_InterpreterDaytimeTelephone\[0\]/,
   pt4_mobile: /Page5\[0\]\.Pt4Line5_MobileNumber\[0\]/,
   pt4_email: /Page5\[0\]\.Pt4Line6_Email\[0\]/,
@@ -462,6 +466,11 @@ export async function fillI765Pdf(data: I765Data) {
     setText(form, P.pt4_family, data.interpreterLastName);
     setText(form, P.pt4_given, data.interpreterFirstName);
     setText(form, P.pt4_org, data.interpreterOrg);
+    setText(form, P.pt4_street, data.interpreterStreet);
+    setText(form, P.pt4_apt, data.interpreterApt);
+    setText(form, P.pt4_city, data.interpreterCity);
+    setText(form, P.pt4_state, data.interpreterState);
+    setText(form, P.pt4_zip, data.interpreterZip);
     setText(form, P.pt4_phone, data.interpreterPhone);
     setText(form, P.pt4_mobile, data.interpreterMobile);
     setText(form, P.pt4_email, data.interpreterEmail);
@@ -482,6 +491,7 @@ export async function fillI765Pdf(data: I765Data) {
     setText(form, P.pt5_postal, data.preparerPostalCode);
     setText(form, P.pt5_country, data.preparerCountry);
     setText(form, P.pt5_phone, data.preparerPhone);
+    setText(form, P.pt5_fax, data.preparerMobile); // preparerMobile stores fax per official form
     setText(form, P.pt5_email, data.preparerEmail);
     setCheck(form, P.pt5_is_attorney, data.preparerIsAttorney);
     setCheck(form, P.pt5_not_attorney, !data.preparerIsAttorney);
