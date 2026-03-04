@@ -115,10 +115,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const visibleSteps = isProfessional ? I765_STEPS : I765_STEPS.filter(s => s !== "caseConfig");
   const [stepIdx, setStepIdx] = useState(0);
   const [hasOtherName, setHasOtherName] = useState(() => !!(initialData?.otherNames?.length));
-  const [ssnFull, setSsnFull] = useState(() => {
-    const saved = initialData?.ssn || "";
-    return saved.startsWith("***") ? "" : saved;
-  });
+  const [ssnFull, setSsnFull] = useState(() => initialData?.ssn || "");
   const [ssnFocused, setSsnFocused] = useState(false);
   const step = visibleSteps[stepIdx];
   const { setWizardNav } = useSmartFormsContext();

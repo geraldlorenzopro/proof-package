@@ -71,19 +71,13 @@ export default function SmartFormPage() {
       const accountId = await getAccountId(session.user.id);
       if (!accountId) { toast({ title: "Error", description: "No account found", variant: "destructive" }); return; }
 
-      // Mask SSN for storage — only keep last 4 digits in the database
-      const maskedData = { ...formData };
-      if (maskedData.ssn && maskedData.ssn.length >= 4) {
-        maskedData.ssn = `***-**-${maskedData.ssn.replace(/\D/g, "").slice(-4)}`;
-      }
-
       const payload = {
         account_id: accountId,
         user_id: session.user.id,
         form_type: "i-765" as string,
         form_version: "08/21/25",
         status,
-        form_data: JSON.parse(JSON.stringify(maskedData)),
+        form_data: JSON.parse(JSON.stringify(formData)),
         client_name: `${formData.lastName}, ${formData.firstName}`.trim() || null,
         client_email: formData.applicantEmail || null,
       };
