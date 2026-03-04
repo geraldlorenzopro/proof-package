@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.hub-redirect]
 verify_jwt = false
+
+[functions.sync-ghl-contacts]
+verify_jwt = false
