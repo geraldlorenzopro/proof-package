@@ -291,8 +291,8 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderCaseConfig = () => {
     const p = profileData as any;
-    const hasAttorneyData = p?.attorney_name;
-    const hasPreparerData = p?.preparer_name;
+    const hasAttorneyData = !profileLoaded || p?.attorney_name;
+    const hasPreparerData = !profileLoaded || p?.preparer_name;
 
     const roles = [
       { value: "attorney" as const, icon: Scale, label: t("Attorney", "Abogado"), desc: t("Requires G-28", "Requiere G-28"), ok: hasAttorneyData, name: p?.attorney_name },
