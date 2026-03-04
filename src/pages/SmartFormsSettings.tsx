@@ -27,6 +27,7 @@ export default function SmartFormsSettings() {
 
   // Attorney fields
   const [attorneyName, setAttorneyName] = useState('');
+  const [firmName, setFirmName] = useState('');
   const [attorneyBarNumber, setAttorneyBarNumber] = useState('');
   const [attorneyAddress, setAttorneyAddress] = useState('');
   const [attorneyCity, setAttorneyCity] = useState('');
@@ -59,6 +60,7 @@ export default function SmartFormsSettings() {
     const { data } = await supabase.from('profiles').select('*').eq('user_id', user.id).single();
     if (data) {
       setAttorneyName((data as any).attorney_name || '');
+      setFirmName((data as any).firm_name || '');
       // Compose combined bar number from legacy split fields or new combined field
       const legacyCombo = [((data as any).attorney_bar_state || ''), ((data as any).attorney_bar_number || '')].filter(Boolean).join(' ');
       setAttorneyBarNumber(legacyCombo || '');
@@ -91,6 +93,7 @@ export default function SmartFormsSettings() {
     const payload = {
       user_id: userId,
       attorney_name: attorneyName.trim() || null,
+      firm_name: firmName.trim() || null,
       attorney_bar_number: attorneyBarNumber.trim() || null,
       attorney_bar_state: null, // Now stored combined in attorney_bar_number
       attorney_address: attorneyAddress.trim() || null,
@@ -165,6 +168,7 @@ export default function SmartFormsSettings() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2"><SettingsField label="Nombre completo" value={attorneyName} onChange={setAttorneyName} placeholder="Ej. María García López" /></div>
+            <div className="sm:col-span-2"><SettingsField label="Firma / Organización" value={firmName} onChange={setFirmName} placeholder="Ej. Immigration Services LLC" /></div>
             <div className="sm:col-span-2"><SettingsField label="Attorney State Bar Number" value={attorneyBarNumber} onChange={setAttorneyBarNumber} placeholder="Ej. FL 123456" /></div>
             <div className="sm:col-span-2"><SettingsField label="USCIS Online Account # (Attorney)" value={attorneyUscisAcct} onChange={setAttorneyUscisAcct} placeholder="Optional" /></div>
             <div className="sm:col-span-2"><SettingsField label="Dirección" value={attorneyAddress} onChange={setAttorneyAddress} placeholder="Dirección de la oficina" /></div>

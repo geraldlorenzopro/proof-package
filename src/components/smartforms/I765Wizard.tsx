@@ -177,7 +177,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         preparerIsAttorney: true,
         preparerFirstName: firstName,
         preparerLastName: lastName,
-        preparerOrg: prev.preparerOrg || "",
+        preparerOrg: p.firm_name || prev.preparerOrg || "",
         preparerStreet: p.attorney_address || "",
         preparerCity: p.attorney_city || "",
         preparerState: p.attorney_state || "",
