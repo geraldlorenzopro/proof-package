@@ -169,7 +169,7 @@ export default function HubPage() {
           {/* Refresh button — top right */}
           <button
             onClick={() => window.location.reload()}
-            className="absolute top-0 right-0 p-2 rounded-lg text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10 transition-all duration-300"
+            className="absolute top-0 right-0 p-2 rounded-lg text-muted-foreground hover:text-jarvis hover:bg-jarvis/10 transition-all duration-300"
             title="Refrescar"
           >
             <RefreshCw className="w-4 h-4" />
