@@ -174,7 +174,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         ...prev,
         g28Attached: true,
         attorneyBarNumber: barNum,
-        attorneyUscisAccountNumber: prev.attorneyUscisAccountNumber || "",
+        attorneyUscisAccountNumber: prev.attorneyUscisAccountNumber || p.attorney_uscis_account || "",
         preparerUsed: true,
         preparerIsAttorney: true,
         preparerFirstName: firstName,
@@ -741,27 +741,46 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       {data.interpreterUsed && (
         <>
           <h3 className="text-lg font-semibold text-accent">{t("Interpreter Information", "Datos del Intérprete")}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label={t("Last Name", "Apellido")}><Input className={inputCls} value={data.interpreterLastName} onChange={e => set("interpreterLastName", e.target.value)} /></Field>
-            <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.interpreterFirstName} onChange={e => set("interpreterFirstName", e.target.value)} /></Field>
-          </div>
-          <Field label={t("Organization", "Organización")}><Input className={inputCls} value={data.interpreterOrg} onChange={e => set("interpreterOrg", e.target.value)} /></Field>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.interpreterStreet} onChange={e => set("interpreterStreet", e.target.value)} /></Field>
-            <Field label="Apt/Ste/Flr"><Input className={inputCls} value={data.interpreterApt} onChange={e => set("interpreterApt", e.target.value)} /></Field>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.interpreterCity} onChange={e => set("interpreterCity", e.target.value)} /></Field>
-            <Field label={t("State", "Estado")}><StateSelect value={data.interpreterState} onChange={v => set("interpreterState", v)} /></Field>
-            <Field label="ZIP"><Input className={inputCls} value={data.interpreterZip} onChange={e => set("interpreterZip", e.target.value)} /></Field>
-            <Field label={t("Province", "Provincia")}><Input className={inputCls} value={data.interpreterProvince} onChange={e => set("interpreterProvince", e.target.value)} /></Field>
-          </div>
-          <Field label={t("Language", "Idioma")}><Input className={inputCls} value={data.interpreterLanguage} onChange={e => set("interpreterLanguage", e.target.value)} /></Field>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Field label={t("Phone", "Teléfono")}><Input className={inputCls} value={data.interpreterPhone} onChange={e => set("interpreterPhone", e.target.value)} /></Field>
-            <Field label={t("Mobile", "Celular")}><Input className={inputCls} value={data.interpreterMobile} onChange={e => set("interpreterMobile", e.target.value)} /></Field>
-            <Field label="Email"><Input className={inputCls} value={data.interpreterEmail} onChange={e => set("interpreterEmail", e.target.value)} /></Field>
-          </div>
+          {data.preparerUsed && (
+            <div className="flex items-center gap-2 p-3 rounded-lg border border-border/40 bg-secondary/20">
+              <Checkbox checked={data.interpreterSameAsPreparer} onCheckedChange={v => set("interpreterSameAsPreparer", !!v)} id="int-same" />
+              <Label htmlFor="int-same" className="text-sm cursor-pointer">
+                {t("The interpreter is the same person as the preparer", "El intérprete es la misma persona que el preparador")}
+              </Label>
+            </div>
+          )}
+          {data.interpreterSameAsPreparer && data.preparerUsed ? (
+            <div className="rounded-lg border border-accent/20 bg-accent/5 p-3">
+              <p className="text-sm text-muted-foreground">
+                ✓ {t("Preparer data will be copied to interpreter section in the PDF.", "Los datos del preparador se copiarán a la sección de intérprete en el PDF.")}
+              </p>
+              <Field label={t("Language", "Idioma")} className="mt-3"><Input className={inputCls} value={data.interpreterLanguage} onChange={e => set("interpreterLanguage", e.target.value)} placeholder={t("e.g. Spanish", "ej. Español")} /></Field>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label={t("Last Name", "Apellido")}><Input className={inputCls} value={data.interpreterLastName} onChange={e => set("interpreterLastName", e.target.value)} /></Field>
+                <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.interpreterFirstName} onChange={e => set("interpreterFirstName", e.target.value)} /></Field>
+              </div>
+              <Field label={t("Organization", "Organización")}><Input className={inputCls} value={data.interpreterOrg} onChange={e => set("interpreterOrg", e.target.value)} /></Field>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.interpreterStreet} onChange={e => set("interpreterStreet", e.target.value)} /></Field>
+                <Field label="Apt/Ste/Flr"><Input className={inputCls} value={data.interpreterApt} onChange={e => set("interpreterApt", e.target.value)} /></Field>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.interpreterCity} onChange={e => set("interpreterCity", e.target.value)} /></Field>
+                <Field label={t("State", "Estado")}><StateSelect value={data.interpreterState} onChange={v => set("interpreterState", v)} /></Field>
+                <Field label="ZIP"><Input className={inputCls} value={data.interpreterZip} onChange={e => set("interpreterZip", e.target.value)} /></Field>
+                <Field label={t("Province", "Provincia")}><Input className={inputCls} value={data.interpreterProvince} onChange={e => set("interpreterProvince", e.target.value)} /></Field>
+              </div>
+              <Field label={t("Language", "Idioma")}><Input className={inputCls} value={data.interpreterLanguage} onChange={e => set("interpreterLanguage", e.target.value)} placeholder={t("e.g. Spanish", "ej. Español")} /></Field>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Field label={t("Phone", "Teléfono")}><Input className={inputCls} value={data.interpreterPhone} onChange={e => set("interpreterPhone", e.target.value)} /></Field>
+                <Field label={t("Mobile", "Celular")}><Input className={inputCls} value={data.interpreterMobile} onChange={e => set("interpreterMobile", e.target.value)} /></Field>
+                <Field label="Email"><Input className={inputCls} value={data.interpreterEmail} onChange={e => set("interpreterEmail", e.target.value)} /></Field>
+              </div>
+            </>
+          )}
         </>
       )}
 
