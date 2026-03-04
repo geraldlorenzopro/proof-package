@@ -101,13 +101,13 @@ function TopNavBar() {
   return (
     <header className="sticky top-0 z-30">
       {/* Top nav row */}
-      <div className="flex items-center h-12 px-3 gap-2 border-b border-border/40 bg-card/80 backdrop-blur-sm">
+      <div className="relative flex items-center justify-center h-12 px-3 gap-2 border-b border-border/40 bg-card/80 backdrop-blur-sm">
         {/* Back button */}
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate(backDest)}
-          className="gap-1.5 text-muted-foreground hover:text-foreground shrink-0 px-2"
+          className="gap-1.5 text-muted-foreground hover:text-foreground shrink-0 px-2 absolute left-3"
         >
           <ArrowLeft className="w-4 h-4" />
           {isHub ? (
@@ -119,62 +119,60 @@ function TopNavBar() {
           )}
         </Button>
 
-        {/* Divider */}
-        <div className="w-px h-5 bg-border/60 shrink-0" />
-
-        {/* Branding */}
-        <div className="flex items-center gap-1.5 shrink-0 mr-2">
-          <FileText className="w-4 h-4 text-accent" />
-          <span className="font-bold text-sm hidden sm:inline">Smart Forms</span>
+        {/* Center: Branding + Nav tabs */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <FileText className="w-4 h-4 text-accent" />
+            <span className="font-bold text-sm hidden sm:inline">Smart Forms</span>
+          </div>
+          <div className="w-px h-5 bg-border/60 shrink-0" />
+          <nav className="flex items-center gap-0.5">
+            {navItems.map((item) => (
+              <Button
+                key={item.path}
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(item.path)}
+                className={cn(
+                  "gap-1.5 text-xs px-3 h-8 rounded-lg transition-all",
+                  isActive(item.path, item.end)
+                    ? "bg-accent/15 text-accent font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <item.icon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{item.label}</span>
+              </Button>
+            ))}
+          </nav>
         </div>
 
-        {/* Nav tabs */}
-        <nav className="flex items-center gap-0.5">
-          {navItems.map((item) => (
-            <Button
-              key={item.path}
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(item.path)}
-              className={cn(
-                "gap-1.5 text-xs px-3 h-8 rounded-lg transition-all",
-                isActive(item.path, item.end)
-                  ? "bg-accent/15 text-accent font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <item.icon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{item.label}</span>
-            </Button>
-          ))}
-        </nav>
+        {/* Right side controls — positioned absolutely */}
+        <div className="absolute right-3 flex items-center gap-1">
+          {/* Lang toggle (only in wizard) */}
+          {wizardNav && <LangToggle lang={lang} setLang={setLang} />}
 
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Lang toggle (only in wizard) */}
-        {wizardNav && <LangToggle lang={lang} setLang={setLang} />}
-
-        {/* Settings gear */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/dashboard/smart-forms/settings")}
-          className={cn(
-            "w-8 h-8 shrink-0",
-            isSettingsActive ? "text-accent" : "text-muted-foreground hover:text-foreground"
-          )}
-          title="Configuración"
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
+          {/* Settings gear */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/dashboard/smart-forms/settings")}
+            className={cn(
+              "w-8 h-8 shrink-0",
+              isSettingsActive ? "text-accent" : "text-muted-foreground hover:text-foreground"
+            )}
+            title="Configuración"
+          >
+            <Settings className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Wizard progress — clickable step navigator */}
       {wizardNav && (
         <div className="px-4 py-3 bg-secondary/40 border-b border-border/30 space-y-2.5">
           {/* Step pills — click to jump */}
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
+          <div className="flex items-center justify-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
             {wizardNav.steps.map((s, i) => {
               const isCurrent = i === wizardNav.currentStep;
               const isCompleted = i < wizardNav.currentStep;
