@@ -40,7 +40,7 @@ interface HubData {
     refresh_token: string;
   } | null;
   staff_info?: {
-    ghl_user_id: string;
+    ghl_user_email: string;
     display_name: string;
   } | null;
 }
@@ -56,14 +56,13 @@ export default function HubPage() {
   const cid = searchParams.get('cid');
   const sig = searchParams.get('sig');
   const ts = searchParams.get('ts');
-  const uid = searchParams.get('uid');
   const uemail = searchParams.get('uemail');
   const uname = searchParams.get('uname');
 
   useEffect(() => {
     // If we have HMAC params, resolve fresh from server
     if (cid && sig && ts) {
-      resolveHub(cid, sig, ts, uid, uemail, uname);
+      resolveHub(cid, sig, ts, uemail, uname);
       return;
     }
 
@@ -106,11 +105,10 @@ export default function HubPage() {
     }
   }
 
-  async function resolveHub(contactId: string, signature: string, timestamp: string, staffId?: string | null, staffEmail?: string | null, staffName?: string | null) {
+  async function resolveHub(contactId: string, signature: string, timestamp: string, staffEmail?: string | null, staffName?: string | null) {
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const params = new URLSearchParams({ cid: contactId, sig: signature, ts: timestamp });
-      if (staffId) params.set("uid", staffId);
       if (staffEmail) params.set("uemail", staffEmail);
       if (staffName) params.set("uname", staffName);
       const res = await fetch(
