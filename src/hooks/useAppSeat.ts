@@ -1,12 +1,23 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+interface Occupant {
+  user_id: string;
+  display_name: string;
+  since: string;
+}
+
 interface SeatStatus {
   granted: boolean;
   sessionId?: string;
   reason?: string;
   loading: boolean;
   kicked: boolean;
+  /** When seats are full, contains info about who to kick */
+  pendingKick?: {
+    occupants: Occupant[];
+    maxSeats: number;
+  } | null;
 }
 
 const HEARTBEAT_INTERVAL = 30_000; // 30s
@@ -14,34 +25,84 @@ const HEARTBEAT_INTERVAL = 30_000; // 30s
 /**
  * Hook that acquires a seat for the given app slug on mount,
  * sends heartbeats, and detects if the user gets kicked.
- * Call release() or let unmount handle cleanup.
+ * 
+ * When seats are full, sets pendingKick with occupant info.
+ * Call confirmKick() to proceed or cancelKick() to back out.
  */
-export function useAppSeat(appSlug: string | null): SeatStatus & { release: () => void } {
+export function useAppSeat(appSlug: string | null): SeatStatus & {
+  release: () => void;
+  confirmKick: () => void;
+  cancelKick: () => void;
+} {
   const [status, setStatus] = useState<SeatStatus>({
     granted: false,
     loading: true,
     kicked: false,
+    pendingKick: null,
   });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
 
-  const acquire = useCallback(async () => {
+  const checkAndAcquire = useCallback(async () => {
     if (!appSlug) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      setStatus({ granted: false, loading: false, kicked: false, reason: "not_authenticated" });
+      setStatus({ granted: false, loading: false, kicked: false, reason: "not_authenticated", pendingKick: null });
       return;
     }
 
-    const { data, error } = await supabase.rpc("acquire_app_seat", {
+    // First, check seat status without acquiring
+    const { data: checkData, error: checkErr } = await supabase.rpc("check_app_seat_status" as any, {
       _user_id: user.id,
+      _app_slug: appSlug,
+    });
+
+    if (checkErr || !checkData) {
+      console.warn("[useAppSeat] check error:", checkErr);
+      // Fallback: try direct acquire
+      await directAcquire(user.id);
+      return;
+    }
+
+    const check = checkData as unknown as {
+      status: string;
+      max_seats?: number;
+      active?: number;
+      occupants?: Occupant[];
+    };
+
+    if (check.status === "full" && check.occupants && check.occupants.length > 0) {
+      // Seats are full — ask user for confirmation before kicking
+      if (mountedRef.current) {
+        setStatus({
+          granted: false,
+          loading: false,
+          kicked: false,
+          reason: "seats_full",
+          pendingKick: {
+            occupants: check.occupants,
+            maxSeats: check.max_seats || 1,
+          },
+        });
+      }
+      return;
+    }
+
+    // Available, already_active, or unlimited — proceed with acquire
+    await directAcquire(user.id);
+  }, [appSlug]);
+
+  const directAcquire = useCallback(async (userId: string) => {
+    if (!appSlug) return;
+
+    const { data, error } = await supabase.rpc("acquire_app_seat", {
+      _user_id: userId,
       _app_slug: appSlug,
     });
 
     if (error || !data) {
       console.warn("[useAppSeat] acquire error:", error);
-      // Fallback: allow access to not block users if DB issue
-      setStatus({ granted: true, loading: false, kicked: false, reason: "fallback" });
+      setStatus({ granted: true, loading: false, kicked: false, reason: "fallback", pendingKick: null });
       return;
     }
 
@@ -53,9 +114,33 @@ export function useAppSeat(appSlug: string | null): SeatStatus & { release: () =
         reason: result.reason,
         loading: false,
         kicked: false,
+        pendingKick: null,
       });
+
+      // Start heartbeat if granted
+      if (result.granted && !intervalRef.current) {
+        intervalRef.current = setInterval(heartbeat, HEARTBEAT_INTERVAL);
+      }
     }
   }, [appSlug]);
+
+  const confirmKick = useCallback(async () => {
+    if (!appSlug) return;
+    setStatus(prev => ({ ...prev, loading: true, pendingKick: null }));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await directAcquire(user.id);
+  }, [appSlug, directAcquire]);
+
+  const cancelKick = useCallback(() => {
+    setStatus({
+      granted: false,
+      loading: false,
+      kicked: false,
+      reason: "user_cancelled",
+      pendingKick: null,
+    });
+  }, []);
 
   const heartbeat = useCallback(async () => {
     if (!appSlug) return;
@@ -74,8 +159,7 @@ export function useAppSeat(appSlug: string | null): SeatStatus & { release: () =
 
     const result = data as unknown as { valid: boolean; reason?: string };
     if (!result.valid && mountedRef.current) {
-      setStatus((prev) => ({ ...prev, granted: false, kicked: true, reason: result.reason }));
-      // Stop heartbeat
+      setStatus((prev) => ({ ...prev, granted: false, kicked: true, reason: result.reason, pendingKick: null }));
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -97,8 +181,7 @@ export function useAppSeat(appSlug: string | null): SeatStatus & { release: () =
   useEffect(() => {
     mountedRef.current = true;
     if (appSlug) {
-      acquire();
-      intervalRef.current = setInterval(heartbeat, HEARTBEAT_INTERVAL);
+      checkAndAcquire();
     }
     return () => {
       mountedRef.current = false;
@@ -106,7 +189,6 @@ export function useAppSeat(appSlug: string | null): SeatStatus & { release: () =
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      // Release seat on unmount (best-effort)
       if (appSlug) {
         supabase.auth.getUser().then(({ data: { user } }) => {
           if (user) {
@@ -115,7 +197,7 @@ export function useAppSeat(appSlug: string | null): SeatStatus & { release: () =
         });
       }
     };
-  }, [appSlug, acquire, heartbeat]);
+  }, [appSlug, checkAndAcquire]);
 
-  return { ...status, release };
+  return { ...status, release, confirmKick, cancelKick };
 }
