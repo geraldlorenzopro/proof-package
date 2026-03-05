@@ -239,8 +239,8 @@ export default function HubPage() {
                       navigate(route);
                     }
                   }}
-                  disabled={!route || !authReady}
-                  className="tool-card text-left p-6 group cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                  disabled={!route}
+                  className="tool-card text-left p-6 group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="w-11 h-11 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center group-hover:bg-jarvis/20 group-hover:shadow-glow transition-all duration-500">
