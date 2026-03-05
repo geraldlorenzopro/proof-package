@@ -9,6 +9,15 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+function FieldRow({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
+  return (
+    <div>
+      <Label className="text-xs text-muted-foreground mb-1.5 block">{label}</Label>
+      <Input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="bg-background border-border" />
+    </div>
+  );
+}
+
 export default function Settings() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -176,13 +185,6 @@ export default function Settings() {
       </div>
     );
   }
-
-  const FieldRow = ({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) => (
-    <div>
-      <Label className="text-xs text-muted-foreground mb-1.5 block">{label}</Label>
-      <Input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="bg-background border-border" />
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-background grid-bg">
