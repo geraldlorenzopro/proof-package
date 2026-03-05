@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, FolderOpen, Calculator, BarChart3, Activity, Shield, AlertTriangle, ChevronRight, FileSearch, FileText, RefreshCw } from 'lucide-react';
+import { Loader2, FolderOpen, Calculator, BarChart3, Activity, Shield, AlertTriangle, ChevronRight, FileSearch, FileText, RefreshCw, ClipboardList, Scale } from 'lucide-react';
 
 const ICON_MAP: Record<string, any> = {
   evidence: FolderOpen,
@@ -9,6 +9,9 @@ const ICON_MAP: Record<string, any> = {
   affidavit: Calculator,
   tracker: Activity,
   'uscis-analyzer': FileSearch,
+  'checklist-generator': ClipboardList,
+  'vawa-screener': Scale,
+  'vawa-checklist': ClipboardList,
   'smart-forms': FileText,
 };
 
@@ -19,6 +22,8 @@ const ROUTE_MAP: Record<string, string> = {
   tracker: '/dashboard/tracker',
   'uscis-analyzer': '/dashboard/uscis-analyzer',
   'checklist-generator': '/dashboard/checklist',
+  'vawa-screener': '/dashboard/vawa-screener',
+  'vawa-checklist': '/dashboard/vawa-checklist',
   'smart-forms': '/dashboard/smart-forms',
 };
 
