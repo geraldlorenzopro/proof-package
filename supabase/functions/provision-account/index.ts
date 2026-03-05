@@ -166,24 +166,25 @@ Deno.serve(async (req) => {
       .eq("is_active", true);
 
     if (apps && apps.length > 0) {
-      // Essential: evidence only. Professional: evidence + cspa. Elite: all.
+      const allSlugs = apps.map((a) => a.slug);
+      // Essential: evidence + cspa. Professional: all. Elite/Enterprise: all.
       const planApps: Record<string, string[]> = {
-        essential: ["evidence"],
-        professional: ["evidence", "cspa"],
-        elite: apps.map((a) => a.slug),
-        enterprise: apps.map((a) => a.slug),
+        essential: ["evidence", "cspa"],
+        professional: allSlugs,
+        elite: allSlugs,
+        enterprise: allSlugs,
       };
 
-      // Seat limits per plan per tool (0 = unlimited)
-      const planSeats: Record<string, Record<string, number>> = {
-        essential: { evidence: 1, cspa: 1, "smart-forms": 1, vawa: 1 },
-        professional: { evidence: 3, cspa: 3, "smart-forms": 3, vawa: 3 },
-        elite: { evidence: 5, cspa: 5, "smart-forms": 5, vawa: 5 },
-        enterprise: { evidence: 0, cspa: 0, "smart-forms": 0, vawa: 0 }, // custom / unlimited
+      // Default seat limits per plan (0 = unlimited)
+      const defaultSeats: Record<string, number> = {
+        essential: 1,
+        professional: 3,
+        elite: 5,
+        enterprise: 0,
       };
 
-      const allowedSlugs = planApps[selectedPlan] || ["evidence"];
-      const seatConfig = planSeats[selectedPlan] || planSeats.essential;
+      const allowedSlugs = planApps[selectedPlan] || ["evidence", "cspa"];
+      const seats = defaultSeats[selectedPlan] ?? 1;
       const grantApps = apps.filter((a) => allowedSlugs.includes(a.slug));
 
       if (grantApps.length > 0) {
@@ -191,7 +192,7 @@ Deno.serve(async (req) => {
           grantApps.map((a) => ({
             account_id: account.id,
             app_id: a.id,
-            max_seats: seatConfig[a.slug] ?? 1,
+            max_seats: seats,
           }))
         );
       }
