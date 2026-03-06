@@ -295,13 +295,14 @@ function daysToYears(days: number): number {
 }
 
 const FAMILY_CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4"];
+const AVAILABLE_CATEGORIES = new Set(["F1", "F2A", "F2B", "F3", "F4"]);
 const ALL_CATEGORIES = [
   { group: "family", label: "Family-Based", items: ["F1", "F2A", "F2B", "F3", "F4"] },
-  { group: "immediate", label: "Immediate Relative", items: ["IR"] },
   { group: "employment", label: "Employment-Based", items: ["EB1", "EB2", "EB3", "EB4", "EB5"] },
-  { group: "other", label: "Other", items: ["DV", "ASYLUM"] },
+  { group: "immediate", label: "Immediate Relative", items: ["IR"] },
+  { group: "other", label: "Other", items: ["DV"] },
 ];
-const CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4", "IR", "EB1", "EB2", "EB3", "EB4", "EB5", "DV", "ASYLUM"];
+const CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4", "IR", "EB1", "EB2", "EB3", "EB4", "EB5", "DV"];
 const CHARGEABILITIES_ES = [
   { value: "ALL", label: "All Chargeability Areas" },
   { value: "MEXICO", label: "México" },
@@ -667,7 +668,15 @@ export default function CSPACalculator() {
                     {ALL_CATEGORIES.map((group) => (
                       <div key={group.group}>
                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group.label}</div>
-                        {group.items.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        {group.items.map((cat) => {
+                          const available = AVAILABLE_CATEGORIES.has(cat);
+                          return (
+                            <SelectItem key={cat} value={cat} disabled={!available} className={!available ? "opacity-50" : ""}>
+                              {cat}
+                              {!available && <span className="ml-2 text-[10px] text-accent/60 font-medium">(coming soon)</span>}
+                            </SelectItem>
+                          );
+                        })}
                       </div>
                     ))}
                    </SelectContent>
