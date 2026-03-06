@@ -1274,6 +1274,16 @@ export default function CSPACalculator() {
                 </div>
               </div>
 
+              {/* Sought to Acquire — shown after verdict only for qualifying preference categories */}
+              {result.qualifies && !AGE_FROZEN_CATEGORIES.has(result.category) && FAMILY_CATEGORIES.includes(result.category) && (
+                <div className="px-5 py-3 border-t border-border">
+                  <SoughtToAcquireAlert
+                    visaAvailableDate={form.visaAvailableDate}
+                    lang={lang}
+                  />
+                </div>
+              )}
+
               {/* Collapsible detail section */}
               <details className="px-5 pb-1 group">
                 <summary className="flex items-center justify-center gap-1.5 py-2.5 cursor-pointer text-xs text-accent font-medium hover:text-accent/80 transition-colors list-none [&::-webkit-details-marker]:hidden">
