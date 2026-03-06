@@ -633,44 +633,30 @@ export default function CSPACalculator() {
             <h2 className="text-xl font-semibold text-foreground mb-0.5">{t.formTitle}</h2>
             <p className="text-muted-foreground text-xs mb-5">{t.formSub}</p>
 
-            {/* Adjudicator Toggle */}
-            <div className="mb-4 p-3 rounded-lg border border-border bg-secondary/30">
-              <Label className="text-foreground font-medium text-sm mb-2 block">{t.adjudicatorLabel}</Label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setForm(prev => ({ ...prev, adjudicator: "DOS" }))}
-                  className={cn("flex-1 py-2 px-3 rounded-md text-xs font-semibold transition-all border",
-                    form.adjudicator === "DOS"
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80")}
-                >
-                  {t.adjudicatorDOS}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForm(prev => ({ ...prev, adjudicator: "USCIS" }))}
-                  className={cn("flex-1 py-2 px-3 rounded-md text-xs font-semibold transition-all border",
-                    form.adjudicator === "USCIS"
-                      ? "bg-accent text-accent-foreground border-accent shadow-sm"
-                      : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80")}
-                >
-                  {t.adjudicatorUSCIS}
-                </button>
+            {/* Policy notice — collapsible */}
+            <details className="mb-4 rounded-lg border border-border bg-secondary/30 group">
+              <summary className="flex items-center gap-2 px-3 py-2.5 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <Info className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span className="font-medium">
+                  {lang === 'es'
+                    ? 'Esta calculadora usa Final Action Dates (política vigente desde agosto 2025)'
+                    : 'This calculator uses Final Action Dates (policy effective since August 2025)'}
+                </span>
+                <ChevronRight className="w-3 h-3 ml-auto transition-transform group-open:rotate-90 shrink-0" />
+              </summary>
+              <div className="px-3 pb-3 text-[11px] text-muted-foreground leading-relaxed space-y-1.5">
+                <p>
+                  {lang === 'es'
+                    ? 'Desde el 15 de agosto de 2025, tanto USCIS como el Departamento de Estado (DOS) calculan la edad CSPA usando la tabla de Final Action Dates del Boletín de Visas. Esta calculadora refleja esa política unificada.'
+                    : 'Since August 15, 2025, both USCIS and the Department of State (DOS) calculate CSPA age using the Final Action Dates chart from the Visa Bulletin. This calculator reflects that unified policy.'}
+                </p>
+                <p className="text-accent/80">
+                  {lang === 'es'
+                    ? '📋 Nota histórica: Entre febrero 2023 y agosto 2025, USCIS usó las Filing Charts (Dates for Filing) para casos de ajuste de estatus, lo que daba resultados más favorables. Los casos con I-485 presentado antes del 15 de agosto de 2025 podrían aún beneficiarse de esa política anterior.'
+                    : '📋 Historical note: Between February 2023 and August 2025, USCIS used Filing Charts (Dates for Filing) for adjustment of status cases, which gave more favorable results. Cases with I-485 filed before August 15, 2025 may still benefit from that prior policy.'}
+                </p>
               </div>
-              <p className="text-muted-foreground text-[11px] mt-1.5">{t.adjudicatorHint}</p>
-              {form.adjudicator === "USCIS" && (
-                <>
-                  <p className="text-[11px] text-accent font-medium mt-1.5 leading-relaxed">
-                    <Info className="w-3 h-3 inline-block mr-1 -mt-0.5" />
-                    {t.adjudicatorGrandfathered}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                    {t.adjudicatorNote}
-                  </p>
-                </>
-              )}
-            </div>
+            </details>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="space-y-1.5">
