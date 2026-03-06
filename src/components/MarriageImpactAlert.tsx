@@ -105,6 +105,11 @@ const T = {
     derivativeNote: "💡 Nota sobre derivados",
     derivativeText: "En las categorías F1, F2B, F3 y F4, la CSPA protege principalmente a los hijos derivados (los hijos menores del beneficiario principal). El beneficiario principal en estas categorías ya es mayor de 21 años, por lo que la CSPA no aplica a su propia edad.",
     derivativeTextF2A: "En F2A, la CSPA puede proteger tanto al hijo menor como beneficiario principal, como a los hijos derivados del cónyuge beneficiario. Es importante identificar quién es el beneficiario principal para evaluar correctamente el riesgo.",
+    divorceTitle: "⚖️ ¿Y si se divorcia?",
+    divorceSubtitle: "9 FAM 502.1-1(D)(6)",
+    divorceBefore: "Si el divorcio ocurre ANTES de que la visa esté disponible (ya sea como solicitante principal o derivado), el divorcio puede restaurar el estatus de \"child\" siempre que la edad CSPA sea menor de 21.",
+    divorceAfter: "Si el divorcio ocurre DESPUÉS del cumpleaños 21 Y después de que la visa esté disponible, NO restaura el estatus de \"child\" — porque estaba casado/a cuando la visa estuvo disponible.",
+    divorceKey: "⏰ El momento del divorcio es clave: antes de la disponibilidad de visa = puede salvar el caso. Después = demasiado tarde.",
   },
   en: {
     title: "💍 What happens if the principal beneficiary gets married?",
@@ -119,6 +124,11 @@ const T = {
     derivativeNote: "💡 Note about derivatives",
     derivativeText: "In categories F1, F2B, F3, and F4, CSPA primarily protects the derivative children (the minor children of the principal beneficiary). The principal beneficiary in these categories is already over 21, so CSPA doesn't apply to their own age.",
     derivativeTextF2A: "In F2A, CSPA can protect both the minor child as principal beneficiary, and the derivative children of the spouse beneficiary. It's important to identify who the principal beneficiary is to correctly assess the risk.",
+    divorceTitle: "⚖️ What about divorce?",
+    divorceSubtitle: "9 FAM 502.1-1(D)(6)",
+    divorceBefore: "If the divorce occurs BEFORE a visa becomes available (as either the principal or derivative applicant), the divorce may restore \"child\" status as long as the CSPA age is under 21.",
+    divorceAfter: "If the divorce occurs AFTER the 21st birthday AND after the visa becomes available, it does NOT restore \"child\" status — because the applicant was married when a visa was available.",
+    divorceKey: "⏰ Timing of divorce is critical: before visa availability = may save the case. After = too late.",
   },
 };
 
@@ -201,6 +211,20 @@ export default function MarriageImpactAlert({
             {category === "F2A" ? t.derivativeTextF2A : t.derivativeText}
           </p>
         </div>
+        {/* Divorce timing rule — 9 FAM 502.1-1(D)(6) */}
+        {info.severity !== "none" && (
+          <div className="rounded-lg border border-accent/30 bg-accent/5 px-3 py-2.5 space-y-1.5">
+            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              {t.divorceTitle}
+              <span className="text-[10px] font-normal text-muted-foreground">({t.divorceSubtitle})</span>
+            </p>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">✅ {t.divorceBefore}</p>
+              <p className="text-xs text-muted-foreground">❌ {t.divorceAfter}</p>
+            </div>
+            <p className="text-xs font-semibold text-accent">{t.divorceKey}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
