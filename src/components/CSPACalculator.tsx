@@ -419,6 +419,45 @@ function WelcomeSplash({ onContinue, lang, setLang }: { onContinue: () => void; 
   );
 }
 
+// ─── Consideration Bullet ────────────────────────────────────────────────────
+function ConsiderationBullet({
+  icon, label, summary, severity, children,
+}: {
+  icon: string;
+  label: string;
+  summary: string;
+  severity: 'severe' | 'moderate' | 'none';
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={cn(
+      "rounded-lg border transition-colors",
+      severity === 'severe' ? "border-destructive/20" : severity === 'moderate' ? "border-accent/20" : "border-border"
+    )}>
+      <button
+        type="button"
+        onClick={() => setOpen(prev => !prev)}
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left"
+      >
+        <span className="text-sm shrink-0">{icon}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-foreground truncate">{label}</p>
+          <p className={cn("text-xs truncate",
+            severity === 'severe' ? "text-destructive" : severity === 'moderate' ? "text-accent" : "text-muted-foreground"
+          )}>{summary}</p>
+        </div>
+        <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="px-3 pb-3 pt-0">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function CSPACalculator() {
   const navigate = useNavigate();
@@ -446,6 +485,7 @@ export default function CSPACalculator() {
   const [showLeadCapture, setShowLeadCapture] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showInapplicability, setShowInapplicability] = useState(false);
+  const [showConsiderations, setShowConsiderations] = useState(false);
 
   const autoDetectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
@@ -959,33 +999,85 @@ export default function CSPACalculator() {
           </CardContent>
         </Card>
 
-        {/* Sought to Acquire Alert */}
-        {form.visaAvailableDate && !AGE_FROZEN_CATEGORIES.has(form.category) && (
-          <div className="mt-6">
-            <SoughtToAcquireAlert
-              visaAvailableDate={form.visaAvailableDate}
-              lang={lang}
-            />
-          </div>
-        )}
-
-        {/* Naturalization Simulator */}
+        {/* Consolidated Considerations — collapsed by default */}
         {form.category && FAMILY_CATEGORIES.includes(form.category) && (
           <div className="mt-6">
-            <NaturalizationSimulator
-              category={form.category}
-              lang={lang}
-            />
-          </div>
-        )}
+            <Card className="glow-border bg-card">
+              <CardContent className="p-4">
+                <button
+                  type="button"
+                  onClick={() => setShowConsiderations(prev => !prev)}
+                  className="w-full flex items-center justify-between gap-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-accent" />
+                    <span className="text-sm font-semibold text-foreground">
+                      {lang === 'es' ? '📋 Consideraciones importantes para este caso' : '📋 Important considerations for this case'}
+                    </span>
+                  </div>
+                  <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", showConsiderations && "rotate-180")} />
+                </button>
 
-        {/* Marriage Impact Alert */}
-        {form.category && FAMILY_CATEGORIES.includes(form.category) && (
-          <div className="mt-6">
-            <MarriageImpactAlert
-              category={form.category}
-              lang={lang}
-            />
+                {showConsiderations && (
+                  <div className="mt-4 space-y-2">
+                    {/* Sought to Acquire — deadline bullet */}
+                    {form.visaAvailableDate && !AGE_FROZEN_CATEGORIES.has(form.category) && (() => {
+                      const visaDate = new Date(form.visaAvailableDate + "T00:00:00");
+                      const deadline = new Date(visaDate);
+                      deadline.setFullYear(deadline.getFullYear() + 1);
+                      const today = new Date(); today.setHours(0,0,0,0);
+                      const daysLeft = Math.floor((deadline.getTime() - today.getTime()) / (1000*60*60*24));
+                      const isExpired = daysLeft < 0;
+                      return (
+                        <ConsiderationBullet
+                          icon="⏰"
+                          label={lang === 'es' ? 'Plazo para actuar (Sought to Acquire)' : 'Deadline to act (Sought to Acquire)'}
+                          summary={isExpired
+                            ? (lang === 'es' ? '⚠️ ¡El plazo de 1 año ya venció!' : '⚠️ The 1-year deadline has passed!')
+                            : (lang === 'es' ? `${daysLeft} días restantes para presentar solicitud` : `${daysLeft} days remaining to file application`)
+                          }
+                          severity={isExpired ? 'severe' : daysLeft <= 90 ? 'moderate' : 'none'}
+                        >
+                          <SoughtToAcquireAlert visaAvailableDate={form.visaAvailableDate} lang={lang} />
+                        </ConsiderationBullet>
+                      );
+                    })()}
+
+                    {/* Marriage impact bullet */}
+                    <ConsiderationBullet
+                      icon="💍"
+                      label={lang === 'es' ? 'Impacto del matrimonio' : 'Marriage impact'}
+                      summary={
+                        ['F2A','F2B'].includes(form.category)
+                          ? (lang === 'es' ? '🔴 Casarse destruiría la petición' : '🔴 Marriage would destroy the petition')
+                          : form.category === 'F1'
+                          ? (lang === 'es' ? '🟡 Cambiaría a F3 (fila más lenta)' : '🟡 Would change to F3 (slower line)')
+                          : (lang === 'es' ? '✅ Sin riesgo en esta categoría' : '✅ No risk in this category')
+                      }
+                      severity={['F2A','F2B'].includes(form.category) ? 'severe' : form.category === 'F1' ? 'moderate' : 'none'}
+                    >
+                      <MarriageImpactAlert category={form.category} lang={lang} />
+                    </ConsiderationBullet>
+
+                    {/* Naturalization bullet */}
+                    {['F2A','F2B'].includes(form.category) && (
+                      <ConsiderationBullet
+                        icon="🇺🇸"
+                        label={lang === 'es' ? 'Si el peticionario se naturaliza' : 'If petitioner naturalizes'}
+                        summary={
+                          form.category === 'F2A'
+                            ? (lang === 'es' ? '✅ Pasaría a Familiar Inmediato — ¡sin fila!' : '✅ Would become Immediate Relative — no wait!')
+                            : (lang === 'es' ? '↔️ Cambiaría de F2B a F1 — comparar tiempos' : '↔️ Would change from F2B to F1 — compare wait times')
+                        }
+                        severity="none"
+                      >
+                        <NaturalizationSimulator category={form.category} lang={lang} />
+                      </ConsiderationBullet>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
 
