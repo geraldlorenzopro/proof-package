@@ -504,6 +504,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
         ];
 
     soughtActions.forEach((action) => {
+      y = ensureSpace(doc, y, 12, W, isEs ? 'Requisito: Sought to Acquire' : 'Requirement: Sought to Acquire');
       doc.setFillColor(...GOLD);
       doc.circle(25, y + 1, 1.2, 'F');
       doc.setFontSize(8);
