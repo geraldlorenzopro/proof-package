@@ -87,6 +87,8 @@ async function loadLogoAsDataUrl(url: string): Promise<string | null> {
   }
 }
 
+const FOOTER_ZONE = 30; // mm reserved for footer
+
 function addPageHeader(doc: jsPDF, title: string, W: number) {
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
@@ -95,6 +97,21 @@ function addPageHeader(doc: jsPDF, title: string, W: number) {
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.8);
   doc.line(20, 30, W - 20, 30);
+}
+
+/** Returns the max Y before footer. If y would exceed it, adds a page and returns new y. */
+function ensureSpace(doc: jsPDF, y: number, needed: number, W: number, sectionTitle?: string): number {
+  const pageH = doc.internal.pageSize.getHeight();
+  const maxY = pageH - FOOTER_ZONE;
+  if (y + needed > maxY) {
+    doc.addPage();
+    if (sectionTitle) {
+      addPageHeader(doc, sectionTitle, W);
+      return 40;
+    }
+    return 20;
+  }
+  return y;
 }
 
 export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
