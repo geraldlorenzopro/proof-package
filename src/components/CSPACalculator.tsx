@@ -537,23 +537,38 @@ export default function CSPACalculator() {
     setError(null); setResult(null); setHypothetical(false);
     const dob = new Date(form.dob), pd = new Date(form.priorityDate);
     const ad = new Date(form.approvalDate);
+    const isFrozen = AGE_FROZEN_CATEGORIES.has(form.category);
 
     // If visa not available, do hypothetical calc with today's date
-    const isHypothetical = forceHypothetical || !form.visaAvailableDate;
+    const isHypothetical = !isFrozen && (forceHypothetical || !form.visaAvailableDate);
     const vadStr = isHypothetical ? format(new Date(), "yyyy-MM-dd") : form.visaAvailableDate;
     const vad = new Date(vadStr);
 
-    if ([dob, pd, ad].some((d) => isNaN(d.getTime()))) { setError(t.errorDates); return; }
-    if (!isHypothetical && isNaN(vad.getTime())) { setError(t.errorDates); return; }
-    if (ad < pd) { setError(t.errorApproval); return; }
-    if (!isHypothetical && vad < pd) { setError(t.errorVisa); return; }
-    const biologicalAge = diffInDays(dob, vad);
-    const pendingTime = diffInDays(pd, ad);
-    const cspaAgeDays = biologicalAge - pendingTime;
-    const cspaAgeYears = daysToYears(cspaAgeDays);
-    const approvalControlled = !!(pdBecameCurrent && form.approvalDate && form.approvalDate > pdBecameCurrent);
+    if ([dob, pd].some((d) => isNaN(d.getTime()))) { setError(t.errorDates); return; }
+    if (!isFrozen && isNaN(ad.getTime())) { setError(t.errorDates); return; }
+    if (!isFrozen && !isHypothetical && isNaN(vad.getTime())) { setError(t.errorDates); return; }
+    if (!isFrozen && ad < pd) { setError(t.errorApproval); return; }
+    if (!isFrozen && !isHypothetical && vad < pd) { setError(t.errorVisa); return; }
+
+    let biologicalAge: number, pendingTime: number, cspaAgeDays: number, cspaAgeYears: number;
+
+    if (isFrozen) {
+      // Age-frozen categories: age locks on petition filing date (priority date)
+      // No pending time subtraction per 9 FAM 502.1-1(D)(3)
+      biologicalAge = diffInDays(dob, pd);
+      pendingTime = 0;
+      cspaAgeDays = biologicalAge;
+      cspaAgeYears = daysToYears(cspaAgeDays);
+    } else {
+      biologicalAge = diffInDays(dob, vad);
+      pendingTime = diffInDays(pd, ad);
+      cspaAgeDays = biologicalAge - pendingTime;
+      cspaAgeYears = daysToYears(cspaAgeDays);
+    }
+
+    const approvalControlled = !isFrozen && !!(pdBecameCurrent && form.approvalDate && form.approvalDate > pdBecameCurrent);
     setHypothetical(isHypothetical);
-    setResult({ biologicalAge, pendingTime, cspaAgeDays, cspaAgeYears, qualifies: cspaAgeYears < 21, dobDate: dob, priorityDate: pd, approvalDate: ad, visaAvailableDate: vad, category: form.category || "—", chargeability: form.chargeability || "—", visaDateAutoDetected: !!visaAutoInfo, bulletinInfo: visaAutoInfo ?? undefined, pdBecameCurrentDate: pdBecameCurrent ?? undefined, approvalControlled });
+    setResult({ biologicalAge, pendingTime, cspaAgeDays, cspaAgeYears, qualifies: cspaAgeYears < 21, dobDate: dob, priorityDate: pd, approvalDate: ad, visaAvailableDate: isFrozen ? pd : vad, category: form.category || "—", chargeability: form.chargeability || "—", visaDateAutoDetected: !!visaAutoInfo, bulletinInfo: visaAutoInfo ?? undefined, pdBecameCurrentDate: pdBecameCurrent ?? undefined, approvalControlled });
     setShowDialog(true);
   };
 
@@ -638,8 +653,11 @@ export default function CSPACalculator() {
     }
   };
 
-  const canCalculateHypothetical = form.dob && form.priorityDate && form.approvalDate && !form.visaAvailableDate && !loadingVisa;
-  const requiredFilled = form.dob && form.priorityDate && form.approvalDate && form.visaAvailableDate && !loadingVisa;
+  const isFrozenCategory = AGE_FROZEN_CATEGORIES.has(form.category);
+  const canCalculateHypothetical = !isFrozenCategory && form.dob && form.priorityDate && form.approvalDate && !form.visaAvailableDate && !loadingVisa;
+  const requiredFilled = isFrozenCategory
+    ? (form.dob && form.priorityDate && form.category)
+    : (form.dob && form.priorityDate && form.approvalDate && form.visaAvailableDate && !loadingVisa);
 
   if (!accepted) return <WelcomeSplash onContinue={() => setAccepted(true)} lang={lang} setLang={setLang} />;
 
@@ -1055,9 +1073,13 @@ export default function CSPACalculator() {
                 <p className={cn("text-sm font-semibold mt-2",
                   result.qualifies ? "text-accent" : "text-destructive")}>
                   {result.qualifies
-                    ? (lang === 'es'
-                      ? '¡La edad queda congelada y es menor de 21!'
-                      : 'Age is frozen and under 21!')
+                    ? (AGE_FROZEN_CATEGORIES.has(result.category)
+                      ? (lang === 'es'
+                        ? '¡La edad queda congelada y es menor de 21!'
+                        : 'Age is frozen and under 21!')
+                      : (lang === 'es'
+                        ? '¡La edad queda congelada y es menor de 21!'
+                        : 'Age is frozen and under 21!'))
                     : (lang === 'es'
                       ? 'La edad supera los 21 años'
                       : 'Age exceeds 21')}
@@ -1065,13 +1087,21 @@ export default function CSPACalculator() {
 
                 {/* Simple explanation */}
                 <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto leading-relaxed">
-                  {result.qualifies
-                    ? (lang === 'es'
-                      ? 'Gracias a la ley CSPA, el tiempo que USCIS tardó en procesar el caso se resta de la edad. Esto permite que el beneficiario califique como menor de 21.'
-                      : 'Thanks to the CSPA law, the time USCIS took to process the case is subtracted from the age. This allows the beneficiary to qualify as under 21.')
-                    : (lang === 'es'
-                      ? 'Aun restando el tiempo de procesamiento de USCIS, la edad sigue siendo 21 o mayor.'
-                      : 'Even after subtracting USCIS processing time, the age is still 21 or older.')}
+                  {AGE_FROZEN_CATEGORIES.has(result.category)
+                    ? (result.qualifies
+                      ? (lang === 'es'
+                        ? `La edad se congeló en la fecha de la petición. El beneficiario tenía ${result.cspaAgeYears.toFixed(1)} años al momento de la presentación, por lo que califica como menor de 21.`
+                        : `Age was frozen on the petition filing date. The beneficiary was ${result.cspaAgeYears.toFixed(1)} years old at filing, qualifying as under 21.`)
+                      : (lang === 'es'
+                        ? `La edad se congeló en la fecha de la petición, pero el beneficiario ya tenía ${result.cspaAgeYears.toFixed(1)} años — 21 o más.`
+                        : `Age was frozen on the petition filing date, but the beneficiary was already ${result.cspaAgeYears.toFixed(1)} years old — 21 or older.`))
+                    : (result.qualifies
+                      ? (lang === 'es'
+                        ? 'Gracias a la ley CSPA, el tiempo que USCIS tardó en procesar el caso se resta de la edad. Esto permite que el beneficiario califique como menor de 21.'
+                        : 'Thanks to the CSPA law, the time USCIS took to process the case is subtracted from the age. This allows the beneficiary to qualify as under 21.')
+                      : (lang === 'es'
+                        ? 'Aun restando el tiempo de procesamiento de USCIS, la edad sigue siendo 21 o mayor.'
+                        : 'Even after subtracting USCIS processing time, the age is still 21 or older.'))}
                 </p>
 
                 {/* Category/Country badges */}
@@ -1108,30 +1138,62 @@ export default function CSPACalculator() {
                   {lang === 'es' ? 'Ver cómo se calculó' : 'See how it was calculated'}
                 </summary>
                 <div className="space-y-1.5 pb-3 animate-fade-in">
-                  {result.bulletinInfo && (
-                    <div className="rounded-lg border border-accent/20 bg-accent/5 px-3 py-2 flex items-start gap-2 mb-2">
-                      <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-accent" />
-                      <div className="text-xs text-foreground leading-relaxed">
-                        <span className="font-semibold">{t.controlling}</span>
-                        <span className="text-accent font-bold">{result.approvalControlled ? t.approval130 : t.bulletin}</span>
-                        {result.approvalControlled && result.pdBecameCurrentDate && (
-                          <>{t.approvalLater(new Date(result.pdBecameCurrentDate + "T12:00:00").toLocaleDateString(lang === "es" ? "es-ES" : "en-US", { day: "2-digit", month: "short", year: "numeric" }))}</>
-                        )}
-                        {!result.approvalControlled && <>{t.pdBefore}</>}
-                        <br /><span className="text-muted-foreground italic">{result.bulletinInfo}</span>
+                  {AGE_FROZEN_CATEGORIES.has(result.category) ? (
+                    <>
+                      {/* Age-frozen: simple explanation */}
+                      <div className="rounded-lg border border-accent/20 bg-accent/5 px-3 py-2 flex items-start gap-2 mb-2">
+                        <Shield className="w-3.5 h-3.5 mt-0.5 shrink-0 text-accent" />
+                        <div className="text-xs text-foreground leading-relaxed">
+                          <span className="font-semibold">
+                            {lang === 'es' ? 'Categoría de edad congelada' : 'Age-frozen category'}
+                          </span>
+                          {' — '}
+                          {AGE_FROZEN_INFO[result.category]?.[lang]?.note || (lang === 'es' ? 'La edad se congela en la fecha de la petición.' : 'Age freezes on the petition filing date.')}
+                          <br />
+                          <span className="text-muted-foreground italic">
+                            {lang === 'es'
+                              ? 'No aplica resta de tiempo pendiente ni requisito de "sought to acquire". Ref: 9 FAM 502.1-1(D)(3)'
+                              : 'No pending time subtraction or "sought to acquire" requirement applies. Ref: 9 FAM 502.1-1(D)(3)'}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                      <StepCard step="1"
+                        title={lang === 'es' ? '🎂 Edad al presentar la petición' : '🎂 Age at petition filing'}
+                        formula={lang === 'es' ? 'Fecha Petición − Nacimiento' : 'Filing Date − Birth'}
+                        result={t.years(result.cspaAgeYears.toFixed(2))}
+                        description={result.cspaAgeYears < 21
+                          ? (lang === 'es' ? '✅ Menor de 21 al presentar → ¡Califica!' : '✅ Under 21 at filing → Qualifies!')
+                          : (lang === 'es' ? '❌ 21 o más al presentar → No califica' : '❌ 21 or older at filing → Does not qualify')}
+                        color={result.qualifies ? "success" : "danger"} highlight />
+                    </>
+                  ) : (
+                    <>
+                      {result.bulletinInfo && (
+                        <div className="rounded-lg border border-accent/20 bg-accent/5 px-3 py-2 flex items-start gap-2 mb-2">
+                          <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-accent" />
+                          <div className="text-xs text-foreground leading-relaxed">
+                            <span className="font-semibold">{t.controlling}</span>
+                            <span className="text-accent font-bold">{result.approvalControlled ? t.approval130 : t.bulletin}</span>
+                            {result.approvalControlled && result.pdBecameCurrentDate && (
+                              <>{t.approvalLater(new Date(result.pdBecameCurrentDate + "T12:00:00").toLocaleDateString(lang === "es" ? "es-ES" : "en-US", { day: "2-digit", month: "short", year: "numeric" }))}</>
+                            )}
+                            {!result.approvalControlled && <>{t.pdBefore}</>}
+                            <br /><span className="text-muted-foreground italic">{result.bulletinInfo}</span>
+                          </div>
+                        </div>
+                      )}
+                      <StepCard step="1" title={t.step1Title} formula={t.step1Formula}
+                        result={t.months(Math.round(result.pendingTime / 30.44), daysToYears(result.pendingTime).toFixed(1))}
+                        description={t.step1Desc} color="gold" />
+                      <StepCard step="2" title={t.step2Title} formula={t.step2Formula}
+                        result={t.years(daysToYears(result.biologicalAge).toFixed(1))}
+                        description={t.step2Desc} color="navy" />
+                      <StepCard step="3" title={t.step3Title} formula={t.step3Formula}
+                        result={t.years(result.cspaAgeYears.toFixed(2))}
+                        description={result.cspaAgeYears < 21 ? t.step3QualDesc : t.step3NotDesc}
+                        color={result.qualifies ? "success" : "danger"} highlight />
+                    </>
                   )}
-                  <StepCard step="1" title={t.step1Title} formula={t.step1Formula}
-                    result={t.months(Math.round(result.pendingTime / 30.44), daysToYears(result.pendingTime).toFixed(1))}
-                    description={t.step1Desc} color="gold" />
-                  <StepCard step="2" title={t.step2Title} formula={t.step2Formula}
-                    result={t.years(daysToYears(result.biologicalAge).toFixed(1))}
-                    description={t.step2Desc} color="navy" />
-                  <StepCard step="3" title={t.step3Title} formula={t.step3Formula}
-                    result={t.years(result.cspaAgeYears.toFixed(2))}
-                    description={result.cspaAgeYears < 21 ? t.step3QualDesc : t.step3NotDesc}
-                    color={result.qualifies ? "success" : "danger"} highlight />
                 </div>
               </details>
 
