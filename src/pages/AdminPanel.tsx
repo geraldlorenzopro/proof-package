@@ -12,9 +12,10 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft, Plus, Users, Building2, Loader2, BarChart3,
-  Link2, Copy, Check, Pencil, Shield, Power, ChevronDown, ChevronUp, Boxes
+  Link2, Copy, Check, Pencil, Shield, Power, ChevronDown, ChevronUp, Boxes, Star
 } from 'lucide-react';
 import AdminAnalytics from '@/components/AdminAnalytics';
+import AdminFeedback from '@/components/AdminFeedback';
 
 interface NerAccount {
   id: string;
@@ -205,6 +206,10 @@ export default function AdminPanel() {
             <TabsTrigger value="analytics" className="data-[state=active]:bg-jarvis/20 data-[state=active]:text-jarvis">
               <BarChart3 className="w-4 h-4 mr-2" />
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="feedback" className="data-[state=active]:bg-jarvis/20 data-[state=active]:text-jarvis">
+              <Star className="w-4 h-4 mr-2" />
+              Feedback
             </TabsTrigger>
           </TabsList>
 
@@ -438,6 +443,11 @@ export default function AdminPanel() {
           {/* Analytics Tab */}
           <TabsContent value="analytics">
             <AdminAnalytics />
+          </TabsContent>
+
+          {/* Feedback Tab */}
+          <TabsContent value="feedback">
+            <AdminFeedback />
           </TabsContent>
         </Tabs>
       </div>
