@@ -296,10 +296,14 @@ function daysToYears(days: number): number {
 
 const FAMILY_CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4"];
 const AVAILABLE_CATEGORIES = new Set(["F1", "F2A", "F2B", "F3", "F4"]);
+const IR_NOTE: Record<Lang, string> = {
+  es: 'La edad se congela el día que se presenta la petición',
+  en: 'Age is locked on the date the petition is filed',
+};
 const ALL_CATEGORIES = [
   { group: "family", label: "Family-Based", items: ["F1", "F2A", "F2B", "F3", "F4"] },
-  { group: "employment", label: "Employment-Based", items: ["EB1", "EB2", "EB3", "EB4", "EB5"] },
   { group: "immediate", label: "Immediate Relative", items: ["IR"] },
+  { group: "employment", label: "Employment-Based", items: ["EB1", "EB2", "EB3", "EB4", "EB5"] },
   { group: "other", label: "Other", items: ["DV"] },
 ];
 const CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4", "IR", "EB1", "EB2", "EB3", "EB4", "EB5", "DV"];
@@ -430,6 +434,16 @@ export default function CSPACalculator() {
     if (!isCompleteDate || !form.category || !form.chargeability) {
       setVisaAutoInfo(null); setVisaError(null); setPdBecameCurrent(null);
       setForm((prev) => ({ ...prev, visaAvailableDate: "" }));
+      return;
+    }
+    // IR: visa is immediately available — age locks on petition filing date (priority date)
+    if (form.category === "IR") {
+      setVisaAutoInfo(lang === 'es'
+        ? '✅ Familiar inmediato — la visa está disponible de inmediato. La edad se congela el día de la petición.'
+        : '✅ Immediate Relative — visa is immediately available. Age locks on the petition filing date.');
+      setVisaError(null);
+      setPdBecameCurrent(form.priorityDate);
+      setForm((prev) => ({ ...prev, visaAvailableDate: form.priorityDate }));
       return;
     }
     if (autoDetectRef.current) clearTimeout(autoDetectRef.current);
@@ -670,10 +684,14 @@ export default function CSPACalculator() {
                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group.label}</div>
                         {group.items.map((cat) => {
                           const available = AVAILABLE_CATEGORIES.has(cat);
+                          const isIR = cat === "IR";
                           return (
-                            <SelectItem key={cat} value={cat} disabled={!available} className={!available ? "opacity-50" : ""}>
-                              {cat}
-                              {!available && <span className="ml-2 text-[10px] text-accent/60 font-medium">(coming soon)</span>}
+                            <SelectItem key={cat} value={cat} disabled={!available && !isIR} className={!available && !isIR ? "opacity-50" : ""}>
+                              <span className="flex items-center gap-1.5">
+                                {cat}
+                                {isIR && <span className="text-[10px] text-accent/70 font-medium">— {IR_NOTE[lang]}</span>}
+                                {!available && !isIR && <span className="text-[10px] text-accent/60 font-medium">(coming soon)</span>}
+                              </span>
                             </SelectItem>
                           );
                         })}
