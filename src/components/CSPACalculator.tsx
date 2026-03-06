@@ -1179,19 +1179,19 @@ export default function CSPACalculator() {
 
       {/* Results Dialog — Simplified UX */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md bg-card border-accent/20 p-0 overflow-hidden max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-md bg-card border-accent/20 p-0 overflow-hidden max-h-[85vh] flex flex-col [&>button]:z-20">
           {result && (
-            <div className="flex flex-col overflow-hidden max-h-[90vh]">
+            <div className="flex flex-col overflow-hidden h-full">
               {/* Hypothetical banner */}
               {hypothetical && (
-                <div className="bg-accent/10 border-b border-accent/30 px-5 py-3">
+                <div className="bg-accent/10 border-b border-accent/30 px-5 py-3 shrink-0">
                   <p className="text-sm font-bold text-accent">{t.hypotheticalBanner}</p>
                   <p className="text-xs text-muted-foreground">{t.hypotheticalDesc}</p>
                 </div>
               )}
 
-              {/* Scrollable content area */}
-              <div className="overflow-y-auto flex-1 min-h-0">
+              {/* Scrollable content area — hidden scrollbar */}
+              <div className="overflow-y-auto flex-1 min-h-0 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {/* Hero result area */}
               <div className={cn("px-6 pt-8 pb-5 text-center",
                 result.qualifies
