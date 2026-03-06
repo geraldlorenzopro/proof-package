@@ -1400,6 +1400,14 @@ export default function CSPACalculator() {
         loading={generatingPDF}
         lang={lang}
       />
+
+      {/* Feedback Modal */}
+      <CSPAFeedbackModal
+        open={showFeedback}
+        onOpenChange={setShowFeedback}
+        calculationId={lastCalculationId}
+        lang={lang}
+      />
     </div>
   );
 }
