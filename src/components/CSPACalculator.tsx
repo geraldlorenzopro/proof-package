@@ -1002,12 +1002,7 @@ export default function CSPACalculator() {
           </CardContent>
         </Card>
 
-        {/* Sought to Acquire — PROMINENT standalone section for preference categories */}
-        {form.category && FAMILY_CATEGORIES.includes(form.category) && form.visaAvailableDate && !AGE_FROZEN_CATEGORIES.has(form.category) && (
-          <div className="mt-6">
-            <SoughtToAcquireAlert visaAvailableDate={form.visaAvailableDate} lang={lang} />
-          </div>
-        )}
+
 
         {/* Consolidated Considerations — collapsed by default */}
         {form.category && FAMILY_CATEGORIES.includes(form.category) && (
