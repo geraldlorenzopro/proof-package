@@ -302,7 +302,7 @@ const ALL_CATEGORIES = [
   { group: "immediate", label: "Immediate Relative", items: ["IR"] },
   { group: "other", label: "Other", items: ["DV"] },
 ];
-const CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4", "IR", "EB1", "EB2", "EB3", "EB4", "EB5", "DV", "ASYLUM"];
+const CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4", "IR", "EB1", "EB2", "EB3", "EB4", "EB5", "DV"];
 const CHARGEABILITIES_ES = [
   { value: "ALL", label: "All Chargeability Areas" },
   { value: "MEXICO", label: "México" },
