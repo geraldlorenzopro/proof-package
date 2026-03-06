@@ -648,6 +648,19 @@ export default function CSPACalculator() {
                 )}
                 {visaError && !loadingVisa && <p className="text-xs text-destructive font-medium">{visaError}</p>}
                 {(!form.priorityDate || !form.category) && <p className="text-muted-foreground text-xs">{t.completePriority}</p>}
+                {/* Explanatory note */}
+                {form.visaAvailableDate && !loadingVisa && (
+                  <div className="mt-2 bg-muted/50 border border-border rounded-lg p-3 space-y-1.5">
+                    <div className="flex items-start gap-2">
+                      <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-accent" />
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {lang === 'es'
+                          ? 'La visa se considera disponible cuando la petición ya está aprobada y la fecha de prioridad está cubierta por el Visa Bulletin. Si la visa retrocedió después de presentada la petición, la disponibilidad válida ocurre cuando el boletín vuelve a cubrir la fecha de prioridad.'
+                          : 'A visa is considered available when the petition is already approved and the priority date is covered by the Visa Bulletin. If the visa retrogressed after the petition was filed, the valid availability occurs when the bulletin covers the priority date again.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
