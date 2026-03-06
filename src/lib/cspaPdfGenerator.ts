@@ -24,6 +24,8 @@ export interface CSPAReportData {
   bulletinInfo?: string;
   approvalControlled?: boolean;
   isHypothetical?: boolean;
+  isAgeFrozen?: boolean;
+  ageFrozenNote?: string;
   firmName?: string;
   logoUrl?: string;
   projection?: {
@@ -218,13 +220,18 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
   doc.text(isEs ? 'Fechas del caso' : 'Case dates', 20, y);
   y += 8;
 
-  const visaLabel = data.isHypothetical ? (isEs ? 'Fecha simulada (hoy)' : 'Simulated date (today)') : (isEs ? 'Visa disponible' : 'Visa available');
-  const dates = [
-    [isEs ? 'Fecha de nacimiento' : 'Date of birth', formatDatePDF(data.dob, data.lang)],
-    [isEs ? 'Fecha de prioridad (petición)' : 'Priority date (petition)', formatDatePDF(data.priorityDate, data.lang)],
-    [isEs ? 'Fecha de aprobación (USCIS)' : 'Approval date (USCIS)', formatDatePDF(data.approvalDate, data.lang)],
-    [visaLabel, data.visaAvailableDate ? formatDatePDF(data.visaAvailableDate, data.lang) : (isEs ? 'Hoy (simulación)' : 'Today (simulation)')],
-  ];
+  const dates: [string, string][] = data.isAgeFrozen
+    ? [
+        [isEs ? 'Fecha de nacimiento' : 'Date of birth', formatDatePDF(data.dob, data.lang)],
+        [isEs ? 'Fecha de la petición' : 'Petition filing date', formatDatePDF(data.priorityDate, data.lang)],
+      ]
+    : [
+        [isEs ? 'Fecha de nacimiento' : 'Date of birth', formatDatePDF(data.dob, data.lang)],
+        [isEs ? 'Fecha de prioridad (petición)' : 'Priority date (petition)', formatDatePDF(data.priorityDate, data.lang)],
+        [isEs ? 'Fecha de aprobación (USCIS)' : 'Approval date (USCIS)', formatDatePDF(data.approvalDate, data.lang)],
+        [data.isHypothetical ? (isEs ? 'Fecha simulada (hoy)' : 'Simulated date (today)') : (isEs ? 'Visa disponible' : 'Visa available'),
+          data.visaAvailableDate ? formatDatePDF(data.visaAvailableDate, data.lang) : (isEs ? 'Hoy (simulación)' : 'Today (simulation)')],
+      ];
 
   dates.forEach(([label, value], i) => {
     doc.setFillColor(i % 2 === 0 ? 245 : 252, i % 2 === 0 ? 247 : 252, 252);
@@ -239,8 +246,30 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
     y += 12;
   });
 
-  // Controlling date explanation
-  if (data.bulletinInfo) {
+  // Age-frozen category explanation OR controlling date explanation
+  if (data.isAgeFrozen) {
+    y += 2;
+    doc.setFillColor(235, 245, 255);
+    doc.roundedRect(20, y - 4, W - 40, 22, 2, 2, 'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...NAVY);
+    doc.text(isEs ? 'Categoría de edad congelada' : 'Age-frozen category', 25, y + 3);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GRAY);
+    const frozenText = data.ageFrozenNote
+      || (isEs
+        ? 'La edad se congela en la fecha de la petición. No aplica resta de tiempo pendiente ni requisito de "sought to acquire".'
+        : 'Age freezes on the petition filing date. No pending time subtraction or "sought to acquire" requirement applies.');
+    const frozenLines = doc.splitTextToSize(frozenText, W - 50);
+    doc.text(frozenLines, 25, y + 9);
+    y += 26;
+    doc.setFontSize(7);
+    doc.setTextColor(...GRAY);
+    doc.text('Ref: 9 FAM 502.1-1(D)(3)', 25, y - 2);
+    y += 6;
+  } else if (data.bulletinInfo) {
     y += 2;
     doc.setFillColor(235, 245, 255);
     doc.roundedRect(20, y - 4, W - 40, 16, 2, 2, 'F');
@@ -265,60 +294,32 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
   doc.text(isEs ? 'Desglose paso a paso' : 'Step-by-step breakdown', 20, y);
   y += 10;
 
-  const pendingHuman = daysToHuman(data.pendingTimeDays, data.lang);
-  const bioHuman = daysToHuman(data.biologicalAgeDays, data.lang);
-
-  const steps = [
-    {
+  if (data.isAgeFrozen) {
+    // Single step for age-frozen categories
+    const frozenAge = data.cspaAgeYears;
+    const step = {
       num: '1',
-      title: isEs ? 'Tiempo que USCIS tardó en aprobar' : 'How long USCIS took to approve',
+      title: isEs ? 'Edad al presentar la petición' : 'Age at petition filing',
       detail: isEs
-        ? `Desde que se presentó la petición hasta que USCIS la aprobó pasaron ${pendingHuman} (${data.pendingTimeDays} días). Este tiempo se le resta a la edad del beneficiario como un "crédito" que otorga la ley CSPA.`
-        : `From petition filing to USCIS approval took ${pendingHuman} (${data.pendingTimeDays} days). This time is subtracted from the beneficiary's age as a "credit" granted by the CSPA law.`,
-      result: pendingHuman,
-      color: GOLD,
-    },
-    {
-      num: '2',
-      title: isEs ? 'Edad real cuando la visa estuvo lista' : 'Actual age when the visa was ready',
-      detail: isEs
-        ? `El beneficiario tenía ${bioHuman} (${daysToYearsStr(data.biologicalAgeDays)} años exactos) cuando la visa estuvo disponible (o cuando se simuló que estuviera disponible).`
-        : `The beneficiary was ${bioHuman} (${daysToYearsStr(data.biologicalAgeDays)} exact years) when the visa became available (or when availability was simulated).`,
-      result: `${daysToYearsStr(data.biologicalAgeDays)} ${isEs ? 'años' : 'years'}`,
-      color: NAVY,
-    },
-    {
-      num: '3',
-      title: isEs ? 'Edad CSPA (resultado final)' : 'CSPA Age (final result)',
-      detail: isEs
-        ? `Edad real (${bioHuman}) menos el crédito de USCIS (${pendingHuman}) = ${data.cspaAgeYears.toFixed(2)} años. ${data.qualifies ? 'Como es menor de 21, el beneficiario CALIFICA bajo CSPA.' : 'Como es 21 o más, el beneficiario NO califica bajo CSPA.'}`
-        : `Actual age (${bioHuman}) minus USCIS credit (${pendingHuman}) = ${data.cspaAgeYears.toFixed(2)} years. ${data.qualifies ? 'Since it is under 21, the beneficiary QUALIFIES under CSPA.' : 'Since it is 21 or more, the beneficiary DOES NOT qualify under CSPA.'}`,
-      result: `${data.cspaAgeYears.toFixed(2)} ${isEs ? 'años' : 'years'}`,
+        ? `El beneficiario tenía ${frozenAge.toFixed(2)} años al momento de presentar la petición. ${data.qualifies ? 'Como era menor de 21, la edad queda congelada y CALIFICA bajo CSPA.' : 'Como ya tenía 21 o más, NO califica bajo CSPA.'}`
+        : `The beneficiary was ${frozenAge.toFixed(2)} years old at the time of petition filing. ${data.qualifies ? 'Since they were under 21, the age is frozen and they QUALIFY under CSPA.' : 'Since they were already 21 or older, they DO NOT qualify under CSPA.'}`,
+      result: `${frozenAge.toFixed(2)} ${isEs ? 'años' : 'years'}`,
       color: data.qualifies ? GREEN : RED,
-    },
-  ];
+    };
 
-  steps.forEach((step) => {
-    // Step number circle
     doc.setFillColor(step.color[0], step.color[1], step.color[2]);
     doc.circle(28, y + 1, 4, 'F');
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
     doc.text(step.num, 28, y + 2, { align: 'center' });
-
-    // Title
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...NAVY);
     doc.text(step.title, 36, y + 2);
-
-    // Result badge
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(step.color[0], step.color[1], step.color[2]);
     doc.text(step.result, W - 25, y + 2, { align: 'right' });
-
-    // Detail
     y += 7;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
@@ -326,7 +327,64 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
     const lines = doc.splitTextToSize(step.detail, W - 55);
     doc.text(lines, 36, y);
     y += lines.length * 4 + 6;
-  });
+  } else {
+    // Standard 3-step breakdown
+    const pendingHuman = daysToHuman(data.pendingTimeDays, data.lang);
+    const bioHuman = daysToHuman(data.biologicalAgeDays, data.lang);
+
+    const steps = [
+      {
+        num: '1',
+        title: isEs ? 'Tiempo que USCIS tardó en aprobar' : 'How long USCIS took to approve',
+        detail: isEs
+          ? `Desde que se presentó la petición hasta que USCIS la aprobó pasaron ${pendingHuman} (${data.pendingTimeDays} días). Este tiempo se le resta a la edad del beneficiario como un "crédito" que otorga la ley CSPA.`
+          : `From petition filing to USCIS approval took ${pendingHuman} (${data.pendingTimeDays} days). This time is subtracted from the beneficiary's age as a "credit" granted by the CSPA law.`,
+        result: pendingHuman,
+        color: GOLD,
+      },
+      {
+        num: '2',
+        title: isEs ? 'Edad real cuando la visa estuvo lista' : 'Actual age when the visa was ready',
+        detail: isEs
+          ? `El beneficiario tenía ${bioHuman} (${daysToYearsStr(data.biologicalAgeDays)} años exactos) cuando la visa estuvo disponible (o cuando se simuló que estuviera disponible).`
+          : `The beneficiary was ${bioHuman} (${daysToYearsStr(data.biologicalAgeDays)} exact years) when the visa became available (or when availability was simulated).`,
+        result: `${daysToYearsStr(data.biologicalAgeDays)} ${isEs ? 'años' : 'years'}`,
+        color: NAVY,
+      },
+      {
+        num: '3',
+        title: isEs ? 'Edad CSPA (resultado final)' : 'CSPA Age (final result)',
+        detail: isEs
+          ? `Edad real (${bioHuman}) menos el crédito de USCIS (${pendingHuman}) = ${data.cspaAgeYears.toFixed(2)} años. ${data.qualifies ? 'Como es menor de 21, el beneficiario CALIFICA bajo CSPA.' : 'Como es 21 o más, el beneficiario NO califica bajo CSPA.'}`
+          : `Actual age (${bioHuman}) minus USCIS credit (${pendingHuman}) = ${data.cspaAgeYears.toFixed(2)} years. ${data.qualifies ? 'Since it is under 21, the beneficiary QUALIFIES under CSPA.' : 'Since it is 21 or more, the beneficiary DOES NOT qualify under CSPA.'}`,
+        result: `${data.cspaAgeYears.toFixed(2)} ${isEs ? 'años' : 'years'}`,
+        color: data.qualifies ? GREEN : RED,
+      },
+    ];
+
+    steps.forEach((step) => {
+      doc.setFillColor(step.color[0], step.color[1], step.color[2]);
+      doc.circle(28, y + 1, 4, 'F');
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(step.num, 28, y + 2, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NAVY);
+      doc.text(step.title, 36, y + 2);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(step.color[0], step.color[1], step.color[2]);
+      doc.text(step.result, W - 25, y + 2, { align: 'right' });
+      y += 7;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      const lines = doc.splitTextToSize(step.detail, W - 55);
+      doc.text(lines, 36, y);
+      y += lines.length * 4 + 6;
+    });
+  }
 
   // ══════════════════════════════════════════════════════════════════
   // PAGE 3: PROJECTIONS (if available)
