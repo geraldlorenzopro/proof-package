@@ -387,22 +387,13 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // SOUGHT TO ACQUIRE SECTION (preference categories only, not age-frozen)
+  // SOUGHT TO ACQUIRE — dedicated page (preference categories only, not age-frozen)
   // ══════════════════════════════════════════════════════════════════
   const PREF_CATS = ['F1', 'F2A', 'F2B', 'F3', 'F4'];
   if (data.qualifies && !data.isAgeFrozen && PREF_CATS.includes(data.category) && data.visaAvailableDate) {
-    // Check if we need a new page
-    if (y > 200) {
-      doc.addPage();
-      addPageHeader(doc, isEs ? 'Requisito: Sought to Acquire' : 'Requirement: Sought to Acquire', W);
-      y = 40;
-    } else {
-      y += 8;
-      doc.setDrawColor(...GOLD);
-      doc.setLineWidth(0.3);
-      doc.line(20, y, W - 20, y);
-      y += 10;
-    }
+    doc.addPage();
+    addPageHeader(doc, isEs ? 'Requisito: Sought to Acquire' : 'Requirement: Sought to Acquire', W);
+    y = 40;
 
     // Title
     doc.setFontSize(12);
@@ -796,28 +787,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
     }
   }
 
-  // Sought to Acquire reminder
-  if (data.qualifies || (hasProjection && !proj?.base?.agedOut)) {
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...NAVY);
-    doc.text(isEs ? 'Plazo de 1 año para actuar (Sought to Acquire)' : '1-year deadline to act (Sought to Acquire)', 20, cy);
-    cy += 7;
-
-    doc.setFillColor(255, 248, 220);
-    doc.roundedRect(20, cy - 3, W - 40, 14, 2, 2, 'F');
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...GRAY);
-    const staLines = doc.splitTextToSize(
-      isEs
-        ? 'Si el beneficiario califica bajo CSPA, tiene MÁXIMO 1 AÑO desde que la visa estuvo disponible para demostrar que "buscó adquirir" la residencia. Si no actúa dentro de ese plazo, pierde la protección CSPA aunque califique por edad.'
-        : 'If the beneficiary qualifies under CSPA, they have a MAXIMUM of 1 YEAR from when the visa became available to demonstrate they "sought to acquire" residence. Missing this deadline means losing CSPA protection even if they qualify by age.',
-      W - 50
-    );
-    doc.text(staLines, 25, cy + 2);
-    cy += staLines.length * 4 + 10;
-  }
+  // Sought to Acquire reminder — REMOVED (now has its own dedicated page)
 
   // What is CSPA explanation
   doc.setFontSize(11);
