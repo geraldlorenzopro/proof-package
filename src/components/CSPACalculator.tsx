@@ -626,6 +626,8 @@ export default function CSPACalculator() {
         bulletinInfo: result.bulletinInfo,
         approvalControlled: result.approvalControlled,
         isHypothetical: hypothetical,
+        isAgeFrozen: AGE_FROZEN_CATEGORIES.has(form.category),
+        ageFrozenNote: AGE_FROZEN_CATEGORIES.has(form.category) ? AGE_FROZEN_INFO[form.category]?.[leadData.reportLang]?.note : undefined,
         firmName,
         logoUrl,
         lang: leadData.reportLang,
