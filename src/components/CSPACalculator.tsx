@@ -1190,6 +1190,8 @@ export default function CSPACalculator() {
                 </div>
               )}
 
+              {/* Scrollable content area */}
+              <div className="overflow-y-auto flex-1 min-h-0">
               {/* Hero result area */}
               <div className={cn("px-6 pt-8 pb-5 text-center",
                 result.qualifies
