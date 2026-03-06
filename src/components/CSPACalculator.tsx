@@ -1179,9 +1179,9 @@ export default function CSPACalculator() {
 
       {/* Results Dialog — Simplified UX */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md bg-card border-accent/20 p-0 overflow-hidden">
+        <DialogContent className="max-w-md bg-card border-accent/20 p-0 overflow-hidden max-h-[90vh] flex flex-col">
           {result && (
-            <div className="flex flex-col">
+            <div className="flex flex-col overflow-hidden max-h-[90vh]">
               {/* Hypothetical banner */}
               {hypothetical && (
                 <div className="bg-accent/10 border-b border-accent/30 px-5 py-3">
@@ -1190,6 +1190,8 @@ export default function CSPACalculator() {
                 </div>
               )}
 
+              {/* Scrollable content area */}
+              <div className="overflow-y-auto flex-1 min-h-0">
               {/* Hero result area */}
               <div className={cn("px-6 pt-8 pb-5 text-center",
                 result.qualifies
@@ -1350,8 +1352,10 @@ export default function CSPACalculator() {
                 </div>
               </details>
 
+              </div>{/* end scrollable */}
+
               {/* Action buttons */}
-              <div className="px-5 pb-3 pt-1 flex gap-2">
+              <div className="px-5 pb-3 pt-1 flex gap-2 shrink-0 border-t border-border">
                 <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
                   <FileText className="w-4 h-4 mr-1" />
                   {lang === 'es' ? 'Descargar Reporte' : 'Download Report'}
