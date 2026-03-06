@@ -582,7 +582,7 @@ export default function CSPACalculator() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="space-y-1.5">
                 <Label className="text-foreground font-medium text-sm">{t.category}</Label>
-                <Select value={form.category} onValueChange={handleSelect("category")}>
+                <Select value={form.category || undefined} onValueChange={handleSelect("category")}>
                   <SelectTrigger className="h-10 border-border bg-secondary"><SelectValue placeholder={t.categoryPlaceholder} /></SelectTrigger>
                    <SelectContent>
                     {ALL_CATEGORIES.map((group) => (
