@@ -199,7 +199,7 @@ function extractFamilyPreferenceDates(html: string, year: number, month: number)
     
     for (let i = 1; i < rowMatches.length; i++) {
       const cells = [...rowMatches[i][1].matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi)]
-        .map(m => m[1].replace(/<[^>]+>/g, '').trim().toUpperCase());
+        .map(m => m[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ').trim().toUpperCase());
       
       if (cells.length < 2) continue;
       
