@@ -734,6 +734,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
       const li = isEs ? 0 : 1;
 
       // Risk severity banner
+      cy = ensureSpace(doc, cy, 16, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
       const bannerColor = catInfo.severity === 'severe' ? [255, 235, 235] as const : catInfo.severity === 'moderate' ? [255, 248, 220] as const : [230, 245, 230] as const;
       const textColor = catInfo.severity === 'severe' ? RED : catInfo.severity === 'moderate' ? GOLD : GREEN;
       doc.setFillColor(bannerColor[0], bannerColor[1], bannerColor[2]);
@@ -745,6 +746,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
       cy += 16;
 
       // Who is who
+      cy = ensureSpace(doc, cy, 20, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NAVY);
@@ -758,6 +760,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
       cy += whoLines.length * 4 + 3;
 
       // Who does CSPA protect
+      cy = ensureSpace(doc, cy, 20, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NAVY);
@@ -771,6 +774,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
       cy += cspaLines.length * 4 + 3;
 
       // Marriage effect
+      cy = ensureSpace(doc, cy, 30, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NAVY);
@@ -784,6 +788,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
       cy += effectLines.length * 4 + 4;
 
       // Narrative example box
+      cy = ensureSpace(doc, cy, 36, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
       doc.setFillColor(...LIGHT);
       doc.roundedRect(20, cy - 3, W - 40, 28, 2, 2, 'F');
       doc.setDrawColor(...GOLD);
