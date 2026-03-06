@@ -762,60 +762,86 @@ export default function CSPACalculator() {
                 fromYear={1970}
                 toYear={new Date().getFullYear()}
                 lang={lang}
-                extraNote={form.category !== "DV" ? t.receiptDateNote : undefined}
+                extraNote={form.category !== "DV" && !isFrozenCategory ? t.receiptDateNote : undefined}
               />
-              <DateField
-                label={form.category === "DV" ? t.dvApprovalLabel : t.approvalDate}
-                id="approvalDate"
-                hint={form.category === "DV" ? t.dvApprovalHint : t.approvalDateHint}
-                value={form.approvalDate}
-                onChange={handleDateChange("approvalDate")}
-                fromYear={1970}
-                toYear={new Date().getFullYear()}
-                lang={lang}
-              />
+              {!isFrozenCategory && (
+                <DateField
+                  label={form.category === "DV" ? t.dvApprovalLabel : t.approvalDate}
+                  id="approvalDate"
+                  hint={form.category === "DV" ? t.dvApprovalHint : t.approvalDateHint}
+                  value={form.approvalDate}
+                  onChange={handleDateChange("approvalDate")}
+                  fromYear={1970}
+                  toYear={new Date().getFullYear()}
+                  lang={lang}
+                />
+              )}
 
-              <div className="space-y-1.5">
-                <Label className="text-foreground font-medium text-sm">{t.visaDate}</Label>
-                <div className={cn("h-10 rounded-md border px-3 flex items-center gap-2 text-sm",
-                  loadingVisa ? "border-border bg-muted text-muted-foreground"
-                    : visaAutoInfo ? "border-accent/40 bg-accent/5 text-foreground"
-                    : "border-border bg-muted/40 text-muted-foreground")}>
-                  {loadingVisa ? (
-                    <><Loader2 className="w-4 h-4 animate-spin shrink-0 text-accent" /><span>{t.consulting}</span></>
-                  ) : visaAutoInfo && form.visaAvailableDate ? (
-                    <><Search className="w-4 h-4 shrink-0 text-accent" />
-                    <span className="font-semibold">{new Date(form.visaAvailableDate + "T12:00:00").toLocaleDateString(lang === "es" ? "es-ES" : "en-US", { day: "2-digit", month: "long", year: "numeric" })}</span></>
-                  ) : (
-                    <span className="italic">{t.autoDetect}</span>
+              {!isFrozenCategory && (
+                <div className="space-y-1.5">
+                  <Label className="text-foreground font-medium text-sm">{t.visaDate}</Label>
+                  <div className={cn("h-10 rounded-md border px-3 flex items-center gap-2 text-sm",
+                    loadingVisa ? "border-border bg-muted text-muted-foreground"
+                      : visaAutoInfo ? "border-accent/40 bg-accent/5 text-foreground"
+                      : "border-border bg-muted/40 text-muted-foreground")}>
+                    {loadingVisa ? (
+                      <><Loader2 className="w-4 h-4 animate-spin shrink-0 text-accent" /><span>{t.consulting}</span></>
+                    ) : visaAutoInfo && form.visaAvailableDate ? (
+                      <><Search className="w-4 h-4 shrink-0 text-accent" />
+                      <span className="font-semibold">{new Date(form.visaAvailableDate + "T12:00:00").toLocaleDateString(lang === "es" ? "es-ES" : "en-US", { day: "2-digit", month: "long", year: "numeric" })}</span></>
+                    ) : (
+                      <span className="italic">{t.autoDetect}</span>
+                    )}
+                  </div>
+                  {visaAutoInfo && !loadingVisa && (
+                    <div className="space-y-0.5">
+                      <p className="text-xs text-accent font-medium">✅ {visaAutoInfo}</p>
+                      {pdBecameCurrent && form.approvalDate && form.approvalDate > pdBecameCurrent
+                        ? <p className="text-xs font-medium text-accent">{t.cspaUsesApproval}</p>
+                        : pdBecameCurrent && form.approvalDate
+                        ? <p className="text-xs text-muted-foreground">{t.cspaUsesBulletin}</p>
+                        : null}
+                    </div>
+                  )}
+                  {visaError && !loadingVisa && <p className="text-xs text-destructive font-medium">{visaError}</p>}
+                  {(!form.priorityDate || !form.category) && <p className="text-muted-foreground text-xs">{t.completePriority}</p>}
+                  {/* Explanatory note - compact inline */}
+                  {form.visaAvailableDate && !loadingVisa && (
+                    <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
+                      <Info className="w-3 h-3 inline-block mr-1 -mt-0.5 text-accent" />
+                      {lang === 'es'
+                        ? 'La visa se considera disponible cuando la petición ya está aprobada y la fecha de prioridad está cubierta por el Visa Bulletin.'
+                        : 'A visa is considered available when the petition is approved and the priority date is covered by the Visa Bulletin.'}
+                    </p>
                   )}
                 </div>
-                {visaAutoInfo && !loadingVisa && (
-                  <div className="space-y-0.5">
-                    <p className="text-xs text-accent font-medium">✅ {visaAutoInfo}</p>
-                    {pdBecameCurrent && form.approvalDate && form.approvalDate > pdBecameCurrent
-                      ? <p className="text-xs font-medium text-accent">{t.cspaUsesApproval}</p>
-                      : pdBecameCurrent && form.approvalDate
-                      ? <p className="text-xs text-muted-foreground">{t.cspaUsesBulletin}</p>
-                      : null}
-                  </div>
-                )}
-                {visaError && !loadingVisa && <p className="text-xs text-destructive font-medium">{visaError}</p>}
-                {(!form.priorityDate || !form.category) && <p className="text-muted-foreground text-xs">{t.completePriority}</p>}
-                {/* Explanatory note - compact inline */}
-                {form.visaAvailableDate && !loadingVisa && (
-                  <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
-                    <Info className="w-3 h-3 inline-block mr-1 -mt-0.5 text-accent" />
-                    {lang === 'es'
-                      ? 'La visa se considera disponible cuando la petición ya está aprobada y la fecha de prioridad está cubierta por el Visa Bulletin.'
-                      : 'A visa is considered available when the petition is approved and the priority date is covered by the Visa Bulletin.'}
-                  </p>
-                )}
-              </div>
+              )}
             </div>
 
-            {/* I-485 Filed checkbox — only for USCIS + retrogression */}
-            {form.adjudicator === "USCIS" && visaError && visaError.includes("retro") && (
+            {/* Age-frozen category banner */}
+            {isFrozenCategory && form.category && (
+              <div className="flex items-start gap-3 bg-accent/10 border border-accent/30 rounded-lg p-4 mb-4">
+                <Shield className="w-5 h-5 mt-0.5 shrink-0 text-accent" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {lang === 'es' ? 'Categoría de edad congelada' : 'Age-frozen category'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    {AGE_FROZEN_INFO[form.category]?.[lang]?.note || (lang === 'es'
+                      ? 'La edad se congela en la fecha de la petición.'
+                      : 'Age freezes on the petition filing date.')}
+                    {' '}
+                    {lang === 'es'
+                      ? 'No se requiere consulta al Visa Bulletin ni fecha de aprobación.'
+                      : 'No Visa Bulletin lookup or approval date required.'}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-1">Ref: 9 FAM 502.1-1(D)(3)</p>
+                </div>
+              </div>
+            )}
+
+            {/* I-485 Filed checkbox — only for USCIS + retrogression (not for frozen categories) */}
+            {!isFrozenCategory && form.adjudicator === "USCIS" && visaError && visaError.includes("retro") && (
               <div className="flex items-start gap-2 bg-accent/5 border border-accent/20 rounded-lg p-3 mb-4">
                 <input
                   type="checkbox"
@@ -831,8 +857,8 @@ export default function CSPACalculator() {
               </div>
             )}
 
-            {/* Chart 2: Deadline when visa is NOT yet current */}
-            {!form.visaAvailableDate && !loadingVisa && form.dob && form.approvalDate && form.priorityDate && (() => {
+            {/* Chart 2: Deadline when visa is NOT yet current (not for frozen categories) */}
+            {!isFrozenCategory && !form.visaAvailableDate && !loadingVisa && form.dob && form.approvalDate && form.priorityDate && (() => {
               const dob = new Date(form.dob);
               const pd = new Date(form.priorityDate);
               const ad = new Date(form.approvalDate);
