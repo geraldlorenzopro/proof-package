@@ -6,9 +6,10 @@ import {
   LogOut, Scale, Menu, X, Shield, Users, Zap,
   TrendingUp, Power, Loader2, Plus, Link2, Copy,
   Check, Pencil, ChevronDown, ChevronUp, Boxes,
-  ArrowLeft, Eye, FileText, Image as ImageIcon
+  ArrowLeft, Eye, FileText, Image as ImageIcon, Star
 } from 'lucide-react';
 import AdminAnalytics from '@/components/AdminAnalytics';
+import AdminFeedback from '@/components/AdminFeedback';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
   { label: 'Subcuentas', icon: Building2, id: 'accounts' },
   { label: 'Analytics', icon: BarChart3, id: 'analytics' },
+  { label: 'Feedback', icon: Star, id: 'feedback' },
   { label: 'Configuración', icon: Settings, id: 'settings', route: '/dashboard/settings' },
 ];
 
@@ -800,6 +802,17 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-bold text-foreground">Analytics de Plataforma</h2>
               </div>
               <AdminAnalytics />
+            </>
+          )}
+
+          {/* ====== FEEDBACK ====== */}
+          {activeSection === 'feedback' && (
+            <>
+              <div className="mb-6">
+                <p className="text-xs text-muted-foreground mb-1 font-mono">EVALUACIONES</p>
+                <h2 className="text-2xl font-bold text-foreground">Feedback CSPA</h2>
+              </div>
+              <AdminFeedback />
             </>
           )}
         </div>
