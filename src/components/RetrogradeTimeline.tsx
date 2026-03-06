@@ -170,16 +170,19 @@ export default function RetrogradeTimeline({
     let longestSetbackMonths = 0;
     let prevTimestamp: number | null = null;
     let wasCurrent = false;
+    let prevWasCurrent = false;
 
     for (const point of chartData) {
       if (point.isCurrent) {
         if (!wasCurrent) currentPeriods++;
+        prevWasCurrent = true;
         wasCurrent = true;
-      } else {
-        wasCurrent = false;
+        prevTimestamp = null; // Reset so transition from CURRENT→date isn't counted as retrogression
+        continue;
       }
+      wasCurrent = false;
 
-      if (point.finalActionTimestamp !== null && prevTimestamp !== null) {
+      if (point.finalActionTimestamp !== null && prevTimestamp !== null && !prevWasCurrent) {
         if (point.finalActionTimestamp < prevTimestamp) {
           retrogressions++;
           const diffMonths = Math.round((prevTimestamp - point.finalActionTimestamp) / (1000 * 60 * 60 * 24 * 30.44));
@@ -187,6 +190,7 @@ export default function RetrogradeTimeline({
         }
       }
       if (point.finalActionTimestamp !== null) prevTimestamp = point.finalActionTimestamp;
+      prevWasCurrent = false;
     }
 
     return { total: chartData.length, currentPeriods, retrogressions, longestSetbackMonths };
@@ -359,6 +363,9 @@ export default function RetrogradeTimeline({
                   if (row.isCurrent) {
                     status = t.becameCurrent;
                     statusColor = "text-accent";
+                  } else if (prevRow?.isCurrent) {
+                    // Transition from CURRENT to a date — not a retrogression, just end of CURRENT period
+                    status = t.unchanged;
                   } else if (prevRow && row.finalActionTimestamp !== null && prevRow.finalActionTimestamp !== null) {
                     if (row.finalActionTimestamp > prevRow.finalActionTimestamp) {
                       status = t.advanced;
