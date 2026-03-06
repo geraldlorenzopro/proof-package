@@ -348,6 +348,27 @@ export default function RetrogradeTimeline({
           </ResponsiveContainer>
         </div>
 
+        {/* Data coverage disclaimer */}
+        {coverage && coverage.pct < 95 && (
+          <div className="flex items-start gap-2 bg-accent/5 rounded-lg px-3 py-2 border border-accent/20">
+            <Calendar className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+            <div className="text-xs text-muted-foreground leading-relaxed">
+              <p className="font-medium text-foreground">
+                {lang === "es"
+                  ? `📊 Cobertura de datos: ${coverage.pct}% (${coverage.haveMonths} de ~${coverage.expectedMonths} meses desde ${coverage.minYear})`
+                  : `📊 Data coverage: ${coverage.pct}% (${coverage.haveMonths} of ~${coverage.expectedMonths} months since ${coverage.minYear})`}
+              </p>
+              {coverage.gapYears.length > 0 && (
+                <p>
+                  {lang === "es"
+                    ? `Años con datos incompletos: ${coverage.gapYears.join(", ")}. Las estadísticas pueden no reflejar todos los retrocesos históricos.`
+                    : `Years with incomplete data: ${coverage.gapYears.join(", ")}. Statistics may not reflect all historical retrogressions.`}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-start gap-2 bg-secondary/50 rounded-lg px-3 py-2 border border-border">
           <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
           <div className="text-xs text-muted-foreground leading-relaxed space-y-1">
