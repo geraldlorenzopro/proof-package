@@ -1002,12 +1002,7 @@ export default function CSPACalculator() {
           </CardContent>
         </Card>
 
-        {/* Sought to Acquire — PROMINENT standalone section for preference categories */}
-        {form.category && FAMILY_CATEGORIES.includes(form.category) && form.visaAvailableDate && !AGE_FROZEN_CATEGORIES.has(form.category) && (
-          <div className="mt-6">
-            <SoughtToAcquireAlert visaAvailableDate={form.visaAvailableDate} lang={lang} />
-          </div>
-        )}
+
 
         {/* Consolidated Considerations — collapsed by default */}
         {form.category && FAMILY_CATEGORIES.includes(form.category) && (
@@ -1278,6 +1273,16 @@ export default function CSPACalculator() {
                   })}
                 </div>
               </div>
+
+              {/* Sought to Acquire — shown after verdict only for qualifying preference categories */}
+              {result.qualifies && !AGE_FROZEN_CATEGORIES.has(result.category) && FAMILY_CATEGORIES.includes(result.category) && (
+                <div className="px-5 py-3 border-t border-border">
+                  <SoughtToAcquireAlert
+                    visaAvailableDate={form.visaAvailableDate}
+                    lang={lang}
+                  />
+                </div>
+              )}
 
               {/* Collapsible detail section */}
               <details className="px-5 pb-1 group">
