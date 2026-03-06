@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { trackToolUsage } from "@/lib/trackUsage";
 import CSPALeadCaptureModal from "@/components/CSPALeadCaptureModal";
+import CSPAFeedbackModal from "@/components/CSPAFeedbackModal";
 import { generateCSPAReport, type CSPAReportData } from "@/lib/cspaPdfGenerator";
 import { toast } from "@/hooks/use-toast";
 
@@ -1189,7 +1190,7 @@ export default function CSPACalculator() {
         <div className="max-w-4xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="text-xs text-muted-foreground font-medium font-display tracking-wider">{t.platform}</span>
           <p className="text-xs text-muted-foreground text-center sm:text-right max-w-sm">{t.footerDisclaimer}</p>
-          <a href="mailto:contacto@nerimmigration.ai" className="flex items-center gap-1 text-xs text-accent hover:underline shrink-0">
+          <a href="mailto:info@nertech.com" className="flex items-center gap-1 text-xs text-accent hover:underline shrink-0">
             <ExternalLink className="w-3 h-3" />{t.contact}
           </a>
         </div>
