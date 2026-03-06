@@ -82,6 +82,24 @@ const T = {
     cspaUsesApproval: "⚖️ Se usa la fecha de aprobación porque fue después de que la visa estuvo disponible.",
     cspaUsesBulletin: "⚖️ Se usa la fecha del boletín de visas.",
     calculate: "Calcular Edad CSPA",
+    adjudicatorLabel: "⚖️ ¿Quién adjudica el caso?",
+    adjudicatorHint: "USCIS usa las Filing Charts (más favorables). DOS usa Final Action Dates.",
+    adjudicatorUSCIS: "USCIS (Ajuste de Estatus)",
+    adjudicatorDOS: "DOS (Procesamiento Consular)",
+    adjudicatorNote: "⚠️ Nota: Actualmente la detección automática usa Final Action Dates (método DOS). Para casos USCIS, los Filing Charts suelen tener fechas más avanzadas — verifique manualmente.",
+    i485Label: "¿Se presentó I-485 antes de la retrogresión?",
+    i485Hint: "Si se presentó I-485 antes de que la visa retrocediera, USCIS usa la fecha original de disponibilidad.",
+    receiptDateNote: "Nota: Esta fecha es el Receipt Date del recibo de USCIS, que no siempre es igual al Priority Date.",
+    chart2Title: "📅 Fecha límite para que la visa esté disponible",
+    chart2Desc: "Para que el beneficiario califique, la visa debe estar disponible antes de:",
+    chart2Formula: "Cumpleaños 21 + Tiempo pendiente en USCIS = Fecha límite",
+    chart2Birthday: "Cumpleaños 21",
+    chart2Pending: "Tiempo pendiente",
+    chart2Deadline: "Fecha límite",
+    dvFilingLabel: "📌 ¿Cuándo se abrió el registro DV?",
+    dvFilingHint: "Fecha en que se abrió el período de registro de la Lotería DV para ese año fiscal",
+    dvApprovalLabel: "✅ ¿Cuándo recibió la carta de selección?",
+    dvApprovalHint: "Fecha de la carta (Selection Letter) notificando que fue seleccionado",
     resultTitle: "Resultado",
     cspaAge: "Edad CSPA",
     qualifies: "✅ ¡CALIFICA! — La edad queda congelada y es menor de 21",
@@ -168,6 +186,24 @@ const T = {
     cspaUsesApproval: "⚖️ Using the approval date because it came after the visa was available.",
     cspaUsesBulletin: "⚖️ Using the visa bulletin date.",
     calculate: "Calculate CSPA Age",
+    adjudicatorLabel: "⚖️ Who is adjudicating the case?",
+    adjudicatorHint: "USCIS uses Filing Charts (more favorable). DOS uses Final Action Dates.",
+    adjudicatorUSCIS: "USCIS (Adjustment of Status)",
+    adjudicatorDOS: "DOS (Consular Processing)",
+    adjudicatorNote: "⚠️ Note: Auto-detection currently uses Final Action Dates (DOS method). For USCIS cases, Filing Charts typically have more advanced dates — verify manually.",
+    i485Label: "Was an I-485 filed before retrogression?",
+    i485Hint: "If an I-485 was filed before the visa retrogressed, USCIS uses the original availability date.",
+    receiptDateNote: "Note: This is the Receipt Date from the USCIS receipt, which is not always the same as the Priority Date.",
+    chart2Title: "📅 Deadline for visa availability",
+    chart2Desc: "For the beneficiary to qualify, the visa must become available before:",
+    chart2Formula: "21st Birthday + Pending Time at USCIS = Deadline",
+    chart2Birthday: "21st Birthday",
+    chart2Pending: "Pending time",
+    chart2Deadline: "Deadline",
+    dvFilingLabel: "📌 When did the DV registration open?",
+    dvFilingHint: "Date when the DV Lottery registration period opened for that fiscal year",
+    dvApprovalLabel: "✅ When was the selection letter received?",
+    dvApprovalHint: "Date of the Selection Letter notifying the applicant was chosen",
     resultTitle: "Result",
     cspaAge: "CSPA Age",
     qualifies: "✅ QUALIFIES! — Age is frozen and under 21",
@@ -213,6 +249,8 @@ const T = {
 
 // LangToggle imported from shared component
 
+type Adjudicator = "DOS" | "USCIS";
+
 interface FormData {
   dob: string;
   priorityDate: string;
@@ -220,6 +258,8 @@ interface FormData {
   visaAvailableDate: string;
   category: string;
   chargeability: string;
+  adjudicator: Adjudicator;
+  i485Filed: boolean;
 }
 
 interface CSPAResult {
@@ -364,6 +404,7 @@ export default function CSPACalculator() {
 
   const [form, setForm] = useState<FormData>({
     dob: "", priorityDate: "", approvalDate: "", visaAvailableDate: "", category: "", chargeability: "ALL",
+    adjudicator: "DOS", i485Filed: false,
   });
 
   const [result, setResult] = useState<CSPAResult | null>(null);
@@ -590,6 +631,40 @@ export default function CSPACalculator() {
             <h2 className="text-xl font-semibold text-foreground mb-0.5">{t.formTitle}</h2>
             <p className="text-muted-foreground text-xs mb-5">{t.formSub}</p>
 
+            {/* Adjudicator Toggle */}
+            <div className="mb-4 p-3 rounded-lg border border-border bg-secondary/30">
+              <Label className="text-foreground font-medium text-sm mb-2 block">{t.adjudicatorLabel}</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, adjudicator: "DOS" }))}
+                  className={cn("flex-1 py-2 px-3 rounded-md text-xs font-semibold transition-all border",
+                    form.adjudicator === "DOS"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80")}
+                >
+                  {t.adjudicatorDOS}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, adjudicator: "USCIS" }))}
+                  className={cn("flex-1 py-2 px-3 rounded-md text-xs font-semibold transition-all border",
+                    form.adjudicator === "USCIS"
+                      ? "bg-accent text-accent-foreground border-accent shadow-sm"
+                      : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80")}
+                >
+                  {t.adjudicatorUSCIS}
+                </button>
+              </div>
+              <p className="text-muted-foreground text-[11px] mt-1.5">{t.adjudicatorHint}</p>
+              {form.adjudicator === "USCIS" && (
+                <p className="text-[11px] text-accent font-medium mt-1.5 leading-relaxed">
+                  <Info className="w-3 h-3 inline-block mr-1 -mt-0.5" />
+                  {t.adjudicatorNote}
+                </p>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="space-y-1.5">
                 <Label className="text-foreground font-medium text-sm">{t.category}</Label>
@@ -618,8 +693,27 @@ export default function CSPACalculator() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <DateField label={t.dob} id="dob" hint={t.dobHint} value={form.dob} onChange={handleDateChange("dob")} fromYear={1940} toYear={new Date().getFullYear()} lang={lang} />
-              <DateField label={t.priorityDate} id="priorityDate" hint={t.priorityDateHint} value={form.priorityDate} onChange={handleDateChange("priorityDate")} fromYear={1970} toYear={new Date().getFullYear()} lang={lang} />
-              <DateField label={t.approvalDate} id="approvalDate" hint={t.approvalDateHint} value={form.approvalDate} onChange={handleDateChange("approvalDate")} fromYear={1970} toYear={new Date().getFullYear()} lang={lang} />
+              <DateField
+                label={form.category === "DV" ? t.dvFilingLabel : t.priorityDate}
+                id="priorityDate"
+                hint={form.category === "DV" ? t.dvFilingHint : t.priorityDateHint}
+                value={form.priorityDate}
+                onChange={handleDateChange("priorityDate")}
+                fromYear={1970}
+                toYear={new Date().getFullYear()}
+                lang={lang}
+                extraNote={form.category !== "DV" ? t.receiptDateNote : undefined}
+              />
+              <DateField
+                label={form.category === "DV" ? t.dvApprovalLabel : t.approvalDate}
+                id="approvalDate"
+                hint={form.category === "DV" ? t.dvApprovalHint : t.approvalDateHint}
+                value={form.approvalDate}
+                onChange={handleDateChange("approvalDate")}
+                fromYear={1970}
+                toYear={new Date().getFullYear()}
+                lang={lang}
+              />
 
               <div className="space-y-1.5">
                 <Label className="text-foreground font-medium text-sm">{t.visaDate}</Label>
@@ -659,6 +753,61 @@ export default function CSPACalculator() {
                 )}
               </div>
             </div>
+
+            {/* I-485 Filed checkbox — only for USCIS + retrogression */}
+            {form.adjudicator === "USCIS" && visaError && visaError.includes("retro") && (
+              <div className="flex items-start gap-2 bg-accent/5 border border-accent/20 rounded-lg p-3 mb-4">
+                <input
+                  type="checkbox"
+                  id="i485Filed"
+                  checked={form.i485Filed}
+                  onChange={(e) => setForm(prev => ({ ...prev, i485Filed: e.target.checked }))}
+                  className="mt-0.5 accent-accent"
+                />
+                <div>
+                  <label htmlFor="i485Filed" className="text-sm font-medium text-foreground cursor-pointer">{t.i485Label}</label>
+                  <p className="text-[11px] text-muted-foreground">{t.i485Hint}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Chart 2: Deadline when visa is NOT yet current */}
+            {!form.visaAvailableDate && !loadingVisa && form.dob && form.approvalDate && form.priorityDate && (() => {
+              const dob = new Date(form.dob);
+              const pd = new Date(form.priorityDate);
+              const ad = new Date(form.approvalDate);
+              if ([dob, pd, ad].some(d => isNaN(d.getTime()))) return false;
+              const birthday21 = new Date(dob);
+              birthday21.setFullYear(birthday21.getFullYear() + 21);
+              const pendingDays = diffInDays(pd, ad);
+              const deadline = new Date(birthday21);
+              deadline.setDate(deadline.getDate() + pendingDays);
+              const isPast = deadline < new Date();
+              return (
+                <div className={cn("rounded-lg border p-4 mb-4", isPast ? "border-destructive/30 bg-destructive/5" : "border-accent/30 bg-accent/5")}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className={cn("w-4 h-4", isPast ? "text-destructive" : "text-accent")} />
+                    <h4 className="text-sm font-semibold text-foreground">{t.chart2Title}</h4>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">{t.chart2Desc}</p>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-secondary rounded-md p-2">
+                      <p className="text-[10px] text-muted-foreground uppercase">{t.chart2Birthday}</p>
+                      <p className="text-xs font-bold text-foreground">{formatDate(birthday21)}</p>
+                    </div>
+                    <div className="bg-secondary rounded-md p-2">
+                      <p className="text-[10px] text-muted-foreground uppercase">{t.chart2Pending}</p>
+                      <p className="text-xs font-bold text-foreground">{pendingDays} {lang === 'es' ? 'días' : 'days'}</p>
+                    </div>
+                    <div className={cn("rounded-md p-2", isPast ? "bg-destructive/10" : "bg-accent/10")}>
+                      <p className="text-[10px] text-muted-foreground uppercase">{t.chart2Deadline}</p>
+                      <p className={cn("text-xs font-bold", isPast ? "text-destructive" : "text-accent")}>{formatDate(deadline)}</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2 text-center italic">{t.chart2Formula}</p>
+                </div>
+              );
+            })()}
 
             {error && (
               <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg p-3 mb-4 text-sm">
@@ -979,10 +1128,11 @@ function getDaysInMonth(month: string, year: string): number {
 }
 
 function DateField({
-  label, id, hint, value, onChange, fromYear = 1940, toYear = 2030, lang,
+  label, id, hint, value, onChange, fromYear = 1940, toYear = 2030, lang, extraNote,
 }: {
   label: string; id: string; hint: string; value: string;
   onChange: (date: Date | undefined) => void; fromYear?: number; toYear?: number; lang: Lang;
+  extraNote?: string;
 }) {
   const [selDay, setSelDay] = useState<string | undefined>(undefined);
   const [selMonth, setSelMonth] = useState<string | undefined>(undefined);
@@ -1044,6 +1194,12 @@ function DateField({
         </Select>
       </div>
       <p className="text-muted-foreground text-xs">{hint}</p>
+      {extraNote && (
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <Info className="w-3 h-3 inline-block mr-1 -mt-0.5 text-accent" />
+          {extraNote}
+        </p>
+      )}
     </div>
   );
 }
