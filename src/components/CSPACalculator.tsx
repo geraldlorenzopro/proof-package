@@ -1352,8 +1352,10 @@ export default function CSPACalculator() {
                 </div>
               </details>
 
+              </div>{/* end scrollable */}
+
               {/* Action buttons */}
-              <div className="px-5 pb-3 pt-1 flex gap-2">
+              <div className="px-5 pb-3 pt-1 flex gap-2 shrink-0 border-t border-border">
                 <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
                   <FileText className="w-4 h-4 mr-1" />
                   {lang === 'es' ? 'Descargar Reporte' : 'Download Report'}
