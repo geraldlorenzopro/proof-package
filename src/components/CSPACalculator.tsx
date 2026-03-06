@@ -674,10 +674,14 @@ export default function CSPACalculator() {
                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group.label}</div>
                         {group.items.map((cat) => {
                           const available = AVAILABLE_CATEGORIES.has(cat);
+                          const isIR = cat === "IR";
                           return (
-                            <SelectItem key={cat} value={cat} disabled={!available} className={!available ? "opacity-50" : ""}>
-                              {cat}
-                              {!available && <span className="ml-2 text-[10px] text-accent/60 font-medium">(coming soon)</span>}
+                            <SelectItem key={cat} value={cat} disabled={!available && !isIR} className={!available && !isIR ? "opacity-50" : ""}>
+                              <span className="flex items-center gap-1.5">
+                                {cat}
+                                {isIR && <span className="text-[10px] text-accent/70 font-medium">— {IR_NOTE[lang]}</span>}
+                                {!available && !isIR && <span className="text-[10px] text-accent/60 font-medium">(coming soon)</span>}
+                              </span>
                             </SelectItem>
                           );
                         })}
