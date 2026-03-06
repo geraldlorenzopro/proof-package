@@ -204,8 +204,20 @@ function extractFamilyPreferenceDates(html: string, year: number, month: number)
       if (cells.length < 2) continue;
       
       const rawCat = cells[0].replace(/\s+/g, '').replace(/\*/g, '').replace(/-/g, '');
-      const cat = CATEGORY_ALIASES[rawCat] || CATEGORY_ALIASES[cells[0].trim()];
-      if (!cat) continue;
+      // Robust matching: try alias map first, then regex for ordinal formats
+      let cat = CATEGORY_ALIASES[rawCat] || CATEGORY_ALIASES[cells[0].trim()];
+      if (!cat) {
+        // Handle "1ST", "2A", "2B", "3RD", "4TH" and variations
+        if (/^1(ST)?$/.test(rawCat) || /^F?1$/.test(rawCat) || /^FIRST$/.test(rawCat)) cat = 'F1';
+        else if (/^2A$/.test(rawCat) || /^F?2A$/.test(rawCat)) cat = 'F2A';
+        else if (/^2B$/.test(rawCat) || /^F?2B$/.test(rawCat)) cat = 'F2B';
+        else if (/^3(RD)?$/.test(rawCat) || /^F?3$/.test(rawCat) || /^THIRD$/.test(rawCat)) cat = 'F3';
+        else if (/^4(TH)?$/.test(rawCat) || /^F?4$/.test(rawCat) || /^FOURTH$/.test(rawCat)) cat = 'F4';
+      }
+      if (!cat) {
+        console.log(`⚠️ Unmatched category: "${rawCat}" (original: "${cells[0]}")`);
+        continue;
+      }
       
       for (let col = 1; col < cells.length && col < colMapping.length; col++) {
         const chargeability = colMapping[col];
