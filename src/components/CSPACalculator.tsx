@@ -1179,19 +1179,19 @@ export default function CSPACalculator() {
 
       {/* Results Dialog — Simplified UX */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md bg-card border-accent/20 p-0 overflow-hidden max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-md bg-card border-accent/20 p-0 overflow-hidden max-h-[85vh] flex flex-col [&>button]:z-20">
           {result && (
-            <div className="flex flex-col overflow-hidden max-h-[90vh]">
+            <div className="flex flex-col overflow-hidden h-full">
               {/* Hypothetical banner */}
               {hypothetical && (
-                <div className="bg-accent/10 border-b border-accent/30 px-5 py-3">
+                <div className="bg-accent/10 border-b border-accent/30 px-5 py-3 shrink-0">
                   <p className="text-sm font-bold text-accent">{t.hypotheticalBanner}</p>
                   <p className="text-xs text-muted-foreground">{t.hypotheticalDesc}</p>
                 </div>
               )}
 
-              {/* Scrollable content area */}
-              <div className="overflow-y-auto flex-1 min-h-0">
+              {/* Scrollable content area — hidden scrollbar */}
+              <div className="overflow-y-auto flex-1 min-h-0 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {/* Hero result area */}
               <div className={cn("px-6 pt-8 pb-5 text-center",
                 result.qualifies
@@ -1354,31 +1354,31 @@ export default function CSPACalculator() {
 
               </div>{/* end scrollable */}
 
-              {/* Action buttons */}
-              <div className="px-5 pb-3 pt-1 flex gap-2 shrink-0 border-t border-border">
-                <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
-                  <FileText className="w-4 h-4 mr-1" />
-                  {lang === 'es' ? 'Descargar Reporte' : 'Download Report'}
-                </Button>
-                <Button onClick={() => setShowDialog(false)} variant="outline" className="shrink-0" size="sm">
-                  {t.close}
-                </Button>
-              </div>
-
-              {/* Contact + Feedback row */}
-              <div className="px-5 pb-5 flex items-center justify-between">
-                <a href="mailto:info@nertech.com" className="flex items-center gap-1.5 text-xs text-accent hover:underline">
-                  <ExternalLink className="w-3 h-3" />
-                  {lang === 'es' ? 'Contactar especialista' : 'Contact specialist'}
-                </a>
-                <button
-                  type="button"
-                  onClick={() => { setShowDialog(false); setTimeout(() => setShowFeedback(true), 300); }}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Star className="w-3 h-3" />
-                  {lang === 'es' ? 'Evaluar herramienta' : 'Rate this tool'}
-                </button>
+              {/* Fixed footer */}
+              <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur-sm">
+                <div className="px-5 pt-3 pb-2 flex gap-2">
+                  <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
+                    <FileText className="w-4 h-4 mr-1" />
+                    {lang === 'es' ? 'Descargar Reporte' : 'Download Report'}
+                  </Button>
+                  <Button onClick={() => setShowDialog(false)} variant="outline" className="shrink-0" size="sm">
+                    {t.close}
+                  </Button>
+                </div>
+                <div className="px-5 pb-3 flex items-center justify-between">
+                  <a href="mailto:info@nertech.com" className="flex items-center gap-1.5 text-xs text-accent hover:underline">
+                    <ExternalLink className="w-3 h-3" />
+                    {lang === 'es' ? 'Contactar especialista' : 'Contact specialist'}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => { setShowDialog(false); setTimeout(() => setShowFeedback(true), 300); }}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Star className="w-3 h-3" />
+                    {lang === 'es' ? 'Evaluar herramienta' : 'Rate this tool'}
+                  </button>
+                </div>
               </div>
             </div>
           )}
