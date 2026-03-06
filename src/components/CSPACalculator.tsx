@@ -82,11 +82,12 @@ const T = {
     cspaUsesApproval: "⚖️ Se usa la fecha de aprobación porque fue después de que la visa estuvo disponible.",
     cspaUsesBulletin: "⚖️ Se usa la fecha del boletín de visas.",
     calculate: "Calcular Edad CSPA",
-    adjudicatorLabel: "⚖️ ¿Quién adjudica el caso?",
-    adjudicatorHint: "USCIS usa las Adjustment of Status Filing Charts (Dates for Filing). DOS usa Final Action Dates.",
-    adjudicatorUSCIS: "USCIS (Ajuste de Estatus)",
-    adjudicatorDOS: "DOS (Procesamiento Consular)",
-    adjudicatorNote: "⚠️ Desde febrero 2023, USCIS considera una visa disponible cuando la Fecha de Prioridad está cubierta por las Filing Charts (Dates for Filing), que suelen ser más avanzadas que las Final Action Dates. Nuestra detección automática usa Final Action Dates — verifique contra las Filing Charts para casos USCIS.",
+    adjudicatorLabel: "⚖️ ¿Cuándo se presentó el I-485?",
+    adjudicatorHint: "Desde agosto 15, 2025, tanto USCIS como DOS usan Final Action Dates para CSPA. Los casos con I-485 presentado antes de esa fecha pueden usar las Filing Charts (política de febrero 2023).",
+    adjudicatorUSCIS: "I-485 antes del 15/Ago/2025",
+    adjudicatorDOS: "I-485 después del 15/Ago/2025 o Consular",
+    adjudicatorNote: "⚠️ Si el I-485 se presentó antes del 15 de agosto de 2025, USCIS aplicará la política de febrero 2023 (Filing Charts / Dates for Filing). Para casos presentados después de esa fecha, o procesamiento consular, se usan las Final Action Dates — que es lo que calcula esta herramienta automáticamente.",
+    adjudicatorGrandfathered: "✅ Este caso podría beneficiarse de la política de febrero 2023 que usa las Filing Charts (más favorables). Verifique contra las Dates for Filing del Boletín de Visas.",
     i485Label: "¿Se presentó I-485 antes de la retrogresión?",
     i485Hint: "Si se presentó I-485 antes de que la visa retrocediera, USCIS usa la fecha original de disponibilidad.",
     receiptDateNote: "Nota: Esta fecha es el Receipt Date del recibo de USCIS, que no siempre es igual al Priority Date.",
@@ -187,10 +188,11 @@ const T = {
     cspaUsesBulletin: "⚖️ Using the visa bulletin date.",
     calculate: "Calculate CSPA Age",
     adjudicatorLabel: "⚖️ Who is adjudicating the case?",
-    adjudicatorHint: "USCIS uses the Adjustment of Status Filing Charts (Dates for Filing). DOS uses Final Action Dates.",
-    adjudicatorUSCIS: "USCIS (Adjustment of Status)",
-    adjudicatorDOS: "DOS (Consular Processing)",
-    adjudicatorNote: "⚠️ Since February 2023, USCIS considers a visa available when the Priority Date is reached under the Filing Charts (Dates for Filing), which are typically more advanced than Final Action Dates. Our auto-detection uses Final Action Dates — verify against Filing Charts for USCIS cases.",
+    adjudicatorHint: "Since August 15, 2025, both USCIS and DOS use Final Action Dates for CSPA. Cases with I-485 filed before that date may use Filing Charts (February 2023 policy).",
+    adjudicatorUSCIS: "I-485 before Aug 15, 2025",
+    adjudicatorDOS: "I-485 after Aug 15, 2025 or Consular",
+    adjudicatorNote: "⚠️ If the I-485 was filed before August 15, 2025, USCIS will apply the February 2023 policy (Filing Charts / Dates for Filing). For cases filed after that date, or consular processing, Final Action Dates are used — which is what this tool calculates automatically.",
+    adjudicatorGrandfathered: "✅ This case may benefit from the February 2023 policy using Filing Charts (more favorable). Verify against the Dates for Filing in the Visa Bulletin.",
     i485Label: "Was an I-485 filed before retrogression?",
     i485Hint: "If an I-485 was filed before the visa retrogressed, USCIS uses the original availability date.",
     receiptDateNote: "Note: This is the Receipt Date from the USCIS receipt, which is not always the same as the Priority Date.",
@@ -658,10 +660,15 @@ export default function CSPACalculator() {
               </div>
               <p className="text-muted-foreground text-[11px] mt-1.5">{t.adjudicatorHint}</p>
               {form.adjudicator === "USCIS" && (
-                <p className="text-[11px] text-accent font-medium mt-1.5 leading-relaxed">
-                  <Info className="w-3 h-3 inline-block mr-1 -mt-0.5" />
-                  {t.adjudicatorNote}
-                </p>
+                <>
+                  <p className="text-[11px] text-accent font-medium mt-1.5 leading-relaxed">
+                    <Info className="w-3 h-3 inline-block mr-1 -mt-0.5" />
+                    {t.adjudicatorGrandfathered}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                    {t.adjudicatorNote}
+                  </p>
+                </>
               )}
             </div>
 
