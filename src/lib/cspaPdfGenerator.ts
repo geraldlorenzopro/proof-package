@@ -380,6 +380,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
     ];
 
     steps.forEach((step) => {
+      y = ensureSpace(doc, y, 30, W, isEs ? 'Cómo se calculó la edad CSPA' : 'How the CSPA age was calculated');
       doc.setFillColor(step.color[0], step.color[1], step.color[2]);
       doc.circle(28, y + 1, 4, 'F');
       doc.setFontSize(9);
