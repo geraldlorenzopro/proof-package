@@ -639,21 +639,21 @@ export default function CSPACalculator() {
                 <Info className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span className="font-medium">
                   {lang === 'es'
-                    ? 'Esta calculadora usa Final Action Dates (política vigente desde agosto 2025)'
-                    : 'This calculator uses Final Action Dates (policy effective since August 2025)'}
+                    ? 'Esta calculadora usa la tabla de Final Action Dates del Boletín de Visas'
+                    : 'This calculator uses the Final Action Dates chart from the Visa Bulletin'}
                 </span>
                 <ChevronRight className="w-3 h-3 ml-auto transition-transform group-open:rotate-90 shrink-0" />
               </summary>
               <div className="px-3 pb-3 text-[11px] text-muted-foreground leading-relaxed space-y-1.5">
                 <p>
                   {lang === 'es'
-                    ? 'Desde el 15 de agosto de 2025, tanto USCIS como el Departamento de Estado (DOS) calculan la edad CSPA usando la tabla de Final Action Dates del Boletín de Visas. Esta calculadora refleja esa política unificada.'
-                    : 'Since August 15, 2025, both USCIS and the Department of State (DOS) calculate CSPA age using the Final Action Dates chart from the Visa Bulletin. This calculator reflects that unified policy.'}
+                    ? 'La edad CSPA se calcula usando la tabla de Final Action Dates del Boletín de Visas, tanto para procesos consulares como para ajuste de estatus.'
+                    : 'CSPA age is calculated using the Final Action Dates chart from the Visa Bulletin, for both consular processing and adjustment of status cases.'}
                 </p>
                 <p className="text-accent/80">
                   {lang === 'es'
-                    ? '📋 Nota histórica: Entre febrero 2023 y agosto 2025, USCIS usó las Filing Charts (Dates for Filing) para casos de ajuste de estatus, lo que daba resultados más favorables. Los casos con I-485 presentado antes del 15 de agosto de 2025 podrían aún beneficiarse de esa política anterior.'
-                    : '📋 Historical note: Between February 2023 and August 2025, USCIS used Filing Charts (Dates for Filing) for adjustment of status cases, which gave more favorable results. Cases with I-485 filed before August 15, 2025 may still benefit from that prior policy.'}
+                    ? '📋 Nota: Entre febrero 2023 y agosto 2025, USCIS usó las Filing Charts (Dates for Filing) exclusivamente para casos de ajuste de estatus, lo que daba resultados más favorables. Los casos con I-485 presentado antes del 15 de agosto de 2025 podrían aún beneficiarse de esa política anterior.'
+                    : '📋 Note: Between February 2023 and August 2025, USCIS used Filing Charts (Dates for Filing) exclusively for adjustment of status cases, which gave more favorable results. Cases with I-485 filed before August 15, 2025 may still benefit from that prior policy.'}
                 </p>
               </div>
             </details>
