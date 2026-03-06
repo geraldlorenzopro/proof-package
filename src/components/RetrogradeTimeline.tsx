@@ -363,6 +363,9 @@ export default function RetrogradeTimeline({
                   if (row.isCurrent) {
                     status = t.becameCurrent;
                     statusColor = "text-accent";
+                  } else if (prevRow?.isCurrent) {
+                    // Transition from CURRENT to a date — not a retrogression, just end of CURRENT period
+                    status = t.unchanged;
                   } else if (prevRow && row.finalActionTimestamp !== null && prevRow.finalActionTimestamp !== null) {
                     if (row.finalActionTimestamp > prevRow.finalActionTimestamp) {
                       status = t.advanced;
