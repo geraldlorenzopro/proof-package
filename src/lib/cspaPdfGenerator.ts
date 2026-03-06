@@ -395,12 +395,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
     addPageHeader(doc, isEs ? 'Requisito: Sought to Acquire' : 'Requirement: Sought to Acquire', W);
     y = 40;
 
-    // Title
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...NAVY);
-    doc.text(isEs ? 'Requisito: Sought to Acquire' : 'Requirement: Sought to Acquire', 20, y);
-    y += 4;
+    // Legal reference
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...GRAY);
