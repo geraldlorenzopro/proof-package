@@ -419,6 +419,45 @@ function WelcomeSplash({ onContinue, lang, setLang }: { onContinue: () => void; 
   );
 }
 
+// ─── Consideration Bullet ────────────────────────────────────────────────────
+function ConsiderationBullet({
+  icon, label, summary, severity, children,
+}: {
+  icon: string;
+  label: string;
+  summary: string;
+  severity: 'severe' | 'moderate' | 'none';
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={cn(
+      "rounded-lg border transition-colors",
+      severity === 'severe' ? "border-destructive/20" : severity === 'moderate' ? "border-accent/20" : "border-border"
+    )}>
+      <button
+        type="button"
+        onClick={() => setOpen(prev => !prev)}
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left"
+      >
+        <span className="text-sm shrink-0">{icon}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-foreground truncate">{label}</p>
+          <p className={cn("text-xs truncate",
+            severity === 'severe' ? "text-destructive" : severity === 'moderate' ? "text-accent" : "text-muted-foreground"
+          )}>{summary}</p>
+        </div>
+        <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="px-3 pb-3 pt-0">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function CSPACalculator() {
   const navigate = useNavigate();
