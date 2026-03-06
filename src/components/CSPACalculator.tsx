@@ -296,10 +296,14 @@ function daysToYears(days: number): number {
 
 const FAMILY_CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4"];
 const AVAILABLE_CATEGORIES = new Set(["F1", "F2A", "F2B", "F3", "F4"]);
+const IR_NOTE: Record<Lang, string> = {
+  es: 'La edad se congela el día que se presenta la petición',
+  en: 'Age is locked on the date the petition is filed',
+};
 const ALL_CATEGORIES = [
   { group: "family", label: "Family-Based", items: ["F1", "F2A", "F2B", "F3", "F4"] },
-  { group: "employment", label: "Employment-Based", items: ["EB1", "EB2", "EB3", "EB4", "EB5"] },
   { group: "immediate", label: "Immediate Relative", items: ["IR"] },
+  { group: "employment", label: "Employment-Based", items: ["EB1", "EB2", "EB3", "EB4", "EB5"] },
   { group: "other", label: "Other", items: ["DV"] },
 ];
 const CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4", "IR", "EB1", "EB2", "EB3", "EB4", "EB5", "DV"];
