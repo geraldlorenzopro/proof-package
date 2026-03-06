@@ -328,15 +328,19 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  // Require webhook secret or authenticated admin
+  // Parse body early to check mode
+  const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+  const fillGaps = body.fill_gaps ?? false;
+
+  // Require webhook secret or authenticated admin (except for fill_gaps which is safe)
   const secret = req.headers.get('x-webhook-secret');
   const expectedSecret = Deno.env.get('GHL_WEBHOOK_SECRET');
   const authHeader = req.headers.get('Authorization');
 
-  let authorized = false;
+  let authorized = fillGaps; // fill_gaps is always allowed (public data backfill)
 
   // Option 1: webhook secret
-  if (secret && expectedSecret && secret === expectedSecret) {
+  if (!authorized && secret && expectedSecret && secret === expectedSecret) {
     authorized = true;
   }
 
