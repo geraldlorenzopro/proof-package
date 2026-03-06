@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBackDestination } from '@/hooks/useBackDestination';
-import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, ChevronDown, Loader2, Search, Shield, ExternalLink, TrendingDown, Info, FileText, ArrowLeft } from "lucide-react";
+import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, ChevronDown, Loader2, Search, Shield, ExternalLink, TrendingDown, Info, FileText, ArrowLeft, Star } from "lucide-react";
 import { LangToggle } from '@/components/LangToggle';
 import RetrogradeTimeline from "@/components/RetrogradeTimeline";
 import SoughtToAcquireAlert from "@/components/SoughtToAcquireAlert";
