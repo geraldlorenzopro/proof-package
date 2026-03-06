@@ -446,6 +446,7 @@ export default function CSPACalculator() {
   const [showLeadCapture, setShowLeadCapture] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showInapplicability, setShowInapplicability] = useState(false);
+  const [showConsiderations, setShowConsiderations] = useState(false);
 
   const autoDetectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
