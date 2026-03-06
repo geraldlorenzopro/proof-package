@@ -1354,31 +1354,31 @@ export default function CSPACalculator() {
 
               </div>{/* end scrollable */}
 
-              {/* Action buttons */}
-              <div className="px-5 pb-3 pt-1 flex gap-2 shrink-0 border-t border-border">
-                <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
-                  <FileText className="w-4 h-4 mr-1" />
-                  {lang === 'es' ? 'Descargar Reporte' : 'Download Report'}
-                </Button>
-                <Button onClick={() => setShowDialog(false)} variant="outline" className="shrink-0" size="sm">
-                  {t.close}
-                </Button>
-              </div>
-
-              {/* Contact + Feedback row */}
-              <div className="px-5 pb-5 flex items-center justify-between">
-                <a href="mailto:info@nertech.com" className="flex items-center gap-1.5 text-xs text-accent hover:underline">
-                  <ExternalLink className="w-3 h-3" />
-                  {lang === 'es' ? 'Contactar especialista' : 'Contact specialist'}
-                </a>
-                <button
-                  type="button"
-                  onClick={() => { setShowDialog(false); setTimeout(() => setShowFeedback(true), 300); }}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Star className="w-3 h-3" />
-                  {lang === 'es' ? 'Evaluar herramienta' : 'Rate this tool'}
-                </button>
+              {/* Fixed footer */}
+              <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur-sm">
+                <div className="px-5 pt-3 pb-2 flex gap-2">
+                  <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
+                    <FileText className="w-4 h-4 mr-1" />
+                    {lang === 'es' ? 'Descargar Reporte' : 'Download Report'}
+                  </Button>
+                  <Button onClick={() => setShowDialog(false)} variant="outline" className="shrink-0" size="sm">
+                    {t.close}
+                  </Button>
+                </div>
+                <div className="px-5 pb-3 flex items-center justify-between">
+                  <a href="mailto:info@nertech.com" className="flex items-center gap-1.5 text-xs text-accent hover:underline">
+                    <ExternalLink className="w-3 h-3" />
+                    {lang === 'es' ? 'Contactar especialista' : 'Contact specialist'}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => { setShowDialog(false); setTimeout(() => setShowFeedback(true), 300); }}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Star className="w-3 h-3" />
+                    {lang === 'es' ? 'Evaluar herramienta' : 'Rate this tool'}
+                  </button>
+                </div>
               </div>
             </div>
           )}
