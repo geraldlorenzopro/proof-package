@@ -198,6 +198,37 @@ export default function RetrogradeTimeline({
 
   const priorityDateTimestamp = priorityDate ? dateToTimestamp(priorityDate) : null;
 
+  // Calculate data coverage
+  const coverage = useMemo(() => {
+    if (rows.length === 0) return null;
+    const minYear = rows[0].bulletin_year;
+    const maxYear = rows[rows.length - 1].bulletin_year;
+    const maxMonth = rows[rows.length - 1].bulletin_month;
+    // Expected months: from Oct minYear (FY start) to maxMonth/maxYear
+    const startDate = new Date(minYear, rows[0].bulletin_month - 1);
+    const endDate = new Date(maxYear, maxMonth - 1);
+    const expectedMonths = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)) + 1;
+    const haveMonths = rows.length;
+    const pct = Math.round((haveMonths / expectedMonths) * 100);
+    
+    // Find gap years
+    const yearSet = new Map<number, number[]>();
+    rows.forEach(r => {
+      if (!yearSet.has(r.bulletin_year)) yearSet.set(r.bulletin_year, []);
+      yearSet.get(r.bulletin_year)!.push(r.bulletin_month);
+    });
+    const gapYears: string[] = [];
+    for (let y = minYear; y <= maxYear; y++) {
+      const months = yearSet.get(y);
+      if (!months || months.length < (y === minYear || y === maxYear ? months.length : 10)) {
+        const missing = 12 - (months?.length || 0);
+        if (missing > 3) gapYears.push(`${y}`);
+      }
+    }
+    
+    return { pct: Math.min(pct, 100), haveMonths, expectedMonths, gapYears, minYear, maxYear };
+  }, [rows]);
+
   // Filter to only points with data for the chart
   const validChartData = chartData.filter((p) => p.finalActionTimestamp !== null);
 
