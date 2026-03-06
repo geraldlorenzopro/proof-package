@@ -668,7 +668,15 @@ export default function CSPACalculator() {
                     {ALL_CATEGORIES.map((group) => (
                       <div key={group.group}>
                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group.label}</div>
-                        {group.items.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        {group.items.map((cat) => {
+                          const available = AVAILABLE_CATEGORIES.has(cat);
+                          return (
+                            <SelectItem key={cat} value={cat} disabled={!available} className={!available ? "opacity-50" : ""}>
+                              {cat}
+                              {!available && <span className="ml-2 text-[10px] text-accent/60 font-medium">(coming soon)</span>}
+                            </SelectItem>
+                          );
+                        })}
                       </div>
                     ))}
                    </SelectContent>
