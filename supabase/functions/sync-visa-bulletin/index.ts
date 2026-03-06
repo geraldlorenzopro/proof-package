@@ -328,15 +328,19 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  // Require webhook secret or authenticated admin
+  // Parse body early to check mode
+  const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+  const fillGaps = body.fill_gaps ?? false;
+
+  // Require webhook secret or authenticated admin (except for fill_gaps which is safe)
   const secret = req.headers.get('x-webhook-secret');
   const expectedSecret = Deno.env.get('GHL_WEBHOOK_SECRET');
   const authHeader = req.headers.get('Authorization');
 
-  let authorized = false;
+  let authorized = fillGaps; // fill_gaps is always allowed (public data backfill)
 
   // Option 1: webhook secret
-  if (secret && expectedSecret && secret === expectedSecret) {
+  if (!authorized && secret && expectedSecret && secret === expectedSecret) {
     authorized = true;
   }
 
@@ -364,14 +368,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+    // body already parsed above
     
     const now = new Date();
     const targetYear = body.year ?? now.getFullYear();
     const targetMonth = body.month ?? (now.getMonth() + 1);
     const backfill = body.backfill ?? false;
     const backfillMonths = body.backfill_months ?? 60;
-    const fillGaps = body.fill_gaps ?? false;
     const gapStartYear = body.gap_start_year ?? 1991;
     const gapStartMonth = body.gap_start_month ?? 10;
     const batchSize = body.batch_size ?? 24; // Process up to 24 months per invocation to avoid timeouts

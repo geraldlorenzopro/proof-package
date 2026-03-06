@@ -198,6 +198,37 @@ export default function RetrogradeTimeline({
 
   const priorityDateTimestamp = priorityDate ? dateToTimestamp(priorityDate) : null;
 
+  // Calculate data coverage
+  const coverage = useMemo(() => {
+    if (rows.length === 0) return null;
+    const minYear = rows[0].bulletin_year;
+    const maxYear = rows[rows.length - 1].bulletin_year;
+    const maxMonth = rows[rows.length - 1].bulletin_month;
+    // Expected months: from Oct minYear (FY start) to maxMonth/maxYear
+    const startDate = new Date(minYear, rows[0].bulletin_month - 1);
+    const endDate = new Date(maxYear, maxMonth - 1);
+    const expectedMonths = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)) + 1;
+    const haveMonths = rows.length;
+    const pct = Math.round((haveMonths / expectedMonths) * 100);
+    
+    // Find gap years
+    const yearSet = new Map<number, number[]>();
+    rows.forEach(r => {
+      if (!yearSet.has(r.bulletin_year)) yearSet.set(r.bulletin_year, []);
+      yearSet.get(r.bulletin_year)!.push(r.bulletin_month);
+    });
+    const gapYears: string[] = [];
+    for (let y = minYear; y <= maxYear; y++) {
+      const months = yearSet.get(y);
+      if (!months || months.length < (y === minYear || y === maxYear ? months.length : 10)) {
+        const missing = 12 - (months?.length || 0);
+        if (missing > 3) gapYears.push(`${y}`);
+      }
+    }
+    
+    return { pct: Math.min(pct, 100), haveMonths, expectedMonths, gapYears, minYear, maxYear };
+  }, [rows]);
+
   // Filter to only points with data for the chart
   const validChartData = chartData.filter((p) => p.finalActionTimestamp !== null);
 
@@ -316,6 +347,27 @@ export default function RetrogradeTimeline({
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Data coverage disclaimer */}
+        {coverage && coverage.pct < 95 && (
+          <div className="flex items-start gap-2 bg-accent/5 rounded-lg px-3 py-2 border border-accent/20">
+            <Calendar className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+            <div className="text-xs text-muted-foreground leading-relaxed">
+              <p className="font-medium text-foreground">
+                {lang === "es"
+                  ? `📊 Cobertura de datos: ${coverage.pct}% (${coverage.haveMonths} de ~${coverage.expectedMonths} meses desde ${coverage.minYear})`
+                  : `📊 Data coverage: ${coverage.pct}% (${coverage.haveMonths} of ~${coverage.expectedMonths} months since ${coverage.minYear})`}
+              </p>
+              {coverage.gapYears.length > 0 && (
+                <p>
+                  {lang === "es"
+                    ? `Años con datos incompletos: ${coverage.gapYears.join(", ")}. Las estadísticas pueden no reflejar todos los retrocesos históricos.`
+                    : `Years with incomplete data: ${coverage.gapYears.join(", ")}. Statistics may not reflect all historical retrogressions.`}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex items-start gap-2 bg-secondary/50 rounded-lg px-3 py-2 border border-border">
           <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
