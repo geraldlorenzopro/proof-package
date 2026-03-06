@@ -368,14 +368,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+    // body already parsed above
     
     const now = new Date();
     const targetYear = body.year ?? now.getFullYear();
     const targetMonth = body.month ?? (now.getMonth() + 1);
     const backfill = body.backfill ?? false;
     const backfillMonths = body.backfill_months ?? 60;
-    const fillGaps = body.fill_gaps ?? false;
     const gapStartYear = body.gap_start_year ?? 1991;
     const gapStartMonth = body.gap_start_month ?? 10;
     const batchSize = body.batch_size ?? 24; // Process up to 24 months per invocation to avoid timeouts
