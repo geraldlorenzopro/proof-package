@@ -296,17 +296,38 @@ function daysToYears(days: number): number {
 
 const FAMILY_CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4"];
 const AVAILABLE_CATEGORIES = new Set(["F1", "F2A", "F2B", "F3", "F4"]);
-const IR_NOTE: Record<Lang, string> = {
-  es: 'La edad se congela el día que se presenta la petición',
-  en: 'Age is locked on the date the petition is filed',
+// Categories where age freezes on filing date — no bulletin needed, no "sought to acquire"
+const AGE_FROZEN_CATEGORIES = new Set(["IR", "IB", "IW2", "V92", "V93"]);
+const AGE_FROZEN_INFO: Record<string, Record<Lang, { label: string; note: string; formula: string; autoMsg: string }>> = {
+  IR: {
+    es: { label: "Familiar Inmediato", note: "La edad se congela el día que se presenta la petición I-130", formula: "Edad al momento de presentar I-130", autoMsg: "✅ Familiar inmediato — la visa está disponible de inmediato. La edad se congela el día de la petición I-130." },
+    en: { label: "Immediate Relative", note: "Age is locked on the I-130 petition filing date", formula: "Age at time of I-130 filing", autoMsg: "✅ Immediate Relative — visa is immediately available. Age locks on the I-130 petition filing date." },
+  },
+  IB: {
+    es: { label: "VAWA Auto-petición", note: "La edad se congela el día que se presenta la petición I-360", formula: "Edad al momento de presentar I-360", autoMsg: "✅ VAWA (IB) — la visa está disponible de inmediato. La edad se congela el día de la petición I-360." },
+    en: { label: "VAWA Self-Petition", note: "Age is locked on the I-360 petition filing date", formula: "Age at time of I-360 filing", autoMsg: "✅ VAWA (IB) — visa is immediately available. Age locks on the I-360 petition filing date." },
+  },
+  IW2: {
+    es: { label: "Derivado de Viudo(a)", note: "La edad se congela en la fecha de conversión I-130→I-360", formula: "Edad en la fecha de conversión a I-360", autoMsg: "✅ Derivado de viudo(a) (IW2) — la edad se congela en la fecha de conversión del I-130 al I-360." },
+    en: { label: "Widow(er) Derivative", note: "Age locks on I-130 to I-360 conversion date", formula: "Age at I-360 conversion date", autoMsg: "✅ Widow(er) derivative (IW2) — age locks on the date the I-130 converted to I-360." },
+  },
+  V92: {
+    es: { label: "Derivado de Asilado (V92)", note: "La edad se congela el día que el padre presenta el I-589", formula: "Edad al momento de presentar I-589 del padre", autoMsg: "✅ Derivado de asilado (V92) — la edad se congela en la fecha de presentación del I-589 del padre." },
+    en: { label: "Asylee Following-to-Join (V92)", note: "Age locks on the date the parent files I-589", formula: "Age at parent's I-589 filing date", autoMsg: "✅ Asylee following-to-join (V92) — age locks on the date the parent's I-589 was filed." },
+  },
+  V93: {
+    es: { label: "Derivado de Refugiado (V93)", note: "La edad se congela el día de la entrevista del padre con USCIS (I-590)", formula: "Edad al momento de presentar I-590 del padre", autoMsg: "✅ Derivado de refugiado (V93) — la edad se congela en la fecha de presentación del I-590 del padre." },
+    en: { label: "Refugee Following-to-Join (V93)", note: "Age locks on the date the parent's I-590 is filed", formula: "Age at parent's I-590 filing date", autoMsg: "✅ Refugee following-to-join (V93) — age locks on the date the parent's I-590 was filed." },
+  },
 };
 const ALL_CATEGORIES = [
   { group: "family", label: "Family-Based", items: ["F1", "F2A", "F2B", "F3", "F4"] },
-  { group: "immediate", label: "Immediate Relative", items: ["IR"] },
+  { group: "immediate", label: "Immediate Relative / VAWA", items: ["IR", "IB", "IW2"] },
   { group: "employment", label: "Employment-Based", items: ["EB1", "EB2", "EB3", "EB4", "EB5"] },
+  { group: "asylee", label: "Asylee / Refugee", items: ["V92", "V93"] },
   { group: "other", label: "Other", items: ["DV"] },
 ];
-const CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4", "IR", "EB1", "EB2", "EB3", "EB4", "EB5", "DV"];
+const CATEGORIES = ["F1", "F2A", "F2B", "F3", "F4", "IR", "IB", "IW2", "EB1", "EB2", "EB3", "EB4", "EB5", "V92", "V93", "DV"];
 const CHARGEABILITIES_ES = [
   { value: "ALL", label: "All Chargeability Areas" },
   { value: "MEXICO", label: "México" },
@@ -436,11 +457,10 @@ export default function CSPACalculator() {
       setForm((prev) => ({ ...prev, visaAvailableDate: "" }));
       return;
     }
-    // IR: visa is immediately available — age locks on petition filing date (priority date)
-    if (form.category === "IR") {
-      setVisaAutoInfo(lang === 'es'
-        ? '✅ Familiar inmediato — la visa está disponible de inmediato. La edad se congela el día de la petición.'
-        : '✅ Immediate Relative — visa is immediately available. Age locks on the petition filing date.');
+    // Age-frozen categories: visa immediately available, age locks on filing date
+    if (AGE_FROZEN_CATEGORIES.has(form.category)) {
+      const info = AGE_FROZEN_INFO[form.category]?.[lang];
+      setVisaAutoInfo(info?.autoMsg ?? '✅ Age frozen on filing date');
       setVisaError(null);
       setPdBecameCurrent(form.priorityDate);
       setForm((prev) => ({ ...prev, visaAvailableDate: form.priorityDate }));
@@ -684,13 +704,15 @@ export default function CSPACalculator() {
                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group.label}</div>
                         {group.items.map((cat) => {
                           const available = AVAILABLE_CATEGORIES.has(cat);
-                          const isIR = cat === "IR";
+                          const isFrozen = AGE_FROZEN_CATEGORIES.has(cat);
+                          const frozenInfo = AGE_FROZEN_INFO[cat]?.[lang];
+                          const enabled = available || isFrozen;
                           return (
-                            <SelectItem key={cat} value={cat} disabled={!available && !isIR} className={!available && !isIR ? "opacity-50" : ""}>
+                            <SelectItem key={cat} value={cat} disabled={!enabled} className={!enabled ? "opacity-50" : ""}>
                               <span className="flex items-center gap-1.5">
                                 {cat}
-                                {isIR && <span className="text-[10px] text-accent/70 font-medium">— {IR_NOTE[lang]}</span>}
-                                {!available && !isIR && <span className="text-[10px] text-accent/60 font-medium">(coming soon)</span>}
+                                {isFrozen && frozenInfo && <span className="text-[10px] text-accent/70 font-medium">— {frozenInfo.note}</span>}
+                                {!enabled && <span className="text-[10px] text-accent/60 font-medium">(coming soon)</span>}
                               </span>
                             </SelectItem>
                           );
@@ -851,7 +873,7 @@ export default function CSPACalculator() {
         </Card>
 
         {/* Sought to Acquire Alert */}
-        {form.visaAvailableDate && (
+        {form.visaAvailableDate && !AGE_FROZEN_CATEGORIES.has(form.category) && (
           <div className="mt-6">
             <SoughtToAcquireAlert
               visaAvailableDate={form.visaAvailableDate}
@@ -918,18 +940,21 @@ export default function CSPACalculator() {
                     {lang === "es" ? "Fórmula CSPA Especial" : "Special CSPA Formula"} — {form.category}
                   </h3>
                 </div>
-                {form.category === "IR" && (
+                {AGE_FROZEN_CATEGORIES.has(form.category) && AGE_FROZEN_INFO[form.category] && (
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">
                       {lang === "es"
-                        ? "Para Familiares Inmediatos (IR), la edad se congela en la fecha de presentación de la petición (filing date). No hay espera por boletín de visas porque los IR no están sujetos a cuotas numéricas."
-                        : "For Immediate Relatives (IR), age freezes at the petition filing date. There is no visa bulletin wait since IRs are not subject to numerical caps."}
+                        ? `Para ${AGE_FROZEN_INFO[form.category].es.label}, la edad se congela en la fecha de presentación de la petición. No hay espera por boletín de visas ni requisito de "sought to acquire".`
+                        : `For ${AGE_FROZEN_INFO[form.category].en.label}, age freezes at the petition filing date. There is no visa bulletin wait and no "sought to acquire" requirement.`}
                     </p>
                     <div className="bg-accent/10 border border-accent/20 rounded-lg px-3 py-2">
                       <p className="text-xs font-semibold text-accent">
-                        {lang === "es" ? "Fórmula: Edad al momento de presentar I-130" : "Formula: Age at time of I-130 filing"}
+                        {lang === "es" ? `Fórmula: ${AGE_FROZEN_INFO[form.category].es.formula}` : `Formula: ${AGE_FROZEN_INFO[form.category].en.formula}`}
                       </p>
                     </div>
+                    <p className="text-xs text-muted-foreground/70">
+                      {lang === "es" ? "Ref: 9 FAM 502.1-1(D)(4)" : "Ref: 9 FAM 502.1-1(D)(4)"}
+                    </p>
                   </div>
                 )}
                 {form.category === "DV" && (
