@@ -380,19 +380,9 @@ export default function CSPACalculator() {
   const autoDetectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
 
-  const applyMaxRule = (pdCurrent: string, approvalDate: string) => {
-    if (!pdCurrent) return;
-    setForm((prev) => ({ ...prev, visaAvailableDate: approvalDate && approvalDate > pdCurrent ? approvalDate : pdCurrent }));
-  };
-
-  useEffect(() => {
-    if (!pdBecameCurrent) return;
-    applyMaxRule(pdBecameCurrent, form.approvalDate);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.approvalDate, pdBecameCurrent]);
-
   useEffect(() => {
     const isCompleteDate = /^\d{4}-\d{2}-\d{2}$/.test(form.priorityDate) && !isNaN(new Date(form.priorityDate).getTime());
+    const hasApproval = /^\d{4}-\d{2}-\d{2}$/.test(form.approvalDate) && !isNaN(new Date(form.approvalDate).getTime());
     if (!isCompleteDate || !form.category || !form.chargeability) {
       setVisaAutoInfo(null); setVisaError(null); setPdBecameCurrent(null);
       setForm((prev) => ({ ...prev, visaAvailableDate: "" }));
@@ -403,24 +393,45 @@ export default function CSPACalculator() {
       const thisRequestId = ++requestIdRef.current;
       setLoadingVisa(true); setVisaAutoInfo(null); setVisaError(null);
       try {
+        // Pass approval_date so the edge function can correctly determine
+        // visa availability considering retrogression (INA §203(h))
+        const requestBody: Record<string, string> = {
+          priority_date: form.priorityDate,
+          category: form.category,
+          chargeability: form.chargeability,
+        };
+        if (hasApproval) {
+          requestBody.approval_date = form.approvalDate;
+        }
         const { data, error: fnError } = await supabase.functions.invoke("get-visa-date", {
-          body: { priority_date: form.priorityDate, category: form.category, chargeability: form.chargeability },
+          body: requestBody,
         });
         if (thisRequestId !== requestIdRef.current) return;
         if (fnError) throw new Error(fnError.message);
         if (!data.success) {
           if (data.error === 'NOT_YET_CURRENT') {
             const mName = MONTH_NAMES[(data.latest_bulletin_month ?? 1) - 1];
-            setVisaError(t.notYetCurrent(mName, data.latest_bulletin_year, data.latest_is_current ? 'CURRENT' : (data.latest_raw_value ?? '—'), form.category, form.chargeability));
+            if (data.retrogressed) {
+              // Visa was current before but retrogressed — special message
+              setVisaError(lang === 'es'
+                ? `La fecha de prioridad estuvo vigente anteriormente pero retrocedió. El boletín más reciente (${mName} ${data.latest_bulletin_year}) muestra ${data.latest_is_current ? 'CURRENT' : (data.latest_raw_value ?? '—')} para ${form.category}/${form.chargeability}. Esperando a que la visa vuelva a estar disponible después de la aprobación.`
+                : `The priority date was previously current but retrogressed. The latest bulletin (${mName} ${data.latest_bulletin_year}) shows ${data.latest_is_current ? 'CURRENT' : (data.latest_raw_value ?? '—')} for ${form.category}/${form.chargeability}. Waiting for visa to become available again after approval.`
+              );
+            } else {
+              setVisaError(t.notYetCurrent(mName, data.latest_bulletin_year, data.latest_is_current ? 'CURRENT' : (data.latest_raw_value ?? '—'), form.category, form.chargeability));
+            }
           } else {
             setVisaError(t.noBulletin);
           }
           setPdBecameCurrent(null); setForm((prev) => ({ ...prev, visaAvailableDate: "" }));
           return;
         }
-        const pdCurrentDate = data.visa_available_date;
-        setPdBecameCurrent(pdCurrentDate);
-        applyMaxRule(pdCurrentDate, form.approvalDate);
+        // The edge function now returns the correct visa_available_date
+        // already accounting for retrogression and the max(approval, bulletin) rule
+        const visaDate = data.visa_available_date;
+        const approvalControlled = data.approval_controlled ?? false;
+        setPdBecameCurrent(data.bulletin_first_day ?? visaDate);
+        setForm((prev) => ({ ...prev, visaAvailableDate: visaDate }));
         const mName = MONTH_NAMES[data.bulletin_month - 1];
         setVisaAutoInfo(data.is_current ? t.bulletinCurrent(mName, data.bulletin_year) : t.bulletinFinal(mName, data.bulletin_year, data.raw_value));
       } catch (e) {
@@ -431,7 +442,7 @@ export default function CSPACalculator() {
       }
     }, 500);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.priorityDate, form.category, form.chargeability, lang]);
+  }, [form.priorityDate, form.approvalDate, form.category, form.chargeability, lang]);
 
   const handleSelect = (field: keyof FormData) => (value: string) => {
     setForm((prev) => ({ ...prev, [field]: value })); setResult(null); setError(null);
