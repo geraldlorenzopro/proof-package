@@ -809,6 +809,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
   // Sought to Acquire reminder — REMOVED (now has its own dedicated page)
 
   // What is CSPA explanation
+  cy = ensureSpace(doc, cy, 50, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...NAVY);
