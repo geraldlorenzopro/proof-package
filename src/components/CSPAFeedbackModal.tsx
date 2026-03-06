@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Star, Send, Loader2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -50,6 +51,7 @@ export default function CSPAFeedbackModal({
   const [hoveredStar, setHoveredStar] = useState(0);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   const handleSubmit = async () => {
     if (rating === 0) return;
@@ -74,7 +76,16 @@ export default function CSPAFeedbackModal({
     }
   };
 
-  const displayRating = hoveredStar || rating;
+  const handleStarClick = useCallback((star: number) => {
+    setRating(star);
+  }, []);
+
+  const handleTouchStart = useCallback((star: number) => {
+    setIsTouchDevice(true);
+    setRating(star);
+  }, []);
+
+  const displayRating = isTouchDevice ? rating : (hoveredStar || rating);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -84,8 +95,10 @@ export default function CSPAFeedbackModal({
             <MessageSquare className="w-5 h-5 text-accent" />
             {t.title}
           </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            {t.subtitle}
+          </DialogDescription>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground -mt-2">{t.subtitle}</p>
 
         <div className="space-y-4">
           {/* Star rating */}
@@ -95,10 +108,14 @@ export default function CSPAFeedbackModal({
                 <button
                   key={star}
                   type="button"
-                  onMouseEnter={() => setHoveredStar(star)}
-                  onMouseLeave={() => setHoveredStar(0)}
-                  onClick={() => setRating(star)}
-                  className="p-1 transition-transform hover:scale-110"
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    handleTouchStart(star);
+                  }}
+                  onMouseEnter={() => { if (!isTouchDevice) setHoveredStar(star); }}
+                  onMouseLeave={() => { if (!isTouchDevice) setHoveredStar(0); }}
+                  onClick={() => handleStarClick(star)}
+                  className="p-1.5 transition-transform hover:scale-110 active:scale-95 touch-manipulation"
                 >
                   <Star
                     className={cn(
@@ -111,11 +128,13 @@ export default function CSPAFeedbackModal({
                 </button>
               ))}
             </div>
-            {displayRating > 0 && (
-              <span className="text-xs text-accent font-medium animate-fade-in">
-                {t.labels[displayRating - 1]}
-              </span>
-            )}
+            <div className="h-4">
+              {displayRating > 0 && (
+                <span className="text-xs text-accent font-medium">
+                  {t.labels[displayRating - 1]}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Comment */}
