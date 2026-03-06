@@ -436,6 +436,16 @@ export default function CSPACalculator() {
       setForm((prev) => ({ ...prev, visaAvailableDate: "" }));
       return;
     }
+    // IR: visa is immediately available — age locks on petition filing date (priority date)
+    if (form.category === "IR") {
+      setVisaAutoInfo(lang === 'es'
+        ? '✅ Familiar inmediato — la visa está disponible de inmediato. La edad se congela el día de la petición.'
+        : '✅ Immediate Relative — visa is immediately available. Age locks on the petition filing date.');
+      setVisaError(null);
+      setPdBecameCurrent(form.priorityDate);
+      setForm((prev) => ({ ...prev, visaAvailableDate: form.priorityDate }));
+      return;
+    }
     if (autoDetectRef.current) clearTimeout(autoDetectRef.current);
     autoDetectRef.current = setTimeout(async () => {
       const thisRequestId = ++requestIdRef.current;
