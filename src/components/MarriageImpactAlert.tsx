@@ -211,6 +211,20 @@ export default function MarriageImpactAlert({
             {category === "F2A" ? t.derivativeTextF2A : t.derivativeText}
           </p>
         </div>
+        {/* Divorce timing rule — 9 FAM 502.1-1(D)(6) */}
+        {info.severity !== "none" && (
+          <div className="rounded-lg border border-accent/30 bg-accent/5 px-3 py-2.5 space-y-1.5">
+            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              {t.divorceTitle}
+              <span className="text-[10px] font-normal text-muted-foreground">({t.divorceSubtitle})</span>
+            </p>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">✅ {t.divorceBefore}</p>
+              <p className="text-xs text-muted-foreground">❌ {t.divorceAfter}</p>
+            </div>
+            <p className="text-xs font-semibold text-accent">{t.divorceKey}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
