@@ -447,6 +447,41 @@ export type Database = {
         }
         Relationships: []
       }
+      cspa_feedback: {
+        Row: {
+          calculation_id: string | null
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          user_id: string | null
+        }
+        Insert: {
+          calculation_id?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          user_id?: string | null
+        }
+        Update: {
+          calculation_id?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cspa_feedback_calculation_id_fkey"
+            columns: ["calculation_id"]
+            isOneToOne: false
+            referencedRelation: "cspa_calculations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evidence_items: {
         Row: {
           caption: string | null
