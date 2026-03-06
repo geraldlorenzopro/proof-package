@@ -653,8 +653,11 @@ export default function CSPACalculator() {
     }
   };
 
-  const canCalculateHypothetical = form.dob && form.priorityDate && form.approvalDate && !form.visaAvailableDate && !loadingVisa;
-  const requiredFilled = form.dob && form.priorityDate && form.approvalDate && form.visaAvailableDate && !loadingVisa;
+  const isFrozenCategory = AGE_FROZEN_CATEGORIES.has(form.category);
+  const canCalculateHypothetical = !isFrozenCategory && form.dob && form.priorityDate && form.approvalDate && !form.visaAvailableDate && !loadingVisa;
+  const requiredFilled = isFrozenCategory
+    ? (form.dob && form.priorityDate && form.category)
+    : (form.dob && form.priorityDate && form.approvalDate && form.visaAvailableDate && !loadingVisa);
 
   if (!accepted) return <WelcomeSplash onContinue={() => setAccepted(true)} lang={lang} setLang={setLang} />;
 
