@@ -822,103 +822,136 @@ export default function CSPACalculator() {
         </div>
       </footer>
 
-      {/* Results Dialog */}
+      {/* Results Dialog — Simplified UX */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-xl bg-card border-accent/20">
-          <DialogHeader className="pb-0">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2 text-base">
-                <Scale className="w-4 h-4 text-accent" />{t.resultTitle}
-              </DialogTitle>
-              <LangToggle lang={lang} setLang={setLang} />
-            </div>
-          </DialogHeader>
-
+        <DialogContent className="max-w-md bg-card border-accent/20 p-0 overflow-hidden">
           {result && (
-            <>
-            {hypothetical && (
-              <div className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 space-y-1">
-                <p className="text-sm font-bold text-accent">{t.hypotheticalBanner}</p>
-                <p className="text-xs text-muted-foreground">{t.hypotheticalDesc}</p>
-              </div>
-            )}
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-1.5">
-                <span className="inline-flex items-center gap-1 bg-accent/10 border border-accent/20 text-foreground text-xs px-2.5 py-0.5 rounded-full font-medium">
-                  {t.category_label}{result.category}
-                </span>
-                <span className="inline-flex items-center gap-1 bg-secondary border border-border text-foreground text-xs px-2.5 py-0.5 rounded-full font-medium">
-                  {result.chargeability === "ALL" ? t.country_all : result.chargeability.charAt(0) + result.chargeability.slice(1).toLowerCase()}
-                </span>
-              </div>
-
-              <div className={cn("rounded-xl px-5 py-4 flex items-center gap-4",
-                result.qualifies ? "glow-border bg-primary/30" : "bg-destructive/20 border border-destructive/40")}>
-                {result.qualifies ? <CheckCircle2 className="w-10 h-10 text-accent shrink-0" /> : <XCircle className="w-10 h-10 text-destructive shrink-0" />}
-                <div className="flex-1 min-w-0">
-                  <p className="text-muted-foreground text-xs uppercase tracking-widest">{t.cspaAge}</p>
-                  <p className="text-3xl font-bold text-foreground leading-tight font-display">
-                    {result.cspaAgeYears.toFixed(2)} <span className="text-base font-normal">{t.years("").trim()}</span>
-                  </p>
-                  <p className={cn("text-sm font-semibold mt-0.5", result.qualifies ? "text-accent" : "text-destructive")}>
-                    {result.qualifies ? t.qualifies : t.notQualifies}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                {t.dateLabels.map((label, i) => {
-                  const vals = [formatDate(result.dobDate), formatDate(result.priorityDate), formatDate(result.approvalDate), formatDate(result.visaAvailableDate)];
-                  const isHypotheticalDate = hypothetical && i === 3;
-                  return (
-                    <div key={label} className={cn("rounded-lg px-3 py-2 border", isHypotheticalDate ? "bg-accent/10 border-accent/30" : "bg-secondary border-border")}>
-                      <p className="text-muted-foreground text-xs">{isHypotheticalDate ? t.hypotheticalVisaDate : label}</p>
-                      <p className="font-semibold text-foreground text-sm">{vals[i]}</p>
-                      {isHypotheticalDate && <p className="text-xs text-accent">🔮</p>}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {result.bulletinInfo && (
-                <div className="rounded-lg border border-accent/20 bg-accent/5 px-3 py-2.5 flex items-start gap-2">
-                  <span className="text-base shrink-0">📌</span>
-                  <div className="text-xs text-foreground leading-relaxed">
-                    <span className="font-semibold">{t.controlling}</span>
-                    <span className="text-accent font-bold">{result.approvalControlled ? t.approval130 : t.bulletin}</span>
-                    {result.approvalControlled && result.pdBecameCurrentDate && (
-                      <>{t.approvalLater(new Date(result.pdBecameCurrentDate + "T12:00:00").toLocaleDateString(lang === "es" ? "es-ES" : "en-US", { day: "2-digit", month: "short", year: "numeric" }))}</>
-                    )}
-                    {!result.approvalControlled && <>{t.pdBefore}</>}
-                    <br /><span className="text-muted-foreground italic">{result.bulletinInfo}</span>
-                  </div>
+            <div className="flex flex-col">
+              {/* Hypothetical banner */}
+              {hypothetical && (
+                <div className="bg-accent/10 border-b border-accent/30 px-5 py-3">
+                  <p className="text-sm font-bold text-accent">{t.hypotheticalBanner}</p>
+                  <p className="text-xs text-muted-foreground">{t.hypotheticalDesc}</p>
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                <StepCard step="1" title={t.step1Title} formula={t.step1Formula}
-                  result={t.months(Math.round(result.pendingTime / 30.44), daysToYears(result.pendingTime).toFixed(1))}
-                  description={t.step1Desc} color="gold" />
-                <StepCard step="2" title={t.step2Title} formula={t.step2Formula}
-                  result={t.years(daysToYears(result.biologicalAge).toFixed(1))}
-                  description={t.step2Desc} color="navy" />
-                <StepCard step="3" title={t.step3Title} formula={t.step3Formula}
-                  result={t.years(result.cspaAgeYears.toFixed(2))}
-                  description={result.cspaAgeYears < 21 ? t.step3QualDesc : t.step3NotDesc}
-                  color={result.qualifies ? "success" : "danger"} highlight />
+              {/* Hero result area */}
+              <div className={cn("px-6 pt-8 pb-5 text-center",
+                result.qualifies
+                  ? "bg-gradient-to-b from-primary/20 to-transparent"
+                  : "bg-gradient-to-b from-destructive/10 to-transparent")}>
+                
+                {/* Result icon */}
+                <div className={cn("w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center",
+                  result.qualifies ? "bg-accent/15 ring-2 ring-accent/30" : "bg-destructive/15 ring-2 ring-destructive/30")}>
+                  {result.qualifies
+                    ? <CheckCircle2 className="w-9 h-9 text-accent" />
+                    : <XCircle className="w-9 h-9 text-destructive" />}
+                </div>
+
+                {/* Age number */}
+                <p className="text-4xl font-bold text-foreground font-display leading-none">
+                  {result.cspaAgeYears.toFixed(2)}
+                  <span className="text-base font-normal text-muted-foreground ml-1">
+                    {lang === 'es' ? 'años' : 'years'}
+                  </span>
+                </p>
+
+                {/* Human-friendly verdict */}
+                <p className={cn("text-sm font-semibold mt-2",
+                  result.qualifies ? "text-accent" : "text-destructive")}>
+                  {result.qualifies
+                    ? (lang === 'es'
+                      ? '¡La edad queda congelada y es menor de 21!'
+                      : 'Age is frozen and under 21!')
+                    : (lang === 'es'
+                      ? 'La edad supera los 21 años'
+                      : 'Age exceeds 21')}
+                </p>
+
+                {/* Simple explanation */}
+                <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto leading-relaxed">
+                  {result.qualifies
+                    ? (lang === 'es'
+                      ? 'Gracias a la ley CSPA, el tiempo que USCIS tardó en procesar el caso se resta de la edad. Esto permite que el beneficiario califique como menor de 21.'
+                      : 'Thanks to the CSPA law, the time USCIS took to process the case is subtracted from the age. This allows the beneficiary to qualify as under 21.')
+                    : (lang === 'es'
+                      ? 'Aun restando el tiempo de procesamiento de USCIS, la edad sigue siendo 21 o mayor.'
+                      : 'Even after subtracting USCIS processing time, the age is still 21 or older.')}
+                </p>
+
+                {/* Category/Country badges */}
+                <div className="flex justify-center gap-1.5 mt-3">
+                  <span className="inline-flex items-center bg-accent/10 border border-accent/20 text-foreground text-xs px-2.5 py-0.5 rounded-full font-medium">
+                    {result.category}
+                  </span>
+                  <span className="inline-flex items-center bg-secondary border border-border text-foreground text-xs px-2.5 py-0.5 rounded-full font-medium">
+                    {result.chargeability === "ALL" ? t.country_all : result.chargeability.charAt(0) + result.chargeability.slice(1).toLowerCase()}
+                  </span>
+                </div>
               </div>
 
-              <div className="flex gap-2">
+              {/* Key dates — compact inline */}
+              <div className="px-5 py-3 border-t border-border">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                  {t.dateLabels.map((label, i) => {
+                    const vals = [formatDate(result.dobDate), formatDate(result.priorityDate), formatDate(result.approvalDate), formatDate(result.visaAvailableDate)];
+                    const isHypo = hypothetical && i === 3;
+                    return (
+                      <div key={label} className="flex justify-between items-baseline">
+                        <span className="text-muted-foreground">{isHypo ? (lang === 'es' ? 'Visa (simulada)' : 'Visa (simulated)') : label}</span>
+                        <span className={cn("font-semibold", isHypo ? "text-accent" : "text-foreground")}>{vals[i]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Collapsible detail section */}
+              <details className="px-5 pb-1 group">
+                <summary className="flex items-center justify-center gap-1.5 py-2.5 cursor-pointer text-xs text-accent font-medium hover:text-accent/80 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                  <ChevronRight className="w-3.5 h-3.5 transition-transform group-open:rotate-90" />
+                  {lang === 'es' ? 'Ver cómo se calculó' : 'See how it was calculated'}
+                </summary>
+                <div className="space-y-1.5 pb-3 animate-fade-in">
+                  {result.bulletinInfo && (
+                    <div className="rounded-lg border border-accent/20 bg-accent/5 px-3 py-2 flex items-start gap-2 mb-2">
+                      <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-accent" />
+                      <div className="text-xs text-foreground leading-relaxed">
+                        <span className="font-semibold">{t.controlling}</span>
+                        <span className="text-accent font-bold">{result.approvalControlled ? t.approval130 : t.bulletin}</span>
+                        {result.approvalControlled && result.pdBecameCurrentDate && (
+                          <>{t.approvalLater(new Date(result.pdBecameCurrentDate + "T12:00:00").toLocaleDateString(lang === "es" ? "es-ES" : "en-US", { day: "2-digit", month: "short", year: "numeric" }))}</>
+                        )}
+                        {!result.approvalControlled && <>{t.pdBefore}</>}
+                        <br /><span className="text-muted-foreground italic">{result.bulletinInfo}</span>
+                      </div>
+                    </div>
+                  )}
+                  <StepCard step="1" title={t.step1Title} formula={t.step1Formula}
+                    result={t.months(Math.round(result.pendingTime / 30.44), daysToYears(result.pendingTime).toFixed(1))}
+                    description={t.step1Desc} color="gold" />
+                  <StepCard step="2" title={t.step2Title} formula={t.step2Formula}
+                    result={t.years(daysToYears(result.biologicalAge).toFixed(1))}
+                    description={t.step2Desc} color="navy" />
+                  <StepCard step="3" title={t.step3Title} formula={t.step3Formula}
+                    result={t.years(result.cspaAgeYears.toFixed(2))}
+                    description={result.cspaAgeYears < 21 ? t.step3QualDesc : t.step3NotDesc}
+                    color={result.qualifies ? "success" : "danger"} highlight />
+                </div>
+              </details>
+
+              {/* Action buttons */}
+              <div className="px-5 pb-5 pt-1 flex gap-2">
                 <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
                   <FileText className="w-4 h-4 mr-1" />
-                  {lang === 'es' ? '📄 Descargar Reporte Completo' : '📄 Download Full Report'}
+                  {lang === 'es' ? 'Descargar Reporte' : 'Download Report'}
                 </Button>
                 <Button onClick={() => setShowDialog(false)} variant="outline" className="shrink-0" size="sm">
                   {t.close}
                 </Button>
               </div>
             </div>
-            </>
           )}
         </DialogContent>
       </Dialog>
