@@ -915,6 +915,46 @@ export default function CSPACalculator() {
                 </Button>
               )}
             </div>
+
+            {/* CSPA Inapplicability Info */}
+            <div className="mt-4 border-t border-border pt-4">
+              <button
+                type="button"
+                onClick={() => setShowInapplicability(prev => !prev)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto"
+              >
+                <Info className="w-3.5 h-3.5" />
+                <span>{lang === 'es' ? '¿A quiénes NO aplica CSPA?' : 'Who does CSPA NOT apply to?'}</span>
+                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showInapplicability && "rotate-180")} />
+              </button>
+              {showInapplicability && (
+                <div className="mt-3 text-xs text-muted-foreground bg-muted/50 rounded-lg p-4 space-y-2">
+                  <p className="font-semibold text-foreground">
+                    {lang === 'es' ? '9 FAM 502.1-1(D)(4) — Inaplicabilidad del CSPA' : '9 FAM 502.1-1(D)(4) — Inapplicability of the CSPA'}
+                  </p>
+                  <p>
+                    {lang === 'es'
+                      ? 'El CSPA no aplica a visas de no-inmigrante (K, U, SU-3, etc.). Tampoco aplica a beneficiarios bajo los siguientes programas:'
+                      : 'The CSPA does not apply to NIVs (K, U, SU-3, etc.). Additionally, beneficiaries under the following programs are not covered:'}
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>NACARA (Nicaraguan Adjustment and Central American Relief Act)</li>
+                    <li>HRIFA (Haitian Refugee Immigrant Fairness Act)</li>
+                    <li>{lang === 'es' ? 'Unidad Familiar (Family Unity)' : 'Family Unity'}</li>
+                    <li>Cuban Adjustment Act</li>
+                    <li>Chinese Student Protection Act</li>
+                    <li>{lang === 'es'
+                      ? 'SIJ (Special Immigrant Juvenile) — protegidos independientemente por la Ley Wilberforce (2008)'
+                      : 'SIJ (Special Immigrant Juvenile) — independently protected by the Wilberforce Act (2008)'}</li>
+                  </ul>
+                  <p className="pt-1">
+                    {lang === 'es'
+                      ? 'Tampoco aplica a solicitantes cuya decisión final fue antes del 6 de agosto de 2002 y que cumplieron 21 años antes de esa fecha.'
+                      : 'Also does not apply to applicants with a final decision before August 6, 2002, who aged out before that date.'}
+                  </p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
