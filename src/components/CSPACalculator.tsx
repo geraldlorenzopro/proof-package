@@ -1002,6 +1002,13 @@ export default function CSPACalculator() {
           </CardContent>
         </Card>
 
+        {/* Sought to Acquire — PROMINENT standalone section for preference categories */}
+        {form.category && FAMILY_CATEGORIES.includes(form.category) && form.visaAvailableDate && !AGE_FROZEN_CATEGORIES.has(form.category) && (
+          <div className="mt-6">
+            <SoughtToAcquireAlert visaAvailableDate={form.visaAvailableDate} lang={lang} />
+          </div>
+        )}
+
         {/* Consolidated Considerations — collapsed by default */}
         {form.category && FAMILY_CATEGORIES.includes(form.category) && (
           <div className="mt-6">
@@ -1023,29 +1030,6 @@ export default function CSPACalculator() {
 
                 {showConsiderations && (
                   <div className="mt-4 space-y-2">
-                    {/* Sought to Acquire — deadline bullet */}
-                    {form.visaAvailableDate && !AGE_FROZEN_CATEGORIES.has(form.category) && (() => {
-                      const visaDate = new Date(form.visaAvailableDate + "T00:00:00");
-                      const deadline = new Date(visaDate);
-                      deadline.setFullYear(deadline.getFullYear() + 1);
-                      const today = new Date(); today.setHours(0,0,0,0);
-                      const daysLeft = Math.floor((deadline.getTime() - today.getTime()) / (1000*60*60*24));
-                      const isExpired = daysLeft < 0;
-                      return (
-                        <ConsiderationBullet
-                          icon="⏰"
-                          label={lang === 'es' ? 'Plazo para actuar (Sought to Acquire)' : 'Deadline to act (Sought to Acquire)'}
-                          summary={isExpired
-                            ? (lang === 'es' ? '⚠️ ¡El plazo de 1 año ya venció!' : '⚠️ The 1-year deadline has passed!')
-                            : (lang === 'es' ? `${daysLeft} días restantes para presentar solicitud` : `${daysLeft} days remaining to file application`)
-                          }
-                          severity={isExpired ? 'severe' : daysLeft <= 90 ? 'moderate' : 'none'}
-                        >
-                          <SoughtToAcquireAlert visaAvailableDate={form.visaAvailableDate} lang={lang} />
-                        </ConsiderationBullet>
-                      );
-                    })()}
-
                     {/* Marriage impact bullet */}
                     <ConsiderationBullet
                       icon="💍"
