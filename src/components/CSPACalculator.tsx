@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBackDestination } from '@/hooks/useBackDestination';
-import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, ChevronDown, Loader2, Search, Shield, ExternalLink, TrendingDown, Info, FileText, ArrowLeft } from "lucide-react";
+import { Scale, CheckCircle2, XCircle, AlertCircle, ChevronRight, ChevronDown, Loader2, Search, Shield, ExternalLink, TrendingDown, Info, FileText, ArrowLeft, Star } from "lucide-react";
 import { LangToggle } from '@/components/LangToggle';
 import RetrogradeTimeline from "@/components/RetrogradeTimeline";
 import SoughtToAcquireAlert from "@/components/SoughtToAcquireAlert";
@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { trackToolUsage } from "@/lib/trackUsage";
 import CSPALeadCaptureModal from "@/components/CSPALeadCaptureModal";
+import CSPAFeedbackModal from "@/components/CSPAFeedbackModal";
 import { generateCSPAReport, type CSPAReportData } from "@/lib/cspaPdfGenerator";
 import { toast } from "@/hooks/use-toast";
 
@@ -484,6 +485,8 @@ export default function CSPACalculator() {
   const [pdBecameCurrent, setPdBecameCurrent] = useState<string | null>(null);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [lastCalculationId, setLastCalculationId] = useState<string | undefined>();
   const [showInapplicability, setShowInapplicability] = useState(false);
   const [showConsiderations, setShowConsiderations] = useState(false);
 
@@ -1189,7 +1192,7 @@ export default function CSPACalculator() {
         <div className="max-w-4xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="text-xs text-muted-foreground font-medium font-display tracking-wider">{t.platform}</span>
           <p className="text-xs text-muted-foreground text-center sm:text-right max-w-sm">{t.footerDisclaimer}</p>
-          <a href="mailto:contacto@nerimmigration.ai" className="flex items-center gap-1 text-xs text-accent hover:underline shrink-0">
+          <a href="mailto:info@nertech.com" className="flex items-center gap-1 text-xs text-accent hover:underline shrink-0">
             <ExternalLink className="w-3 h-3" />{t.contact}
           </a>
         </div>
@@ -1359,7 +1362,7 @@ export default function CSPACalculator() {
               </details>
 
               {/* Action buttons */}
-              <div className="px-5 pb-5 pt-1 flex gap-2">
+              <div className="px-5 pb-3 pt-1 flex gap-2">
                 <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
                   <FileText className="w-4 h-4 mr-1" />
                   {lang === 'es' ? 'Descargar Reporte' : 'Download Report'}
@@ -1367,6 +1370,22 @@ export default function CSPACalculator() {
                 <Button onClick={() => setShowDialog(false)} variant="outline" className="shrink-0" size="sm">
                   {t.close}
                 </Button>
+              </div>
+
+              {/* Contact + Feedback row */}
+              <div className="px-5 pb-5 flex items-center justify-between">
+                <a href="mailto:info@nertech.com" className="flex items-center gap-1.5 text-xs text-accent hover:underline">
+                  <ExternalLink className="w-3 h-3" />
+                  {lang === 'es' ? 'Contactar especialista' : 'Contact specialist'}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => { setShowDialog(false); setTimeout(() => setShowFeedback(true), 300); }}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Star className="w-3 h-3" />
+                  {lang === 'es' ? 'Evaluar herramienta' : 'Rate this tool'}
+                </button>
               </div>
             </div>
           )}
@@ -1379,6 +1398,14 @@ export default function CSPACalculator() {
         onOpenChange={setShowLeadCapture}
         onSubmit={handleGeneratePDF}
         loading={generatingPDF}
+        lang={lang}
+      />
+
+      {/* Feedback Modal */}
+      <CSPAFeedbackModal
+        open={showFeedback}
+        onOpenChange={setShowFeedback}
+        calculationId={lastCalculationId}
         lang={lang}
       />
     </div>
