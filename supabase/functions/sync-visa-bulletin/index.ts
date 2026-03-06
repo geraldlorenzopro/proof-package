@@ -16,21 +16,43 @@ const CATEGORIES = ['F1', 'F2A', 'F2B', 'F3', 'F4'];
 // Map old-style category names to standard format
 const CATEGORY_ALIASES: Record<string, string> = {
   '1ST': 'F1',
+  '1st': 'F1',
   '2A': 'F2A',
   '2A*': 'F2A',
   '2B': 'F2B',
   '3RD': 'F3',
+  '3rd': 'F3',
   '4TH': 'F4',
+  '4th': 'F4',
   'F1': 'F1',
   'F2A': 'F2A',
   'F2B': 'F2B',
   'F3': 'F3',
   'F4': 'F4',
+  // Additional variations found on older bulletins
+  'FIRST': 'F1',
+  'SECOND A': 'F2A',
+  'SECOND B': 'F2B',
+  'THIRD': 'F3',
+  'FOURTH': 'F4',
+  'F-1': 'F1',
+  'F-2A': 'F2A',
+  'F-2B': 'F2B',
+  'F-3': 'F3',
+  'F-4': 'F4',
 };
 
 const CHARGEABILITY_MAP: Record<string, string> = {
   'all chargeability': 'ALL',
+  'all chargeability areas': 'ALL',
+  'all charge- ability areas': 'ALL',
+  'all charge-ability areas': 'ALL',
+  'all chargeability areas except': 'ALL',
+  'all chargeability areas except those listed below': 'ALL',
   'china': 'CHINA',
+  'china-mainland born': 'CHINA',
+  'china - mainland born': 'CHINA',
+  'china- mainland born': 'CHINA',
   'india': 'INDIA',
   'mexico': 'MEXICO',
   'philippines': 'PHILIPPINES',
@@ -51,7 +73,7 @@ function parseVisaDate(raw: string): { date: string | null; isCurrent: boolean }
   if (cleaned === 'C' || cleaned === 'CURRENT') {
     return { date: null, isCurrent: true };
   }
-  if (cleaned === 'U' || cleaned === 'UNAVAILABLE' || cleaned === '-') {
+  if (cleaned === 'U' || cleaned === 'UNAVAILABLE' || cleaned === '-' || cleaned === '') {
     return { date: null, isCurrent: false };
   }
 
@@ -60,6 +82,7 @@ function parseVisaDate(raw: string): { date: string | null; isCurrent: boolean }
     JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12',
   };
 
+  // Format: 01JAN06 or 01JAN2006
   const match = cleaned.match(/^(\d{2})([A-Z]{3})(\d{2,4})$/);
   if (match) {
     const day = match[1];
@@ -73,6 +96,18 @@ function parseVisaDate(raw: string): { date: string | null; isCurrent: boolean }
     }
   }
 
+  // Format: JAN 01, 2006 or January 1, 2006
+  const longMatch = cleaned.match(/([A-Z]+)\s*(\d{1,2}),?\s*(\d{4})/);
+  if (longMatch) {
+    const monthAbbr = longMatch[1].substring(0, 3);
+    const mon = monthMap[monthAbbr];
+    const day = longMatch[2].padStart(2, '0');
+    const year = longMatch[3];
+    if (mon) {
+      return { date: `${year}-${mon}-${day}`, isCurrent: false };
+    }
+  }
+
   return { date: null, isCurrent: false };
 }
 
@@ -81,32 +116,46 @@ async function fetchBulletin(year: number, month: number): Promise<string | null
   // State Department uses fiscal years (Oct = start of new FY)
   const fiscalYear = month >= 10 ? year + 1 : year;
   
-  // Try multiple URL patterns since older bulletins have inconsistent naming
+  // Comprehensive URL patterns — State Dept has changed formats multiple times
   const urlPatterns = [
+    // Current format (2015+)
     `https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/${fiscalYear}/visa-bulletin-for-${monthName}-${year}.html`,
+    // Alternative without "for"
     `https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/${fiscalYear}/visa-bulletin-${monthName}-${year}.html`,
+    // Using calendar year instead of fiscal year
     `https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/${year}/visa-bulletin-for-${monthName}-${year}.html`,
+    `https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/${year}/visa-bulletin-${monthName}-${year}.html`,
+    // Fiscal year -1 variant (some edge cases)
+    `https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/${fiscalYear - 1}/visa-bulletin-for-${monthName}-${year}.html`,
+    // Older format with visa-bulletin repeated
+    `https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/${fiscalYear}/visa-bulletin-for-${monthName}-${year}0.html`,
+    // Some older bulletins have hyphens or different endings
+    `https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/${fiscalYear}/visa-bulletin-for-${monthName}${year}.html`,
   ];
   
   for (const url of urlPatterns) {
     try {
       const res = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; NERImmigration/1.0)',
-          'Accept': 'text/html',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         },
       });
       if (res.ok) {
-        return await res.text();
+        const html = await res.text();
+        // Verify it actually contains visa bulletin data
+        if (html.toLowerCase().includes('chargeability') || html.toLowerCase().includes('preference')) {
+          console.log(`✅ Found bulletin for ${month}/${year} at: ${url}`);
+          return html;
+        }
       }
-      // Consume body to prevent leaks
-      await res.text();
+      await res.text().catch(() => {});
     } catch (e) {
-      console.error(`Error fetching ${url}:`, e);
+      // Continue to next pattern
     }
   }
   
-  console.log(`Bulletin not found for ${month}/${year} (tried ${urlPatterns.length} patterns)`);
+  console.log(`❌ Bulletin not found for ${month}/${year} (tried ${urlPatterns.length} patterns)`);
   return null;
 }
 
@@ -119,10 +168,9 @@ function extractFamilyPreferenceDates(html: string, year: number, month: number)
   while ((tableMatch = tablePattern.exec(normalizedHtml)) !== null) {
     const tableHtml = tableMatch[1];
     const tableStart = tableMatch.index;
-    const contextBefore = normalizedHtml.slice(Math.max(0, tableStart - 2000), tableStart).toLowerCase();
+    const contextBefore = normalizedHtml.slice(Math.max(0, tableStart - 3000), tableStart).toLowerCase();
     
     // For newer bulletins, check for "final action" section
-    // For older bulletins (pre-2015), tables appear directly without "final action" header
     const finalActionIdx = contextBefore.lastIndexOf('final action');
     const datesForFilingIdx = contextBefore.lastIndexOf('dates for filing');
     
@@ -133,7 +181,8 @@ function extractFamilyPreferenceDates(html: string, year: number, month: number)
     if (rowMatches.length < 3) continue;
     
     const headerRow = rowMatches[0][1].toLowerCase();
-    const hasChargeability = headerRow.includes('chargeability') || headerRow.includes('china') || headerRow.includes('india');
+    const hasChargeability = headerRow.includes('chargeability') || headerRow.includes('china') || 
+                              headerRow.includes('india') || headerRow.includes('all charge');
     if (!hasChargeability) continue;
     
     const headerCells = [...rowMatches[0][1].matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi)]
@@ -150,13 +199,25 @@ function extractFamilyPreferenceDates(html: string, year: number, month: number)
     
     for (let i = 1; i < rowMatches.length; i++) {
       const cells = [...rowMatches[i][1].matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi)]
-        .map(m => m[1].replace(/<[^>]+>/g, '').trim().toUpperCase());
+        .map(m => m[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ').trim().toUpperCase());
       
       if (cells.length < 2) continue;
       
-      const rawCat = cells[0].replace(/\s+/g, '').replace(/\*/g, '');
-      const cat = CATEGORY_ALIASES[rawCat] || CATEGORY_ALIASES[rawCat + '*'];
-      if (!cat) continue;
+      const rawCat = cells[0].replace(/\s+/g, '').replace(/\*/g, '').replace(/-/g, '');
+      // Robust matching: try alias map first, then regex for ordinal formats
+      let cat = CATEGORY_ALIASES[rawCat] || CATEGORY_ALIASES[cells[0].trim()];
+      if (!cat) {
+        // Handle "1ST", "2A", "2B", "3RD", "4TH" and variations
+        if (/^1(ST)?$/.test(rawCat) || /^F?1$/.test(rawCat) || /^FIRST$/.test(rawCat)) cat = 'F1';
+        else if (/^2A$/.test(rawCat) || /^F?2A$/.test(rawCat)) cat = 'F2A';
+        else if (/^2B$/.test(rawCat) || /^F?2B$/.test(rawCat)) cat = 'F2B';
+        else if (/^3(RD)?$/.test(rawCat) || /^F?3$/.test(rawCat) || /^THIRD$/.test(rawCat)) cat = 'F3';
+        else if (/^4(TH)?$/.test(rawCat) || /^F?4$/.test(rawCat) || /^FOURTH$/.test(rawCat)) cat = 'F4';
+      }
+      if (!cat) {
+        console.log(`⚠️ Unmatched category: "${rawCat}" (original: "${cells[0]}")`);
+        continue;
+      }
       
       for (let col = 1; col < cells.length && col < colMapping.length; col++) {
         const chargeability = colMapping[col];
@@ -220,6 +281,48 @@ async function logSync(year: number, month: number, records: number, status: 'su
   });
 }
 
+async function getExistingMonths(): Promise<Set<string>> {
+  const params = new URLSearchParams({
+    select: 'bulletin_year,bulletin_month',
+    category: 'eq.F1',
+    chargeability: 'eq.ALL',
+    order: 'bulletin_year.asc,bulletin_month.asc',
+    limit: '500',
+  });
+  
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/visa_bulletin?${params}`, {
+    headers: {
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'apikey': SUPABASE_SERVICE_ROLE_KEY,
+    },
+  });
+  
+  if (!res.ok) return new Set();
+  const rows: Array<{ bulletin_year: number; bulletin_month: number }> = await res.json();
+  return new Set(rows.map(r => `${r.bulletin_year}-${r.bulletin_month}`));
+}
+
+function getMissingMonths(existing: Set<string>, startYear: number, startMonth: number): Array<{ year: number; month: number }> {
+  const now = new Date();
+  const endYear = now.getFullYear();
+  const endMonth = now.getMonth() + 1;
+  const missing: Array<{ year: number; month: number }> = [];
+  
+  let y = startYear;
+  let m = startMonth;
+  
+  while (y < endYear || (y === endYear && m <= endMonth)) {
+    const key = `${y}-${m}`;
+    if (!existing.has(key)) {
+      missing.push({ year: y, month: m });
+    }
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  
+  return missing;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -268,12 +371,22 @@ Deno.serve(async (req) => {
     const targetMonth = body.month ?? (now.getMonth() + 1);
     const backfill = body.backfill ?? false;
     const backfillMonths = body.backfill_months ?? 60;
+    const fillGaps = body.fill_gaps ?? false;
+    const gapStartYear = body.gap_start_year ?? 1991;
+    const gapStartMonth = body.gap_start_month ?? 10;
+    const batchSize = body.batch_size ?? 24; // Process up to 24 months per invocation to avoid timeouts
     // When called without specific month (cron), also try next month for "upcoming" bulletin
-    const autoMode = !body.year && !body.month;
+    const autoMode = !body.year && !body.month && !fillGaps;
     
     const monthsToSync: Array<{ year: number; month: number }> = [];
     
-    if (backfill) {
+    if (fillGaps) {
+      // Smart gap-filling: check what's missing and fill only those
+      const existing = await getExistingMonths();
+      const missing = getMissingMonths(existing, gapStartYear, gapStartMonth);
+      console.log(`Found ${missing.length} missing months total. Processing batch of ${batchSize}.`);
+      monthsToSync.push(...missing.slice(0, batchSize));
+    } else if (backfill) {
       let y = targetYear;
       let m = targetMonth;
       for (let i = 0; i < backfillMonths; i++) {
@@ -314,7 +427,8 @@ Deno.serve(async (req) => {
           totalInserted += extractedRows.length;
           results.push({ month: `${month}/${year}`, records: extractedRows.length, status: 'success' });
         } else {
-          results.push({ month: `${month}/${year}`, records: 0, status: 'no_data' });
+          await logSync(year, month, 0, 'error', 'Page found but no family preference data extracted');
+          results.push({ month: `${month}/${year}`, records: 0, status: 'no_data_extracted' });
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -322,13 +436,27 @@ Deno.serve(async (req) => {
         results.push({ month: `${month}/${year}`, records: 0, status: `error: ${msg}` });
       }
       
+      // Rate limit to be polite to State Dept servers
       if (monthsToSync.length > 1) {
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 800));
       }
     }
     
+    // If filling gaps, report remaining
+    let remainingGaps = 0;
+    if (fillGaps) {
+      const existing = await getExistingMonths();
+      const missing = getMissingMonths(existing, gapStartYear, gapStartMonth);
+      remainingGaps = missing.length;
+    }
+    
     return new Response(
-      JSON.stringify({ success: true, total_inserted: totalInserted, results }),
+      JSON.stringify({ 
+        success: true, 
+        total_inserted: totalInserted, 
+        results,
+        ...(fillGaps ? { remaining_gaps: remainingGaps } : {}),
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
     
