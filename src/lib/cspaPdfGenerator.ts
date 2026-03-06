@@ -387,7 +387,130 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // PAGE 3: PROJECTIONS (if available)
+  // SOUGHT TO ACQUIRE SECTION (preference categories only, not age-frozen)
+  // ══════════════════════════════════════════════════════════════════
+  const PREF_CATS = ['F1', 'F2A', 'F2B', 'F3', 'F4'];
+  if (data.qualifies && !data.isAgeFrozen && PREF_CATS.includes(data.category) && data.visaAvailableDate) {
+    // Check if we need a new page
+    if (y > 200) {
+      doc.addPage();
+      addPageHeader(doc, isEs ? 'Requisito: Sought to Acquire' : 'Requirement: Sought to Acquire', W);
+      y = 40;
+    } else {
+      y += 8;
+      doc.setDrawColor(...GOLD);
+      doc.setLineWidth(0.3);
+      doc.line(20, y, W - 20, y);
+      y += 10;
+    }
+
+    // Title
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...NAVY);
+    doc.text(isEs ? 'Requisito: Sought to Acquire' : 'Requirement: Sought to Acquire', 20, y);
+    y += 4;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GRAY);
+    doc.text('INA §203(h)(1)(A) · 9 FAM 502.1-1(D)(8)', 20, y + 2);
+    y += 10;
+
+    // Warning box
+    doc.setFillColor(255, 248, 220);
+    doc.roundedRect(20, y - 4, W - 40, 28, 2, 2, 'F');
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(20, y - 4, W - 40, 28, 2, 2, 'S');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...NAVY);
+    const warningText = isEs
+      ? 'Aunque la edad CSPA califica, el beneficiario DEBE demostrar que buscó activamente obtener la residencia dentro de 1 año desde que la visa estuvo disponible.'
+      : 'Even though the CSPA age qualifies, the beneficiary MUST demonstrate they actively sought to acquire residency within 1 year of visa availability.';
+    const warningLines = doc.splitTextToSize(warningText, W - 50);
+    doc.text(warningLines, 25, y + 2);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...GOLD);
+    doc.text(isEs ? 'Sin este paso, la protección de edad se pierde.' : 'Without this step, age protection is lost.', 25, y + 18);
+    y += 34;
+
+    // Deadline info
+    const visaD = new Date(data.visaAvailableDate + 'T00:00:00');
+    const deadlineD = new Date(visaD);
+    deadlineD.setFullYear(deadlineD.getFullYear() + 1);
+    const todayD = new Date();
+    todayD.setHours(0, 0, 0, 0);
+    const dLeft = Math.floor((deadlineD.getTime() - todayD.getTime()) / 86400000);
+    const isExpired = dLeft < 0;
+
+    doc.setFillColor(...LIGHT);
+    doc.roundedRect(20, y - 4, W - 40, 14, 2, 2, 'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...NAVY);
+    doc.text(isEs ? 'Visa disponible:' : 'Visa available:', 25, y + 3);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GRAY);
+    doc.text(formatDatePDF(data.visaAvailableDate, data.lang), 75, y + 3);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...NAVY);
+    doc.text(isEs ? 'Fecha límite:' : 'Deadline:', W / 2 + 10, y + 3);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...(isExpired ? RED : GRAY));
+    doc.text(formatDatePDF(deadlineD.toISOString().split('T')[0], data.lang), W / 2 + 45, y + 3);
+    y += 10;
+
+    // Status
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    if (isExpired) {
+      doc.setTextColor(...RED);
+      doc.text(isEs ? 'PLAZO VENCIDO' : 'DEADLINE PASSED', 25, y + 4);
+    } else {
+      doc.setTextColor(...GREEN);
+      doc.text(`${dLeft} ${isEs ? 'días restantes' : 'days remaining'}`, 25, y + 4);
+    }
+    y += 12;
+
+    // Valid actions list
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...NAVY);
+    doc.text(isEs ? 'Acciones que satisfacen el requisito:' : 'Actions that satisfy the requirement:', 20, y);
+    y += 7;
+
+    const soughtActions = isEs
+      ? [
+          'Presentar I-485 (Ajuste de Estatus) o DS-260 (Procesamiento Consular)',
+          'Completar el examen médico de inmigración (I-693)',
+          'Reunir documentos civiles y financieros requeridos',
+          'Contratar o consultar un abogado de inmigración',
+          'Responder a solicitudes de evidencia de NVC o USCIS',
+          'Mantener comunicación activa y dirección actualizada con NVC/USCIS',
+        ]
+      : [
+          'File I-485 (Adjustment of Status) or DS-260 (Consular Processing)',
+          'Complete the immigration medical exam (I-693)',
+          'Gather required civil and financial documents',
+          'Hire or consult an immigration attorney',
+          'Respond to evidence requests from NVC or USCIS',
+          'Maintain active communication and updated address with NVC/USCIS',
+        ];
+
+    soughtActions.forEach((action) => {
+      doc.setFillColor(...GOLD);
+      doc.circle(25, y + 1, 1.2, 'F');
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      const aLines = doc.splitTextToSize(action, W - 55);
+      doc.text(aLines, 30, y + 2);
+      y += aLines.length * 4 + 3;
+    });
+  }
+
   // ══════════════════════════════════════════════════════════════════
   const proj = data.projection;
   const hasProjection = proj && (proj.base || proj.optimistic || proj.pessimistic);
