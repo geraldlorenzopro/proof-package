@@ -87,6 +87,8 @@ async function loadLogoAsDataUrl(url: string): Promise<string | null> {
   }
 }
 
+const FOOTER_ZONE = 30; // mm reserved for footer
+
 function addPageHeader(doc: jsPDF, title: string, W: number) {
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
@@ -95,6 +97,21 @@ function addPageHeader(doc: jsPDF, title: string, W: number) {
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.8);
   doc.line(20, 30, W - 20, 30);
+}
+
+/** Returns the max Y before footer. If y would exceed it, adds a page and returns new y. */
+function ensureSpace(doc: jsPDF, y: number, needed: number, W: number, sectionTitle?: string): number {
+  const pageH = doc.internal.pageSize.getHeight();
+  const maxY = pageH - FOOTER_ZONE;
+  if (y + needed > maxY) {
+    doc.addPage();
+    if (sectionTitle) {
+      addPageHeader(doc, sectionTitle, W);
+      return 40;
+    }
+    return 20;
+  }
+  return y;
 }
 
 export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
@@ -363,6 +380,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
     ];
 
     steps.forEach((step) => {
+      y = ensureSpace(doc, y, 30, W, isEs ? 'Cómo se calculó la edad CSPA' : 'How the CSPA age was calculated');
       doc.setFillColor(step.color[0], step.color[1], step.color[2]);
       doc.circle(28, y + 1, 4, 'F');
       doc.setFontSize(9);
@@ -486,6 +504,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
         ];
 
     soughtActions.forEach((action) => {
+      y = ensureSpace(doc, y, 12, W, isEs ? 'Requisito: Sought to Acquire' : 'Requirement: Sought to Acquire');
       doc.setFillColor(...GOLD);
       doc.circle(25, y + 1, 1.2, 'F');
       doc.setFontSize(8);
@@ -715,6 +734,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
       const li = isEs ? 0 : 1;
 
       // Risk severity banner
+      cy = ensureSpace(doc, cy, 16, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
       const bannerColor = catInfo.severity === 'severe' ? [255, 235, 235] as const : catInfo.severity === 'moderate' ? [255, 248, 220] as const : [230, 245, 230] as const;
       const textColor = catInfo.severity === 'severe' ? RED : catInfo.severity === 'moderate' ? GOLD : GREEN;
       doc.setFillColor(bannerColor[0], bannerColor[1], bannerColor[2]);
@@ -726,6 +746,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
       cy += 16;
 
       // Who is who
+      cy = ensureSpace(doc, cy, 20, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NAVY);
@@ -739,6 +760,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
       cy += whoLines.length * 4 + 3;
 
       // Who does CSPA protect
+      cy = ensureSpace(doc, cy, 20, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NAVY);
@@ -752,6 +774,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
       cy += cspaLines.length * 4 + 3;
 
       // Marriage effect
+      cy = ensureSpace(doc, cy, 30, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NAVY);
@@ -765,6 +788,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
       cy += effectLines.length * 4 + 4;
 
       // Narrative example box
+      cy = ensureSpace(doc, cy, 36, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
       doc.setFillColor(...LIGHT);
       doc.roundedRect(20, cy - 3, W - 40, 28, 2, 2, 'F');
       doc.setDrawColor(...GOLD);
@@ -785,6 +809,7 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
   // Sought to Acquire reminder — REMOVED (now has its own dedicated page)
 
   // What is CSPA explanation
+  cy = ensureSpace(doc, cy, 50, W, isEs ? 'Consideraciones importantes' : 'Important considerations');
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...NAVY);
