@@ -487,20 +487,22 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
 
     const soughtActions = isEs
       ? [
-          'Presentar I-485 (Ajuste de Estatus) o DS-260 (Procesamiento Consular)',
-          'Completar el examen médico de inmigración (I-693)',
-          'Reunir documentos civiles y financieros requeridos',
-          'Contratar o consultar un abogado de inmigración',
-          'Responder a solicitudes de evidencia de NVC o USCIS',
-          'Mantener comunicación activa y dirección actualizada con NVC/USCIS',
+          'Presentar I-485 (Ajuste de Estatus)',
+          'Completar Parte 1 del DS-260 (Visa de Inmigrante Electrónica)',
+          'Presentar I-824 (Solicitud de Acción sobre Petición Aprobada)',
+          'Presentar I-864 (Affidavit of Support)',
+          'Pagar el immigrant visa fee al Departamento de Estado',
+          'Pagar el I-864 review fee al Departamento de Estado (si el alien está listado en el Affidavit)',
+          'Solicitud escrita de transferencia de la base del ajuste a otra categoría de preferencia',
         ]
       : [
-          'File I-485 (Adjustment of Status) or DS-260 (Consular Processing)',
-          'Complete the immigration medical exam (I-693)',
-          'Gather required civil and financial documents',
-          'Hire or consult an immigration attorney',
-          'Respond to evidence requests from NVC or USCIS',
-          'Maintain active communication and updated address with NVC/USCIS',
+          'File I-485 (Adjustment of Status)',
+          'Submit completed Part 1 of Form DS-260 (Immigrant Visa Electronic Application)',
+          'File I-824 (Application for Action on an Approved Application or Petition)',
+          'File I-864 (Affidavit of Support)',
+          'Pay the immigrant visa fee to the Department of State',
+          'Pay the I-864 review fee to the Department of State (if the alien is listed on the Affidavit)',
+          'Written request to transfer the underlying basis of adjustment to a different preference category',
         ];
 
     soughtActions.forEach((action) => {
@@ -514,6 +516,19 @@ export async function generateCSPAReport(data: CSPAReportData): Promise<void> {
       doc.text(aLines, 30, y + 2);
       y += aLines.length * 4 + 3;
     });
+
+    // Extraordinary circumstances disclaimer
+    y += 4;
+    y = ensureSpace(doc, y, 20, W, isEs ? 'Requisito: Sought to Acquire' : 'Requirement: Sought to Acquire');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(...GRAY);
+    const ecText = isEs
+      ? 'Nota: Si el beneficiario no cumplió con el requisito de "sought to acquire" dentro del plazo, USCIS puede ejercer discreción para determinar que se satisfizo el requisito si el incumplimiento fue resultado de circunstancias extraordinarias. Ver Volumen 7, Parte A, Capítulo 7, Sección H del Manual de Políticas de USCIS.'
+      : 'Note: If the beneficiary did not meet the "sought to acquire" requirement within the deadline, USCIS may use discretion to determine the requirement is satisfied if the failure was due to extraordinary circumstances. See USCIS Policy Manual Volume 7, Part A, Chapter 7, Section H.';
+    const ecLines = doc.splitTextToSize(ecText, W - 50);
+    doc.text(ecLines, 25, y + 2);
+    y += ecLines.length * 3.5 + 4;
   }
 
   // ══════════════════════════════════════════════════════════════════
