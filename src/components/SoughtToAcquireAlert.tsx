@@ -6,18 +6,22 @@ type Lang = "es" | "en";
 
 const SOUGHT_ACTIONS = {
   es: [
-    "Presentar I-485 o DS-260",
-    "Examen médico (I-693)",
-    "Documentos civiles y financieros",
-    "Consultar abogado de inmigración",
-    "Responder solicitudes de NVC/USCIS",
+    "Presentar I-485 (Ajuste de Estatus)",
+    "Completar Parte 1 del DS-260",
+    "Presentar I-824",
+    "Presentar I-864 (Affidavit of Support)",
+    "Pagar immigrant visa fee al DOS",
+    "Pagar I-864 review fee al DOS",
+    "Solicitud escrita de transferencia de categoría",
   ],
   en: [
-    "File I-485 or DS-260",
-    "Medical exam (I-693)",
-    "Civil & financial documents",
-    "Consult immigration attorney",
-    "Respond to NVC/USCIS requests",
+    "File I-485 (Adjustment of Status)",
+    "Submit completed Part 1 of DS-260",
+    "File I-824",
+    "File I-864 (Affidavit of Support)",
+    "Pay immigrant visa fee to DOS",
+    "Pay I-864 review fee to DOS",
+    "Written request to transfer underlying basis",
   ],
 };
 
@@ -133,6 +137,15 @@ export default function SoughtToAcquireAlert({
             ))}
           </div>
         </div>
+      )}
+
+      {/* Extraordinary circumstances note */}
+      {!isExpired && (
+        <p className="text-[10px] text-muted-foreground/70 italic leading-relaxed">
+          {lang === "es"
+            ? "⚖️ Si no se cumplió a tiempo, USCIS puede ejercer discreción si el incumplimiento fue resultado de circunstancias extraordinarias."
+            : "⚖️ If the requirement was not met in time, USCIS may use discretion if the failure was due to extraordinary circumstances."}
+        </p>
       )}
 
       {/* Ref */}
