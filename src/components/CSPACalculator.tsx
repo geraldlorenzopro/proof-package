@@ -130,6 +130,8 @@ const T = {
     errorDates: "Por favor complete todas las fechas correctamente.",
     errorApproval: "La fecha de aprobación no puede ser anterior a la fecha de prioridad.",
     errorVisa: "La fecha de disponibilidad de visa no puede ser anterior a la fecha de prioridad.",
+    errorPdBeforeDob: "La fecha de prioridad (cuando se presentó la petición) es anterior a la fecha de nacimiento del beneficiario. Esto no es posible — no se puede presentar una petición por un hijo que aún no ha nacido. Por favor verifique las fechas ingresadas.",
+    errorApprovalBeforeDob: "La fecha de aprobación es anterior a la fecha de nacimiento del beneficiario. Por favor verifique las fechas.",
     notYetCurrent: (m: string, y: number, cut: string, cat: string, ch: string) =>
       `La fecha de prioridad aún NO está vigente. El boletín más reciente (${m} ${y}) tiene un corte de ${cut} para ${cat}/${ch}.`,
     hypotheticalCalc: "Ver simulación — ¿qué pasaría si la visa estuviera lista hoy?",
@@ -235,6 +237,8 @@ const T = {
     errorDates: "Please complete all dates correctly.",
     errorApproval: "The approval date cannot be earlier than the priority date.",
     errorVisa: "The visa availability date cannot be earlier than the priority date.",
+    errorPdBeforeDob: "The priority date (when the petition was filed) is earlier than the beneficiary's date of birth. This is not possible — you cannot file a petition for a child who hasn't been born yet. Please verify the dates entered.",
+    errorApprovalBeforeDob: "The approval date is earlier than the beneficiary's date of birth. Please verify the dates.",
     notYetCurrent: (m: string, y: number, cut: string, cat: string, ch: string) =>
       `Priority date is NOT yet current. The most recent bulletin (${m} ${y}) has a cutoff of ${cut} for ${cat}/${ch}.`,
     hypotheticalCalc: "See simulation — what if the visa were ready today?",
@@ -591,6 +595,9 @@ export default function CSPACalculator() {
     if ([dob, pd].some((d) => isNaN(d.getTime()))) { setError(t.errorDates); return; }
     if (!isFrozen && isNaN(ad.getTime())) { setError(t.errorDates); return; }
     if (!isFrozen && !isHypothetical && isNaN(vad.getTime())) { setError(t.errorDates); return; }
+    // Validate logical date order
+    if (pd < dob) { setError(t.errorPdBeforeDob); return; }
+    if (!isFrozen && ad < dob) { setError(t.errorApprovalBeforeDob); return; }
     if (!isFrozen && ad < pd) { setError(t.errorApproval); return; }
     if (!isFrozen && !isHypothetical && vad < pd) { setError(t.errorVisa); return; }
 
