@@ -130,8 +130,9 @@ const T = {
     errorDates: "Por favor complete todas las fechas correctamente.",
     errorApproval: "La fecha de aprobación no puede ser anterior a la fecha de prioridad.",
     errorVisa: "La fecha de disponibilidad de visa no puede ser anterior a la fecha de prioridad.",
-    errorPdBeforeDob: "La fecha de prioridad (cuando se presentó la petición) es anterior a la fecha de nacimiento del beneficiario. Esto no es posible — no se puede presentar una petición por un hijo que aún no ha nacido. Por favor verifique las fechas ingresadas.",
     errorApprovalBeforeDob: "La fecha de aprobación es anterior a la fecha de nacimiento del beneficiario. Por favor verifique las fechas.",
+    derivativeNote: "Este beneficiario nació después de la fecha de prioridad — es un hijo derivado que hereda la fecha de la petición original.",
+    negativeAgeExplanation: "La edad CSPA es menor que cero porque el tiempo de procesamiento de USCIS supera la edad biológica del beneficiario. Esto sucede cuando el hijo nació después de la fecha de prioridad (hijo derivado). El beneficiario califica con amplio margen.",
     notYetCurrent: (m: string, y: number, cut: string, cat: string, ch: string) =>
       `La fecha de prioridad aún NO está vigente. El boletín más reciente (${m} ${y}) tiene un corte de ${cut} para ${cat}/${ch}.`,
     hypotheticalCalc: "Ver simulación — ¿qué pasaría si la visa estuviera lista hoy?",
@@ -237,8 +238,9 @@ const T = {
     errorDates: "Please complete all dates correctly.",
     errorApproval: "The approval date cannot be earlier than the priority date.",
     errorVisa: "The visa availability date cannot be earlier than the priority date.",
-    errorPdBeforeDob: "The priority date (when the petition was filed) is earlier than the beneficiary's date of birth. This is not possible — you cannot file a petition for a child who hasn't been born yet. Please verify the dates entered.",
     errorApprovalBeforeDob: "The approval date is earlier than the beneficiary's date of birth. Please verify the dates.",
+    derivativeNote: "This beneficiary was born after the priority date — they are a derivative child who inherits the original petition date.",
+    negativeAgeExplanation: "The CSPA age is less than zero because USCIS processing time exceeds the beneficiary's biological age. This happens when the child was born after the priority date (derivative child). The beneficiary qualifies with ample margin.",
     notYetCurrent: (m: string, y: number, cut: string, cat: string, ch: string) =>
       `Priority date is NOT yet current. The most recent bulletin (${m} ${y}) has a cutoff of ${cut} for ${cat}/${ch}.`,
     hypotheticalCalc: "See simulation — what if the visa were ready today?",
@@ -596,7 +598,6 @@ export default function CSPACalculator() {
     if (!isFrozen && isNaN(ad.getTime())) { setError(t.errorDates); return; }
     if (!isFrozen && !isHypothetical && isNaN(vad.getTime())) { setError(t.errorDates); return; }
     // Validate logical date order
-    if (pd < dob) { setError(t.errorPdBeforeDob); return; }
     if (!isFrozen && ad < dob) { setError(t.errorApprovalBeforeDob); return; }
     if (!isFrozen && ad < pd) { setError(t.errorApproval); return; }
     if (!isFrozen && !isHypothetical && vad < pd) { setError(t.errorVisa); return; }
@@ -1213,9 +1214,9 @@ export default function CSPACalculator() {
                     : <XCircle className="w-9 h-9 text-destructive" />}
                 </div>
 
-                {/* Age number */}
+                {/* Age number — show 0.00 if negative, with derivative note */}
                 <p className="text-4xl font-bold text-foreground font-display leading-none">
-                  {result.cspaAgeYears.toFixed(2)}
+                  {result.cspaAgeYears < 0 ? '< 0' : result.cspaAgeYears.toFixed(2)}
                   <span className="text-base font-normal text-muted-foreground ml-1">
                     {lang === 'es' ? 'años' : 'years'}
                   </span>
@@ -1247,14 +1248,23 @@ export default function CSPACalculator() {
                       : (lang === 'es'
                         ? `La edad se congeló en la fecha de la petición, pero el beneficiario ya tenía ${result.cspaAgeYears.toFixed(1)} años — 21 o más.`
                         : `Age was frozen on the petition filing date, but the beneficiary was already ${result.cspaAgeYears.toFixed(1)} years old — 21 or older.`))
-                    : (result.qualifies
-                      ? (lang === 'es'
-                        ? 'Gracias a la ley CSPA, el tiempo que USCIS tardó en procesar el caso se resta de la edad. Esto permite que el beneficiario califique como menor de 21.'
-                        : 'Thanks to the CSPA law, the time USCIS took to process the case is subtracted from the age. This allows the beneficiary to qualify as under 21.')
-                      : (lang === 'es'
-                        ? 'Aun restando el tiempo de procesamiento de USCIS, la edad sigue siendo 21 o mayor.'
-                        : 'Even after subtracting USCIS processing time, the age is still 21 or older.'))}
+                    : result.cspaAgeYears < 0
+                      ? t.negativeAgeExplanation
+                      : (result.qualifies
+                        ? (lang === 'es'
+                          ? 'Gracias a la ley CSPA, el tiempo que USCIS tardó en procesar el caso se resta de la edad. Esto permite que el beneficiario califique como menor de 21.'
+                          : 'Thanks to the CSPA law, the time USCIS took to process the case is subtracted from the age. This allows the beneficiary to qualify as under 21.')
+                        : (lang === 'es'
+                          ? 'Aun restando el tiempo de procesamiento de USCIS, la edad sigue siendo 21 o mayor.'
+                          : 'Even after subtracting USCIS processing time, the age is still 21 or older.'))}
                 </p>
+
+                {/* Derivative child notice — when priority date is before DOB */}
+                {result.priorityDate < result.dobDate && (
+                  <div className="mt-3 bg-jarvis/5 border border-jarvis/20 rounded-lg px-3 py-2 mx-auto max-w-xs">
+                    <p className="text-[11px] text-jarvis font-medium">👶 {t.derivativeNote}</p>
+                  </div>
+                )}
 
                 {/* Category/Country badges */}
                 <div className="flex justify-center gap-1.5 mt-3">
