@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRightLeft, AlertTriangle, CheckCircle2, XCircle, Info } from "lucide-react";
+import { ArrowRightLeft, AlertTriangle, CheckCircle2, XCircle, Info, Baby, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,15 @@ const T = {
       F3: { converts: false, note: "F3 (hijo casado de ciudadano) — no cambia si el peticionario se naturaliza." },
       F4: { converts: false, note: "F4 (hermano de ciudadano) — no cambia si el peticionario se naturaliza." },
     } as Record<string, { converts: boolean; to?: string; note: string }>,
+    // F2A-specific: spouse vs child distinction
+    f2aDistinctionTitle: "⚠️ Importante: F2A cubre dos tipos de beneficiarios",
+    f2aChildTitle: "👶 Hijo/a menor de 21 años (soltero/a)",
+    f2aChildDesc: "Si el peticionario se naturaliza, el hijo menor pasa automáticamente a Familiar Inmediato (IR). La edad se congela en la fecha de naturalización del peticionario — esto es extremadamente favorable porque elimina la fila de espera y protege al menor contra el \"aging out\".",
+    f2aChildCspa: "🛡️ Efecto CSPA: La edad del hijo se congela en la fecha de naturalización. Ya no se aplica la fórmula estándar CSPA (edad real − tiempo pendiente). Simplemente, si era menor de 21 cuando el peticionario se naturalizó, queda congelado como menor.",
+    f2aSpouseTitle: "💍 Cónyuge del residente permanente",
+    f2aSpouseDesc: "Si el peticionario se naturaliza, el cónyuge también pasa a Familiar Inmediato (IR). Esto es siempre favorable porque elimina la fila de espera. No hay implicación de edad CSPA — los cónyuges no tienen restricción de edad.",
+    f2aSpouseCspa: "La CSPA no aplica al cónyuge porque no hay requisito de edad. Sin embargo, los hijos derivados del cónyuge (hijastros del peticionario) SÍ quedan protegidos como familiares inmediatos si son menores de 21 y solteros al momento de la naturalización.",
+    f2aRef: "Ref: INA §201(b)(2)(A)(i); 8 CFR §204.2(a)(4); 9 FAM 502.1-1(D)(3)",
   },
   en: {
     title: "🇺🇸 What happens if the petitioner becomes a citizen?",
@@ -88,6 +97,15 @@ const T = {
       F3: { converts: false, note: "F3 (married child of citizen) — no change if petitioner naturalizes." },
       F4: { converts: false, note: "F4 (sibling of citizen) — no change if petitioner naturalizes." },
     } as Record<string, { converts: boolean; to?: string; note: string }>,
+    // F2A-specific
+    f2aDistinctionTitle: "⚠️ Important: F2A covers two types of beneficiaries",
+    f2aChildTitle: "👶 Unmarried child under 21",
+    f2aChildDesc: "If the petitioner naturalizes, the minor child automatically becomes an Immediate Relative (IR). Age freezes on the date of the petitioner's naturalization — this is extremely favorable because it eliminates the wait line and protects the minor against aging out.",
+    f2aChildCspa: "🛡️ CSPA effect: The child's age freezes on the naturalization date. The standard CSPA formula (actual age − pending time) no longer applies. Simply put, if they were under 21 when the petitioner naturalized, they are frozen as a minor.",
+    f2aSpouseTitle: "💍 Spouse of the permanent resident",
+    f2aSpouseDesc: "If the petitioner naturalizes, the spouse also becomes an Immediate Relative (IR). This is always favorable because it eliminates the wait line. There is no CSPA age implication — spouses have no age restriction.",
+    f2aSpouseCspa: "CSPA does not apply to the spouse because there is no age requirement. However, the spouse's derivative children (petitioner's stepchildren) ARE protected as immediate relatives if they are under 21 and unmarried at the time of naturalization.",
+    f2aRef: "Ref: INA §201(b)(2)(A)(i); 8 CFR §204.2(a)(4); 9 FAM 502.1-1(D)(3)",
   },
 };
 
@@ -152,19 +170,40 @@ export default function NaturalizationSimulator({
 
                 <p className="text-sm text-foreground/80">{catInfo.note}</p>
 
-                {/* F2A → IR specific */}
+                {/* F2A → IR specific — with spouse vs child distinction */}
                 {category === "F2A" && (
-                  <div className="rounded-lg border border-accent/30 bg-accent/5 px-3 py-2.5 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />
-                      <p className="text-sm font-semibold text-foreground">{t.f2aToIr}</p>
+                  <div className="space-y-3">
+                    {/* Distinction banner */}
+                    <div className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5">
+                      <p className="text-sm font-bold text-foreground">{t.f2aDistinctionTitle}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">{t.f2aDetail}</p>
-                    <p className="text-xs text-accent">{t.irNote}</p>
-                    <div className="bg-secondary/50 rounded px-2.5 py-2 border border-border mt-1">
-                      <p className="text-xs font-semibold text-foreground">{t.cspaNote}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{t.cspaF2aNote}</p>
+
+                    {/* Child under 21 */}
+                    <div className="rounded-lg border border-accent/30 bg-accent/5 px-3 py-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Baby className="w-4 h-4 text-accent shrink-0" />
+                        <p className="text-sm font-semibold text-foreground">{t.f2aChildTitle}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t.f2aChildDesc}</p>
+                      <div className="bg-secondary/50 rounded px-2.5 py-2 border border-border">
+                        <p className="text-xs text-accent font-semibold">{t.f2aChildCspa}</p>
+                      </div>
                     </div>
+
+                    {/* Spouse */}
+                    <div className="rounded-lg border border-jarvis/20 bg-jarvis/5 px-3 py-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Heart className="w-4 h-4 text-jarvis shrink-0" />
+                        <p className="text-sm font-semibold text-foreground">{t.f2aSpouseTitle}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t.f2aSpouseDesc}</p>
+                      <div className="bg-secondary/50 rounded px-2.5 py-2 border border-border">
+                        <p className="text-xs text-muted-foreground">{t.f2aSpouseCspa}</p>
+                      </div>
+                    </div>
+
+                    {/* Legal reference */}
+                    <p className="text-[10px] text-muted-foreground">{t.f2aRef}</p>
                   </div>
                 )}
 
