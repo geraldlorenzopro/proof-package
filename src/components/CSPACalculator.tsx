@@ -598,7 +598,6 @@ export default function CSPACalculator() {
     if (!isFrozen && isNaN(ad.getTime())) { setError(t.errorDates); return; }
     if (!isFrozen && !isHypothetical && isNaN(vad.getTime())) { setError(t.errorDates); return; }
     // Validate logical date order
-    if (pd < dob) { setError(t.errorPdBeforeDob); return; }
     if (!isFrozen && ad < dob) { setError(t.errorApprovalBeforeDob); return; }
     if (!isFrozen && ad < pd) { setError(t.errorApproval); return; }
     if (!isFrozen && !isHypothetical && vad < pd) { setError(t.errorVisa); return; }
