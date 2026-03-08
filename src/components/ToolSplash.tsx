@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ChevronRight, Shield, type LucideIcon } from "lucide-react";
+import { ChevronRight, Shield, ArrowLeft, type LucideIcon } from "lucide-react";
+import { useBackDestination } from "@/hooks/useBackDestination";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -174,6 +175,7 @@ export default function ToolSplash({
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const t = T_SPLASH[lang];
   const s = ACCENT_STYLES[accentVariant];
+  const { destination, isHub } = useBackDestination();
 
   const handleTap = () => {
     if (disclaimer) {
@@ -193,8 +195,19 @@ export default function ToolSplash({
       {/* Ambient glow */}
       <div className={cn("absolute top-0 right-0 w-72 h-72 opacity-10 pointer-events-none", s.radialGlow)} />
 
-      {/* Language toggle */}
-      <div className="absolute top-4 right-4">
+      {/* Top bar: back + lang */}
+      <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
+        {isHub ? (
+          <a
+            href={destination}
+            className={cn("flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80", s.pillText)}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>🛡 Hub</span>
+          </a>
+        ) : (
+          <div />
+        )}
         <LangToggle lang={lang} setLang={setLang} />
       </div>
 
