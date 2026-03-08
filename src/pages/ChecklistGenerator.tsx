@@ -37,19 +37,34 @@ interface ChecklistData {
 
 type Step = "splash" | "upload" | "result";
 
-const DISCLAIMER_BULLETS: Record<string, string[]> = {
-  es: [
-    "Esta herramienta genera un checklist basado en el reporte del USCIS Document Analyzer.",
-    "El checklist es una guía organizativa; no constituye asesoría legal.",
-    "Verifica cada punto contra el documento original de USCIS.",
-    "Consulta siempre con un abogado o representante de inmigración autorizado.",
-  ],
-  en: [
-    "This tool generates a checklist based on the USCIS Document Analyzer report.",
-    "The checklist is an organizational guide; it does not constitute legal advice.",
-    "Verify each item against the original USCIS document.",
-    "Always consult with an attorney or authorized immigration representative.",
-  ],
+const CHECKLIST_DISCLAIMER: DisclaimerConfig = {
+  title: { es: "Aviso Legal Importante", en: "Important Legal Notice" },
+  exclusive: {
+    es: "Esta herramienta es de uso exclusivo para profesionales de inmigración.",
+    en: "This tool is for exclusive use by immigration professionals.",
+  },
+  description: {
+    es: "NER Checklist Generator es un módulo de apoyo organizativo integrado en la plataforma NER Immigration AI. El checklist generado no constituye asesoría legal.",
+    en: "NER Checklist Generator is an organizational support module integrated into the NER Immigration AI platform. The generated checklist does not constitute legal advice.",
+  },
+  bullets: {
+    es: [
+      "Esta herramienta genera un checklist basado en el reporte del USCIS Document Analyzer.",
+      "El checklist es una guía organizativa; no constituye asesoría legal.",
+      "Verifica cada punto contra el documento original de USCIS.",
+      "Consulta siempre con un abogado o representante de inmigración autorizado.",
+    ],
+    en: [
+      "This tool generates a checklist based on the USCIS Document Analyzer report.",
+      "The checklist is an organizational guide; it does not constitute legal advice.",
+      "Verify each item against the original USCIS document.",
+      "Always consult with an attorney or authorized immigration representative.",
+    ],
+  },
+  acceptText: {
+    es: "Al continuar acepta los términos de uso.",
+    en: "By continuing you accept the terms of use.",
+  },
 };
 
 function formatFileSize(bytes: number) {
