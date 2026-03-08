@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Shield, ChevronRight, Scale, FlaskConical, FolderOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, Shield, Scale, FlaskConical, FolderOpen } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import nerLogo from "@/assets/ner-logo.png";
 import { LangToggle } from "@/components/LangToggle";
@@ -14,36 +12,9 @@ import VawaResults from "@/components/vawa/VawaResults";
 import VawaTestRunner from "@/components/vawa/VawaTestRunner";
 import VawaCasesList from "@/components/vawa/VawaCasesList";
 import { VawaAnswers, evaluateEligibility, EligibilityResult } from "@/components/vawa/vawaEngine";
+import ToolSplash from "@/components/ToolSplash";
 
-type Step = "home" | "wizard" | "result" | "test";
-
-const DISCLAIMER_BULLETS: Record<string, string[]> = {
-  es: [
-    "Esta herramienta realiza una evaluación preliminar de elegibilidad para la auto-petición VAWA I-360.",
-    "El resultado NO constituye asesoría legal ni garantiza la aprobación del caso.",
-    "La evaluación se basa en las respuestas proporcionadas; la precisión depende de la información suministrada.",
-    "Siempre consulte con un abogado de inmigración autorizado antes de tomar decisiones legales.",
-    "NER Immigration AI no se responsabiliza por decisiones tomadas con base en esta evaluación.",
-  ],
-  en: [
-    "This tool performs a preliminary eligibility assessment for the VAWA I-360 self-petition.",
-    "The result does NOT constitute legal advice or guarantee case approval.",
-    "The assessment is based on answers provided; accuracy depends on the information given.",
-    "Always consult with an authorized immigration attorney before making legal decisions.",
-    "NER Immigration AI is not responsible for decisions made based on this assessment.",
-  ],
-};
-
-const DISCLAIMER_EXCLUSIVE: Record<string, { title: string; desc: string }> = {
-  es: {
-    title: "Esta herramienta es de uso exclusivo para profesionales de inmigración.",
-    desc: "NER VAWA Screener es un módulo de apoyo técnico integrado en la plataforma NER Immigration AI. La evaluación generada es preliminar y no constituye asesoría legal.",
-  },
-  en: {
-    title: "This tool is for exclusive use by immigration professionals.",
-    desc: "NER VAWA Screener is a technical support module integrated into the NER Immigration AI platform. The generated assessment is preliminary and does not constitute legal advice.",
-  },
-};
+type Step = "splash" | "home" | "wizard" | "result" | "test";
 
 export default function VawaScreener() {
   const navigate = useNavigate();
