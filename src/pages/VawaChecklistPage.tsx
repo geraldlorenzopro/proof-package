@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Save, ClipboardList, Download } from "lucide-react";
+import { ArrowLeft, Save, ClipboardList, Download, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import VawaChecklist from "@/components/vawa/VawaChecklist";
 import { generateChecklist, ChecklistCategory } from "@/components/vawa/vawaChecklistEngine";
 import { VawaAnswers, getDefaultAnswers, evaluateEligibility } from "@/components/vawa/vawaEngine";
 import { generateScreenerPdf } from "@/lib/vawaScreenerPdf";
+import ToolSplash from "@/components/ToolSplash";
 
 export default function VawaChecklistPage() {
   const navigate = useNavigate();
