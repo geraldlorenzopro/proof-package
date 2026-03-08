@@ -234,6 +234,28 @@ function SeatGuardedContent() {
   const navigate = useNavigate();
   const seat = useAppSeat("smart-forms");
   const { destination: backDest } = useBackDestination();
+  const [splashDone, setSplashDone] = useState(false);
+  const [splashLang, setSplashLang] = useState<"es" | "en">("es");
+
+  // ── SPLASH ──
+  if (!splashDone) {
+    return (
+      <ToolSplash
+        slug="smart-forms"
+        icon={FileText}
+        heroTitle="Smart"
+        heroSubtitle="Forms"
+        accentVariant="gold"
+        tagline={{
+          es: "Formularios inteligentes para inmigración",
+          en: "Intelligent immigration forms",
+        }}
+        onContinue={() => setSplashDone(true)}
+        lang={splashLang}
+        setLang={setSplashLang}
+      />
+    );
+  }
 
   // Show confirmation dialog when seats are full
   if (seat.pendingKick) {
