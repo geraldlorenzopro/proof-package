@@ -10,6 +10,7 @@ import { LangToggle } from "@/components/LangToggle";
 import { trackToolUsage } from "@/lib/trackUsage";
 import { supabase } from "@/integrations/supabase/client";
 import { useBackDestination } from "@/hooks/useBackDestination";
+import ToolSplash, { type DisclaimerConfig } from "@/components/ToolSplash";
 
 interface ChecklistCategory {
   title: string;
