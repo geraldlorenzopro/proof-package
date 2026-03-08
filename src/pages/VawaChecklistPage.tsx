@@ -225,11 +225,15 @@ export default function VawaChecklistPage() {
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
           <button
-            onClick={() => navigate(destination)}
+            onClick={() => isHub ? (window.location.href = destination) : navigate(destination)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
+            {isHub ? (
+              <><Shield className="w-3.5 h-3.5 text-jarvis" /><span className="text-xs">Hub</span></>
+            ) : (
+              <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
+            )}
           </button>
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <ClipboardList className="w-4 h-4 text-accent" />
