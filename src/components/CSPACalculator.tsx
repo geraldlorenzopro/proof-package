@@ -1374,7 +1374,7 @@ export default function CSPACalculator() {
 
               {/* Fixed footer */}
               <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur-sm">
-                <div className="px-5 pt-3 pb-2 flex gap-2">
+                <div className="px-5 pt-3 pb-2 flex gap-2" data-tour="result-download">
                   <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
                     <FileText className="w-4 h-4 mr-1" />
                     {lang === 'es' ? 'Descargar Reporte' : 'Download Report'}
