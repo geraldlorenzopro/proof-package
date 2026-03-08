@@ -39,27 +39,44 @@ function calculateCSPA(params: {
 }
 
 describe("CSPA Calculator", () => {
-  it("F2B Mexico normal case: DOB 2003-06-15, PD 2010-01-20, AD 2012-08-10, VAD 2024-03-01", () => {
+  it("F2B Mexico realistic: DOB 2000-03-10, PD 2005-06-01, AD 2007-11-15, VAD 2026-03-08 (today)", () => {
+    // PD 2005-06-01 is before the current F2B/Mexico cutoff of 15FEB2009, so visa IS available
     const r = calculateCSPA({
-      dob: "2003-06-15",
-      priorityDate: "2010-01-20",
-      approvalDate: "2012-08-10",
-      visaAvailableDate: "2024-03-01",
+      dob: "2000-03-10",
+      priorityDate: "2005-06-01",
+      approvalDate: "2007-11-15",
+      visaAvailableDate: "2026-03-08",
     });
-    // Biological age at visa available: ~20.7 years
-    expect(r.biologicalAge).toBeGreaterThan(7500);
-    // Pending time: ~933 days (2010-01-20 to 2012-08-10)
-    expect(r.pendingTime).toBeGreaterThan(900);
-    expect(r.pendingTime).toBeLessThan(970);
-    // CSPA age should be well under 21
-    expect(r.cspaAgeYears).toBeLessThan(21);
-    expect(r.qualifies).toBe(true);
-    console.log("F2B Mexico result:", {
-      biologicalAgeDays: r.biologicalAge,
+    // Bio age: 2000-03-10 to 2026-03-08 = ~25.99 years
+    // Pending: 2005-06-01 to 2007-11-15 = ~898 days = ~2.46 years
+    // CSPA = ~25.99 - 2.46 = ~23.53 → does NOT qualify
+    expect(r.cspaAgeYears).toBeGreaterThan(23);
+    expect(r.cspaAgeYears).toBeLessThan(24);
+    expect(r.qualifies).toBe(false);
+    console.log("F2B Mexico realistic (not qualifying):", {
       biologicalAgeYears: daysToYears(r.biologicalAge).toFixed(2),
-      pendingTimeDays: r.pendingTime,
       pendingTimeYears: daysToYears(r.pendingTime).toFixed(2),
-      cspaAgeDays: r.cspaAgeDays,
+      cspaAgeYears: r.cspaAgeYears.toFixed(2),
+      qualifies: r.qualifies,
+    });
+  });
+
+  it("F2B Mexico realistic qualifying: DOB 2005-06-15, PD 2005-01-10, AD 2007-08-20, VAD 2026-03-08", () => {
+    // PD before cutoff, child born after PD → young enough to qualify
+    const r = calculateCSPA({
+      dob: "2005-06-15",
+      priorityDate: "2005-01-10",
+      approvalDate: "2007-08-20",
+      visaAvailableDate: "2026-03-08",
+    });
+    // Bio age: ~20.73 years, Pending: ~953 days = ~2.61 years
+    // CSPA = ~20.73 - 2.61 = ~18.12 → qualifies
+    expect(r.cspaAgeYears).toBeGreaterThan(17.5);
+    expect(r.cspaAgeYears).toBeLessThan(19);
+    expect(r.qualifies).toBe(true);
+    console.log("F2B Mexico realistic (qualifying):", {
+      biologicalAgeYears: daysToYears(r.biologicalAge).toFixed(2),
+      pendingTimeYears: daysToYears(r.pendingTime).toFixed(2),
       cspaAgeYears: r.cspaAgeYears.toFixed(2),
       qualifies: r.qualifies,
     });
