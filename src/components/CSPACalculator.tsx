@@ -500,8 +500,8 @@ export default function CSPACalculator() {
   const requestIdRef = useRef(0);
 
   useEffect(() => {
-    const isCompleteDate = /^\d{4}-\d{2}-\d{2}$/.test(form.priorityDate) && !isNaN(new Date(form.priorityDate).getTime());
-    const hasApproval = /^\d{4}-\d{2}-\d{2}$/.test(form.approvalDate) && !isNaN(new Date(form.approvalDate).getTime());
+    const isCompleteDate = /^\d{4}-\d{2}-\d{2}$/.test(form.priorityDate) && !isNaN(new Date(form.priorityDate + "T12:00:00").getTime());
+    const hasApproval = /^\d{4}-\d{2}-\d{2}$/.test(form.approvalDate) && !isNaN(new Date(form.approvalDate + "T12:00:00").getTime());
     if (!isCompleteDate || !form.category || !form.chargeability) {
       setVisaAutoInfo(null); setVisaError(null); setPdBecameCurrent(null);
       setForm((prev) => ({ ...prev, visaAvailableDate: "" }));
@@ -585,14 +585,14 @@ export default function CSPACalculator() {
 
   const calculate = (forceHypothetical = false) => {
     setError(null); setResult(null); setHypothetical(false);
-    const dob = new Date(form.dob), pd = new Date(form.priorityDate);
-    const ad = new Date(form.approvalDate);
+    const dob = new Date(form.dob + "T12:00:00"), pd = new Date(form.priorityDate + "T12:00:00");
+    const ad = new Date(form.approvalDate + "T12:00:00");
     const isFrozen = AGE_FROZEN_CATEGORIES.has(form.category);
 
     // If visa not available, do hypothetical calc with today's date
     const isHypothetical = !isFrozen && (forceHypothetical || !form.visaAvailableDate);
     const vadStr = isHypothetical ? format(new Date(), "yyyy-MM-dd") : form.visaAvailableDate;
-    const vad = new Date(vadStr);
+    const vad = new Date(vadStr + "T12:00:00");
 
     if ([dob, pd].some((d) => isNaN(d.getTime()))) { setError(t.errorDates); return; }
     if (!isFrozen && isNaN(ad.getTime())) { setError(t.errorDates); return; }
@@ -913,9 +913,9 @@ export default function CSPACalculator() {
 
             {/* Chart 2: Deadline when visa is NOT yet current (not for frozen categories) */}
             {!isFrozenCategory && !form.visaAvailableDate && !loadingVisa && form.dob && form.approvalDate && form.priorityDate && (() => {
-              const dob = new Date(form.dob);
-              const pd = new Date(form.priorityDate);
-              const ad = new Date(form.approvalDate);
+               const dob = new Date(form.dob + "T12:00:00");
+               const pd = new Date(form.priorityDate + "T12:00:00");
+               const ad = new Date(form.approvalDate + "T12:00:00");
               if ([dob, pd, ad].some(d => isNaN(d.getTime()))) return false;
               const birthday21 = new Date(dob);
               birthday21.setFullYear(birthday21.getFullYear() + 21);
