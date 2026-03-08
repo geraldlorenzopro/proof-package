@@ -33,6 +33,7 @@ import CSPALeadCaptureModal from "@/components/CSPALeadCaptureModal";
 import CSPAFeedbackModal from "@/components/CSPAFeedbackModal";
 import { generateCSPAReport, type CSPAReportData } from "@/lib/cspaPdfGenerator";
 import OnboardingSpotlight, { type TourStep } from "@/components/OnboardingSpotlight";
+import ToolSplash from "@/components/ToolSplash";
 import { toast } from "@/hooks/use-toast";
 
 // ─── Translations ─────────────────────────────────────────────────────────────
@@ -354,78 +355,47 @@ const CHARGEABILITIES_EN = [
 const MONTH_NAMES_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const MONTH_NAMES_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-// ─── Welcome Splash ────────────────────────────────────────────────────────────
-function WelcomeSplash({ onContinue, lang, setLang }: { onContinue: () => void; lang: Lang; setLang: (l: Lang) => void }) {
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
-  const t = T[lang];
+// WelcomeSplash removed — now uses reusable ToolSplash component
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background grid-bg">
-      <div className="absolute top-0 right-0 w-72 h-72 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--jarvis)),_transparent_70%)] pointer-events-none" />
-
-      <div className="absolute top-4 right-4">
-        <LangToggle lang={lang} setLang={setLang} />
-      </div>
-
-      <div
-        className="relative z-10 flex flex-col items-center gap-7 cursor-pointer select-none px-10 py-12 max-w-sm w-full text-center"
-        onClick={() => setShowDisclaimer(true)}
-      >
-        <div className="w-20 h-20 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center animate-float">
-          <Scale className="w-10 h-10 text-accent" />
-        </div>
-        <div>
-          <p className="text-muted-foreground text-xs font-semibold uppercase tracking-[0.3em] mb-2">{t.platform}</p>
-          <h1 className="font-bold leading-tight">
-            <span className="text-5xl font-display text-accent glow-text-gold">CSPA</span>
-            <br />
-            <span className="text-3xl text-foreground">Calculator</span>
-          </h1>
-          <p className="text-muted-foreground text-sm mt-3">{t.subtitle}</p>
-        </div>
-        <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5 animate-glow-pulse">
-          <Scale className="w-4 h-4 text-accent" />
-          <span className="text-sm font-medium text-accent">{t.tapToStart}</span>
-        </div>
-      </div>
-
-      <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
-        <DialogContent className="max-w-md bg-card border-accent/20">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2 text-base text-foreground">
-                <Shield className="w-5 h-5 text-accent" />
-                {t.legalNotice}
-              </DialogTitle>
-              <LangToggle lang={lang} setLang={setLang} />
-            </div>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-accent/10 border border-accent/20 rounded-xl p-4">
-              <p className="text-foreground text-sm leading-relaxed font-semibold mb-2">{t.moduleExclusive}</p>
-              <p className="text-muted-foreground text-sm leading-relaxed">{t.moduleDesc}</p>
-            </div>
-            <ul className="space-y-2 text-sm text-foreground/80">
-              {t.bullets.map((item, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="border-t border-border pt-3 flex items-center justify-between gap-3">
-              <p className="text-xs text-muted-foreground">{t.acceptTerms}</p>
-              <Button onClick={onContinue} className="gradient-gold text-accent-foreground font-semibold px-6 shrink-0" size="sm">
-                {t.continue}
-                <ChevronRight className="ml-1 w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+const CSPA_DISCLAIMER = {
+  title: { es: "Aviso Legal Importante", en: "Important Legal Notice" },
+  exclusive: {
+    es: "Este módulo es de uso exclusivo para profesionales de inmigración.",
+    en: "This module is for use by immigration professionals only.",
+  },
+  description: {
+    es: (
+      <>
+        <strong>NER CSPA Calculator</strong> es un módulo de apoyo técnico integrado en la plataforma{" "}
+        <strong>NER Immigration AI</strong>. Los resultados generados son orientativos y{" "}
+        <strong>no constituyen asesoría legal</strong>.
+      </>
+    ),
+    en: (
+      <>
+        <strong>NER CSPA Calculator</strong> is a technical support module integrated in the{" "}
+        <strong>NER Immigration AI</strong> platform. Results are for guidance only and{" "}
+        <strong>do not constitute legal advice</strong>.
+      </>
+    ),
+  },
+  bullets: {
+    es: [
+      "Este módulo no reemplaza el criterio profesional ni la investigación independiente.",
+      "NER Immigration AI no asume responsabilidad por decisiones tomadas basándose únicamente en estos resultados.",
+      "El usuario acepta utilizar este módulo como recurso complementario de análisis.",
+    ],
+    en: [
+      "This module does not replace professional judgment or independent research.",
+      "NER Immigration AI assumes no responsibility for decisions made solely based on these results.",
+      "The user agrees to use this module as a complementary analysis resource.",
+    ],
+  },
+  acceptText: {
+    es: "Al continuar acepta los términos de uso.",
+    en: "By continuing you accept the terms of use.",
+  },
+} satisfies import("@/components/ToolSplash").DisclaimerConfig;
 
 // ─── Consideration Bullet ────────────────────────────────────────────────────
 function ConsiderationBullet({
@@ -714,7 +684,20 @@ export default function CSPACalculator() {
     ? (form.dob && form.priorityDate && form.category)
     : (form.dob && form.priorityDate && form.approvalDate && form.visaAvailableDate && !loadingVisa);
 
-  if (!accepted) return <WelcomeSplash onContinue={() => setAccepted(true)} lang={lang} setLang={setLang} />;
+  if (!accepted) return (
+    <ToolSplash
+      slug="cspa"
+      icon={Scale}
+      heroTitle="CSPA"
+      heroSubtitle="Calculator"
+      accentVariant="gold"
+      tagline={{ es: "Soluciones de Inmigración Inteligente", en: "Intelligent Immigration Solutions" }}
+      disclaimer={CSPA_DISCLAIMER}
+      onContinue={() => setAccepted(true)}
+      lang={lang}
+      setLang={setLang}
+    />
+  );
 
   return (
     <div className="min-h-screen bg-background grid-bg flex flex-col">
