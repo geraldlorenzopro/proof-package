@@ -33,6 +33,7 @@ import CSPALeadCaptureModal from "@/components/CSPALeadCaptureModal";
 import CSPAFeedbackModal from "@/components/CSPAFeedbackModal";
 import { generateCSPAReport, type CSPAReportData } from "@/lib/cspaPdfGenerator";
 import OnboardingSpotlight, { type TourStep } from "@/components/OnboardingSpotlight";
+import ToolSplash from "@/components/ToolSplash";
 import { toast } from "@/hooks/use-toast";
 
 // ─── Translations ─────────────────────────────────────────────────────────────
