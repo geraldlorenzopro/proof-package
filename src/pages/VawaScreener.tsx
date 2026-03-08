@@ -16,11 +16,39 @@ import ToolSplash from "@/components/ToolSplash";
 
 type Step = "splash" | "home" | "wizard" | "result" | "test";
 
+const VAWA_DISCLAIMER = {
+  title: { es: "Aviso Legal Importante", en: "Important Legal Notice" },
+  exclusive: {
+    es: "Esta herramienta es de uso exclusivo para profesionales de inmigración.",
+    en: "This tool is for exclusive use by immigration professionals.",
+  },
+  description: {
+    es: "NER VAWA Screener es un módulo de apoyo técnico integrado en la plataforma NER Immigration AI. La evaluación generada es preliminar y no constituye asesoría legal.",
+    en: "NER VAWA Screener is a technical support module integrated into the NER Immigration AI platform. The generated assessment is preliminary and does not constitute legal advice.",
+  },
+  bullets: {
+    es: [
+      "Esta herramienta realiza una evaluación preliminar de elegibilidad para la auto-petición VAWA I-360.",
+      "El resultado NO constituye asesoría legal ni garantiza la aprobación del caso.",
+      "La evaluación se basa en las respuestas proporcionadas; la precisión depende de la información suministrada.",
+      "Siempre consulte con un abogado de inmigración autorizado antes de tomar decisiones legales.",
+      "NER Immigration AI no se responsabiliza por decisiones tomadas con base en esta evaluación.",
+    ],
+    en: [
+      "This tool performs a preliminary eligibility assessment for the VAWA I-360 self-petition.",
+      "The result does NOT constitute legal advice or guarantee case approval.",
+      "The assessment is based on answers provided; accuracy depends on the information given.",
+      "Always consult with an authorized immigration attorney before making legal decisions.",
+      "NER Immigration AI is not responsible for decisions made based on this assessment.",
+    ],
+  },
+  acceptText: { es: "Deseo Continuar", en: "Continue" },
+};
+
 export default function VawaScreener() {
   const navigate = useNavigate();
   const { destination, isHub } = useBackDestination();
-  const [step, setStep] = useState<Step>("home");
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [step, setStep] = useState<Step>("splash");
   const [lang, setLang] = useState<"es" | "en">("es");
   const [result, setResult] = useState<EligibilityResult | null>(null);
   const [answers, setAnswers] = useState<VawaAnswers | null>(null);
@@ -28,14 +56,13 @@ export default function VawaScreener() {
 
   const t = (es: string, en: string) => (lang === "es" ? es : en);
 
-  const handleAcceptDisclaimer = async () => {
-    setShowDisclaimer(false);
+  const handleSplashContinue = async () => {
     const usage = await trackToolUsage("vawa-screener", "start");
     if (!usage.allowed) {
       toast.error(usage.message);
       return;
     }
-    setStep("wizard");
+    setStep("home");
   };
 
   const handleWizardComplete = (a: VawaAnswers) => {
