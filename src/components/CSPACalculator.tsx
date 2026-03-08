@@ -833,7 +833,7 @@ export default function CSPACalculator() {
               )}
 
               {!isFrozenCategory && (
-                <div className="space-y-1.5">
+                <div className="space-y-1.5" data-tour="visa-date">
                   <Label className="text-foreground font-medium text-sm">{t.visaDate}</Label>
                   <div className={cn("h-10 rounded-md border px-3 flex items-center gap-2 text-sm",
                     loadingVisa ? "border-border bg-muted text-muted-foreground"
