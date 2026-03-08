@@ -112,7 +112,7 @@ export default function OnboardingSpotlight({
   const [active, setActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0, arrow: "top" as const });
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; arrow: "top" | "bottom" | "left" | "right" }>({ top: 0, left: 0, arrow: "top" });
   const tooltipRef = useRef<HTMLDivElement>(null);
   const t = T[lang];
 
