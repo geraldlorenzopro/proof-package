@@ -736,7 +736,7 @@ export default function CSPACalculator() {
 
       {/* Form */}
       <div className="flex-1 max-w-4xl w-full mx-auto px-6 py-6 pb-4">
-        <Card className="glow-border bg-card">
+        <Card className="glow-border bg-card" data-tour="form-card">
           <CardContent className="p-6">
             <h2 className="text-xl font-semibold text-foreground mb-0.5">{t.formTitle}</h2>
             <p className="text-muted-foreground text-xs mb-5">{t.formSub}</p>
