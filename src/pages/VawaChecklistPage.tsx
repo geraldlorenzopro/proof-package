@@ -18,9 +18,10 @@ import ToolSplash from "@/components/ToolSplash";
 
 export default function VawaChecklistPage() {
   const navigate = useNavigate();
-  const { destination } = useBackDestination();
+  const { destination, isHub } = useBackDestination();
   const [searchParams] = useSearchParams();
   const caseId = searchParams.get("case");
+  const [splashDone, setSplashDone] = useState(false);
   
   const [lang, setLang] = useState<"es" | "en">("es");
   const [loading, setLoading] = useState(true);
