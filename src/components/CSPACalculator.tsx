@@ -1305,7 +1305,7 @@ export default function CSPACalculator() {
               )}
 
               {/* Collapsible detail section */}
-              <details className="px-5 pb-1 group">
+              <details className="px-5 pb-1 group" data-tour="result-details">
                 <summary className="flex items-center justify-center gap-1.5 py-2.5 cursor-pointer text-xs text-accent font-medium hover:text-accent/80 transition-colors list-none [&::-webkit-details-marker]:hidden">
                   <ChevronRight className="w-3.5 h-3.5 transition-transform group-open:rotate-90" />
                   {lang === 'es' ? 'Ver cómo se calculó' : 'See how it was calculated'}
