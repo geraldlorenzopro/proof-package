@@ -585,8 +585,8 @@ export default function CSPACalculator() {
 
   const calculate = (forceHypothetical = false) => {
     setError(null); setResult(null); setHypothetical(false);
-    const dob = new Date(form.dob), pd = new Date(form.priorityDate);
-    const ad = new Date(form.approvalDate);
+    const dob = new Date(form.dob + "T12:00:00"), pd = new Date(form.priorityDate + "T12:00:00");
+    const ad = new Date(form.approvalDate + "T12:00:00");
     const isFrozen = AGE_FROZEN_CATEGORIES.has(form.category);
 
     // If visa not available, do hypothetical calc with today's date
