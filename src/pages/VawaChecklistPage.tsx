@@ -189,6 +189,26 @@ export default function VawaChecklistPage() {
     await createCase();
   };
 
+  // ── SPLASH ──
+  if (!splashDone) {
+    return (
+      <ToolSplash
+        slug="vawa-checklist"
+        icon={ClipboardList}
+        heroTitle="VAWA"
+        heroSubtitle="Checklist"
+        accentVariant="green"
+        tagline={{
+          es: "Seguimiento integral de documentación VAWA",
+          en: "Comprehensive VAWA documentation tracking",
+        }}
+        onContinue={() => setSplashDone(true)}
+        lang={lang}
+        setLang={setLang}
+      />
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
