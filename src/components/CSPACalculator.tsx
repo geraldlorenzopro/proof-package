@@ -956,7 +956,7 @@ export default function CSPACalculator() {
               </div>
             )}
 
-            <div className="flex flex-col items-center gap-3 pt-2">
+            <div className="flex flex-col items-center gap-3 pt-2" data-tour="calculate-btn">
               <Button onClick={() => calculate()} disabled={!requiredFilled}
                 className="w-full sm:w-auto gradient-gold text-accent-foreground font-semibold px-14 py-3 text-base hover:opacity-90 transition-opacity shadow-lg">
                 {t.calculate}<ChevronRight className="ml-2 w-4 h-4" />
