@@ -10,6 +10,7 @@ import { LangToggle } from "@/components/LangToggle";
 import { trackToolUsage } from "@/lib/trackUsage";
 import { supabase } from "@/integrations/supabase/client";
 import { useBackDestination } from "@/hooks/useBackDestination";
+import ToolSplash, { type DisclaimerConfig } from "@/components/ToolSplash";
 
 interface ChecklistCategory {
   title: string;
@@ -36,19 +37,34 @@ interface ChecklistData {
 
 type Step = "splash" | "upload" | "result";
 
-const DISCLAIMER_BULLETS: Record<string, string[]> = {
-  es: [
-    "Esta herramienta genera un checklist basado en el reporte del USCIS Document Analyzer.",
-    "El checklist es una guía organizativa; no constituye asesoría legal.",
-    "Verifica cada punto contra el documento original de USCIS.",
-    "Consulta siempre con un abogado o representante de inmigración autorizado.",
-  ],
-  en: [
-    "This tool generates a checklist based on the USCIS Document Analyzer report.",
-    "The checklist is an organizational guide; it does not constitute legal advice.",
-    "Verify each item against the original USCIS document.",
-    "Always consult with an attorney or authorized immigration representative.",
-  ],
+const CHECKLIST_DISCLAIMER: DisclaimerConfig = {
+  title: { es: "Aviso Legal Importante", en: "Important Legal Notice" },
+  exclusive: {
+    es: "Esta herramienta es de uso exclusivo para profesionales de inmigración.",
+    en: "This tool is for exclusive use by immigration professionals.",
+  },
+  description: {
+    es: "NER Checklist Generator es un módulo de apoyo organizativo integrado en la plataforma NER Immigration AI. El checklist generado no constituye asesoría legal.",
+    en: "NER Checklist Generator is an organizational support module integrated into the NER Immigration AI platform. The generated checklist does not constitute legal advice.",
+  },
+  bullets: {
+    es: [
+      "Esta herramienta genera un checklist basado en el reporte del USCIS Document Analyzer.",
+      "El checklist es una guía organizativa; no constituye asesoría legal.",
+      "Verifica cada punto contra el documento original de USCIS.",
+      "Consulta siempre con un abogado o representante de inmigración autorizado.",
+    ],
+    en: [
+      "This tool generates a checklist based on the USCIS Document Analyzer report.",
+      "The checklist is an organizational guide; it does not constitute legal advice.",
+      "Verify each item against the original USCIS document.",
+      "Always consult with an attorney or authorized immigration representative.",
+    ],
+  },
+  acceptText: {
+    es: "Al continuar acepta los términos de uso.",
+    en: "By continuing you accept the terms of use.",
+  },
 };
 
 function formatFileSize(bytes: number) {
@@ -70,7 +86,7 @@ export default function ChecklistGenerator() {
   const navigate = useNavigate();
   const { destination, isHub } = useBackDestination();
   const [step, setStep] = useState<Step>("splash");
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  // showDisclaimer state removed — handled by ToolSplash
   const [lang, setLang] = useState<"es" | "en">("es");
   const [uploadedFile, setUploadedFile] = useState<{ name: string; size: number; base64: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,11 +94,6 @@ export default function ChecklistGenerator() {
   const [checklist, setChecklist] = useState<ChecklistData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleStart = () => setShowDisclaimer(true);
-  const handleAcceptDisclaimer = () => {
-    setShowDisclaimer(false);
-    setStep("upload");
-  };
 
   const handleFileSelect = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -415,76 +426,21 @@ export default function ChecklistGenerator() {
   // ── SPLASH ──
   if (step === "splash") {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background grid-bg">
-        <div className="absolute top-4 right-4 z-20">
-          <LangToggle lang={lang} setLang={setLang} />
-        </div>
-        <div className="absolute top-0 right-0 w-72 h-72 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--jarvis)),_transparent_70%)] pointer-events-none" />
-
-        <div
-          className="relative z-10 flex flex-col items-center gap-7 cursor-pointer select-none px-10 py-12 max-w-sm w-full text-center"
-          onClick={() => setShowDisclaimer(true)}
-        >
-          <div className="w-20 h-20 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center animate-float">
-            <ClipboardList className="w-10 h-10 text-accent" />
-          </div>
-          <div>
-            <p className="text-muted-foreground text-xs font-semibold uppercase tracking-[0.3em] mb-2">NER IMMIGRATION AI</p>
-            <h1 className="font-bold leading-tight">
-              <span className="text-4xl font-display text-accent glow-text-gold">Checklist</span>
-              <br />
-              <span className="text-3xl text-foreground">Generator</span>
-            </h1>
-            <p className="text-muted-foreground text-sm mt-3">{lang === 'es' ? 'Organiza tu evidencia de forma inteligente' : 'Organize your evidence intelligently'}</p>
-          </div>
-          <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5 animate-glow-pulse">
-            <ClipboardList className="w-4 h-4 text-accent" />
-            <span className="text-sm font-medium text-accent">{lang === 'es' ? 'Toca para comenzar' : 'Tap to start'}</span>
-          </div>
-        </div>
-
-        {/* Disclaimer Modal */}
-        <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
-          <DialogContent className="max-w-md bg-card border-accent/20">
-            <DialogHeader>
-              <DialogTitle className="flex items-center justify-between text-base text-foreground">
-                <span className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-accent" />
-                  {lang === 'es' ? 'Aviso Legal Importante' : 'Important Legal Notice'}
-                </span>
-                <LangToggle lang={lang} setLang={setLang} />
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="bg-accent/10 border border-accent/20 rounded-xl p-4">
-                <p className="text-foreground text-sm leading-relaxed font-semibold mb-2">
-                  {lang === 'es' ? 'Esta herramienta es de uso exclusivo para profesionales de inmigracion.' : 'This tool is for exclusive use by immigration professionals.'}
-                </p>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {lang === 'es'
-                    ? 'NER Checklist Generator es un modulo de apoyo organizativo integrado en la plataforma NER Immigration AI. El checklist generado no constituye asesoria legal.'
-                    : 'NER Checklist Generator is an organizational support module integrated into the NER Immigration AI platform. The generated checklist does not constitute legal advice.'}
-                </p>
-              </div>
-              <ul className="space-y-2 text-sm text-foreground/80">
-                {DISCLAIMER_BULLETS[lang].map((b, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-                    <span>{b}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="border-t border-border pt-3 flex items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">{lang === 'es' ? 'Al continuar acepta los terminos de uso.' : 'By continuing you accept the terms of use.'}</p>
-                <Button onClick={handleAcceptDisclaimer} className="gradient-gold text-accent-foreground font-semibold px-6 shrink-0" size="sm">
-                  {lang === 'es' ? 'Deseo Continuar' : 'Continue'}
-                  <ChevronRight className="ml-1 w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+      <ToolSplash
+        slug="checklist-generator"
+        icon={ClipboardList}
+        heroTitle="Checklist"
+        heroSubtitle="Generator"
+        accentVariant="gold"
+        tagline={{
+          es: "Organiza tu evidencia de forma inteligente",
+          en: "Organize your evidence intelligently",
+        }}
+        disclaimer={CHECKLIST_DISCLAIMER}
+        onContinue={() => setStep("upload")}
+        lang={lang}
+        setLang={setLang}
+      />
     );
   }
 
