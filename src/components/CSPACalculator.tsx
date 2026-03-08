@@ -913,9 +913,9 @@ export default function CSPACalculator() {
 
             {/* Chart 2: Deadline when visa is NOT yet current (not for frozen categories) */}
             {!isFrozenCategory && !form.visaAvailableDate && !loadingVisa && form.dob && form.approvalDate && form.priorityDate && (() => {
-              const dob = new Date(form.dob);
-              const pd = new Date(form.priorityDate);
-              const ad = new Date(form.approvalDate);
+               const dob = new Date(form.dob + "T12:00:00");
+               const pd = new Date(form.priorityDate + "T12:00:00");
+               const ad = new Date(form.approvalDate + "T12:00:00");
               if ([dob, pd, ad].some(d => isNaN(d.getTime()))) return false;
               const birthday21 = new Date(dob);
               birthday21.setFullYear(birthday21.getFullYear() + 21);
