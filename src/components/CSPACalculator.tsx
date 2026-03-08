@@ -395,7 +395,7 @@ const CSPA_DISCLAIMER = {
     es: "Al continuar acepta los términos de uso.",
     en: "By continuing you accept the terms of use.",
   },
-} as const;
+} satisfies import("@/components/ToolSplash").DisclaimerConfig;
 
 // ─── Consideration Bullet ────────────────────────────────────────────────────
 function ConsiderationBullet({
