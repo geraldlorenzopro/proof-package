@@ -94,11 +94,6 @@ export default function ChecklistGenerator() {
   const [checklist, setChecklist] = useState<ChecklistData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleStart = () => setShowDisclaimer(true);
-  const handleAcceptDisclaimer = () => {
-    setShowDisclaimer(false);
-    setStep("upload");
-  };
 
   const handleFileSelect = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
