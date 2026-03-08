@@ -32,6 +32,7 @@ import { trackToolUsage } from "@/lib/trackUsage";
 import CSPALeadCaptureModal from "@/components/CSPALeadCaptureModal";
 import CSPAFeedbackModal from "@/components/CSPAFeedbackModal";
 import { generateCSPAReport, type CSPAReportData } from "@/lib/cspaPdfGenerator";
+import OnboardingSpotlight, { type TourStep } from "@/components/OnboardingSpotlight";
 import { toast } from "@/hooks/use-toast";
 
 // ─── Translations ─────────────────────────────────────────────────────────────
@@ -718,7 +719,7 @@ export default function CSPACalculator() {
   return (
     <div className="min-h-screen bg-background grid-bg flex flex-col">
       {/* Sticky header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" data-tour="header">
         <div className="max-w-4xl mx-auto flex items-center justify-between h-14 px-4">
           <button onClick={() => navigate(backDest)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
@@ -735,7 +736,7 @@ export default function CSPACalculator() {
 
       {/* Form */}
       <div className="flex-1 max-w-4xl w-full mx-auto px-6 py-6 pb-4">
-        <Card className="glow-border bg-card">
+        <Card className="glow-border bg-card" data-tour="form-card">
           <CardContent className="p-6">
             <h2 className="text-xl font-semibold text-foreground mb-0.5">{t.formTitle}</h2>
             <p className="text-muted-foreground text-xs mb-5">{t.formSub}</p>
@@ -765,7 +766,7 @@ export default function CSPACalculator() {
               </div>
             </details>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" data-tour="category-country">
               <div className="space-y-1.5">
                 <Label className="text-foreground font-medium text-sm">{t.category}</Label>
                 <Select value={form.category || undefined} onValueChange={handleSelect("category")}>
@@ -805,7 +806,7 @@ export default function CSPACalculator() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" data-tour="dates">
               <DateField label={t.dob} id="dob" hint={t.dobHint} value={form.dob} onChange={handleDateChange("dob")} fromYear={1940} toYear={new Date().getFullYear()} lang={lang} />
               <DateField
                 label={form.category === "DV" ? t.dvFilingLabel : t.priorityDate}
@@ -832,7 +833,7 @@ export default function CSPACalculator() {
               )}
 
               {!isFrozenCategory && (
-                <div className="space-y-1.5">
+                <div className="space-y-1.5" data-tour="visa-date">
                   <Label className="text-foreground font-medium text-sm">{t.visaDate}</Label>
                   <div className={cn("h-10 rounded-md border px-3 flex items-center gap-2 text-sm",
                     loadingVisa ? "border-border bg-muted text-muted-foreground"
@@ -955,7 +956,7 @@ export default function CSPACalculator() {
               </div>
             )}
 
-            <div className="flex flex-col items-center gap-3 pt-2">
+            <div className="flex flex-col items-center gap-3 pt-2" data-tour="calculate-btn">
               <Button onClick={() => calculate()} disabled={!requiredFilled}
                 className="w-full sm:w-auto gradient-gold text-accent-foreground font-semibold px-14 py-3 text-base hover:opacity-90 transition-opacity shadow-lg">
                 {t.calculate}<ChevronRight className="ml-2 w-4 h-4" />
@@ -1417,6 +1418,28 @@ export default function CSPACalculator() {
         onOpenChange={setShowFeedback}
         calculationId={lastCalculationId}
         lang={lang}
+      />
+
+      {/* Onboarding Tutorial */}
+      <OnboardingSpotlight
+        storageKey="cspa-onboarding-done"
+        lang={lang}
+        steps={(() => {
+          const s: TourStep[] = lang === "es" ? [
+            { target: "header", title: "Bienvenido a la Calculadora CSPA", description: "Esta herramienta calcula si un hijo califica como menor de 21 bajo la ley CSPA. Te guiaremos paso a paso.", icon: "⚖️", position: "bottom" },
+            { target: "category-country", title: "Categoría y país", description: "Primero selecciona la categoría de visa (F1, F2A, etc.) y el país de nacimiento del beneficiario. Esto determina los tiempos de espera.", icon: "📋", position: "bottom" },
+            { target: "dates", title: "Fechas del caso", description: "Ingresa la fecha de nacimiento del hijo, la fecha de prioridad (del recibo USCIS), y la fecha de aprobación. La visa se detecta automáticamente.", icon: "📅", position: "top" },
+            { target: "visa-date", title: "Visa automática", description: "Este campo se llena solo — consultamos el Boletín de Visas en tiempo real para detectar cuándo la visa estuvo disponible.", icon: "🌐", position: "top" },
+            { target: "calculate-btn", title: "¡Calcula!", description: "Presiona este botón y obtén el resultado al instante. Si la visa aún no está vigente, puedes ver una simulación hipotética.", icon: "🚀", position: "top" },
+          ] : [
+            { target: "header", title: "Welcome to the CSPA Calculator", description: "This tool calculates if a child qualifies as under 21 under the CSPA law. We'll guide you step by step.", icon: "⚖️", position: "bottom" },
+            { target: "category-country", title: "Category & Country", description: "First select the visa category (F1, F2A, etc.) and the beneficiary's country of birth. This determines wait times.", icon: "📋", position: "bottom" },
+            { target: "dates", title: "Case dates", description: "Enter the child's date of birth, priority date (from the USCIS receipt), and approval date. The visa date is auto-detected.", icon: "📅", position: "top" },
+            { target: "visa-date", title: "Automatic visa lookup", description: "This field fills itself — we query the Visa Bulletin in real time to detect when the visa became available.", icon: "🌐", position: "top" },
+            { target: "calculate-btn", title: "Calculate!", description: "Press this button and get the result instantly. If the visa isn't current yet, you can see a hypothetical simulation.", icon: "🚀", position: "top" },
+          ];
+          return s;
+        })()}
       />
     </div>
   );
