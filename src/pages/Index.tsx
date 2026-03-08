@@ -35,22 +35,35 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import ToolSplash from '@/components/ToolSplash';
 
-const DISCLAIMER_BULLETS = {
-  es: [
-    "Esta herramienta organiza evidencia fotográfica; no genera ni interpreta documentos legales.",
-    "El PDF resultante no constituye asesoría legal ni de inmigración.",
-    "El usuario es responsable de la veracidad y relevancia de las fotos incluidas.",
-    "Siempre consulta con un abogado o representante de inmigración autorizado.",
-    "NER Immigration AI no se responsabiliza por decisiones tomadas con base en estos documentos.",
-  ],
-  en: [
-    "This tool organizes photographic evidence; it does not generate or interpret legal documents.",
-    "The resulting PDF does not constitute legal or immigration advice.",
-    "The user is responsible for the accuracy and relevance of the included photos.",
-    "Always consult with an authorized immigration attorney or representative.",
-    "NER Immigration AI is not responsible for decisions made based on these documents.",
-  ],
+const EVIDENCE_DISCLAIMER = {
+  title: { es: "Aviso Legal Importante", en: "Important Legal Notice" },
+  exclusive: {
+    es: "Esta herramienta es de uso exclusivo para profesionales de inmigración.",
+    en: "This tool is for exclusive use by immigration professionals.",
+  },
+  description: {
+    es: "NER Photo Evidence Organizer es un módulo de apoyo técnico integrado en la plataforma NER Immigration AI. El PDF generado no constituye asesoría legal.",
+    en: "NER Photo Evidence Organizer is a technical support module integrated into the NER Immigration AI platform. The generated PDF does not constitute legal advice.",
+  },
+  bullets: {
+    es: [
+      "Esta herramienta organiza evidencia fotográfica; no genera ni interpreta documentos legales.",
+      "El PDF resultante no constituye asesoría legal ni de inmigración.",
+      "El usuario es responsable de la veracidad y relevancia de las fotos incluidas.",
+      "Siempre consulta con un abogado o representante de inmigración autorizado.",
+      "NER Immigration AI no se responsabiliza por decisiones tomadas con base en estos documentos.",
+    ],
+    en: [
+      "This tool organizes photographic evidence; it does not generate or interpret legal documents.",
+      "The resulting PDF does not constitute legal or immigration advice.",
+      "The user is responsible for the accuracy and relevance of the included photos.",
+      "Always consult with an authorized immigration attorney or representative.",
+      "NER Immigration AI is not responsible for decisions made based on these documents.",
+    ],
+  },
+  acceptText: { es: "Deseo Continuar", en: "Continue" },
 };
 
 // ─── Welcome Splash ────────────────────────────────────────────────────────────
