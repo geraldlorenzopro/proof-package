@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { FileText, List, Plus, ArrowLeft, CheckCircle2, Shield, Settings, AlertTriangle } from "lucide-react";
 import { LangToggle } from "@/components/LangToggle";
@@ -9,6 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { SmartFormsProvider, useSmartFormsContext } from "./SmartFormsContext";
 import { I765_STEP_LABELS } from "./i765Schema";
 import { useAppSeat } from "@/hooks/useAppSeat";
+import ToolSplash from "@/components/ToolSplash";
 import {
   Dialog,
   DialogContent,
