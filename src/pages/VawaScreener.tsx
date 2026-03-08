@@ -163,6 +163,24 @@ export default function VawaScreener() {
     );
   }
 
+  // ── SPLASH (ToolSplash) ──
+  if (step === "splash") {
+    return (
+      <ToolSplash
+        slug="vawa-screener"
+        icon={Scale}
+        heroTitle="VAWA"
+        heroSubtitle="Screener"
+        tagline={{ es: "Soluciones de Inmigración Inteligente", en: "Intelligent Immigration Solutions" }}
+        accentVariant="cyan"
+        disclaimer={VAWA_DISCLAIMER}
+        onContinue={handleSplashContinue}
+        lang={lang}
+        setLang={setLang}
+      />
+    );
+  }
+
   // ── HOME: Tabs (Nuevo Screening + Mis Casos) ──
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background grid-bg">
@@ -221,7 +239,7 @@ export default function VawaScreener() {
                 {t("Soluciones de Inmigración Inteligente", "Intelligent Immigration Solutions")}
               </p>
               <button
-                onClick={() => setShowDisclaimer(true)}
+                onClick={() => setStep("wizard")}
                 className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5 animate-glow-pulse hover:bg-accent/20 transition-colors"
               >
                 <Scale className="w-4 h-4 text-accent" />
@@ -249,52 +267,6 @@ export default function VawaScreener() {
       <div className="relative z-10 text-center pb-4">
         <p className="text-[10px] text-muted-foreground/40 tracking-widest uppercase">NER AI · Immigration Suite</p>
       </div>
-
-      {/* Disclaimer Modal */}
-      <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
-        <DialogContent className="max-w-md bg-card border-accent/20">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2 text-base text-foreground">
-                <Shield className="w-5 h-5 text-accent" />
-                {t("Aviso Legal Importante", "Important Legal Notice")}
-              </DialogTitle>
-              <LangToggle lang={lang} setLang={setLang} />
-            </div>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-accent/10 border border-accent/20 rounded-xl p-4">
-              <p className="text-foreground text-sm leading-relaxed font-semibold mb-2">
-                {DISCLAIMER_EXCLUSIVE[lang].title}
-              </p>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {DISCLAIMER_EXCLUSIVE[lang].desc}
-              </p>
-            </div>
-            <ul className="space-y-2 text-sm text-foreground/80">
-              {(DISCLAIMER_BULLETS[lang] || DISCLAIMER_BULLETS.es).map((b, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="border-t border-border pt-3 flex items-center justify-between gap-3">
-              <p className="text-xs text-muted-foreground">
-                {t("Al continuar acepta los términos de uso.", "By continuing you accept the terms of use.")}
-              </p>
-              <Button
-                onClick={handleAcceptDisclaimer}
-                className="gradient-gold text-accent-foreground font-semibold px-6 shrink-0"
-                size="sm"
-              >
-                {t("Deseo Continuar", "Continue")}
-                <ChevronRight className="ml-1 w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
