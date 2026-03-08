@@ -22,16 +22,10 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { LangToggle } from '@/components/LangToggle';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  
-} from "@/components/ui/dialog";
 import nerLogo from "@/assets/ner-logo.png";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Calculator } from "lucide-react";
+import ToolSplash from "@/components/ToolSplash";
 
 // ──────── i18n ────────
 type Lang = "es" | "en";
