@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ChevronRight, Shield, type LucideIcon } from "lucide-react";
+import { ChevronRight, Shield, ArrowLeft, type LucideIcon } from "lucide-react";
+import { useBackDestination } from "@/hooks/useBackDestination";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
