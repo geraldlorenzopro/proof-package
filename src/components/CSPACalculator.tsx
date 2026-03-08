@@ -500,8 +500,8 @@ export default function CSPACalculator() {
   const requestIdRef = useRef(0);
 
   useEffect(() => {
-    const isCompleteDate = /^\d{4}-\d{2}-\d{2}$/.test(form.priorityDate) && !isNaN(new Date(form.priorityDate).getTime());
-    const hasApproval = /^\d{4}-\d{2}-\d{2}$/.test(form.approvalDate) && !isNaN(new Date(form.approvalDate).getTime());
+    const isCompleteDate = /^\d{4}-\d{2}-\d{2}$/.test(form.priorityDate) && !isNaN(new Date(form.priorityDate + "T12:00:00").getTime());
+    const hasApproval = /^\d{4}-\d{2}-\d{2}$/.test(form.approvalDate) && !isNaN(new Date(form.approvalDate + "T12:00:00").getTime());
     if (!isCompleteDate || !form.category || !form.chargeability) {
       setVisaAutoInfo(null); setVisaError(null); setPdBecameCurrent(null);
       setForm((prev) => ({ ...prev, visaAvailableDate: "" }));
