@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Save, ClipboardList, Download } from "lucide-react";
+import { ArrowLeft, Save, ClipboardList, Download, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,12 +14,14 @@ import VawaChecklist from "@/components/vawa/VawaChecklist";
 import { generateChecklist, ChecklistCategory } from "@/components/vawa/vawaChecklistEngine";
 import { VawaAnswers, getDefaultAnswers, evaluateEligibility } from "@/components/vawa/vawaEngine";
 import { generateScreenerPdf } from "@/lib/vawaScreenerPdf";
+import ToolSplash from "@/components/ToolSplash";
 
 export default function VawaChecklistPage() {
   const navigate = useNavigate();
-  const { destination } = useBackDestination();
+  const { destination, isHub } = useBackDestination();
   const [searchParams] = useSearchParams();
   const caseId = searchParams.get("case");
+  const [splashDone, setSplashDone] = useState(false);
   
   const [lang, setLang] = useState<"es" | "en">("es");
   const [loading, setLoading] = useState(true);
@@ -187,6 +189,26 @@ export default function VawaChecklistPage() {
     await createCase();
   };
 
+  // ── SPLASH ──
+  if (!splashDone) {
+    return (
+      <ToolSplash
+        slug="vawa-checklist"
+        icon={ClipboardList}
+        heroTitle="VAWA"
+        heroSubtitle="Checklist"
+        accentVariant="green"
+        tagline={{
+          es: "Seguimiento integral de documentación VAWA",
+          en: "Comprehensive VAWA documentation tracking",
+        }}
+        onContinue={() => setSplashDone(true)}
+        lang={lang}
+        setLang={setLang}
+      />
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -203,11 +225,15 @@ export default function VawaChecklistPage() {
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
           <button
-            onClick={() => navigate(destination)}
+            onClick={() => isHub ? (window.location.href = destination) : navigate(destination)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
+            {isHub ? (
+              <><Shield className="w-3.5 h-3.5 text-jarvis" /><span className="text-xs">Hub</span></>
+            ) : (
+              <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
+            )}
           </button>
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <ClipboardList className="w-4 h-4 text-accent" />

@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calculator, BarChart3, Activity, Lock, Shield } from 'lucide-react';
 import { useBackDestination } from '@/hooks/useBackDestination';
+import ToolSplash from '@/components/ToolSplash';
+import type { ToolAccentVariant } from '@/components/ToolSplash';
 import nerLogo from '@/assets/ner-logo.png';
 
 interface PlaceholderToolProps {
@@ -11,6 +14,10 @@ const TOOLS = {
   affidavit: {
     name: 'Affidavit Calculator',
     icon: Calculator,
+    heroTitle: 'Affidavit',
+    heroSubtitle: 'Calculator',
+    accent: 'gold' as ToolAccentVariant,
+    tagline: { es: 'Cálculo inteligente de requisitos financieros', en: 'Smart financial requirement calculation' },
     description: 'Calcula automáticamente los requisitos financieros del Affidavit of Support (I-864) basándose en las Poverty Guidelines más recientes.',
     features: [
       'Cálculo automático según tamaño del hogar',
@@ -22,6 +29,10 @@ const TOOLS = {
   cspa: {
     name: 'CSPA Calculator',
     icon: BarChart3,
+    heroTitle: 'CSPA',
+    heroSubtitle: 'Calculator',
+    accent: 'gold' as ToolAccentVariant,
+    tagline: { es: 'Análisis preciso de edad bajo CSPA', en: 'Precise age analysis under CSPA' },
     description: 'Determina la edad del beneficiario bajo el Child Status Protection Act y calcula elegibilidad.',
     features: [
       'Cálculo de edad CSPA preciso',
@@ -33,6 +44,10 @@ const TOOLS = {
   tracker: {
     name: 'Case Tracker',
     icon: Activity,
+    heroTitle: 'Case',
+    heroSubtitle: 'Tracker',
+    accent: 'cyan' as ToolAccentVariant,
+    tagline: { es: 'Seguimiento inteligente de casos', en: 'Intelligent case tracking' },
     description: 'Seguimiento en tiempo real del estatus de todos los casos con un portal de cliente integrado.',
     features: [
       'Dashboard de seguimiento en tiempo real',
@@ -46,13 +61,31 @@ const TOOLS = {
 export default function PlaceholderTool({ tool }: PlaceholderToolProps) {
   const navigate = useNavigate();
   const { destination: backDest, isHub } = useBackDestination();
+  const [showContent, setShowContent] = useState(false);
+  const [lang, setLang] = useState<'es' | 'en'>('es');
   const t = TOOLS[tool];
   const Icon = t.icon;
 
+  if (!showContent) {
+    return (
+      <ToolSplash
+        slug={tool}
+        icon={Icon}
+        heroTitle={t.heroTitle}
+        heroSubtitle={t.heroSubtitle}
+        accentVariant={t.accent}
+        tagline={t.tagline}
+        onContinue={() => setShowContent(true)}
+        lang={lang}
+        setLang={setLang}
+      />
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background grid-bg lg:ml-64">
+    <div className="min-h-screen bg-background grid-bg">
       <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-md border-b border-border px-4 py-2 flex items-center gap-3">
-        <button onClick={() => navigate(backDest)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+        <button onClick={() => isHub ? (window.location.href = backDest) : navigate(backDest)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
           <ArrowLeft className="w-4 h-4" />
           {isHub ? <><Shield className="w-3.5 h-3.5 text-jarvis" /><span className="text-xs">Hub</span></> : <img src={nerLogo} alt="NER" className="h-4 brightness-0 invert" />}
         </button>
@@ -69,7 +102,9 @@ export default function PlaceholderTool({ tool }: PlaceholderToolProps) {
         <p className="text-sm text-muted-foreground mb-8 leading-relaxed">{t.description}</p>
 
         <div className="glow-border-gold rounded-xl p-5 bg-card text-left mb-8">
-          <h3 className="text-xs uppercase tracking-wider text-accent mb-3 font-semibold">Funcionalidades planeadas</h3>
+          <h3 className="text-xs uppercase tracking-wider text-accent mb-3 font-semibold">
+            {lang === 'es' ? 'Funcionalidades planeadas' : 'Planned features'}
+          </h3>
           <ul className="space-y-2.5">
             {t.features.map((f, i) => (
               <li key={i} className="flex items-center gap-2.5 text-sm text-muted-foreground">
@@ -82,7 +117,7 @@ export default function PlaceholderTool({ tool }: PlaceholderToolProps) {
 
         <div className="inline-flex items-center gap-2 text-xs text-accent/60 border border-accent/20 rounded-full px-4 py-2">
           <div className="w-2 h-2 rounded-full bg-accent/40 animate-glow-pulse" />
-          En desarrollo — Próximamente disponible
+          {lang === 'es' ? 'En desarrollo — Próximamente disponible' : 'In development — Coming soon'}
         </div>
       </div>
     </div>

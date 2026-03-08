@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { FileText, List, Plus, ArrowLeft, CheckCircle2, Shield, Settings, AlertTriangle } from "lucide-react";
 import { LangToggle } from "@/components/LangToggle";
@@ -9,6 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { SmartFormsProvider, useSmartFormsContext } from "./SmartFormsContext";
 import { I765_STEP_LABELS } from "./i765Schema";
 import { useAppSeat } from "@/hooks/useAppSeat";
+import ToolSplash from "@/components/ToolSplash";
 import {
   Dialog,
   DialogContent,
@@ -232,6 +234,28 @@ function SeatGuardedContent() {
   const navigate = useNavigate();
   const seat = useAppSeat("smart-forms");
   const { destination: backDest } = useBackDestination();
+  const [splashDone, setSplashDone] = useState(false);
+  const [splashLang, setSplashLang] = useState<"es" | "en">("es");
+
+  // ── SPLASH ──
+  if (!splashDone) {
+    return (
+      <ToolSplash
+        slug="smart-forms"
+        icon={FileText}
+        heroTitle="Smart"
+        heroSubtitle="Forms"
+        accentVariant="gold"
+        tagline={{
+          es: "Formularios inteligentes para inmigración",
+          en: "Intelligent immigration forms",
+        }}
+        onContinue={() => setSplashDone(true)}
+        lang={splashLang}
+        setLang={setSplashLang}
+      />
+    );
+  }
 
   // Show confirmation dialog when seats are full
   if (seat.pendingKick) {
