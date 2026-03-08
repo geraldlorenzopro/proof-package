@@ -719,7 +719,7 @@ export default function CSPACalculator() {
   return (
     <div className="min-h-screen bg-background grid-bg flex flex-col">
       {/* Sticky header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" data-tour="header">
         <div className="max-w-4xl mx-auto flex items-center justify-between h-14 px-4">
           <button onClick={() => navigate(backDest)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
