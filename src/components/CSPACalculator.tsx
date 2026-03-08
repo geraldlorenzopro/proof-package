@@ -592,7 +592,7 @@ export default function CSPACalculator() {
     // If visa not available, do hypothetical calc with today's date
     const isHypothetical = !isFrozen && (forceHypothetical || !form.visaAvailableDate);
     const vadStr = isHypothetical ? format(new Date(), "yyyy-MM-dd") : form.visaAvailableDate;
-    const vad = new Date(vadStr);
+    const vad = new Date(vadStr + "T12:00:00");
 
     if ([dob, pd].some((d) => isNaN(d.getTime()))) { setError(t.errorDates); return; }
     if (!isFrozen && isNaN(ad.getTime())) { setError(t.errorDates); return; }
