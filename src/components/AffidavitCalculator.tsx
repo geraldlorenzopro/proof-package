@@ -238,77 +238,7 @@ function toFilingStatus(fs: ExtFilingStatus): FilingStatus {
 
 // LangToggle imported from shared component
 
-// ──────── Splash + Disclaimer (unified pattern) ────────
-function WelcomeSplash({ onContinue, lang, setLang, t }: { onContinue: () => void; lang: Lang; setLang: (l: Lang) => void; t: typeof T["es"] | typeof T["en"] }) {
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
-
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background grid-bg">
-      <div className="absolute top-0 right-0 w-72 h-72 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--jarvis)),_transparent_70%)] pointer-events-none" />
-
-      <div className="absolute top-4 right-4">
-        <LangToggle lang={lang} setLang={setLang} />
-      </div>
-
-      <div
-        className="relative z-10 flex flex-col items-center gap-7 cursor-pointer select-none px-10 py-12 max-w-sm w-full text-center"
-        onClick={() => setShowDisclaimer(true)}
-      >
-        <div className="w-20 h-20 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center animate-float">
-          <Shield className="w-10 h-10 text-accent" />
-        </div>
-        <div>
-          <p className="text-muted-foreground text-xs font-semibold uppercase tracking-[0.3em] mb-2">NER IMMIGRATION AI</p>
-          <h1 className="font-bold leading-tight">
-            <span className="text-4xl font-display text-accent glow-text-gold">Affidavit</span>
-            <br />
-            <span className="text-3xl text-foreground">Calculator</span>
-          </h1>
-          <p className="text-muted-foreground text-sm mt-3">I-864P · HHS 2025</p>
-        </div>
-        <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-6 py-2.5 animate-glow-pulse">
-          <Shield className="w-4 h-4 text-accent" />
-          <span className="text-sm font-medium text-accent">{t.splashBtn}</span>
-        </div>
-      </div>
-
-      <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
-        <DialogContent className="max-w-md bg-card border-accent/20">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2 text-base text-foreground">
-                <Shield className="w-5 h-5 text-accent" />
-                {t.legalTitle}
-              </DialogTitle>
-              <LangToggle lang={lang} setLang={setLang} />
-            </div>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-accent/10 border border-accent/20 rounded-xl p-4">
-              <p className="text-foreground text-sm leading-relaxed font-semibold mb-2">{t.legalDesc}</p>
-            </div>
-            <ul className="space-y-2 text-sm text-foreground/80">
-              {t.legalBullets.map((bullet, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-                  <span>{bullet}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="border-t border-border pt-3 flex items-center justify-between gap-3">
-              <p className="text-xs text-muted-foreground">{lang === 'es' ? 'Al continuar acepta los terminos de uso.' : 'By continuing you accept the terms of use.'}</p>
-              <Button onClick={onContinue} className="gradient-gold text-accent-foreground font-semibold px-6 shrink-0" size="sm">
-                {t.legalBtn}
-                <ChevronRight className="ml-1 w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
+// WelcomeSplash replaced by ToolSplash
 // ──────── Main Calculator ────────
 export default function AffidavitCalculator() {
   const navigate = useNavigate();
