@@ -86,7 +86,7 @@ export default function ChecklistGenerator() {
   const navigate = useNavigate();
   const { destination, isHub } = useBackDestination();
   const [step, setStep] = useState<Step>("splash");
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  // showDisclaimer state removed — handled by ToolSplash
   const [lang, setLang] = useState<"es" | "en">("es");
   const [uploadedFile, setUploadedFile] = useState<{ name: string; size: number; base64: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
