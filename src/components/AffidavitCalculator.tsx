@@ -290,14 +290,26 @@ export default function AffidavitCalculator() {
   const pct = sponsorType === "military" ? "100%" : "125%";
   const toggleLang = () => setLang(lang === "es" ? "en" : "es");
 
-  // ── Splash + Legal (unified) ──
+  // ── Splash + Legal (unified via ToolSplash) ──
   if (appState === "splash" || appState === "legal") {
     return (
-      <WelcomeSplash
+      <ToolSplash
+        slug="affidavit"
+        icon={Calculator}
+        heroTitle="Affidavit"
+        heroSubtitle="Calculator"
+        tagline={{ es: "I-864P · HHS 2025", en: "I-864P · HHS 2025" }}
+        accentVariant="gold"
+        disclaimer={{
+          title: { es: t.legalTitle, en: T.en.legalTitle },
+          exclusive: { es: t.legalDesc, en: T.en.legalDesc },
+          description: { es: "", en: "" },
+          bullets: { es: T.es.legalBullets as unknown as string[], en: T.en.legalBullets as unknown as string[] },
+          acceptText: { es: T.es.legalBtn, en: T.en.legalBtn },
+        }}
         onContinue={() => setAppState("calc")}
         lang={lang}
         setLang={setLang}
-        t={t}
       />
     );
   }

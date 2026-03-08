@@ -148,7 +148,20 @@ export default function Index() {
   const pendingCount = numberedItems.filter(i => !i.formComplete).length;
   const completedCount = numberedItems.filter(i => i.formComplete).length;
 
-  if (!accepted) return <WelcomeSplash onContinue={() => setAccepted(true)} lang={lang} setLang={setLang} />;
+  if (!accepted) return (
+    <ToolSplash
+      slug="evidence"
+      icon={Camera}
+      heroTitle="Photo Evidence"
+      heroSubtitle="Organizer"
+      tagline={{ es: "Soluciones de Inmigración Inteligente", en: "Intelligent Immigration Solutions" }}
+      accentVariant="navy"
+      disclaimer={EVIDENCE_DISCLAIMER}
+      onContinue={() => setAccepted(true)}
+      lang={lang}
+      setLang={setLang}
+    />
+  );
 
   return (
     <div className="min-h-screen bg-background">
