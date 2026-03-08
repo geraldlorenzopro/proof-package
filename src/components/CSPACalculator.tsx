@@ -1419,6 +1419,28 @@ export default function CSPACalculator() {
         calculationId={lastCalculationId}
         lang={lang}
       />
+
+      {/* Onboarding Tutorial */}
+      <OnboardingSpotlight
+        storageKey="cspa-onboarding-done"
+        lang={lang}
+        steps={(() => {
+          const s: TourStep[] = lang === "es" ? [
+            { target: "header", title: "Bienvenido a la Calculadora CSPA", description: "Esta herramienta calcula si un hijo califica como menor de 21 bajo la ley CSPA. Te guiaremos paso a paso.", icon: "⚖️", position: "bottom" },
+            { target: "category-country", title: "Categoría y país", description: "Primero selecciona la categoría de visa (F1, F2A, etc.) y el país de nacimiento del beneficiario. Esto determina los tiempos de espera.", icon: "📋", position: "bottom" },
+            { target: "dates", title: "Fechas del caso", description: "Ingresa la fecha de nacimiento del hijo, la fecha de prioridad (del recibo USCIS), y la fecha de aprobación. La visa se detecta automáticamente.", icon: "📅", position: "top" },
+            { target: "visa-date", title: "Visa automática", description: "Este campo se llena solo — consultamos el Boletín de Visas en tiempo real para detectar cuándo la visa estuvo disponible.", icon: "🌐", position: "top" },
+            { target: "calculate-btn", title: "¡Calcula!", description: "Presiona este botón y obtén el resultado al instante. Si la visa aún no está vigente, puedes ver una simulación hipotética.", icon: "🚀", position: "top" },
+          ] : [
+            { target: "header", title: "Welcome to the CSPA Calculator", description: "This tool calculates if a child qualifies as under 21 under the CSPA law. We'll guide you step by step.", icon: "⚖️", position: "bottom" },
+            { target: "category-country", title: "Category & Country", description: "First select the visa category (F1, F2A, etc.) and the beneficiary's country of birth. This determines wait times.", icon: "📋", position: "bottom" },
+            { target: "dates", title: "Case dates", description: "Enter the child's date of birth, priority date (from the USCIS receipt), and approval date. The visa date is auto-detected.", icon: "📅", position: "top" },
+            { target: "visa-date", title: "Automatic visa lookup", description: "This field fills itself — we query the Visa Bulletin in real time to detect when the visa became available.", icon: "🌐", position: "top" },
+            { target: "calculate-btn", title: "Calculate!", description: "Press this button and get the result instantly. If the visa isn't current yet, you can see a hypothetical simulation.", icon: "🚀", position: "top" },
+          ];
+          return s;
+        })()}
+      />
     </div>
   );
 }
