@@ -13,6 +13,7 @@ import { trackToolUsage } from "@/lib/trackUsage";
 import { supabase } from "@/integrations/supabase/client";
 import AnalysisHistory from "@/components/AnalysisHistory";
 import { detectUrgency } from "@/components/AnalysisSummaryCard";
+import ToolSplash from "@/components/ToolSplash";
 
 
 const DOCUMENT_TYPES = [
@@ -29,21 +30,33 @@ const DOCUMENT_TYPES = [
 
 const LANGUAGES = ["Español", "Inglés"];
 
-const DISCLAIMER_BULLETS: Record<string, string[]> = {
-  es: [
-    "Esta herramienta analiza documentos oficiales emitidos por USCIS; no genera ni interpreta documentos legales.",
-    "El analisis resultante no constituye asesoria legal ni de inmigracion.",
-    "El preparador de formularios es responsable de verificar minuciosamente cada detalle del documento original.",
-    "Siempre consulta con un abogado o representante de inmigracion autorizado.",
-    "NER Immigration AI no se responsabiliza por decisiones tomadas con base en estos analisis.",
-  ],
-  en: [
-    "This tool analyzes official documents issued by USCIS; it does not generate or interpret legal documents.",
-    "The resulting analysis does not constitute legal or immigration advice.",
-    "The form preparer is responsible for thoroughly verifying every detail of the original document.",
-    "Always consult with an attorney or authorized immigration representative.",
-    "NER Immigration AI is not responsible for decisions made based on these analyses.",
-  ],
+const USCIS_DISCLAIMER = {
+  title: { es: "Aviso Legal Importante", en: "Important Legal Notice" },
+  exclusive: {
+    es: "Esta herramienta es de uso exclusivo para profesionales de inmigración.",
+    en: "This tool is for exclusive use by immigration professionals.",
+  },
+  description: {
+    es: "NER USCIS Document Analyzer es un módulo de apoyo técnico integrado en la plataforma NER Immigration AI. El análisis generado no constituye asesoría legal.",
+    en: "NER USCIS Document Analyzer is a technical support module integrated into the NER Immigration AI platform. The generated analysis does not constitute legal advice.",
+  },
+  bullets: {
+    es: [
+      "Esta herramienta analiza documentos oficiales emitidos por USCIS; no genera ni interpreta documentos legales.",
+      "El analisis resultante no constituye asesoria legal ni de inmigracion.",
+      "El preparador de formularios es responsable de verificar minuciosamente cada detalle del documento original.",
+      "Siempre consulta con un abogado o representante de inmigracion autorizado.",
+      "NER Immigration AI no se responsabiliza por decisiones tomadas con base en estos analisis.",
+    ],
+    en: [
+      "This tool analyzes official documents issued by USCIS; it does not generate or interpret legal documents.",
+      "The resulting analysis does not constitute legal or immigration advice.",
+      "The form preparer is responsible for thoroughly verifying every detail of the original document.",
+      "Always consult with an attorney or authorized immigration representative.",
+      "NER Immigration AI is not responsible for decisions made based on these analyses.",
+    ],
+  },
+  acceptText: { es: "Deseo Continuar", en: "Continue" },
 };
 
 type Step = "splash" | "upload" | "result" | "history";
