@@ -806,7 +806,7 @@ export default function CSPACalculator() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" data-tour="dates">
               <DateField label={t.dob} id="dob" hint={t.dobHint} value={form.dob} onChange={handleDateChange("dob")} fromYear={1940} toYear={new Date().getFullYear()} lang={lang} />
               <DateField
                 label={form.category === "DV" ? t.dvFilingLabel : t.priorityDate}
