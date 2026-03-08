@@ -1305,7 +1305,7 @@ export default function CSPACalculator() {
               )}
 
               {/* Collapsible detail section */}
-              <details className="px-5 pb-1 group">
+              <details className="px-5 pb-1 group" data-tour="result-details">
                 <summary className="flex items-center justify-center gap-1.5 py-2.5 cursor-pointer text-xs text-accent font-medium hover:text-accent/80 transition-colors list-none [&::-webkit-details-marker]:hidden">
                   <ChevronRight className="w-3.5 h-3.5 transition-transform group-open:rotate-90" />
                   {lang === 'es' ? 'Ver cómo se calculó' : 'See how it was calculated'}
@@ -1374,7 +1374,7 @@ export default function CSPACalculator() {
 
               {/* Fixed footer */}
               <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur-sm">
-                <div className="px-5 pt-3 pb-2 flex gap-2">
+                <div className="px-5 pt-3 pb-2 flex gap-2" data-tour="result-download">
                   <Button onClick={() => setShowLeadCapture(true)} className="flex-1 gradient-gold text-accent-foreground font-semibold" size="sm">
                     <FileText className="w-4 h-4 mr-1" />
                     {lang === 'es' ? 'Descargar Reporte' : 'Download Report'}
@@ -1441,6 +1441,21 @@ export default function CSPACalculator() {
           return s;
         })()}
       />
+
+      {/* Results modal tutorial — only when dialog is open */}
+      {showDialog && result && (
+        <OnboardingSpotlight
+          storageKey="cspa-results-onboarding-done"
+          lang={lang}
+          steps={lang === "es" ? [
+            { target: "result-details", title: "Desglose del cálculo", description: "Toca aquí para ver paso a paso cómo se calculó la edad CSPA — fórmulas, tiempos y fuente del boletín.", icon: "🔍", position: "top" },
+            { target: "result-download", title: "Descarga el reporte PDF", description: "Genera un reporte profesional con el resultado, desglose y datos del cliente — listo para compartir o archivar.", icon: "📄", position: "top" },
+          ] : [
+            { target: "result-details", title: "Calculation breakdown", description: "Tap here to see step-by-step how the CSPA age was calculated — formulas, times, and bulletin source.", icon: "🔍", position: "top" },
+            { target: "result-download", title: "Download PDF report", description: "Generate a professional report with the result, breakdown and client data — ready to share or archive.", icon: "📄", position: "top" },
+          ]}
+        />
+      )}
     </div>
   );
 }
