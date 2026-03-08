@@ -684,7 +684,20 @@ export default function CSPACalculator() {
     ? (form.dob && form.priorityDate && form.category)
     : (form.dob && form.priorityDate && form.approvalDate && form.visaAvailableDate && !loadingVisa);
 
-  if (!accepted) return <WelcomeSplash onContinue={() => setAccepted(true)} lang={lang} setLang={setLang} />;
+  if (!accepted) return (
+    <ToolSplash
+      slug="cspa"
+      icon={Scale}
+      heroTitle="CSPA"
+      heroSubtitle="Calculator"
+      accentVariant="gold"
+      tagline={{ es: "Soluciones de Inmigración Inteligente", en: "Intelligent Immigration Solutions" }}
+      disclaimer={CSPA_DISCLAIMER}
+      onContinue={() => setAccepted(true)}
+      lang={lang}
+      setLang={setLang}
+    />
+  );
 
   return (
     <div className="min-h-screen bg-background grid-bg flex flex-col">
