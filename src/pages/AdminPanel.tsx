@@ -53,7 +53,7 @@ export default function AdminPanel() {
     email: '',
     phone: '',
     plan: 'essential' as string,
-    ghl_contact_id: '',
+    external_crm_id: '',
   });
   const [editingGhl, setEditingGhl] = useState<string | null>(null);
   const [ghlInput, setGhlInput] = useState('');
