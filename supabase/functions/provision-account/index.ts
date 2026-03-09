@@ -52,9 +52,9 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    // Handle external CRM ID update (admin action)
-    if (body.__update_crm_id && body.account_id) {
-      const crmId = body.external_crm_id;
+    // Handle external CRM ID update (admin action) — supports legacy __update_ghl key
+    if ((body.__update_crm_id || body.__update_ghl) && body.account_id) {
+      const crmId = body.external_crm_id ?? body.ghl_contact_id;
       if (crmId && (typeof crmId !== 'string' || crmId.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(crmId))) {
         return new Response(
           JSON.stringify({ error: "Invalid external_crm_id format" }),
