@@ -1171,7 +1171,7 @@ export default function CSPACalculator() {
 
       {/* Results Dialog — Simplified UX */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md bg-card border-accent/20 p-0 overflow-hidden max-h-[85vh] flex flex-col [&>button]:z-20 z-[110]">
+        <DialogContent className="max-w-md bg-card border-accent/20 p-0 overflow-hidden max-h-[85vh] flex flex-col [&>button]:z-20" style={{ zIndex: 110 }}>
           {result && (
             <div className="flex flex-col overflow-hidden h-full">
               {/* Hypothetical banner */}
