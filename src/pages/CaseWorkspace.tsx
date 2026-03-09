@@ -11,6 +11,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import ClientDirectory from "@/components/workspace/ClientDirectory";
+import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
+import QuickFormLauncher from "@/components/workspace/QuickFormLauncher";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -201,7 +203,7 @@ function buildTimeline(
 export default function CaseWorkspace() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeView, setActiveView] = useState<"stages" | "timeline">("stages");
+  const [activeView, setActiveView] = useState<"stages" | "timeline" | "profile" | "forms">("stages");
   const [loading, setLoading] = useState(true);
 
   // Real data state
@@ -458,9 +460,11 @@ export default function CaseWorkspace() {
 
         {/* ═══ VIEW TOGGLE ═══ */}
         <div className="flex items-center gap-2 mb-5">
-          <div className="flex bg-secondary/50 border border-border rounded-xl p-0.5">
+          <div className="flex bg-secondary/50 border border-border rounded-xl p-0.5 flex-wrap">
             {([
-              { id: "stages" as const, label: "Etapas del Caso", icon: BarChart3 },
+              { id: "stages" as const, label: "Etapas", icon: BarChart3 },
+              { id: "profile" as const, label: "Perfil", icon: Users },
+              { id: "forms" as const, label: "Formularios", icon: FileText },
               { id: "timeline" as const, label: "Actividad", icon: Clock },
             ]).map((tab) => (
               <button
@@ -554,6 +558,37 @@ export default function CaseWorkspace() {
                 );
               })}
             </div>
+          </motion.div>
+        )}
+
+        {/* ═══ PROFILE VIEW ═══ */}
+        {activeView === "profile" && selectedClientId && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            <ClientProfileEditor
+              clientId={selectedClientId}
+              onUpdated={() => {
+                // Refresh profile data
+                supabase.from("client_profiles").select("id, first_name, last_name, email, phone, dob, country_of_birth, immigration_status, created_at").eq("id", selectedClientId).single().then(({ data }) => {
+                  if (data) setProfile(data);
+                });
+              }}
+            />
+          </motion.div>
+        )}
+
+        {/* ═══ FORMS VIEW ═══ */}
+        {activeView === "forms" && selectedClientId && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            <QuickFormLauncher
+              clientId={selectedClientId}
+              clientName={clientFullName}
+              existingForms={forms}
+              onFormCreated={() => {
+                supabase.from("form_submissions").select("id, form_type, status, created_at, updated_at").eq("beneficiary_profile_id", selectedClientId).order("updated_at", { ascending: false }).then(({ data }) => {
+                  if (data) setForms(data);
+                });
+              }}
+            />
           </motion.div>
         )}
 
