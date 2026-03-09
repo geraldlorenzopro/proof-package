@@ -561,6 +561,37 @@ export default function CaseWorkspace() {
           </motion.div>
         )}
 
+        {/* ═══ PROFILE VIEW ═══ */}
+        {activeView === "profile" && selectedClientId && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            <ClientProfileEditor
+              clientId={selectedClientId}
+              onUpdated={() => {
+                // Refresh profile data
+                supabase.from("client_profiles").select("id, first_name, last_name, email, phone, dob, country_of_birth, immigration_status, created_at").eq("id", selectedClientId).single().then(({ data }) => {
+                  if (data) setProfile(data);
+                });
+              }}
+            />
+          </motion.div>
+        )}
+
+        {/* ═══ FORMS VIEW ═══ */}
+        {activeView === "forms" && selectedClientId && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            <QuickFormLauncher
+              clientId={selectedClientId}
+              clientName={clientFullName}
+              existingForms={forms}
+              onFormCreated={() => {
+                supabase.from("form_submissions").select("id, form_type, status, created_at, updated_at").eq("beneficiary_profile_id", selectedClientId).order("updated_at", { ascending: false }).then(({ data }) => {
+                  if (data) setForms(data);
+                });
+              }}
+            />
+          </motion.div>
+        )}
+
         {/* ═══ TIMELINE VIEW ═══ */}
         {activeView === "timeline" && (
           <motion.div
