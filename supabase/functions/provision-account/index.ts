@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { account_name, email, phone, plan, ghl_contact_id } = body;
+    const { account_name, email, phone, plan, external_crm_id } = body;
 
     if (!account_name || !email) {
       return new Response(
@@ -91,12 +91,12 @@ Deno.serve(async (req) => {
 
     // supabaseAdmin already created above
 
-    // Check if account already exists by ghl_contact_id or email
-    if (ghl_contact_id) {
+    // Check if account already exists by external_crm_id or email
+    if (external_crm_id) {
       const { data: existing } = await supabaseAdmin
         .from("ner_accounts")
         .select("id")
-        .eq("ghl_contact_id", ghl_contact_id)
+        .eq("external_crm_id", external_crm_id)
         .maybeSingle();
 
       if (existing) {
