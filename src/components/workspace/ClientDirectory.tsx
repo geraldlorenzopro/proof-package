@@ -125,7 +125,12 @@ export default function ClientDirectory({ onSelectClient }: Props) {
                 </p>
               </div>
             </div>
-            <Button variant="default" size="sm" className="gap-2 bg-jarvis hover:bg-jarvis/90">
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="gap-2 bg-jarvis hover:bg-jarvis/90"
+              onClick={() => setShowNewModal(true)}
+            >
               <UserPlus className="w-4 h-4" />
               <span className="hidden sm:inline">Nuevo Cliente</span>
             </Button>
