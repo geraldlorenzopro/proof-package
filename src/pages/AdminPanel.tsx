@@ -373,7 +373,7 @@ export default function AdminPanel() {
                                 </button>
                               )}
                               <button
-                                onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.ghl_contact_id || ''); }}
+                                onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.external_crm_id || ''); }}
                                 className="p-1 rounded hover:bg-secondary transition-colors"
                                 title="Editar NER Contact ID"
                               >
