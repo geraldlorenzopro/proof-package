@@ -627,10 +627,10 @@ export default function Dashboard() {
                               </>
                             ) : (
                               <>
-                                <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">{acc.ghl_contact_id || '—sin vincular—'}</span>
-                                {acc.ghl_contact_id && (
+                                <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">{acc.external_crm_id || '—sin vincular—'}</span>
+                                {acc.external_crm_id && (
                                   <button onClick={async () => {
-                                    await navigator.clipboard.writeText(`https://ner.recursosmigratorios.com/hub?cid=${acc.ghl_contact_id}`);
+                                    await navigator.clipboard.writeText(`https://ner.recursosmigratorios.com/hub?cid=${acc.external_crm_id}`);
                                     setCopiedId(acc.id); setTimeout(() => setCopiedId(null), 2000);
                                     toast({ title: 'URL copiada' });
                                   }} className="p-1 rounded hover:bg-secondary transition-colors">
