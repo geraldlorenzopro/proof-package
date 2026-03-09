@@ -1,0 +1,1 @@
+ALTER TABLE public.ner_accounts RENAME COLUMN ghl_contact_id TO external_crm_id;

@@ -24,7 +24,7 @@ interface NerAccount {
   max_users: number;
   is_active: boolean;
   phone: string | null;
-  ghl_contact_id: string | null;
+  external_crm_id: string | null;
   created_at: string;
 }
 
@@ -53,7 +53,7 @@ export default function AdminPanel() {
     email: '',
     phone: '',
     plan: 'essential' as string,
-    ghl_contact_id: '',
+    external_crm_id: '',
   });
   const [editingGhl, setEditingGhl] = useState<string | null>(null);
   const [ghlInput, setGhlInput] = useState('');
@@ -131,7 +131,7 @@ export default function AdminPanel() {
           email: form.email,
           phone: form.phone || undefined,
           plan: form.plan,
-          ghl_contact_id: form.ghl_contact_id || undefined,
+          external_crm_id: form.external_crm_id || undefined,
           source: 'admin',
         },
       });
@@ -154,7 +154,7 @@ export default function AdminPanel() {
         } else {
           toast({ title: 'Cuenta creada', description: 'Cuenta creada exitosamente.' });
         }
-        setForm({ account_name: '', email: '', phone: '', plan: 'essential', ghl_contact_id: '' });
+        setForm({ account_name: '', email: '', phone: '', plan: 'essential', external_crm_id: '' });
         setShowForm(false);
         loadData();
       }
@@ -257,7 +257,7 @@ export default function AdminPanel() {
                     </div>
                     <div className="space-y-2 sm:col-span-2">
                       <Label>NER Contact ID</Label>
-                      <Input value={form.ghl_contact_id} onChange={e => setForm(p => ({ ...p, ghl_contact_id: e.target.value }))} placeholder="l9G97rwZhv1OFxQjAg5U (opcional)" />
+                      <Input value={form.external_crm_id} onChange={e => setForm(p => ({ ...p, external_crm_id: e.target.value }))} placeholder="l9G97rwZhv1OFxQjAg5U (opcional)" />
                       <p className="text-[10px] text-muted-foreground">Se usa para generar el enlace seguro del Hub</p>
                     </div>
                   </div>
@@ -340,7 +340,7 @@ export default function AdminPanel() {
                                 onClick={async () => {
                                   setSavingGhl(true);
                                   await supabase.functions.invoke('provision-account', {
-                                    body: { __update_ghl: true, account_id: acc.id, ghl_contact_id: ghlInput || null },
+                                    body: { __update_crm_id: true, account_id: acc.id, external_crm_id: ghlInput || null },
                                   });
                                   setEditingGhl(null);
                                   setSavingGhl(false);
@@ -354,13 +354,13 @@ export default function AdminPanel() {
                           ) : (
                             <>
                               <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">
-                                {acc.ghl_contact_id || '—sin vincular—'}
+                                {acc.external_crm_id || '—sin vincular—'}
                               </span>
-                              {acc.ghl_contact_id && (
+                              {acc.external_crm_id && (
                                 <button
                                   onClick={async () => {
                                     await navigator.clipboard.writeText(
-                                      `https://ner.recursosmigratorios.com/hub?cid=${acc.ghl_contact_id}`
+                                      `https://ner.recursosmigratorios.com/hub?cid=${acc.external_crm_id}`
                                     );
                                     setCopiedId(acc.id);
                                     setTimeout(() => setCopiedId(null), 2000);
@@ -373,7 +373,7 @@ export default function AdminPanel() {
                                 </button>
                               )}
                               <button
-                                onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.ghl_contact_id || ''); }}
+                                onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.external_crm_id || ''); }}
                                 className="p-1 rounded hover:bg-secondary transition-colors"
                                 title="Editar NER Contact ID"
                               >

@@ -52,18 +52,18 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    // Handle GHL contact ID update (admin action)
-    if (body.__update_ghl && body.account_id) {
-      const ghlId = body.ghl_contact_id;
-      if (ghlId && (typeof ghlId !== 'string' || ghlId.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(ghlId))) {
+    // Handle external CRM ID update (admin action) — supports legacy __update_ghl key
+    if ((body.__update_crm_id || body.__update_ghl) && body.account_id) {
+      const crmId = body.external_crm_id ?? body.ghl_contact_id;
+      if (crmId && (typeof crmId !== 'string' || crmId.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(crmId))) {
         return new Response(
-          JSON.stringify({ error: "Invalid ghl_contact_id format" }),
+          JSON.stringify({ error: "Invalid external_crm_id format" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       const { error: updateErr } = await supabaseAdmin
         .from("ner_accounts")
-        .update({ ghl_contact_id: ghlId || null })
+        .update({ external_crm_id: crmId || null })
         .eq("id", body.account_id);
       if (updateErr) {
         return new Response(
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { account_name, email, phone, plan, ghl_contact_id } = body;
+    const { account_name, email, phone, plan, external_crm_id } = body;
 
     if (!account_name || !email) {
       return new Response(
@@ -91,12 +91,12 @@ Deno.serve(async (req) => {
 
     // supabaseAdmin already created above
 
-    // Check if account already exists by ghl_contact_id or email
-    if (ghl_contact_id) {
+    // Check if account already exists by external_crm_id or email
+    if (external_crm_id) {
       const { data: existing } = await supabaseAdmin
         .from("ner_accounts")
         .select("id")
-        .eq("ghl_contact_id", ghl_contact_id)
+        .eq("external_crm_id", external_crm_id)
         .maybeSingle();
 
       if (existing) {
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
         plan: selectedPlan,
         max_users: maxUsersMap[selectedPlan],
         phone: phone || null,
-        ghl_contact_id: ghl_contact_id || null,
+        external_crm_id: external_crm_id || null,
       })
       .select("id")
       .single();

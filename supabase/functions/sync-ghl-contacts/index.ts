@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     const { data: account, error: accountError } = await adminClient
       .from("ner_accounts")
       .select("id")
-      .eq("ghl_contact_id", locationId)
+      .eq("external_crm_id", locationId)
       .eq("is_active", true)
       .maybeSingle();
 

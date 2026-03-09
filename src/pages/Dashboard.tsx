@@ -34,7 +34,7 @@ interface NerAccount {
   max_users: number;
   is_active: boolean;
   phone: string | null;
-  ghl_contact_id: string | null;
+  external_crm_id: string | null;
   created_at: string;
 }
 
@@ -69,7 +69,7 @@ export default function Dashboard() {
   const [expandedAccount, setExpandedAccount] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ account_name: '', email: '', phone: '', plan: 'essential', ghl_contact_id: '' });
+  const [form, setForm] = useState({ account_name: '', email: '', phone: '', plan: 'essential', external_crm_id: '' });
   const [editingGhl, setEditingGhl] = useState<string | null>(null);
   const [ghlInput, setGhlInput] = useState('');
   const [savingGhl, setSavingGhl] = useState(false);
@@ -164,7 +164,7 @@ export default function Dashboard() {
     setCreating(true);
     try {
       const { data, error } = await supabase.functions.invoke('provision-account', {
-        body: { account_name: form.account_name, email: form.email, phone: form.phone || undefined, plan: form.plan, ghl_contact_id: form.ghl_contact_id || undefined, source: 'admin' },
+        body: { account_name: form.account_name, email: form.email, phone: form.phone || undefined, plan: form.plan, external_crm_id: form.external_crm_id || undefined, source: 'admin' },
       });
       if (error) throw error;
       if (data?.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); }
@@ -176,7 +176,7 @@ export default function Dashboard() {
         } else {
           toast({ title: 'Cuenta creada' });
         }
-        setForm({ account_name: '', email: '', phone: '', plan: 'essential', ghl_contact_id: '' });
+        setForm({ account_name: '', email: '', phone: '', plan: 'essential', external_crm_id: '' });
         setShowForm(false);
         const { data: refreshed } = await supabase.from('ner_accounts').select('*').order('created_at', { ascending: false });
         setAccounts(refreshed || []);
@@ -518,7 +518,7 @@ export default function Dashboard() {
                       </div>
                       <div className="space-y-2 sm:col-span-2">
                         <Label>NER Contact ID</Label>
-                        <Input value={form.ghl_contact_id} onChange={e => setForm(p => ({ ...p, ghl_contact_id: e.target.value }))} placeholder="Opcional — para enlace del Hub" />
+                        <Input value={form.external_crm_id} onChange={e => setForm(p => ({ ...p, external_crm_id: e.target.value }))} placeholder="Opcional — para enlace del Hub" />
                       </div>
                     </div>
                     <div className="flex justify-end gap-3 pt-2">
@@ -616,7 +616,7 @@ export default function Dashboard() {
                                 <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-jarvis" disabled={savingGhl}
                                   onClick={async () => {
                                     setSavingGhl(true);
-                                    await supabase.functions.invoke('provision-account', { body: { __update_ghl: true, account_id: acc.id, ghl_contact_id: ghlInput || null } });
+                                    await supabase.functions.invoke('provision-account', { body: { __update_crm_id: true, account_id: acc.id, external_crm_id: ghlInput || null } });
                                     setEditingGhl(null); setSavingGhl(false);
                                     const { data } = await supabase.from('ner_accounts').select('*').order('created_at', { ascending: false });
                                     setAccounts(data || []);
@@ -627,17 +627,17 @@ export default function Dashboard() {
                               </>
                             ) : (
                               <>
-                                <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">{acc.ghl_contact_id || '—sin vincular—'}</span>
-                                {acc.ghl_contact_id && (
+                                <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">{acc.external_crm_id || '—sin vincular—'}</span>
+                                {acc.external_crm_id && (
                                   <button onClick={async () => {
-                                    await navigator.clipboard.writeText(`https://ner.recursosmigratorios.com/hub?cid=${acc.ghl_contact_id}`);
+                                    await navigator.clipboard.writeText(`https://ner.recursosmigratorios.com/hub?cid=${acc.external_crm_id}`);
                                     setCopiedId(acc.id); setTimeout(() => setCopiedId(null), 2000);
                                     toast({ title: 'URL copiada' });
                                   }} className="p-1 rounded hover:bg-secondary transition-colors">
                                     {copiedId === acc.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
                                   </button>
                                 )}
-                                <button onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.ghl_contact_id || ''); }} className="p-1 rounded hover:bg-secondary transition-colors">
+                                <button onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.external_crm_id || ''); }} className="p-1 rounded hover:bg-secondary transition-colors">
                                   <Pencil className="w-3 h-3 text-muted-foreground" />
                                 </button>
                               </>
@@ -757,7 +757,7 @@ export default function Dashboard() {
                     <div className="grid sm:grid-cols-2 gap-3 text-sm">
                       <div><span className="text-muted-foreground">Teléfono:</span> <span className="text-foreground ml-1">{viewingAccount.phone || '—'}</span></div>
                       <div><span className="text-muted-foreground">Max usuarios:</span> <span className="text-foreground ml-1">{viewingAccount.max_users}</span></div>
-                      <div><span className="text-muted-foreground">NER Contact ID:</span> <span className="text-foreground ml-1 font-mono text-xs">{viewingAccount.ghl_contact_id || '—'}</span></div>
+                      <div><span className="text-muted-foreground">NER Contact ID:</span> <span className="text-foreground ml-1 font-mono text-xs">{viewingAccount.external_crm_id || '—'}</span></div>
                       <div><span className="text-muted-foreground">Usuario:</span> <span className="text-foreground ml-1">{accountDetail.memberEmail || '—'}</span></div>
                     </div>
                   </div>
