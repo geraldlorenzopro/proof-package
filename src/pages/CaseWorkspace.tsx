@@ -203,7 +203,7 @@ function buildTimeline(
 export default function CaseWorkspace() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeView, setActiveView] = useState<"stages" | "timeline">("stages");
+  const [activeView, setActiveView] = useState<"stages" | "timeline" | "profile" | "forms">("stages");
   const [loading, setLoading] = useState(true);
 
   // Real data state
