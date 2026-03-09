@@ -422,10 +422,10 @@ export default function CaseWorkspace() {
             <div className="flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-jarvis/40" />
               <span className="text-[10px] text-muted-foreground/50 tracking-wider uppercase font-display">
-                Immigration AI Workspace
+                Immigration Case Workspace
               </span>
             </div>
-            <span className="text-[10px] text-muted-foreground/30 font-mono">v1.0 · AILA 2025</span>
+            <span className="text-[10px] text-muted-foreground/30 font-mono">Powered by NER AI</span>
           </div>
         </motion.div>
       </div>
