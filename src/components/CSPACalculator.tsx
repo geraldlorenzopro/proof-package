@@ -1403,7 +1403,8 @@ export default function CSPACalculator() {
         lang={lang}
       />
 
-      {/* Onboarding Tutorial */}
+      {/* Onboarding Tutorial — hide when results dialog is open */}
+      {!showDialog && (
       <OnboardingSpotlight
         storageKey="cspa-onboarding-done"
         lang={lang}
