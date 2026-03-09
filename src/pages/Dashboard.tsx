@@ -176,7 +176,7 @@ export default function Dashboard() {
         } else {
           toast({ title: 'Cuenta creada' });
         }
-        setForm({ account_name: '', email: '', phone: '', plan: 'essential', ghl_contact_id: '' });
+        setForm({ account_name: '', email: '', phone: '', plan: 'essential', external_crm_id: '' });
         setShowForm(false);
         const { data: refreshed } = await supabase.from('ner_accounts').select('*').order('created_at', { ascending: false });
         setAccounts(refreshed || []);
