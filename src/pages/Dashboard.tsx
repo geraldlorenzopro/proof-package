@@ -518,7 +518,7 @@ export default function Dashboard() {
                       </div>
                       <div className="space-y-2 sm:col-span-2">
                         <Label>NER Contact ID</Label>
-                        <Input value={form.ghl_contact_id} onChange={e => setForm(p => ({ ...p, ghl_contact_id: e.target.value }))} placeholder="Opcional — para enlace del Hub" />
+                        <Input value={form.external_crm_id} onChange={e => setForm(p => ({ ...p, external_crm_id: e.target.value }))} placeholder="Opcional — para enlace del Hub" />
                       </div>
                     </div>
                     <div className="flex justify-end gap-3 pt-2">
