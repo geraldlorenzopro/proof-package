@@ -154,7 +154,7 @@ export default function AdminPanel() {
         } else {
           toast({ title: 'Cuenta creada', description: 'Cuenta creada exitosamente.' });
         }
-        setForm({ account_name: '', email: '', phone: '', plan: 'essential', ghl_contact_id: '' });
+        setForm({ account_name: '', email: '', phone: '', plan: 'essential', external_crm_id: '' });
         setShowForm(false);
         loadData();
       }
