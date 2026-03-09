@@ -230,11 +230,11 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Look up account by ghl_contact_id
+    // Look up account by external_crm_id
     const { data: account, error: accErr } = await supabaseAdmin
       .from("ner_accounts")
       .select("id, account_name, plan, is_active, max_users")
-      .eq("ghl_contact_id", cid)
+      .eq("external_crm_id", cid)
       .maybeSingle();
 
     if (accErr || !account) {

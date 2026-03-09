@@ -687,7 +687,7 @@ export type Database = {
         Row: {
           account_name: string
           created_at: string
-          ghl_contact_id: string | null
+          external_crm_id: string | null
           id: string
           is_active: boolean
           max_users: number
@@ -698,7 +698,7 @@ export type Database = {
         Insert: {
           account_name: string
           created_at?: string
-          ghl_contact_id?: string | null
+          external_crm_id?: string | null
           id?: string
           is_active?: boolean
           max_users?: number
@@ -709,7 +709,7 @@ export type Database = {
         Update: {
           account_name?: string
           created_at?: string
-          ghl_contact_id?: string | null
+          external_crm_id?: string | null
           id?: string
           is_active?: boolean
           max_users?: number

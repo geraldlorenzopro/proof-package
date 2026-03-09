@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
         plan: selectedPlan,
         max_users: maxUsersMap[selectedPlan],
         phone: phone || null,
-        ghl_contact_id: ghl_contact_id || null,
+        external_crm_id: external_crm_id || null,
       })
       .select("id")
       .single();
