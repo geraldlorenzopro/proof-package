@@ -260,11 +260,6 @@ export default function CaseWorkspace() {
     load();
   }, [selectedClientId]);
 
-  // If no client selected, show directory
-  if (!selectedClientId) {
-    return <ClientDirectory onSelectClient={handleSelectClient} />;
-  }
-
   // Computed data
   const stages = useMemo(() => buildStages(vawaCases, forms, clientCases), [vawaCases, forms, clientCases]);
   const alerts = useMemo(() => buildAlerts(stages, forms, vawaCases), [stages, forms, vawaCases]);
@@ -283,6 +278,11 @@ export default function CaseWorkspace() {
     { label: "Progreso", value: `${totalProgress}%`, icon: TrendingUp, color: "text-emerald-400" },
     { label: "Etapa actual", value: `${completedStages}/${stages.length}`, icon: Target, color: "text-jarvis" },
   ];
+
+  // If no client selected, show directory
+  if (!selectedClientId) {
+    return <ClientDirectory onSelectClient={handleSelectClient} />;
+  }
 
   if (loading) {
     return (
