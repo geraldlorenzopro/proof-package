@@ -460,9 +460,11 @@ export default function CaseWorkspace() {
 
         {/* ═══ VIEW TOGGLE ═══ */}
         <div className="flex items-center gap-2 mb-5">
-          <div className="flex bg-secondary/50 border border-border rounded-xl p-0.5">
+          <div className="flex bg-secondary/50 border border-border rounded-xl p-0.5 flex-wrap">
             {([
-              { id: "stages" as const, label: "Etapas del Caso", icon: BarChart3 },
+              { id: "stages" as const, label: "Etapas", icon: BarChart3 },
+              { id: "profile" as const, label: "Perfil", icon: Users },
+              { id: "forms" as const, label: "Formularios", icon: FileText },
               { id: "timeline" as const, label: "Actividad", icon: Clock },
             ]).map((tab) => (
               <button
