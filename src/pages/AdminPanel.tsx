@@ -24,7 +24,7 @@ interface NerAccount {
   max_users: number;
   is_active: boolean;
   phone: string | null;
-  ghl_contact_id: string | null;
+  external_crm_id: string | null;
   created_at: string;
 }
 
