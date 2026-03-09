@@ -11,6 +11,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import ClientDirectory from "@/components/workspace/ClientDirectory";
+import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
+import QuickFormLauncher from "@/components/workspace/QuickFormLauncher";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 
