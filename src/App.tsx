@@ -30,6 +30,7 @@ import SmartFormsLayout from "./components/smartforms/SmartFormsLayout";
 import ClientQuestionnaire from "./pages/ClientQuestionnaire";
 import NotFound from "./pages/NotFound";
 import PdfFieldInspector from "./pages/PdfFieldInspector";
+import CaseWorkspace from "./pages/CaseWorkspace";
 
 const queryClient = new QueryClient();
 
