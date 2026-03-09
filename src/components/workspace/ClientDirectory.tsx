@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import NewClientModal from "./NewClientModal";
 
 interface ClientProfile {
   id: string;
@@ -61,6 +62,7 @@ export default function ClientDirectory({ onSelectClient }: Props) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "recent">("recent");
+  const [showNewModal, setShowNewModal] = useState(false);
 
   useEffect(() => {
     fetchClients();
