@@ -1427,20 +1427,6 @@ export default function CSPACalculator() {
       />
       )}
 
-      {/* Results modal tutorial — only when dialog is open */}
-      {showDialog && result && (
-        <OnboardingSpotlight
-          storageKey="cspa-results-onboarding-done"
-          lang={lang}
-          steps={lang === "es" ? [
-            { target: "result-details", title: "Desglose del cálculo", description: "Toca aquí para ver paso a paso cómo se calculó la edad CSPA — fórmulas, tiempos y fuente del boletín.", icon: "🔍", position: "top" },
-            { target: "result-download", title: "Descarga el reporte PDF", description: "Genera un reporte profesional con el resultado, desglose y datos del cliente — listo para compartir o archivar.", icon: "📄", position: "top" },
-          ] : [
-            { target: "result-details", title: "Calculation breakdown", description: "Tap here to see step-by-step how the CSPA age was calculated — formulas, times, and bulletin source.", icon: "🔍", position: "top" },
-            { target: "result-download", title: "Download PDF report", description: "Generate a professional report with the result, breakdown and client data — ready to share or archive.", icon: "📄", position: "top" },
-          ]}
-        />
-      )}
     </div>
   );
 }
