@@ -257,7 +257,7 @@ export default function AdminPanel() {
                     </div>
                     <div className="space-y-2 sm:col-span-2">
                       <Label>NER Contact ID</Label>
-                      <Input value={form.ghl_contact_id} onChange={e => setForm(p => ({ ...p, ghl_contact_id: e.target.value }))} placeholder="l9G97rwZhv1OFxQjAg5U (opcional)" />
+                      <Input value={form.external_crm_id} onChange={e => setForm(p => ({ ...p, external_crm_id: e.target.value }))} placeholder="l9G97rwZhv1OFxQjAg5U (opcional)" />
                       <p className="text-[10px] text-muted-foreground">Se usa para generar el enlace seguro del Hub</p>
                     </div>
                   </div>
