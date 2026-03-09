@@ -757,7 +757,7 @@ export default function Dashboard() {
                     <div className="grid sm:grid-cols-2 gap-3 text-sm">
                       <div><span className="text-muted-foreground">Teléfono:</span> <span className="text-foreground ml-1">{viewingAccount.phone || '—'}</span></div>
                       <div><span className="text-muted-foreground">Max usuarios:</span> <span className="text-foreground ml-1">{viewingAccount.max_users}</span></div>
-                      <div><span className="text-muted-foreground">NER Contact ID:</span> <span className="text-foreground ml-1 font-mono text-xs">{viewingAccount.ghl_contact_id || '—'}</span></div>
+                      <div><span className="text-muted-foreground">NER Contact ID:</span> <span className="text-foreground ml-1 font-mono text-xs">{viewingAccount.external_crm_id || '—'}</span></div>
                       <div><span className="text-muted-foreground">Usuario:</span> <span className="text-foreground ml-1">{accountDetail.memberEmail || '—'}</span></div>
                     </div>
                   </div>
