@@ -637,7 +637,7 @@ export default function Dashboard() {
                                     {copiedId === acc.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
                                   </button>
                                 )}
-                                <button onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.ghl_contact_id || ''); }} className="p-1 rounded hover:bg-secondary transition-colors">
+                                <button onClick={() => { setEditingGhl(acc.id); setGhlInput(acc.external_crm_id || ''); }} className="p-1 rounded hover:bg-secondary transition-colors">
                                   <Pencil className="w-3 h-3 text-muted-foreground" />
                                 </button>
                               </>
