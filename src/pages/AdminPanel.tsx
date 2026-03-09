@@ -354,13 +354,13 @@ export default function AdminPanel() {
                           ) : (
                             <>
                               <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">
-                                {acc.ghl_contact_id || '—sin vincular—'}
+                                {acc.external_crm_id || '—sin vincular—'}
                               </span>
-                              {acc.ghl_contact_id && (
+                              {acc.external_crm_id && (
                                 <button
                                   onClick={async () => {
                                     await navigator.clipboard.writeText(
-                                      `https://ner.recursosmigratorios.com/hub?cid=${acc.ghl_contact_id}`
+                                      `https://ner.recursosmigratorios.com/hub?cid=${acc.external_crm_id}`
                                     );
                                     setCopiedId(acc.id);
                                     setTimeout(() => setCopiedId(null), 2000);
