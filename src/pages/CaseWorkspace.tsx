@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, AlertTriangle, CheckCircle2, FileText, Shield,
@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import ClientDirectory from "@/components/workspace/ClientDirectory";
 
 /* ── Mock data ── */
 const MOCK_CASE = {
@@ -103,7 +104,25 @@ const fadeUp = {
 
 export default function CaseWorkspace() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeView, setActiveView] = useState<"stages" | "timeline">("stages");
+
+  // Client selection state - from URL param
+  const selectedClientId = searchParams.get("client");
+  const selectedClientName = searchParams.get("name") || "Cliente";
+
+  const handleSelectClient = (clientId: string, clientName: string) => {
+    setSearchParams({ client: clientId, name: clientName });
+  };
+
+  const handleBackToDirectory = () => {
+    setSearchParams({});
+  };
+
+  // If no client selected, show directory
+  if (!selectedClientId) {
+    return <ClientDirectory onSelectClient={handleSelectClient} />;
+  }
 
   const completedStages = MOCK_STAGES.filter(s => s.status === "complete").length;
 
