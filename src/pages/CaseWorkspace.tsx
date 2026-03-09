@@ -440,8 +440,11 @@ export default function CaseWorkspace() {
                       <div className={`w-2 h-2 rounded-full ${cfg.dot} shrink-0`} />
                       <Icon className={`w-4 h-4 ${cfg.text} shrink-0`} />
                       <span className={`text-sm flex-1 ${cfg.text}`}>{alert.message}</span>
-                      {alert.action && (
-                        <button className={`text-[10px] font-semibold px-3 py-1 rounded-lg border border-transparent transition-all ${cfg.actionBg}`}>
+                      {alert.action && alert.route && (
+                        <button 
+                          onClick={() => navigate(alert.route!)}
+                          className={`text-[10px] font-semibold px-3 py-1 rounded-lg border border-transparent transition-all ${cfg.actionBg}`}
+                        >
                           {alert.action} →
                         </button>
                       )}
