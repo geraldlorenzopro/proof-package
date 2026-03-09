@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight } from 'lucide-react';
+import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight, Eye } from 'lucide-react';
 import NewCaseModal from '@/components/NewCaseModal';
 
 type Case = {
@@ -76,13 +76,22 @@ export default function CasesPage() {
             <h1 className="text-xl font-bold text-foreground">Mis Casos</h1>
             <p className="text-xs text-muted-foreground">Gestiona los casos y enlaces de tus clientes</p>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 gradient-gold text-accent-foreground font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Nuevo caso
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/dashboard/workspace-demo')}
+              className="flex items-center gap-2 border border-primary/30 text-primary font-semibold px-4 py-2.5 rounded-xl hover:bg-primary/10 transition-colors text-sm"
+            >
+              <Eye className="w-4 h-4" />
+              Demo Workspace
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 gradient-gold text-accent-foreground font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Nuevo caso
+            </button>
+          </div>
         </div>
 
         {/* Stats */}

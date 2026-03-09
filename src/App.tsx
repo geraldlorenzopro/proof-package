@@ -30,6 +30,7 @@ import SmartFormsLayout from "./components/smartforms/SmartFormsLayout";
 import ClientQuestionnaire from "./pages/ClientQuestionnaire";
 import NotFound from "./pages/NotFound";
 import PdfFieldInspector from "./pages/PdfFieldInspector";
+import CaseWorkspace from "./pages/CaseWorkspace";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="settings" element={<SmartFormsSettings />} />
             <Route path=":id" element={<SmartFormPage />} />
           </Route>
+          <Route path="/dashboard/workspace-demo" element={<CaseWorkspace />} />
           <Route path="/debug/pdf-fields" element={<PdfFieldInspector />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
