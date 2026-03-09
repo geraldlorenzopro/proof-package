@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight } from 'lucide-react';
+import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight, Eye } from 'lucide-react';
 import NewCaseModal from '@/components/NewCaseModal';
 
 type Case = {
