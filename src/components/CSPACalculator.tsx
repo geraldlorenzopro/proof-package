@@ -1425,6 +1425,7 @@ export default function CSPACalculator() {
           return s;
         })()}
       />
+      )}
 
       {/* Results modal tutorial — only when dialog is open */}
       {showDialog && result && (
