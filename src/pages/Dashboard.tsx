@@ -164,7 +164,7 @@ export default function Dashboard() {
     setCreating(true);
     try {
       const { data, error } = await supabase.functions.invoke('provision-account', {
-        body: { account_name: form.account_name, email: form.email, phone: form.phone || undefined, plan: form.plan, ghl_contact_id: form.ghl_contact_id || undefined, source: 'admin' },
+        body: { account_name: form.account_name, email: form.email, phone: form.phone || undefined, plan: form.plan, external_crm_id: form.external_crm_id || undefined, source: 'admin' },
       });
       if (error) throw error;
       if (data?.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); }
