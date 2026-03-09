@@ -139,13 +139,13 @@ export default function CaseWorkspace() {
         >
           <div className="flex items-center gap-3 mb-5">
             <button
-              onClick={() => navigate("/dashboard/cases")}
+              onClick={handleBackToDirectory}
               className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="h-4 w-px bg-border" />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Case Workspace</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{selectedClientName}</span>
             <div className="flex-1" />
             <Badge variant="outline" className="text-[10px] font-mono text-jarvis border-jarvis/20 bg-jarvis/5 gap-1">
               <Activity className="w-3 h-3" />
