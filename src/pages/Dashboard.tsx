@@ -69,7 +69,7 @@ export default function Dashboard() {
   const [expandedAccount, setExpandedAccount] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ account_name: '', email: '', phone: '', plan: 'essential', ghl_contact_id: '' });
+  const [form, setForm] = useState({ account_name: '', email: '', phone: '', plan: 'essential', external_crm_id: '' });
   const [editingGhl, setEditingGhl] = useState<string | null>(null);
   const [ghlInput, setGhlInput] = useState('');
   const [savingGhl, setSavingGhl] = useState(false);
