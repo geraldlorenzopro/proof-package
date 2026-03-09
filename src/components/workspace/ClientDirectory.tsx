@@ -289,6 +289,16 @@ export default function ClientDirectory({ onSelectClient }: Props) {
           Immigration Case Workspace · Powered by NER AI
         </div>
       </footer>
+
+      {/* New Client Modal */}
+      <NewClientModal
+        open={showNewModal}
+        onOpenChange={setShowNewModal}
+        onCreated={(id, name) => {
+          fetchClients();
+          onSelectClient(id, name);
+        }}
+      />
     </div>
   );
 }
