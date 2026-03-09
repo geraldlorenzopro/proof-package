@@ -131,7 +131,7 @@ export default function AdminPanel() {
           email: form.email,
           phone: form.phone || undefined,
           plan: form.plan,
-          ghl_contact_id: form.ghl_contact_id || undefined,
+          external_crm_id: form.external_crm_id || undefined,
           source: 'admin',
         },
       });
