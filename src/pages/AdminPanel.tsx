@@ -340,7 +340,7 @@ export default function AdminPanel() {
                                 onClick={async () => {
                                   setSavingGhl(true);
                                   await supabase.functions.invoke('provision-account', {
-                                    body: { __update_ghl: true, account_id: acc.id, ghl_contact_id: ghlInput || null },
+                                    body: { __update_crm_id: true, account_id: acc.id, external_crm_id: ghlInput || null },
                                   });
                                   setEditingGhl(null);
                                   setSavingGhl(false);
