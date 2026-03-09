@@ -142,25 +142,25 @@ function buildAlerts(
   forms: FormSubmission[],
   vawaCases: VawaCase[]
 ) {
-  const alerts: { id: string; severity: "critical" | "warning" | "success"; message: string; action: string | null }[] = [];
+  const alerts: { id: string; severity: "critical" | "warning" | "success"; message: string; action: string | null; route: string | null }[] = [];
 
   const draftForms = forms.filter((f) => f.status === "draft");
   if (draftForms.length > 0) {
-    alerts.push({ id: "draft-forms", severity: "warning", message: `${draftForms.length} formulario${draftForms.length > 1 ? "s" : ""} en borrador pendiente${draftForms.length > 1 ? "s" : ""} de completar`, action: "Ver formularios" });
+    alerts.push({ id: "draft-forms", severity: "warning", message: `${draftForms.length} formulario${draftForms.length > 1 ? "s" : ""} en borrador pendiente${draftForms.length > 1 ? "s" : ""} de completar`, action: "Ver formularios", route: "/dashboard/smart-forms" });
   }
 
   const screenerStage = stages.find((s) => s.slug === "screener");
   if (screenerStage?.status === "complete") {
-    alerts.push({ id: "screener-done", severity: "success", message: "Screener completado — caso evaluado", action: null });
+    alerts.push({ id: "screener-done", severity: "success", message: "Screener completado — caso evaluado", action: null, route: null });
   }
 
   const evidenceStage = stages.find((s) => s.slug === "checklist");
   if (evidenceStage?.status === "in_progress" && evidenceStage.progress < 50) {
-    alerts.push({ id: "evidence-low", severity: "critical", message: "Menos del 50% de la evidencia recopilada — se necesita más documentación", action: "Ver checklist" });
+    alerts.push({ id: "evidence-low", severity: "critical", message: "Menos del 50% de la evidencia recopilada — se necesita más documentación", action: "Ver checklist", route: "/dashboard/vawa-checklist" });
   }
 
   if (alerts.length === 0 && vawaCases.length === 0 && forms.length === 0) {
-    alerts.push({ id: "empty", severity: "warning", message: "Este cliente no tiene casos ni formularios aún — comienza creando uno", action: null });
+    alerts.push({ id: "empty", severity: "warning", message: "Este cliente no tiene casos ni formularios aún — comienza creando uno", action: "Crear formulario", route: "/dashboard/smart-forms/new" });
   }
 
   return alerts;
@@ -440,8 +440,11 @@ export default function CaseWorkspace() {
                       <div className={`w-2 h-2 rounded-full ${cfg.dot} shrink-0`} />
                       <Icon className={`w-4 h-4 ${cfg.text} shrink-0`} />
                       <span className={`text-sm flex-1 ${cfg.text}`}>{alert.message}</span>
-                      {alert.action && (
-                        <button className={`text-[10px] font-semibold px-3 py-1 rounded-lg border border-transparent transition-all ${cfg.actionBg}`}>
+                      {alert.action && alert.route && (
+                        <button 
+                          onClick={() => navigate(alert.route!)}
+                          className={`text-[10px] font-semibold px-3 py-1 rounded-lg border border-transparent transition-all ${cfg.actionBg}`}
+                        >
                           {alert.action} →
                         </button>
                       )}

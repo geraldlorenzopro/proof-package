@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import NewClientModal from "./NewClientModal";
 
 interface ClientProfile {
   id: string;
@@ -61,6 +62,7 @@ export default function ClientDirectory({ onSelectClient }: Props) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "recent">("recent");
+  const [showNewModal, setShowNewModal] = useState(false);
 
   useEffect(() => {
     fetchClients();
@@ -123,7 +125,12 @@ export default function ClientDirectory({ onSelectClient }: Props) {
                 </p>
               </div>
             </div>
-            <Button variant="default" size="sm" className="gap-2 bg-jarvis hover:bg-jarvis/90">
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="gap-2 bg-jarvis hover:bg-jarvis/90"
+              onClick={() => setShowNewModal(true)}
+            >
               <UserPlus className="w-4 h-4" />
               <span className="hidden sm:inline">Nuevo Cliente</span>
             </Button>
@@ -282,6 +289,16 @@ export default function ClientDirectory({ onSelectClient }: Props) {
           Immigration Case Workspace · Powered by NER AI
         </div>
       </footer>
+
+      {/* New Client Modal */}
+      <NewClientModal
+        open={showNewModal}
+        onOpenChange={setShowNewModal}
+        onCreated={(id, name) => {
+          fetchClients();
+          onSelectClient(id, name);
+        }}
+      />
     </div>
   );
 }

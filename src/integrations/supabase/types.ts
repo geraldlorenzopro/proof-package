@@ -203,6 +203,7 @@ export type Database = {
           case_type: string
           client_email: string
           client_name: string
+          client_profile_id: string | null
           created_at: string
           id: string
           notes: string | null
@@ -218,6 +219,7 @@ export type Database = {
           case_type?: string
           client_email: string
           client_name: string
+          client_profile_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -233,6 +235,7 @@ export type Database = {
           case_type?: string
           client_email?: string
           client_name?: string
+          client_profile_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -242,7 +245,15 @@ export type Database = {
           updated_at?: string
           webhook_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "client_cases_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_profiles: {
         Row: {

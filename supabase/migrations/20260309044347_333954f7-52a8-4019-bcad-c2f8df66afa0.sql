@@ -1,0 +1,1 @@
+ALTER TABLE public.client_cases ADD COLUMN client_profile_id uuid REFERENCES public.client_profiles(id) ON DELETE SET NULL;
