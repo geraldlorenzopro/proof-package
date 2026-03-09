@@ -616,7 +616,7 @@ export default function Dashboard() {
                                 <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-jarvis" disabled={savingGhl}
                                   onClick={async () => {
                                     setSavingGhl(true);
-                                    await supabase.functions.invoke('provision-account', { body: { __update_ghl: true, account_id: acc.id, ghl_contact_id: ghlInput || null } });
+                                    await supabase.functions.invoke('provision-account', { body: { __update_crm_id: true, account_id: acc.id, external_crm_id: ghlInput || null } });
                                     setEditingGhl(null); setSavingGhl(false);
                                     const { data } = await supabase.from('ner_accounts').select('*').order('created_at', { ascending: false });
                                     setAccounts(data || []);
