@@ -52,18 +52,18 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    // Handle GHL contact ID update (admin action)
-    if (body.__update_ghl && body.account_id) {
-      const ghlId = body.ghl_contact_id;
-      if (ghlId && (typeof ghlId !== 'string' || ghlId.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(ghlId))) {
+    // Handle external CRM ID update (admin action)
+    if (body.__update_crm_id && body.account_id) {
+      const crmId = body.external_crm_id;
+      if (crmId && (typeof crmId !== 'string' || crmId.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(crmId))) {
         return new Response(
-          JSON.stringify({ error: "Invalid ghl_contact_id format" }),
+          JSON.stringify({ error: "Invalid external_crm_id format" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       const { error: updateErr } = await supabaseAdmin
         .from("ner_accounts")
-        .update({ ghl_contact_id: ghlId || null })
+        .update({ external_crm_id: crmId || null })
         .eq("id", body.account_id);
       if (updateErr) {
         return new Response(
