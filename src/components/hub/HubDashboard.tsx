@@ -33,7 +33,7 @@ interface Props {
 const ICON_MAP: Record<string, any> = {
   "case-engine": Briefcase,
   evidence: FolderOpen,
-  cspa: BarChart3,
+  cspa: Calculator,
   affidavit: Calculator,
   "uscis-analyzer": FileSearch,
   "checklist-generator": ClipboardList,
