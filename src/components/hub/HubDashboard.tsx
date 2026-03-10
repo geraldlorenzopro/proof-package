@@ -151,8 +151,8 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         ))}
       </motion.div>
 
-      {/* ── Case Engine CTA ── */}
-      {caseEngineApp && (
+      {/* ── Case Engine CTA — always visible as primary app ── */}
+      {(
         <motion.button
           custom={0}
           initial="hidden"
