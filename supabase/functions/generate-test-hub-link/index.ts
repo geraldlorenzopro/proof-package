@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   const sig = Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, "0")).join("");
 
   const { base_url } = await req.json().catch(() => ({ base_url: null }));
-  const baseUrl = base_url || "https://proof-package.lovable.app";
+  const baseUrl = parsedBaseUrl || "https://proof-package.lovable.app";
   const link = `${baseUrl}/hub?cid=${cid}&ts=${ts}&sig=${sig}`;
 
   return new Response(JSON.stringify({ link, cid, ts, sig }), {
