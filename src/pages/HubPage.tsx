@@ -109,6 +109,7 @@ export default function HubPage() {
     }
   }, [data, authReady, loading, navigate]);
 
+  async function establishSession(authToken: { access_token: string; refresh_token: string }) {
     try {
       const { error: sessionErr } = await supabase.auth.setSession({
         access_token: authToken.access_token,
