@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import HubActivityFeed from "./HubActivityFeed";
-import HubAnalyticsCards from "./HubAnalyticsCards";
 
 interface HubApp {
   id: string;
@@ -250,26 +249,22 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         </div>
       )}
 
-      {/* ── Intelligence: KPI row + Activity ── */}
+      {/* ── Recent Activity — full width ── */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
           <div className="h-px flex-1 bg-gradient-to-r from-border/80 to-transparent" />
           <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/60">
-            Intelligence
+            Actividad Reciente
           </h3>
           <div className="h-px flex-1 bg-gradient-to-l from-border/80 to-transparent" />
         </div>
 
-        {/* KPI Cards — single horizontal row */}
-        <HubAnalyticsCards />
-
-        {/* Activity Feed — contained card below */}
-        <div className="mt-4 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm overflow-hidden">
+        <div className="rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border/20">
             <Clock className="w-3.5 h-3.5 text-accent" />
-            <span className="text-xs font-medium text-muted-foreground">Actividad reciente</span>
+            <span className="text-xs font-medium text-muted-foreground">Últimos movimientos en tu cuenta</span>
           </div>
-          <div className="max-h-[320px] overflow-y-auto">
+          <div className="max-h-[400px] overflow-y-auto">
             <HubActivityFeed />
           </div>
         </div>
