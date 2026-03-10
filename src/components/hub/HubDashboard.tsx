@@ -160,6 +160,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
           variants={fadeUp}
           onClick={() => {
             sessionStorage.setItem("ner_hub_return", "/hub");
+            sessionStorage.setItem("ner_auth_redirect", "/dashboard/workspace-demo");
             navigate("/dashboard/workspace-demo");
           }}
           className="w-full group relative overflow-hidden rounded-2xl border border-jarvis/20 bg-gradient-to-r from-jarvis/[0.06] via-card to-accent/[0.04] p-6 sm:p-8 mb-8 text-left transition-all hover:border-jarvis/30 hover:shadow-[0_0_40px_hsl(195_100%_50%/0.08)]"
