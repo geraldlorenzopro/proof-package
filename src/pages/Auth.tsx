@@ -27,6 +27,15 @@ export default function Auth() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
+        // Hub users should go back to Hub, not Dashboard
+        const isHubUser = user.email?.endsWith('@hub.ner.internal');
+        const hubData = sessionStorage.getItem('ner_hub_data');
+
+        if (isHubUser || hubData) {
+          navigate('/hub', { replace: true });
+          return;
+        }
+
         // Check if MFA is fully verified by checking AAL
         supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
           if (data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2') {
