@@ -115,10 +115,14 @@ export default function VawaChecklistPage() {
       }
       const user = session.user;
 
+      const { data: accountId } = await supabase.rpc("user_account_id", { _user_id: user.id });
+
       const { data, error } = await supabase
         .from("vawa_cases")
         .insert({
           professional_id: user.id,
+          account_id: accountId,
+          assigned_to: user.id,
           client_name: clientName.trim(),
           client_email: clientEmail.trim() || null,
           screener_answers: answers as any,

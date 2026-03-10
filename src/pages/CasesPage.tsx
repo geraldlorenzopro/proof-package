@@ -29,7 +29,6 @@ export default function CasesPage() {
     const { data } = await supabase
       .from('client_cases')
       .select('*')
-      .eq('professional_id', user.id)
       .order('created_at', { ascending: false });
     setCases(data || []);
     setLoading(false);

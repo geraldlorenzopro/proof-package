@@ -205,7 +205,6 @@ export default function Dashboard() {
       const { data: casesData } = await supabase
         .from('client_cases')
         .select('id, client_name, status, case_type, created_at')
-        .in('professional_id', memberUserIds)
         .order('created_at', { ascending: false })
         .limit(50);
       cases = casesData || [];

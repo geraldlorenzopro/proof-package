@@ -65,7 +65,6 @@ export default function CaseReview() {
       .from('client_cases')
       .select('*')
       .eq('id', id)
-      .eq('professional_id', user.id)
       .single();
 
     if (!caseData) { navigate('/dashboard'); return; }

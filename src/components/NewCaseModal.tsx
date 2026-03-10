@@ -27,8 +27,12 @@ export default function NewCaseModal({ onClose, onCreated }: Props) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const { data: accountId } = await supabase.rpc("user_account_id", { _user_id: user.id });
+
     const { data, error } = await supabase.from('client_cases').insert({
       professional_id: user.id,
+      account_id: accountId,
+      assigned_to: user.id,
       client_name: clientName,
       client_email: clientEmail,
       case_type: caseType,
