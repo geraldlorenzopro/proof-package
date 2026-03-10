@@ -10,7 +10,8 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "No secret" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const cid = "test_ghl_123";
+  const { base_url: parsedBaseUrl, cid: parsedCid } = await req.json().catch(() => ({ base_url: null, cid: null }));
+  const cid = parsedCid || "test_ghl_123";
   const ts = String(Date.now());
 
   const encoder = new TextEncoder();
@@ -21,8 +22,7 @@ Deno.serve(async (req) => {
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(`${cid}:${ts}`));
   const sig = Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, "0")).join("");
 
-  const { base_url } = await req.json().catch(() => ({ base_url: null }));
-  const baseUrl = base_url || "https://proof-package.lovable.app";
+  const baseUrl = parsedBaseUrl || "https://proof-package.lovable.app";
   const link = `${baseUrl}/hub?cid=${cid}&ts=${ts}&sig=${sig}`;
 
   return new Response(JSON.stringify({ link, cid, ts, sig }), {
