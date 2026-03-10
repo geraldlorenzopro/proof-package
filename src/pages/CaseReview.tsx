@@ -156,11 +156,20 @@ export default function CaseReview() {
               <h1 className="font-display text-2xl font-bold">{clientCase?.client_name}</h1>
               <p className="text-primary-foreground/70 text-sm mt-0.5">{clientCase?.client_email} · {clientCase?.case_type}</p>
             </div>
-            <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${status.color}`}>
-              <StatusIcon className="w-3.5 h-3.5" />
-              {status.label}
-            </span>
-          </div>
+            <div className="flex items-center gap-2">
+              {clientCase && (
+                <CaseAssigneeSelector
+                  caseId={clientCase.id}
+                  table="client_cases"
+                  currentAssignee={(clientCase as any).assigned_to || null}
+                  compact
+                />
+              )}
+              <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${status.color}`}>
+                <StatusIcon className="w-3.5 h-3.5" />
+                {status.label}
+              </span>
+            </div>
         </div>
       </header>
 
