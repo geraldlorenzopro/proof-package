@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import ClientDirectory from "@/components/workspace/ClientDirectory";
 import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
 import QuickFormLauncher from "@/components/workspace/QuickFormLauncher";
+import HubLayout from "@/components/hub/HubLayout";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -290,40 +291,56 @@ export default function CaseWorkspace() {
     { label: "Etapa actual", value: `${completedStages}/${stages.length}`, icon: Target, color: "text-jarvis" },
   ];
 
+  // Parse hub data for layout
+  const hubData = useMemo(() => {
+    if (!isFromHub) return null;
+    try {
+      const raw = sessionStorage.getItem("ner_hub_data");
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }, [isFromHub]);
+
+  // Wrapper component based on context
+  const Wrapper = ({ children }: { children: React.ReactNode }) => {
+    if (isFromHub && hubData) {
+      return (
+        <HubLayout
+          accountName={hubData.account_name}
+          staffName={hubData.staff_info?.display_name}
+          plan={hubData.plan}
+          availableApps={hubData.apps?.map((a: any) => a.slug).filter((s: string) => s !== "case-engine")}
+        >
+          {children}
+        </HubLayout>
+      );
+    }
+    return <div className="min-h-screen bg-background grid-bg lg:ml-64">{children}</div>;
+  };
+
   // If no client selected, show directory
   if (!selectedClientId) {
     return (
-      <div className="min-h-screen bg-background grid-bg">
-        {isFromHub && (
-          <div className="max-w-5xl mx-auto px-4 pt-4">
-            <button
-              onClick={handleBackToHub}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-jarvis transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <Shield className="w-4 h-4" />
-              <span>Hub</span>
-            </button>
-          </div>
-        )}
+      <Wrapper>
         <ClientDirectory onSelectClient={handleSelectClient} />
-      </div>
+      </Wrapper>
     );
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-jarvis animate-spin" />
-          <p className="text-sm text-muted-foreground">Cargando workspace...</p>
+      <Wrapper>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 text-jarvis animate-spin" />
+            <p className="text-sm text-muted-foreground">Cargando workspace...</p>
+          </div>
         </div>
-      </div>
+      </Wrapper>
     );
   }
 
   return (
-    <div className={`min-h-screen bg-background grid-bg ${isFromHub ? '' : 'lg:ml-64'}`}>
+    <Wrapper>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-16 lg:pt-8">
 
         {/* ═══ HERO HEADER ═══ */}
@@ -684,6 +701,6 @@ export default function CaseWorkspace() {
           </div>
         </motion.div>
       </div>
-    </div>
+    </Wrapper>
   );
 }
