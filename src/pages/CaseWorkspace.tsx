@@ -292,20 +292,24 @@ export default function CaseWorkspace() {
 
   // If no client selected, show directory
   if (!selectedClientId) {
+    if (isFromHub) {
+      // Import HubLayout dynamically — wrap in hub context
+      const HubLayout = require("@/components/hub/HubLayout").default;
+      const hubData = sessionStorage.getItem("ner_hub_data");
+      const parsed = hubData ? JSON.parse(hubData) : {};
+      return (
+        <HubLayout
+          accountName={parsed.account_name}
+          staffName={parsed.staff_info?.display_name}
+          plan={parsed.plan}
+          availableApps={parsed.apps?.map((a: any) => a.slug).filter((s: string) => s !== "case-engine")}
+        >
+          <ClientDirectory onSelectClient={handleSelectClient} />
+        </HubLayout>
+      );
+    }
     return (
       <div className="min-h-screen bg-background grid-bg">
-        {isFromHub && (
-          <div className="max-w-5xl mx-auto px-4 pt-4">
-            <button
-              onClick={handleBackToHub}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-jarvis transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <Shield className="w-4 h-4" />
-              <span>Hub</span>
-            </button>
-          </div>
-        )}
         <ClientDirectory onSelectClient={handleSelectClient} />
       </div>
     );
