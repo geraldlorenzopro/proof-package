@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, FolderOpen, Calculator, BarChart3, Activity, Shield, AlertTriangle, ChevronRight, FileSearch, FileText, RefreshCw, ClipboardList, Scale } from 'lucide-react';
+import { Loader2, FolderOpen, Calculator, BarChart3, Activity, Shield, AlertTriangle, ChevronRight, FileSearch, FileText, RefreshCw, ClipboardList, Scale, Briefcase } from 'lucide-react';
 
 const ICON_MAP: Record<string, any> = {
   evidence: FolderOpen,
