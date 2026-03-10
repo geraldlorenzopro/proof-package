@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
-  Users, FileText, FolderOpen, BarChart3, Calculator,
-  FileSearch, Scale, ClipboardList, ChevronRight, TrendingUp,
-  Clock, Zap, ArrowUpRight, Activity, Briefcase, Sparkles,
+  Users, FileText, FolderOpen, Calculator,
+  FileSearch, Scale, ClipboardList, ChevronRight,
+  Clock, ArrowUpRight, Activity, Briefcase,
   Shield
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
