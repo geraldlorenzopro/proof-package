@@ -212,6 +212,9 @@ export default function CaseWorkspace() {
   const [vawaCases, setVawaCases] = useState<VawaCase[]>([]);
   const [clientCases, setClientCases] = useState<ClientCase[]>([]);
 
+  // Check if coming from Hub
+  const isFromHub = !!sessionStorage.getItem('ner_hub_return');
+
   const selectedClientId = searchParams.get("client");
   const selectedClientName = searchParams.get("name") || "Cliente";
 
@@ -221,6 +224,12 @@ export default function CaseWorkspace() {
 
   const handleBackToDirectory = () => {
     setSearchParams({});
+  };
+
+  const handleBackToHub = () => {
+    // Clear auto-launched flag so Hub shows the grid
+    sessionStorage.removeItem('ner_hub_auto_launched');
+    navigate('/hub');
   };
 
   // Fetch data when client is selected
