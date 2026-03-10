@@ -250,7 +250,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         </div>
       )}
 
-      {/* ── Analytics + Activity Feed ── */}
+      {/* ── Intelligence: KPI row + Activity ── */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
           <div className="h-px flex-1 bg-gradient-to-r from-border/80 to-transparent" />
@@ -260,22 +260,16 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
           <div className="h-px flex-1 bg-gradient-to-l from-border/80 to-transparent" />
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Analytics Cards */}
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
-              <BarChart3 className="w-3.5 h-3.5 text-jarvis" />
-              Métricas de cuenta
-            </p>
-            <HubAnalyticsCards />
-          </div>
+        {/* KPI Cards — single horizontal row */}
+        <HubAnalyticsCards />
 
-          {/* Activity Feed */}
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-accent" />
-              Actividad reciente
-            </p>
+        {/* Activity Feed — contained card below */}
+        <div className="mt-4 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border/20">
+            <Clock className="w-3.5 h-3.5 text-accent" />
+            <span className="text-xs font-medium text-muted-foreground">Actividad reciente</span>
+          </div>
+          <div className="max-h-[320px] overflow-y-auto">
             <HubActivityFeed />
           </div>
         </div>
