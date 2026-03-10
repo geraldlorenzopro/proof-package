@@ -291,28 +291,38 @@ export default function CaseWorkspace() {
     { label: "Etapa actual", value: `${completedStages}/${stages.length}`, icon: Target, color: "text-jarvis" },
   ];
 
-  // If no client selected, show directory
-  if (!selectedClientId) {
-    if (isFromHub) {
-      // Import HubLayout dynamically — wrap in hub context
-      const HubLayout = require("@/components/hub/HubLayout").default;
-      const hubData = sessionStorage.getItem("ner_hub_data");
-      const parsed = hubData ? JSON.parse(hubData) : {};
+  // Parse hub data for layout
+  const hubData = useMemo(() => {
+    if (!isFromHub) return null;
+    try {
+      const raw = sessionStorage.getItem("ner_hub_data");
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }, [isFromHub]);
+
+  // Wrapper component based on context
+  const Wrapper = ({ children }: { children: React.ReactNode }) => {
+    if (isFromHub && hubData) {
       return (
         <HubLayout
-          accountName={parsed.account_name}
-          staffName={parsed.staff_info?.display_name}
-          plan={parsed.plan}
-          availableApps={parsed.apps?.map((a: any) => a.slug).filter((s: string) => s !== "case-engine")}
+          accountName={hubData.account_name}
+          staffName={hubData.staff_info?.display_name}
+          plan={hubData.plan}
+          availableApps={hubData.apps?.map((a: any) => a.slug).filter((s: string) => s !== "case-engine")}
         >
-          <ClientDirectory onSelectClient={handleSelectClient} />
+          {children}
         </HubLayout>
       );
     }
+    return <div className="min-h-screen bg-background grid-bg lg:ml-64">{children}</div>;
+  };
+
+  // If no client selected, show directory
+  if (!selectedClientId) {
     return (
-      <div className="min-h-screen bg-background grid-bg">
+      <Wrapper>
         <ClientDirectory onSelectClient={handleSelectClient} />
-      </div>
+      </Wrapper>
     );
   }
 
