@@ -94,7 +94,21 @@ export default function HubPage() {
     setLoading(false);
   }, [cid, sig, ts]);
 
-  async function establishSession(authToken: { access_token: string; refresh_token: string }) {
+  // Auto-navigate to Case Engine when auth is ready and it's available
+  useEffect(() => {
+    if (!data || !authReady || loading) return;
+    // Only auto-navigate on fresh hub entry (not when returning from a tool)
+    const autoLaunched = sessionStorage.getItem('ner_hub_auto_launched');
+    if (autoLaunched === data.account_id) return; // Already auto-launched this session
+    
+    const caseEngine = data.apps.find(app => app.slug === 'case-engine');
+    if (caseEngine) {
+      sessionStorage.setItem('ner_hub_return', '/hub');
+      sessionStorage.setItem('ner_hub_auto_launched', data.account_id);
+      navigate('/dashboard/workspace-demo');
+    }
+  }, [data, authReady, loading, navigate]);
+
     try {
       const { error: sessionErr } = await supabase.auth.setSession({
         access_token: authToken.access_token,
