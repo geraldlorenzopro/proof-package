@@ -68,9 +68,88 @@ export default function HubPage() {
         return;
       } catch { /* fall through */ }
     }
-    setError("Enlace inválido o incompleto.");
-    setLoading(false);
+    // No query params and no cache — try to recover from existing auth session
+    recoverFromSession();
   }, [cid, sig, ts]);
+
+  async function recoverFromSession() {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session?.user) {
+        setError("Enlace inválido o incompleto. Por favor usa el enlace desde tu CRM.");
+        setLoading(false);
+        return;
+      }
+      const userId = sessionData.session.user.id;
+
+      // Get account info
+      const { data: member } = await supabase
+        .from("account_members")
+        .select("account_id, role")
+        .eq("user_id", userId)
+        .limit(1)
+        .single();
+
+      if (!member) {
+        setError("No se encontró una cuenta asociada.");
+        setLoading(false);
+        return;
+      }
+
+      const { data: account } = await supabase
+        .from("ner_accounts")
+        .select("account_name, plan")
+        .eq("id", member.account_id)
+        .single();
+
+      if (!account) {
+        setError("Cuenta no encontrada.");
+        setLoading(false);
+        return;
+      }
+
+      // Get apps the account has access to
+      const { data: appAccess } = await supabase
+        .from("account_app_access")
+        .select("app_id")
+        .eq("account_id", member.account_id);
+
+      let apps: HubApp[] = [];
+      if (appAccess && appAccess.length > 0) {
+        const appIds = appAccess.map(a => a.app_id);
+        const { data: hubApps } = await supabase
+          .from("hub_apps")
+          .select("id, name, slug, icon, description")
+          .in("id", appIds)
+          .eq("is_active", true);
+        apps = hubApps || [];
+      }
+
+      // Get profile for staff name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", userId)
+        .single();
+
+      const recovered: HubData = {
+        account_id: member.account_id,
+        account_name: account.account_name,
+        plan: account.plan,
+        apps,
+        staff_info: profile?.full_name ? { ghl_user_email: "", display_name: profile.full_name } : null,
+      };
+
+      setData(recovered);
+      sessionStorage.setItem("ner_hub_data", JSON.stringify(recovered));
+      setAuthReady(true);
+      setLoading(false);
+    } catch (err) {
+      console.error("Hub recovery failed:", err);
+      setError("Enlace inválido o incompleto. Por favor usa el enlace desde tu CRM.");
+      setLoading(false);
+    }
+  }
 
   // Load stats once auth is ready
   useEffect(() => {
