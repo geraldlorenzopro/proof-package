@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, FolderOpen, Calculator, BarChart3, Activity, Shield, AlertTriangle, ChevronRight, FileSearch, FileText, RefreshCw, ClipboardList, Scale, Briefcase } from 'lucide-react';
 
 const ICON_MAP: Record<string, any> = {
+  'case-engine': Briefcase,
   evidence: FolderOpen,
   cspa: BarChart3,
   affidavit: Calculator,
@@ -16,6 +17,7 @@ const ICON_MAP: Record<string, any> = {
 };
 
 const ROUTE_MAP: Record<string, string> = {
+  'case-engine': '/dashboard/workspace-demo',
   evidence: '/dashboard/evidence',
   cspa: '/dashboard/cspa',
   affidavit: '/dashboard/affidavit',
