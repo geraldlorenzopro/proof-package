@@ -298,7 +298,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
           SECTION 5 — RECENT ACTIVITY
       ═══════════════════════════════════════════════ */}
       <section>
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-3">
           <div className="h-px flex-1 bg-gradient-to-r from-border/80 to-transparent" />
           <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/60">
             Actividad Reciente
@@ -306,13 +306,12 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
           <div className="h-px flex-1 bg-gradient-to-l from-border/80 to-transparent" />
         </div>
 
-        <div className="rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-3 border-b border-border/20">
-            <Clock className="w-3.5 h-3.5 text-accent" />
-            <span className="text-xs font-medium text-muted-foreground">Últimos movimientos en tu cuenta</span>
-          </div>
-          <div className="max-h-[400px] overflow-y-auto">
-            <HubActivityFeed />
+        <div className="rounded-xl border border-border/20 bg-card/20 backdrop-blur-sm px-5 py-4">
+          <HubActivityFeed />
+          <div className="mt-3 pt-2 border-t border-border/10 text-center">
+            <button className="text-[11px] text-accent/70 hover:text-accent transition-colors font-medium">
+              Ver toda la actividad →
+            </button>
           </div>
         </div>
       </section>
