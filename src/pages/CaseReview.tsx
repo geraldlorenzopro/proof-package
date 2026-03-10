@@ -170,6 +170,7 @@ export default function CaseReview() {
                 {status.label}
               </span>
             </div>
+          </div>
         </div>
       </header>
 
