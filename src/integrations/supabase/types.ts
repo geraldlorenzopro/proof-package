@@ -199,6 +199,8 @@ export type Database = {
       client_cases: {
         Row: {
           access_token: string
+          account_id: string | null
+          assigned_to: string | null
           beneficiary_name: string | null
           case_type: string
           client_email: string
@@ -215,6 +217,8 @@ export type Database = {
         }
         Insert: {
           access_token?: string
+          account_id?: string | null
+          assigned_to?: string | null
           beneficiary_name?: string | null
           case_type?: string
           client_email: string
@@ -231,6 +235,8 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          account_id?: string | null
+          assigned_to?: string | null
           beneficiary_name?: string | null
           case_type?: string
           client_email?: string
@@ -246,6 +252,13 @@ export type Database = {
           webhook_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "client_cases_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "client_cases_client_profile_id_fkey"
             columns: ["client_profile_id"]
@@ -852,6 +865,8 @@ export type Database = {
       }
       vawa_cases: {
         Row: {
+          account_id: string | null
+          assigned_to: string | null
           checklist_notes: Json
           checklist_progress: Json
           client_email: string | null
@@ -865,6 +880,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
+          assigned_to?: string | null
           checklist_notes?: Json
           checklist_progress?: Json
           client_email?: string | null
@@ -878,6 +895,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
+          assigned_to?: string | null
           checklist_notes?: Json
           checklist_progress?: Json
           client_email?: string | null
@@ -890,7 +909,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vawa_cases_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       visa_bulletin: {
         Row: {
