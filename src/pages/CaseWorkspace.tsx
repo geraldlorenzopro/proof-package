@@ -292,7 +292,23 @@ export default function CaseWorkspace() {
 
   // If no client selected, show directory
   if (!selectedClientId) {
-    return <ClientDirectory onSelectClient={handleSelectClient} />;
+    return (
+      <div className="min-h-screen bg-background grid-bg">
+        {isFromHub && (
+          <div className="max-w-5xl mx-auto px-4 pt-4">
+            <button
+              onClick={handleBackToHub}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-jarvis transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <Shield className="w-4 h-4" />
+              <span>Hub</span>
+            </button>
+          </div>
+        )}
+        <ClientDirectory onSelectClient={handleSelectClient} />
+      </div>
+    );
   }
 
   if (loading) {
