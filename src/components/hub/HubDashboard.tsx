@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import HubActivityFeed from "./HubActivityFeed";
-import HubAnalyticsCards from "./HubAnalyticsCards";
 
 interface HubApp {
   id: string;
