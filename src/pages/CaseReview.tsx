@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Download, Image, MessageSquare, FileText, CheckCircle, Clock, User, Loader2 } from 'lucide-react';
+import CaseAssigneeSelector from '@/components/CaseAssigneeSelector';
 import { generateEvidencePDF } from '@/lib/pdfGenerator';
 
 type EvidenceItem = {
