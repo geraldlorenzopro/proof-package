@@ -88,7 +88,6 @@ export default function VawaCasesList({ lang }: VawaCasesListProps) {
       const { data, error } = await supabase
         .from("vawa_cases")
         .select("*")
-        .eq("professional_id", user.id)
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
