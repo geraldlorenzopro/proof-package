@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import ClientDirectory from "@/components/workspace/ClientDirectory";
 import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
 import QuickFormLauncher from "@/components/workspace/QuickFormLauncher";
+import HubLayout from "@/components/hub/HubLayout";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 
