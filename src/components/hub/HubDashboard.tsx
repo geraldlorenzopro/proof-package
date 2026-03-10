@@ -250,6 +250,37 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         </div>
       )}
 
+      {/* ── Analytics + Activity Feed ── */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-px flex-1 bg-gradient-to-r from-border/80 to-transparent" />
+          <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/60">
+            Intelligence
+          </h3>
+          <div className="h-px flex-1 bg-gradient-to-l from-border/80 to-transparent" />
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Analytics Cards */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
+              <BarChart3 className="w-3.5 h-3.5 text-jarvis" />
+              Métricas de cuenta
+            </p>
+            <HubAnalyticsCards />
+          </div>
+
+          {/* Activity Feed */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-accent" />
+              Actividad reciente
+            </p>
+            <HubActivityFeed />
+          </div>
+        </div>
+      </div>
+
       {/* ── Footer ── */}
       <motion.div
         initial={{ opacity: 0 }}
