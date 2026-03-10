@@ -224,6 +224,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
                   onClick={() => {
                     if (route) {
                       sessionStorage.setItem("ner_hub_return", "/hub");
+                      sessionStorage.setItem("ner_auth_redirect", route);
                       navigate(route);
                     }
                   }}
