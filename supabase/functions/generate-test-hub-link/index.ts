@@ -10,7 +10,8 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "No secret" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const cid = "test_ghl_123";
+  const { base_url: parsedBaseUrl, cid: parsedCid } = await req.json().catch(() => ({ base_url: null, cid: null }));
+  const cid = parsedCid || "test_ghl_123";
   const ts = String(Date.now());
 
   const encoder = new TextEncoder();
