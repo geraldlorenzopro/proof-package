@@ -323,7 +323,7 @@ export default function CaseWorkspace() {
   }
 
   return (
-    <div className="min-h-screen bg-background grid-bg lg:ml-64">
+    <div className={`min-h-screen bg-background grid-bg ${isFromHub ? '' : 'lg:ml-64'}`}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-16 lg:pt-8">
 
         {/* ═══ HERO HEADER ═══ */}
