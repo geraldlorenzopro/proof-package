@@ -212,6 +212,9 @@ export default function CaseWorkspace() {
   const [vawaCases, setVawaCases] = useState<VawaCase[]>([]);
   const [clientCases, setClientCases] = useState<ClientCase[]>([]);
 
+  // Check if coming from Hub
+  const isFromHub = !!sessionStorage.getItem('ner_hub_return');
+
   const selectedClientId = searchParams.get("client");
   const selectedClientName = searchParams.get("name") || "Cliente";
 
@@ -221,6 +224,12 @@ export default function CaseWorkspace() {
 
   const handleBackToDirectory = () => {
     setSearchParams({});
+  };
+
+  const handleBackToHub = () => {
+    // Clear auto-launched flag so Hub shows the grid
+    sessionStorage.removeItem('ner_hub_auto_launched');
+    navigate('/hub');
   };
 
   // Fetch data when client is selected
@@ -283,7 +292,23 @@ export default function CaseWorkspace() {
 
   // If no client selected, show directory
   if (!selectedClientId) {
-    return <ClientDirectory onSelectClient={handleSelectClient} />;
+    return (
+      <div className="min-h-screen bg-background grid-bg">
+        {isFromHub && (
+          <div className="max-w-5xl mx-auto px-4 pt-4">
+            <button
+              onClick={handleBackToHub}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-jarvis transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <Shield className="w-4 h-4" />
+              <span>Hub</span>
+            </button>
+          </div>
+        )}
+        <ClientDirectory onSelectClient={handleSelectClient} />
+      </div>
+    );
   }
 
   if (loading) {
@@ -298,7 +323,7 @@ export default function CaseWorkspace() {
   }
 
   return (
-    <div className="min-h-screen bg-background grid-bg lg:ml-64">
+    <div className={`min-h-screen bg-background grid-bg ${isFromHub ? '' : 'lg:ml-64'}`}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-16 lg:pt-8">
 
         {/* ═══ HERO HEADER ═══ */}

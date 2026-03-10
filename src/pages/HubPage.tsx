@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, FolderOpen, Calculator, BarChart3, Activity, Shield, AlertTriangle, ChevronRight, FileSearch, FileText, RefreshCw, ClipboardList, Scale } from 'lucide-react';
+import { Loader2, FolderOpen, Calculator, BarChart3, Activity, Shield, AlertTriangle, ChevronRight, FileSearch, FileText, RefreshCw, ClipboardList, Scale, Briefcase } from 'lucide-react';
 
 const ICON_MAP: Record<string, any> = {
+  'case-engine': Briefcase,
   evidence: FolderOpen,
   cspa: BarChart3,
   affidavit: Calculator,
@@ -16,6 +17,7 @@ const ICON_MAP: Record<string, any> = {
 };
 
 const ROUTE_MAP: Record<string, string> = {
+  'case-engine': '/dashboard/workspace-demo',
   evidence: '/dashboard/evidence',
   cspa: '/dashboard/cspa',
   affidavit: '/dashboard/affidavit',
@@ -91,6 +93,21 @@ export default function HubPage() {
     setError('Enlace inválido o incompleto.');
     setLoading(false);
   }, [cid, sig, ts]);
+
+  // Auto-navigate to Case Engine when auth is ready and it's available
+  useEffect(() => {
+    if (!data || !authReady || loading) return;
+    // Only auto-navigate on fresh hub entry (not when returning from a tool)
+    const autoLaunched = sessionStorage.getItem('ner_hub_auto_launched');
+    if (autoLaunched === data.account_id) return; // Already auto-launched this session
+    
+    const caseEngine = data.apps.find(app => app.slug === 'case-engine');
+    if (caseEngine) {
+      sessionStorage.setItem('ner_hub_return', '/hub');
+      sessionStorage.setItem('ner_hub_auto_launched', data.account_id);
+      navigate('/dashboard/workspace-demo');
+    }
+  }, [data, authReady, loading, navigate]);
 
   async function establishSession(authToken: { access_token: string; refresh_token: string }) {
     try {
