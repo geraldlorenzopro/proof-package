@@ -22,7 +22,6 @@ Deno.serve(async (req) => {
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(`${cid}:${ts}`));
   const sig = Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, "0")).join("");
 
-  const { base_url } = await req.json().catch(() => ({ base_url: null }));
   const baseUrl = parsedBaseUrl || "https://proof-package.lovable.app";
   const link = `${baseUrl}/hub?cid=${cid}&ts=${ts}&sig=${sig}`;
 
