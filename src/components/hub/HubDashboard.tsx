@@ -105,11 +105,24 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         <p className="text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider">
           {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}
         </p>
-        <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-          {greeting}, <span className="text-jarvis">{staffName || accountName}</span>
-        </h2>
+        <div className="flex items-center gap-3 mb-1">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+            {greeting}, <span className="text-jarvis">{staffName || accountName}</span>
+          </h2>
+          {plan && (
+            <Badge className={`text-[9px] font-display font-bold uppercase tracking-wider border ${
+              plan === "elite" || plan === "enterprise"
+                ? "bg-accent/10 text-accent border-accent/20"
+                : plan === "professional"
+                ? "bg-jarvis/10 text-jarvis border-jarvis/20"
+                : "bg-muted text-muted-foreground border-border"
+            }`}>
+              {plan}
+            </Badge>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Tu centro de operaciones para gestionar casos de inmigración.
+          {accountName}{staffName ? ` · ${staffName}` : ""} — Tu centro de operaciones para gestionar casos de inmigración.
         </p>
       </motion.div>
 
