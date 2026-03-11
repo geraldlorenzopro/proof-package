@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, UserPlus } from "lucide-react";
+import { logAudit } from "@/lib/auditLog";
 
 interface Props {
   open: boolean;
@@ -70,6 +71,13 @@ export default function NewClientModal({ open, onOpenChange, onCreated }: Props)
 
       const clientName = `${firstName.trim()} ${lastName.trim()}`;
       toast.success(`Cliente "${clientName}" creado`);
+
+      logAudit({
+        action: "client.created",
+        entity_type: "client",
+        entity_id: data.id,
+        entity_label: clientName,
+      });
       
       // Reset form
       setFirstName("");

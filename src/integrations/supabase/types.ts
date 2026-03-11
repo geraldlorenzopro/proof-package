@@ -166,6 +166,56 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          account_id: string
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_label: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          user_display_name: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_label?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_display_name?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_label?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_display_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bulletin_sync_log: {
         Row: {
           bulletin_month: number

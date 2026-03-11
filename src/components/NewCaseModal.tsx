@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { X, Copy, Check, ArrowRight, User, Mail, Briefcase } from 'lucide-react';
+import { logAudit } from '@/lib/auditLog';
 
 const CASE_TYPES = ['I-130', 'I-485', 'I-751', 'I-129F', 'N-400', 'DACA', 'TPS', 'Otro'];
 
@@ -43,6 +44,13 @@ export default function NewCaseModal({ onClose, onCreated }: Props) {
     setLoading(false);
     if (!error && data) {
       setCreated(data);
+      logAudit({
+        action: "case.created",
+        entity_type: "case",
+        entity_id: data.id,
+        entity_label: `${caseType} - ${clientName}`,
+        metadata: { case_type: caseType },
+      });
     }
   }
 

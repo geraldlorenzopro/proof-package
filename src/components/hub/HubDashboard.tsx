@@ -6,12 +6,13 @@ import {
   FileSearch, Scale, ClipboardList, ChevronRight,
   ArrowUpRight, Briefcase,
   Shield, UserPlus, PlusCircle, Upload, FileCheck,
-  Zap, LayoutGrid
+  Zap, LayoutGrid, ChevronDown
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import HubAnalyticsCards from "./HubAnalyticsCards";
 import HubCommandBar from "./HubCommandBar";
 import HubActivityDrawer from "./HubActivityDrawer";
+import HubAuditLog from "./HubAuditLog";
 
 interface HubApp {
   id: string;
@@ -100,6 +101,7 @@ const PRIMARY_ACTIONS = [
 
 export default function HubDashboard({ accountName, staffName, plan, apps, stats }: Props) {
   const navigate = useNavigate();
+  const [showAudit, setShowAudit] = useState(false);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -265,6 +267,30 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
           </motion.div>
         </section>
       )}
+
+      {/* ═══ AUDIT LOG — Compliance Section ═══ */}
+      <section>
+        <button
+          onClick={() => setShowAudit(!showAudit)}
+          className="flex items-center gap-2 mb-3 w-full group"
+        >
+          <Shield className="w-3.5 h-3.5 text-muted-foreground/30" />
+          <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/70">
+            Seguridad & Compliance
+          </h3>
+          <div className="h-px flex-1 bg-border/20" />
+          <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground/30 transition-transform ${showAudit ? "rotate-180" : ""}`} />
+        </button>
+        {showAudit && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            transition={{ duration: 0.2 }}
+          >
+            <HubAuditLog />
+          </motion.div>
+        )}
+      </section>
 
       {/* Footer */}
       <motion.p
