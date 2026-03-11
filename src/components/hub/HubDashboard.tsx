@@ -6,12 +6,13 @@ import {
   FileSearch, Scale, ClipboardList, ChevronRight,
   ArrowUpRight, Briefcase,
   Shield, UserPlus, PlusCircle, Upload, FileCheck,
-  Zap, LayoutGrid
+  Zap, LayoutGrid, ChevronDown
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import HubAnalyticsCards from "./HubAnalyticsCards";
 import HubCommandBar from "./HubCommandBar";
 import HubActivityDrawer from "./HubActivityDrawer";
+import HubAuditLog from "./HubAuditLog";
 
 interface HubApp {
   id: string;
