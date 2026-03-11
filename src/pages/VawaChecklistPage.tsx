@@ -138,6 +138,12 @@ export default function VawaChecklistPage() {
       if (error) throw error;
       setCurrentCaseId(data.id);
       toast.success(t("Caso guardado", "Case saved"));
+      logAudit({
+        action: "vawa.created",
+        entity_type: "vawa",
+        entity_id: data.id,
+        entity_label: clientName.trim(),
+      });
       window.history.replaceState(null, "", `/dashboard/vawa-checklist?case=${data.id}`);
     } catch (err: any) {
       console.error("Error creating case:", err);

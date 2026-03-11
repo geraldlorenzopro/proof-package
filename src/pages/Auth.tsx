@@ -124,6 +124,7 @@ export default function Auth() {
       });
       if (verifyError) throw verifyError;
 
+      logAudit({ action: "auth.login", entity_type: "auth", entity_label: email, metadata: { mfa: true } });
       const returnTo = sessionStorage.getItem('ner_auth_redirect') || '/dashboard';
       sessionStorage.removeItem('ner_auth_redirect');
       navigate(returnTo, { replace: true });
