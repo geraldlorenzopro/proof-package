@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -105,8 +106,15 @@ export default function VawaCasesList({ lang }: VawaCasesListProps) {
     try {
       const { error } = await supabase.from("vawa_cases").delete().eq("id", deleteId);
       if (error) throw error;
+      const deletedCase = cases.find(c => c.id === deleteId);
       setCases((prev) => prev.filter((c) => c.id !== deleteId));
       toast.success(t("Caso eliminado", "Case deleted"));
+      logAudit({
+        action: "client.deleted",
+        entity_type: "vawa",
+        entity_id: deleteId,
+        entity_label: deletedCase?.client_name || undefined,
+      });
     } catch (err) {
       toast.error(t("Error al eliminar", "Error deleting"));
     } finally {

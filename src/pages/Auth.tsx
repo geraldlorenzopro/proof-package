@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Scale, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, ArrowLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { logAudit } from '@/lib/auditLog';
 
 export default function Auth() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -81,6 +82,7 @@ export default function Auth() {
         }
 
         // No MFA — go straight to dashboard
+        logAudit({ action: "auth.login", entity_type: "auth", entity_label: email });
         const returnTo = sessionStorage.getItem('ner_auth_redirect') || '/dashboard';
         sessionStorage.removeItem('ner_auth_redirect');
         navigate(returnTo, { replace: true });
@@ -122,6 +124,7 @@ export default function Auth() {
       });
       if (verifyError) throw verifyError;
 
+      logAudit({ action: "auth.login", entity_type: "auth", entity_label: email, metadata: { mfa: true } });
       const returnTo = sessionStorage.getItem('ner_auth_redirect') || '/dashboard';
       sessionStorage.removeItem('ner_auth_redirect');
       navigate(returnTo, { replace: true });

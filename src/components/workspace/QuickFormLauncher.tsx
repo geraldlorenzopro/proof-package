@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -128,6 +129,13 @@ export default function QuickFormLauncher({ clientId, clientName, existingForms,
       }
 
       toast.success("Formulario creado con datos pre-llenados");
+      logAudit({
+        action: "form.created",
+        entity_type: "form",
+        entity_id: submission.id,
+        entity_label: `${formType.toUpperCase()} - ${clientName}`,
+        metadata: { form_type: formType },
+      });
       onFormCreated?.();
       navigate(`/dashboard/smart-forms/${submission.id}`);
     } catch (err) {

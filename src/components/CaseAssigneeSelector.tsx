@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 
 interface TeamMember {
   user_id: string;
@@ -93,6 +94,13 @@ export default function CaseAssigneeSelector({
       const member = members.find((m) => m.user_id === memberId);
       const name = member?.full_name || "Miembro";
       toast.success(`Caso asignado a ${name}`);
+      logAudit({
+        action: "case.updated",
+        entity_type: "case",
+        entity_id: caseId,
+        entity_label: `Asignado a ${name}`,
+        metadata: { assigned_to: memberId },
+      });
       onAssigned?.(memberId, name);
     } catch {
       toast.error("Error al reasignar");
