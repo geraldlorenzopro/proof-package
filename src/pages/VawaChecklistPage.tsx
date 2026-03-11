@@ -10,6 +10,7 @@ import { LangToggle } from "@/components/LangToggle";
 import { useBackDestination } from "@/hooks/useBackDestination";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 import VawaChecklist from "@/components/vawa/VawaChecklist";
 import { generateChecklist, ChecklistCategory } from "@/components/vawa/vawaChecklistEngine";
 import { VawaAnswers, getDefaultAnswers, evaluateEligibility } from "@/components/vawa/vawaEngine";
