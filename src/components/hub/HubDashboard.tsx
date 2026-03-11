@@ -101,6 +101,7 @@ const PRIMARY_ACTIONS = [
 
 export default function HubDashboard({ accountName, staffName, plan, apps, stats }: Props) {
   const navigate = useNavigate();
+  const [showAudit, setShowAudit] = useState(false);
 
   const greeting = (() => {
     const h = new Date().getHours();
