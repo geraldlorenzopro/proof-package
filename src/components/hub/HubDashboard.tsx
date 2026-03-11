@@ -131,7 +131,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
             {greeting}, <span className="text-jarvis">{staffName || accountName}</span>
           </h2>
           {plan && (
-            <Badge className={`text-[8px] font-display font-bold uppercase tracking-wider border shrink-0 ${
+            <Badge className={`text-[9px] font-display font-bold uppercase tracking-wider border shrink-0 ${
               plan === "elite" || plan === "enterprise"
                 ? "bg-accent/10 text-accent border-accent/20"
                 : plan === "professional"
