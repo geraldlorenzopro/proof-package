@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
+  { label: 'Hub', icon: Boxes, id: 'hub', route: '/hub' },
   { label: 'Subcuentas', icon: Building2, id: 'accounts' },
   { label: 'Analytics', icon: BarChart3, id: 'analytics' },
   { label: 'Feedback', icon: Star, id: 'feedback' },
