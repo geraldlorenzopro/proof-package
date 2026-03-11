@@ -58,15 +58,15 @@ const ROUTE_MAP: Record<string, string> = {
 };
 
 const TOOL_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  "case-engine": { bg: "bg-jarvis/8", border: "border-jarvis/15", text: "text-jarvis" },
-  evidence: { bg: "bg-emerald-500/8", border: "border-emerald-500/15", text: "text-emerald-400" },
-  cspa: { bg: "bg-blue-500/8", border: "border-blue-500/15", text: "text-blue-400" },
-  affidavit: { bg: "bg-accent/8", border: "border-accent/15", text: "text-accent" },
-  "uscis-analyzer": { bg: "bg-purple-500/8", border: "border-purple-500/15", text: "text-purple-400" },
-  "vawa-screener": { bg: "bg-rose-500/8", border: "border-rose-500/15", text: "text-rose-400" },
-  "vawa-checklist": { bg: "bg-orange-500/8", border: "border-orange-500/15", text: "text-orange-400" },
-  "smart-forms": { bg: "bg-cyan-500/8", border: "border-cyan-500/15", text: "text-cyan-400" },
-  "checklist-generator": { bg: "bg-teal-500/8", border: "border-teal-500/15", text: "text-teal-400" },
+  "case-engine": { bg: "bg-jarvis/12", border: "border-jarvis/25", text: "text-jarvis" },
+  evidence: { bg: "bg-emerald-500/12", border: "border-emerald-500/25", text: "text-emerald-400" },
+  cspa: { bg: "bg-blue-500/12", border: "border-blue-500/25", text: "text-blue-400" },
+  affidavit: { bg: "bg-accent/12", border: "border-accent/25", text: "text-accent" },
+  "uscis-analyzer": { bg: "bg-purple-500/12", border: "border-purple-500/25", text: "text-purple-400" },
+  "vawa-screener": { bg: "bg-rose-500/12", border: "border-rose-500/25", text: "text-rose-400" },
+  "vawa-checklist": { bg: "bg-orange-500/12", border: "border-orange-500/25", text: "text-orange-400" },
+  "smart-forms": { bg: "bg-cyan-500/12", border: "border-cyan-500/25", text: "text-cyan-400" },
+  "checklist-generator": { bg: "bg-teal-500/12", border: "border-teal-500/25", text: "text-teal-400" },
 };
 
 const DEFAULT_COLOR = { bg: "bg-jarvis/8", border: "border-jarvis/15", text: "text-jarvis" };
