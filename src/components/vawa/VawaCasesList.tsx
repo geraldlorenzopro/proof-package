@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 import {
   AlertDialog,
   AlertDialogAction,
