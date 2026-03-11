@@ -36,7 +36,7 @@ export default function HubActivityDrawer() {
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            transition={{ type: "tween", duration: 0.15, ease: "easeOut" }}
             className="fixed top-0 right-0 h-full w-full max-w-md z-[91] flex flex-col bg-secondary border-l border-foreground/10 shadow-2xl"
           >
             {/* Header */}

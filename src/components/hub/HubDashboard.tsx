@@ -127,11 +127,11 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         className="flex items-center justify-between gap-3"
       >
         <div className="min-w-0 flex items-center gap-2.5">
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate">
             {greeting}, <span className="text-jarvis">{staffName || accountName}</span>
           </h2>
           {plan && (
-            <Badge className={`text-[8px] font-display font-bold uppercase tracking-wider border shrink-0 ${
+            <Badge className={`text-[9px] font-display font-bold uppercase tracking-wider border shrink-0 ${
               plan === "elite" || plan === "enterprise"
                 ? "bg-accent/10 text-accent border-accent/20"
                 : plan === "professional"
@@ -203,7 +203,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
             className={`shrink-0 flex items-center gap-2 rounded-lg border ${action.border} bg-card px-3.5 py-2.5 transition-all duration-200 hover:bg-card/90 hover:shadow-md hover:scale-[1.02] group shadow-sm`}
           >
             <action.icon className={`w-3.5 h-3.5 ${action.color}`} />
-            <span className="text-[11px] font-semibold text-foreground group-hover:text-foreground whitespace-nowrap">{action.label}</span>
+            <span className="text-xs font-semibold text-foreground group-hover:text-foreground whitespace-nowrap">{action.label}</span>
           </motion.button>
         ))}
       </motion.div>
@@ -245,7 +245,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
                       <IconComp className={`w-3.5 h-3.5 ${colors.text}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-bold text-foreground truncate leading-tight">{app.name}</p>
+                      <p className="text-[13px] font-bold text-foreground truncate leading-tight">{app.name}</p>
                       {tag && (
                         <span className={`text-[9px] ${colors.text} uppercase tracking-wider font-semibold`}>{tag}</span>
                       )}
