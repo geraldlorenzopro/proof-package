@@ -148,22 +148,22 @@ export default function HubActivityFeed() {
             initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.03, duration: 0.25 }}
-            className="flex items-center gap-3 py-2 px-1 group hover:bg-card/30 rounded transition-colors cursor-default"
+            className="flex items-center gap-3 py-2.5 px-2 group hover:bg-card/30 rounded transition-colors cursor-default"
           >
-            <Icon className={`w-3.5 h-3.5 ${color} shrink-0 opacity-60`} />
+            <Icon className={`w-4 h-4 ${color} shrink-0 opacity-70`} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-[12px] font-medium text-foreground/80 truncate">{item.title}</p>
-                <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold border ${statusCfg.bg} ${statusCfg.color} shrink-0`}>
-                  <statusCfg.icon className="w-2.5 h-2.5" />
+                <p className="text-sm font-medium text-foreground/80 truncate">{item.title}</p>
+                <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${statusCfg.bg} ${statusCfg.color} shrink-0`}>
+                  <statusCfg.icon className="w-3 h-3" />
                   {statusCfg.label}
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 {item.subtitle && (
-                  <span className="text-[11px] text-muted-foreground/50 truncate">{item.subtitle}</span>
+                  <span className="text-xs text-muted-foreground/50 truncate">{item.subtitle}</span>
                 )}
-                <span className="text-[10px] text-muted-foreground/25 shrink-0">
+                <span className="text-[11px] text-muted-foreground/30 shrink-0">
                   {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: es })}
                 </span>
               </div>
