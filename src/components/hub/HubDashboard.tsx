@@ -175,7 +175,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
                 Master
               </Badge>
             </div>
-            <p className="text-[11px] text-muted-foreground/70 leading-snug">
+            <p className="text-[11px] text-muted-foreground leading-snug">
               Workspace central · Clientes, Casos y Flujos de Trabajo
             </p>
           </div>
