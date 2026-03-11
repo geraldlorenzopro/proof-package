@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { X, Copy, Check, ArrowRight, User, Mail, Briefcase } from 'lucide-react';
+import { logAudit } from '@/lib/auditLog';
 
 const CASE_TYPES = ['I-130', 'I-485', 'I-751', 'I-129F', 'N-400', 'DACA', 'TPS', 'Otro'];
 
