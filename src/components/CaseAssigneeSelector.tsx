@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 
 interface TeamMember {
   user_id: string;
