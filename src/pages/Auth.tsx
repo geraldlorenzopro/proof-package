@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Scale, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, ArrowLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { logAudit } from '@/lib/auditLog';
 
 export default function Auth() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
