@@ -146,7 +146,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         <div className="flex items-center gap-2">
           <HubCommandBar />
           <HubActivityDrawer />
-          <span className="text-[10px] text-muted-foreground/40 font-mono uppercase tracking-wider hidden lg:block">
+          <span className="text-[10px] text-muted-foreground/60 font-mono uppercase tracking-wider hidden lg:block">
             {new Date().toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
           </span>
         </div>
