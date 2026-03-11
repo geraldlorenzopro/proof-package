@@ -127,7 +127,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         className="flex items-center justify-between gap-3"
       >
         <div className="min-w-0 flex items-center gap-2.5">
-          <h2 className="text-lg font-bold text-foreground tracking-tight truncate">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">
             {greeting}, <span className="text-jarvis">{staffName || accountName}</span>
           </h2>
           {plan && (
@@ -146,7 +146,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         <div className="flex items-center gap-2">
           <HubCommandBar />
           <HubActivityDrawer />
-          <span className="text-[10px] text-muted-foreground/40 font-mono uppercase tracking-wider hidden lg:block">
+          <span className="text-[10px] text-muted-foreground/60 font-mono uppercase tracking-wider hidden lg:block">
             {new Date().toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
           </span>
         </div>
@@ -175,7 +175,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
                 Master
               </Badge>
             </div>
-            <p className="text-[11px] text-muted-foreground/70 leading-snug">
+            <p className="text-[11px] text-muted-foreground leading-snug">
               Workspace central · Clientes, Casos y Flujos de Trabajo
             </p>
           </div>
@@ -200,10 +200,10 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
             custom={i}
             variants={fadeUp}
             onClick={() => goTo(action.route)}
-            className={`shrink-0 flex items-center gap-2 rounded-lg border ${action.border} ${action.bg} backdrop-blur-sm px-3 py-2 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
+            className={`shrink-0 flex items-center gap-2 rounded-lg border ${action.border} bg-foreground/[0.07] backdrop-blur-sm px-3.5 py-2.5 transition-all duration-200 hover:bg-foreground/[0.12] hover:shadow-md hover:scale-[1.02] group`}
           >
             <action.icon className={`w-3.5 h-3.5 ${action.color}`} />
-            <span className="text-[11px] font-semibold text-foreground/90 group-hover:text-foreground whitespace-nowrap">{action.label}</span>
+            <span className="text-[11px] font-semibold text-foreground group-hover:text-foreground whitespace-nowrap">{action.label}</span>
           </motion.button>
         ))}
       </motion.div>
@@ -213,7 +213,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         <section>
           <div className="flex items-center gap-2 mb-3">
             <LayoutGrid className="w-3.5 h-3.5 text-muted-foreground/30" />
-            <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/50">
+            <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/70">
               Herramientas
             </h3>
             <div className="h-px flex-1 bg-border/20" />
@@ -271,7 +271,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="text-center text-[9px] text-muted-foreground/20 tracking-[0.3em] uppercase font-display pt-1 pb-2"
+        className="text-center text-[9px] text-muted-foreground/40 tracking-[0.3em] uppercase font-display pt-1 pb-2"
       >
         NER Legal Operations · Powered by AI
       </motion.p>
