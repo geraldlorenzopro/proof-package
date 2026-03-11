@@ -245,9 +245,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
                       <IconComp className={`w-3.5 h-3.5 ${colors.text}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-semibold text-foreground/90 truncate leading-tight">{app.name}</p>
+                      <p className="text-[12px] font-bold text-foreground truncate leading-tight">{app.name}</p>
                       {tag && (
-                        <span className={`text-[9px] ${colors.text} opacity-60 uppercase tracking-wider font-medium`}>{tag}</span>
+                        <span className={`text-[9px] ${colors.text} uppercase tracking-wider font-semibold`}>{tag}</span>
                       )}
                     </div>
                     <ChevronRight className="w-3 h-3 text-muted-foreground/15 group-hover:text-muted-foreground/50 transition-colors shrink-0 mt-0.5" />
