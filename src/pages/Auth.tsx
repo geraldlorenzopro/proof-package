@@ -82,6 +82,7 @@ export default function Auth() {
         }
 
         // No MFA — go straight to dashboard
+        logAudit({ action: "auth.login", entity_type: "auth", entity_label: email });
         const returnTo = sessionStorage.getItem('ner_auth_redirect') || '/dashboard';
         sessionStorage.removeItem('ner_auth_redirect');
         navigate(returnTo, { replace: true });
