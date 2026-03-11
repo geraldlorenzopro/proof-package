@@ -238,7 +238,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
                   variants={fadeUp}
                   onClick={() => { if (route) goTo(route); }}
                   disabled={!route}
-                  className={`group relative rounded-lg border ${colors.border} bg-card/50 backdrop-blur-sm p-3 text-left transition-all duration-200 hover:bg-card/70 hover:border-foreground/10 hover:shadow-[0_4px_20px_hsl(0_0%_0%/0.2)] disabled:opacity-30 disabled:cursor-not-allowed`}
+                  className={`group relative rounded-lg border ${colors.border} bg-card p-3 text-left transition-all duration-200 hover:bg-card/90 hover:border-foreground/15 hover:shadow-[0_4px_20px_hsl(0_0%_0%/0.3)] disabled:opacity-30 disabled:cursor-not-allowed shadow-sm`}
                 >
                   <div className="flex items-start gap-2.5">
                     <div className={`w-8 h-8 rounded-lg ${colors.bg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
