@@ -130,7 +130,7 @@ export default function HubAnalyticsCards() {
           className={`relative rounded-lg border ${card.border} bg-card p-3 transition-all duration-200 hover:bg-card/90 hover:border-foreground/15 group cursor-default shadow-sm`}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold">{card.label}</span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{card.label}</span>
             <div className={`w-6 h-6 rounded-md ${card.bg} flex items-center justify-center`}>
               <card.icon className={`w-3 h-3 ${card.color}`} />
             </div>
