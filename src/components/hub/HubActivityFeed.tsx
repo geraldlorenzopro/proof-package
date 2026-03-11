@@ -153,9 +153,9 @@ export default function HubActivityFeed() {
             <Icon className={`w-4 h-4 ${color} shrink-0 opacity-70`} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-[12px] font-medium text-foreground/80 truncate">{item.title}</p>
-                <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold border ${statusCfg.bg} ${statusCfg.color} shrink-0`}>
-                  <statusCfg.icon className="w-2.5 h-2.5" />
+                <p className="text-sm font-medium text-foreground/80 truncate">{item.title}</p>
+                <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${statusCfg.bg} ${statusCfg.color} shrink-0`}>
+                  <statusCfg.icon className="w-3 h-3" />
                   {statusCfg.label}
                 </div>
               </div>
