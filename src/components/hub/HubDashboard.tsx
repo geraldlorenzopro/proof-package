@@ -127,7 +127,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         className="flex items-center justify-between gap-3"
       >
         <div className="min-w-0 flex items-center gap-2.5">
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate">
             {greeting}, <span className="text-jarvis">{staffName || accountName}</span>
           </h2>
           {plan && (
