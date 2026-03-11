@@ -129,6 +129,13 @@ export default function QuickFormLauncher({ clientId, clientName, existingForms,
       }
 
       toast.success("Formulario creado con datos pre-llenados");
+      logAudit({
+        action: "form.created",
+        entity_type: "form",
+        entity_id: submission.id,
+        entity_label: `${formType.toUpperCase()} - ${clientName}`,
+        metadata: { form_type: formType },
+      });
       onFormCreated?.();
       navigate(`/dashboard/smart-forms/${submission.id}`);
     } catch (err) {
