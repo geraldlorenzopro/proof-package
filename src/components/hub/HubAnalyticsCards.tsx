@@ -2,22 +2,24 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import {
-  Users, FileText, FolderOpen, Scale, TrendingUp
+  FolderOpen, FileText, Users, Scale, TrendingUp, TrendingDown, Minus, FileSearch
 } from "lucide-react";
 
 interface AnalyticsData {
   totalCases: number;
   totalForms: number;
   totalVawa: number;
+  totalClients: number;
   clientsThisMonth: number;
-  clientsTotal: number;
+  pendingForms: number;
+  analyzedToday: number;
 }
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 10 },
+  hidden: { opacity: 0, y: 8 },
   visible: (i: number) => ({
     opacity: 1, y: 0,
-    transition: { delay: i * 0.06, duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+    transition: { delay: i * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] },
   }),
 };
 
@@ -25,9 +27,7 @@ export default function HubAnalyticsCards() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadAnalytics();
-  }, []);
+  useEffect(() => { loadAnalytics(); }, []);
 
   async function loadAnalytics() {
     try {
@@ -35,20 +35,27 @@ export default function HubAnalyticsCards() {
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
-      const [casesRes, formsRes, vawaRes, clientsMonthRes, clientsTotalRes] = await Promise.all([
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const [casesRes, formsRes, vawaRes, clientsTotalRes, clientsMonthRes, pendingFormsRes, analyzedRes] = await Promise.all([
         supabase.from("client_cases").select("id", { count: "exact", head: true }),
         supabase.from("form_submissions").select("id", { count: "exact", head: true }),
         supabase.from("vawa_cases").select("id", { count: "exact", head: true }),
-        supabase.from("client_profiles").select("id", { count: "exact", head: true }).gte("created_at", startOfMonth.toISOString()),
         supabase.from("client_profiles").select("id", { count: "exact", head: true }),
+        supabase.from("client_profiles").select("id", { count: "exact", head: true }).gte("created_at", startOfMonth.toISOString()),
+        supabase.from("form_submissions").select("id", { count: "exact", head: true }).eq("status", "draft"),
+        supabase.from("analysis_history").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
       ]);
 
       setData({
         totalCases: casesRes.count || 0,
         totalForms: formsRes.count || 0,
         totalVawa: vawaRes.count || 0,
+        totalClients: clientsTotalRes.count || 0,
         clientsThisMonth: clientsMonthRes.count || 0,
-        clientsTotal: clientsTotalRes.count || 0,
+        pendingForms: pendingFormsRes.count || 0,
+        analyzedToday: analyzedRes.count || 0,
       });
     } catch (err) {
       console.error("Analytics load error:", err);
@@ -59,9 +66,9 @@ export default function HubAnalyticsCards() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="rounded-xl border border-border/30 bg-card/30 p-4 animate-pulse h-20" />
+          <div key={i} className="rounded-lg border border-border/20 bg-card/20 p-3 animate-pulse h-[72px]" />
         ))}
       </div>
     );
@@ -71,37 +78,40 @@ export default function HubAnalyticsCards() {
 
   const cards = [
     {
-      label: "Casos",
-      icon: FolderOpen,
+      label: "Casos Activos",
       value: data.totalCases,
+      icon: FolderOpen,
       color: "text-emerald-400",
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/20",
+      bg: "bg-emerald-500/8",
+      border: "border-emerald-500/15",
+      trend: null as string | null,
     },
     {
-      label: "Formularios",
+      label: "En Preparación",
+      value: data.pendingForms,
       icon: FileText,
-      value: data.totalForms,
       color: "text-accent",
-      bg: "bg-accent/10",
-      border: "border-accent/20",
+      bg: "bg-accent/8",
+      border: "border-accent/15",
+      trend: data.totalForms > 0 ? `${data.totalForms} total` : null,
+    },
+    {
+      label: "Docs Analizados Hoy",
+      value: data.analyzedToday,
+      icon: FileSearch,
+      color: "text-purple-400",
+      bg: "bg-purple-500/8",
+      border: "border-purple-500/15",
+      trend: null,
     },
     {
       label: "Clientes",
+      value: data.totalClients,
       icon: Users,
-      value: data.clientsTotal,
       color: "text-jarvis",
-      bg: "bg-jarvis/10",
-      border: "border-jarvis/20",
-      highlight: data.clientsThisMonth > 0 ? `+${data.clientsThisMonth} este mes` : undefined,
-    },
-    {
-      label: "VAWA",
-      icon: Scale,
-      value: data.totalVawa,
-      color: "text-rose-400",
-      bg: "bg-rose-500/10",
-      border: "border-rose-500/20",
+      bg: "bg-jarvis/8",
+      border: "border-jarvis/15",
+      trend: data.clientsThisMonth > 0 ? `+${data.clientsThisMonth} este mes` : null,
     },
   ];
 
@@ -109,27 +119,27 @@ export default function HubAnalyticsCards() {
     <motion.div
       initial="hidden"
       animate="visible"
-      variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-      className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+      variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+      className="grid grid-cols-2 lg:grid-cols-4 gap-2.5"
     >
       {cards.map((card, i) => (
         <motion.div
           key={card.label}
           custom={i}
           variants={fadeUp}
-          className={`relative overflow-hidden rounded-xl border ${card.border} bg-card/40 backdrop-blur-sm p-4 transition-all duration-200 hover:bg-card/60`}
+          className={`relative rounded-lg border ${card.border} bg-card/30 backdrop-blur-sm p-3 transition-all duration-200 hover:bg-card/50 group cursor-default`}
         >
-          <div className="flex items-center gap-2 mb-2">
-            <div className={`w-7 h-7 rounded-lg ${card.bg} flex items-center justify-center`}>
-              <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">{card.label}</span>
+            <div className={`w-6 h-6 rounded-md ${card.bg} flex items-center justify-center`}>
+              <card.icon className={`w-3 h-3 ${card.color}`} />
             </div>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{card.label}</span>
           </div>
-          <p className={`font-display text-2xl font-bold ${card.color}`}>{card.value}</p>
-          {card.highlight && (
+          <p className={`font-display text-xl font-bold ${card.color} leading-none`}>{card.value}</p>
+          {card.trend && (
             <div className="flex items-center gap-1 mt-1">
-              <TrendingUp className="w-3 h-3 text-emerald-400" />
-              <span className="text-[10px] text-emerald-400 font-medium">{card.highlight}</span>
+              <TrendingUp className="w-2.5 h-2.5 text-emerald-400" />
+              <span className="text-[9px] text-emerald-400/80 font-medium">{card.trend}</span>
             </div>
           )}
         </motion.div>
