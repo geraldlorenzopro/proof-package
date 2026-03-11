@@ -71,6 +71,13 @@ export default function NewClientModal({ open, onOpenChange, onCreated }: Props)
 
       const clientName = `${firstName.trim()} ${lastName.trim()}`;
       toast.success(`Cliente "${clientName}" creado`);
+
+      logAudit({
+        action: "client.created",
+        entity_type: "client",
+        entity_id: data.id,
+        entity_label: clientName,
+      });
       
       // Reset form
       setFirstName("");

@@ -44,6 +44,13 @@ export default function NewCaseModal({ onClose, onCreated }: Props) {
     setLoading(false);
     if (!error && data) {
       setCreated(data);
+      logAudit({
+        action: "case.created",
+        entity_type: "case",
+        entity_id: data.id,
+        entity_label: `${caseType} - ${clientName}`,
+        metadata: { case_type: caseType },
+      });
     }
   }
 
