@@ -203,7 +203,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
             className={`shrink-0 flex items-center gap-2 rounded-lg border ${action.border} ${action.bg} backdrop-blur-sm px-3 py-2 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
           >
             <action.icon className={`w-3.5 h-3.5 ${action.color}`} />
-            <span className="text-[11px] font-medium text-foreground/80 group-hover:text-foreground whitespace-nowrap">{action.label}</span>
+            <span className="text-[11px] font-semibold text-foreground/90 group-hover:text-foreground whitespace-nowrap">{action.label}</span>
           </motion.button>
         ))}
       </motion.div>
