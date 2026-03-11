@@ -213,7 +213,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         <section>
           <div className="flex items-center gap-2 mb-3">
             <LayoutGrid className="w-3.5 h-3.5 text-muted-foreground/30" />
-            <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/50">
+            <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/70">
               Herramientas
             </h3>
             <div className="h-px flex-1 bg-border/20" />
