@@ -145,6 +145,12 @@ export default function ClientProfileEditor({ clientId, onUpdated }: Props) {
       toast.success("Perfil actualizado");
       setOriginal(data);
       onUpdated?.();
+      logAudit({
+        action: "client.updated",
+        entity_type: "client",
+        entity_id: clientId,
+        entity_label: [data.first_name, data.last_name].filter(Boolean).join(" ") || undefined,
+      });
     }
     setSaving(false);
   }
