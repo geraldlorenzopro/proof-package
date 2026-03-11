@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
