@@ -58,15 +58,15 @@ const ROUTE_MAP: Record<string, string> = {
 };
 
 const TOOL_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  "case-engine": { bg: "bg-jarvis/8", border: "border-jarvis/15", text: "text-jarvis" },
-  evidence: { bg: "bg-emerald-500/8", border: "border-emerald-500/15", text: "text-emerald-400" },
-  cspa: { bg: "bg-blue-500/8", border: "border-blue-500/15", text: "text-blue-400" },
-  affidavit: { bg: "bg-accent/8", border: "border-accent/15", text: "text-accent" },
-  "uscis-analyzer": { bg: "bg-purple-500/8", border: "border-purple-500/15", text: "text-purple-400" },
-  "vawa-screener": { bg: "bg-rose-500/8", border: "border-rose-500/15", text: "text-rose-400" },
-  "vawa-checklist": { bg: "bg-orange-500/8", border: "border-orange-500/15", text: "text-orange-400" },
-  "smart-forms": { bg: "bg-cyan-500/8", border: "border-cyan-500/15", text: "text-cyan-400" },
-  "checklist-generator": { bg: "bg-teal-500/8", border: "border-teal-500/15", text: "text-teal-400" },
+  "case-engine": { bg: "bg-jarvis/12", border: "border-jarvis/25", text: "text-jarvis" },
+  evidence: { bg: "bg-emerald-500/12", border: "border-emerald-500/25", text: "text-emerald-400" },
+  cspa: { bg: "bg-blue-500/12", border: "border-blue-500/25", text: "text-blue-400" },
+  affidavit: { bg: "bg-accent/12", border: "border-accent/25", text: "text-accent" },
+  "uscis-analyzer": { bg: "bg-purple-500/12", border: "border-purple-500/25", text: "text-purple-400" },
+  "vawa-screener": { bg: "bg-rose-500/12", border: "border-rose-500/25", text: "text-rose-400" },
+  "vawa-checklist": { bg: "bg-orange-500/12", border: "border-orange-500/25", text: "text-orange-400" },
+  "smart-forms": { bg: "bg-cyan-500/12", border: "border-cyan-500/25", text: "text-cyan-400" },
+  "checklist-generator": { bg: "bg-teal-500/12", border: "border-teal-500/25", text: "text-teal-400" },
 };
 
 const DEFAULT_COLOR = { bg: "bg-jarvis/8", border: "border-jarvis/15", text: "text-jarvis" };
@@ -91,11 +91,11 @@ const fadeUp = {
 };
 
 const PRIMARY_ACTIONS = [
-  { label: "Nuevo Cliente", icon: UserPlus, route: "/dashboard/workspace-demo", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
-  { label: "Iniciar Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-  { label: "Subir Evidencia", icon: Upload, route: "/dashboard/evidence", color: "text-accent", bg: "bg-accent/10", border: "border-accent/20" },
-  { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-  { label: "Nuevo Formulario", icon: FileCheck, route: "/dashboard/smart-forms", color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20" },
+  { label: "Nuevo Cliente", icon: UserPlus, route: "/dashboard/workspace-demo", color: "text-jarvis", bg: "bg-jarvis/15", border: "border-jarvis/30" },
+  { label: "Iniciar Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/15", border: "border-emerald-500/30" },
+  { label: "Subir Evidencia", icon: Upload, route: "/dashboard/evidence", color: "text-accent", bg: "bg-accent/15", border: "border-accent/30" },
+  { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/15", border: "border-purple-500/30" },
+  { label: "Nuevo Formulario", icon: FileCheck, route: "/dashboard/smart-forms", color: "text-cyan-400", bg: "bg-cyan-500/15", border: "border-cyan-500/30" },
 ];
 
 export default function HubDashboard({ accountName, staffName, plan, apps, stats }: Props) {
@@ -203,7 +203,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
             className={`shrink-0 flex items-center gap-2 rounded-lg border ${action.border} ${action.bg} backdrop-blur-sm px-3 py-2 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
           >
             <action.icon className={`w-3.5 h-3.5 ${action.color}`} />
-            <span className="text-[11px] font-medium text-foreground/80 group-hover:text-foreground whitespace-nowrap">{action.label}</span>
+            <span className="text-[11px] font-semibold text-foreground/90 group-hover:text-foreground whitespace-nowrap">{action.label}</span>
           </motion.button>
         ))}
       </motion.div>
@@ -238,16 +238,16 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
                   variants={fadeUp}
                   onClick={() => { if (route) goTo(route); }}
                   disabled={!route}
-                  className={`group relative rounded-lg border ${colors.border} bg-card/30 backdrop-blur-sm p-3 text-left transition-all duration-200 hover:bg-card/50 hover:shadow-[0_2px_16px_hsl(0_0%_0%/0.12)] disabled:opacity-30 disabled:cursor-not-allowed`}
+                  className={`group relative rounded-lg border ${colors.border} bg-card/50 backdrop-blur-sm p-3 text-left transition-all duration-200 hover:bg-card/70 hover:border-foreground/10 hover:shadow-[0_4px_20px_hsl(0_0%_0%/0.2)] disabled:opacity-30 disabled:cursor-not-allowed`}
                 >
                   <div className="flex items-start gap-2.5">
                     <div className={`w-8 h-8 rounded-lg ${colors.bg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
                       <IconComp className={`w-3.5 h-3.5 ${colors.text}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-semibold text-foreground/90 truncate leading-tight">{app.name}</p>
+                      <p className="text-[12px] font-bold text-foreground truncate leading-tight">{app.name}</p>
                       {tag && (
-                        <span className={`text-[9px] ${colors.text} opacity-60 uppercase tracking-wider font-medium`}>{tag}</span>
+                        <span className={`text-[9px] ${colors.text} uppercase tracking-wider font-semibold`}>{tag}</span>
                       )}
                     </div>
                     <ChevronRight className="w-3 h-3 text-muted-foreground/15 group-hover:text-muted-foreground/50 transition-colors shrink-0 mt-0.5" />
