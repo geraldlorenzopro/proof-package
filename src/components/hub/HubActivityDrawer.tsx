@@ -11,7 +11,7 @@ export default function HubActivityDrawer() {
       {/* Trigger — History icon */}
       <button
         onClick={() => setOpen(true)}
-        className="relative flex items-center justify-center w-8 h-8 rounded-lg border border-border/30 bg-card/30 hover:bg-card/50 transition-all text-muted-foreground/50 hover:text-muted-foreground group"
+        className="relative flex items-center justify-center w-8 h-8 rounded-lg border border-foreground/20 bg-card hover:bg-card/90 transition-all text-muted-foreground hover:text-foreground group shadow-sm"
         title="Actividad reciente"
       >
         <Clock className="w-3.5 h-3.5" />

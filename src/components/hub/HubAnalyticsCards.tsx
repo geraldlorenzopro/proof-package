@@ -50,7 +50,7 @@ export default function HubAnalyticsCards() {
       setData({
         totalCases: casesRes.count || 0,
         totalForms: formsRes.count || 0,
-        totalVawa: vawaRes.count || 0,
+        totalVawa: 0,
         totalClients: clientsTotalRes.count || 0,
         clientsThisMonth: clientsMonthRes.count || 0,
         pendingForms: pendingFormsRes.count || 0,
