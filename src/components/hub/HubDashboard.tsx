@@ -200,7 +200,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
             custom={i}
             variants={fadeUp}
             onClick={() => goTo(action.route)}
-            className={`shrink-0 flex items-center gap-2 rounded-lg border ${action.border} bg-foreground/[0.07] backdrop-blur-sm px-3.5 py-2.5 transition-all duration-200 hover:bg-foreground/[0.12] hover:shadow-md hover:scale-[1.02] group`}
+            className={`shrink-0 flex items-center gap-2 rounded-lg border ${action.border} bg-card px-3.5 py-2.5 transition-all duration-200 hover:bg-card/90 hover:shadow-md hover:scale-[1.02] group shadow-sm`}
           >
             <action.icon className={`w-3.5 h-3.5 ${action.color}`} />
             <span className="text-[11px] font-semibold text-foreground group-hover:text-foreground whitespace-nowrap">{action.label}</span>
