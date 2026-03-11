@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   Users, FileText, FolderOpen, Calculator,
   FileSearch, Scale, ClipboardList, ChevronRight,
-  ArrowUpRight, Activity, Briefcase,
+  ArrowUpRight, Briefcase,
   Shield, UserPlus, PlusCircle, Upload, FileCheck,
-  ChevronDown, Inbox, Zap, LayoutGrid
+  Zap, LayoutGrid
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import HubActivityFeed from "./HubActivityFeed";
 import HubAnalyticsCards from "./HubAnalyticsCards";
 import HubCommandBar from "./HubCommandBar";
+import HubActivityDrawer from "./HubActivityDrawer";
 
 interface HubApp {
   id: string;
@@ -100,7 +100,6 @@ const PRIMARY_ACTIONS = [
 
 export default function HubDashboard({ accountName, staffName, plan, apps, stats }: Props) {
   const navigate = useNavigate();
-  const [activityOpen, setActivityOpen] = useState(true);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -118,9 +117,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-5 py-4 sm:py-6 space-y-5">
+    <div className="max-w-6xl mx-auto px-4 sm:px-5 py-4 sm:py-5 space-y-4">
 
-      {/* ═══ HEADER — Compact with Command Bar ═══ */}
+      {/* ═══ HEADER — Greeting + Search + Activity Drawer ═══ */}
       <motion.div
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
@@ -144,9 +143,10 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <HubCommandBar />
-          <span className="text-[10px] text-muted-foreground/40 font-mono uppercase tracking-wider hidden sm:block">
+          <HubActivityDrawer />
+          <span className="text-[10px] text-muted-foreground/40 font-mono uppercase tracking-wider hidden lg:block">
             {new Date().toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
           </span>
         </div>
@@ -159,7 +159,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
       <motion.button
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15, duration: 0.4 }}
+        transition={{ delay: 0.12, duration: 0.4 }}
         onClick={() => goTo("/dashboard/workspace-demo")}
         className="w-full group relative overflow-hidden rounded-xl border border-jarvis/20 bg-gradient-to-r from-jarvis/[0.06] via-card/80 to-accent/[0.04] p-4 sm:p-5 text-left transition-all hover:border-jarvis/30 hover:shadow-[0_2px_30px_hsl(195_100%_50%/0.08)]"
       >
@@ -190,7 +190,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
       <motion.div
         initial="hidden"
         animate="visible"
-        variants={{ visible: { transition: { staggerChildren: 0.03, delayChildren: 0.2 } } }}
+        variants={{ visible: { transition: { staggerChildren: 0.03, delayChildren: 0.18 } } }}
         className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-0.5"
       >
         <Zap className="w-3.5 h-3.5 text-muted-foreground/30 shrink-0" />
@@ -222,7 +222,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
           <motion.div
             initial="hidden"
             animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.03, delayChildren: 0.25 } } }}
+            variants={{ visible: { transition: { staggerChildren: 0.03, delayChildren: 0.22 } } }}
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
           >
             {toolApps.map((app, i) => {
@@ -266,43 +266,12 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         </section>
       )}
 
-      {/* ═══ ACTIVITY INBOX ═══ */}
-      <section>
-        <button
-          onClick={() => setActivityOpen(!activityOpen)}
-          className="w-full flex items-center gap-2 mb-2 group"
-        >
-          <Inbox className="w-3.5 h-3.5 text-muted-foreground/30" />
-          <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/50">
-            Actividad Reciente
-          </h3>
-          <div className="h-px flex-1 bg-border/20" />
-          <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground/30 transition-transform duration-300 ${activityOpen ? "rotate-180" : ""}`} />
-        </button>
-
-        <AnimatePresence>
-          {activityOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden"
-            >
-              <div className="rounded-lg border border-border/15 bg-card/20 backdrop-blur-sm px-3 py-2">
-                <HubActivityFeed />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
-
       {/* Footer */}
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="text-center text-[9px] text-muted-foreground/20 tracking-[0.3em] uppercase font-display py-2"
+        transition={{ delay: 0.4 }}
+        className="text-center text-[9px] text-muted-foreground/20 tracking-[0.3em] uppercase font-display pt-1 pb-2"
       >
         NER Legal Operations · Powered by AI
       </motion.p>
