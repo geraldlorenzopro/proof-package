@@ -161,9 +161,9 @@ export default function HubActivityFeed() {
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 {item.subtitle && (
-                  <span className="text-[11px] text-muted-foreground/50 truncate">{item.subtitle}</span>
+                  <span className="text-xs text-muted-foreground/50 truncate">{item.subtitle}</span>
                 )}
-                <span className="text-[10px] text-muted-foreground/25 shrink-0">
+                <span className="text-[11px] text-muted-foreground/30 shrink-0">
                   {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: es })}
                 </span>
               </div>
