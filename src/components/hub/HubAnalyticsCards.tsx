@@ -38,10 +38,9 @@ export default function HubAnalyticsCards() {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
-      const [casesRes, formsRes, vawaRes, clientsTotalRes, clientsMonthRes, pendingFormsRes, analyzedRes] = await Promise.all([
+      const [casesRes, formsRes, clientsTotalRes, clientsMonthRes, pendingFormsRes, analyzedRes] = await Promise.all([
         supabase.from("client_cases").select("id", { count: "exact", head: true }),
         supabase.from("form_submissions").select("id", { count: "exact", head: true }),
-        supabase.from("vawa_cases").select("id", { count: "exact", head: true }),
         supabase.from("client_profiles").select("id", { count: "exact", head: true }),
         supabase.from("client_profiles").select("id", { count: "exact", head: true }).gte("created_at", startOfMonth.toISOString()),
         supabase.from("form_submissions").select("id", { count: "exact", head: true }).eq("status", "draft"),
@@ -51,7 +50,7 @@ export default function HubAnalyticsCards() {
       setData({
         totalCases: casesRes.count || 0,
         totalForms: formsRes.count || 0,
-        totalVawa: vawaRes.count || 0,
+        totalVawa: 0,
         totalClients: clientsTotalRes.count || 0,
         clientsThisMonth: clientsMonthRes.count || 0,
         pendingForms: pendingFormsRes.count || 0,
