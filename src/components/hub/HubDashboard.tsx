@@ -271,7 +271,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="text-center text-[9px] text-muted-foreground/20 tracking-[0.3em] uppercase font-display pt-1 pb-2"
+        className="text-center text-[9px] text-muted-foreground/40 tracking-[0.3em] uppercase font-display pt-1 pb-2"
       >
         NER Legal Operations · Powered by AI
       </motion.p>

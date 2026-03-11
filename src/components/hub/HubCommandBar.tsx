@@ -129,11 +129,11 @@ export default function HubCommandBar() {
       {/* Trigger button */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-foreground/10 bg-card/60 hover:bg-card/80 transition-all text-muted-foreground/70 hover:text-foreground group shadow-sm"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-foreground/15 bg-foreground/[0.07] hover:bg-foreground/[0.12] transition-all text-muted-foreground hover:text-foreground group shadow-sm"
       >
         <Search className="w-3.5 h-3.5" />
         <span className="text-xs hidden sm:inline">Buscar...</span>
-        <kbd className="hidden sm:inline text-[9px] font-mono px-1.5 py-0.5 rounded border border-border/40 bg-background/50 text-muted-foreground/40 group-hover:text-muted-foreground/60">
+        <kbd className="hidden sm:inline text-[9px] font-mono px-1.5 py-0.5 rounded border border-foreground/10 bg-background/50 text-muted-foreground/60 group-hover:text-muted-foreground">
           ⌘K
         </kbd>
       </button>
