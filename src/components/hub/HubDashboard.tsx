@@ -13,6 +13,7 @@ import HubAnalyticsCards from "./HubAnalyticsCards";
 import HubCommandBar from "./HubCommandBar";
 import HubActivityDrawer from "./HubActivityDrawer";
 import HubAuditLog from "./HubAuditLog";
+import HubToolPermissions from "./HubToolPermissions";
 
 interface HubApp {
   id: string;
