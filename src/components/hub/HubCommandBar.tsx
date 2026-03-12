@@ -229,14 +229,17 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
           .select("id, first_name, last_name, email")
           .or(`first_name.ilike.%${sanitized}%,last_name.ilike.%${sanitized}%,email.ilike.%${sanitized}%`)
           .limit(8);
-        (data || []).forEach(c => dbResults.push({
-          id: `c-${c.id}`,
-          type: "client",
-          title: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre",
-          subtitle: c.email || undefined,
-          route: `/dashboard/workspace-demo?tab=profile&clientId=${c.id}`,
-          meta: { email: c.email || undefined },
-        }));
+        (data || []).forEach(c => {
+          const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre";
+          dbResults.push({
+            id: `c-${c.id}`,
+            type: "client",
+            title: name,
+            subtitle: c.email || undefined,
+            route: `/dashboard/workspace-demo?client=${c.id}&name=${encodeURIComponent(name)}`,
+            meta: { email: c.email || undefined },
+          });
+        });
       })());
     }
 
