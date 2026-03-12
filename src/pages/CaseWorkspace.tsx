@@ -251,21 +251,23 @@ export default function CaseWorkspace() {
       if (formsRes.data) setForms(formsRes.data);
       if (vawaRes.data) setVawaCases(vawaRes.data as VawaCase[]);
 
-      // For evidence count, we need cases — match by client name
-      if (profileRes.data) {
-        const name = [profileRes.data.first_name, profileRes.data.last_name].filter(Boolean).join(" ");
-        if (name) {
-          const casesRes = await supabase.from("client_cases").select("id, case_type, status, created_at").ilike("client_name", `%${name}%`);
-          if (casesRes.data) {
-            // Get evidence counts per case
-            const casesWithEvidence = await Promise.all(
-              casesRes.data.map(async (c) => {
-                const { count } = await supabase.from("evidence_items").select("id", { count: "exact", head: true }).eq("case_id", c.id);
-                return { ...c, evidence_count: count || 0 };
-              })
-            );
-            setClientCases(casesWithEvidence);
-          }
+      // Fetch cases linked to this client profile (proper FK relationship)
+      const casesRes = await supabase
+        .from("client_cases")
+        .select("id, case_type, status, created_at")
+        .eq("client_profile_id", selectedClientId!);
+      
+      if (casesRes.data) {
+        const casesWithEvidence = await Promise.all(
+          casesRes.data.map(async (c) => {
+            const { count } = await supabase.from("evidence_items").select("id", { count: "exact", head: true }).eq("case_id", c.id);
+            return { ...c, evidence_count: count || 0 };
+          })
+        );
+        setClientCases(casesWithEvidence);
+        // Auto-switch to Case Engine view if client has cases
+        if (casesWithEvidence.length > 0) {
+          setActiveView("engine");
         }
       }
 
