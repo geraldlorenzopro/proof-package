@@ -57,6 +57,10 @@ const DISPLAY_NAMES: Record<string, string> = {
   "vawa-checklist": "Checklist VAWA",
   "cspa": "Calculadora CSPA",
   "affidavit": "Calculadora I-864",
+  "evidence": "Photo Organizer",
+  "uscis-analyzer": "USCIS Analyzer",
+  "checklist-generator": "Checklist Generator",
+  "smart-forms": "NER Smart Forms",
 };
 
 const ROUTE_MAP: Record<string, string> = {
