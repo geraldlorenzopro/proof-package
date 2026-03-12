@@ -1147,6 +1147,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_account_role_in: {
+        Args: {
+          _account_id: string
+          _role: Database["public"]["Enums"]["account_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       heartbeat_app_seat: {
         Args: { _app_slug: string; _user_id: string }
         Returns: Json
