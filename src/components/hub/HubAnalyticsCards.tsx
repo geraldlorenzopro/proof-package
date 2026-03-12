@@ -128,13 +128,13 @@ export default function HubAnalyticsCards() {
           variants={fadeUp}
           className={`relative rounded-lg border ${card.border} bg-card p-3 transition-all duration-200 hover:bg-card/90 hover:border-foreground/15 group cursor-default shadow-sm`}
         >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{card.label}</span>
-            <div className={`w-6 h-6 rounded-md ${card.bg} flex items-center justify-center`}>
-              <card.icon className={`w-3 h-3 ${card.color}`} />
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">{card.label}</span>
+            <div className={`w-7 h-7 rounded-md ${card.bg} flex items-center justify-center`}>
+              <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
             </div>
           </div>
-          <p className={`font-display text-xl font-bold ${card.color} leading-none`}>{card.value}</p>
+          <p className={`font-display text-2xl font-bold ${card.color} leading-none`}>{card.value}</p>
           {card.trend && (
             <div className="flex items-center gap-1 mt-1">
               <TrendingUp className="w-2.5 h-2.5 text-emerald-400" />
