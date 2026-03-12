@@ -318,7 +318,8 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
         </kbd>
       </button>
 
-      {/* Modal */}
+      {/* Modal — rendered via Portal to escape transform ancestors */}
+      {createPortal(
       <AnimatePresence>
         {open && (
           <>
