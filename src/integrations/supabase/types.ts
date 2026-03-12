@@ -358,6 +358,72 @@ export type Database = {
           },
         ]
       }
+      case_forms: {
+        Row: {
+          account_id: string
+          approved_date: string | null
+          case_id: string
+          created_at: string
+          denied_date: string | null
+          filed_date: string | null
+          form_type: string
+          id: string
+          notes: string | null
+          receipt_date: string | null
+          receipt_number: string | null
+          sort_order: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          approved_date?: string | null
+          case_id: string
+          created_at?: string
+          denied_date?: string | null
+          filed_date?: string | null
+          form_type: string
+          id?: string
+          notes?: string | null
+          receipt_date?: string | null
+          receipt_number?: string | null
+          sort_order?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          approved_date?: string | null
+          case_id?: string
+          created_at?: string
+          denied_date?: string | null
+          filed_date?: string | null
+          form_type?: string
+          id?: string
+          notes?: string | null
+          receipt_date?: string | null
+          receipt_number?: string | null
+          sort_order?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_forms_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_forms_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_notes: {
         Row: {
           account_id: string
@@ -406,6 +472,61 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_cases"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_questionnaire_answers: {
+        Row: {
+          account_id: string
+          case_id: string
+          created_at: string
+          field_key: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+          value: string | null
+        }
+        Insert: {
+          account_id: string
+          case_id: string
+          created_at?: string
+          field_key: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string | null
+        }
+        Update: {
+          account_id?: string
+          case_id?: string
+          created_at?: string
+          field_key?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_questionnaire_answers_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_questionnaire_answers_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_questionnaire_answers_field_key_fkey"
+            columns: ["field_key"]
+            isOneToOne: false
+            referencedRelation: "form_field_registry"
+            referencedColumns: ["field_key"]
           },
         ]
       }
@@ -978,6 +1099,95 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      form_field_mappings: {
+        Row: {
+          created_at: string
+          field_key: string
+          form_type: string
+          id: string
+          is_required: boolean | null
+          part_label: string | null
+          pdf_field_name: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          field_key: string
+          form_type: string
+          id?: string
+          is_required?: boolean | null
+          part_label?: string | null
+          pdf_field_name?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          field_key?: string
+          form_type?: string
+          id?: string
+          is_required?: boolean | null
+          part_label?: string | null
+          pdf_field_name?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_field_mappings_field_key_fkey"
+            columns: ["field_key"]
+            isOneToOne: false
+            referencedRelation: "form_field_registry"
+            referencedColumns: ["field_key"]
+          },
+        ]
+      }
+      form_field_registry: {
+        Row: {
+          created_at: string
+          field_group: string
+          field_key: string
+          field_subgroup: string | null
+          field_type: string
+          help_text_en: string | null
+          help_text_es: string | null
+          id: string
+          label_en: string
+          label_es: string
+          options: Json | null
+          sort_order: number | null
+          validation_rules: Json | null
+        }
+        Insert: {
+          created_at?: string
+          field_group?: string
+          field_key: string
+          field_subgroup?: string | null
+          field_type?: string
+          help_text_en?: string | null
+          help_text_es?: string | null
+          id?: string
+          label_en: string
+          label_es: string
+          options?: Json | null
+          sort_order?: number | null
+          validation_rules?: Json | null
+        }
+        Update: {
+          created_at?: string
+          field_group?: string
+          field_key?: string
+          field_subgroup?: string | null
+          field_type?: string
+          help_text_en?: string | null
+          help_text_es?: string | null
+          id?: string
+          label_en?: string
+          label_es?: string
+          options?: Json | null
+          sort_order?: number | null
+          validation_rules?: Json | null
+        }
+        Relationships: []
       }
       form_submissions: {
         Row: {
