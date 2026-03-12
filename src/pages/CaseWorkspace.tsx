@@ -364,6 +364,13 @@ export default function CaseWorkspace() {
             <div className="h-4 w-px bg-border" />
             <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{clientFullName}</span>
             <div className="flex-1" />
+            <button
+              onClick={() => setShowNewCase(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-jarvis/10 border border-jarvis/20 text-jarvis text-[11px] font-semibold hover:bg-jarvis/20 transition-all"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              Crear Caso
+            </button>
             {profile?.immigration_status && (
               <Badge variant="outline" className="text-[10px] font-mono text-accent border-accent/20 bg-accent/5">
                 {profile.immigration_status}
