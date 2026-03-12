@@ -277,6 +277,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         </section>
       )}
 
+      {/* ═══ SLA TRACKER — Deadline Countdowns ═══ */}
+      <SlaTracker />
+
       {/* ═══ AUDIT LOG & PERMISSIONS — Compliance Section ═══ */}
       <section>
         <button
