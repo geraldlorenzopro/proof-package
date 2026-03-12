@@ -505,6 +505,7 @@ export default function CaseWorkspace() {
           <div className="flex bg-secondary/50 border border-border rounded-xl p-0.5 flex-wrap">
             {([
               { id: "stages" as const, label: "Etapas", icon: BarChart3 },
+              { id: "engine" as const, label: "Case Engine", icon: Activity },
               { id: "profile" as const, label: "Perfil", icon: Users },
               { id: "forms" as const, label: "Formularios", icon: FileText },
               { id: "timeline" as const, label: "Actividad", icon: Clock },
