@@ -243,6 +243,13 @@ export default function CaseWorkspace() {
     setLoading(true);
 
     async function load() {
+      // Get account id for questionnaire
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        const { data: accId } = await supabase.rpc("user_account_id", { _user_id: currentUser.id });
+        if (accId) setUserAccountId(accId);
+      }
+
       const [profileRes, formsRes, vawaRes] = await Promise.all([
         supabase.from("client_profiles").select("id, first_name, last_name, email, phone, dob, country_of_birth, immigration_status, created_at").eq("id", selectedClientId!).single(),
         supabase.from("form_submissions").select("id, form_type, status, created_at, updated_at").eq("beneficiary_profile_id", selectedClientId!).order("updated_at", { ascending: false }),
