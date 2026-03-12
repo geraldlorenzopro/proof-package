@@ -14,6 +14,7 @@ import HubCommandBar from "./HubCommandBar";
 import HubActivityDrawer from "./HubActivityDrawer";
 import HubAuditLog from "./HubAuditLog";
 import HubToolPermissions from "./HubToolPermissions";
+import HubNotifications from "./HubNotifications";
 
 interface HubApp {
   id: string;
