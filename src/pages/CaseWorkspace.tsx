@@ -6,13 +6,14 @@ import {
   ArrowLeft, AlertTriangle, CheckCircle2, FileText, Shield,
   ClipboardList, Scale, Clock, ChevronRight, Zap, Activity,
   Calendar, Sparkles, CircleDot, FileCheck, BarChart3,
-  TrendingUp, Target, Users, ExternalLink, Loader2
+  TrendingUp, Target, Users, ExternalLink, Loader2, PlusCircle
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import ClientDirectory from "@/components/workspace/ClientDirectory";
 import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
 import QuickFormLauncher from "@/components/workspace/QuickFormLauncher";
+import NewCaseFromProfile from "@/components/workspace/NewCaseFromProfile";
 import HubLayout from "@/components/hub/HubLayout";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
@@ -206,6 +207,7 @@ export default function CaseWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeView, setActiveView] = useState<"stages" | "engine" | "timeline" | "profile" | "forms">("stages");
   const [loading, setLoading] = useState(true);
+  const [showNewCase, setShowNewCase] = useState(false);
 
   // Real data state
   const [profile, setProfile] = useState<ClientProfile | null>(null);
@@ -249,21 +251,23 @@ export default function CaseWorkspace() {
       if (formsRes.data) setForms(formsRes.data);
       if (vawaRes.data) setVawaCases(vawaRes.data as VawaCase[]);
 
-      // For evidence count, we need cases — match by client name
-      if (profileRes.data) {
-        const name = [profileRes.data.first_name, profileRes.data.last_name].filter(Boolean).join(" ");
-        if (name) {
-          const casesRes = await supabase.from("client_cases").select("id, case_type, status, created_at").ilike("client_name", `%${name}%`);
-          if (casesRes.data) {
-            // Get evidence counts per case
-            const casesWithEvidence = await Promise.all(
-              casesRes.data.map(async (c) => {
-                const { count } = await supabase.from("evidence_items").select("id", { count: "exact", head: true }).eq("case_id", c.id);
-                return { ...c, evidence_count: count || 0 };
-              })
-            );
-            setClientCases(casesWithEvidence);
-          }
+      // Fetch cases linked to this client profile (proper FK relationship)
+      const casesRes = await supabase
+        .from("client_cases")
+        .select("id, case_type, status, created_at")
+        .eq("client_profile_id", selectedClientId!);
+      
+      if (casesRes.data) {
+        const casesWithEvidence = await Promise.all(
+          casesRes.data.map(async (c) => {
+            const { count } = await supabase.from("evidence_items").select("id", { count: "exact", head: true }).eq("case_id", c.id);
+            return { ...c, evidence_count: count || 0 };
+          })
+        );
+        setClientCases(casesWithEvidence);
+        // Auto-switch to Case Engine view if client has cases
+        if (casesWithEvidence.length > 0) {
+          setActiveView("engine");
         }
       }
 
@@ -360,6 +364,13 @@ export default function CaseWorkspace() {
             <div className="h-4 w-px bg-border" />
             <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{clientFullName}</span>
             <div className="flex-1" />
+            <button
+              onClick={() => setShowNewCase(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-jarvis/10 border border-jarvis/20 text-jarvis text-[11px] font-semibold hover:bg-jarvis/20 transition-all"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              Crear Caso
+            </button>
             {profile?.immigration_status && (
               <Badge variant="outline" className="text-[10px] font-mono text-accent border-accent/20 bg-accent/5">
                 {profile.immigration_status}
@@ -611,7 +622,14 @@ export default function CaseWorkspace() {
               <div className="text-center py-16">
                 <Activity className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">No hay casos vinculados a este cliente</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Crea un caso desde la pestaña de Formularios para activar el Case Engine</p>
+                <p className="text-xs text-muted-foreground/60 mt-1 mb-4">Crea un caso para activar el Case Engine con pipeline y seguimiento</p>
+                <button
+                  onClick={() => setShowNewCase(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-jarvis/10 border border-jarvis/20 text-jarvis text-sm font-semibold hover:bg-jarvis/20 transition-all"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Crear Primer Caso
+                </button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -751,6 +769,34 @@ export default function CaseWorkspace() {
           </div>
         </motion.div>
       </div>
+
+      {/* New Case Modal */}
+      {selectedClientId && (
+        <NewCaseFromProfile
+          open={showNewCase}
+          onOpenChange={setShowNewCase}
+          clientProfileId={selectedClientId}
+          clientName={clientFullName}
+          clientEmail={profile?.email}
+          onCreated={async () => {
+            // Reload cases
+            const casesRes = await supabase
+              .from("client_cases")
+              .select("id, case_type, status, created_at")
+              .eq("client_profile_id", selectedClientId);
+            if (casesRes.data) {
+              const casesWithEvidence = await Promise.all(
+                casesRes.data.map(async (c) => {
+                  const { count } = await supabase.from("evidence_items").select("id", { count: "exact", head: true }).eq("case_id", c.id);
+                  return { ...c, evidence_count: count || 0 };
+                })
+              );
+              setClientCases(casesWithEvidence);
+              setActiveView("engine");
+            }
+          }}
+        />
+      )}
     </Wrapper>
   );
 }
