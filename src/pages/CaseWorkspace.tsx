@@ -762,6 +762,34 @@ export default function CaseWorkspace() {
           </div>
         </motion.div>
       </div>
+
+      {/* New Case Modal */}
+      {selectedClientId && (
+        <NewCaseFromProfile
+          open={showNewCase}
+          onOpenChange={setShowNewCase}
+          clientProfileId={selectedClientId}
+          clientName={clientFullName}
+          clientEmail={profile?.email}
+          onCreated={async () => {
+            // Reload cases
+            const casesRes = await supabase
+              .from("client_cases")
+              .select("id, case_type, status, created_at")
+              .eq("client_profile_id", selectedClientId);
+            if (casesRes.data) {
+              const casesWithEvidence = await Promise.all(
+                casesRes.data.map(async (c) => {
+                  const { count } = await supabase.from("evidence_items").select("id", { count: "exact", head: true }).eq("case_id", c.id);
+                  return { ...c, evidence_count: count || 0 };
+                })
+              );
+              setClientCases(casesWithEvidence);
+              setActiveView("engine");
+            }
+          }}
+        />
+      )}
     </Wrapper>
   );
 }
