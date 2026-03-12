@@ -67,6 +67,13 @@ export default function CaseEnginePage() {
         setLoading(false);
         return;
       }
+
+      // If case has a client_profile_id, redirect to unified workspace
+      if ((c as any).client_profile_id) {
+        navigate(`/dashboard/workspace-demo?client=${(c as any).client_profile_id}&name=${encodeURIComponent(c.client_name)}&caseId=${c.id}`, { replace: true });
+        return;
+      }
+
       setCaseData(c);
 
       // Load template, notes, tasks, tags, history in parallel
@@ -94,7 +101,7 @@ export default function CaseEnginePage() {
     } finally {
       setLoading(false);
     }
-  }, [caseId]);
+  }, [caseId, navigate]);
 
   useEffect(() => { loadCase(); }, [loadCase]);
 
