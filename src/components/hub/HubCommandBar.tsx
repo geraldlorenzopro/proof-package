@@ -174,14 +174,17 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
           .order("updated_at", { ascending: false })
           .limit(10);
 
-        setResults((data || []).map(c => ({
-          id: `c-${c.id}`,
-          type: "client",
-          title: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre",
-          subtitle: c.email || undefined,
-          route: `/dashboard/workspace-demo?tab=profile&clientId=${c.id}`,
-          meta: { email: c.email || undefined },
-        })));
+        setResults((data || []).map(c => {
+          const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre";
+          return {
+            id: `c-${c.id}`,
+            type: "client",
+            title: name,
+            subtitle: c.email || undefined,
+            route: `/dashboard/workspace-demo?client=${c.id}&name=${encodeURIComponent(name)}`,
+            meta: { email: c.email || undefined },
+          };
+        }));
       } else if (f === "case") {
         const { data } = await supabase
           .from("client_cases")
