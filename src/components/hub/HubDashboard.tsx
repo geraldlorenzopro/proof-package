@@ -237,21 +237,21 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         {/* NER Smart Forms */}
         <button
           onClick={() => goTo("/dashboard/smart-forms")}
-          className="w-full group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] via-card/80 to-cyan-400/[0.04] p-4 text-left transition-all hover:border-cyan-500/30 hover:shadow-[0_2px_30px_hsl(185_100%_50%/0.08)]"
+          className="w-full group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] via-card/80 to-cyan-400/[0.04] p-5 text-left transition-all hover:border-cyan-500/30 hover:shadow-[0_2px_30px_hsl(185_100%_50%/0.08)]"
         >
           <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-cyan-500/50 to-cyan-400/30 opacity-50 group-hover:opacity-100 transition-opacity" />
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <FileText className="w-5 h-5 text-cyan-400" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <FileText className="w-6 h-6 text-cyan-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <h3 className="text-sm font-bold text-foreground">NER Smart Forms</h3>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-lg font-bold text-foreground">NER Smart Forms</h3>
                 <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[7px] font-display uppercase tracking-wider">Forms</Badge>
               </div>
-              <p className="text-[10px] text-muted-foreground leading-snug truncate">Formularios USCIS · Autocompletado desde perfil</p>
+              <p className="text-xs text-muted-foreground leading-snug truncate">Formularios USCIS · Autocompletado desde perfil</p>
             </div>
-            <ArrowUpRight className="w-4 h-4 text-cyan-400/40 group-hover:text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+            <ArrowUpRight className="w-5 h-5 text-cyan-400/40 group-hover:text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
           </div>
         </button>
       </motion.div>
