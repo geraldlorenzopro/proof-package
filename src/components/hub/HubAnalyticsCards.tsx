@@ -100,9 +100,9 @@ export default function HubAnalyticsCards() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-3">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="rounded-xl border border-border/15 bg-card/30 animate-pulse h-[88px]" />
+          <div key={i} className="rounded-2xl border border-border/15 bg-card/30 animate-pulse h-[120px]" />
         ))}
       </div>
     );
