@@ -358,21 +358,248 @@ export type Database = {
           },
         ]
       }
+      case_notes: {
+        Row: {
+          account_id: string
+          author_id: string
+          author_name: string | null
+          case_id: string
+          content: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          note_type: string
+        }
+        Insert: {
+          account_id: string
+          author_id: string
+          author_name?: string | null
+          case_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          note_type?: string
+        }
+        Update: {
+          account_id?: string
+          author_id?: string
+          author_name?: string | null
+          case_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          note_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_notes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_notes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_stage_history: {
+        Row: {
+          account_id: string
+          case_id: string
+          changed_by: string
+          changed_by_name: string | null
+          created_at: string
+          from_stage: string | null
+          id: string
+          note: string | null
+          to_stage: string
+        }
+        Insert: {
+          account_id: string
+          case_id: string
+          changed_by: string
+          changed_by_name?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          note?: string | null
+          to_stage: string
+        }
+        Update: {
+          account_id?: string
+          case_id?: string
+          changed_by?: string
+          changed_by_name?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          note?: string | null
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_stage_history_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_stage_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_tags: {
+        Row: {
+          account_id: string
+          added_by: string
+          added_by_name: string | null
+          case_id: string
+          created_at: string
+          id: string
+          removed_at: string | null
+          removed_by: string | null
+          tag: string
+        }
+        Insert: {
+          account_id: string
+          added_by: string
+          added_by_name?: string | null
+          case_id: string
+          created_at?: string
+          id?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          tag: string
+        }
+        Update: {
+          account_id?: string
+          added_by?: string
+          added_by_name?: string | null
+          case_id?: string
+          created_at?: string
+          id?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_tags_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_tags_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_tasks: {
+        Row: {
+          account_id: string
+          assigned_to: string | null
+          assigned_to_name: string | null
+          case_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          created_by_name: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          case_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          created_by_name?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          case_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          created_by_name?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_tasks_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_tasks_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_cases: {
         Row: {
           access_token: string
           account_id: string | null
           assigned_to: string | null
+          ball_in_court: string | null
           beneficiary_name: string | null
           case_type: string
           client_email: string
           client_name: string
           client_profile_id: string | null
           created_at: string
+          custom_fields: Json | null
           id: string
           notes: string | null
           petitioner_name: string | null
+          pipeline_stage: string | null
+          process_type: string | null
           professional_id: string
+          stage_entered_at: string | null
           status: string
           updated_at: string
           webhook_url: string | null
@@ -381,16 +608,21 @@ export type Database = {
           access_token?: string
           account_id?: string | null
           assigned_to?: string | null
+          ball_in_court?: string | null
           beneficiary_name?: string | null
           case_type?: string
           client_email: string
           client_name: string
           client_profile_id?: string | null
           created_at?: string
+          custom_fields?: Json | null
           id?: string
           notes?: string | null
           petitioner_name?: string | null
+          pipeline_stage?: string | null
+          process_type?: string | null
           professional_id: string
+          stage_entered_at?: string | null
           status?: string
           updated_at?: string
           webhook_url?: string | null
@@ -399,16 +631,21 @@ export type Database = {
           access_token?: string
           account_id?: string | null
           assigned_to?: string | null
+          ball_in_court?: string | null
           beneficiary_name?: string | null
           case_type?: string
           client_email?: string
           client_name?: string
           client_profile_id?: string | null
           created_at?: string
+          custom_fields?: Json | null
           id?: string
           notes?: string | null
           petitioner_name?: string | null
+          pipeline_stage?: string | null
+          process_type?: string | null
           professional_id?: string
+          stage_entered_at?: string | null
           status?: string
           updated_at?: string
           webhook_url?: string | null
@@ -893,6 +1130,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      pipeline_templates: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          field_definitions: Json
+          id: string
+          is_active: boolean
+          is_system: boolean
+          process_label: string
+          process_type: string
+          stages: Json
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          field_definitions?: Json
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          process_label: string
+          process_type: string
+          stages?: Json
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          field_definitions?: Json
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          process_label?: string
+          process_type?: string
+          stages?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_templates_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
