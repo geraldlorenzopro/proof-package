@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,14 +6,29 @@ import CaseQuestionnaire from "@/components/workspace/CaseQuestionnaire";
 import {
   ArrowLeft, FileText, ClipboardList, Clock, ChevronRight,
   Activity, Calendar, Sparkles, Loader2, PlusCircle, Users,
-  Briefcase, CheckCircle2
+  Briefcase, CheckCircle2, BarChart3, FolderOpen, AlertTriangle,
+  MessageSquare, ListTodo, ChevronDown
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import ClientDirectory from "@/components/workspace/ClientDirectory";
 import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
 import NewCaseFromProfile from "@/components/workspace/NewCaseFromProfile";
 import HubLayout from "@/components/hub/HubLayout";
-import { format } from "date-fns";
+import CasePipelineTracker, { type PipelineStage } from "@/components/case-engine/CasePipelineTracker";
+import CaseDecisionPanel from "@/components/case-engine/CaseDecisionPanel";
+import CaseNotesPanel from "@/components/case-engine/CaseNotesPanel";
+import CaseTasksPanel from "@/components/case-engine/CaseTasksPanel";
+import CaseStageHistory from "@/components/case-engine/CaseStageHistory";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 
 /* ── Types ── */
@@ -46,14 +61,30 @@ const fadeUp = {
   visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.35, ease: [0.22, 1, 0.36, 1] } }),
 };
 
+type ClientView = "cases" | "questionnaire" | "profile" | "activity";
+type CaseEngineTab = "resumen" | "documentos" | "formularios" | "decision" | "historial";
+
 export default function CaseWorkspace() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeView, setActiveView] = useState<"cases" | "questionnaire" | "profile" | "activity">("cases");
+  const [activeView, setActiveView] = useState<ClientView>("cases");
   const [userAccountId, setUserAccountId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [showNewCase, setShowNewCase] = useState(false);
   const [selectedCaseForQ, setSelectedCaseForQ] = useState<string | null>(null);
+
+  // Case engine inline state
+  const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
+  const [caseEngineTab, setCaseEngineTab] = useState<CaseEngineTab>("resumen");
+  const [caseData, setCaseData] = useState<any>(null);
+  const [caseTemplate, setCaseTemplate] = useState<any>(null);
+  const [caseNotes, setCaseNotes] = useState<any[]>([]);
+  const [caseTasks, setCaseTasks] = useState<any[]>([]);
+  const [caseTags, setCaseTags] = useState<any[]>([]);
+  const [caseStageHistory, setCaseStageHistory] = useState<any[]>([]);
+  const [caseEvidenceCount, setCaseEvidenceCount] = useState(0);
+  const [caseFormsCount, setCaseFormsCount] = useState(0);
+  const [caseLoading, setCaseLoading] = useState(false);
 
   // Data
   const [profile, setProfile] = useState<ClientProfile | null>(null);
@@ -64,24 +95,36 @@ export default function CaseWorkspace() {
   const selectedClientId = searchParams.get("client") || searchParams.get("clientId");
   const selectedClientName = searchParams.get("name") || "Cliente";
   const initialTab = searchParams.get("tab");
+  const initialCaseId = searchParams.get("caseId");
 
-  // If arriving with a tab param, set the active view
+  // If arriving with a tab or caseId param
   useEffect(() => {
     if (initialTab === "profile" && selectedClientId) {
       setActiveView("profile");
     }
-  }, [initialTab, selectedClientId]);
+    if (initialCaseId) {
+      setActiveCaseId(initialCaseId);
+    }
+  }, [initialTab, selectedClientId, initialCaseId]);
 
   const handleSelectClient = (clientId: string, clientName: string) => {
     setSearchParams({ client: clientId, name: clientName });
+    setActiveCaseId(null);
   };
 
   const handleBackToDirectory = () => {
     setSearchParams({});
     setActiveView("cases");
+    setActiveCaseId(null);
   };
 
-  // Fetch data
+  const handleBackToCaseList = () => {
+    setActiveCaseId(null);
+    setCaseData(null);
+    setActiveView("cases");
+  };
+
+  // ── Load client data ──
   useEffect(() => {
     if (!selectedClientId) return;
     setLoading(true);
@@ -106,7 +149,6 @@ export default function CaseWorkspace() {
       if (profileRes.data) setProfile(profileRes.data);
 
       if (casesRes.data) {
-        // Get form counts per case
         const casesWithForms = await Promise.all(
           casesRes.data.map(async (c) => {
             const { count } = await supabase.from("case_forms").select("id", { count: "exact", head: true }).eq("case_id", c.id);
@@ -114,14 +156,10 @@ export default function CaseWorkspace() {
           })
         );
         setClientCases(casesWithForms);
-
-        // If only 1 case, pre-select for questionnaire
-        if (casesWithForms.length === 1) {
-          setSelectedCaseForQ(casesWithForms[0].id);
-        }
+        if (casesWithForms.length === 1) setSelectedCaseForQ(casesWithForms[0].id);
       }
 
-      // Build activity from stage history + case creation
+      // Build activity
       const activities: { date: string; event: string; icon: any }[] = [];
       if (profileRes.data) {
         activities.push({ date: profileRes.data.created_at, event: "Perfil de cliente creado", icon: Sparkles });
@@ -130,7 +168,6 @@ export default function CaseWorkspace() {
         for (const c of casesRes.data) {
           activities.push({ date: c.created_at, event: `Caso ${c.case_type} creado`, icon: Briefcase });
         }
-        // Get stage history for all cases
         const caseIds = casesRes.data.map(c => c.id);
         if (caseIds.length > 0) {
           const { data: stageHistory } = await supabase
@@ -148,11 +185,113 @@ export default function CaseWorkspace() {
       }
       activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setActivityLog(activities);
-
       setLoading(false);
     }
     load();
   }, [selectedClientId]);
+
+  // ── Load case engine data ──
+  const loadCaseEngine = useCallback(async (caseId: string) => {
+    setCaseLoading(true);
+    try {
+      const { data: c, error: cErr } = await supabase
+        .from("client_cases")
+        .select("*")
+        .eq("id", caseId)
+        .single();
+
+      if (cErr || !c) {
+        toast.error("Caso no encontrado");
+        setCaseLoading(false);
+        return;
+      }
+      setCaseData(c);
+
+      const processType = (c as any).process_type || "general";
+      const [templateRes, notesRes, tasksRes, tagsRes, historyRes, evidenceRes, formsRes] = await Promise.all([
+        supabase.from("pipeline_templates").select("*").eq("process_type", processType).eq("is_active", true).limit(1).maybeSingle(),
+        supabase.from("case_notes").select("*").eq("case_id", caseId).order("created_at", { ascending: false }),
+        supabase.from("case_tasks").select("*").eq("case_id", caseId).order("created_at", { ascending: false }),
+        supabase.from("case_tags").select("*").eq("case_id", caseId).is("removed_at", null),
+        supabase.from("case_stage_history").select("*").eq("case_id", caseId).order("created_at", { ascending: false }),
+        supabase.from("evidence_items").select("id", { count: "exact", head: true }).eq("case_id", caseId),
+        supabase.from("form_submissions").select("id", { count: "exact", head: true }).eq("case_id", caseId),
+      ]);
+
+      if (templateRes.data) setCaseTemplate(templateRes.data);
+      if (notesRes.data) setCaseNotes(notesRes.data);
+      if (tasksRes.data) setCaseTasks(tasksRes.data);
+      if (tagsRes.data) setCaseTags(tagsRes.data);
+      if (historyRes.data) setCaseStageHistory(historyRes.data);
+      setCaseEvidenceCount(evidenceRes.count || 0);
+      setCaseFormsCount(formsRes.count || 0);
+    } catch (err) {
+      console.error("Error loading case:", err);
+      toast.error("Error al cargar el caso");
+    } finally {
+      setCaseLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeCaseId) loadCaseEngine(activeCaseId);
+  }, [activeCaseId, loadCaseEngine]);
+
+  // ── Case engine helpers ──
+  const stages: PipelineStage[] = useMemo(() => {
+    if (!caseTemplate?.stages) return [];
+    try {
+      const parsed = typeof caseTemplate.stages === "string" ? JSON.parse(caseTemplate.stages) : caseTemplate.stages;
+      return parsed as PipelineStage[];
+    } catch { return []; }
+  }, [caseTemplate]);
+
+  const stageLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    stages.forEach(s => { map[s.slug] = s.label; });
+    return map;
+  }, [stages]);
+
+  const currentStageSlug = (caseData as any)?.pipeline_stage || "caso-no-iniciado";
+  const currentStage = stages.find(s => s.slug === currentStageSlug) || null;
+  const ballInCourt = (caseData as any)?.ball_in_court || "team";
+  const stageEnteredAt = (caseData as any)?.stage_entered_at || null;
+  const openTasks = caseTasks.filter(t => t.status === "pending");
+
+  async function handleStageChange(newStage: string) {
+    if (!activeCaseId || !caseData) return;
+    const newStageData = stages.find(s => s.slug === newStage);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: prof } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
+
+      await supabase.from("client_cases").update({
+        pipeline_stage: newStage,
+        stage_entered_at: new Date().toISOString(),
+        ball_in_court: newStageData?.owner || "team",
+      } as any).eq("id", activeCaseId);
+
+      await supabase.from("case_stage_history").insert({
+        case_id: activeCaseId,
+        account_id: caseData.account_id,
+        from_stage: currentStageSlug,
+        to_stage: newStage,
+        changed_by: user.id,
+        changed_by_name: prof?.full_name || "Staff",
+      });
+
+      toast.success(`Etapa cambiada a: ${stageLabels[newStage] || newStage}`);
+      loadCaseEngine(activeCaseId);
+    } catch {
+      toast.error("Error al cambiar etapa");
+    }
+  }
+
+  function openCase(caseId: string) {
+    setActiveCaseId(caseId);
+    setCaseEngineTab("resumen");
+  }
 
   const clientFullName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") || selectedClientName : selectedClientName;
   const initials = ((profile?.first_name?.[0] || "") + (profile?.last_name?.[0] || "")).toUpperCase() || "?";
@@ -191,6 +330,237 @@ export default function CaseWorkspace() {
   }
 
   if (loading) {
+    return (
+      <Wrapper>
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="w-6 h-6 text-jarvis animate-spin" />
+        </div>
+      </Wrapper>
+    );
+  }
+
+  // ── CASE ENGINE INLINE VIEW ──
+  if (activeCaseId && caseData) {
+    const daysOpen = differenceInDays(new Date(), new Date(caseData.created_at));
+    const processLabel = caseTemplate?.process_label || caseData.case_type;
+
+    const caseEngineTabs = [
+      { id: "resumen" as const, label: "Resumen", icon: BarChart3 },
+      { id: "documentos" as const, label: "Documentos", icon: FolderOpen, count: caseEvidenceCount },
+      { id: "formularios" as const, label: "Formularios", icon: FileText, count: caseFormsCount },
+      { id: "decision" as const, label: "Decisión", icon: AlertTriangle },
+      { id: "historial" as const, label: "Historial", icon: Clock, count: caseStageHistory.length },
+    ];
+
+    return (
+      <Wrapper>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pt-16 lg:pt-6">
+          {/* ═══ BREADCRUMB ═══ */}
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
+            <div className="flex items-center gap-2 text-[11px]">
+              <button onClick={handleBackToDirectory} className="text-muted-foreground hover:text-foreground transition-colors">
+                Clientes
+              </button>
+              <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
+              <button onClick={handleBackToCaseList} className="text-jarvis hover:text-jarvis/80 font-semibold transition-colors">
+                {clientFullName}
+              </button>
+              <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
+              <span className="text-foreground font-semibold">{processLabel}</span>
+            </div>
+          </motion.div>
+
+          {/* ═══ CASE HERO CARD ═══ */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-6">
+            <div className="relative overflow-hidden rounded-2xl border border-jarvis/15 bg-gradient-to-br from-card via-card to-jarvis/[0.03]">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-jarvis/50 to-accent/50" />
+              <div className="p-5 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-1">
+                      <button onClick={handleBackToCaseList} className="p-1.5 -ml-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                      <h1 className="text-xl font-bold text-foreground tracking-tight">{caseData.client_name}</h1>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap ml-8">
+                      <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[10px] font-semibold">{processLabel}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{daysOpen} días abierto</Badge>
+                      {caseData.assigned_to && (
+                        <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent border-accent/20">
+                          <Users className="w-3 h-3 mr-1" />
+                          Asignado
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {stages.length > 0 && (
+                    <Select value={currentStageSlug} onValueChange={handleStageChange}>
+                      <SelectTrigger className="w-[240px] h-9 text-xs border-jarvis/20 bg-jarvis/5">
+                        <SelectValue placeholder="Cambiar etapa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {stages.map(s => (
+                          <SelectItem key={s.slug} value={s.slug} className="text-xs">
+                            <span className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${
+                                s.owner === "team" ? "bg-jarvis" : s.owner === "client" ? "bg-accent" : "bg-emerald-400"
+                              }`} />
+                              {s.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                {stages.length > 0 && (
+                  <div className="mt-5">
+                    <CasePipelineTracker
+                      stages={stages}
+                      currentStage={currentStageSlug}
+                      stageEnteredAt={stageEnteredAt}
+                      ballInCourt={ballInCourt}
+                      compact
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ═══ CASE ENGINE TABS ═══ */}
+          <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
+            <div className="flex bg-secondary/50 border border-border rounded-xl p-0.5">
+              {caseEngineTabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setCaseEngineTab(tab.id)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                    caseEngineTab === tab.id
+                      ? "bg-card text-foreground shadow-sm border border-border"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                  {tab.count !== undefined && tab.count > 0 && (
+                    <span className="text-[9px] bg-jarvis/10 text-jarvis px-1.5 py-0.5 rounded-full">{tab.count}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ═══ CASE ENGINE CONTENT ═══ */}
+          <motion.div key={caseEngineTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+            {caseEngineTab === "resumen" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                  {stages.length > 0 && (
+                    <div className="rounded-2xl border border-border bg-card p-5">
+                      <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-jarvis" />
+                        Pipeline del Caso
+                      </h3>
+                      <CasePipelineTracker
+                        stages={stages}
+                        currentStage={currentStageSlug}
+                        stageEnteredAt={stageEnteredAt}
+                        ballInCourt={ballInCourt}
+                      />
+                    </div>
+                  )}
+                  <div className="rounded-2xl border border-border bg-card p-5">
+                    <CaseNotesPanel
+                      notes={caseNotes}
+                      caseId={activeCaseId}
+                      accountId={caseData.account_id}
+                      onNoteAdded={() => loadCaseEngine(activeCaseId)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-border bg-card p-5">
+                    <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-accent" />
+                      Panel de Decisión
+                    </h3>
+                    <CaseDecisionPanel
+                      currentStage={currentStage}
+                      stageEnteredAt={stageEnteredAt}
+                      ballInCourt={ballInCourt}
+                      activeTags={caseTags}
+                      openTaskCount={openTasks.length}
+                      stages={stages}
+                      currentStageSlug={currentStageSlug}
+                    />
+                  </div>
+                  <div className="rounded-2xl border border-border bg-card p-5">
+                    <CaseTasksPanel
+                      tasks={caseTasks}
+                      caseId={activeCaseId}
+                      accountId={caseData.account_id}
+                      onTaskChanged={() => loadCaseEngine(activeCaseId)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {caseEngineTab === "documentos" && (
+              <div className="rounded-2xl border border-border bg-card p-8 text-center">
+                <FolderOpen className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-foreground mb-1">Panel de Documentación</p>
+                <p className="text-xs text-muted-foreground">{caseEvidenceCount} evidencia{caseEvidenceCount !== 1 ? "s" : ""} en el caso</p>
+                <Button variant="outline" className="mt-4 text-xs" onClick={() => navigate(`/case/${activeCaseId}`)}>
+                  Abrir Evidence Tool
+                </Button>
+              </div>
+            )}
+
+            {caseEngineTab === "formularios" && (
+              <div className="rounded-2xl border border-border bg-card p-8 text-center">
+                <FileText className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-foreground mb-1">Formularios del Caso</p>
+                <p className="text-xs text-muted-foreground">{caseFormsCount} formulario{caseFormsCount !== 1 ? "s" : ""} asociados</p>
+                <Button variant="outline" className="mt-4 text-xs" onClick={() => navigate("/dashboard/smart-forms")}>
+                  Abrir Smart Forms
+                </Button>
+              </div>
+            )}
+
+            {caseEngineTab === "decision" && (
+              <div className="max-w-xl mx-auto">
+                <div className="rounded-2xl border border-border bg-card p-6">
+                  <CaseDecisionPanel
+                    currentStage={currentStage}
+                    stageEnteredAt={stageEnteredAt}
+                    ballInCourt={ballInCourt}
+                    activeTags={caseTags}
+                    openTaskCount={openTasks.length}
+                    stages={stages}
+                    currentStageSlug={currentStageSlug}
+                  />
+                </div>
+              </div>
+            )}
+
+            {caseEngineTab === "historial" && (
+              <div className="max-w-2xl">
+                <CaseStageHistory history={caseStageHistory} stageLabels={stageLabels} />
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </Wrapper>
+    );
+  }
+
+  // ── Case engine loading state ──
+  if (activeCaseId && caseLoading) {
     return (
       <Wrapper>
         <div className="min-h-screen flex items-center justify-center">
@@ -287,7 +657,7 @@ export default function CaseWorkspace() {
                 <p className="text-xs text-muted-foreground/60 mb-5">Crea el primer caso para este cliente y selecciona los formularios que necesita</p>
                 <button
                   onClick={() => setShowNewCase(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-jarvis text-white text-sm font-semibold hover:bg-jarvis/90 transition-all"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-jarvis text-background text-sm font-semibold hover:bg-jarvis/90 transition-all"
                 >
                   <PlusCircle className="w-4 h-4" />
                   Crear Caso
@@ -296,13 +666,14 @@ export default function CaseWorkspace() {
             ) : (
               <div className="space-y-2">
                 {clientCases.map((c, i) => (
-                  <motion.div
+                  <motion.button
                     key={c.id}
                     custom={i}
                     initial="hidden"
                     animate="visible"
                     variants={fadeUp}
-                    className="rounded-xl border border-border bg-card hover:border-jarvis/20 transition-all"
+                    onClick={() => openCase(c.id)}
+                    className="w-full rounded-xl border border-border bg-card hover:border-jarvis/20 transition-all text-left group"
                   >
                     <div className="flex items-center gap-4 p-4">
                       <div className="w-10 h-10 rounded-xl bg-jarvis/10 ring-1 ring-jarvis/20 flex items-center justify-center shrink-0">
@@ -330,32 +701,12 @@ export default function CaseWorkspace() {
                               {c.form_count} formulario{c.form_count !== 1 ? "s" : ""}
                             </span>
                           ) : null}
-                          {c.process_type && c.process_type !== "general" && (
-                            <span>Pipeline: {c.process_type}</span>
-                          )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {c.form_count && c.form_count > 0 ? (
-                          <button
-                            onClick={() => { setSelectedCaseForQ(c.id); setActiveView("questionnaire"); }}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent/10 border border-accent/20 text-accent text-[10px] font-semibold hover:bg-accent/20 transition-all"
-                          >
-                            <ClipboardList className="w-3 h-3" />
-                            Cuestionario
-                          </button>
-                        ) : null}
-                        <button
-                          onClick={() => navigate(`/case-engine/${c.id}`)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-jarvis/10 border border-jarvis/20 text-jarvis text-[10px] font-semibold hover:bg-jarvis/20 transition-all"
-                        >
-                          <Activity className="w-3 h-3" />
-                          Pipeline
-                        </button>
-                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-jarvis transition-colors shrink-0" />
                     </div>
-                  </motion.div>
+                  </motion.button>
                 ))}
               </div>
             )}
