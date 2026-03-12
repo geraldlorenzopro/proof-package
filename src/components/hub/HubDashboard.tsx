@@ -312,7 +312,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
                   key={cat.key}
                   custom={i}
                   variants={fadeUp}
-                  className={`rounded-2xl border ${cat.color.border} bg-[#000000] transition-all duration-300 overflow-hidden ${isExpanded ? "ring-1 ring-foreground/8 border-foreground/20" : "hover:border-foreground/15"}`}
+                  className={`rounded-2xl border ${cat.color.border} bg-white/[0.03] backdrop-blur-xl transition-all duration-300 overflow-hidden ${isExpanded ? "ring-1 ring-white/10 border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" : "hover:border-white/12 hover:bg-white/[0.05] hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)]"}`}
                 >
                   {/* Category header */}
                   <button
