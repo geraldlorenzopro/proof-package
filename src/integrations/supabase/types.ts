@@ -166,6 +166,45 @@ export type Database = {
           },
         ]
       }
+      app_role_access: {
+        Row: {
+          account_id: string
+          app_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["account_role"]
+        }
+        Insert: {
+          account_id: string
+          app_id: string
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["account_role"]
+        }
+        Update: {
+          account_id?: string
+          app_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["account_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_role_access_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_role_access_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "hub_apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           account_id: string
@@ -1016,6 +1055,10 @@ export type Database = {
       acquire_app_seat: {
         Args: { _app_slug: string; _user_id: string }
         Returns: Json
+      }
+      can_access_app: {
+        Args: { _app_slug: string; _user_id: string }
+        Returns: boolean
       }
       check_app_seat_status: {
         Args: { _app_slug: string; _user_id: string }

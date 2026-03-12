@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, AlertTriangle, Shield } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
 import HubDashboard from "@/components/hub/HubDashboard";
+import { useAppPermissions } from "@/hooks/useAppPermissions";
 
 interface HubApp {
   id: string;
@@ -42,6 +43,7 @@ export default function HubPage() {
   const [authReady, setAuthReady] = useState(false);
   const [stats, setStats] = useState<HubStats>({ totalClients: 0, activeForms: 0, recentActivity: 0 });
   const navigate = useNavigate();
+  const { canAccess, userRole, loading: permLoading } = useAppPermissions();
 
   const cid = searchParams.get("cid");
   const sig = searchParams.get("sig");
@@ -257,6 +259,8 @@ export default function HubPage() {
         staffName={data.staff_info?.display_name}
         plan={data.plan}
         apps={data.apps}
+        userRole={userRole}
+        canAccessApp={canAccess}
         stats={stats}
       />
     </HubLayout>

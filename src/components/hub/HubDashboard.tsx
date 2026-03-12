@@ -13,6 +13,7 @@ import HubAnalyticsCards from "./HubAnalyticsCards";
 import HubCommandBar from "./HubCommandBar";
 import HubActivityDrawer from "./HubActivityDrawer";
 import HubAuditLog from "./HubAuditLog";
+import HubToolPermissions from "./HubToolPermissions";
 
 interface HubApp {
   id: string;
@@ -27,6 +28,8 @@ interface Props {
   staffName?: string;
   plan: string;
   apps: HubApp[];
+  userRole?: string | null;
+  canAccessApp?: (slug: string) => boolean;
   stats?: {
     totalClients: number;
     activeForms: number;
@@ -99,9 +102,11 @@ const PRIMARY_ACTIONS = [
   { label: "Nuevo Formulario", icon: FileCheck, route: "/dashboard/smart-forms", color: "text-cyan-400", bg: "bg-cyan-500/15", border: "border-cyan-500/30" },
 ];
 
-export default function HubDashboard({ accountName, staffName, plan, apps, stats }: Props) {
+export default function HubDashboard({ accountName, staffName, plan, apps, userRole, canAccessApp, stats }: Props) {
   const navigate = useNavigate();
   const [showAudit, setShowAudit] = useState(false);
+
+  const isAdmin = !userRole || userRole === "owner" || userRole === "admin";
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -110,7 +115,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
     return "Buenas noches";
   })();
 
-  const toolApps = apps.filter(a => a.slug !== "case-engine");
+  const toolApps = apps
+    .filter(a => a.slug !== "case-engine")
+    .filter(a => canAccessApp ? canAccessApp(a.slug) : true);
 
   function goTo(route: string) {
     sessionStorage.setItem("ner_hub_return", "/hub");
@@ -268,7 +275,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
         </section>
       )}
 
-      {/* ═══ AUDIT LOG — Compliance Section ═══ */}
+      {/* ═══ AUDIT LOG & PERMISSIONS — Compliance Section ═══ */}
       <section>
         <button
           onClick={() => setShowAudit(!showAudit)}
@@ -286,8 +293,10 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             transition={{ duration: 0.2 }}
+            className="space-y-6"
           >
             <HubAuditLog />
+            {isAdmin && <HubToolPermissions />}
           </motion.div>
         )}
       </section>
