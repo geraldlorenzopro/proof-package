@@ -526,6 +526,7 @@ export default function CaseWorkspace() {
             {([
               { id: "stages" as const, label: "Etapas", icon: BarChart3 },
               { id: "engine" as const, label: "Case Engine", icon: Activity },
+              { id: "questionnaire" as const, label: "Cuestionario", icon: ClipboardList },
               { id: "profile" as const, label: "Perfil", icon: Users },
               { id: "forms" as const, label: "Formularios", icon: FileText },
               { id: "timeline" as const, label: "Actividad", icon: Clock },
