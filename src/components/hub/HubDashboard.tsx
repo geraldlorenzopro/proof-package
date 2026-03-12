@@ -269,7 +269,13 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
             key={action.label}
             custom={i}
             variants={fadeUp}
-            onClick={() => goTo(action.route)}
+            onClick={() => {
+              if (action.label === "Buscar Cliente") {
+                setCommandBarOpen(true);
+              } else {
+                goTo(action.route);
+              }
+            }}
             className={`flex items-center justify-center gap-2.5 rounded-xl border ${action.border} ${action.bg} px-4 py-3.5 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
           >
             <action.icon className={`w-4 h-4 ${action.color}`} />
