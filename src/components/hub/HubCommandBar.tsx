@@ -326,13 +326,13 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
               onClick={() => setOpen(false)}
             />
             <motion.div
-              initial={{ opacity: 0, y: -6 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.12, ease: "easeOut" }}
-              className="fixed top-[12%] left-1/2 -translate-x-1/2 w-full max-w-xl z-[101] px-4"
+              className="fixed top-[8%] left-1/2 -translate-x-1/2 w-full max-w-2xl z-[101] px-4"
             >
-              <div className="rounded-2xl border border-border/50 bg-card shadow-2xl shadow-background/50 overflow-hidden">
+              <div className="rounded-2xl border border-border/40 bg-card shadow-2xl shadow-background/60 overflow-hidden">
                 
                 {/* ═══ FILTER TABS ═══ */}
                 <div className="flex items-center gap-0.5 px-3 pt-3 pb-0">
@@ -377,7 +377,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
                 <div className="h-px bg-border/20" />
 
                 {/* ═══ RESULTS ═══ */}
-                <div className="max-h-[380px] overflow-y-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+                <div className="max-h-[480px] overflow-y-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                   {results.length === 0 && !loading && (
                     <div className="flex flex-col items-center justify-center py-12 gap-2">
                       <Search className="w-8 h-8 text-muted-foreground/15" />
