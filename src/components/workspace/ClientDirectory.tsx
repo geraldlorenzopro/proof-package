@@ -119,9 +119,9 @@ export default function ClientDirectory({ onSelectClient }: Props) {
                 <Users className="w-5 h-5 text-jarvis" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Directorio de Clientes</h1>
+                <h1 className="text-xl font-bold text-foreground">Portfolio</h1>
                 <p className="text-xs text-muted-foreground">
-                  {clients.length} cliente{clients.length !== 1 ? "s" : ""} sincronizado{clients.length !== 1 ? "s" : ""}
+                  {clients.length} cliente{clients.length !== 1 ? "s" : ""} en portafolio
                 </p>
               </div>
             </div>

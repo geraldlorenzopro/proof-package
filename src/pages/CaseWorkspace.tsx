@@ -370,7 +370,7 @@ export default function CaseWorkspace() {
           <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
             <div className="flex items-center gap-2 text-[11px]">
               <button onClick={handleBackToDirectory} className="text-muted-foreground hover:text-foreground transition-colors">
-                Clientes
+                Portfolio
               </button>
               <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
               <button onClick={handleBackToCaseList} className="text-jarvis hover:text-jarvis/80 font-semibold transition-colors">
