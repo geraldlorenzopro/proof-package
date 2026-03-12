@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, AlertTriangle, Shield } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
 import HubDashboard from "@/components/hub/HubDashboard";
+import { useAppPermissions } from "@/hooks/useAppPermissions";
 
 interface HubApp {
   id: string;
