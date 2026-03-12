@@ -478,7 +478,8 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body)}
     </>
   );
 }
