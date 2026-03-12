@@ -188,7 +188,7 @@ export default function HubAnalyticsCards() {
       initial="hidden"
       animate="visible"
       variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"
+      className="grid grid-cols-3 gap-2"
     >
       {cards.map((card, i) => (
         <motion.div
