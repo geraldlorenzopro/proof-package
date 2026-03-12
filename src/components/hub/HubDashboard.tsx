@@ -55,6 +55,8 @@ const ICON_MAP: Record<string, any> = {
 const DISPLAY_NAMES: Record<string, string> = {
   "vawa-screener": "Agente VAWA",
   "vawa-checklist": "Checklist VAWA",
+  "cspa": "Calculadora CSPA",
+  "affidavit": "Calculadora I-864",
 };
 
 const ROUTE_MAP: Record<string, string> = {
