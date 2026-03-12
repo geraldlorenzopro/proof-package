@@ -150,7 +150,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
             type: "client" as ResultType,
             title: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre",
             subtitle: c.email || undefined,
-            route: "/dashboard/workspace-demo",
+            route: `/dashboard/workspace-demo?tab=profile&clientId=${c.id}`,
             meta: { email: c.email || undefined },
           }));
 
@@ -176,7 +176,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
           type: "client",
           title: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre",
           subtitle: c.email || undefined,
-          route: "/dashboard/workspace-demo",
+          route: `/dashboard/workspace-demo?tab=profile&clientId=${c.id}`,
           meta: { email: c.email || undefined },
         })));
       } else if (f === "case") {
@@ -191,7 +191,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
           type: "case",
           title: c.client_name,
           subtitle: c.case_type,
-          route: "/dashboard/workspace-demo",
+          route: `/case-engine/${c.id}`,
           meta: { caseType: c.case_type, status: c.pipeline_stage || c.status },
         })));
       }
@@ -226,7 +226,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
           type: "client",
           title: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre",
           subtitle: c.email || undefined,
-          route: "/dashboard/workspace-demo",
+          route: `/dashboard/workspace-demo?tab=profile&clientId=${c.id}`,
           meta: { email: c.email || undefined },
         }));
       })());
@@ -244,7 +244,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
           type: "case",
           title: c.client_name,
           subtitle: c.case_type,
-          route: "/dashboard/workspace-demo",
+          route: `/case-engine/${c.id}`,
           meta: { caseType: c.case_type, status: c.pipeline_stage || c.status },
         }));
       })());
