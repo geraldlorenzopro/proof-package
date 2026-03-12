@@ -15,6 +15,7 @@ import HubActivityDrawer from "./HubActivityDrawer";
 import HubAuditLog from "./HubAuditLog";
 import HubToolPermissions from "./HubToolPermissions";
 import HubNotifications from "./HubNotifications";
+import SlaTracker from "./SlaTracker";
 
 interface HubApp {
   id: string;
@@ -275,6 +276,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
           </motion.div>
         </section>
       )}
+
+      {/* ═══ SLA TRACKER — Deadline Countdowns ═══ */}
+      <SlaTracker />
 
       {/* ═══ AUDIT LOG & PERMISSIONS — Compliance Section ═══ */}
       <section>
