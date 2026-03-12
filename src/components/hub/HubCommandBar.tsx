@@ -40,8 +40,18 @@ const TYPE_COLORS: Record<string, string> = {
   tool: "text-purple-400",
 };
 
-export default function HubCommandBar() {
-  const [open, setOpen] = useState(false);
+interface HubCommandBarProps {
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
+}
+
+export default function HubCommandBar({ externalOpen, onExternalOpenChange }: HubCommandBarProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = (v: boolean) => {
+    setInternalOpen(v);
+    onExternalOpenChange?.(v);
+  };
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -53,7 +63,7 @@ export default function HubCommandBar() {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setOpen(prev => !prev);
+        setOpen(!open);
       }
       if (e.key === "Escape") setOpen(false);
     }
