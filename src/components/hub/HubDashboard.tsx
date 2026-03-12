@@ -15,6 +15,7 @@ import HubActivityDrawer from "./HubActivityDrawer";
 import HubAuditLog from "./HubAuditLog";
 import HubToolPermissions from "./HubToolPermissions";
 import HubNotifications from "./HubNotifications";
+import SlaTracker from "./SlaTracker";
 
 interface HubApp {
   id: string;
