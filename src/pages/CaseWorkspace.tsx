@@ -157,6 +157,17 @@ export default function CaseWorkspace() {
         );
         setClientCases(casesWithForms);
         if (casesWithForms.length === 1) setSelectedCaseForQ(casesWithForms[0].id);
+
+        // Smart default: if no cases, show profile; if has cases and only 1, open it directly
+        if (!initialTab && !initialCaseId) {
+          if (casesWithForms.length === 0) {
+            setActiveView("profile");
+          } else if (casesWithForms.length === 1) {
+            setActiveCaseId(casesWithForms[0].id);
+          }
+        }
+      } else if (!initialTab && !initialCaseId) {
+        setActiveView("profile");
       }
 
       // Build activity
