@@ -321,14 +321,15 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.1 }}
               className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100]"
               onClick={() => setOpen(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: -10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: -10 }}
-              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.12, ease: "easeOut" }}
               className="fixed top-[12%] left-1/2 -translate-x-1/2 w-full max-w-xl z-[101] px-4"
             >
               <div className="rounded-2xl border border-border/50 bg-card shadow-2xl shadow-background/50 overflow-hidden">
@@ -376,7 +377,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
                 <div className="h-px bg-border/20" />
 
                 {/* ═══ RESULTS ═══ */}
-                <div className="max-h-[380px] overflow-y-auto">
+                <div className="max-h-[380px] overflow-y-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                   {results.length === 0 && !loading && (
                     <div className="flex flex-col items-center justify-center py-12 gap-2">
                       <Search className="w-8 h-8 text-muted-foreground/15" />
