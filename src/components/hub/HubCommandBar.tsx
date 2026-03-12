@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, Users, FolderOpen, FileText, Scale,
-  Calculator, FileSearch, ClipboardList, Briefcase, X,
-  ArrowRight, Mail, Calendar, Hash
+  Search, Users, FolderOpen, FileText,
+  Briefcase, X, ArrowRight, Mail, Hash
 } from "lucide-react";
 
 // ═══ TYPES ═══
@@ -21,10 +20,17 @@ interface SearchResult {
   meta?: {
     email?: string;
     caseType?: string;
-    caseCount?: number;
     status?: string;
-    date?: string;
   };
+}
+
+// ═══ SANITIZE — prevent SQL injection in ilike filters ═══
+function sanitizeSearchInput(input: string): string {
+  // Remove special Postgres pattern characters and limit length
+  return input
+    .replace(/[%_\\'";\-\-]/g, "")
+    .trim()
+    .slice(0, 100);
 }
 
 // ═══ STATIC DATA ═══
@@ -69,7 +75,7 @@ const FILTER_TABS: { key: FilterTab; label: string; icon: any }[] = [
 
 const FILTER_PLACEHOLDERS: Record<FilterTab, string> = {
   all: "Buscar clientes, casos o herramientas...",
-  client: "Buscar por nombre, email o A-Number...",
+  client: "Buscar por nombre o email...",
   case: "Buscar por nombre de cliente o tipo de caso...",
   tool: "Buscar herramienta...",
 };
@@ -84,10 +90,10 @@ interface HubCommandBarProps {
 export default function HubCommandBar({ externalOpen, onExternalOpenChange, defaultFilter }: HubCommandBarProps = {}) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
-  const setOpen = (v: boolean) => {
+  const setOpen = useCallback((v: boolean) => {
     setInternalOpen(v);
     onExternalOpenChange?.(v);
-  };
+  }, [onExternalOpenChange]);
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterTab>("all");
@@ -96,23 +102,21 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const openRef = useRef(open);
+  openRef.current = open;
 
-  // ⌘K listener
+  // ⌘K listener — uses ref to avoid stale closure
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        if (open) {
-          setOpen(false);
-        } else {
-          setOpen(true);
-        }
+        setOpen(!openRef.current);
       }
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape" && openRef.current) setOpen(false);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [setOpen]);
 
   // Reset on open
   useEffect(() => {
@@ -126,14 +130,13 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
 
   // Search logic
   const performSearch = useCallback(async (q: string, f: FilterTab) => {
-    const trimmed = q.trim().toLowerCase();
+    const sanitized = sanitizeSearchInput(q).toLowerCase();
 
     // No query: show contextual defaults
-    if (!trimmed) {
+    if (!sanitized) {
       if (f === "tool" || f === "all") {
         const toolResults = f === "tool" ? TOOLS : [];
         if (f === "all") {
-          // Show recent clients + tools
           setLoading(true);
           const { data: recentClients } = await supabase
             .from("client_profiles")
@@ -163,7 +166,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
       if (f === "client") {
         const { data } = await supabase
           .from("client_profiles")
-          .select("id, first_name, last_name, email, country_of_birth, updated_at")
+          .select("id, first_name, last_name, email")
           .order("updated_at", { ascending: false })
           .limit(10);
 
@@ -178,7 +181,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
       } else if (f === "case") {
         const { data } = await supabase
           .from("client_cases")
-          .select("id, client_name, case_type, pipeline_stage, status, updated_at")
+          .select("id, client_name, case_type, pipeline_stage, status")
           .order("updated_at", { ascending: false })
           .limit(10);
 
@@ -196,26 +199,26 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
       return;
     }
 
-    // Active search
+    // Active search with sanitized input
     setLoading(true);
     const dbResults: SearchResult[] = [];
 
-    // Tools (always fast, local)
+    // Tools (local, fast)
     if (f === "all" || f === "tool") {
       TOOLS.filter(t =>
-        t.title.toLowerCase().includes(trimmed) || t.subtitle?.toLowerCase().includes(trimmed)
+        t.title.toLowerCase().includes(sanitized) || t.subtitle?.toLowerCase().includes(sanitized)
       ).forEach(t => dbResults.push(t));
     }
 
-    // DB searches
+    // DB searches — only fetch display-safe fields (no PII like a_number, SSN, etc.)
     const promises: Promise<void>[] = [];
 
     if (f === "all" || f === "client") {
       promises.push((async () => {
         const { data } = await supabase
           .from("client_profiles")
-          .select("id, first_name, last_name, email, a_number")
-          .or(`first_name.ilike.%${trimmed}%,last_name.ilike.%${trimmed}%,email.ilike.%${trimmed}%`)
+          .select("id, first_name, last_name, email")
+          .or(`first_name.ilike.%${sanitized}%,last_name.ilike.%${sanitized}%,email.ilike.%${sanitized}%`)
           .limit(8);
         (data || []).forEach(c => dbResults.push({
           id: `c-${c.id}`,
@@ -233,7 +236,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
         const { data } = await supabase
           .from("client_cases")
           .select("id, client_name, case_type, pipeline_stage, status")
-          .or(`client_name.ilike.%${trimmed}%,case_type.ilike.%${trimmed}%`)
+          .or(`client_name.ilike.%${sanitized}%,case_type.ilike.%${sanitized}%`)
           .limit(8);
         (data || []).forEach(c => dbResults.push({
           id: `case-${c.id}`,
@@ -274,7 +277,6 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
     if (e.key === "ArrowDown") { e.preventDefault(); setSelectedIdx(i => Math.min(i + 1, results.length - 1)); }
     if (e.key === "ArrowUp") { e.preventDefault(); setSelectedIdx(i => Math.max(i - 1, 0)); }
     if (e.key === "Enter" && results[selectedIdx]) { go(results[selectedIdx]); }
-    // Tab to cycle filters
     if (e.key === "Tab") {
       e.preventDefault();
       const idx = FILTER_TABS.findIndex(t => t.key === filter);
@@ -295,9 +297,11 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
     return acc;
   }, []);
 
-  // Flat index for keyboard nav
-  const flatResults = groupedResults.flatMap(g => g.items);
-  let flatIdx = 0;
+  // Build flat index mapping for keyboard navigation
+  const flatIndexMap: number[] = [];
+  groupedResults.forEach(g => g.items.forEach(() => flatIndexMap.push(flatIndexMap.length)));
+
+  let renderIdx = 0;
 
   return (
     <>
@@ -401,27 +405,25 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
                       )}
 
                       {group.items.map(r => {
-                        const currentFlatIdx = flatIdx++;
+                        const currentIdx = renderIdx++;
                         const Icon = TYPE_ICON[r.type];
                         const color = TYPE_COLORS[r.type];
                         const bg = TYPE_BG[r.type];
-                        const isSelected = currentFlatIdx === selectedIdx;
+                        const isSelected = currentIdx === selectedIdx;
 
                         return (
                           <button
                             key={r.id}
                             onClick={() => go(r)}
-                            onMouseEnter={() => setSelectedIdx(currentFlatIdx)}
+                            onMouseEnter={() => setSelectedIdx(currentIdx)}
                             className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all duration-100 group/item ${
                               isSelected ? "bg-jarvis/[0.06]" : "hover:bg-muted/20"
                             }`}
                           >
-                            {/* Icon */}
                             <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center shrink-0`}>
                               <Icon className={`w-4 h-4 ${color}`} />
                             </div>
 
-                            {/* Content */}
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
                               <div className="flex items-center gap-2 mt-0.5">
@@ -448,7 +450,6 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
                               </div>
                             </div>
 
-                            {/* Arrow */}
                             <ArrowRight className={`w-3.5 h-3.5 shrink-0 transition-all duration-150 ${
                               isSelected ? "text-jarvis/60 translate-x-0" : "text-transparent -translate-x-1"
                             }`} />
