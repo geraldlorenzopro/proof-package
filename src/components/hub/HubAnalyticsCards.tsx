@@ -100,9 +100,9 @@ export default function HubAnalyticsCards() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-3">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="rounded-xl border border-border/15 bg-card/30 animate-pulse h-[88px]" />
+          <div key={i} className="rounded-2xl border border-border/15 bg-card/30 animate-pulse h-[120px]" />
         ))}
       </div>
     );
@@ -188,40 +188,40 @@ export default function HubAnalyticsCards() {
       initial="hidden"
       animate="visible"
       variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-      className="grid grid-cols-3 gap-2"
+      className="grid grid-cols-3 gap-3"
     >
       {cards.map((card, i) => (
         <motion.div
           key={card.label}
           custom={i}
           variants={fadeUp}
-          className={`relative rounded-xl border ${card.border} bg-card p-3 transition-all duration-300 hover:border-foreground/15 group cursor-default ${card.glow}`}
+          className={`relative rounded-2xl border ${card.border} bg-card p-5 transition-all duration-300 hover:border-foreground/15 group cursor-default ${card.glow}`}
         >
           {/* Pulse dot for urgent items */}
           {card.pulse && (
-            <span className="absolute top-2 right-2 flex h-2 w-2">
+            <span className="absolute top-3.5 right-3.5 flex h-2.5 w-2.5">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${card.color === "text-rose-400" ? "bg-rose-400" : "bg-amber-400"}`} />
-              <span className={`relative inline-flex rounded-full h-2 w-2 ${card.color === "text-rose-400" ? "bg-rose-400" : "bg-amber-400"}`} />
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${card.color === "text-rose-400" ? "bg-rose-400" : "bg-amber-400"}`} />
             </span>
           )}
 
           {/* Icon */}
-          <div className={`w-7 h-7 rounded-lg ${card.bg} flex items-center justify-center mb-2`}>
-            <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
+          <div className={`w-9 h-9 rounded-xl ${card.bg} flex items-center justify-center mb-3`}>
+            <card.icon className={`w-4.5 h-4.5 ${card.color}`} />
           </div>
 
           {/* Value */}
-          <p className={`font-display text-2xl font-bold ${card.color} leading-none tracking-tight`}>
+          <p className={`font-display text-4xl font-extrabold ${card.color} leading-none tracking-tighter`}>
             {card.value}
           </p>
 
           {/* Label */}
-          <div className="mt-1">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold leading-none">
+          <div className="mt-2">
+            <span className="text-xs uppercase tracking-widest text-muted-foreground/80 font-bold leading-none">
               {card.label}
             </span>
             {(card as any).subtitle && (
-              <span className="text-[9px] text-muted-foreground/50 ml-1 font-medium">
+              <span className="text-[10px] text-muted-foreground/50 ml-1.5 font-medium">
                 {(card as any).subtitle}
               </span>
             )}
@@ -229,10 +229,10 @@ export default function HubAnalyticsCards() {
 
           {/* Trend */}
           {card.trend && (
-            <div className="flex items-center gap-1 mt-1.5">
-              {card.trendUp === true && <ArrowUpRight className="w-2.5 h-2.5 text-emerald-400/70" />}
-              {card.trendUp === false && <ArrowDownRight className="w-2.5 h-2.5 text-amber-400/70" />}
-              <span className={`text-[8px] font-medium leading-none ${
+            <div className="flex items-center gap-1 mt-2">
+              {card.trendUp === true && <ArrowUpRight className="w-3 h-3 text-emerald-400/70" />}
+              {card.trendUp === false && <ArrowDownRight className="w-3 h-3 text-amber-400/70" />}
+              <span className={`text-[10px] font-medium leading-none ${
                 card.trendUp === true ? "text-emerald-400/60" :
                 card.trendUp === false ? "text-amber-400/60" :
                 "text-muted-foreground/40"
