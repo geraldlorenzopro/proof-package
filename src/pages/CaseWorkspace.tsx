@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import CaseQuestionnaire from "@/components/workspace/CaseQuestionnaire";
 import {
   ArrowLeft, AlertTriangle, CheckCircle2, FileText, Shield,
   ClipboardList, Scale, Clock, ChevronRight, Zap, Activity,
@@ -205,7 +206,8 @@ function buildTimeline(
 export default function CaseWorkspace() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeView, setActiveView] = useState<"stages" | "engine" | "timeline" | "profile" | "forms">("stages");
+  const [activeView, setActiveView] = useState<"stages" | "engine" | "timeline" | "profile" | "forms" | "questionnaire">("stages");
+  const [userAccountId, setUserAccountId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [showNewCase, setShowNewCase] = useState(false);
 
@@ -241,6 +243,13 @@ export default function CaseWorkspace() {
     setLoading(true);
 
     async function load() {
+      // Get account id for questionnaire
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        const { data: accId } = await supabase.rpc("user_account_id", { _user_id: currentUser.id });
+        if (accId) setUserAccountId(accId);
+      }
+
       const [profileRes, formsRes, vawaRes] = await Promise.all([
         supabase.from("client_profiles").select("id, first_name, last_name, email, phone, dob, country_of_birth, immigration_status, created_at").eq("id", selectedClientId!).single(),
         supabase.from("form_submissions").select("id, form_type, status, created_at, updated_at").eq("beneficiary_profile_id", selectedClientId!).order("updated_at", { ascending: false }),
@@ -517,6 +526,7 @@ export default function CaseWorkspace() {
             {([
               { id: "stages" as const, label: "Etapas", icon: BarChart3 },
               { id: "engine" as const, label: "Case Engine", icon: Activity },
+              { id: "questionnaire" as const, label: "Cuestionario", icon: ClipboardList },
               { id: "profile" as const, label: "Perfil", icon: Users },
               { id: "forms" as const, label: "Formularios", icon: FileText },
               { id: "timeline" as const, label: "Actividad", icon: Clock },
@@ -666,6 +676,43 @@ export default function CaseWorkspace() {
                       </div>
                     </div>
                   </motion.button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* ═══ QUESTIONNAIRE VIEW ═══ */}
+        {activeView === "questionnaire" && selectedClientId && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            {clientCases.length === 0 ? (
+              <div className="text-center py-16">
+                <ClipboardList className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">Crea un caso primero para acceder al cuestionario</p>
+              </div>
+            ) : clientCases.length === 1 ? (
+              <CaseQuestionnaire caseId={clientCases[0].id} accountId={userAccountId} />
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground mb-3">Selecciona un caso para abrir su cuestionario:</p>
+                {clientCases.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      // For multi-case, we could add a selectedCaseForQuestionnaire state
+                      // For now navigate to a dedicated view
+                      setActiveView("questionnaire");
+                    }}
+                    className="w-full tool-card rounded-xl p-4 text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <ClipboardList className="w-5 h-5 text-jarvis" />
+                      <div>
+                        <p className="text-sm font-bold">{c.case_type}</p>
+                        <p className="text-xs text-muted-foreground">{c.evidence_count || 0} evidencias</p>
+                      </div>
+                    </div>
+                  </button>
                 ))}
               </div>
             )}
