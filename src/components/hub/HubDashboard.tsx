@@ -286,22 +286,22 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         ))}
       </motion.div>
 
-      {/* ═══ TOOL CATEGORIES — Grouped modules ═══ */}
+      {/* ═══ TOOL CATEGORIES — Pure black cards, filled icons ═══ */}
       {categoriesWithApps.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <LayoutGrid className="w-3.5 h-3.5 text-muted-foreground/30" />
-            <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/70">
+        <section className="pt-2">
+          <div className="flex items-center gap-2 mb-4">
+            <LayoutGrid className="w-4 h-4 text-muted-foreground/40" strokeWidth={2.5} />
+            <h3 className="text-[11px] font-display font-bold tracking-[0.25em] uppercase text-muted-foreground/60">
               Herramientas
             </h3>
-            <div className="h-px flex-1 bg-border/20" />
+            <div className="h-px flex-1 bg-border/15" />
           </div>
 
           <motion.div
             initial="hidden"
             animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.05, delayChildren: 0.2 } } }}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
+            variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.2 } } }}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-3.5"
           >
             {categoriesWithApps.map((cat, i) => {
               const isExpanded = expandedCategory === cat.key;
@@ -312,26 +312,26 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
                   key={cat.key}
                   custom={i}
                   variants={fadeUp}
-                  className={`rounded-xl border ${cat.color.border} bg-gradient-to-br ${cat.color.accent} transition-all duration-200 overflow-hidden ${isExpanded ? "ring-1 ring-foreground/5" : ""}`}
+                  className={`rounded-2xl border ${cat.color.border} bg-[#000000] transition-all duration-300 overflow-hidden ${isExpanded ? "ring-1 ring-foreground/8 border-foreground/20" : "hover:border-foreground/15"}`}
                 >
                   {/* Category header */}
                   <button
                     onClick={() => setExpandedCategory(isExpanded ? null : cat.key)}
-                    className="w-full flex items-center gap-3 p-3.5 text-left group"
+                    className="w-full flex items-center gap-4 p-5 text-left group"
                   >
-                    <div className={`w-9 h-9 rounded-lg ${cat.color.bg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
-                      <CatIcon className={`w-4 h-4 ${cat.color.text}`} />
+                    <div className={`w-11 h-11 rounded-xl ${cat.color.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                      <CatIcon className={`w-5 h-5 ${cat.color.text}`} strokeWidth={2.5} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-bold text-foreground">{cat.label}</h4>
-                        <Badge className={`${cat.color.bg} ${cat.color.text} border-0 text-[8px] font-mono`}>
+                      <div className="flex items-center gap-2.5">
+                        <h4 className="text-sm font-bold text-foreground tracking-wide">{cat.label}</h4>
+                        <span className={`${cat.color.text} text-[9px] font-mono font-bold opacity-60`}>
                           {cat.tools.length}
-                        </Badge>
+                        </span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground leading-snug truncate">{cat.description}</p>
+                      <p className="text-[11px] text-muted-foreground/50 leading-snug mt-0.5">{cat.description}</p>
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-muted-foreground/40 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground/30 transition-transform duration-300 ${isExpanded ? "rotate-180 text-muted-foreground/60" : ""}`} strokeWidth={2.5} />
                   </button>
 
                   {/* Expanded sub-tools */}
@@ -340,8 +340,8 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="border-t border-border/10 px-3.5 pb-3 pt-2 space-y-1"
+                      transition={{ duration: 0.25 }}
+                      className="border-t border-foreground/5 px-5 pb-4 pt-3 space-y-1"
                     >
                       {cat.tools.map(app => {
                         const SubIcon = ICON_MAP[app.slug] || Shield;
@@ -351,11 +351,11 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
                             key={app.id}
                             onClick={() => { if (route) goTo(route); }}
                             disabled={!route}
-                            className="w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-foreground/5 transition-colors group disabled:opacity-30"
+                            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-foreground/[0.06] transition-all duration-200 group disabled:opacity-30"
                           >
-                            <SubIcon className={`w-3.5 h-3.5 ${cat.color.text}`} />
-                            <span className="text-xs font-semibold text-foreground flex-1 text-left">{DISPLAY_NAMES[app.slug] || app.name}</span>
-                            <ChevronRight className="w-3 h-3 text-muted-foreground/20 group-hover:text-muted-foreground/60 transition-colors" />
+                            <SubIcon className={`w-4 h-4 ${cat.color.text}`} strokeWidth={2.5} />
+                            <span className="text-[13px] font-semibold text-foreground/90 flex-1 text-left tracking-wide">{DISPLAY_NAMES[app.slug] || app.name}</span>
+                            <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/15 group-hover:text-muted-foreground/50 transition-colors" strokeWidth={2.5} />
                           </button>
                         );
                       })}
