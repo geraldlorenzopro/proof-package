@@ -139,6 +139,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
   const [showAudit, setShowAudit] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [commandBarOpen, setCommandBarOpen] = useState(false);
+  const [commandBarFilter, setCommandBarFilter] = useState<"all" | "client" | "case" | "tool">("all");
 
   const isAdmin = !userRole || userRole === "owner" || userRole === "admin";
 
