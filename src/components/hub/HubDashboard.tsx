@@ -5,7 +5,7 @@ import {
   Users, FileText, FolderOpen, Calculator,
   FileSearch, Scale, ClipboardList, ChevronRight,
   ArrowUpRight, Briefcase,
-  Shield, UserPlus, PlusCircle, Upload, FileCheck,
+  Shield, PlusCircle, Search,
   Zap, LayoutGrid, ChevronDown
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
