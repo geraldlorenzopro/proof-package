@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -317,7 +318,8 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
         </kbd>
       </button>
 
-      {/* Modal */}
+      {/* Modal — rendered via Portal to escape transform ancestors */}
+      {createPortal(
       <AnimatePresence>
         {open && (
           <>
@@ -330,11 +332,11 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
               onClick={() => setOpen(false)}
             />
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
+              initial={{ opacity: 0, y: -8, x: "-50%" }}
+              animate={{ opacity: 1, y: 0, x: "-50%" }}
+              exit={{ opacity: 0, y: -8, x: "-50%" }}
               transition={{ duration: 0.12, ease: "easeOut" }}
-              className="fixed top-[8%] left-1/2 -translate-x-1/2 w-full max-w-2xl z-[101] px-4"
+              className="fixed top-[8%] left-1/2 w-full max-w-2xl z-[101] px-4"
             >
               <div className="rounded-2xl border border-border/40 bg-card shadow-2xl shadow-background/60 overflow-hidden">
                 
@@ -476,7 +478,8 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body)}
     </>
   );
 }
