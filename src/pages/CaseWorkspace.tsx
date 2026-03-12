@@ -61,8 +61,16 @@ export default function CaseWorkspace() {
   const [activityLog, setActivityLog] = useState<{ date: string; event: string; icon: any }[]>([]);
 
   const isFromHub = !!sessionStorage.getItem('ner_hub_return');
-  const selectedClientId = searchParams.get("client");
+  const selectedClientId = searchParams.get("client") || searchParams.get("clientId");
   const selectedClientName = searchParams.get("name") || "Cliente";
+  const initialTab = searchParams.get("tab");
+
+  // If arriving with a tab param, set the active view
+  useEffect(() => {
+    if (initialTab === "profile" && selectedClientId) {
+      setActiveView("profile");
+    }
+  }, [initialTab, selectedClientId]);
 
   const handleSelectClient = (clientId: string, clientName: string) => {
     setSearchParams({ client: clientId, name: clientName });
