@@ -63,30 +63,50 @@ const ROUTE_MAP: Record<string, string> = {
   "smart-forms": "/dashboard/smart-forms",
 };
 
-const TOOL_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  "case-engine": { bg: "bg-jarvis/12", border: "border-jarvis/25", text: "text-jarvis" },
-  evidence: { bg: "bg-emerald-500/12", border: "border-emerald-500/25", text: "text-emerald-400" },
-  cspa: { bg: "bg-blue-500/12", border: "border-blue-500/25", text: "text-blue-400" },
-  affidavit: { bg: "bg-accent/12", border: "border-accent/25", text: "text-accent" },
-  "uscis-analyzer": { bg: "bg-purple-500/12", border: "border-purple-500/25", text: "text-purple-400" },
-  "vawa-screener": { bg: "bg-rose-500/12", border: "border-rose-500/25", text: "text-rose-400" },
-  "vawa-checklist": { bg: "bg-orange-500/12", border: "border-orange-500/25", text: "text-orange-400" },
-  "smart-forms": { bg: "bg-cyan-500/12", border: "border-cyan-500/25", text: "text-cyan-400" },
-  "checklist-generator": { bg: "bg-teal-500/12", border: "border-teal-500/25", text: "text-teal-400" },
-};
+// ═══ TOOL CATEGORIES ═══
+interface ToolCategory {
+  key: string;
+  label: string;
+  icon: any;
+  color: { bg: string; border: string; text: string; accent: string };
+  slugs: string[];
+  description: string;
+}
 
-const DEFAULT_COLOR = { bg: "bg-jarvis/8", border: "border-jarvis/15", text: "text-jarvis" };
-
-const TOOL_TAGS: Record<string, string> = {
-  "uscis-analyzer": "Auditoría",
-  "smart-forms": "Librería",
-  cspa: "Elegibilidad",
-  "vawa-screener": "Evaluación",
-  evidence: "Recopilación",
-  affidavit: "Generador",
-  "checklist-generator": "Generador",
-  "vawa-checklist": "Checklist",
-};
+const TOOL_CATEGORIES: ToolCategory[] = [
+  {
+    key: "screeners",
+    label: "Evaluadores",
+    icon: Scale,
+    color: { bg: "bg-rose-500/10", border: "border-rose-500/20", text: "text-rose-400", accent: "from-rose-500/10 to-rose-500/5" },
+    slugs: ["vawa-screener", "vawa-checklist"],
+    description: "Screeners de elegibilidad y checklists por tipo de caso",
+  },
+  {
+    key: "forms",
+    label: "Formularios",
+    icon: FileText,
+    color: { bg: "bg-cyan-500/10", border: "border-cyan-500/20", text: "text-cyan-400", accent: "from-cyan-500/10 to-cyan-500/5" },
+    slugs: ["smart-forms", "checklist-generator"],
+    description: "Librería de formularios USCIS y generadores de checklists",
+  },
+  {
+    key: "calculators",
+    label: "Calculadoras",
+    icon: Calculator,
+    color: { bg: "bg-blue-500/10", border: "border-blue-500/20", text: "text-blue-400", accent: "from-blue-500/10 to-blue-500/5" },
+    slugs: ["cspa", "affidavit"],
+    description: "CSPA, Affidavit Generator y simuladores",
+  },
+  {
+    key: "analysis",
+    label: "Análisis",
+    icon: FileSearch,
+    color: { bg: "bg-purple-500/10", border: "border-purple-500/20", text: "text-purple-400", accent: "from-purple-500/10 to-purple-500/5" },
+    slugs: ["uscis-analyzer", "evidence"],
+    description: "Procesamiento de documentos y auditoría de evidencia",
+  },
+];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 10 },
@@ -107,6 +127,7 @@ const PRIMARY_ACTIONS = [
 export default function HubDashboard({ accountName, staffName, plan, apps, userRole, canAccessApp, stats }: Props) {
   const navigate = useNavigate();
   const [showAudit, setShowAudit] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   const isAdmin = !userRole || userRole === "owner" || userRole === "admin";
 
@@ -117,9 +138,18 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
     return "Buenas noches";
   })();
 
-  const toolApps = apps
-    .filter(a => a.slug !== "case-engine")
-    .filter(a => canAccessApp ? canAccessApp(a.slug) : true);
+  const accessibleSlugs = new Set(
+    apps.filter(a => a.slug !== "case-engine" && (canAccessApp ? canAccessApp(a.slug) : true)).map(a => a.slug)
+  );
+
+  const appsBySlug = Object.fromEntries(apps.map(a => [a.slug, a]));
+
+  const categoriesWithApps = TOOL_CATEGORIES
+    .map(cat => ({
+      ...cat,
+      tools: cat.slugs.filter(s => accessibleSlugs.has(s)).map(s => appsBySlug[s]).filter(Boolean),
+    }))
+    .filter(cat => cat.tools.length > 0);
 
   function goTo(route: string) {
     sessionStorage.setItem("ner_hub_return", "/hub");
@@ -219,8 +249,8 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         ))}
       </motion.div>
 
-      {/* ═══ TOOL GRID — Compact modules ═══ */}
-      {toolApps.length > 0 && (
+      {/* ═══ TOOL CATEGORIES — Grouped modules ═══ */}
+      {categoriesWithApps.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-3">
             <LayoutGrid className="w-3.5 h-3.5 text-muted-foreground/30" />
@@ -233,44 +263,68 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
           <motion.div
             initial="hidden"
             animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.03, delayChildren: 0.22 } } }}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
+            variants={{ visible: { transition: { staggerChildren: 0.05, delayChildren: 0.2 } } }}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
           >
-            {toolApps.map((app, i) => {
-              const IconComp = ICON_MAP[app.slug] || Shield;
-              const route = ROUTE_MAP[app.slug];
-              const colors = TOOL_COLORS[app.slug] || DEFAULT_COLOR;
-              const tag = TOOL_TAGS[app.slug];
+            {categoriesWithApps.map((cat, i) => {
+              const isExpanded = expandedCategory === cat.key;
+              const CatIcon = cat.icon;
 
               return (
-                <motion.button
-                  key={app.id}
+                <motion.div
+                  key={cat.key}
                   custom={i}
                   variants={fadeUp}
-                  onClick={() => { if (route) goTo(route); }}
-                  disabled={!route}
-                  className={`group relative rounded-lg border ${colors.border} bg-card p-3 text-left transition-all duration-200 hover:bg-card/90 hover:border-foreground/15 hover:shadow-[0_4px_20px_hsl(0_0%_0%/0.3)] disabled:opacity-30 disabled:cursor-not-allowed shadow-sm`}
+                  className={`rounded-xl border ${cat.color.border} bg-gradient-to-br ${cat.color.accent} transition-all duration-200 overflow-hidden ${isExpanded ? "ring-1 ring-foreground/5" : ""}`}
                 >
-                  <div className="flex items-start gap-2.5">
-                    <div className={`w-8 h-8 rounded-lg ${colors.bg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
-                      <IconComp className={`w-3.5 h-3.5 ${colors.text}`} />
+                  {/* Category header */}
+                  <button
+                    onClick={() => setExpandedCategory(isExpanded ? null : cat.key)}
+                    className="w-full flex items-center gap-3 p-3.5 text-left group"
+                  >
+                    <div className={`w-9 h-9 rounded-lg ${cat.color.bg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
+                      <CatIcon className={`w-4 h-4 ${cat.color.text}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-foreground truncate leading-tight">{app.name}</p>
-                      {tag && (
-                        <span className={`text-[9px] ${colors.text} uppercase tracking-wider font-semibold`}>{tag}</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-foreground">{cat.label}</h4>
+                        <Badge className={`${cat.color.bg} ${cat.color.text} border-0 text-[8px] font-mono`}>
+                          {cat.tools.length}
+                        </Badge>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground leading-snug truncate">{cat.description}</p>
                     </div>
-                    <ChevronRight className="w-3 h-3 text-muted-foreground/15 group-hover:text-muted-foreground/50 transition-colors shrink-0 mt-0.5" />
-                  </div>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground/40 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                  </button>
 
-                  {/* Hover quick action */}
-                  <div className="absolute inset-x-0 bottom-0 h-0 group-hover:h-7 overflow-hidden transition-all duration-200 bg-gradient-to-t from-card/90 to-transparent rounded-b-lg flex items-end justify-center pb-1">
-                    <span className={`text-[9px] font-medium ${colors.text} opacity-0 group-hover:opacity-80 transition-opacity`}>
-                      Abrir →
-                    </span>
-                  </div>
-                </motion.button>
+                  {/* Expanded sub-tools */}
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="border-t border-border/10 px-3.5 pb-3 pt-2 space-y-1"
+                    >
+                      {cat.tools.map(app => {
+                        const SubIcon = ICON_MAP[app.slug] || Shield;
+                        const route = ROUTE_MAP[app.slug];
+                        return (
+                          <button
+                            key={app.id}
+                            onClick={() => { if (route) goTo(route); }}
+                            disabled={!route}
+                            className="w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-foreground/5 transition-colors group disabled:opacity-30"
+                          >
+                            <SubIcon className={`w-3.5 h-3.5 ${cat.color.text}`} />
+                            <span className="text-xs font-semibold text-foreground flex-1 text-left">{app.name}</span>
+                            <ChevronRight className="w-3 h-3 text-muted-foreground/20 group-hover:text-muted-foreground/60 transition-colors" />
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </motion.div>
               );
             })}
           </motion.div>
