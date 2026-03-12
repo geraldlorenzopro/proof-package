@@ -101,9 +101,11 @@ const PRIMARY_ACTIONS = [
   { label: "Nuevo Formulario", icon: FileCheck, route: "/dashboard/smart-forms", color: "text-cyan-400", bg: "bg-cyan-500/15", border: "border-cyan-500/30" },
 ];
 
-export default function HubDashboard({ accountName, staffName, plan, apps, stats }: Props) {
+export default function HubDashboard({ accountName, staffName, plan, apps, userRole, canAccessApp, stats }: Props) {
   const navigate = useNavigate();
   const [showAudit, setShowAudit] = useState(false);
+
+  const isAdmin = !userRole || userRole === "owner" || userRole === "admin";
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -112,7 +114,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, stats
     return "Buenas noches";
   })();
 
-  const toolApps = apps.filter(a => a.slug !== "case-engine");
+  const toolApps = apps
+    .filter(a => a.slug !== "case-engine")
+    .filter(a => canAccessApp ? canAccessApp(a.slug) : true);
 
   function goTo(route: string) {
     sessionStorage.setItem("ner_hub_return", "/hub");
