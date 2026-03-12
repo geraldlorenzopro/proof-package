@@ -230,7 +230,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
                 <h3 className="text-lg font-bold text-foreground">Case Engine</h3>
                 <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[7px] font-display uppercase tracking-wider">Master</Badge>
               </div>
-              <p className="text-xs text-muted-foreground leading-snug truncate">Clientes, Casos y Flujos de Trabajo</p>
+              <p className="text-xs text-muted-foreground leading-snug truncate">Portfolio, Casos y Flujos de Trabajo</p>
             </div>
             <ArrowUpRight className="w-5 h-5 text-jarvis/40 group-hover:text-jarvis group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
           </div>
