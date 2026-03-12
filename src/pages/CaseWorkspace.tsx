@@ -622,7 +622,14 @@ export default function CaseWorkspace() {
               <div className="text-center py-16">
                 <Activity className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">No hay casos vinculados a este cliente</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Crea un caso desde la pestaña de Formularios para activar el Case Engine</p>
+                <p className="text-xs text-muted-foreground/60 mt-1 mb-4">Crea un caso para activar el Case Engine con pipeline y seguimiento</p>
+                <button
+                  onClick={() => setShowNewCase(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-jarvis/10 border border-jarvis/20 text-jarvis text-sm font-semibold hover:bg-jarvis/20 transition-all"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Crear Primer Caso
+                </button>
               </div>
             ) : (
               <div className="space-y-3">
