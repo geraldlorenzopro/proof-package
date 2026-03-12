@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Loader2, Briefcase, ArrowRight } from "lucide-react";
+import { Loader2, Briefcase, ArrowRight, FileText, CheckCircle2 } from "lucide-react";
 import { logAudit } from "@/lib/auditLog";
+import { Badge } from "@/components/ui/badge";
 
 interface PipelineTemplate {
   id: string;
@@ -40,6 +42,31 @@ const GENERIC_CASE_TYPES = [
   { value: "Other", label: "Otro" },
 ];
 
+const AVAILABLE_FORMS = [
+  { value: "I-130", label: "I-130", desc: "Petición Familiar" },
+  { value: "I-485", label: "I-485", desc: "Ajuste de Estatus" },
+  { value: "I-765", label: "I-765", desc: "Permiso de Trabajo (EAD)" },
+  { value: "I-131", label: "I-131", desc: "Documento de Viaje" },
+  { value: "I-864", label: "I-864", desc: "Declaración de Sostenimiento" },
+  { value: "I-693", label: "I-693", desc: "Examen Médico" },
+  { value: "I-751", label: "I-751", desc: "Remoción de Condiciones" },
+  { value: "I-129F", label: "I-129F", desc: "Visa de Prometido(a)" },
+  { value: "N-400", label: "N-400", desc: "Naturalización" },
+  { value: "I-589", label: "I-589", desc: "Asilo" },
+  { value: "G-28", label: "G-28", desc: "Representación Legal" },
+];
+
+// Suggested form packages based on case type
+const FORM_PRESETS: Record<string, string[]> = {
+  "I-485": ["I-130", "I-485", "I-765", "I-131", "I-864", "I-693", "G-28"],
+  "I-130": ["I-130", "G-28"],
+  "I-765": ["I-765", "G-28"],
+  "I-751": ["I-751", "G-28"],
+  "I-129F": ["I-129F", "G-28"],
+  "N-400": ["N-400", "G-28"],
+  "I-589": ["I-589", "I-765", "G-28"],
+};
+
 export default function NewCaseFromProfile({
   open, onOpenChange, clientProfileId, clientName, clientEmail, onCreated
 }: Props) {
@@ -49,6 +76,7 @@ export default function NewCaseFromProfile({
   const [processType, setProcessType] = useState<string>("none");
   const [petitionerName, setPetitionerName] = useState("");
   const [beneficiaryName, setBeneficiaryName] = useState(clientName);
+  const [selectedForms, setSelectedForms] = useState<string[]>([]);
 
   // Load available pipeline templates
   useEffect(() => {
@@ -67,7 +95,24 @@ export default function NewCaseFromProfile({
     if (open) setBeneficiaryName(clientName);
   }, [open, clientName]);
 
+  // Auto-suggest forms when case type changes
+  useEffect(() => {
+    if (caseType && FORM_PRESETS[caseType]) {
+      setSelectedForms(FORM_PRESETS[caseType]);
+    } else if (caseType) {
+      setSelectedForms([caseType].filter(f => AVAILABLE_FORMS.some(af => af.value === f)));
+    }
+  }, [caseType]);
+
   const selectedTemplate = templates.find(t => t.process_type === processType);
+
+  const toggleForm = (formType: string) => {
+    setSelectedForms(prev =>
+      prev.includes(formType)
+        ? prev.filter(f => f !== formType)
+        : [...prev, formType]
+    );
+  };
 
   const handleCreate = async () => {
     if (!caseType) {
@@ -114,6 +159,18 @@ export default function NewCaseFromProfile({
         return;
       }
 
+      // Insert selected forms into case_forms
+      if (selectedForms.length > 0 && data) {
+        const formRows = selectedForms.map((ft, i) => ({
+          case_id: data.id,
+          account_id: accountId,
+          form_type: ft,
+          status: "pending",
+          sort_order: i,
+        }));
+        await supabase.from("case_forms").insert(formRows);
+      }
+
       // Record initial stage in history if pipeline was assigned
       if (initialStage && data) {
         await supabase.from("case_stage_history").insert({
@@ -132,15 +189,21 @@ export default function NewCaseFromProfile({
         entity_type: "case",
         entity_id: data!.id,
         entity_label: `${caseType} - ${clientName}`,
-        metadata: { case_type: caseType, process_type: processType, client_profile_id: clientProfileId },
+        metadata: {
+          case_type: caseType,
+          process_type: processType,
+          client_profile_id: clientProfileId,
+          forms: selectedForms,
+        },
       });
 
-      toast.success(`Caso "${caseType}" creado para ${clientName}`);
+      toast.success(`Caso "${caseType}" creado con ${selectedForms.length} formulario${selectedForms.length !== 1 ? "s" : ""}`);
 
       // Reset
       setCaseType("");
       setProcessType("none");
       setPetitionerName("");
+      setSelectedForms([]);
       onOpenChange(false);
       onCreated();
     } catch (err) {
@@ -153,7 +216,7 @@ export default function NewCaseFromProfile({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Briefcase className="w-5 h-5 text-jarvis" />
@@ -175,6 +238,54 @@ export default function NewCaseFromProfile({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Form Selection */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-jarvis" />
+                Formularios del Caso
+              </Label>
+              {selectedForms.length > 0 && (
+                <Badge variant="outline" className="text-[10px] bg-jarvis/10 text-jarvis border-jarvis/20">
+                  {selectedForms.length} seleccionado{selectedForms.length !== 1 ? "s" : ""}
+                </Badge>
+              )}
+            </div>
+            {caseType && FORM_PRESETS[caseType] && (
+              <p className="text-[10px] text-jarvis/70">
+                📦 Paquete sugerido para {caseType} — puedes agregar o quitar formularios
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto rounded-lg border border-border p-2 bg-secondary/30">
+              {AVAILABLE_FORMS.map(form => {
+                const isSelected = selectedForms.includes(form.value);
+                return (
+                  <button
+                    key={form.value}
+                    type="button"
+                    onClick={() => toggleForm(form.value)}
+                    disabled={loading}
+                    className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all text-xs ${
+                      isSelected
+                        ? "bg-jarvis/10 border border-jarvis/30 text-foreground"
+                        : "bg-transparent border border-transparent text-muted-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                      isSelected ? "bg-jarvis border-jarvis" : "border-muted-foreground/30"
+                    }`}>
+                      {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="font-semibold">{form.label}</span>
+                      <span className="block text-[9px] text-muted-foreground truncate">{form.desc}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Pipeline Template */}
@@ -228,7 +339,7 @@ export default function NewCaseFromProfile({
           </Button>
           <Button onClick={handleCreate} disabled={loading || !caseType} className="bg-jarvis hover:bg-jarvis/90 gap-2">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-            Crear Caso
+            Crear Caso {selectedForms.length > 0 && `(${selectedForms.length} forms)`}
           </Button>
         </DialogFooter>
       </DialogContent>
