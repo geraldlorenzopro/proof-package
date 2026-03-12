@@ -129,11 +129,9 @@ const fadeUp = {
 };
 
 const PRIMARY_ACTIONS = [
-  { label: "Nuevo Cliente", icon: UserPlus, route: "/dashboard/workspace-demo", color: "text-jarvis", bg: "bg-jarvis/15", border: "border-jarvis/30" },
-  { label: "Iniciar Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/15", border: "border-emerald-500/30" },
-  { label: "Subir Evidencia", icon: Upload, route: "/dashboard/evidence", color: "text-accent", bg: "bg-accent/15", border: "border-accent/30" },
-  { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/15", border: "border-purple-500/30" },
-  { label: "Nuevo Formulario", icon: FileCheck, route: "/dashboard/smart-forms", color: "text-cyan-400", bg: "bg-cyan-500/15", border: "border-cyan-500/30" },
+  { label: "Nuevo Cliente", icon: UserPlus, route: "/dashboard/workspace-demo", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
+  { label: "Iniciar Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
 ];
 
 export default function HubDashboard({ accountName, staffName, plan, apps, userRole, canAccessApp, stats }: Props) {
