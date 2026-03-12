@@ -51,6 +51,12 @@ const ICON_MAP: Record<string, any> = {
   "smart-forms": FileText,
 };
 
+// ═══ DISPLAY NAME OVERRIDES — Enterprise naming ═══
+const DISPLAY_NAMES: Record<string, string> = {
+  "vawa-screener": "Agente VAWA",
+  "vawa-checklist": "Checklist VAWA",
+};
+
 const ROUTE_MAP: Record<string, string> = {
   "case-engine": "/dashboard/workspace-demo",
   evidence: "/dashboard/evidence",
