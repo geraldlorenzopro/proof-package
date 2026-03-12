@@ -237,24 +237,54 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         </div>
       </motion.button>
 
-      {/* ═══ QUICK ACTIONS — Single row compact ═══ */}
+      {/* ═══ NER SMART FORMS — Hero Card ═══ */}
+      <motion.button
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.16, duration: 0.4 }}
+        onClick={() => goTo("/dashboard/smart-forms")}
+        className="w-full group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] via-card/80 to-cyan-400/[0.04] p-4 sm:p-5 text-left transition-all hover:border-cyan-500/30 hover:shadow-[0_2px_30px_hsl(185_100%_50%/0.08)]"
+      >
+        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-cyan-500/50 to-cyan-400/30 opacity-50 group-hover:opacity-100 transition-opacity" />
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <FileText className="w-5 h-5 text-cyan-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <h3 className="text-base font-bold text-foreground">NER Smart Forms</h3>
+              <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[7px] font-display uppercase tracking-wider">
+                Forms
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              Formularios USCIS inteligentes · Autocompletado desde perfil
+            </p>
+          </div>
+          <div className="shrink-0 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/8 border border-cyan-500/15 group-hover:bg-cyan-500/12 transition-colors">
+            <span className="text-xs text-cyan-400 font-semibold">Abrir</span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+          </div>
+        </div>
+      </motion.button>
+
+      {/* ═══ QUICK ACTIONS — 3-column grid ═══ */}
       <motion.div
         initial="hidden"
         animate="visible"
-        variants={{ visible: { transition: { staggerChildren: 0.03, delayChildren: 0.18 } } }}
-        className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-0.5"
+        variants={{ visible: { transition: { staggerChildren: 0.04, delayChildren: 0.2 } } }}
+        className="grid grid-cols-3 gap-2.5"
       >
-        <Zap className="w-3.5 h-3.5 text-muted-foreground/30 shrink-0" />
         {PRIMARY_ACTIONS.map((action, i) => (
           <motion.button
             key={action.label}
             custom={i}
             variants={fadeUp}
             onClick={() => goTo(action.route)}
-            className={`shrink-0 flex items-center gap-2 rounded-lg border ${action.border} bg-card px-3.5 py-2.5 transition-all duration-200 hover:bg-card/90 hover:shadow-md hover:scale-[1.02] group shadow-sm`}
+            className={`flex items-center justify-center gap-2.5 rounded-xl border ${action.border} ${action.bg} px-4 py-3.5 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
           >
-            <action.icon className={`w-3.5 h-3.5 ${action.color}`} />
-            <span className="text-xs font-semibold text-foreground group-hover:text-foreground whitespace-nowrap">{action.label}</span>
+            <action.icon className={`w-4 h-4 ${action.color}`} />
+            <span className="text-sm font-semibold text-foreground whitespace-nowrap">{action.label}</span>
           </motion.button>
         ))}
       </motion.div>
