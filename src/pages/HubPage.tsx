@@ -259,6 +259,8 @@ export default function HubPage() {
         staffName={data.staff_info?.display_name}
         plan={data.plan}
         apps={data.apps}
+        userRole={userRole}
+        canAccessApp={canAccess}
         stats={stats}
       />
     </HubLayout>
