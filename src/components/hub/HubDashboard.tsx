@@ -27,6 +27,8 @@ interface Props {
   staffName?: string;
   plan: string;
   apps: HubApp[];
+  userRole?: string | null;
+  canAccessApp?: (slug: string) => boolean;
   stats?: {
     totalClients: number;
     activeForms: number;
