@@ -5,7 +5,7 @@ import {
   Users, FileText, FolderOpen, Calculator,
   FileSearch, Scale, ClipboardList, ChevronRight,
   ArrowUpRight, Briefcase,
-  Shield, UserPlus, PlusCircle, Upload, FileCheck,
+  Shield, PlusCircle, Search,
   Zap, LayoutGrid, ChevronDown
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -129,8 +129,8 @@ const fadeUp = {
 };
 
 const PRIMARY_ACTIONS = [
-  { label: "Nuevo Cliente", icon: UserPlus, route: "/dashboard/workspace-demo", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
-  { label: "Iniciar Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  { label: "Buscar Cliente", icon: Search, route: "/dashboard/workspace-demo", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
+  { label: "Nuevo Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
   { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
 ];
 
