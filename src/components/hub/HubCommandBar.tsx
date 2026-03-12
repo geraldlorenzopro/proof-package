@@ -63,7 +63,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange }: Hu
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setOpen(prev => !prev);
+        setOpen(!open);
       }
       if (e.key === "Escape") setOpen(false);
     }
