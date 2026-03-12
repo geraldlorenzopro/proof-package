@@ -682,7 +682,41 @@ export default function CaseWorkspace() {
           </motion.div>
         )}
 
-        {activeView === "profile" && selectedClientId && (
+        {/* ═══ QUESTIONNAIRE VIEW ═══ */}
+        {activeView === "questionnaire" && selectedClientId && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            {clientCases.length === 0 ? (
+              <div className="text-center py-16">
+                <ClipboardList className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">Crea un caso primero para acceder al cuestionario</p>
+              </div>
+            ) : clientCases.length === 1 ? (
+              <CaseQuestionnaire caseId={clientCases[0].id} accountId={userAccountId} />
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground mb-3">Selecciona un caso para abrir su cuestionario:</p>
+                {clientCases.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      // For multi-case, we could add a selectedCaseForQuestionnaire state
+                      // For now navigate to a dedicated view
+                      setActiveView("questionnaire");
+                    }}
+                    className="w-full tool-card rounded-xl p-4 text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <ClipboardList className="w-5 h-5 text-jarvis" />
+                      <div>
+                        <p className="text-sm font-bold">{c.case_type}</p>
+                        <p className="text-xs text-muted-foreground">{c.evidence_count || 0} evidencias</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </motion.div>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
             <ClientProfileEditor
               clientId={selectedClientId}
