@@ -211,43 +211,39 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
     const promises: Promise<void>[] = [];
 
     if (f === "all" || f === "client") {
-      promises.push(
-        supabase
+      promises.push((async () => {
+        const { data } = await supabase
           .from("client_profiles")
           .select("id, first_name, last_name, email, a_number")
           .or(`first_name.ilike.%${trimmed}%,last_name.ilike.%${trimmed}%,email.ilike.%${trimmed}%`)
-          .limit(8)
-          .then(({ data }) => {
-            (data || []).forEach(c => dbResults.push({
-              id: `c-${c.id}`,
-              type: "client",
-              title: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre",
-              subtitle: c.email || undefined,
-              route: "/dashboard/workspace-demo",
-              meta: { email: c.email || undefined },
-            }));
-          })
-      );
+          .limit(8);
+        (data || []).forEach(c => dbResults.push({
+          id: `c-${c.id}`,
+          type: "client",
+          title: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre",
+          subtitle: c.email || undefined,
+          route: "/dashboard/workspace-demo",
+          meta: { email: c.email || undefined },
+        }));
+      })());
     }
 
     if (f === "all" || f === "case") {
-      promises.push(
-        supabase
+      promises.push((async () => {
+        const { data } = await supabase
           .from("client_cases")
           .select("id, client_name, case_type, pipeline_stage, status")
           .or(`client_name.ilike.%${trimmed}%,case_type.ilike.%${trimmed}%`)
-          .limit(8)
-          .then(({ data }) => {
-            (data || []).forEach(c => dbResults.push({
-              id: `case-${c.id}`,
-              type: "case",
-              title: c.client_name,
-              subtitle: c.case_type,
-              route: "/dashboard/workspace-demo",
-              meta: { caseType: c.case_type, status: c.pipeline_stage || c.status },
-            }));
-          })
-      );
+          .limit(8);
+        (data || []).forEach(c => dbResults.push({
+          id: `case-${c.id}`,
+          type: "case",
+          title: c.client_name,
+          subtitle: c.case_type,
+          route: "/dashboard/workspace-demo",
+          meta: { caseType: c.case_type, status: c.pipeline_stage || c.status },
+        }));
+      })());
     }
 
     await Promise.all(promises);
