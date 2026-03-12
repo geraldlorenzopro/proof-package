@@ -129,7 +129,7 @@ const fadeUp = {
 };
 
 const PRIMARY_ACTIONS = [
-  { label: "Buscar Cliente", icon: Search, route: "/dashboard/workspace-demo", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
+  { label: "Buscar", icon: Search, route: "", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
   { label: "Nuevo Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
   { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
 ];
