@@ -1,22 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import CaseQuestionnaire from "@/components/workspace/CaseQuestionnaire";
 import {
-  ArrowLeft, AlertTriangle, CheckCircle2, FileText, Shield,
-  ClipboardList, Scale, Clock, ChevronRight, Zap, Activity,
-  Calendar, Sparkles, CircleDot, FileCheck, BarChart3,
-  TrendingUp, Target, Users, ExternalLink, Loader2, PlusCircle
+  ArrowLeft, FileText, ClipboardList, Clock, ChevronRight,
+  Activity, Calendar, Sparkles, Loader2, PlusCircle, Users,
+  Briefcase, CheckCircle2
 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import ClientDirectory from "@/components/workspace/ClientDirectory";
 import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
-import QuickFormLauncher from "@/components/workspace/QuickFormLauncher";
 import NewCaseFromProfile from "@/components/workspace/NewCaseFromProfile";
 import HubLayout from "@/components/hub/HubLayout";
-import { format, differenceInDays } from "date-fns";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 /* ── Types ── */
@@ -32,194 +29,38 @@ interface ClientProfile {
   created_at: string;
 }
 
-interface FormSubmission {
-  id: string;
-  form_type: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface VawaCase {
-  id: string;
-  status: string;
-  screener_result: any;
-  checklist_progress: any;
-  created_at: string;
-  updated_at: string;
-}
-
 interface ClientCase {
   id: string;
   case_type: string;
   status: string;
+  process_type: string | null;
+  pipeline_stage: string | null;
   created_at: string;
-  evidence_count?: number;
+  updated_at: string;
+  form_count?: number;
 }
 
-/* ── Styles ── */
-const severityConfig = {
-  critical: {
-    border: "border-destructive/30", bg: "bg-destructive/5", text: "text-destructive",
-    icon: AlertTriangle, dot: "bg-destructive", actionBg: "bg-destructive/10 hover:bg-destructive/20 text-destructive",
-  },
-  warning: {
-    border: "border-accent/30", bg: "bg-accent/5", text: "text-accent",
-    icon: Clock, dot: "bg-accent", actionBg: "bg-accent/10 hover:bg-accent/20 text-accent",
-  },
-  success: {
-    border: "border-emerald-500/30", bg: "bg-emerald-500/5", text: "text-emerald-400",
-    icon: CheckCircle2, dot: "bg-emerald-400", actionBg: "",
-  },
-};
-
-const stageStatusConfig = {
-  complete: { ring: "ring-emerald-500/40", bg: "bg-emerald-500/10", text: "text-emerald-400", badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-  in_progress: { ring: "ring-jarvis/40", bg: "bg-jarvis/10", text: "text-jarvis", badge: "bg-jarvis/10 text-jarvis border-jarvis/20" },
-  pending: { ring: "ring-muted-foreground/20", bg: "bg-muted", text: "text-muted-foreground", badge: "bg-muted text-muted-foreground border-border" },
-};
-
-const timelineColor: Record<string, string> = {
-  alert: "text-destructive", tool: "text-jarvis", client: "text-accent", system: "text-muted-foreground",
-};
-
-const timelineDot: Record<string, string> = {
-  alert: "border-destructive bg-destructive/20", tool: "border-jarvis bg-jarvis/20",
-  client: "border-accent bg-accent/20", system: "border-muted-foreground bg-muted",
-};
-
+/* ── Animation ── */
 const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.08, duration: 0.45, ease: [0.22, 1, 0.36, 1] } }),
+  hidden: { opacity: 0, y: 12 },
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.35, ease: [0.22, 1, 0.36, 1] } }),
 };
-
-/* ── Helper: build stages from real data ── */
-function buildStages(
-  vawaCases: VawaCase[],
-  forms: FormSubmission[],
-  evidenceCases: ClientCase[]
-) {
-  // VAWA Screener stage
-  const vawaCase = vawaCases[0]; // latest
-  const screenerStatus: "complete" | "in_progress" | "pending" = vawaCase?.screener_result
-    ? "complete"
-    : vawaCase ? "in_progress" : "pending";
-  const screenerDetail = vawaCase?.screener_result
-    ? `Completado — ${format(new Date(vawaCase.updated_at), "d MMM yyyy", { locale: es })}`
-    : vawaCase ? "En progreso" : "Sin iniciar";
-
-  // Evidence/checklist stage
-  const totalEvidence = evidenceCases.reduce((sum, c) => sum + (c.evidence_count || 0), 0);
-  const checklistProgress = vawaCase?.checklist_progress || {};
-  const checklistKeys = Object.keys(checklistProgress);
-  const checklistCompleted = checklistKeys.filter((k) => (checklistProgress as any)[k] === true).length;
-  const checklistTotal = Math.max(checklistKeys.length, 1);
-  const checklistPct = checklistTotal > 0 ? Math.round((checklistCompleted / checklistTotal) * 100) : 0;
-  const evidenceStatus: "complete" | "in_progress" | "pending" = checklistPct >= 100
-    ? "complete"
-    : totalEvidence > 0 || checklistPct > 0 ? "in_progress" : "pending";
-  const evidenceDetail = evidenceStatus === "pending"
-    ? "Sin iniciar"
-    : `${totalEvidence} evidencia${totalEvidence !== 1 ? "s" : ""} · ${checklistCompleted}/${checklistTotal} categorías`;
-
-  // Forms stage
-  const completedForms = forms.filter((f) => f.status === "completed").length;
-  const draftForms = forms.filter((f) => f.status === "draft").length;
-  const formsStatus: "complete" | "in_progress" | "pending" = completedForms > 0 && draftForms === 0
-    ? "complete"
-    : forms.length > 0 ? "in_progress" : "pending";
-  const formsPct = forms.length > 0 ? Math.round((completedForms / forms.length) * 100) : 0;
-  const formsDetail = forms.length === 0
-    ? "Sin iniciar"
-    : `${completedForms}/${forms.length} formulario${forms.length !== 1 ? "s" : ""} completo${completedForms !== 1 ? "s" : ""}`;
-
-  return [
-    { slug: "screener", label: "Elegibilidad", sublabel: "Screener VAWA", icon: Shield, status: screenerStatus, progress: screenerStatus === "complete" ? 100 : screenerStatus === "in_progress" ? 50 : 0, route: "/dashboard/vawa-screener", detail: screenerDetail },
-    { slug: "checklist", label: "Evidencias", sublabel: "Documentos del Caso", icon: ClipboardList, status: evidenceStatus, progress: checklistPct, route: "/dashboard/vawa-checklist", detail: evidenceDetail },
-    { slug: "affidavit", label: "Declaración", sublabel: "Carta Personal", icon: Scale, status: "pending" as const, progress: 0, route: "/dashboard/affidavit", detail: "Sin iniciar" },
-    { slug: "forms", label: "Formularios", sublabel: "Smart Forms", icon: FileText, status: formsStatus, progress: formsPct, route: "/dashboard/smart-forms", detail: formsDetail },
-  ];
-}
-
-/* ── Helper: build alerts ── */
-function buildAlerts(
-  stages: ReturnType<typeof buildStages>,
-  forms: FormSubmission[],
-  vawaCases: VawaCase[]
-) {
-  const alerts: { id: string; severity: "critical" | "warning" | "success"; message: string; action: string | null; route: string | null }[] = [];
-
-  const draftForms = forms.filter((f) => f.status === "draft");
-  if (draftForms.length > 0) {
-    alerts.push({ id: "draft-forms", severity: "warning", message: `${draftForms.length} formulario${draftForms.length > 1 ? "s" : ""} en borrador pendiente${draftForms.length > 1 ? "s" : ""} de completar`, action: "Ver formularios", route: "/dashboard/smart-forms" });
-  }
-
-  const screenerStage = stages.find((s) => s.slug === "screener");
-  if (screenerStage?.status === "complete") {
-    alerts.push({ id: "screener-done", severity: "success", message: "Screener completado — caso evaluado", action: null, route: null });
-  }
-
-  const evidenceStage = stages.find((s) => s.slug === "checklist");
-  if (evidenceStage?.status === "in_progress" && evidenceStage.progress < 50) {
-    alerts.push({ id: "evidence-low", severity: "critical", message: "Menos del 50% de la evidencia recopilada — se necesita más documentación", action: "Ver checklist", route: "/dashboard/vawa-checklist" });
-  }
-
-  if (alerts.length === 0 && vawaCases.length === 0 && forms.length === 0) {
-    alerts.push({ id: "empty", severity: "warning", message: "Este cliente no tiene casos ni formularios aún — comienza creando uno", action: "Crear formulario", route: "/dashboard/smart-forms/new" });
-  }
-
-  return alerts;
-}
-
-/* ── Helper: build timeline ── */
-function buildTimeline(
-  profile: ClientProfile,
-  forms: FormSubmission[],
-  vawaCases: VawaCase[],
-  cases: ClientCase[]
-) {
-  const events: { date: string; event: string; type: "alert" | "tool" | "client" | "system"; icon: any }[] = [];
-
-  events.push({ date: profile.created_at, event: "Perfil de cliente creado", type: "system", icon: Sparkles });
-
-  for (const c of cases) {
-    events.push({ date: c.created_at, event: `Caso ${c.case_type} creado`, type: "tool", icon: FileText });
-  }
-
-  for (const v of vawaCases) {
-    events.push({ date: v.created_at, event: "Caso VAWA iniciado", type: "tool", icon: Shield });
-    if (v.screener_result) {
-      events.push({ date: v.updated_at, event: "Screener VAWA completado", type: "tool", icon: CheckCircle2 });
-    }
-  }
-
-  for (const f of forms) {
-    events.push({ date: f.created_at, event: `Formulario ${f.form_type.toUpperCase()} creado`, type: "tool", icon: FileText });
-    if (f.status === "completed") {
-      events.push({ date: f.updated_at, event: `Formulario ${f.form_type.toUpperCase()} completado`, type: "client", icon: CheckCircle2 });
-    }
-  }
-
-  return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-}
 
 export default function CaseWorkspace() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeView, setActiveView] = useState<"stages" | "engine" | "timeline" | "profile" | "forms" | "questionnaire">("stages");
+  const [activeView, setActiveView] = useState<"cases" | "questionnaire" | "profile" | "activity">("cases");
   const [userAccountId, setUserAccountId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [showNewCase, setShowNewCase] = useState(false);
+  const [selectedCaseForQ, setSelectedCaseForQ] = useState<string | null>(null);
 
-  // Real data state
+  // Data
   const [profile, setProfile] = useState<ClientProfile | null>(null);
-  const [forms, setForms] = useState<FormSubmission[]>([]);
-  const [vawaCases, setVawaCases] = useState<VawaCase[]>([]);
   const [clientCases, setClientCases] = useState<ClientCase[]>([]);
+  const [activityLog, setActivityLog] = useState<{ date: string; event: string; icon: any }[]>([]);
 
-  // Check if coming from Hub
   const isFromHub = !!sessionStorage.getItem('ner_hub_return');
-
   const selectedClientId = searchParams.get("client");
   const selectedClientName = searchParams.get("name") || "Cliente";
 
@@ -229,82 +70,85 @@ export default function CaseWorkspace() {
 
   const handleBackToDirectory = () => {
     setSearchParams({});
+    setActiveView("cases");
   };
 
-  const handleBackToHub = () => {
-    // Clear auto-launched flag so Hub shows the grid
-    sessionStorage.removeItem('ner_hub_auto_launched');
-    navigate('/hub');
-  };
-
-  // Fetch data when client is selected
+  // Fetch data
   useEffect(() => {
     if (!selectedClientId) return;
     setLoading(true);
 
     async function load() {
-      // Get account id for questionnaire
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (currentUser) {
         const { data: accId } = await supabase.rpc("user_account_id", { _user_id: currentUser.id });
         if (accId) setUserAccountId(accId);
       }
 
-      const [profileRes, formsRes, vawaRes] = await Promise.all([
-        supabase.from("client_profiles").select("id, first_name, last_name, email, phone, dob, country_of_birth, immigration_status, created_at").eq("id", selectedClientId!).single(),
-        supabase.from("form_submissions").select("id, form_type, status, created_at, updated_at").eq("beneficiary_profile_id", selectedClientId!).order("updated_at", { ascending: false }),
-        supabase.from("vawa_cases").select("id, status, screener_result, checklist_progress, created_at, updated_at").order("updated_at", { ascending: false }),
+      const [profileRes, casesRes] = await Promise.all([
+        supabase.from("client_profiles")
+          .select("id, first_name, last_name, email, phone, dob, country_of_birth, immigration_status, created_at")
+          .eq("id", selectedClientId!).single(),
+        supabase.from("client_cases")
+          .select("id, case_type, status, process_type, pipeline_stage, created_at, updated_at")
+          .eq("client_profile_id", selectedClientId!)
+          .order("updated_at", { ascending: false }),
       ]);
 
       if (profileRes.data) setProfile(profileRes.data);
-      if (formsRes.data) setForms(formsRes.data);
-      if (vawaRes.data) setVawaCases(vawaRes.data as VawaCase[]);
 
-      // Fetch cases linked to this client profile (proper FK relationship)
-      const casesRes = await supabase
-        .from("client_cases")
-        .select("id, case_type, status, created_at")
-        .eq("client_profile_id", selectedClientId!);
-      
       if (casesRes.data) {
-        const casesWithEvidence = await Promise.all(
+        // Get form counts per case
+        const casesWithForms = await Promise.all(
           casesRes.data.map(async (c) => {
-            const { count } = await supabase.from("evidence_items").select("id", { count: "exact", head: true }).eq("case_id", c.id);
-            return { ...c, evidence_count: count || 0 };
+            const { count } = await supabase.from("case_forms").select("id", { count: "exact", head: true }).eq("case_id", c.id);
+            return { ...c, form_count: count || 0 };
           })
         );
-        setClientCases(casesWithEvidence);
-        // Auto-switch to Case Engine view if client has cases
-        if (casesWithEvidence.length > 0) {
-          setActiveView("engine");
+        setClientCases(casesWithForms);
+
+        // If only 1 case, pre-select for questionnaire
+        if (casesWithForms.length === 1) {
+          setSelectedCaseForQ(casesWithForms[0].id);
         }
       }
+
+      // Build activity from stage history + case creation
+      const activities: { date: string; event: string; icon: any }[] = [];
+      if (profileRes.data) {
+        activities.push({ date: profileRes.data.created_at, event: "Perfil de cliente creado", icon: Sparkles });
+      }
+      if (casesRes.data) {
+        for (const c of casesRes.data) {
+          activities.push({ date: c.created_at, event: `Caso ${c.case_type} creado`, icon: Briefcase });
+        }
+        // Get stage history for all cases
+        const caseIds = casesRes.data.map(c => c.id);
+        if (caseIds.length > 0) {
+          const { data: stageHistory } = await supabase
+            .from("case_stage_history")
+            .select("created_at, to_stage, note")
+            .in("case_id", caseIds)
+            .order("created_at", { ascending: false })
+            .limit(20);
+          if (stageHistory) {
+            for (const sh of stageHistory) {
+              activities.push({ date: sh.created_at, event: sh.note || `Etapa: ${sh.to_stage}`, icon: Activity });
+            }
+          }
+        }
+      }
+      activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setActivityLog(activities);
 
       setLoading(false);
     }
     load();
   }, [selectedClientId]);
 
-  // Computed data
-  const stages = useMemo(() => buildStages(vawaCases, forms, clientCases), [vawaCases, forms, clientCases]);
-  const alerts = useMemo(() => buildAlerts(stages, forms, vawaCases), [stages, forms, vawaCases]);
-  const timeline = useMemo(() => profile ? buildTimeline(profile, forms, vawaCases, clientCases) : [], [profile, forms, vawaCases, clientCases]);
-  const completedStages = stages.filter((s) => s.status === "complete").length;
-  const totalProgress = stages.length > 0 ? Math.round(stages.reduce((sum, s) => sum + s.progress, 0) / stages.length) : 0;
-  const totalEvidence = clientCases.reduce((sum, c) => sum + (c.evidence_count || 0), 0);
-  const daysOpen = profile ? differenceInDays(new Date(), new Date(profile.created_at)) : 0;
-
   const clientFullName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") || selectedClientName : selectedClientName;
   const initials = ((profile?.first_name?.[0] || "") + (profile?.last_name?.[0] || "")).toUpperCase() || "?";
 
-  const metrics = [
-    { label: "Días abierto", value: String(daysOpen), icon: Clock, color: "text-jarvis" },
-    { label: "Evidencias", value: String(totalEvidence), icon: FileCheck, color: "text-accent" },
-    { label: "Progreso", value: `${totalProgress}%`, icon: TrendingUp, color: "text-emerald-400" },
-    { label: "Etapa actual", value: `${completedStages}/${stages.length}`, icon: Target, color: "text-jarvis" },
-  ];
-
-  // Parse hub data for layout
   const hubData = useMemo(() => {
     if (!isFromHub) return null;
     try {
@@ -313,7 +157,6 @@ export default function CaseWorkspace() {
     } catch { return null; }
   }, [isFromHub]);
 
-  // Wrapper component based on context
   const Wrapper = ({ children }: { children: React.ReactNode }) => {
     if (isFromHub && hubData) {
       return (
@@ -330,7 +173,7 @@ export default function CaseWorkspace() {
     return <div className="min-h-screen bg-background grid-bg lg:ml-64">{children}</div>;
   };
 
-  // If no client selected, show directory
+  // Directory view
   if (!selectedClientId) {
     return (
       <Wrapper>
@@ -343,339 +186,168 @@ export default function CaseWorkspace() {
     return (
       <Wrapper>
         <div className="min-h-screen flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-8 h-8 text-jarvis animate-spin" />
-            <p className="text-sm text-muted-foreground">Cargando workspace...</p>
-          </div>
+          <Loader2 className="w-6 h-6 text-jarvis animate-spin" />
         </div>
       </Wrapper>
     );
   }
 
+  const TABS = [
+    { id: "cases" as const, label: "Casos", icon: Briefcase, count: clientCases.length },
+    { id: "questionnaire" as const, label: "Cuestionario", icon: ClipboardList },
+    { id: "profile" as const, label: "Perfil", icon: Users },
+    { id: "activity" as const, label: "Actividad", icon: Clock, count: activityLog.length },
+  ];
+
   return (
     <Wrapper>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-16 lg:pt-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pt-16 lg:pt-6">
 
-        {/* ═══ HERO HEADER ═══ */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
-          <div className="flex items-center gap-3 mb-5">
-            <button
-              onClick={handleBackToDirectory}
-              className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <div className="h-4 w-px bg-border" />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{clientFullName}</span>
-            <div className="flex-1" />
-            <button
-              onClick={() => setShowNewCase(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-jarvis/10 border border-jarvis/20 text-jarvis text-[11px] font-semibold hover:bg-jarvis/20 transition-all"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              Crear Caso
-            </button>
-            {profile?.immigration_status && (
-              <Badge variant="outline" className="text-[10px] font-mono text-accent border-accent/20 bg-accent/5">
-                {profile.immigration_status}
-              </Badge>
-            )}
+        {/* ═══ COMPACT HEADER ═══ */}
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={handleBackToDirectory}
+            className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+
+          <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center shrink-0">
+            <span className="font-display text-sm font-bold text-jarvis">{initials}</span>
           </div>
 
-          {/* Client hero card */}
-          <div className="relative overflow-hidden rounded-2xl border border-jarvis/15 bg-gradient-to-br from-card via-card to-jarvis/[0.03]">
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-jarvis/50 to-accent/50" />
-
-            <div className="p-6 sm:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-11 h-11 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center">
-                      <span className="font-display text-sm font-bold text-jarvis">{initials}</span>
-                    </div>
-                    <div>
-                      <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-                        {clientFullName}
-                      </h1>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        {forms.length > 0 && (
-                          <Badge className="bg-primary/15 text-primary border-primary/20 text-[10px] font-semibold">
-                            {forms.length} Formulario{forms.length !== 1 ? "s" : ""}
-                          </Badge>
-                        )}
-                        {clientCases.length > 0 && (
-                          <Badge className="bg-accent/15 text-accent border-accent/20 text-[10px] font-semibold">
-                            {clientCases.length} Caso{clientCases.length !== 1 ? "s" : ""}
-                          </Badge>
-                        )}
-                        <span className="text-[10px] text-muted-foreground">
-                          · Desde {format(new Date(profile?.created_at || new Date()), "d MMM yyyy", { locale: es })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress ring */}
-                <div className="flex items-center gap-4 sm:gap-6">
-                  <div className="relative w-16 h-16 sm:w-20 sm:h-20">
-                    <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                      <circle cx="50" cy="50" r="42" fill="none" stroke="hsl(var(--border))" strokeWidth="6" />
-                      <circle
-                        cx="50" cy="50" r="42" fill="none"
-                        stroke="hsl(var(--jarvis))"
-                        strokeWidth="6"
-                        strokeLinecap="round"
-                        strokeDasharray={`${totalProgress * 2.64} 264`}
-                        className="drop-shadow-[0_0_6px_hsl(var(--jarvis)/0.5)]"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="font-display text-lg sm:text-xl font-bold text-jarvis glow-text">{totalProgress}%</span>
-                    </div>
-                  </div>
-                  <div className="hidden sm:block text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Etapas</p>
-                    <p className="text-sm font-semibold text-foreground">
-                      <span className="text-jarvis">{completedStages}</span>/{stages.length} completas
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Metric chips */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-6">
-                {metrics.map((m, i) => (
-                  <motion.div
-                    key={m.label}
-                    custom={i}
-                    initial="hidden"
-                    animate="visible"
-                    variants={fadeUp}
-                    className="flex items-center gap-2.5 bg-secondary/50 border border-border rounded-xl px-3.5 py-2.5"
-                  >
-                    <m.icon className={`w-4 h-4 ${m.color} shrink-0`} />
-                    <div>
-                      <p className={`font-display text-sm font-bold ${m.color}`}>{m.value}</p>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{m.label}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold text-foreground tracking-tight truncate">{clientFullName}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              {clientCases.length > 0 && (
+                <span className="text-[10px] text-muted-foreground">
+                  {clientCases.length} caso{clientCases.length !== 1 ? "s" : ""}
+                </span>
+              )}
+              {profile?.immigration_status && (
+                <Badge variant="outline" className="text-[9px] font-mono text-accent border-accent/20 bg-accent/5 px-1.5 py-0">
+                  {profile.immigration_status}
+                </Badge>
+              )}
+              {profile?.country_of_birth && (
+                <span className="text-[10px] text-muted-foreground">· {profile.country_of_birth}</span>
+              )}
             </div>
           </div>
-        </motion.div>
 
-        {/* ═══ ALERTS ═══ */}
-        <AnimatePresence>
-          {alerts.length > 0 && (
-            <motion.section
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mb-8"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <Zap className="w-3.5 h-3.5 text-accent" />
-                <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                  Alertas Activas
-                </h2>
-                <div className="flex-1 h-px bg-gradient-to-r from-accent/20 to-transparent" />
-              </div>
-
-              <div className="space-y-2">
-                {alerts.map((alert, i) => {
-                  const cfg = severityConfig[alert.severity];
-                  const Icon = cfg.icon;
-                  return (
-                    <motion.div
-                      key={alert.id}
-                      custom={i}
-                      initial="hidden"
-                      animate="visible"
-                      variants={fadeUp}
-                      className={`flex items-center gap-3 rounded-xl border ${cfg.border} ${cfg.bg} px-4 py-3 group`}
-                    >
-                      <div className={`w-2 h-2 rounded-full ${cfg.dot} shrink-0`} />
-                      <Icon className={`w-4 h-4 ${cfg.text} shrink-0`} />
-                      <span className={`text-sm flex-1 ${cfg.text}`}>{alert.message}</span>
-                      {alert.action && alert.route && (
-                        <button 
-                          onClick={() => navigate(alert.route!)}
-                          className={`text-[10px] font-semibold px-3 py-1 rounded-lg border border-transparent transition-all ${cfg.actionBg}`}
-                        >
-                          {alert.action} →
-                        </button>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.section>
-          )}
-        </AnimatePresence>
-
-        {/* ═══ VIEW TOGGLE ═══ */}
-        <div className="flex items-center gap-2 mb-5">
-          <div className="flex bg-secondary/50 border border-border rounded-xl p-0.5 flex-wrap">
-            {([
-              { id: "stages" as const, label: "Etapas", icon: BarChart3 },
-              { id: "engine" as const, label: "Case Engine", icon: Activity },
-              { id: "questionnaire" as const, label: "Cuestionario", icon: ClipboardList },
-              { id: "profile" as const, label: "Perfil", icon: Users },
-              { id: "forms" as const, label: "Formularios", icon: FileText },
-              { id: "timeline" as const, label: "Actividad", icon: Clock },
-            ]).map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveView(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  activeView === tab.id
-                    ? "bg-card text-foreground shadow-sm border border-border"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <tab.icon className="w-3.5 h-3.5" />
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex-1" />
+          <button
+            onClick={() => setShowNewCase(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-jarvis/10 border border-jarvis/20 text-jarvis text-[11px] font-semibold hover:bg-jarvis/20 transition-all shrink-0"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Nuevo Caso</span>
+          </button>
         </div>
 
-        {/* ═══ STAGES VIEW ═══ */}
-        {activeView === "stages" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-            {/* Stage pipeline visual */}
-            <div className="hidden sm:flex items-center justify-between mb-6 px-2">
-              {stages.map((stage, i) => (
-                <div key={stage.slug} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <div className={`w-8 h-8 rounded-full ring-2 ${stageStatusConfig[stage.status].ring} ${stageStatusConfig[stage.status].bg} flex items-center justify-center`}>
-                      {stage.status === "complete" ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      ) : stage.status === "in_progress" ? (
-                        <CircleDot className="w-4 h-4 text-jarvis animate-pulse" />
-                      ) : (
-                        <span className="text-[10px] font-display font-bold text-muted-foreground">{i + 1}</span>
-                      )}
-                    </div>
-                    <span className={`text-[9px] font-semibold uppercase tracking-wider ${stageStatusConfig[stage.status].text}`}>
-                      {stage.label}
-                    </span>
-                  </div>
-                  {i < stages.length - 1 && (
-                    <div className="flex-1 mx-2">
-                      <div className={`h-px ${stage.status === "complete" ? "bg-emerald-500/40" : "bg-border"}`} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+        {/* ═══ TABS ═══ */}
+        <div className="flex bg-secondary/50 border border-border rounded-xl p-0.5 mb-5">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveView(tab.id)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all flex-1 justify-center ${
+                activeView === tab.id
+                  ? "bg-card text-foreground shadow-sm border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <tab.icon className="w-3.5 h-3.5" />
+              {tab.label}
+              {tab.count !== undefined && tab.count > 0 && (
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                  activeView === tab.id ? "bg-jarvis/15 text-jarvis" : "bg-muted text-muted-foreground"
+                }`}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
 
-            {/* Stage cards */}
-            <div className="space-y-3">
-              {stages.map((stage, i) => {
-                const cfg = stageStatusConfig[stage.status];
-                return (
-                  <motion.button
-                    key={stage.slug}
-                    custom={i}
-                    initial="hidden"
-                    animate="visible"
-                    variants={fadeUp}
-                    onClick={() => navigate(stage.route)}
-                    className={`w-full tool-card rounded-xl p-5 text-left group ${
-                      stage.status === "in_progress" ? "!border-jarvis/20" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl ${cfg.bg} ring-1 ${cfg.ring} flex items-center justify-center shrink-0 transition-transform group-hover:scale-105`}>
-                        <stage.icon className={`w-5 h-5 ${cfg.text}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-sm font-bold text-foreground">{stage.label}</p>
-                          <Badge variant="outline" className={`text-[9px] font-semibold border ${cfg.badge}`}>
-                            {stage.status === "complete" ? "✓ Completado" : stage.status === "in_progress" ? "En progreso" : "Pendiente"}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{stage.sublabel}</p>
-                        <p className={`text-[11px] mt-1 ${cfg.text} font-medium`}>{stage.detail}</p>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        {stage.status !== "pending" && (
-                          <div className="w-20 hidden sm:block">
-                            <Progress value={stage.progress} className="h-1.5" />
-                            <p className={`text-[9px] text-right mt-1 font-display font-bold ${cfg.text}`}>{stage.progress}%</p>
-                          </div>
-                        )}
-                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-jarvis group-hover:translate-x-0.5 transition-all" />
-                      </div>
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-
-        {/* ═══ CASE ENGINE VIEW ═══ */}
-        {activeView === "engine" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+        {/* ═══ CASES VIEW ═══ */}
+        {activeView === "cases" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
             {clientCases.length === 0 ? (
-              <div className="text-center py-16">
-                <Activity className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">No hay casos vinculados a este cliente</p>
-                <p className="text-xs text-muted-foreground/60 mt-1 mb-4">Crea un caso para activar el Case Engine con pipeline y seguimiento</p>
+              <div className="text-center py-20">
+                <Briefcase className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                <p className="text-sm font-medium text-muted-foreground mb-1">Sin casos aún</p>
+                <p className="text-xs text-muted-foreground/60 mb-5">Crea el primer caso para este cliente y selecciona los formularios que necesita</p>
                 <button
                   onClick={() => setShowNewCase(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-jarvis/10 border border-jarvis/20 text-jarvis text-sm font-semibold hover:bg-jarvis/20 transition-all"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-jarvis text-white text-sm font-semibold hover:bg-jarvis/90 transition-all"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  Crear Primer Caso
+                  Crear Caso
                 </button>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {clientCases.map((c, i) => (
-                  <motion.button
+                  <motion.div
                     key={c.id}
                     custom={i}
                     initial="hidden"
                     animate="visible"
                     variants={fadeUp}
-                    onClick={() => navigate(`/case-engine/${c.id}`)}
-                    className="w-full tool-card rounded-xl p-5 text-left group"
+                    className="rounded-xl border border-border bg-card hover:border-jarvis/20 transition-all"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-jarvis/10 ring-1 ring-jarvis/20 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
-                        <Activity className="w-5 h-5 text-jarvis" />
+                    <div className="flex items-center gap-4 p-4">
+                      <div className="w-10 h-10 rounded-xl bg-jarvis/10 ring-1 ring-jarvis/20 flex items-center justify-center shrink-0">
+                        <Briefcase className="w-4.5 h-4.5 text-jarvis" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <p className="text-sm font-bold text-foreground">{c.case_type}</p>
-                          <Badge variant="outline" className="text-[9px] font-semibold">
-                            {c.status}
+                          <Badge variant="outline" className={`text-[9px] font-semibold ${
+                            c.status === "active" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-muted text-muted-foreground"
+                          }`}>
+                            {c.status === "active" ? "Activo" : c.status}
                           </Badge>
+                          {c.pipeline_stage && (
+                            <Badge variant="outline" className="text-[9px] bg-jarvis/10 text-jarvis border-jarvis/20">
+                              {c.pipeline_stage.replace(/-/g, " ")}
+                            </Badge>
+                          )}
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Creado {format(new Date(c.created_at), "d MMM yyyy", { locale: es })} · {c.evidence_count || 0} evidencias
-                        </p>
+                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                          <span>{format(new Date(c.created_at), "d MMM yyyy", { locale: es })}</span>
+                          {c.form_count ? (
+                            <span className="flex items-center gap-1">
+                              <FileText className="w-3 h-3" />
+                              {c.form_count} formulario{c.form_count !== 1 ? "s" : ""}
+                            </span>
+                          ) : null}
+                          {c.process_type && c.process_type !== "general" && (
+                            <span>Pipeline: {c.process_type}</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] font-semibold text-jarvis opacity-0 group-hover:opacity-100 transition-opacity">
-                          Abrir Engine
-                        </span>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-jarvis group-hover:translate-x-0.5 transition-all" />
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {c.form_count && c.form_count > 0 ? (
+                          <button
+                            onClick={() => { setSelectedCaseForQ(c.id); setActiveView("questionnaire"); }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent/10 border border-accent/20 text-accent text-[10px] font-semibold hover:bg-accent/20 transition-all"
+                          >
+                            <ClipboardList className="w-3 h-3" />
+                            Cuestionario
+                          </button>
+                        ) : null}
+                        <button
+                          onClick={() => navigate(`/case-engine/${c.id}`)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-jarvis/10 border border-jarvis/20 text-jarvis text-[10px] font-semibold hover:bg-jarvis/20 transition-all"
+                        >
+                          <Activity className="w-3 h-3" />
+                          Pipeline
+                        </button>
                       </div>
                     </div>
-                  </motion.button>
+                  </motion.div>
                 ))}
               </div>
             )}
@@ -684,108 +356,86 @@ export default function CaseWorkspace() {
 
         {/* ═══ QUESTIONNAIRE VIEW ═══ */}
         {activeView === "questionnaire" && selectedClientId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
             {clientCases.length === 0 ? (
               <div className="text-center py-16">
-                <ClipboardList className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Crea un caso primero para acceder al cuestionario</p>
+                <ClipboardList className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">Crea un caso primero</p>
               </div>
-            ) : clientCases.length === 1 ? (
-              <CaseQuestionnaire caseId={clientCases[0].id} accountId={userAccountId} />
-            ) : (
-              <div className="space-y-3">
-                <p className="text-xs text-muted-foreground mb-3">Selecciona un caso para abrir su cuestionario:</p>
-                {clientCases.map(c => (
+            ) : !selectedCaseForQ ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground mb-3">Selecciona un caso:</p>
+                {clientCases.filter(c => (c.form_count || 0) > 0).map(c => (
                   <button
                     key={c.id}
-                    onClick={() => {
-                      // For multi-case, we could add a selectedCaseForQuestionnaire state
-                      // For now navigate to a dedicated view
-                      setActiveView("questionnaire");
-                    }}
-                    className="w-full tool-card rounded-xl p-4 text-left"
+                    onClick={() => setSelectedCaseForQ(c.id)}
+                    className="w-full rounded-xl border border-border bg-card hover:border-jarvis/20 p-4 text-left transition-all"
                   >
                     <div className="flex items-center gap-3">
                       <ClipboardList className="w-5 h-5 text-jarvis" />
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm font-bold">{c.case_type}</p>
-                        <p className="text-xs text-muted-foreground">{c.evidence_count || 0} evidencias</p>
+                        <p className="text-[10px] text-muted-foreground">{c.form_count} formulario{c.form_count !== 1 ? "s" : ""}</p>
                       </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </button>
                 ))}
+              </div>
+            ) : (
+              <div>
+                {clientCases.length > 1 && (
+                  <button
+                    onClick={() => setSelectedCaseForQ(null)}
+                    className="text-[10px] text-jarvis font-semibold mb-3 hover:underline flex items-center gap-1"
+                  >
+                    <ArrowLeft className="w-3 h-3" /> Cambiar caso
+                  </button>
+                )}
+                <CaseQuestionnaire caseId={selectedCaseForQ} accountId={userAccountId} />
               </div>
             )}
           </motion.div>
         )}
 
+        {/* ═══ PROFILE VIEW ═══ */}
         {activeView === "profile" && selectedClientId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
             <ClientProfileEditor
               clientId={selectedClientId}
               onUpdated={() => {
-                // Refresh profile data
-                supabase.from("client_profiles").select("id, first_name, last_name, email, phone, dob, country_of_birth, immigration_status, created_at").eq("id", selectedClientId).single().then(({ data }) => {
-                  if (data) setProfile(data);
-                });
+                supabase.from("client_profiles")
+                  .select("id, first_name, last_name, email, phone, dob, country_of_birth, immigration_status, created_at")
+                  .eq("id", selectedClientId).single()
+                  .then(({ data }) => { if (data) setProfile(data); });
               }}
             />
           </motion.div>
         )}
 
-        {/* ═══ FORMS VIEW ═══ */}
-        {activeView === "forms" && selectedClientId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-            <QuickFormLauncher
-              clientId={selectedClientId}
-              clientName={clientFullName}
-              existingForms={forms}
-              onFormCreated={() => {
-                supabase.from("form_submissions").select("id, form_type, status, created_at, updated_at").eq("beneficiary_profile_id", selectedClientId).order("updated_at", { ascending: false }).then(({ data }) => {
-                  if (data) setForms(data);
-                });
-              }}
-            />
-          </motion.div>
-        )}
-
-        {/* ═══ TIMELINE VIEW ═══ */}
-        {activeView === "timeline" && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="relative pl-8"
-          >
+        {/* ═══ ACTIVITY VIEW ═══ */}
+        {activeView === "activity" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="relative pl-8">
             <div className="absolute left-[13px] top-3 bottom-3 w-px bg-gradient-to-b from-jarvis/30 via-border to-transparent" />
-
-            {timeline.length === 0 ? (
-              <div className="py-10 text-center text-sm text-muted-foreground">Sin actividad registrada aún</div>
+            {activityLog.length === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground">Sin actividad registrada</div>
             ) : (
-              <div className="space-y-4">
-                {timeline.map((item, i) => {
+              <div className="space-y-3">
+                {activityLog.map((item, i) => {
                   const Icon = item.icon;
                   return (
-                    <motion.div
-                      key={i}
-                      custom={i}
-                      initial="hidden"
-                      animate="visible"
-                      variants={fadeUp}
-                      className="relative"
-                    >
-                      <div className={`absolute -left-[22px] top-3 w-4 h-4 rounded-full border-2 ${timelineDot[item.type]} flex items-center justify-center`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${item.type === "alert" ? "bg-destructive" : item.type === "tool" ? "bg-jarvis" : item.type === "client" ? "bg-accent" : "bg-muted-foreground"}`} />
+                    <motion.div key={i} custom={i} initial="hidden" animate="visible" variants={fadeUp} className="relative">
+                      <div className="absolute -left-[22px] top-3 w-4 h-4 rounded-full border-2 border-jarvis bg-jarvis/20 flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 rounded-full bg-jarvis" />
                       </div>
-
-                      <div className="glow-border rounded-xl p-4 bg-card hover:border-jarvis/20 transition-all">
+                      <div className="rounded-xl p-3.5 bg-card border border-border hover:border-jarvis/20 transition-all">
                         <div className="flex items-start gap-3">
-                          <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${timelineColor[item.type]}`} />
+                          <Icon className="w-4 h-4 mt-0.5 shrink-0 text-jarvis" />
                           <div className="flex-1">
-                            <p className="text-sm text-foreground font-medium">{item.event}</p>
-                            <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                            <p className="text-sm text-foreground">{item.event}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              {format(new Date(item.date), "d 'de' MMMM yyyy", { locale: es })}
+                              {format(new Date(item.date), "d MMM yyyy, HH:mm", { locale: es })}
                             </p>
                           </div>
                         </div>
@@ -798,23 +448,11 @@ export default function CaseWorkspace() {
           </motion.div>
         )}
 
-        {/* ═══ FOOTER ═══ */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="mt-10 pt-6 border-t border-border"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-jarvis/40" />
-              <span className="text-[10px] text-muted-foreground/50 tracking-wider uppercase font-display">
-                Immigration Case Workspace
-              </span>
-            </div>
-            <span className="text-[10px] text-muted-foreground/30 font-mono">Powered by NER AI</span>
-          </div>
-        </motion.div>
+        {/* Footer */}
+        <div className="mt-10 pt-4 border-t border-border flex items-center justify-between">
+          <span className="text-[9px] text-muted-foreground/40 uppercase tracking-wider">Case Workspace</span>
+          <span className="text-[9px] text-muted-foreground/30 font-mono">NER AI</span>
+        </div>
       </div>
 
       {/* New Case Modal */}
@@ -826,20 +464,21 @@ export default function CaseWorkspace() {
           clientName={clientFullName}
           clientEmail={profile?.email}
           onCreated={async () => {
-            // Reload cases
             const casesRes = await supabase
               .from("client_cases")
-              .select("id, case_type, status, created_at")
-              .eq("client_profile_id", selectedClientId);
+              .select("id, case_type, status, process_type, pipeline_stage, created_at, updated_at")
+              .eq("client_profile_id", selectedClientId)
+              .order("updated_at", { ascending: false });
             if (casesRes.data) {
-              const casesWithEvidence = await Promise.all(
+              const casesWithForms = await Promise.all(
                 casesRes.data.map(async (c) => {
-                  const { count } = await supabase.from("evidence_items").select("id", { count: "exact", head: true }).eq("case_id", c.id);
-                  return { ...c, evidence_count: count || 0 };
+                  const { count } = await supabase.from("case_forms").select("id", { count: "exact", head: true }).eq("case_id", c.id);
+                  return { ...c, form_count: count || 0 };
                 })
               );
-              setClientCases(casesWithEvidence);
-              setActiveView("engine");
+              setClientCases(casesWithForms);
+              if (casesWithForms.length === 1) setSelectedCaseForQ(casesWithForms[0].id);
+              setActiveView("cases");
             }
           }}
         />
