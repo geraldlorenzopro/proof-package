@@ -271,8 +271,8 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
             custom={i}
             variants={fadeUp}
             onClick={() => {
-              if (action.label === "Buscar Cliente") {
-                setCommandBarFilter("client");
+              if (action.label === "Buscar") {
+                setCommandBarFilter("all");
                 setCommandBarOpen(true);
               } else {
                 goTo(action.route);
