@@ -6,13 +6,14 @@ import {
   ArrowLeft, AlertTriangle, CheckCircle2, FileText, Shield,
   ClipboardList, Scale, Clock, ChevronRight, Zap, Activity,
   Calendar, Sparkles, CircleDot, FileCheck, BarChart3,
-  TrendingUp, Target, Users, ExternalLink, Loader2
+  TrendingUp, Target, Users, ExternalLink, Loader2, PlusCircle
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import ClientDirectory from "@/components/workspace/ClientDirectory";
 import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
 import QuickFormLauncher from "@/components/workspace/QuickFormLauncher";
+import NewCaseFromProfile from "@/components/workspace/NewCaseFromProfile";
 import HubLayout from "@/components/hub/HubLayout";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
