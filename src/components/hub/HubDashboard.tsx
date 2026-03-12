@@ -274,7 +274,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         </section>
       )}
 
-      {/* ═══ AUDIT LOG — Compliance Section ═══ */}
+      {/* ═══ AUDIT LOG & PERMISSIONS — Compliance Section ═══ */}
       <section>
         <button
           onClick={() => setShowAudit(!showAudit)}
@@ -292,8 +292,10 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             transition={{ duration: 0.2 }}
+            className="space-y-6"
           >
             <HubAuditLog />
+            {isAdmin && <HubToolPermissions />}
           </motion.div>
         )}
       </section>
