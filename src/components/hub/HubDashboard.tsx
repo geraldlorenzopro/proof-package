@@ -127,6 +127,7 @@ const PRIMARY_ACTIONS = [
 export default function HubDashboard({ accountName, staffName, plan, apps, userRole, canAccessApp, stats }: Props) {
   const navigate = useNavigate();
   const [showAudit, setShowAudit] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   const isAdmin = !userRole || userRole === "owner" || userRole === "admin";
 
@@ -137,9 +138,18 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
     return "Buenas noches";
   })();
 
-  const toolApps = apps
-    .filter(a => a.slug !== "case-engine")
-    .filter(a => canAccessApp ? canAccessApp(a.slug) : true);
+  const accessibleSlugs = new Set(
+    apps.filter(a => a.slug !== "case-engine" && (canAccessApp ? canAccessApp(a.slug) : true)).map(a => a.slug)
+  );
+
+  const appsBySlug = Object.fromEntries(apps.map(a => [a.slug, a]));
+
+  const categoriesWithApps = TOOL_CATEGORIES
+    .map(cat => ({
+      ...cat,
+      tools: cat.slugs.filter(s => accessibleSlugs.has(s)).map(s => appsBySlug[s]).filter(Boolean),
+    }))
+    .filter(cat => cat.tools.length > 0);
 
   function goTo(route: string) {
     sessionStorage.setItem("ner_hub_return", "/hub");
