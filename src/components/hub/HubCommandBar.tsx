@@ -182,7 +182,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
       } else if (f === "case") {
         const { data } = await supabase
           .from("client_cases")
-          .select("id, client_name, case_type, pipeline_stage, status")
+          .select("id, client_name, case_type, pipeline_stage, status, client_profile_id")
           .order("updated_at", { ascending: false })
           .limit(10);
 
@@ -191,7 +191,9 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
           type: "case",
           title: c.client_name,
           subtitle: c.case_type,
-          route: `/case-engine/${c.id}`,
+          route: c.client_profile_id
+            ? `/dashboard/workspace-demo?client=${c.client_profile_id}&name=${encodeURIComponent(c.client_name)}&caseId=${c.id}`
+            : `/case-engine/${c.id}`,
           meta: { caseType: c.case_type, status: c.pipeline_stage || c.status },
         })));
       }
