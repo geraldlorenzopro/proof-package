@@ -77,6 +77,15 @@ export default function HubAnalyticsCards() {
 
   const cards = [
     {
+      label: "Clientes",
+      value: data.totalClients,
+      icon: Users,
+      color: "text-jarvis",
+      bg: "bg-jarvis/8",
+      border: "border-jarvis/15",
+      trend: data.clientsThisMonth > 0 ? `+${data.clientsThisMonth} este mes` : null,
+    },
+    {
       label: "Casos Activos",
       value: data.totalCases,
       icon: FolderOpen,
@@ -102,15 +111,6 @@ export default function HubAnalyticsCards() {
       bg: "bg-purple-500/8",
       border: "border-purple-500/15",
       trend: null,
-    },
-    {
-      label: "Clientes",
-      value: data.totalClients,
-      icon: Users,
-      color: "text-jarvis",
-      bg: "bg-jarvis/8",
-      border: "border-jarvis/15",
-      trend: data.clientsThisMonth > 0 ? `+${data.clientsThisMonth} este mes` : null,
     },
   ];
 
