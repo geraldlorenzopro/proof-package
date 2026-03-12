@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import CaseQuestionnaire from "@/components/workspace/CaseQuestionnaire";
 import {
   ArrowLeft, AlertTriangle, CheckCircle2, FileText, Shield,
   ClipboardList, Scale, Clock, ChevronRight, Zap, Activity,
