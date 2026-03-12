@@ -377,7 +377,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
                 <div className="h-px bg-border/20" />
 
                 {/* ═══ RESULTS ═══ */}
-                <div className="max-h-[380px] overflow-y-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+                <div className="max-h-[480px] overflow-y-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                   {results.length === 0 && !loading && (
                     <div className="flex flex-col items-center justify-center py-12 gap-2">
                       <Search className="w-8 h-8 text-muted-foreground/15" />
