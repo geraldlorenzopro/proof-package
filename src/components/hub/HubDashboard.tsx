@@ -139,6 +139,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
   const [showAudit, setShowAudit] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [commandBarOpen, setCommandBarOpen] = useState(false);
+  const [commandBarFilter, setCommandBarFilter] = useState<"all" | "client" | "case" | "tool">("all");
 
   const isAdmin = !userRole || userRole === "owner" || userRole === "admin";
 
@@ -196,7 +197,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         </div>
 
         <div className="flex items-center gap-2">
-          <HubCommandBar externalOpen={commandBarOpen} onExternalOpenChange={setCommandBarOpen} />
+          <HubCommandBar externalOpen={commandBarOpen} onExternalOpenChange={setCommandBarOpen} defaultFilter={commandBarFilter} />
           <HubNotifications />
           <span className="text-[10px] text-muted-foreground/60 font-mono uppercase tracking-wider hidden lg:block">
             {new Date().toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
@@ -271,6 +272,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
             variants={fadeUp}
             onClick={() => {
               if (action.label === "Buscar Cliente") {
+                setCommandBarFilter("client");
                 setCommandBarOpen(true);
               } else {
                 goTo(action.route);
