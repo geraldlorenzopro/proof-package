@@ -207,6 +207,7 @@ export default function CaseWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeView, setActiveView] = useState<"stages" | "engine" | "timeline" | "profile" | "forms">("stages");
   const [loading, setLoading] = useState(true);
+  const [showNewCase, setShowNewCase] = useState(false);
 
   // Real data state
   const [profile, setProfile] = useState<ClientProfile | null>(null);
