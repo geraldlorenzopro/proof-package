@@ -81,12 +81,12 @@ interface ToolCategory {
 
 const TOOL_CATEGORIES: ToolCategory[] = [
   {
-    key: "screeners",
-    label: "Evaluadores",
+    key: "agents",
+    label: "Agentes",
     icon: Scale,
     color: { bg: "bg-rose-500/10", border: "border-rose-500/20", text: "text-rose-400", accent: "from-rose-500/10 to-rose-500/5" },
     slugs: ["vawa-screener", "vawa-checklist"],
-    description: "Screeners de elegibilidad y checklists por tipo de caso",
+    description: "Agentes de elegibilidad y checklists por área de práctica",
   },
   {
     key: "forms",
