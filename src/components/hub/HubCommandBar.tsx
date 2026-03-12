@@ -145,14 +145,17 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
             .order("updated_at", { ascending: false })
             .limit(5);
 
-          const clientResults: SearchResult[] = (recentClients || []).map(c => ({
-            id: `c-${c.id}`,
-            type: "client" as ResultType,
-            title: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre",
-            subtitle: c.email || undefined,
-            route: `/dashboard/workspace-demo?tab=profile&clientId=${c.id}`,
-            meta: { email: c.email || undefined },
-          }));
+          const clientResults: SearchResult[] = (recentClients || []).map(c => {
+            const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre";
+            return {
+              id: `c-${c.id}`,
+              type: "client" as ResultType,
+              title: name,
+              subtitle: c.email || undefined,
+              route: `/dashboard/workspace-demo?client=${c.id}&name=${encodeURIComponent(name)}`,
+              meta: { email: c.email || undefined },
+            };
+          });
 
           setResults([...clientResults, ...TOOLS.slice(0, 4)]);
           setLoading(false);
