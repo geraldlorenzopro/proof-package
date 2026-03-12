@@ -176,7 +176,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
           type: "client",
           title: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre",
           subtitle: c.email || undefined,
-          route: "/dashboard/workspace-demo",
+          route: `/dashboard/workspace-demo?tab=profile&clientId=${c.id}`,
           meta: { email: c.email || undefined },
         })));
       } else if (f === "case") {
