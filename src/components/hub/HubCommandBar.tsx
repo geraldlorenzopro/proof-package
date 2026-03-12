@@ -191,7 +191,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
           type: "case",
           title: c.client_name,
           subtitle: c.case_type,
-          route: "/dashboard/workspace-demo",
+          route: `/case-engine/${c.id}`,
           meta: { caseType: c.case_type, status: c.pipeline_stage || c.status },
         })));
       }
