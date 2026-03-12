@@ -63,30 +63,50 @@ const ROUTE_MAP: Record<string, string> = {
   "smart-forms": "/dashboard/smart-forms",
 };
 
-const TOOL_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  "case-engine": { bg: "bg-jarvis/12", border: "border-jarvis/25", text: "text-jarvis" },
-  evidence: { bg: "bg-emerald-500/12", border: "border-emerald-500/25", text: "text-emerald-400" },
-  cspa: { bg: "bg-blue-500/12", border: "border-blue-500/25", text: "text-blue-400" },
-  affidavit: { bg: "bg-accent/12", border: "border-accent/25", text: "text-accent" },
-  "uscis-analyzer": { bg: "bg-purple-500/12", border: "border-purple-500/25", text: "text-purple-400" },
-  "vawa-screener": { bg: "bg-rose-500/12", border: "border-rose-500/25", text: "text-rose-400" },
-  "vawa-checklist": { bg: "bg-orange-500/12", border: "border-orange-500/25", text: "text-orange-400" },
-  "smart-forms": { bg: "bg-cyan-500/12", border: "border-cyan-500/25", text: "text-cyan-400" },
-  "checklist-generator": { bg: "bg-teal-500/12", border: "border-teal-500/25", text: "text-teal-400" },
-};
+// ═══ TOOL CATEGORIES ═══
+interface ToolCategory {
+  key: string;
+  label: string;
+  icon: any;
+  color: { bg: string; border: string; text: string; accent: string };
+  slugs: string[];
+  description: string;
+}
 
-const DEFAULT_COLOR = { bg: "bg-jarvis/8", border: "border-jarvis/15", text: "text-jarvis" };
-
-const TOOL_TAGS: Record<string, string> = {
-  "uscis-analyzer": "Auditoría",
-  "smart-forms": "Librería",
-  cspa: "Elegibilidad",
-  "vawa-screener": "Evaluación",
-  evidence: "Recopilación",
-  affidavit: "Generador",
-  "checklist-generator": "Generador",
-  "vawa-checklist": "Checklist",
-};
+const TOOL_CATEGORIES: ToolCategory[] = [
+  {
+    key: "screeners",
+    label: "Evaluadores",
+    icon: Scale,
+    color: { bg: "bg-rose-500/10", border: "border-rose-500/20", text: "text-rose-400", accent: "from-rose-500/10 to-rose-500/5" },
+    slugs: ["vawa-screener", "vawa-checklist"],
+    description: "Screeners de elegibilidad y checklists por tipo de caso",
+  },
+  {
+    key: "forms",
+    label: "Formularios",
+    icon: FileText,
+    color: { bg: "bg-cyan-500/10", border: "border-cyan-500/20", text: "text-cyan-400", accent: "from-cyan-500/10 to-cyan-500/5" },
+    slugs: ["smart-forms", "checklist-generator"],
+    description: "Librería de formularios USCIS y generadores de checklists",
+  },
+  {
+    key: "calculators",
+    label: "Calculadoras",
+    icon: Calculator,
+    color: { bg: "bg-blue-500/10", border: "border-blue-500/20", text: "text-blue-400", accent: "from-blue-500/10 to-blue-500/5" },
+    slugs: ["cspa", "affidavit"],
+    description: "CSPA, Affidavit Generator y simuladores",
+  },
+  {
+    key: "analysis",
+    label: "Análisis",
+    icon: FileSearch,
+    color: { bg: "bg-purple-500/10", border: "border-purple-500/20", text: "text-purple-400", accent: "from-purple-500/10 to-purple-500/5" },
+    slugs: ["uscis-analyzer", "evidence"],
+    description: "Procesamiento de documentos y auditoría de evidencia",
+  },
+];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 10 },
