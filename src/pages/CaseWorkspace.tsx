@@ -204,7 +204,7 @@ function buildTimeline(
 export default function CaseWorkspace() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeView, setActiveView] = useState<"stages" | "timeline" | "profile" | "forms">("stages");
+  const [activeView, setActiveView] = useState<"stages" | "engine" | "timeline" | "profile" | "forms">("stages");
   const [loading, setLoading] = useState(true);
 
   // Real data state
@@ -505,6 +505,7 @@ export default function CaseWorkspace() {
           <div className="flex bg-secondary/50 border border-border rounded-xl p-0.5 flex-wrap">
             {([
               { id: "stages" as const, label: "Etapas", icon: BarChart3 },
+              { id: "engine" as const, label: "Case Engine", icon: Activity },
               { id: "profile" as const, label: "Perfil", icon: Users },
               { id: "forms" as const, label: "Formularios", icon: FileText },
               { id: "timeline" as const, label: "Actividad", icon: Clock },
@@ -603,7 +604,56 @@ export default function CaseWorkspace() {
           </motion.div>
         )}
 
-        {/* ═══ PROFILE VIEW ═══ */}
+        {/* ═══ CASE ENGINE VIEW ═══ */}
+        {activeView === "engine" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            {clientCases.length === 0 ? (
+              <div className="text-center py-16">
+                <Activity className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No hay casos vinculados a este cliente</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Crea un caso desde la pestaña de Formularios para activar el Case Engine</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {clientCases.map((c, i) => (
+                  <motion.button
+                    key={c.id}
+                    custom={i}
+                    initial="hidden"
+                    animate="visible"
+                    variants={fadeUp}
+                    onClick={() => navigate(`/case-engine/${c.id}`)}
+                    className="w-full tool-card rounded-xl p-5 text-left group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-jarvis/10 ring-1 ring-jarvis/20 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+                        <Activity className="w-5 h-5 text-jarvis" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="text-sm font-bold text-foreground">{c.case_type}</p>
+                          <Badge variant="outline" className="text-[9px] font-semibold">
+                            {c.status}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Creado {format(new Date(c.created_at), "d MMM yyyy", { locale: es })} · {c.evidence_count || 0} evidencias
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-semibold text-jarvis opacity-0 group-hover:opacity-100 transition-opacity">
+                          Abrir Engine
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-jarvis group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
         {activeView === "profile" && selectedClientId && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
             <ClientProfileEditor
