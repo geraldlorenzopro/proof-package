@@ -285,6 +285,79 @@ export type Database = {
         }
         Relationships: []
       }
+      case_deadlines: {
+        Row: {
+          account_id: string
+          case_id: string | null
+          case_type: string
+          client_name: string
+          created_at: string
+          created_by: string
+          deadline_date: string
+          deadline_type: string
+          id: string
+          notes: string | null
+          receipt_number: string | null
+          source_analysis_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          case_id?: string | null
+          case_type?: string
+          client_name: string
+          created_at?: string
+          created_by: string
+          deadline_date: string
+          deadline_type: string
+          id?: string
+          notes?: string | null
+          receipt_number?: string | null
+          source_analysis_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          case_id?: string | null
+          case_type?: string
+          client_name?: string
+          created_at?: string
+          created_by?: string
+          deadline_date?: string
+          deadline_type?: string
+          id?: string
+          notes?: string | null
+          receipt_number?: string | null
+          source_analysis_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_deadlines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_deadlines_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_deadlines_source_analysis_id_fkey"
+            columns: ["source_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_cases: {
         Row: {
           access_token: string
