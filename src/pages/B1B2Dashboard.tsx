@@ -87,6 +87,31 @@ export default function B1B2Dashboard() {
 
   const accountCid = paramCid || resolvedCid;
 
+  // Derived stage helpers
+  const ALL_STAGES = activeStages.filter(s => s.enabled).map(s => s.slug);
+  const STAGE_LABELS: Record<string, string> = Object.fromEntries(
+    loadPipelineConfig(accountCid).map(s => [s.slug, s.label])
+  );
+  const STAGE_ICONS: Record<string, string> = Object.fromEntries(
+    loadPipelineConfig(accountCid).map(s => [s.slug, s.icon])
+  );
+  // Fallback to defaults for any missing
+  for (const [k, v] of Object.entries(DEFAULT_STAGE_LABELS)) { if (!STAGE_LABELS[k]) STAGE_LABELS[k] = v; }
+  for (const [k, v] of Object.entries(DEFAULT_STAGE_ICONS)) { if (!STAGE_ICONS[k]) STAGE_ICONS[k] = v; }
+
+  // Initialize active stages on accountCid change
+  useEffect(() => {
+    if (accountCid) {
+      setActiveStages(loadPipelineConfig(accountCid));
+    }
+  }, [accountCid]);
+
+  const handlePipelineSave = (stages: StageConfig[]) => {
+    setActiveStages(stages);
+    setShowPipelineEditor(false);
+    toast({ title: "Pipeline guardado", description: "El orden de etapas se ha actualizado." });
+  };
+
   const loadCases = useCallback(async () => {
     if (!accountCid) return;
     try {
