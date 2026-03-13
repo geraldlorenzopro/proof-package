@@ -364,7 +364,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </div>
 
           {/* ─── Navigation ─── */}
-          <div className="px-6 pb-5 flex items-center gap-3">
+          <div className="px-8 pb-6 flex items-center gap-3">
             {qIndex > 0 && (
               <button
                 onClick={goPrev}
