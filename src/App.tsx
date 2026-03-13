@@ -35,6 +35,7 @@ import CaseEnginePage from "./pages/CaseEnginePage";
 import IntelligenceCenterPage from "./pages/IntelligenceCenterPage";
 import VisaEvaluatorPage from "./pages/VisaEvaluatorPage";
 import VisaEvalPublic from "./pages/VisaEvalPublic";
+import CaseTrackPublic from "./pages/CaseTrackPublic";
 import InterviewSimulatorPage from "./pages/InterviewSimulatorPage";
 
 const queryClient = new QueryClient();

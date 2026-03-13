@@ -28,24 +28,24 @@ export default function CaseTrackPublic() {
 
   const loadCase = async () => {
     try {
-      // Get case by token (public RPC)
-      const { data, error: err } = await supabase.rpc("get_case_by_token", { _token: token! });
+      const { data, error: err } = await supabase.rpc("get_case_by_token" as any, { _token: token! });
       if (err) throw err;
       const row = Array.isArray(data) ? data[0] : data;
       if (!row) { setError("Caso no encontrado"); return; }
       setCaseData(row);
 
-      // Get pipeline template for this case's process_type
-      // We need a public function for this - use the case data to load stages
-      const { data: fullCase } = await supabase.rpc("get_case_pipeline_by_token", { _token: token! });
-      if (fullCase) {
-        const parsed = Array.isArray(fullCase) ? fullCase[0] : fullCase;
+      const { data: pipelineData } = await supabase.rpc("get_case_pipeline_by_token" as any, { _token: token! });
+      if (pipelineData) {
+        const parsed = Array.isArray(pipelineData) ? pipelineData[0] : pipelineData;
         if (parsed?.stages) {
           const s = typeof parsed.stages === "string" ? JSON.parse(parsed.stages) : parsed.stages;
           setStages(s);
         }
-        // Merge extra fields
-        setCaseData((prev: any) => ({ ...prev, pipeline_stage: parsed?.pipeline_stage, process_label: parsed?.process_label }));
+        setCaseData((prev: any) => ({
+          ...prev,
+          pipeline_stage: parsed?.pipeline_stage,
+          process_label: parsed?.process_label,
+        }));
       }
     } catch (e) {
       console.error(e);
@@ -76,7 +76,7 @@ export default function CaseTrackPublic() {
 
   const currentStage = caseData.pipeline_stage || "consulta-inicial";
   const currentIdx = stages.findIndex(s => s.slug === currentStage);
-  const progressPct = stages.length > 0 ? Math.round(((currentIdx + 1) / stages.length) * 100) : 0;
+  const progressPct = stages.length > 0 ? Math.round(((Math.max(currentIdx, 0) + 1) / stages.length) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -115,17 +115,17 @@ export default function CaseTrackPublic() {
                   isCurrent
                     ? "bg-primary/5 border-primary/20 shadow-sm"
                     : isPast
-                    ? "bg-emerald-500/5 border-emerald-500/10"
+                    ? "bg-accent/5 border-accent/10"
                     : "bg-transparent border-border/30 opacity-40"
                 }`}
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                  isPast ? "bg-emerald-500/15" :
+                  isPast ? "bg-accent/15" :
                   isCurrent ? "bg-primary/10 ring-2 ring-primary/30" :
                   "bg-muted"
                 }`}>
                   {isPast ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle2 className="w-4 h-4 text-accent" />
                   ) : isCurrent ? (
                     <CircleDot className="w-4 h-4 text-primary animate-pulse" />
                   ) : (
@@ -133,7 +133,7 @@ export default function CaseTrackPublic() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold ${isCurrent ? "text-foreground" : isPast ? "text-emerald-500/80" : "text-muted-foreground"}`}>
+                  <p className={`text-sm font-semibold ${isCurrent ? "text-foreground" : isPast ? "text-accent" : "text-muted-foreground"}`}>
                     {stage.label}
                   </p>
                   {isCurrent && (
@@ -148,7 +148,7 @@ export default function CaseTrackPublic() {
           })}
         </div>
 
-        {/* Actions for client */}
+        {/* Actions */}
         <div className="space-y-3">
           <Link to="/interview-sim/practice" className="block">
             <Button className="w-full gap-2" variant="outline">
