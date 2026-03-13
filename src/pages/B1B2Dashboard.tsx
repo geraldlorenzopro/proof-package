@@ -14,6 +14,9 @@ import { Progress } from "@/components/ui/progress";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
@@ -52,6 +55,12 @@ const STAGE_ICONS: Record<string, string> = {
 
 const ALL_STAGES = Object.keys(STAGE_LABELS);
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Nuevo",
+  in_progress: "En Proceso",
+  completed: "Completado",
+};
+
 export default function B1B2Dashboard() {
   const { accountCid: paramCid } = useParams<{ accountCid: string }>();
   const navigate = useNavigate();
@@ -65,6 +74,7 @@ export default function B1B2Dashboard() {
   const [accountName, setAccountName] = useState("");
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // New case modal
@@ -142,10 +152,32 @@ export default function B1B2Dashboard() {
     }
   };
 
+  const updateCaseStatus = async (caseItem: B1B2Case, newStatus: string) => {
+    try {
+      await supabase.functions.invoke("b1b2-update-case", {
+        body: {
+          account_cid: accountCid,
+          case_id: caseItem.id,
+          status: newStatus,
+        },
+      });
+      // Optimistic update
+      setCases(prev => prev.map(c => c.id === caseItem.id ? { ...c, status: newStatus } : c));
+      toast({
+        title: "Estado actualizado",
+        description: `${caseItem.client_name} → ${STATUS_LABELS[newStatus] || newStatus}`,
+      });
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error", description: "No se pudo actualizar el estado.", variant: "destructive" });
+    }
+  };
+
   // Filters
   const filtered = cases.filter(c => {
     if (search && !c.client_name.toLowerCase().includes(search.toLowerCase())) return false;
     if (stageFilter && c.pipeline_stage !== stageFilter) return false;
+    if (statusFilter && c.status !== statusFilter) return false;
     return true;
   });
 
@@ -267,30 +299,30 @@ export default function B1B2Dashboard() {
 
         {/* ── KPI Row ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -translate-y-1/3 translate-x-1/3" />
-            <Users className="w-4 h-4 text-primary mb-2" />
-            <p className="text-2xl font-bold">{cases.length}</p>
-            <p className="text-[10px] text-muted-foreground font-medium">Total Clientes</p>
-          </div>
-          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-[hsl(var(--jarvis))]/5 rounded-full -translate-y-1/3 translate-x-1/3" />
-            <CircleDot className="w-4 h-4 text-[hsl(var(--jarvis))] mb-2" />
-            <p className="text-2xl font-bold">{totalActive}</p>
-            <p className="text-[10px] text-muted-foreground font-medium">En Proceso</p>
-          </div>
-          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-accent/5 rounded-full -translate-y-1/3 translate-x-1/3" />
-            <CheckCircle2 className="w-4 h-4 text-accent mb-2" />
-            <p className="text-2xl font-bold">{totalCompleted}</p>
-            <p className="text-[10px] text-muted-foreground font-medium">Completados</p>
-          </div>
-          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -translate-y-1/3 translate-x-1/3" />
-            <TrendingUp className="w-4 h-4 text-primary mb-2" />
-            <p className="text-2xl font-bold">{avgProgress}%</p>
-            <p className="text-[10px] text-muted-foreground font-medium">Progreso Prom.</p>
-          </div>
+          {[
+            { key: null, label: "Total Clientes", value: cases.length, icon: Users, colorClass: "text-primary", bgClass: "bg-primary/5" },
+            { key: "in_progress", label: "En Proceso", value: cases.filter(c => c.status === "in_progress" || c.status === "active").length, icon: CircleDot, colorClass: "text-[hsl(var(--jarvis))]", bgClass: "bg-[hsl(var(--jarvis))]/5" },
+            { key: "completed", label: "Completados", value: totalCompleted, icon: CheckCircle2, colorClass: "text-accent", bgClass: "bg-accent/5" },
+            { key: "pending", label: "Nuevos", value: cases.filter(c => c.status === "pending").length, icon: Clock, colorClass: "text-primary", bgClass: "bg-primary/5" },
+          ].map((kpi) => {
+            const isActive = statusFilter === kpi.key;
+            return (
+              <button
+                key={kpi.key || "all"}
+                onClick={() => setStatusFilter(isActive ? null : kpi.key)}
+                className={`rounded-xl border p-4 relative overflow-hidden text-left transition-all ${
+                  isActive
+                    ? "border-primary/40 bg-primary/5 ring-1 ring-primary/20"
+                    : "border-border/50 bg-card/60 backdrop-blur-sm hover:border-border/80"
+                }`}
+              >
+                <div className={`absolute top-0 right-0 w-16 h-16 ${kpi.bgClass} rounded-full -translate-y-1/3 translate-x-1/3`} />
+                <kpi.icon className={`w-4 h-4 ${kpi.colorClass} mb-2`} />
+                <p className="text-2xl font-bold">{kpi.value}</p>
+                <p className="text-[10px] text-muted-foreground font-medium">{kpi.label}</p>
+              </button>
+            );
+          })}
         </div>
 
         {/* ── Pipeline Funnel ── */}
@@ -333,6 +365,23 @@ export default function B1B2Dashboard() {
             </button>
           )}
         </div>
+
+        {/* ── Search ── */}
+        {/* Active filters */}
+        {(statusFilter || stageFilter) && (
+          <div className="flex items-center gap-2 mb-3">
+            {statusFilter && (
+              <Badge variant="secondary" className="gap-1 text-xs cursor-pointer" onClick={() => setStatusFilter(null)}>
+                Estado: {STATUS_LABELS[statusFilter]} ✕
+              </Badge>
+            )}
+            {stageFilter && (
+              <Badge variant="secondary" className="gap-1 text-xs cursor-pointer" onClick={() => setStageFilter(null)}>
+                Etapa: {STAGE_LABELS[stageFilter]} ✕
+              </Badge>
+            )}
+          </div>
+        )}
 
         {/* ── Search ── */}
         <div className="relative mb-4">
@@ -396,11 +445,39 @@ export default function B1B2Dashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <h3 className="font-semibold text-sm truncate">{c.client_name}</h3>
-                          {isCompleted && (
-                            <Badge variant="outline" className="text-[8px] bg-accent/10 text-accent border-accent/20 shrink-0">
-                              ✓ Completado
-                            </Badge>
-                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className={`text-[8px] px-2 py-0.5 rounded-full font-semibold border cursor-pointer transition-colors shrink-0 ${
+                                c.status === "completed"
+                                  ? "bg-accent/10 text-accent border-accent/20 hover:bg-accent/20"
+                                  : c.status === "in_progress" || c.status === "active"
+                                  ? "bg-[hsl(var(--jarvis))]/10 text-[hsl(var(--jarvis))] border-[hsl(var(--jarvis))]/20 hover:bg-[hsl(var(--jarvis))]/20"
+                                  : "bg-muted/50 text-muted-foreground border-border/40 hover:bg-muted"
+                              }`}>
+                                {STATUS_LABELS[c.status] || c.status} ▾
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="min-w-[140px]">
+                              <DropdownMenuItem
+                                onClick={() => updateCaseStatus(c, "pending")}
+                                className="text-xs gap-2"
+                              >
+                                <Clock className="w-3 h-3" /> Nuevo
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => updateCaseStatus(c, "in_progress")}
+                                className="text-xs gap-2"
+                              >
+                                <CircleDot className="w-3 h-3" /> En Proceso
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => updateCaseStatus(c, "completed")}
+                                className="text-xs gap-2"
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Completado
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-lg leading-none">{STAGE_ICONS[c.pipeline_stage] || "📄"}</span>
