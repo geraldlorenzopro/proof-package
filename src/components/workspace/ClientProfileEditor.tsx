@@ -276,15 +276,9 @@ export default function ClientProfileEditor({ clientId, onUpdated }: Props) {
                         <Select value={data.immigration_status || ""} onValueChange={(v) => set("immigration_status", v)}>
                           <SelectTrigger className={inputClass}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="lpr">Residente Permanente</SelectItem>
-                            <SelectItem value="ead">Permiso de Trabajo</SelectItem>
-                            <SelectItem value="visa">Visa No-Inmigrante</SelectItem>
-                            <SelectItem value="asylee">Asilado</SelectItem>
-                            <SelectItem value="refugee">Refugiado</SelectItem>
-                            <SelectItem value="tps">TPS</SelectItem>
-                            <SelectItem value="daca">DACA</SelectItem>
-                            <SelectItem value="undocumented">Sin estatus</SelectItem>
-                            <SelectItem value="other">Otro</SelectItem>
+                            {IMMIGRATION_STATUSES.map(s => (
+                              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </Field>
