@@ -1653,6 +1653,84 @@ export type Database = {
         }
         Relationships: []
       }
+      visa_evaluations: {
+        Row: {
+          access_token: string
+          account_id: string | null
+          answers: Json
+          audio_recordings: Json | null
+          avatar_code: string | null
+          avatar_group: string | null
+          avatar_label: string | null
+          client_email: string | null
+          client_name: string
+          client_profile_id: string | null
+          created_at: string
+          id: string
+          professional_id: string | null
+          risk_level: string | null
+          score: number | null
+          score_breakdown: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string
+          account_id?: string | null
+          answers?: Json
+          audio_recordings?: Json | null
+          avatar_code?: string | null
+          avatar_group?: string | null
+          avatar_label?: string | null
+          client_email?: string | null
+          client_name: string
+          client_profile_id?: string | null
+          created_at?: string
+          id?: string
+          professional_id?: string | null
+          risk_level?: string | null
+          score?: number | null
+          score_breakdown?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          account_id?: string | null
+          answers?: Json
+          audio_recordings?: Json | null
+          avatar_code?: string | null
+          avatar_group?: string | null
+          avatar_label?: string | null
+          client_email?: string | null
+          client_name?: string
+          client_profile_id?: string | null
+          created_at?: string
+          id?: string
+          professional_id?: string | null
+          risk_level?: string | null
+          score?: number | null
+          score_breakdown?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visa_evaluations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visa_evaluations_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1747,6 +1825,20 @@ export type Database = {
         }[]
       }
       get_usage_stats: { Args: { _days?: number }; Returns: Json }
+      get_visa_eval_by_token: {
+        Args: { _token: string }
+        Returns: {
+          answers: Json
+          avatar_code: string
+          avatar_label: string
+          client_name: string
+          id: string
+          risk_level: string
+          score: number
+          score_breakdown: Json
+          status: string
+        }[]
+      }
       has_account_role: {
         Args: {
           _role: Database["public"]["Enums"]["account_role"]
@@ -1794,6 +1886,15 @@ export type Database = {
           _client_name?: string
           _form_data: Json
           _status?: string
+          _token: string
+        }
+        Returns: undefined
+      }
+      update_visa_eval_by_token: {
+        Args: {
+          _answers: Json
+          _client_email?: string
+          _client_name?: string
           _token: string
         }
         Returns: undefined
