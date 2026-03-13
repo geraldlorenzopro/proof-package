@@ -263,6 +263,12 @@ export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
   else if (a.employmentStatus === 'student') estabilidad += 2;
   if (a.incomeStability === 'stable') estabilidad += 4;
   else if (a.incomeStability === 'irregular') estabilidad += 1;
+  // Job tenure bonus
+  if (a.jobTenure === 'over_5yr') estabilidad += 3;
+  else if (a.jobTenure === '3_5yr') estabilidad += 2;
+  else if (a.jobTenure === '1_3yr') estabilidad += 1;
+  // Partner occupation bonus (married/cohabiting)
+  if (a.partnerOccupation === 'employed' || a.partnerOccupation === 'self_employed') estabilidad += 2;
   estabilidad = Math.min(estabilidad, 20);
 
   // ── VIAJES (20 pts) ──
