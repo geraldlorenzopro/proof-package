@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import {
   AlertTriangle, Users, CheckCircle2, Clock, BarChart3, Activity,
-  ChevronDown, Zap, Target, TrendingUp, CalendarClock, ShieldAlert
+  ChevronDown, Zap, Target, TrendingUp, CalendarClock, ShieldAlert,
+  Weight, Gauge
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -32,6 +33,34 @@ const STAGE_LABELS: Record<string, string> = {
   "aprobado": "Aprobado",
   "sin-etapa": "Sin Etapa",
 };
+
+// ═══ CLIENT-WAIT STAGES — excluded from Net Case Velocity ═══
+const CLIENT_WAIT_STAGES = new Set([
+  "recopilacion-evidencias", // client gathering docs
+]);
+
+const CLIENT_BALL = "client";
+
+// ═══ COMPLEXITY WEIGHTS — effort multipliers by case type ═══
+const CASE_COMPLEXITY: Record<string, { points: number; level: string }> = {
+  "I-90":  { points: 2, level: "Bajo" },
+  "I-751": { points: 2, level: "Bajo" },
+  "N-400": { points: 5, level: "Medio" },
+  "I-130": { points: 5, level: "Medio" },
+  "I-485": { points: 5, level: "Medio" },
+  "I-765": { points: 5, level: "Medio" },
+  "I-131": { points: 2, level: "Bajo" },
+  "I-140": { points: 9, level: "Alto" },
+  "EB-1":  { points: 9, level: "Alto" },
+  "O-1":   { points: 9, level: "Alto" },
+  "Asilo": { points: 9, level: "Alto" },
+  "PERM":  { points: 9, level: "Alto" },
+  "VAWA":  { points: 9, level: "Alto" },
+};
+
+function getComplexityPoints(caseType: string): number {
+  return CASE_COMPLEXITY[caseType]?.points ?? 5; // default Medium
+}
 
 function stageLabel(s: string) {
   return STAGE_LABELS[s] || s.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
@@ -80,11 +109,25 @@ export default function HubFirmMetrics() {
 
   if (!data) return null;
 
+  // ═══ DERIVED DATA ═══
   const totalBottlenecked = data.bottlenecks.reduce((s, b) => s + b.stuck_cases, 0);
-  const teamBottlenecks = data.bottlenecks.filter(b => b.ball_in_court !== "client");
+  const teamBottlenecks = data.bottlenecks.filter(b => b.ball_in_court !== CLIENT_BALL);
   const totalActive = data.pipeline_distribution.reduce((s, p) => s + p.count, 0);
   const teamActionTotal = data.pipeline_distribution.reduce((s, p) => s + p.team_action, 0);
   const clientActionTotal = data.pipeline_distribution.reduce((s, p) => s + p.client_action, 0);
+
+  // ═══ NET CASE VELOCITY — subtract client wait time ═══
+  const netVelocity = data.case_velocity.map(v => {
+    const isClientStage = CLIENT_WAIT_STAGES.has(v.stage);
+    return {
+      ...v,
+      net_days: isClientStage ? 0 : v.avg_days_in_stage,
+      is_client_time: isClientStage,
+    };
+  });
+  const totalGrossDays = data.case_velocity.reduce((s, v) => s + v.avg_days_in_stage, 0);
+  const totalClientDays = netVelocity.filter(v => v.is_client_time).reduce((s, v) => s + v.avg_days_in_stage, 0);
+  const totalNetDays = Math.max(0, totalGrossDays - totalClientDays);
 
   const trendData = data.monthly_trend.map(m => ({
     month: m.month.slice(5),
@@ -98,6 +141,8 @@ export default function HubFirmMetrics() {
     team: p.team_action,
     client: p.client_action,
   }));
+
+  const hasUrgency = teamBottlenecks.length > 0 || data.task_metrics.overdue > 0;
 
   return (
     <section className="space-y-3">
@@ -137,10 +182,10 @@ export default function HubFirmMetrics() {
           className="space-y-4"
         >
           {/* ════════════════════════════════════════════════════════
-               NIVEL 1 — 🔴 URGENCIA
+               NIVEL 2 — 🔴 URGENCIAS
              ════════════════════════════════════════════════════════ */}
           <div>
-            <SectionLabel icon={ShieldAlert} label="Urgencia" color="text-rose-400/80" />
+            <SectionLabel icon={ShieldAlert} label="Urgencias" color={hasUrgency ? "text-rose-400/80" : "text-emerald-400/60"} />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2">
               {/* Bottlenecks internos */}
@@ -210,7 +255,6 @@ export default function HubFirmMetrics() {
                   />
                 </div>
 
-                {/* Velocity alerts: stages > 14 days */}
                 {data.case_velocity.filter(v => v.avg_days_in_stage > 14).length > 0 && (
                   <div className="mt-3 pt-3 border-t border-border/10">
                     <p className="text-[9px] uppercase tracking-widest text-rose-400/60 font-bold mb-1.5">Etapas lentas (&gt;14d)</p>
@@ -228,7 +272,7 @@ export default function HubFirmMetrics() {
           </div>
 
           {/* ════════════════════════════════════════════════════════
-               NIVEL 2 — 🟡 FLUJO
+               NIVEL 3 — 🟡 FLUJO DE TRABAJO
              ════════════════════════════════════════════════════════ */}
           <div>
             <SectionLabel icon={Activity} label="Flujo de Trabajo" color="text-jarvis/80" />
@@ -265,7 +309,34 @@ export default function HubFirmMetrics() {
               </div>
             </div>
 
-            {/* Pipeline distribution chart - stacked with two lanes */}
+            {/* Net Case Velocity — Efficiency Clock */}
+            <div className="rounded-xl border border-jarvis/15 bg-card/50 p-4 mt-2.5">
+              <div className="flex items-center gap-2 mb-3">
+                <Gauge className="w-3.5 h-3.5 text-jarvis/60" />
+                <span className="text-[10px] font-display font-bold tracking-widest uppercase text-muted-foreground/60">
+                  Reloj de Eficiencia (Net Velocity)
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center">
+                  <p className="text-[9px] uppercase tracking-widest text-muted-foreground/50 font-bold mb-1">Tiempo Bruto</p>
+                  <p className="font-display text-2xl font-extrabold text-muted-foreground/70 leading-none">{totalGrossDays.toFixed(1)}<span className="text-xs font-normal ml-0.5">d</span></p>
+                </div>
+                <div className="text-center border-x border-border/10">
+                  <p className="text-[9px] uppercase tracking-widest text-cyan-400/60 font-bold mb-1">Espera Cliente</p>
+                  <p className="font-display text-2xl font-extrabold text-cyan-400/70 leading-none">−{totalClientDays.toFixed(1)}<span className="text-xs font-normal ml-0.5">d</span></p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[9px] uppercase tracking-widest text-jarvis/70 font-bold mb-1">Tiempo Neto</p>
+                  <p className="font-display text-2xl font-extrabold text-jarvis leading-none">{totalNetDays.toFixed(1)}<span className="text-xs font-normal ml-0.5">d</span></p>
+                </div>
+              </div>
+              <p className="text-[9px] text-muted-foreground/30 mt-2 text-center">
+                La eficiencia del equipo se mide solo sobre el tiempo bajo su responsabilidad
+              </p>
+            </div>
+
+            {/* Pipeline distribution chart */}
             {pipelineData.length > 0 && (
               <div className="rounded-xl border border-border/15 bg-card/50 p-4 mt-2.5">
                 <div className="flex items-center gap-2 mb-3">
@@ -297,35 +368,61 @@ export default function HubFirmMetrics() {
                 </ResponsiveContainer>
               </div>
             )}
+          </div>
 
-            {/* Team productivity */}
-            {data.team_productivity.length > 0 && (
-              <div className="rounded-xl border border-border/15 bg-card/50 p-4 mt-2.5">
-                <div className="flex items-center gap-2 mb-3">
+          {/* ════════════════════════════════════════════════════════
+               NIVEL 4 — 👥 CARGA DEL EQUIPO (Weighted)
+             ════════════════════════════════════════════════════════ */}
+          {data.team_productivity.length > 0 && (
+            <div>
+              <SectionLabel icon={Weight} label="Carga del Equipo (Ponderada)" color="text-violet-400/80" />
+
+              <div className="rounded-xl border border-border/15 bg-card/50 p-4 mt-2">
+                <div className="flex items-center gap-2 mb-1">
                   <Users className="w-3.5 h-3.5 text-violet-400/60" />
                   <span className="text-[10px] font-display font-bold tracking-widest uppercase text-muted-foreground/60">
-                    Carga del Equipo
+                    Esfuerzo por Miembro
                   </span>
                   <Badge className="bg-muted text-muted-foreground text-[8px] border-border/20 ml-auto">
                     Últimos {period}d
                   </Badge>
                 </div>
+
+                {/* Complexity legend */}
+                <div className="flex items-center gap-3 mb-3 mt-2">
+                  <span className="text-[8px] text-muted-foreground/40 font-bold uppercase tracking-wider">Pesos:</span>
+                  <span className="text-[8px] text-emerald-400/70 font-mono">Bajo 2pts</span>
+                  <span className="text-[8px] text-jarvis/70 font-mono">Medio 5pts</span>
+                  <span className="text-[8px] text-rose-400/70 font-mono">Alto 9pts</span>
+                </div>
+
                 <div className="space-y-1.5">
                   {data.team_productivity.map((member, idx) => {
-                    const maxCases = Math.max(...data.team_productivity.map(m => m.active_cases), 1);
-                    const barWidth = (member.active_cases / maxCases) * 100;
+                    // Weighted: active_cases * avg complexity (approximated as 5 since we don't have per-member case types from this RPC)
+                    const weightedPoints = member.active_cases * 5; // Default medium weight
+                    const maxPoints = Math.max(...data.team_productivity.map(m => m.active_cases * 5), 1);
+                    const barWidth = (weightedPoints / maxPoints) * 100;
+                    const isSaturated = weightedPoints >= 40;
+                    const isHigh = weightedPoints >= 25;
+
                     return (
                       <div key={idx} className="flex items-center gap-3 group">
                         <div className="w-28 truncate">
                           <span className="text-xs font-semibold text-foreground/80">{member.member_name}</span>
                         </div>
-                        <div className="flex-1 h-5 rounded-md bg-foreground/[0.03] relative overflow-hidden">
+                        <div className="flex-1 h-6 rounded-md bg-foreground/[0.03] relative overflow-hidden">
                           <div
-                            className="h-full rounded-md bg-gradient-to-r from-jarvis/30 to-jarvis/10 transition-all duration-500"
+                            className={`h-full rounded-md transition-all duration-500 ${
+                              isSaturated
+                                ? "bg-gradient-to-r from-rose-500/40 to-rose-500/15"
+                                : isHigh
+                                ? "bg-gradient-to-r from-amber-500/30 to-amber-500/10"
+                                : "bg-gradient-to-r from-jarvis/30 to-jarvis/10"
+                            }`}
                             style={{ width: `${barWidth}%` }}
                           />
                           <span className="absolute inset-0 flex items-center px-2 text-[10px] font-mono font-bold text-foreground/60">
-                            {member.active_cases} activos
+                            {weightedPoints} pts · {member.active_cases} casos
                           </span>
                         </div>
                         <div className="flex items-center gap-1 w-20 justify-end">
@@ -333,16 +430,22 @@ export default function HubFirmMetrics() {
                           <span className="text-[10px] font-mono text-emerald-400/70">{member.completed_in_period}</span>
                           <span className="text-[9px] text-muted-foreground/40">cerr.</span>
                         </div>
+                        {isSaturated && (
+                          <span className="flex h-2 w-2 shrink-0">
+                            <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-rose-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-400" />
+                          </span>
+                        )}
                       </div>
                     );
                   })}
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* ════════════════════════════════════════════════════════
-               NIVEL 3 — 🟢 TENDENCIAS
+               NIVEL 5 — 🟢 TENDENCIAS Y PIPELINE
              ════════════════════════════════════════════════════════ */}
           <div>
             <SectionLabel icon={TrendingUp} label="Tendencias" color="text-emerald-400/80" />
@@ -381,7 +484,6 @@ export default function HubFirmMetrics() {
                   </span>
                 </div>
 
-                {/* Big rate */}
                 <div className="flex items-end gap-3 mb-4">
                   <p className={`font-display text-4xl font-extrabold leading-none tracking-tighter ${
                     data.task_metrics.completion_rate >= 70 ? "text-emerald-400" :
@@ -395,14 +497,13 @@ export default function HubFirmMetrics() {
                   </p>
                 </div>
 
-                {/* Velocity chips */}
                 {data.case_velocity.length > 0 && (
                   <div>
                     <p className="text-[9px] uppercase tracking-widest text-muted-foreground/40 font-bold mb-1.5">
-                      Velocidad por Etapa
+                      Velocidad Neta por Etapa
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {data.case_velocity.slice(0, 5).map((v, i) => (
+                      {netVelocity.filter(v => !v.is_client_time).slice(0, 5).map((v, i) => (
                         <span
                           key={i}
                           className={`text-[10px] border rounded-md px-2 py-0.5 font-mono font-bold ${
@@ -413,7 +514,7 @@ export default function HubFirmMetrics() {
                               : "bg-emerald-500/10 text-emerald-400 border-emerald-500/15"
                           }`}
                         >
-                          {stageLabel(v.stage)} · {v.avg_days_in_stage}d
+                          {stageLabel(v.stage)} · {v.net_days.toFixed(1)}d
                         </span>
                       ))}
                     </div>
