@@ -106,7 +106,7 @@ export default function CasePipelineTracker({ stages, currentStage, stageEntered
         const isPast = i < currentIdx;
         const isCurrent = i === currentIdx;
         const isFuture = i > currentIdx;
-        const owner = ownerConfig[stage.owner];
+        const owner = ownerConfig[stage.owner] || defaultOwner;
         const OwnerIcon = owner.icon;
         const sla = getSlaStatus(stage, stageEnteredAt, isCurrent);
 
