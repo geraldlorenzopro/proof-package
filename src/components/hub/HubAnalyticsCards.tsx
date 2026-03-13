@@ -101,7 +101,6 @@ export default function HubAnalyticsCards() {
     );
   }
 
-  const navigate = useNavigate();
 
   if (!data) return null;
 
