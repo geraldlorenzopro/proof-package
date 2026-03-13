@@ -19,11 +19,13 @@ export interface VisaEvalAnswers {
   // Step 2 — Estabilidad
   employmentStatus: 'employed' | 'self_employed' | 'unemployed' | 'student' | 'retired' | 'part_time';
   employmentType?: 'private' | 'public' | 'freelance' | 'family_business' | 'informal';
+  jobTenure?: 'less_1yr' | '1_3yr' | '3_5yr' | 'over_5yr';
   hasRegisteredBusiness?: boolean;
   monthlyIncome: 'none' | 'low' | 'medium' | 'high' | 'very_high';
   isStudying: boolean;
   educationLevel: 'none' | 'high_school' | 'university_current' | 'university_recent' | 'university' | 'postgrad';
   incomeStability: 'stable' | 'irregular' | 'none';
+  partnerOccupation?: 'employed' | 'self_employed' | 'student' | 'homemaker' | 'unemployed' | 'retired';
 
   // Step 3 — Arraigo
   ownsProperty: boolean;
