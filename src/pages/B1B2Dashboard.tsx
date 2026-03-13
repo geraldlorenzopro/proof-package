@@ -428,11 +428,39 @@ export default function B1B2Dashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <h3 className="font-semibold text-sm truncate">{c.client_name}</h3>
-                          {isCompleted && (
-                            <Badge variant="outline" className="text-[8px] bg-accent/10 text-accent border-accent/20 shrink-0">
-                              ✓ Completado
-                            </Badge>
-                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className={`text-[8px] px-2 py-0.5 rounded-full font-semibold border cursor-pointer transition-colors shrink-0 ${
+                                c.status === "completed"
+                                  ? "bg-accent/10 text-accent border-accent/20 hover:bg-accent/20"
+                                  : c.status === "in_progress" || c.status === "active"
+                                  ? "bg-[hsl(var(--jarvis))]/10 text-[hsl(var(--jarvis))] border-[hsl(var(--jarvis))]/20 hover:bg-[hsl(var(--jarvis))]/20"
+                                  : "bg-muted/50 text-muted-foreground border-border/40 hover:bg-muted"
+                              }`}>
+                                {STATUS_LABELS[c.status] || c.status} ▾
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="min-w-[140px]">
+                              <DropdownMenuItem
+                                onClick={() => updateCaseStatus(c, "pending")}
+                                className="text-xs gap-2"
+                              >
+                                <Clock className="w-3 h-3" /> Nuevo
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => updateCaseStatus(c, "in_progress")}
+                                className="text-xs gap-2"
+                              >
+                                <CircleDot className="w-3 h-3" /> En Proceso
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => updateCaseStatus(c, "completed")}
+                                className="text-xs gap-2"
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Completado
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-lg leading-none">{STAGE_ICONS[c.pipeline_stage] || "📄"}</span>
