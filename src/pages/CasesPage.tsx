@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight, X, Filter } from 'lucide-react';
+import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight, X, Filter, Search } from 'lucide-react';
 import NewCaseModal from '@/components/NewCaseModal';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Case = {
   id: string;
@@ -36,6 +38,9 @@ export default function CasesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [ballFilter, setBallFilter] = useState('all');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -63,33 +68,58 @@ export default function CasesPage() {
     setLoading(false);
   }
 
-  // Apply filter from URL
+  // Apply URL filter first, then local filters
   const filteredCases = useMemo(() => {
-    if (!activeFilter) return cases;
+    let result = cases;
 
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    switch (activeFilter) {
-      case 'active':
-        return cases.filter(c => c.status !== 'completed');
-      case 'needs-action':
-        return cases.filter(c => c.ball_in_court === 'team' && c.status !== 'completed');
-      case 'deadlines':
-        return cases.filter(c => deadlineCaseIds.has(c.id));
-      case 'completed':
-        return cases.filter(c => c.status === 'completed' && c.updated_at && new Date(c.updated_at) >= startOfMonth);
-      case 'pending':
-        return cases.filter(c => c.status === 'pending');
-      case 'in-progress':
-        return cases.filter(c => c.status === 'in_progress');
-      default:
-        return cases;
+    // URL-based filter (from Hub KPIs)
+    if (activeFilter) {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      switch (activeFilter) {
+        case 'active':
+          result = result.filter(c => c.status !== 'completed'); break;
+        case 'needs-action':
+          result = result.filter(c => c.ball_in_court === 'team' && c.status !== 'completed'); break;
+        case 'deadlines':
+          result = result.filter(c => deadlineCaseIds.has(c.id)); break;
+        case 'completed':
+          result = result.filter(c => c.status === 'completed' && c.updated_at && new Date(c.updated_at) >= startOfMonth); break;
+        case 'pending':
+          result = result.filter(c => c.status === 'pending'); break;
+        case 'in-progress':
+          result = result.filter(c => c.status === 'in_progress'); break;
+      }
     }
-  }, [cases, activeFilter, deadlineCaseIds]);
+
+    // Local search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(c =>
+        c.client_name.toLowerCase().includes(q) ||
+        c.client_email.toLowerCase().includes(q) ||
+        c.case_type.toLowerCase().includes(q)
+      );
+    }
+
+    // Local status dropdown
+    if (statusFilter !== 'all') {
+      result = result.filter(c => c.status === statusFilter);
+    }
+
+    // Local ball-in-court dropdown
+    if (ballFilter !== 'all') {
+      result = result.filter(c => c.ball_in_court === ballFilter);
+    }
+
+    return result;
+  }, [cases, activeFilter, deadlineCaseIds, searchQuery, statusFilter, ballFilter]);
 
   function clearFilter() {
     setSearchParams({});
+    setSearchQuery('');
+    setStatusFilter('all');
+    setBallFilter('all');
   }
 
   function getClientLink(token: string) {
@@ -193,6 +223,61 @@ export default function CasesPage() {
               </button>
             ))}
           </div>
+        )}
+
+        {/* Search & Filters */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, email o tipo de caso..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-card border-border/40 h-9 text-sm"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[150px] bg-card border-border/40 h-9 text-sm">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los estados</SelectItem>
+              <SelectItem value="pending">Pendiente</SelectItem>
+              <SelectItem value="in_progress">En Progreso</SelectItem>
+              <SelectItem value="completed">Completado</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={ballFilter} onValueChange={setBallFilter}>
+            <SelectTrigger className="w-[150px] bg-card border-border/40 h-9 text-sm">
+              <SelectValue placeholder="Responsable" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="team">⚡ Equipo</SelectItem>
+              <SelectItem value="client">⏳ Cliente</SelectItem>
+              <SelectItem value="uscis">🏛 USCIS</SelectItem>
+            </SelectContent>
+          </Select>
+          {(searchQuery || statusFilter !== 'all' || ballFilter !== 'all') && (
+            <button
+              onClick={() => { setSearchQuery(''); setStatusFilter('all'); setBallFilter('all'); }}
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 whitespace-nowrap"
+            >
+              <X className="w-3 h-3" /> Limpiar
+            </button>
+          )}
+        </div>
+
+        {/* Results count */}
+        {(searchQuery || statusFilter !== 'all' || ballFilter !== 'all') && (
+          <p className="text-xs text-muted-foreground mb-3">
+            {filteredCases.length} resultado{filteredCases.length !== 1 ? 's' : ''}
+          </p>
         )}
 
         {/* Cases */}
