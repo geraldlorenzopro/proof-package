@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Loader2, AlertTriangle, BarChart3, FileText,
   MessageSquare, ListTodo, Clock, FolderOpen, Sparkles,
-  Users, User, Shield, ChevronDown
+  Users, User, Shield, ChevronDown, Share2, Copy, Check
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+
+function ShareCaseButton({ accessToken }: { accessToken: string }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/case-track/${accessToken}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    toast.success("Link copiado al portapapeles");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Button variant="outline" size="sm" className="h-9 text-xs gap-1.5 border-accent/20" onClick={handleCopy}>
+      {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
+      {copied ? "Copiado" : "Enviar al cliente"}
+    </Button>
+  );
+}
 
 type TabId = "resumen" | "documentos" | "formularios" | "decision" | "historial";
 
@@ -243,26 +262,31 @@ export default function CaseEnginePage() {
                   </div>
                 </div>
 
-                {/* Stage changer */}
-                {stages.length > 0 && (
-                  <Select value={currentStageSlug} onValueChange={handleStageChange}>
-                    <SelectTrigger className="w-[260px] h-9 text-xs border-jarvis/20 bg-jarvis/5">
-                      <SelectValue placeholder="Cambiar etapa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {stages.map(s => (
-                        <SelectItem key={s.slug} value={s.slug} className="text-xs">
-                          <span className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${
-                              s.owner === "team" ? "bg-jarvis" : s.owner === "client" ? "bg-accent" : "bg-emerald-400"
-                            }`} />
-                            {s.label}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Stage changer */}
+                  {stages.length > 0 && (
+                    <Select value={currentStageSlug} onValueChange={handleStageChange}>
+                      <SelectTrigger className="w-[240px] h-9 text-xs border-jarvis/20 bg-jarvis/5">
+                        <SelectValue placeholder="Cambiar etapa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {stages.map(s => (
+                          <SelectItem key={s.slug} value={s.slug} className="text-xs">
+                            <span className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${
+                                s.owner === "team" ? "bg-jarvis" : s.owner === "client" ? "bg-accent" : "bg-emerald-400"
+                              }`} />
+                              {s.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {/* Share link */}
+                  <ShareCaseButton accessToken={caseData.access_token} />
+                </div>
               </div>
 
               {/* Compact pipeline tracker */}

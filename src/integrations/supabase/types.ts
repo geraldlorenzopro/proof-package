@@ -1768,6 +1768,14 @@ export type Database = {
         }[]
       }
       get_case_id_by_token: { Args: { _token: string }; Returns: string }
+      get_case_pipeline_by_token: {
+        Args: { _token: string }
+        Returns: {
+          pipeline_stage: string
+          process_label: string
+          stages: Json
+        }[]
+      }
       get_evidence_by_token: {
         Args: { _token: string }
         Returns: {

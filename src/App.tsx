@@ -35,6 +35,7 @@ import CaseEnginePage from "./pages/CaseEnginePage";
 import IntelligenceCenterPage from "./pages/IntelligenceCenterPage";
 import VisaEvaluatorPage from "./pages/VisaEvaluatorPage";
 import VisaEvalPublic from "./pages/VisaEvalPublic";
+import CaseTrackPublic from "./pages/CaseTrackPublic";
 import InterviewSimulatorPage from "./pages/InterviewSimulatorPage";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ const App = () => (
           <Route path="/hub/intelligence" element={<IntelligenceCenterPage />} />
           <Route path="/dashboard/visa-evaluator" element={<VisaEvaluatorPage />} />
           <Route path="/visa-eval/:token" element={<VisaEvalPublic />} />
+          <Route path="/case-track/:token" element={<CaseTrackPublic />} />
           <Route path="/dashboard/interview-sim" element={<InterviewSimulatorPage />} />
           <Route path="/interview-sim/practice" element={<InterviewSimulatorPage />} />
           <Route path="/debug/pdf-fields" element={<PdfFieldInspector />} />
