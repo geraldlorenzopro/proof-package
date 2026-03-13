@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
-import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight, Eye } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight, Eye, X, Filter } from 'lucide-react';
 import NewCaseModal from '@/components/NewCaseModal';
+import { Badge } from '@/components/ui/badge';
 
 type Case = {
   id: string;
@@ -12,26 +13,77 @@ type Case = {
   access_token: string;
   status: string;
   created_at: string;
+  ball_in_court?: string | null;
+  updated_at?: string;
+};
+
+type DeadlineCase = {
+  case_id: string | null;
+};
+
+const FILTER_LABELS: Record<string, { label: string; description: string; color: string }> = {
+  active: { label: "Casos Activos", description: "Todos los casos que no están completados", color: "bg-accent/10 text-accent border-accent/20" },
+  "needs-action": { label: "Requieren Acción", description: "Casos donde el equipo necesita actuar", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+  deadlines: { label: "Deadlines Urgentes", description: "Casos con deadlines en los próximos 7 días", color: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
+  completed: { label: "Completados", description: "Casos completados este mes", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
 };
 
 export default function CasesPage() {
   const [cases, setCases] = useState<Case[]>([]);
+  const [deadlineCaseIds, setDeadlineCaseIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const activeFilter = searchParams.get('filter');
 
   useEffect(() => { loadCases(); }, []);
 
   async function loadCases() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { sessionStorage.setItem('ner_auth_redirect', window.location.pathname); navigate('/auth', { replace: true }); return; }
-    const { data } = await supabase
-      .from('client_cases')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setCases(data || []);
+
+    // Load cases and deadline case IDs in parallel
+    const [casesRes, deadlinesRes] = await Promise.all([
+      supabase.from('client_cases').select('*').order('created_at', { ascending: false }),
+      supabase.from('case_deadlines')
+        .select('case_id')
+        .eq('status', 'active')
+        .lte('deadline_date', new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]),
+    ]);
+
+    setCases(casesRes.data || []);
+    const dlIds = new Set<string>();
+    (deadlinesRes.data || []).forEach((d: DeadlineCase) => { if (d.case_id) dlIds.add(d.case_id); });
+    setDeadlineCaseIds(dlIds);
     setLoading(false);
+  }
+
+  // Apply filter from URL
+  const filteredCases = useMemo(() => {
+    if (!activeFilter) return cases;
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    switch (activeFilter) {
+      case 'active':
+        return cases.filter(c => c.status !== 'completed');
+      case 'needs-action':
+        return cases.filter(c => c.ball_in_court === 'team' && c.status !== 'completed');
+      case 'deadlines':
+        return cases.filter(c => deadlineCaseIds.has(c.id));
+      case 'completed':
+        return cases.filter(c => c.status === 'completed' && c.updated_at && new Date(c.updated_at) >= startOfMonth);
+      default:
+        return cases;
+    }
+  }, [cases, activeFilter, deadlineCaseIds]);
+
+  function clearFilter() {
+    setSearchParams({});
   }
 
   function getClientLink(token: string) {
@@ -63,17 +115,23 @@ export default function CasesPage() {
     completed: { label: 'Completado', color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
   };
 
+  const filterMeta = activeFilter ? FILTER_LABELS[activeFilter] : null;
+
   return (
     <div className="min-h-screen bg-background grid-bg lg:ml-64">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-16 lg:pt-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate('/dashboard')} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-foreground">Mis Casos</h1>
-            <p className="text-xs text-muted-foreground">Gestiona los casos y enlaces de tus clientes</p>
+            <h1 className="text-xl font-bold text-foreground">
+              {filterMeta ? filterMeta.label : "Mis Casos"}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              {filterMeta ? filterMeta.description : "Gestiona los casos y enlaces de tus clientes"}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -93,39 +151,69 @@ export default function CasesPage() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          {[
-            { label: 'Total', value: stats.total, icon: Users, color: 'text-jarvis' },
-            { label: 'Pendientes', value: stats.pending, icon: Clock, color: 'text-accent' },
-            { label: 'En progreso', value: stats.inProgress, icon: ChevronRight, color: 'text-jarvis' },
-            { label: 'Completados', value: stats.completed, icon: CheckCircle, color: 'text-emerald-400' },
-          ].map(s => (
-            <div key={s.label} className="glow-border rounded-xl p-3 bg-card">
-              <div className="flex items-center gap-1.5 mb-1">
-                <s.icon className={`w-3.5 h-3.5 ${s.color}`} />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</span>
-              </div>
-              <span className={`font-display text-xl font-bold ${s.color}`}>{s.value}</span>
+        {/* Active filter banner */}
+        {filterMeta && (
+          <div className={`flex items-center justify-between mb-4 px-4 py-2.5 rounded-xl border ${filterMeta.color}`}>
+            <div className="flex items-center gap-2">
+              <Filter className="w-3.5 h-3.5" />
+              <span className="text-xs font-bold">{filterMeta.label}</span>
+              <span className="text-[10px] opacity-70">· {filteredCases.length} resultado{filteredCases.length !== 1 ? 's' : ''}</span>
             </div>
-          ))}
-        </div>
+            <button onClick={clearFilter} className="p-1 rounded-md hover:bg-foreground/10 transition-colors">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Stats */}
+        {!activeFilter && (
+          <div className="grid grid-cols-4 gap-3 mb-6">
+            {[
+              { label: 'Total', value: stats.total, icon: Users, color: 'text-jarvis', filter: undefined },
+              { label: 'Pendientes', value: stats.pending, icon: Clock, color: 'text-accent', filter: 'active' },
+              { label: 'En progreso', value: stats.inProgress, icon: ChevronRight, color: 'text-jarvis', filter: 'needs-action' },
+              { label: 'Completados', value: stats.completed, icon: CheckCircle, color: 'text-emerald-400', filter: 'completed' },
+            ].map(s => (
+              <button
+                key={s.label}
+                onClick={() => s.filter ? setSearchParams({ filter: s.filter }) : undefined}
+                className="glow-border rounded-xl p-3 bg-card text-left hover:border-foreground/15 transition-all"
+              >
+                <div className="flex items-center gap-1.5 mb-1">
+                  <s.icon className={`w-3.5 h-3.5 ${s.color}`} />
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</span>
+                </div>
+                <span className={`font-display text-xl font-bold ${s.color}`}>{s.value}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Cases */}
         {loading ? (
           <div className="text-center py-16 text-muted-foreground">Cargando…</div>
-        ) : cases.length === 0 ? (
+        ) : filteredCases.length === 0 ? (
           <div className="text-center py-16 glow-border rounded-2xl bg-card">
             <FileText className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground font-medium">No tienes casos todavía</p>
-            <p className="text-sm text-muted-foreground/70 mb-6">Crea el primer caso para generar el link de tu cliente</p>
-            <button onClick={() => setShowModal(true)} className="gradient-gold text-accent-foreground font-semibold px-6 py-2.5 rounded-xl hover:opacity-90 text-sm">
-              + Crear primer caso
-            </button>
+            <p className="text-muted-foreground font-medium">
+              {activeFilter ? 'No hay casos que coincidan con este filtro' : 'No tienes casos todavía'}
+            </p>
+            {activeFilter ? (
+              <button onClick={clearFilter} className="mt-4 text-sm text-accent hover:underline font-medium">
+                Ver todos los casos
+              </button>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground/70 mb-6">Crea el primer caso para generar el link de tu cliente</p>
+                <button onClick={() => setShowModal(true)} className="gradient-gold text-accent-foreground font-semibold px-6 py-2.5 rounded-xl hover:opacity-90 text-sm">
+                  + Crear primer caso
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
-            {cases.map(c => (
+            {filteredCases.map(c => (
               <div key={c.id} className="glow-border rounded-xl p-5 bg-card hover:border-jarvis/30 transition-all">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
@@ -135,6 +223,18 @@ export default function CasesPage() {
                         {statusLabel[c.status]?.label}
                       </span>
                       <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">{c.case_type}</span>
+                      {c.ball_in_court && (
+                        <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${
+                          c.ball_in_court === 'team' ? 'border-amber-500/20 text-amber-400' : 'border-cyan-400/20 text-cyan-400'
+                        }`}>
+                          {c.ball_in_court === 'team' ? '⚡ Equipo' : '⏳ Cliente'}
+                        </Badge>
+                      )}
+                      {deadlineCaseIds.has(c.id) && (
+                        <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-rose-500/20 text-rose-400">
+                          🔥 Deadline
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">{c.client_email}</p>
                     <div className="flex items-center gap-2 flex-wrap">
