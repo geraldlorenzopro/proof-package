@@ -357,7 +357,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.1 }}
-              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100]"
+              className="fixed inset-0 bg-background/90 z-[100]"
               onClick={() => setOpen(false)}
             />
             <motion.div
