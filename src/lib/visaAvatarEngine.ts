@@ -38,6 +38,8 @@ export interface VisaEvalAnswers {
   hasDependents: boolean;
 
   // Step 4 — Viajes
+  familyHasVisa: boolean;
+  familyVisaUsage?: 'short_trips' | 'long_trips' | 'mixed' | 'never_used';
   previousVisaApproved: boolean;
   previousUSTravel: boolean;
   travelHistory: 'none' | 'regional' | 'international' | 'extensive';
@@ -272,11 +274,18 @@ export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
   estabilidad = Math.min(estabilidad, 20);
 
   // ── VIAJES (20 pts) ──
-  if (a.previousVisaApproved) viajes += 8;
-  if (a.previousUSTravel) viajes += 4;
+  if (a.previousVisaApproved) viajes += 6;
+  if (a.previousUSTravel) viajes += 3;
+  // Family visa history bonus
+  if (a.familyHasVisa) {
+    viajes += 3;
+    if (a.familyVisaUsage === 'short_trips') viajes += 2; // Good usage pattern
+    else if (a.familyVisaUsage === 'mixed') viajes += 1;
+    else if (a.familyVisaUsage === 'long_trips') viajes -= 1; // Suspicious pattern
+  }
   const travelMap = { none: 0, regional: 2, international: 4, extensive: 6 };
   viajes += travelMap[a.travelHistory] || 0;
-  if (a.complianceRecord === 'perfect') viajes += 4;
+  if (a.complianceRecord === 'perfect') viajes += 3;
   else if (a.complianceRecord === 'minor_issues') viajes += 1;
   viajes = Math.min(viajes, 20);
 
@@ -352,126 +361,126 @@ export interface InterviewQuestion {
 
 export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   // ── STEP 1: PERSONAL ──
-  { id: 'q_age', step: 1, textEs: '¿Cuál es la edad del solicitante?', textEn: 'What is the applicant\'s age?', fieldKey: 'age', type: 'select', options: [
-    { value: '15', labelEs: 'Menor de 16', labelEn: 'Under 16' },
-    { value: '17', labelEs: '16 – 17', labelEn: '16 – 17' },
-    { value: '20', labelEs: '18 – 21', labelEn: '18 – 21' },
-    { value: '25', labelEs: '22 – 28', labelEn: '22 – 28' },
-    { value: '32', labelEs: '29 – 35', labelEn: '29 – 35' },
-    { value: '42', labelEs: '36 – 49', labelEn: '36 – 49' },
-    { value: '55', labelEs: '50 – 60', labelEn: '50 – 60' },
-    { value: '65', labelEs: '61+', labelEn: '61+' },
+  { id: 'q_age', step: 1, textEs: '¿Qué edad tiene la persona que va a pedir la visa?', textEn: 'How old is the visa applicant?', fieldKey: 'age', type: 'select', options: [
+    { value: '15', labelEs: 'Menor de 16 años', labelEn: 'Under 16' },
+    { value: '17', labelEs: '16 a 17 años', labelEn: '16 – 17' },
+    { value: '20', labelEs: '18 a 21 años', labelEn: '18 – 21' },
+    { value: '25', labelEs: '22 a 28 años', labelEn: '22 – 28' },
+    { value: '32', labelEs: '29 a 35 años', labelEn: '29 – 35' },
+    { value: '42', labelEs: '36 a 49 años', labelEn: '36 – 49' },
+    { value: '55', labelEs: '50 a 60 años', labelEn: '50 – 60' },
+    { value: '65', labelEs: '61 años o más', labelEn: '61+' },
   ]},
-  { id: 'q_gender', step: 1, textEs: '¿Sexo del solicitante?', textEn: 'Applicant\'s gender?', fieldKey: 'gender', type: 'select', options: [
-    { value: 'male', labelEs: 'Masculino', labelEn: 'Male' },
-    { value: 'female', labelEs: 'Femenino', labelEn: 'Female' },
+  { id: 'q_gender', step: 1, textEs: '¿Es hombre o mujer?', textEn: 'Male or female?', fieldKey: 'gender', type: 'select', options: [
+    { value: 'male', labelEs: 'Hombre', labelEn: 'Male' },
+    { value: 'female', labelEs: 'Mujer', labelEn: 'Female' },
   ]},
-  { id: 'q_marital', step: 1, textEs: '¿Estado civil?', textEn: 'Marital status?', fieldKey: 'maritalStatus', type: 'select', options: [
+  { id: 'q_marital', step: 1, textEs: '¿Está casado/a, soltero/a, o en otra situación?', textEn: 'Are you married, single, or other?', fieldKey: 'maritalStatus', type: 'select', options: [
     { value: 'single', labelEs: 'Soltero/a', labelEn: 'Single' },
     { value: 'married', labelEs: 'Casado/a', labelEn: 'Married' },
     { value: 'divorced', labelEs: 'Divorciado/a', labelEn: 'Divorced' },
     { value: 'widowed', labelEs: 'Viudo/a', labelEn: 'Widowed' },
-    { value: 'cohabiting', labelEs: 'Unión libre', labelEn: 'Cohabiting' },
+    { value: 'cohabiting', labelEs: 'Vive con su pareja sin casarse', labelEn: 'Living together' },
   ]},
   { id: 'q_children', step: 1, textEs: '¿Tiene hijos?', textEn: 'Do you have children?', fieldKey: 'hasChildren', type: 'boolean' },
-  { id: 'q_children_ages', step: 1, textEs: '¿Edades de los hijos?', textEn: 'Children\'s ages?', fieldKey: 'childrenAges', type: 'select',
+  { id: 'q_children_ages', step: 1, textEs: '¿Sus hijos son menores o mayores de edad?', textEn: 'Are your children minors or adults?', fieldKey: 'childrenAges', type: 'select',
     condition: (a) => a.hasChildren === true,
     options: [
-      { value: 'minor', labelEs: 'Menores de edad', labelEn: 'Minors' },
-      { value: 'adult', labelEs: 'Mayores de edad', labelEn: 'Adults' },
-      { value: 'both', labelEs: 'Ambos', labelEn: 'Both' },
+      { value: 'minor', labelEs: 'Son menores de edad', labelEn: 'Minors' },
+      { value: 'adult', labelEs: 'Son mayores de edad', labelEn: 'Adults' },
+      { value: 'both', labelEs: 'Tengo de los dos', labelEn: 'Both' },
     ]},
-  { id: 'q_living', step: 1, textEs: '¿Con quién vive?', textEn: 'Who do you live with?', fieldKey: 'livingSituation', type: 'select', options: [
-    { value: 'alone', labelEs: 'Solo/a', labelEn: 'Alone' },
-    { value: 'with_parents', labelEs: 'Con padres', labelEn: 'With parents' },
-    { value: 'with_partner', labelEs: 'Con pareja', labelEn: 'With partner' },
-    { value: 'with_family', labelEs: 'Con familia', labelEn: 'With family' },
+  { id: 'q_living', step: 1, textEs: '¿Con quién vive en su casa?', textEn: 'Who do you live with?', fieldKey: 'livingSituation', type: 'select', options: [
+    { value: 'alone', labelEs: 'Vivo solo/a', labelEn: 'Alone' },
+    { value: 'with_parents', labelEs: 'Con mis padres', labelEn: 'With parents' },
+    { value: 'with_partner', labelEs: 'Con mi pareja', labelEn: 'With partner' },
+    { value: 'with_family', labelEs: 'Con otros familiares', labelEn: 'With family' },
   ]},
-  { id: 'q_companion', step: 1, textEs: '¿Con quién viajará?', textEn: 'Who will you travel with?', fieldKey: 'travelCompanion', type: 'select', options: [
-    { value: 'alone', labelEs: 'Solo/a', labelEn: 'Alone' },
-    { value: 'both_parents', labelEs: 'Ambos padres', labelEn: 'Both parents' },
-    { value: 'one_parent', labelEs: 'Un padre/madre', labelEn: 'One parent' },
-    { value: 'relatives', labelEs: 'Familiares', labelEn: 'Relatives' },
-    { value: 'partner', labelEs: 'Pareja', labelEn: 'Partner' },
-    { value: 'family', labelEs: 'Familia completa', labelEn: 'Whole family' },
+  { id: 'q_companion', step: 1, textEs: '¿Con quién va a viajar?', textEn: 'Who will you travel with?', fieldKey: 'travelCompanion', type: 'select', options: [
+    { value: 'alone', labelEs: 'Voy solo/a', labelEn: 'Alone' },
+    { value: 'both_parents', labelEs: 'Con papá y mamá', labelEn: 'Both parents' },
+    { value: 'one_parent', labelEs: 'Con uno de mis padres', labelEn: 'One parent' },
+    { value: 'relatives', labelEs: 'Con otros familiares', labelEn: 'Relatives' },
+    { value: 'partner', labelEs: 'Con mi pareja', labelEn: 'Partner' },
+    { value: 'family', labelEs: 'Con toda mi familia', labelEn: 'Whole family' },
   ]},
-  { id: 'q_purpose', step: 1, textEs: '¿Motivo principal del viaje?', textEn: 'Main purpose of travel?', fieldKey: 'travelPurpose', type: 'select',
+  { id: 'q_purpose', step: 1, textEs: '¿Para qué quiere ir a Estados Unidos?', textEn: 'Why do you want to go to the United States?', fieldKey: 'travelPurpose', type: 'select',
     consularQuestion: 'What is the purpose of your trip to the United States?',
     options: [
-      { value: 'tourism', labelEs: 'Turismo', labelEn: 'Tourism' },
-      { value: 'education', labelEs: 'Educación', labelEn: 'Education' },
-      { value: 'business', labelEs: 'Negocios', labelEn: 'Business' },
-      { value: 'medical', labelEs: 'Médico', labelEn: 'Medical' },
-      { value: 'visit_partner', labelEs: 'Visitar pareja', labelEn: 'Visit partner' },
+      { value: 'tourism', labelEs: 'Pasear / Turismo', labelEn: 'Tourism' },
+      { value: 'education', labelEs: 'Estudiar o tomar un curso', labelEn: 'Education' },
+      { value: 'business', labelEs: 'Negocios o trabajo', labelEn: 'Business' },
+      { value: 'medical', labelEs: 'Ir al doctor o tratamiento médico', labelEn: 'Medical' },
+      { value: 'visit_partner', labelEs: 'Visitar a mi novio/a o pareja', labelEn: 'Visit partner' },
       { value: 'visit_family', labelEs: 'Visitar familia', labelEn: 'Visit family' },
-      { value: 'event', labelEs: 'Evento', labelEn: 'Event' },
-      { value: 'other', labelEs: 'Otro', labelEn: 'Other' },
+      { value: 'event', labelEs: 'Ir a un evento (boda, graduación, etc.)', labelEn: 'Event' },
+      { value: 'other', labelEs: 'Otro motivo', labelEn: 'Other' },
     ]},
 
   // ── STEP 2: ESTABILIDAD ──
-  { id: 'q_employment', step: 2, textEs: '¿Situación laboral actual?', textEn: 'Current employment status?', fieldKey: 'employmentStatus', type: 'select',
+  { id: 'q_employment', step: 2, textEs: '¿Qué hace para ganarse la vida?', textEn: 'What do you do for a living?', fieldKey: 'employmentStatus', type: 'select',
     consularQuestion: 'What do you do for a living?',
     options: [
-      { value: 'employed', labelEs: 'Empleado/a', labelEn: 'Employed' },
-      { value: 'self_employed', labelEs: 'Independiente', labelEn: 'Self-employed' },
-      { value: 'unemployed', labelEs: 'Desempleado/a', labelEn: 'Unemployed' },
-      { value: 'student', labelEs: 'Estudiante', labelEn: 'Student' },
-      { value: 'retired', labelEs: 'Jubilado/a', labelEn: 'Retired' },
-      { value: 'part_time', labelEs: 'Medio tiempo', labelEn: 'Part-time' },
+      { value: 'employed', labelEs: 'Trabajo para una empresa o alguien', labelEn: 'Employed' },
+      { value: 'self_employed', labelEs: 'Tengo mi propio negocio', labelEn: 'Self-employed' },
+      { value: 'unemployed', labelEs: 'No estoy trabajando ahora', labelEn: 'Unemployed' },
+      { value: 'student', labelEs: 'Solo estudio', labelEn: 'Student' },
+      { value: 'retired', labelEs: 'Estoy jubilado/a', labelEn: 'Retired' },
+      { value: 'part_time', labelEs: 'Trabajo medio tiempo', labelEn: 'Part-time' },
     ]},
-  { id: 'q_emp_type', step: 2, textEs: '¿Tipo de empleo?', textEn: 'Type of employment?', fieldKey: 'employmentType', type: 'select',
+  { id: 'q_emp_type', step: 2, textEs: '¿En qué tipo de lugar trabaja?', textEn: 'What type of workplace?', fieldKey: 'employmentType', type: 'select',
     condition: (a) => ['employed', 'self_employed', 'part_time'].includes(a.employmentStatus || ''),
     options: [
-      { value: 'private', labelEs: 'Privado', labelEn: 'Private' },
-      { value: 'public', labelEs: 'Público', labelEn: 'Public' },
-      { value: 'freelance', labelEs: 'Freelance', labelEn: 'Freelance' },
-      { value: 'family_business', labelEs: 'Negocio familiar', labelEn: 'Family business' },
-      { value: 'informal', labelEs: 'Informal', labelEn: 'Informal' },
+      { value: 'private', labelEs: 'Empresa privada', labelEn: 'Private company' },
+      { value: 'public', labelEs: 'Gobierno o sector público', labelEn: 'Government' },
+      { value: 'freelance', labelEs: 'Trabajo por mi cuenta (freelance)', labelEn: 'Freelance' },
+      { value: 'family_business', labelEs: 'Negocio de la familia', labelEn: 'Family business' },
+      { value: 'informal', labelEs: 'Trabajo informal (sin contrato)', labelEn: 'Informal' },
     ]},
-  { id: 'q_registered_biz', step: 2, textEs: '¿Tiene negocio registrado?', textEn: 'Do you have a registered business?', fieldKey: 'hasRegisteredBusiness', type: 'boolean',
+  { id: 'q_registered_biz', step: 2, textEs: '¿Su negocio está registrado legalmente?', textEn: 'Is your business legally registered?', fieldKey: 'hasRegisteredBusiness', type: 'boolean',
     condition: (a) => a.employmentStatus === 'self_employed' },
-  { id: 'q_job_tenure', step: 2, textEs: '¿Cuánto tiempo tiene en su trabajo actual?', textEn: 'How long have you been at your current job?', fieldKey: 'jobTenure', type: 'select',
+  { id: 'q_job_tenure', step: 2, textEs: '¿Hace cuánto tiempo trabaja ahí?', textEn: 'How long have you been working there?', fieldKey: 'jobTenure', type: 'select',
     consularQuestion: 'How long have you been working there?',
     condition: (a) => ['employed', 'self_employed', 'part_time'].includes(a.employmentStatus || ''),
     options: [
       { value: 'less_1yr', labelEs: 'Menos de 1 año', labelEn: 'Less than 1 year' },
-      { value: '1_3yr', labelEs: '1 – 3 años', labelEn: '1 – 3 years' },
-      { value: '3_5yr', labelEs: '3 – 5 años', labelEn: '3 – 5 years' },
+      { value: '1_3yr', labelEs: '1 a 3 años', labelEn: '1 – 3 years' },
+      { value: '3_5yr', labelEs: '3 a 5 años', labelEn: '3 – 5 years' },
       { value: 'over_5yr', labelEs: 'Más de 5 años', labelEn: 'Over 5 years' },
     ]},
-  { id: 'q_income', step: 2, textEs: '¿Nivel de ingresos mensuales?', textEn: 'Monthly income level?', fieldKey: 'monthlyIncome', type: 'select',
+  { id: 'q_income', step: 2, textEs: '¿Cuánto dinero gana al mes?', textEn: 'How much money do you earn per month?', fieldKey: 'monthlyIncome', type: 'select',
     consularQuestion: 'How much do you earn per month?',
     options: [
-      { value: 'none', labelEs: 'Sin ingresos', labelEn: 'No income' },
-      { value: 'low', labelEs: 'Bajo (< $500)', labelEn: 'Low (< $500)' },
-      { value: 'medium', labelEs: 'Medio ($500-$1500)', labelEn: 'Medium ($500-$1500)' },
-      { value: 'high', labelEs: 'Alto ($1500-$5000)', labelEn: 'High ($1500-$5000)' },
-      { value: 'very_high', labelEs: 'Muy alto (> $5000)', labelEn: 'Very high (> $5000)' },
+      { value: 'none', labelEs: 'No gano dinero', labelEn: 'No income' },
+      { value: 'low', labelEs: 'Menos de $500 al mes', labelEn: 'Less than $500/month' },
+      { value: 'medium', labelEs: 'Entre $500 y $1,500 al mes', labelEn: '$500 – $1,500/month' },
+      { value: 'high', labelEs: 'Entre $1,500 y $5,000 al mes', labelEn: '$1,500 – $5,000/month' },
+      { value: 'very_high', labelEs: 'Más de $5,000 al mes', labelEn: 'More than $5,000/month' },
     ]},
-  { id: 'q_studying', step: 2, textEs: '¿Estudia actualmente?', textEn: 'Currently studying?', fieldKey: 'isStudying', type: 'boolean' },
-  { id: 'q_education', step: 2, textEs: '¿Nivel educativo?', textEn: 'Education level?', fieldKey: 'educationLevel', type: 'select', options: [
-    { value: 'none', labelEs: 'Sin educación formal', labelEn: 'No formal education' },
-    { value: 'high_school', labelEs: 'Secundaria/Bachillerato', labelEn: 'High school' },
-    { value: 'university_current', labelEs: 'Universidad (cursando)', labelEn: 'University (current)' },
-    { value: 'university_recent', labelEs: 'Universidad (recién graduado)', labelEn: 'University (recent grad)' },
-    { value: 'university', labelEs: 'Universidad (graduado)', labelEn: 'University (graduate)' },
-    { value: 'postgrad', labelEs: 'Posgrado', labelEn: 'Postgraduate' },
+  { id: 'q_studying', step: 2, textEs: '¿Está estudiando en este momento?', textEn: 'Are you currently studying?', fieldKey: 'isStudying', type: 'boolean' },
+  { id: 'q_education', step: 2, textEs: '¿Hasta qué grado estudió?', textEn: 'What is your education level?', fieldKey: 'educationLevel', type: 'select', options: [
+    { value: 'none', labelEs: 'No fui a la escuela', labelEn: 'No formal education' },
+    { value: 'high_school', labelEs: 'Terminé la secundaria o bachillerato', labelEn: 'High school' },
+    { value: 'university_current', labelEs: 'Estoy en la universidad ahora', labelEn: 'University (current)' },
+    { value: 'university_recent', labelEs: 'Me gradué hace poco de la universidad', labelEn: 'University (recent grad)' },
+    { value: 'university', labelEs: 'Ya me gradué de la universidad', labelEn: 'University (graduate)' },
+    { value: 'postgrad', labelEs: 'Tengo maestría o doctorado', labelEn: 'Postgraduate' },
   ]},
-  { id: 'q_income_stability', step: 2, textEs: '¿Estabilidad de ingresos?', textEn: 'Income stability?', fieldKey: 'incomeStability', type: 'select', options: [
-    { value: 'stable', labelEs: 'Estable', labelEn: 'Stable' },
-    { value: 'irregular', labelEs: 'Irregular', labelEn: 'Irregular' },
-    { value: 'none', labelEs: 'Sin ingresos', labelEn: 'No income' },
+  { id: 'q_income_stability', step: 2, textEs: '¿Cómo le llega el dinero cada mes?', textEn: 'How does your income arrive each month?', fieldKey: 'incomeStability', type: 'select', options: [
+    { value: 'stable', labelEs: 'Me pagan siempre la misma cantidad y a tiempo', labelEn: 'Always the same amount, on time' },
+    { value: 'irregular', labelEs: 'A veces gano más, a veces menos', labelEn: 'Sometimes more, sometimes less' },
+    { value: 'none', labelEs: 'No me entra dinero', labelEn: 'No income coming in' },
   ]},
   { id: 'q_partner_occupation', step: 2, textEs: '¿A qué se dedica su pareja?', textEn: 'What does your partner do?', fieldKey: 'partnerOccupation', type: 'select',
     consularQuestion: 'What does your spouse do for a living?',
     condition: (a) => ['married', 'cohabiting'].includes(a.maritalStatus || ''),
     options: [
-      { value: 'employed', labelEs: 'Empleado/a', labelEn: 'Employed' },
-      { value: 'self_employed', labelEs: 'Independiente', labelEn: 'Self-employed' },
-      { value: 'student', labelEs: 'Estudiante', labelEn: 'Student' },
-      { value: 'homemaker', labelEs: 'Ama de casa', labelEn: 'Homemaker' },
-      { value: 'unemployed', labelEs: 'Desempleado/a', labelEn: 'Unemployed' },
-      { value: 'retired', labelEs: 'Jubilado/a', labelEn: 'Retired' },
+      { value: 'employed', labelEs: 'Trabaja para alguien', labelEn: 'Employed' },
+      { value: 'self_employed', labelEs: 'Tiene su propio negocio', labelEn: 'Self-employed' },
+      { value: 'student', labelEs: 'Estudia', labelEn: 'Student' },
+      { value: 'homemaker', labelEs: 'Se dedica al hogar', labelEn: 'Homemaker' },
+      { value: 'unemployed', labelEs: 'No está trabajando', labelEn: 'Not working' },
+      { value: 'retired', labelEs: 'Está jubilado/a', labelEn: 'Retired' },
     ]},
 
   // ── STEP 3: ARRAIGO ──
@@ -488,72 +497,83 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   { id: 'q_vehicle', step: 3, textEs: '¿Tiene vehículo propio?', textEn: 'Do you own a vehicle?', fieldKey: 'ownsVehicle', type: 'boolean' },
   { id: 'q_bank', step: 3, textEs: '¿Tiene cuentas bancarias?', textEn: 'Do you have bank accounts?', fieldKey: 'hasBankAccounts', type: 'boolean' },
   { id: 'q_invest', step: 3, textEs: '¿Tiene inversiones?', textEn: 'Do you have investments?', fieldKey: 'hasInvestments', type: 'boolean' },
-  { id: 'q_family_ties', step: 3, textEs: '¿Vínculos familiares en su país?', textEn: 'Family ties in home country?', fieldKey: 'familyInHomeCountry', type: 'select',
+  { id: 'q_family_ties', step: 3, textEs: '¿Qué tanta familia tiene en su país?', textEn: 'How much family do you have in your home country?', fieldKey: 'familyInHomeCountry', type: 'select',
     consularQuestion: 'What family do you have in your home country?',
     options: [
-      { value: 'strong', labelEs: 'Fuertes', labelEn: 'Strong' },
-      { value: 'moderate', labelEs: 'Moderados', labelEn: 'Moderate' },
-      { value: 'weak', labelEs: 'Débiles', labelEn: 'Weak' },
+      { value: 'strong', labelEs: 'Mucha familia cercana (padres, hermanos, hijos)', labelEn: 'Lots of close family' },
+      { value: 'moderate', labelEs: 'Algo de familia (tíos, primos)', labelEn: 'Some family' },
+      { value: 'weak', labelEs: 'Casi no tengo familia aquí', labelEn: 'Very little family here' },
     ]},
-  { id: 'q_community', step: 3, textEs: '¿Vínculos comunitarios?', textEn: 'Community ties?', fieldKey: 'communityTies', type: 'select', options: [
-    { value: 'strong', labelEs: 'Fuertes (iglesia, organizaciones, etc.)', labelEn: 'Strong' },
-    { value: 'moderate', labelEs: 'Moderados', labelEn: 'Moderate' },
-    { value: 'weak', labelEs: 'Débiles', labelEn: 'Weak' },
+  { id: 'q_community', step: 3, textEs: '¿Participa en algo en su comunidad?', textEn: 'Do you participate in community activities?', fieldKey: 'communityTies', type: 'select', options: [
+    { value: 'strong', labelEs: 'Sí, voy a la iglesia, club, o soy parte de un grupo', labelEn: 'Yes, church, club, or group' },
+    { value: 'moderate', labelEs: 'A veces participo en actividades', labelEn: 'Sometimes' },
+    { value: 'weak', labelEs: 'No participo en nada', labelEn: 'No participation' },
   ]},
-  { id: 'q_dependents', step: 3, textEs: '¿Tiene dependientes a su cargo?', textEn: 'Do you have dependents?', fieldKey: 'hasDependents', type: 'boolean' },
+  { id: 'q_dependents', step: 3, textEs: '¿Hay personas que dependen de usted económicamente?', textEn: 'Are there people who depend on you financially?', fieldKey: 'hasDependents', type: 'boolean' },
 
   // ── STEP 4: VIAJES ──
-  { id: 'q_prev_visa', step: 4, textEs: '¿Ha tenido visa aprobada antes?', textEn: 'Have you had a visa approved before?', fieldKey: 'previousVisaApproved', type: 'boolean',
+  { id: 'q_family_visa', step: 4, textEs: '¿Alguien en su casa tiene visa americana?', textEn: 'Does anyone in your household have a US visa?', fieldKey: 'familyHasVisa', type: 'boolean',
+    consularQuestion: 'Does anyone in your family have a US visa?' },
+  { id: 'q_family_visa_usage', step: 4, textEs: '¿Cómo han usado la visa en su familia?', textEn: 'How has your family used the visa?', fieldKey: 'familyVisaUsage', type: 'select',
+    condition: (a) => a.familyHasVisa === true,
+    consularQuestion: 'How has your family member used their visa?',
+    options: [
+      { value: 'short_trips', labelEs: 'Han ido por poco tiempo y regresan rápido', labelEn: 'Short trips, return quickly' },
+      { value: 'long_trips', labelEs: 'Se han quedado por mucho tiempo', labelEn: 'Stayed for long periods' },
+      { value: 'mixed', labelEs: 'A veces corto, a veces largo', labelEn: 'Sometimes short, sometimes long' },
+      { value: 'never_used', labelEs: 'Tienen visa pero nunca la han usado', labelEn: 'Have visa but never used it' },
+    ]},
+  { id: 'q_prev_visa', step: 4, textEs: '¿A usted le han aprobado una visa antes?', textEn: 'Have you had a visa approved before?', fieldKey: 'previousVisaApproved', type: 'boolean',
     consularQuestion: 'Have you ever been to the United States before?' },
-  { id: 'q_prev_us', step: 4, textEs: '¿Ha viajado a EE.UU. antes?', textEn: 'Have you traveled to the US before?', fieldKey: 'previousUSTravel', type: 'boolean' },
-  { id: 'q_travel_hist', step: 4, textEs: '¿Historial de viajes internacionales?', textEn: 'International travel history?', fieldKey: 'travelHistory', type: 'select', options: [
-    { value: 'none', labelEs: 'Ninguno', labelEn: 'None' },
-    { value: 'regional', labelEs: 'Regional (países vecinos)', labelEn: 'Regional' },
-    { value: 'international', labelEs: 'Internacional', labelEn: 'International' },
-    { value: 'extensive', labelEs: 'Extenso (múltiples países)', labelEn: 'Extensive' },
+  { id: 'q_prev_us', step: 4, textEs: '¿Usted ha ido a Estados Unidos antes?', textEn: 'Have you traveled to the US before?', fieldKey: 'previousUSTravel', type: 'boolean' },
+  { id: 'q_travel_hist', step: 4, textEs: '¿Ha viajado a otros países?', textEn: 'Have you traveled to other countries?', fieldKey: 'travelHistory', type: 'select', options: [
+    { value: 'none', labelEs: 'Nunca he salido de mi país', labelEn: 'Never left my country' },
+    { value: 'regional', labelEs: 'He ido a países cercanos', labelEn: 'Nearby countries' },
+    { value: 'international', labelEs: 'He viajado a otros continentes', labelEn: 'Other continents' },
+    { value: 'extensive', labelEs: 'He viajado a muchos países', labelEn: 'Many countries' },
   ]},
-  { id: 'q_compliance', step: 4, textEs: '¿Historial de cumplimiento migratorio?', textEn: 'Immigration compliance record?', fieldKey: 'complianceRecord', type: 'select', options: [
-    { value: 'perfect', labelEs: 'Perfecto', labelEn: 'Perfect' },
-    { value: 'minor_issues', labelEs: 'Problemas menores', labelEn: 'Minor issues' },
-    { value: 'overstay', labelEs: 'Sobrestadía', labelEn: 'Overstay' },
-    { value: 'unknown', labelEs: 'No aplica / Primer viaje', labelEn: 'N/A / First trip' },
+  { id: 'q_compliance', step: 4, textEs: '¿Ha tenido problemas de migración antes?', textEn: 'Have you had immigration issues before?', fieldKey: 'complianceRecord', type: 'select', options: [
+    { value: 'perfect', labelEs: 'No, siempre he cumplido las reglas', labelEn: 'No, always followed the rules' },
+    { value: 'minor_issues', labelEs: 'Tuve un problema pequeño', labelEn: 'Had a small issue' },
+    { value: 'overstay', labelEs: 'Me quedé más tiempo del permitido', labelEn: 'Stayed longer than allowed' },
+    { value: 'unknown', labelEs: 'Es mi primera vez viajando', labelEn: 'First time traveling' },
   ]},
-  { id: 'q_duration', step: 4, textEs: '¿Duración planeada del viaje?', textEn: 'Planned trip duration?', fieldKey: 'tripDuration', type: 'select',
+  { id: 'q_duration', step: 4, textEs: '¿Cuánto tiempo piensa quedarse en EE.UU.?', textEn: 'How long do you plan to stay in the US?', fieldKey: 'tripDuration', type: 'select',
     consularQuestion: 'How long do you plan to stay in the United States?',
     options: [
-      { value: 'short', labelEs: '1-2 semanas', labelEn: '1-2 weeks' },
-      { value: 'medium', labelEs: '2-4 semanas', labelEn: '2-4 weeks' },
+      { value: 'short', labelEs: '1 a 2 semanas', labelEn: '1-2 weeks' },
+      { value: 'medium', labelEs: '2 semanas a 1 mes', labelEn: '2 weeks to 1 month' },
       { value: 'long', labelEs: 'Más de 1 mes', labelEn: 'More than 1 month' },
     ]},
-  { id: 'q_financed', step: 4, textEs: '¿Quién financia el viaje?', textEn: 'Who is financing the trip?', fieldKey: 'tripFinancedBy', type: 'select',
+  { id: 'q_financed', step: 4, textEs: '¿Quién va a pagar el viaje?', textEn: 'Who is paying for the trip?', fieldKey: 'tripFinancedBy', type: 'select',
     consularQuestion: 'Who is paying for your trip?',
     options: [
-      { value: 'self', labelEs: 'Yo mismo', labelEn: 'Self' },
-      { value: 'family_local', labelEs: 'Familia (en mi país)', labelEn: 'Family (local)' },
-      { value: 'family_usa', labelEs: 'Familiar en EE.UU.', labelEn: 'Family in USA' },
-      { value: 'employer', labelEs: 'Empleador', labelEn: 'Employer' },
-      { value: 'other', labelEs: 'Otro', labelEn: 'Other' },
+      { value: 'self', labelEs: 'Yo lo pago con mi dinero', labelEn: 'I pay with my money' },
+      { value: 'family_local', labelEs: 'Mi familia de aquí me ayuda', labelEn: 'My family here helps' },
+      { value: 'family_usa', labelEs: 'Un familiar en Estados Unidos paga', labelEn: 'A family member in the US pays' },
+      { value: 'employer', labelEs: 'Mi trabajo lo paga', labelEn: 'My employer pays' },
+      { value: 'other', labelEs: 'Otra persona', labelEn: 'Someone else' },
     ]},
 
   // ── STEP 5: HISTORIAL ──
-  { id: 'q_denials', step: 5, textEs: '¿Cuántas veces le han negado la visa?', textEn: 'How many times have you been denied a visa?', fieldKey: 'previousDenials', type: 'select',
+  { id: 'q_denials', step: 5, textEs: '¿Cuántas veces le han dicho que NO a la visa?', textEn: 'How many times have you been denied a visa?', fieldKey: 'previousDenials', type: 'select',
     consularQuestion: 'Have you ever been refused a visa to the United States?',
     options: [
-      { value: '0', labelEs: 'Ninguna', labelEn: 'None' },
-      { value: '1', labelEs: '1 vez', labelEn: '1 time' },
-      { value: '2', labelEs: '2 veces', labelEn: '2 times' },
-      { value: '3', labelEs: '3 o más', labelEn: '3 or more' },
+      { value: '0', labelEs: 'Nunca me la han negado', labelEn: 'Never denied' },
+      { value: '1', labelEs: 'Me la negaron 1 vez', labelEn: 'Denied 1 time' },
+      { value: '2', labelEs: 'Me la negaron 2 veces', labelEn: 'Denied 2 times' },
+      { value: '3', labelEs: 'Me la han negado 3 veces o más', labelEn: 'Denied 3+ times' },
     ]},
-  { id: 'q_recent_denial', step: 5, textEs: '¿Cuándo fue la negación más reciente?', textEn: 'When was the most recent denial?', fieldKey: 'mostRecentDenial', type: 'select',
+  { id: 'q_recent_denial', step: 5, textEs: '¿Hace cuánto le negaron la visa?', textEn: 'How long ago was the denial?', fieldKey: 'mostRecentDenial', type: 'select',
     condition: (a) => (a.previousDenials || 0) > 0,
     options: [
-      { value: 'less_1yr', labelEs: 'Menos de 1 año', labelEn: 'Less than 1 year' },
-      { value: '1_3yr', labelEs: '1-3 años', labelEn: '1-3 years' },
-      { value: 'over_3yr', labelEs: 'Más de 3 años', labelEn: 'Over 3 years' },
+      { value: 'less_1yr', labelEs: 'Hace menos de 1 año', labelEn: 'Less than 1 year ago' },
+      { value: '1_3yr', labelEs: 'Hace 1 a 3 años', labelEn: '1-3 years ago' },
+      { value: 'over_3yr', labelEs: 'Hace más de 3 años', labelEn: 'Over 3 years ago' },
     ]},
-  { id: 'q_gaps', step: 5, textEs: '¿Tiene huecos laborales largos?', textEn: 'Do you have long employment gaps?', fieldKey: 'employmentGaps', type: 'boolean' },
-  { id: 'q_inconsistencies', step: 5, textEs: '¿Hay inconsistencias en su perfil?', textEn: 'Are there inconsistencies in your profile?', fieldKey: 'inconsistencies', type: 'boolean' },
-  { id: 'q_criminal', step: 5, textEs: '¿Tiene antecedentes penales?', textEn: 'Do you have a criminal record?', fieldKey: 'criminalRecord', type: 'boolean' },
+  { id: 'q_gaps', step: 5, textEs: '¿Ha estado mucho tiempo sin trabajar?', textEn: 'Have you been unemployed for a long time?', fieldKey: 'employmentGaps', type: 'boolean' },
+  { id: 'q_inconsistencies', step: 5, textEs: '¿Hay algo en su historia que no cuadra o es difícil de explicar?', textEn: 'Is there anything in your history that is hard to explain?', fieldKey: 'inconsistencies', type: 'boolean' },
+  { id: 'q_criminal', step: 5, textEs: '¿Ha tenido problemas con la policía o la justicia?', textEn: 'Have you had issues with the police or justice system?', fieldKey: 'criminalRecord', type: 'boolean' },
 ];
 
 export const STEP_LABELS = [

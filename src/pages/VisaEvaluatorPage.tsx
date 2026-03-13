@@ -108,25 +108,25 @@ export default function VisaEvaluatorPage() {
   };
 
   return (
-    <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
-      <div className="max-w-2xl mx-auto px-4 py-4 flex flex-col flex-1 min-h-0 w-full">
+    <div className="h-[100dvh] bg-background text-foreground flex flex-col overflow-hidden">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 py-2 sm:py-4 flex flex-col flex-1 min-h-0 w-full">
         {/* Header */}
-        <div className="flex items-center justify-between mb-3 shrink-0">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/hub')}>
-              <ArrowLeft className="h-5 w-5" />
+        <div className="flex items-center justify-between mb-2 sm:mb-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => navigate('/hub')}>
+              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
             <div>
-              <h1 className="text-xl font-bold flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
+              <h1 className="text-base sm:text-xl font-bold flex items-center gap-2">
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 Visa Evaluator B1/B2
               </h1>
-              <p className="text-xs text-muted-foreground">Evaluación de perfil consular</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Evaluación de perfil consular</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={generateClientLink}>
-              <Link2 className="h-4 w-4 mr-1" /> Link Cliente
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm h-7 sm:h-8" onClick={generateClientLink}>
+              <Link2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> <span className="hidden sm:inline">Link Cliente</span><span className="sm:hidden">Link</span>
             </Button>
           </div>
         </div>
@@ -151,8 +151,8 @@ export default function VisaEvaluatorPage() {
 
         {/* Disclaimer */}
         {view === 'form' && (
-          <div className="py-2 shrink-0">
-            <p className="text-[10px] text-muted-foreground/40 text-center italic">
+          <div className="py-1 sm:py-2 shrink-0">
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground/40 text-center italic">
               ⚖️ Este resultado es una guía informativa basada en el manual 9 FAM 402.2-2.
             </p>
           </div>

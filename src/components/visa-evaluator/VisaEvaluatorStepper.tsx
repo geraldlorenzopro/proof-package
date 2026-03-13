@@ -145,12 +145,12 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
   return (
     <div className="flex flex-col flex-1 min-h-0 max-w-2xl mx-auto w-full">
       {/* ─── Outer Shell ─── */}
-      <div className="relative rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0" style={{ boxShadow: '0 0 60px -15px hsl(195 100% 50% / 0.08), 0 25px 50px -12px rgba(0,0,0,0.4)' }}>
+      <div className="relative rounded-xl sm:rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0" style={{ boxShadow: '0 0 60px -15px hsl(195 100% 50% / 0.08), 0 25px 50px -12px rgba(0,0,0,0.4)' }}>
         {/* Subtle top glow line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--jarvis)/0.4)] to-transparent" />
 
-        {/* ─── Section Header: Large, centered, unique ─── */}
-        <div className="bg-[hsl(220,30%,8%)] border-b border-border/10 px-8 pt-5 pb-4 shrink-0">
+        {/* ─── Section Header ─── */}
+        <div className="bg-[hsl(220,30%,8%)] border-b border-border/10 px-4 sm:px-8 pt-3 sm:pt-5 pb-3 sm:pb-4 shrink-0">
           {/* Current section — big hero label */}
           <AnimatePresence mode="wait">
             <motion.div
@@ -159,22 +159,22 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.3 }}
-              className="flex flex-col items-center text-center mb-4"
+              className="flex flex-col items-center text-center mb-3 sm:mb-4"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--jarvis)/0.15)] to-[hsl(var(--jarvis)/0.05)] border border-[hsl(var(--jarvis)/0.2)] flex items-center justify-center text-[hsl(var(--jarvis))] mb-2">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-[hsl(var(--jarvis)/0.15)] to-[hsl(var(--jarvis)/0.05)] border border-[hsl(var(--jarvis)/0.2)] flex items-center justify-center text-[hsl(var(--jarvis))] mb-1.5 sm:mb-2">
                 {STEP_ICONS[currentStep]}
               </div>
-              <h3 className="text-xl font-bold text-foreground tracking-tight">
+              <h3 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
                 {currentStepLabel?.labelEs}
               </h3>
-              <span className="text-[11px] text-muted-foreground/70 font-medium tracking-wide mt-1">
+              <span className="text-[10px] sm:text-[11px] text-muted-foreground/70 font-medium tracking-wide mt-0.5 sm:mt-1">
                 SECCIÓN {currentStep} DE {STEP_LABELS.length}
               </span>
             </motion.div>
           </AnimatePresence>
 
-          {/* Step navigation pills — small, secondary */}
-          <div className="flex items-center justify-center gap-1.5 mb-3">
+          {/* Step navigation pills */}
+          <div className="flex items-center justify-center gap-1.5 mb-2 sm:mb-3">
             {STEP_LABELS.map(s => {
               const isActive = currentStep === s.step;
               const isDone = currentStep > s.step;
@@ -189,7 +189,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                     }
                   }}
                   className={cn(
-                    "w-10 h-1.5 rounded-full transition-all duration-300",
+                    "w-8 sm:w-10 h-1.5 rounded-full transition-all duration-300",
                     isActive
                       ? "bg-[hsl(var(--jarvis))] shadow-[0_0_8px_hsl(var(--jarvis)/0.4)]"
                       : isDone
@@ -202,7 +202,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </div>
 
           {/* Progress bar */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex-1 h-1 rounded-full bg-muted/20 overflow-hidden">
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--jarvis))] to-emerald-400"
@@ -211,15 +211,15 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                 transition={{ duration: 0.4, ease: "easeOut" }}
               />
             </div>
-            <span className="text-xs font-mono font-bold text-[hsl(var(--jarvis))]">{progress}%</span>
+            <span className="text-[10px] sm:text-xs font-mono font-bold text-[hsl(var(--jarvis))]">{progress}%</span>
           </div>
         </div>
 
         {/* ─── Question Area ─── */}
         <div className="bg-[hsl(220,25%,7%)] flex-1 min-h-0 flex flex-col">
           {/* Question counter */}
-          <div className="px-8 pt-5 pb-2 flex items-center justify-between">
-            <span className="text-[10px] font-mono font-semibold text-muted-foreground/70 tracking-wider">
+          <div className="px-4 sm:px-8 pt-3 sm:pt-5 pb-1 sm:pb-2 flex items-center justify-between">
+            <span className="text-[9px] sm:text-[10px] font-mono font-semibold text-muted-foreground/70 tracking-wider">
               {String(qIndex + 1).padStart(2, '0')} / {String(totalQuestions).padStart(2, '0')}
             </span>
             {/* Audio controls */}
@@ -252,7 +252,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </div>
 
           {/* Animated question */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-8 pb-4">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 pb-3 sm:pb-4">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={currentQ.id}
@@ -261,10 +261,10 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: direction * -40 }}
                 transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 {/* Question text */}
-                <h2 className="text-xl font-semibold text-foreground leading-snug">
+                <h2 className="text-lg sm:text-xl font-semibold text-foreground leading-snug">
                   {currentQ.textEs}
                 </h2>
 
@@ -281,7 +281,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
 
                 {/* Options */}
                 {currentQ.type === 'select' && currentQ.options && (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {currentQ.options.map(opt => {
                       const isSelected = answers[currentQ.fieldKey] === opt.value;
                       return (
@@ -290,7 +290,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                           type="button"
                           onClick={() => handleOptionSelect(currentQ.fieldKey, opt.value)}
                           className={cn(
-                            "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200 border group",
+                            "w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-left transition-all duration-200 border group",
                             isSelected
                               ? "bg-[hsl(var(--jarvis)/0.08)] border-[hsl(var(--jarvis)/0.3)] shadow-[0_0_20px_-5px_hsl(195_100%_50%/0.15)]"
                               : "bg-[hsl(220,25%,10%)] border-border/20 hover:border-border/40 hover:bg-[hsl(220,25%,12%)]"
@@ -348,7 +348,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </div>
 
           {/* ─── Navigation ─── */}
-          <div className="px-8 py-3 shrink-0 flex items-center gap-3">
+          <div className="px-4 sm:px-8 py-2 sm:py-3 shrink-0 flex items-center gap-3">
             {qIndex > 0 && (
               <button
                 onClick={goPrev}
@@ -362,7 +362,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
             {isLastQuestion && allAnswered ? (
               <Button
                 onClick={handleSubmit}
-                className="bg-gradient-to-r from-[hsl(var(--jarvis))] to-emerald-500 hover:from-[hsl(var(--jarvis-glow))] hover:to-emerald-400 text-background font-bold px-6 shadow-[0_0_30px_-5px_hsl(195_100%_50%/0.3)]"
+                className="bg-gradient-to-r from-[hsl(var(--jarvis))] to-emerald-500 hover:from-[hsl(var(--jarvis-glow))] hover:to-emerald-400 text-background font-bold px-4 sm:px-6 text-sm shadow-[0_0_30px_-5px_hsl(195_100%_50%/0.3)]"
               >
                 <Eye className="h-4 w-4 mr-2" /> Ver resultados
               </Button>
