@@ -41,11 +41,13 @@ const STAGE_LABELS: Record<string, string> = {
 const ALL_STAGES = Object.keys(STAGE_LABELS);
 
 export default function B1B2Dashboard() {
-  const { accountCid } = useParams<{ accountCid: string }>();
+  const { accountCid: paramCid } = useParams<{ accountCid: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [loading, setLoading] = useState(true);
+  const [resolvedCid, setResolvedCid] = useState(paramCid || "");
+  const [cidInput, setCidInput] = useState("");
+  const [loading, setLoading] = useState(!!paramCid);
   const [error, setError] = useState<string | null>(null);
   const [cases, setCases] = useState<B1B2Case[]>([]);
   const [accountName, setAccountName] = useState("");
@@ -58,6 +60,8 @@ export default function B1B2Dashboard() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [creating, setCreating] = useState(false);
+
+  const accountCid = paramCid || resolvedCid;
 
   const loadCases = useCallback(async () => {
     if (!accountCid) return;
