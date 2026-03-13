@@ -24,8 +24,10 @@ type DeadlineCase = {
 const FILTER_LABELS: Record<string, { label: string; description: string; color: string }> = {
   active: { label: "Casos Activos", description: "Todos los casos que no están completados", color: "bg-accent/10 text-accent border-accent/20" },
   "needs-action": { label: "Requieren Acción", description: "Casos donde el equipo necesita actuar", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
-  deadlines: { label: "Deadlines Urgentes", description: "Casos con deadlines en los próximos 7 días", color: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
+  deadlines: { label: "Deadlines", description: "Casos con deadlines en los próximos 7 días", color: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
   completed: { label: "Completados", description: "Casos completados este mes", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+  pending: { label: "Pendientes", description: "Casos en espera de inicio", color: "bg-accent/10 text-accent border-accent/20" },
+  "in-progress": { label: "En Progreso", description: "Casos actualmente en proceso", color: "bg-jarvis/10 text-jarvis border-jarvis/20" },
 };
 
 export default function CasesPage() {
