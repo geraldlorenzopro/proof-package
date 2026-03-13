@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight, Eye, X, Filter } from 'lucide-react';
+import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight, X, Filter } from 'lucide-react';
 import NewCaseModal from '@/components/NewCaseModal';
 import { Badge } from '@/components/ui/badge';
 
@@ -24,8 +24,10 @@ type DeadlineCase = {
 const FILTER_LABELS: Record<string, { label: string; description: string; color: string }> = {
   active: { label: "Casos Activos", description: "Todos los casos que no están completados", color: "bg-accent/10 text-accent border-accent/20" },
   "needs-action": { label: "Requieren Acción", description: "Casos donde el equipo necesita actuar", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
-  deadlines: { label: "Deadlines Urgentes", description: "Casos con deadlines en los próximos 7 días", color: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
+  deadlines: { label: "Deadlines", description: "Casos con deadlines en los próximos 7 días", color: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
   completed: { label: "Completados", description: "Casos completados este mes", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+  pending: { label: "Pendientes", description: "Casos en espera de inicio", color: "bg-accent/10 text-accent border-accent/20" },
+  "in-progress": { label: "En Progreso", description: "Casos actualmente en proceso", color: "bg-jarvis/10 text-jarvis border-jarvis/20" },
 };
 
 export default function CasesPage() {
@@ -77,6 +79,10 @@ export default function CasesPage() {
         return cases.filter(c => deadlineCaseIds.has(c.id));
       case 'completed':
         return cases.filter(c => c.status === 'completed' && c.updated_at && new Date(c.updated_at) >= startOfMonth);
+      case 'pending':
+        return cases.filter(c => c.status === 'pending');
+      case 'in-progress':
+        return cases.filter(c => c.status === 'in_progress');
       default:
         return cases;
     }
@@ -122,15 +128,15 @@ export default function CasesPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-16 lg:pt-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={() => navigate('/hub')} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex-1">
             <h1 className="text-xl font-bold text-foreground">
-              {filterMeta ? filterMeta.label : "Mis Casos"}
+              {filterMeta ? filterMeta.label : "Casos"}
             </h1>
             <p className="text-xs text-muted-foreground">
-              {filterMeta ? filterMeta.description : "Gestiona los casos y enlaces de tus clientes"}
+              {filterMeta ? filterMeta.description : "Vista operativa de todos los casos de la firma"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -138,8 +144,8 @@ export default function CasesPage() {
               onClick={() => navigate('/dashboard/workspace-demo')}
               className="flex items-center gap-2 border border-primary/30 text-primary font-semibold px-4 py-2.5 rounded-xl hover:bg-primary/10 transition-colors text-sm"
             >
-              <Eye className="w-4 h-4" />
-              Demo Workspace
+              <Users className="w-4 h-4" />
+              Portfolio
             </button>
             <button
               onClick={() => setShowModal(true)}
@@ -170,8 +176,8 @@ export default function CasesPage() {
           <div className="grid grid-cols-4 gap-3 mb-6">
             {[
               { label: 'Total', value: stats.total, icon: Users, color: 'text-jarvis', filter: undefined },
-              { label: 'Pendientes', value: stats.pending, icon: Clock, color: 'text-accent', filter: 'active' },
-              { label: 'En progreso', value: stats.inProgress, icon: ChevronRight, color: 'text-jarvis', filter: 'needs-action' },
+              { label: 'Pendientes', value: stats.pending, icon: Clock, color: 'text-accent', filter: 'pending' },
+              { label: 'En Progreso', value: stats.inProgress, icon: ChevronRight, color: 'text-jarvis', filter: 'in-progress' },
               { label: 'Completados', value: stats.completed, icon: CheckCircle, color: 'text-emerald-400', filter: 'completed' },
             ].map(s => (
               <button
@@ -257,7 +263,7 @@ export default function CasesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => navigate(`/case/${c.id}`)} className="text-xs text-jarvis hover:underline font-medium px-2 py-1">
+                    <button onClick={() => navigate(`/case-engine/${c.id}`)} className="text-xs text-jarvis hover:underline font-medium px-2 py-1">
                       Revisar
                     </button>
                     <button onClick={() => deleteCase(c.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-destructive/10">
