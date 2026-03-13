@@ -52,7 +52,7 @@ export default function CasePipelineTracker({ stages, currentStage, stageEntered
         {stages.map((stage, i) => {
           const isPast = i < currentIdx;
           const isCurrent = i === currentIdx;
-          const owner = ownerConfig[stage.owner];
+          const owner = ownerConfig[stage.owner] || defaultOwner;
           const sla = getSlaStatus(stage, stageEnteredAt, isCurrent);
 
           return (
