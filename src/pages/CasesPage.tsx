@@ -68,33 +68,58 @@ export default function CasesPage() {
     setLoading(false);
   }
 
-  // Apply filter from URL
+  // Apply URL filter first, then local filters
   const filteredCases = useMemo(() => {
-    if (!activeFilter) return cases;
+    let result = cases;
 
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    switch (activeFilter) {
-      case 'active':
-        return cases.filter(c => c.status !== 'completed');
-      case 'needs-action':
-        return cases.filter(c => c.ball_in_court === 'team' && c.status !== 'completed');
-      case 'deadlines':
-        return cases.filter(c => deadlineCaseIds.has(c.id));
-      case 'completed':
-        return cases.filter(c => c.status === 'completed' && c.updated_at && new Date(c.updated_at) >= startOfMonth);
-      case 'pending':
-        return cases.filter(c => c.status === 'pending');
-      case 'in-progress':
-        return cases.filter(c => c.status === 'in_progress');
-      default:
-        return cases;
+    // URL-based filter (from Hub KPIs)
+    if (activeFilter) {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      switch (activeFilter) {
+        case 'active':
+          result = result.filter(c => c.status !== 'completed'); break;
+        case 'needs-action':
+          result = result.filter(c => c.ball_in_court === 'team' && c.status !== 'completed'); break;
+        case 'deadlines':
+          result = result.filter(c => deadlineCaseIds.has(c.id)); break;
+        case 'completed':
+          result = result.filter(c => c.status === 'completed' && c.updated_at && new Date(c.updated_at) >= startOfMonth); break;
+        case 'pending':
+          result = result.filter(c => c.status === 'pending'); break;
+        case 'in-progress':
+          result = result.filter(c => c.status === 'in_progress'); break;
+      }
     }
-  }, [cases, activeFilter, deadlineCaseIds]);
+
+    // Local search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(c =>
+        c.client_name.toLowerCase().includes(q) ||
+        c.client_email.toLowerCase().includes(q) ||
+        c.case_type.toLowerCase().includes(q)
+      );
+    }
+
+    // Local status dropdown
+    if (statusFilter !== 'all') {
+      result = result.filter(c => c.status === statusFilter);
+    }
+
+    // Local ball-in-court dropdown
+    if (ballFilter !== 'all') {
+      result = result.filter(c => c.ball_in_court === ballFilter);
+    }
+
+    return result;
+  }, [cases, activeFilter, deadlineCaseIds, searchQuery, statusFilter, ballFilter]);
 
   function clearFilter() {
     setSearchParams({});
+    setSearchQuery('');
+    setStatusFilter('all');
+    setBallFilter('all');
   }
 
   function getClientLink(token: string) {
