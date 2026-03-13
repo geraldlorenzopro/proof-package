@@ -175,33 +175,6 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Pro
             <span className="text-[9px] sm:text-[10px] font-mono font-semibold text-muted-foreground/70 tracking-wider">
               {String(qIndex + 1).padStart(2, '0')} / {String(totalQuestions).padStart(2, '0')}
             </span>
-            {/* Audio controls */}
-            {showAudioPractice && currentQ.consularQuestion && (
-              <div className="flex items-center gap-1">
-                <button
-                  className={cn(
-                    "p-1.5 rounded-md transition-all",
-                    speakingId === currentQ.id
-                      ? "text-[hsl(var(--jarvis))] bg-[hsl(var(--jarvis)/0.1)] animate-pulse"
-                      : "text-muted-foreground/40 hover:text-muted-foreground"
-                  )}
-                  onClick={() => speakQuestion(currentQ)}
-                >
-                  <Volume2 className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  className={cn(
-                    "p-1.5 rounded-md transition-all",
-                    recordingId === currentQ.id
-                      ? "text-red-400 bg-red-400/10 animate-pulse"
-                      : "text-muted-foreground/40 hover:text-muted-foreground"
-                  )}
-                  onClick={() => recordingId === currentQ.id ? stopRecording() : startRecording(currentQ.id)}
-                >
-                  <Mic className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Animated question */}
