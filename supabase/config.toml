@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.sync-ghl-contacts]
 verify_jwt = false
+
+[functions.resolve-client-portal]
+verify_jwt = false
