@@ -1345,7 +1345,9 @@ export type Database = {
         Row: {
           account_id: string | null
           created_at: string
+          description: string | null
           field_definitions: Json
+          form_package: Json
           id: string
           is_active: boolean
           is_system: boolean
@@ -1357,7 +1359,9 @@ export type Database = {
         Insert: {
           account_id?: string | null
           created_at?: string
+          description?: string | null
           field_definitions?: Json
+          form_package?: Json
           id?: string
           is_active?: boolean
           is_system?: boolean
@@ -1369,7 +1373,9 @@ export type Database = {
         Update: {
           account_id?: string | null
           created_at?: string
+          description?: string | null
           field_definitions?: Json
+          form_package?: Json
           id?: string
           is_active?: boolean
           is_system?: boolean
@@ -1518,6 +1524,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      uscis_forms: {
+        Row: {
+          category: string
+          created_at: string
+          form_name_en: string
+          form_name_es: string
+          form_number: string
+          id: string
+          is_active: boolean
+          sort_order: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          form_name_en: string
+          form_name_es: string
+          form_number: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          form_name_en?: string
+          form_name_es?: string
+          form_number?: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+        }
+        Relationships: []
       }
       vawa_cases: {
         Row: {
