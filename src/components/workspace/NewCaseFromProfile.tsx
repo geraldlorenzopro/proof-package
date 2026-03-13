@@ -4,17 +4,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Loader2, Briefcase, ArrowRight, FileText, CheckCircle2 } from "lucide-react";
+import { Loader2, Briefcase, ArrowRight, FileText, CheckCircle2, Search, Package, Save, Plus, Sparkles, X, ChevronDown, ChevronUp } from "lucide-react";
 import { logAudit } from "@/lib/auditLog";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface PipelineTemplate {
+interface UscisForm {
+  form_number: string;
+  form_name_es: string;
+  category: string;
+}
+
+interface CaseTemplate {
   id: string;
   process_type: string;
   process_label: string;
+  description: string | null;
+  form_package: string[];
+  is_system: boolean;
 }
 
 interface Props {
@@ -26,97 +35,198 @@ interface Props {
   onCreated: () => void;
 }
 
-const GENERIC_CASE_TYPES = [
-  { value: "I-130", label: "I-130 — Petición Familiar" },
-  { value: "I-485", label: "I-485 — Ajuste de Estatus" },
-  { value: "I-765", label: "I-765 — Permiso de Trabajo (EAD)" },
-  { value: "I-751", label: "I-751 — Remoción de Condiciones" },
-  { value: "I-129F", label: "I-129F — Visa de Prometido(a)" },
-  { value: "N-400", label: "N-400 — Naturalización" },
-  { value: "I-589", label: "I-589 — Asilo" },
-  { value: "VAWA", label: "VAWA — Violencia Doméstica" },
-  { value: "U-Visa", label: "U-Visa — Víctima de Crimen" },
-  { value: "TPS", label: "TPS — Estatus de Protección Temporal" },
-  { value: "DACA", label: "DACA — Acción Diferida" },
-  { value: "Consular", label: "Proceso Consular" },
-  { value: "Other", label: "Otro" },
-];
-
-const AVAILABLE_FORMS = [
-  { value: "I-130", label: "I-130", desc: "Petición Familiar" },
-  { value: "I-485", label: "I-485", desc: "Ajuste de Estatus" },
-  { value: "I-765", label: "I-765", desc: "Permiso de Trabajo (EAD)" },
-  { value: "I-131", label: "I-131", desc: "Documento de Viaje" },
-  { value: "I-864", label: "I-864", desc: "Declaración de Sostenimiento" },
-  { value: "I-693", label: "I-693", desc: "Examen Médico" },
-  { value: "I-751", label: "I-751", desc: "Remoción de Condiciones" },
-  { value: "I-129F", label: "I-129F", desc: "Visa de Prometido(a)" },
-  { value: "N-400", label: "N-400", desc: "Naturalización" },
-  { value: "I-589", label: "I-589", desc: "Asilo" },
-  { value: "G-28", label: "G-28", desc: "Representación Legal" },
-];
-
-// Suggested form packages based on case type
-const FORM_PRESETS: Record<string, string[]> = {
-  "I-485": ["I-130", "I-485", "I-765", "I-131", "I-864", "I-693", "G-28"],
-  "I-130": ["I-130", "G-28"],
-  "I-765": ["I-765", "G-28"],
-  "I-751": ["I-751", "G-28"],
-  "I-129F": ["I-129F", "G-28"],
-  "N-400": ["N-400", "G-28"],
-  "I-589": ["I-589", "I-765", "G-28"],
+const CATEGORY_LABELS: Record<string, string> = {
+  family: "Familiar",
+  adjustment: "Ajuste de Estatus",
+  employment: "Permiso de Trabajo",
+  travel: "Viaje",
+  removal_conditions: "Remoción de Condiciones",
+  fiance: "Prometido(a)",
+  naturalization: "Naturalización",
+  humanitarian: "Humanitario",
+  tps_daca: "TPS / DACA",
+  consular: "Consular",
+  general: "General",
+  work: "Visa de Trabajo",
+  waiver: "Perdón / Waiver",
 };
+
+type Step = "template" | "customize" | "details";
 
 export default function NewCaseFromProfile({
   open, onOpenChange, clientProfileId, clientName, clientEmail, onCreated
 }: Props) {
+  const [step, setStep] = useState<Step>("template");
   const [loading, setLoading] = useState(false);
-  const [templates, setTemplates] = useState<PipelineTemplate[]>([]);
-  const [caseType, setCaseType] = useState("");
-  const [processType, setProcessType] = useState<string>("none");
+  const [saving, setSaving] = useState(false);
+
+  // Data
+  const [templates, setTemplates] = useState<CaseTemplate[]>([]);
+  const [allForms, setAllForms] = useState<UscisForm[]>([]);
+
+  // Selections
+  const [selectedTemplate, setSelectedTemplate] = useState<CaseTemplate | null>(null);
+  const [selectedForms, setSelectedForms] = useState<string[]>([]);
+  const [templateSearch, setTemplateSearch] = useState("");
+  const [formSearch, setFormSearch] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  // Details
+  const [caseName, setCaseName] = useState("");
   const [petitionerName, setPetitionerName] = useState("");
   const [beneficiaryName, setBeneficiaryName] = useState(clientName);
-  const [selectedForms, setSelectedForms] = useState<string[]>([]);
 
-  // Load available pipeline templates
+  // Save as template
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newTemplateDesc, setNewTemplateDesc] = useState("");
+
+  // Load data
   useEffect(() => {
     if (!open) return;
-    supabase
-      .from("pipeline_templates")
-      .select("id, process_type, process_label")
-      .eq("is_active", true)
-      .then(({ data }) => {
-        if (data) setTemplates(data);
-      });
-  }, [open]);
-
-  // Auto-fill beneficiary
-  useEffect(() => {
-    if (open) setBeneficiaryName(clientName);
+    const loadData = async () => {
+      const [templatesRes, formsRes] = await Promise.all([
+        supabase
+          .from("pipeline_templates")
+          .select("id, process_type, process_label, description, form_package, is_system")
+          .eq("is_active", true)
+          .order("is_system", { ascending: false }),
+        supabase
+          .from("uscis_forms")
+          .select("form_number, form_name_es, category")
+          .eq("is_active", true)
+          .order("sort_order"),
+      ]);
+      if (templatesRes.data) {
+        setTemplates(templatesRes.data.map(t => ({
+          ...t,
+          form_package: Array.isArray(t.form_package) ? t.form_package as string[] : [],
+        })));
+      }
+      if (formsRes.data) setAllForms(formsRes.data);
+    };
+    loadData();
+    // Reset state
+    setStep("template");
+    setSelectedTemplate(null);
+    setSelectedForms([]);
+    setTemplateSearch("");
+    setFormSearch("");
+    setCaseName("");
+    setPetitionerName("");
+    setBeneficiaryName(clientName);
+    setShowSaveTemplate(false);
   }, [open, clientName]);
 
-  // Auto-suggest forms when case type changes
-  useEffect(() => {
-    if (caseType && FORM_PRESETS[caseType]) {
-      setSelectedForms(FORM_PRESETS[caseType]);
-    } else if (caseType) {
-      setSelectedForms([caseType].filter(f => AVAILABLE_FORMS.some(af => af.value === f)));
-    }
-  }, [caseType]);
+  // Filter templates
+  const filteredTemplates = templates.filter(t =>
+    t.process_label.toLowerCase().includes(templateSearch.toLowerCase()) ||
+    (t.description || "").toLowerCase().includes(templateSearch.toLowerCase())
+  );
 
-  const selectedTemplate = templates.find(t => t.process_type === processType);
+  // Group forms by category
+  const formsByCategory = allForms.reduce((acc, form) => {
+    const cat = form.category || "general";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(form);
+    return acc;
+  }, {} as Record<string, UscisForm[]>);
 
-  const toggleForm = (formType: string) => {
+  const filteredFormsByCategory = Object.entries(formsByCategory).reduce((acc, [cat, forms]) => {
+    const filtered = forms.filter(f =>
+      f.form_number.toLowerCase().includes(formSearch.toLowerCase()) ||
+      f.form_name_es.toLowerCase().includes(formSearch.toLowerCase())
+    );
+    if (filtered.length > 0) acc[cat] = filtered;
+    return acc;
+  }, {} as Record<string, UscisForm[]>);
+
+  const toggleForm = (formNumber: string) => {
     setSelectedForms(prev =>
-      prev.includes(formType)
-        ? prev.filter(f => f !== formType)
-        : [...prev, formType]
+      prev.includes(formNumber)
+        ? prev.filter(f => f !== formNumber)
+        : [...prev, formNumber]
     );
   };
 
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
+
+  const handleSelectTemplate = (template: CaseTemplate) => {
+    setSelectedTemplate(template);
+    setSelectedForms([...template.form_package]);
+    setCaseName(template.process_label);
+    setStep("customize");
+  };
+
+  const handleStartManual = () => {
+    setSelectedTemplate(null);
+    setSelectedForms([]);
+    setCaseName("");
+    setStep("customize");
+  };
+
+  const handleSaveAsTemplate = async () => {
+    if (!newTemplateName.trim() || selectedForms.length === 0) {
+      toast.error("Ingresa un nombre y selecciona al menos un formulario");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: accountId } = await supabase.rpc("user_account_id", { _user_id: user.id });
+
+      const processType = newTemplateName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+      const { error } = await supabase.from("pipeline_templates").insert({
+        process_type: `custom-${processType}-${Date.now()}`,
+        process_label: newTemplateName.trim(),
+        description: newTemplateDesc.trim() || null,
+        form_package: selectedForms,
+        account_id: accountId,
+        is_system: false,
+        is_active: true,
+        stages: [],
+        field_definitions: [],
+      });
+
+      if (error) throw error;
+
+      toast.success("Template guardado exitosamente");
+      setShowSaveTemplate(false);
+      setNewTemplateName("");
+      setNewTemplateDesc("");
+
+      // Refresh templates
+      const { data } = await supabase
+        .from("pipeline_templates")
+        .select("id, process_type, process_label, description, form_package, is_system")
+        .eq("is_active", true)
+        .order("is_system", { ascending: false });
+      if (data) {
+        setTemplates(data.map(t => ({
+          ...t,
+          form_package: Array.isArray(t.form_package) ? t.form_package as string[] : [],
+        })));
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error al guardar el template");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleCreate = async () => {
-    if (!caseType) {
-      toast.error("Selecciona un tipo de caso");
+    if (selectedForms.length === 0) {
+      toast.error("Selecciona al menos un formulario");
       return;
     }
 
@@ -128,8 +238,13 @@ export default function NewCaseFromProfile({
       const { data: accountId } = await supabase.rpc("user_account_id", { _user_id: user.id });
       if (!accountId) { toast.error("Error de cuenta"); setLoading(false); return; }
 
-      // Determine initial pipeline stage
-      const initialStage = processType !== "none" ? "caso-activado" : null;
+      // Derive case_type from primary form or template
+      const caseType = selectedTemplate
+        ? selectedTemplate.process_type
+        : selectedForms[0] || "General";
+
+      const processType = selectedTemplate?.process_type || null;
+      const initialStage = processType ? "caso-activado" : null;
 
       const { data, error } = await supabase
         .from("client_cases")
@@ -140,8 +255,8 @@ export default function NewCaseFromProfile({
           client_name: clientName,
           client_email: clientEmail || "",
           client_profile_id: clientProfileId,
-          case_type: caseType,
-          process_type: processType !== "none" ? processType : null,
+          case_type: caseName || caseType,
+          process_type: processType,
           pipeline_stage: initialStage,
           stage_entered_at: initialStage ? new Date().toISOString() : null,
           ball_in_court: initialStage ? "team" : null,
@@ -171,7 +286,7 @@ export default function NewCaseFromProfile({
         await supabase.from("case_forms").insert(formRows);
       }
 
-      // Record initial stage in history if pipeline was assigned
+      // Record initial stage in history
       if (initialStage && data) {
         await supabase.from("case_stage_history").insert({
           case_id: data.id,
@@ -180,7 +295,7 @@ export default function NewCaseFromProfile({
           from_stage: null,
           changed_by: user.id,
           changed_by_name: user.email?.split("@")[0] || "Sistema",
-          note: `Caso creado con pipeline: ${selectedTemplate?.process_label || processType}`,
+          note: `Caso creado: ${caseName || caseType} (${selectedForms.length} formularios)`,
         });
       }
 
@@ -188,22 +303,17 @@ export default function NewCaseFromProfile({
         action: "case.created",
         entity_type: "case",
         entity_id: data!.id,
-        entity_label: `${caseType} - ${clientName}`,
+        entity_label: `${caseName || caseType} - ${clientName}`,
         metadata: {
-          case_type: caseType,
+          case_type: caseName || caseType,
           process_type: processType,
+          template_id: selectedTemplate?.id || null,
           client_profile_id: clientProfileId,
           forms: selectedForms,
         },
       });
 
-      toast.success(`Caso "${caseType}" creado con ${selectedForms.length} formulario${selectedForms.length !== 1 ? "s" : ""}`);
-
-      // Reset
-      setCaseType("");
-      setProcessType("none");
-      setPetitionerName("");
-      setSelectedForms([]);
+      toast.success(`Caso creado con ${selectedForms.length} formulario${selectedForms.length !== 1 ? "s" : ""}`);
       onOpenChange(false);
       onCreated();
     } catch (err) {
@@ -214,133 +324,371 @@ export default function NewCaseFromProfile({
     }
   };
 
+  const getFormLabel = (formNumber: string) => {
+    const form = allForms.find(f => f.form_number === formNumber);
+    return form ? `${form.form_number} — ${form.form_name_es}` : formNumber;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Briefcase className="w-5 h-5 text-jarvis" />
-            Nuevo Caso — {clientName}
+            {step === "template" && "Nuevo Caso — Seleccionar Paquete"}
+            {step === "customize" && "Personalizar Formularios"}
+            {step === "details" && "Detalles del Caso"}
           </DialogTitle>
+          <p className="text-xs text-muted-foreground">
+            Cliente: <span className="font-medium text-foreground">{clientName}</span>
+          </p>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Case Type */}
-          <div className="space-y-2">
-            <Label>Tipo de Caso *</Label>
-            <Select value={caseType} onValueChange={setCaseType} disabled={loading}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar tipo de caso..." />
-              </SelectTrigger>
-              <SelectContent>
-                {GENERIC_CASE_TYPES.map(t => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Form Selection */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-jarvis" />
-                Formularios del Caso
-              </Label>
-              {selectedForms.length > 0 && (
-                <Badge variant="outline" className="text-[10px] bg-jarvis/10 text-jarvis border-jarvis/20">
-                  {selectedForms.length} seleccionado{selectedForms.length !== 1 ? "s" : ""}
-                </Badge>
-              )}
+        {/* Step indicator */}
+        <div className="flex items-center gap-1 px-1">
+          {(["template", "customize", "details"] as Step[]).map((s, i) => (
+            <div key={s} className="flex items-center gap-1 flex-1">
+              <div className={`h-1 flex-1 rounded-full transition-colors ${
+                (s === "template" && step !== "template") || 
+                (s === "customize" && step === "details") ||
+                s === step
+                  ? "bg-jarvis" : "bg-muted"
+              }`} />
             </div>
-            {caseType && FORM_PRESETS[caseType] && (
-              <p className="text-[10px] text-jarvis/70">
-                📦 Paquete sugerido para {caseType} — puedes agregar o quitar formularios
-              </p>
-            )}
-            <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto rounded-lg border border-border p-2 bg-secondary/30">
-              {AVAILABLE_FORMS.map(form => {
-                const isSelected = selectedForms.includes(form.value);
-                return (
-                  <button
-                    key={form.value}
-                    type="button"
-                    onClick={() => toggleForm(form.value)}
-                    disabled={loading}
-                    className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all text-xs ${
-                      isSelected
-                        ? "bg-jarvis/10 border border-jarvis/30 text-foreground"
-                        : "bg-transparent border border-transparent text-muted-foreground hover:bg-secondary"
-                    }`}
-                  >
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                      isSelected ? "bg-jarvis border-jarvis" : "border-muted-foreground/30"
-                    }`}>
-                      {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
-                    </div>
-                    <div className="min-w-0">
-                      <span className="font-semibold">{form.label}</span>
-                      <span className="block text-[9px] text-muted-foreground truncate">{form.desc}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Pipeline Template */}
-          <div className="space-y-2">
-            <Label>Pipeline de Proceso</Label>
-            <Select value={processType} onValueChange={setProcessType} disabled={loading}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sin pipeline (seguimiento manual)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sin pipeline (seguimiento manual)</SelectItem>
-                {templates.map(t => (
-                  <SelectItem key={t.process_type} value={t.process_type}>
-                    {t.process_label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedTemplate && (
-              <p className="text-[10px] text-jarvis/70">
-                Este caso seguirá las etapas predefinidas del pipeline con seguimiento de SLA y ownership
-              </p>
-            )}
-          </div>
-
-          {/* Petitioner / Beneficiary */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Peticionario</Label>
-              <Input
-                placeholder="Nombre del peticionario"
-                value={petitionerName}
-                onChange={e => setPetitionerName(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Beneficiario</Label>
-              <Input
-                value={beneficiaryName}
-                onChange={e => setBeneficiaryName(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-          </div>
+          ))}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            Cancelar
-          </Button>
-          <Button onClick={handleCreate} disabled={loading || !caseType} className="bg-jarvis hover:bg-jarvis/90 gap-2">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-            Crear Caso {selectedForms.length > 0 && `(${selectedForms.length} forms)`}
-          </Button>
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {/* STEP 1: Select Template */}
+          {step === "template" && (
+            <div className="space-y-3 py-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar paquete o proceso..."
+                  value={templateSearch}
+                  onChange={e => setTemplateSearch(e.target.value)}
+                  className="pl-9 h-9 text-sm"
+                />
+              </div>
+
+              {/* Manual option */}
+              <button
+                onClick={handleStartManual}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-dashed border-jarvis/30 bg-jarvis/5 hover:bg-jarvis/10 transition-colors text-left group"
+              >
+                <div className="w-9 h-9 rounded-lg bg-jarvis/10 flex items-center justify-center shrink-0 group-hover:bg-jarvis/20">
+                  <Plus className="w-4 h-4 text-jarvis" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Armar Paquete Manual</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Selecciona formularios individuales y opcionalmente guarda como template
+                  </p>
+                </div>
+              </button>
+
+              {/* Template list */}
+              <ScrollArea className="max-h-[400px]">
+                <div className="space-y-1.5">
+                  {filteredTemplates.map(template => (
+                    <button
+                      key={template.id}
+                      onClick={() => handleSelectTemplate(template)}
+                      className="w-full flex items-start gap-3 p-3 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/60 transition-colors text-left group"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-jarvis/10 flex items-center justify-center shrink-0">
+                        <Package className="w-4 h-4 text-jarvis" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground truncate">{template.process_label}</p>
+                          {template.is_system && (
+                            <Badge variant="outline" className="text-[8px] px-1 py-0 border-jarvis/20 text-jarvis shrink-0">
+                              Sistema
+                            </Badge>
+                          )}
+                          {!template.is_system && (
+                            <Badge variant="outline" className="text-[8px] px-1 py-0 border-accent/30 text-accent shrink-0">
+                              Personalizado
+                            </Badge>
+                          )}
+                        </div>
+                        {template.description && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{template.description}</p>
+                        )}
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {template.form_package.slice(0, 6).map(f => (
+                            <Badge key={f} variant="secondary" className="text-[9px] px-1.5 py-0 bg-background/50">
+                              {f}
+                            </Badge>
+                          ))}
+                          {template.form_package.length > 6 && (
+                            <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                              +{template.form_package.length - 6} más
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-1 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+
+          {/* STEP 2: Customize Forms */}
+          {step === "customize" && (
+            <div className="space-y-3 py-2">
+              {/* Selected forms summary */}
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <Sparkles className="w-3.5 h-3.5 text-jarvis" />
+                  {selectedTemplate
+                    ? `Basado en: ${selectedTemplate.process_label}`
+                    : "Paquete Manual"}
+                </Label>
+                <Badge variant="outline" className="text-[10px] bg-jarvis/10 text-jarvis border-jarvis/20">
+                  {selectedForms.length} formulario{selectedForms.length !== 1 ? "s" : ""}
+                </Badge>
+              </div>
+
+              {/* Selected chips */}
+              {selectedForms.length > 0 && (
+                <div className="flex flex-wrap gap-1 p-2 rounded-lg bg-jarvis/5 border border-jarvis/10">
+                  {selectedForms.map(f => (
+                    <Badge
+                      key={f}
+                      className="text-[10px] bg-jarvis/15 text-jarvis border-jarvis/20 gap-1 cursor-pointer hover:bg-jarvis/25"
+                      onClick={() => toggleForm(f)}
+                    >
+                      {f}
+                      <X className="w-2.5 h-2.5" />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar formulario (ej: I-765, asilo, trabajo...)"
+                  value={formSearch}
+                  onChange={e => setFormSearch(e.target.value)}
+                  className="pl-9 h-9 text-sm"
+                />
+              </div>
+
+              {/* Forms by category */}
+              <ScrollArea className="max-h-[300px]">
+                <div className="space-y-1">
+                  {Object.entries(filteredFormsByCategory).map(([cat, forms]) => {
+                    const isExpanded = expandedCategories.has(cat) || formSearch.length > 0;
+                    const selectedInCat = forms.filter(f => selectedForms.includes(f.form_number)).length;
+                    return (
+                      <div key={cat}>
+                        <button
+                          onClick={() => toggleCategory(cat)}
+                          className="w-full flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-secondary/50 transition-colors"
+                        >
+                          <span className="text-xs font-semibold text-muted-foreground">
+                            {CATEGORY_LABELS[cat] || cat}
+                            {selectedInCat > 0 && (
+                              <span className="ml-1.5 text-jarvis">({selectedInCat})</span>
+                            )}
+                          </span>
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+                        {isExpanded && (
+                          <div className="grid grid-cols-2 gap-1 px-1 pb-2">
+                            {forms.map(form => {
+                              const isSelected = selectedForms.includes(form.form_number);
+                              return (
+                                <button
+                                  key={form.form_number}
+                                  type="button"
+                                  onClick={() => toggleForm(form.form_number)}
+                                  className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all text-xs ${
+                                    isSelected
+                                      ? "bg-jarvis/10 border border-jarvis/30 text-foreground"
+                                      : "bg-transparent border border-transparent text-muted-foreground hover:bg-secondary"
+                                  }`}
+                                >
+                                  <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                                    isSelected ? "bg-jarvis border-jarvis" : "border-muted-foreground/30"
+                                  }`}>
+                                    {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="font-semibold">{form.form_number}</span>
+                                    <span className="block text-[9px] text-muted-foreground truncate">
+                                      {form.form_name_es}
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+
+              {/* Save as template option */}
+              {!selectedTemplate && selectedForms.length >= 2 && (
+                <div className="border-t border-border pt-3">
+                  {!showSaveTemplate ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowSaveTemplate(true)}
+                      className="text-xs gap-1.5 text-jarvis hover:text-jarvis"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      Guardar como Template Reutilizable
+                    </Button>
+                  ) : (
+                    <div className="space-y-2 p-3 rounded-lg bg-secondary/40 border border-border">
+                      <p className="text-[10px] font-semibold text-foreground">Guardar Paquete Inteligente</p>
+                      <Input
+                        placeholder="Nombre del template (ej: AOS Completo con Viaje)"
+                        value={newTemplateName}
+                        onChange={e => setNewTemplateName(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                      <Input
+                        placeholder="Descripción breve (opcional)"
+                        value={newTemplateDesc}
+                        onChange={e => setNewTemplateDesc(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={handleSaveAsTemplate}
+                          disabled={saving || !newTemplateName.trim()}
+                          className="text-xs bg-jarvis hover:bg-jarvis/90 gap-1"
+                        >
+                          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                          Guardar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setShowSaveTemplate(false)}
+                          className="text-xs"
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 3: Case Details */}
+          {step === "details" && (
+            <div className="space-y-4 py-2">
+              {/* Package preview */}
+              <div className="p-3 rounded-lg bg-secondary/30 border border-border space-y-2">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-jarvis" />
+                  Paquete de Formularios ({selectedForms.length})
+                </Label>
+                <div className="flex flex-wrap gap-1">
+                  {selectedForms.map(f => (
+                    <Badge key={f} variant="secondary" className="text-[10px]">
+                      {f}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Case name */}
+              <div className="space-y-2">
+                <Label className="text-xs">Nombre del Caso *</Label>
+                <Input
+                  placeholder="Ej: AOS Cónyuge, Petición F4 Hermano..."
+                  value={caseName}
+                  onChange={e => setCaseName(e.target.value)}
+                  disabled={loading}
+                  className="h-9 text-sm"
+                />
+              </div>
+
+              {/* Petitioner / Beneficiary */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-xs">Peticionario</Label>
+                  <Input
+                    placeholder="Nombre del peticionario"
+                    value={petitionerName}
+                    onChange={e => setPetitionerName(e.target.value)}
+                    disabled={loading}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Beneficiario</Label>
+                  <Input
+                    value={beneficiaryName}
+                    onChange={e => setBeneficiaryName(e.target.value)}
+                    disabled={loading}
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="flex-row gap-2 sm:justify-between">
+          <div>
+            {step !== "template" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep(step === "details" ? "customize" : "template")}
+                disabled={loading}
+                className="text-xs"
+              >
+                ← Atrás
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={loading} className="text-xs">
+              Cancelar
+            </Button>
+            {step === "customize" && (
+              <Button
+                size="sm"
+                onClick={() => setStep("details")}
+                disabled={selectedForms.length === 0}
+                className="bg-jarvis hover:bg-jarvis/90 gap-1 text-xs"
+              >
+                Continuar
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            {step === "details" && (
+              <Button
+                size="sm"
+                onClick={handleCreate}
+                disabled={loading || selectedForms.length === 0 || !caseName.trim()}
+                className="bg-jarvis hover:bg-jarvis/90 gap-1 text-xs"
+              >
+                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                Crear Caso ({selectedForms.length} forms)
+              </Button>
+            )}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
