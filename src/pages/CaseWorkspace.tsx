@@ -641,7 +641,7 @@ export default function CaseWorkspace() {
                 <CaseStageHistory history={caseStageHistory} stageLabels={stageLabels} />
               </div>
             )}
-          </motion.div>
+          </div>
         </div>
       </Wrapper>
     );
