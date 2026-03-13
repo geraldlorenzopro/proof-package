@@ -243,26 +243,31 @@ export default function CaseEnginePage() {
                   </div>
                 </div>
 
-                {/* Stage changer */}
-                {stages.length > 0 && (
-                  <Select value={currentStageSlug} onValueChange={handleStageChange}>
-                    <SelectTrigger className="w-[260px] h-9 text-xs border-jarvis/20 bg-jarvis/5">
-                      <SelectValue placeholder="Cambiar etapa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {stages.map(s => (
-                        <SelectItem key={s.slug} value={s.slug} className="text-xs">
-                          <span className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${
-                              s.owner === "team" ? "bg-jarvis" : s.owner === "client" ? "bg-accent" : "bg-emerald-400"
-                            }`} />
-                            {s.label}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Stage changer */}
+                  {stages.length > 0 && (
+                    <Select value={currentStageSlug} onValueChange={handleStageChange}>
+                      <SelectTrigger className="w-[240px] h-9 text-xs border-jarvis/20 bg-jarvis/5">
+                        <SelectValue placeholder="Cambiar etapa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {stages.map(s => (
+                          <SelectItem key={s.slug} value={s.slug} className="text-xs">
+                            <span className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${
+                                s.owner === "team" ? "bg-jarvis" : s.owner === "client" ? "bg-accent" : "bg-emerald-400"
+                              }`} />
+                              {s.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {/* Share link */}
+                  <ShareCaseButton accessToken={caseData.access_token} />
+                </div>
               </div>
 
               {/* Compact pipeline tracker */}
