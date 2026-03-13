@@ -360,7 +360,14 @@ export default function CaseWorkspace() {
     if (!caseTemplate?.stages) return [];
     try {
       const parsed = typeof caseTemplate.stages === "string" ? JSON.parse(caseTemplate.stages) : caseTemplate.stages;
-      return parsed as PipelineStage[];
+      return (parsed as any[]).map((s: any, i: number) => ({
+        order: s.order ?? i + 1,
+        slug: s.slug || s.key || `stage-${i}`,
+        label: s.label || "",
+        owner: s.owner || s.ball_in_court || "team",
+        sla_hours: s.sla_hours ?? (s.sla_days ? s.sla_days * 24 : null),
+        description: s.description || "",
+      }));
     } catch { return []; }
   }, [caseTemplate]);
 
