@@ -124,82 +124,125 @@ export default function CaseWorkspace() {
     setActiveView("cases");
   };
 
-  // ── Load client data ──
+  // Load account context once (avoid repeating on every client click)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAccountContext() {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser || cancelled) return;
+
+      const { data: accId } = await supabase.rpc("user_account_id", { _user_id: currentUser.id });
+      if (!cancelled && accId) setUserAccountId(accId);
+    }
+
+    loadAccountContext();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ── Load client data (fast path first, heavy data in background) ──
   useEffect(() => {
     if (!selectedClientId) return;
+
+    let cancelled = false;
     setLoading(true);
 
     async function load() {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (currentUser) {
-        const { data: accId } = await supabase.rpc("user_account_id", { _user_id: currentUser.id });
-        if (accId) setUserAccountId(accId);
-      }
-
       const [profileRes, casesRes] = await Promise.all([
-        supabase.from("client_profiles")
+        supabase
+          .from("client_profiles")
           .select("id, first_name, last_name, email, phone, dob, country_of_birth, immigration_status, created_at")
-          .eq("id", selectedClientId!).single(),
-        supabase.from("client_cases")
+          .eq("id", selectedClientId)
+          .single(),
+        supabase
+          .from("client_cases")
           .select("id, case_type, status, process_type, pipeline_stage, created_at, updated_at")
-          .eq("client_profile_id", selectedClientId!)
+          .eq("client_profile_id", selectedClientId)
           .order("updated_at", { ascending: false }),
       ]);
 
-      if (profileRes.data) setProfile(profileRes.data);
+      if (cancelled) return;
 
-      if (casesRes.data) {
-        const casesWithForms = await Promise.all(
-          casesRes.data.map(async (c) => {
-            const { count } = await supabase.from("case_forms").select("id", { count: "exact", head: true }).eq("case_id", c.id);
-            return { ...c, form_count: count || 0 };
-          })
-        );
-        setClientCases(casesWithForms);
-        if (casesWithForms.length === 1) setSelectedCaseForQ(casesWithForms[0].id);
+      const nextProfile = profileRes.data || null;
+      const baseCases = (casesRes.data || []) as ClientCase[];
 
-        // Smart default: if no cases, show profile; if has cases and only 1, open it directly
-        if (!initialTab && !initialCaseId) {
-          if (casesWithForms.length === 0) {
-            setActiveView("profile");
-          } else if (casesWithForms.length === 1) {
-            setActiveCaseId(casesWithForms[0].id);
-          }
-        }
-      } else if (!initialTab && !initialCaseId) {
-        setActiveView("profile");
-      }
+      setProfile(nextProfile);
+      setClientCases(baseCases.map(c => ({ ...c, form_count: 0 })));
+      setSelectedCaseForQ(baseCases.length === 1 ? baseCases[0].id : null);
 
-      // Build activity
-      const activities: { date: string; event: string; icon: any }[] = [];
-      if (profileRes.data) {
-        activities.push({ date: profileRes.data.created_at, event: "Perfil de cliente creado", icon: Sparkles });
-      }
-      if (casesRes.data) {
-        for (const c of casesRes.data) {
-          activities.push({ date: c.created_at, event: `Caso ${c.case_type} creado`, icon: Briefcase });
-        }
-        const caseIds = casesRes.data.map(c => c.id);
-        if (caseIds.length > 0) {
-          const { data: stageHistory } = await supabase
-            .from("case_stage_history")
-            .select("created_at, to_stage, note")
-            .in("case_id", caseIds)
-            .order("created_at", { ascending: false })
-            .limit(20);
-          if (stageHistory) {
-            for (const sh of stageHistory) {
-              activities.push({ date: sh.created_at, event: sh.note || `Etapa: ${sh.to_stage}`, icon: Activity });
-            }
-          }
+      // Smart default: immediate view decision (no blocking)
+      if (!initialTab && !initialCaseId) {
+        if (baseCases.length === 0) {
+          setActiveView("profile");
+        } else if (baseCases.length === 1) {
+          setActiveCaseId(baseCases[0].id);
+        } else {
+          setActiveView("cases");
         }
       }
-      activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setActivityLog(activities);
+
+      // Unblock UI as soon as core data is ready
       setLoading(false);
+
+      // Background 1: fetch form counts in one query (remove N+1)
+      if (baseCases.length > 0) {
+        const caseIds = baseCases.map(c => c.id);
+        const { data: formRows } = await supabase
+          .from("case_forms")
+          .select("case_id")
+          .in("case_id", caseIds);
+
+        if (!cancelled) {
+          const countByCase = (formRows || []).reduce<Record<string, number>>((acc, row: any) => {
+            acc[row.case_id] = (acc[row.case_id] || 0) + 1;
+            return acc;
+          }, {});
+
+          setClientCases(baseCases.map(c => ({
+            ...c,
+            form_count: countByCase[c.id] || 0,
+          })));
+        }
+      }
+
+      // Background 2: activity timeline
+      const activities: { date: string; event: string; icon: any }[] = [];
+      if (nextProfile) {
+        activities.push({ date: nextProfile.created_at, event: "Perfil de cliente creado", icon: Sparkles });
+      }
+
+      for (const c of baseCases) {
+        activities.push({ date: c.created_at, event: `Caso ${c.case_type} creado`, icon: Briefcase });
+      }
+
+      if (baseCases.length > 0) {
+        const caseIds = baseCases.map(c => c.id);
+        const { data: stageHistory } = await supabase
+          .from("case_stage_history")
+          .select("created_at, to_stage, note")
+          .in("case_id", caseIds)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        if (!cancelled && stageHistory) {
+          for (const sh of stageHistory) {
+            activities.push({ date: sh.created_at, event: sh.note || `Etapa: ${sh.to_stage}`, icon: Activity });
+          }
+        }
+      }
+
+      if (!cancelled) {
+        activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setActivityLog(activities);
+      }
     }
+
     load();
-  }, [selectedClientId]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedClientId, initialTab, initialCaseId]);
 
   // ── Load case engine data ──
   const loadCaseEngine = useCallback(async (caseId: string) => {
