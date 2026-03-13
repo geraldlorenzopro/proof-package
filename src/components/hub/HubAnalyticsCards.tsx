@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import {
@@ -99,6 +100,8 @@ export default function HubAnalyticsCards() {
     );
   }
 
+  const navigate = useNavigate();
+
   if (!data) return null;
 
   const primaryCards = [
@@ -112,6 +115,7 @@ export default function HubAnalyticsCards() {
       glow: "shadow-[0_0_20px_hsl(195_100%_50%/0.06)]",
       trend: data.newCasesThisWeek > 0 ? `+${data.newCasesThisWeek} esta semana` : "Sin nuevos",
       trendUp: data.newCasesThisWeek > 0,
+      href: "/dashboard/cases?filter=active",
     },
     {
       label: "Requieren Acción",
@@ -124,6 +128,7 @@ export default function HubAnalyticsCards() {
       trend: data.needAction > 0 ? "Pendientes del equipo" : "Todo al día ✓",
       trendUp: data.needAction === 0,
       pulse: data.needAction > 5,
+      href: "/dashboard/cases?filter=needs-action",
     },
   ];
 
@@ -137,6 +142,7 @@ export default function HubAnalyticsCards() {
       bg: data.urgentDeadlines > 0 ? "bg-rose-500/10" : "bg-emerald-500/10",
       border: data.urgentDeadlines > 0 ? "border-rose-500/20" : "border-emerald-500/20",
       pulse: data.urgentDeadlines > 0,
+      href: "/dashboard/cases?filter=deadlines",
     },
     {
       label: "En Preparación",
@@ -145,6 +151,7 @@ export default function HubAnalyticsCards() {
       color: "text-cyan-400",
       bg: "bg-cyan-500/10",
       border: "border-cyan-500/20",
+      href: "/dashboard/smart-forms",
     },
     {
       label: "Completados",
@@ -154,6 +161,7 @@ export default function HubAnalyticsCards() {
       color: "text-emerald-400",
       bg: "bg-emerald-500/10",
       border: "border-emerald-500/20",
+      href: "/dashboard/cases?filter=completed",
     },
     {
       label: "Clientes",
@@ -163,6 +171,7 @@ export default function HubAnalyticsCards() {
       bg: "bg-violet-500/10",
       border: "border-violet-500/20",
       trend: data.newClientsThisMonth > 0 ? `+${data.newClientsThisMonth} este mes` : null,
+      href: "/dashboard/workspace-demo",
     },
   ];
 
@@ -176,11 +185,12 @@ export default function HubAnalyticsCards() {
       {/* ═══ PRIMARY ROW — 2 hero KPIs ═══ */}
       <div className="grid grid-cols-2 gap-3">
         {primaryCards.map((card, i) => (
-          <motion.div
+          <motion.button
             key={card.label}
             custom={i}
             variants={fadeUp}
-            className={`relative rounded-2xl border ${card.border} bg-card p-5 transition-all duration-300 hover:border-foreground/15 cursor-default ${card.glow}`}
+            onClick={() => navigate(card.href)}
+            className={`relative rounded-2xl border ${card.border} bg-card p-5 transition-all duration-300 hover:border-foreground/20 hover:scale-[1.01] cursor-pointer ${card.glow} text-left group`}
           >
             {card.pulse && (
               <span className="absolute top-4 right-4 flex h-2.5 w-2.5">
@@ -189,7 +199,7 @@ export default function HubAnalyticsCards() {
               </span>
             )}
             <div className="flex items-center gap-4">
-              <div className={`w-11 h-11 rounded-xl ${card.bg} flex items-center justify-center shrink-0`}>
+              <div className={`w-11 h-11 rounded-xl ${card.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
                 <card.icon className={`w-5 h-5 ${card.color}`} />
               </div>
               <div className="flex-1 min-w-0">
@@ -212,18 +222,19 @@ export default function HubAnalyticsCards() {
                 {card.value}
               </p>
             </div>
-          </motion.div>
+          </motion.button>
         ))}
       </div>
 
       {/* ═══ SECONDARY ROW — 4 compact cards ═══ */}
       <div className="grid grid-cols-4 gap-3">
         {secondaryCards.map((card, i) => (
-          <motion.div
+          <motion.button
             key={card.label}
             custom={i + 2}
             variants={fadeUp}
-            className={`relative rounded-xl border ${card.border} bg-card px-4 py-3.5 transition-all duration-300 hover:border-foreground/15 cursor-default`}
+            onClick={() => navigate(card.href)}
+            className={`relative rounded-xl border ${card.border} bg-card px-4 py-3.5 transition-all duration-300 hover:border-foreground/20 hover:scale-[1.02] cursor-pointer text-left group`}
           >
             {card.pulse && (
               <span className="absolute top-3 right-3 flex h-2 w-2">
@@ -232,7 +243,7 @@ export default function HubAnalyticsCards() {
               </span>
             )}
             <div className="flex items-center gap-2.5 mb-2">
-              <div className={`w-7 h-7 rounded-lg ${card.bg} flex items-center justify-center shrink-0`}>
+              <div className={`w-7 h-7 rounded-lg ${card.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
                 <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
               </div>
               <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-bold truncate">
@@ -248,7 +259,7 @@ export default function HubAnalyticsCards() {
                 <span className="text-[9px] text-emerald-400/60 font-medium">{card.trend}</span>
               )}
             </div>
-          </motion.div>
+          </motion.button>
         ))}
       </div>
     </motion.div>
