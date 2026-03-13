@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { RotateCcw, Volume2, Mic, ChevronRight, Eye, User, Briefcase, Home, Plane, ShieldAlert } from "lucide-react";
+import { RotateCcw, ChevronRight, Eye, User, Briefcase, Home, Plane, ShieldAlert } from "lucide-react";
 import { INTERVIEW_QUESTIONS, STEP_LABELS, type VisaEvalAnswers, type InterviewQuestion } from "@/lib/visaAvatarEngine";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,16 +10,11 @@ import { motion, AnimatePresence } from "framer-motion";
 interface Props {
   onComplete: (answers: VisaEvalAnswers) => void;
   initialAnswers?: Partial<VisaEvalAnswers>;
-  showAudioPractice?: boolean;
 }
 
-export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showAudioPractice = false }: Props) {
+export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Props) {
   const [answers, setAnswers] = useState<Partial<VisaEvalAnswers>>(initialAnswers || {});
   const [showResetDialog, setShowResetDialog] = useState(false);
-  const [speakingId, setSpeakingId] = useState<string | null>(null);
-  const [recordingId, setRecordingId] = useState<string | null>(null);
-  const [recordings, setRecordings] = useState<Record<string, string>>({});
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [direction, setDirection] = useState(1); // 1=forward, -1=back
 
   // Build flat list of visible questions based on current answers
@@ -62,49 +57,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
   const handleReset = () => {
     setAnswers({});
     setQIndex(0);
-    setRecordings({});
     setShowResetDialog(false);
-  };
-
-  const speakQuestion = (question: InterviewQuestion) => {
-    const text = question.consularQuestion || question.textEn;
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.85;
-      utterance.onstart = () => setSpeakingId(question.id);
-      utterance.onend = () => setSpeakingId(null);
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const startRecording = async (questionId: string) => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => chunks.push(e.data);
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        setRecordings(prev => ({ ...prev, [questionId]: url }));
-        stream.getTracks().forEach(t => t.stop());
-      };
-      recorder.start();
-      setMediaRecorder(recorder);
-      setRecordingId(questionId);
-    } catch {
-      console.error('Microphone access denied');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-    }
-    setRecordingId(null);
-    setMediaRecorder(null);
   };
 
   const currentIsAnswered = currentQ && answers[currentQ.fieldKey] !== undefined && answers[currentQ.fieldKey] !== '';
@@ -222,33 +175,6 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
             <span className="text-[9px] sm:text-[10px] font-mono font-semibold text-muted-foreground/70 tracking-wider">
               {String(qIndex + 1).padStart(2, '0')} / {String(totalQuestions).padStart(2, '0')}
             </span>
-            {/* Audio controls */}
-            {showAudioPractice && currentQ.consularQuestion && (
-              <div className="flex items-center gap-1">
-                <button
-                  className={cn(
-                    "p-1.5 rounded-md transition-all",
-                    speakingId === currentQ.id
-                      ? "text-[hsl(var(--jarvis))] bg-[hsl(var(--jarvis)/0.1)] animate-pulse"
-                      : "text-muted-foreground/40 hover:text-muted-foreground"
-                  )}
-                  onClick={() => speakQuestion(currentQ)}
-                >
-                  <Volume2 className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  className={cn(
-                    "p-1.5 rounded-md transition-all",
-                    recordingId === currentQ.id
-                      ? "text-red-400 bg-red-400/10 animate-pulse"
-                      : "text-muted-foreground/40 hover:text-muted-foreground"
-                  )}
-                  onClick={() => recordingId === currentQ.id ? stopRecording() : startRecording(currentQ.id)}
-                >
-                  <Mic className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Animated question */}
@@ -267,17 +193,6 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                 <h2 className="text-lg sm:text-xl font-semibold text-foreground leading-snug">
                   {currentQ.textEs}
                 </h2>
-
-                {/* Consular practice hint */}
-                {showAudioPractice && currentQ.consularQuestion && (
-                  <p className="text-xs text-[hsl(var(--jarvis)/0.5)] italic">
-                    🎙️ "{currentQ.consularQuestion}"
-                  </p>
-                )}
-
-                {recordings[currentQ.id] && (
-                  <audio controls src={recordings[currentQ.id]} className="w-full h-8" />
-                )}
 
                 {/* Options */}
                 {currentQ.type === 'select' && currentQ.options && (

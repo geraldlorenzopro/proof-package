@@ -6,7 +6,8 @@ import {
   FileSearch, Scale, ClipboardList, ChevronRight,
   ArrowUpRight, Briefcase,
   Shield, PlusCircle, Search,
-  Zap, LayoutGrid, ChevronDown, BarChart3
+  Zap, LayoutGrid, ChevronDown, BarChart3,
+  Mic
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import HubAnalyticsCards from "./HubAnalyticsCards";
@@ -49,6 +50,8 @@ const ICON_MAP: Record<string, any> = {
   "vawa-screener": Scale,
   "vawa-checklist": ClipboardList,
   "smart-forms": FileText,
+  "visa-evaluator": Shield,
+  "interview-sim": Mic,
 };
 
 // ═══ DISPLAY NAME OVERRIDES — Enterprise naming ═══
@@ -61,6 +64,8 @@ const DISPLAY_NAMES: Record<string, string> = {
   "uscis-analyzer": "USCIS Analyzer",
   "checklist-generator": "Checklist Generator",
   "smart-forms": "NER Smart Forms",
+  "visa-evaluator": "Visa Evaluator B1/B2",
+  "interview-sim": "Simulador Consular",
 };
 
 const ROUTE_MAP: Record<string, string> = {
@@ -73,6 +78,8 @@ const ROUTE_MAP: Record<string, string> = {
   "vawa-screener": "/dashboard/vawa-screener",
   "vawa-checklist": "/dashboard/vawa-checklist",
   "smart-forms": "/dashboard/smart-forms",
+  "visa-evaluator": "/dashboard/visa-evaluator",
+  "interview-sim": "/dashboard/interview-sim",
 };
 
 // ═══ TOOL CATEGORIES ═══
@@ -91,8 +98,16 @@ const TOOL_CATEGORIES: ToolCategory[] = [
     label: "Agentes",
     icon: Scale,
     color: { bg: "bg-rose-500/15", border: "border-rose-500/25", text: "text-rose-400", accent: "from-rose-500/[0.03] to-transparent" },
-    slugs: ["vawa-screener", "vawa-checklist"],
+    slugs: ["vawa-screener", "vawa-checklist", "visa-evaluator"],
     description: "Pre-evaluación y elegibilidad",
+  },
+  {
+    key: "practice",
+    label: "Práctica",
+    icon: Mic,
+    color: { bg: "bg-indigo-500/15", border: "border-indigo-500/25", text: "text-indigo-400", accent: "from-indigo-500/[0.03] to-transparent" },
+    slugs: ["interview-sim"],
+    description: "Simulador de entrevista consular",
   },
   {
     key: "calculators",

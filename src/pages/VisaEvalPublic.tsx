@@ -83,7 +83,7 @@ export default function VisaEvalPublic() {
           <Shield className="h-10 w-10 text-primary mx-auto mb-3" />
           <h1 className="text-2xl font-bold">Evaluación de Visa B1/B2</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Responda las preguntas y practique su entrevista consular
+            Responda las preguntas para completar su evaluación
           </p>
         </div>
 
@@ -91,7 +91,6 @@ export default function VisaEvalPublic() {
           <VisaEvaluatorStepper
             onComplete={handleComplete}
             initialAnswers={evalData?.answers || {}}
-            showAudioPractice
           />
         )}
 
