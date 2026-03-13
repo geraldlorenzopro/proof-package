@@ -14,12 +14,14 @@ export default function VisaEvaluatorPage() {
   const { toast } = useToast();
   const [view, setView] = useState<'form' | 'results'>('form');
   const [result, setResult] = useState<EvalResult | null>(null);
+  const [lastAnswers, setLastAnswers] = useState<VisaEvalAnswers | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const handleComplete = async (answers: VisaEvalAnswers) => {
     const evalResult = evaluateProfile(answers);
     setResult(evalResult);
+    setLastAnswers(answers);
     setView('results');
 
     // Save to database
@@ -68,6 +70,7 @@ export default function VisaEvaluatorPage() {
   const handleRestart = () => {
     setView('form');
     setResult(null);
+    setLastAnswers(null);
     setShareToken(null);
   };
 
@@ -141,6 +144,7 @@ export default function VisaEvaluatorPage() {
             <div className="flex-1 overflow-y-auto">
               <VisaEvaluatorResults
                 result={result}
+                answers={lastAnswers || undefined}
                 shareToken={shareToken || undefined}
                 onRestart={handleRestart}
                 onStartCase={() => navigate('/dashboard/cases')}
