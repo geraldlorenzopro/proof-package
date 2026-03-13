@@ -191,7 +191,12 @@ export default function CaseWorkspace() {
       if (cancelled) return;
 
       const nextProfile = profileRes.data || null;
-      const baseCases = (casesRes.data || []) as ClientCase[];
+      const allCases = (casesRes.data || []) as ClientCase[];
+      // Filter out orphan records that are just form types without a real process
+      const baseCases = allCases.filter(c =>
+        c.process_type && c.process_type !== "general" ||
+        !ORPHAN_FORM_TYPES.has(c.case_type)
+      );
 
       setProfile(nextProfile);
       setClientCases(baseCases.map(c => ({ ...c, form_count: 0 })));
