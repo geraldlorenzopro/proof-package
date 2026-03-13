@@ -16,9 +16,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Eye, EyeOff, Save, X, RotateCcw } from "lucide-react";
+import { GripVertical, Save, X, RotateCcw, Pencil, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 
 export interface StageConfig {
   slug: string;
@@ -28,13 +29,13 @@ export interface StageConfig {
 }
 
 const DEFAULT_STAGES: StageConfig[] = [
-  { slug: "consulta-inicial", label: "Consulta Inicial", icon: "💬", enabled: true },
+  { slug: "consulta-inicial", label: "Caso Activo", icon: "💬", enabled: true },
   { slug: "ds160", label: "DS-160", icon: "📝", enabled: true },
   { slug: "cuenta-cas", label: "Cuenta CAS", icon: "🌐", enabled: true },
   { slug: "citas-programadas", label: "Citas Programadas", icon: "📅", enabled: true },
   { slug: "cita-cas", label: "Cita CAS", icon: "🖐", enabled: true },
   { slug: "pre-entrevista", label: "Pre-Entrevista", icon: "📋", enabled: true },
-  { slug: "entrevista", label: "Entrevista", icon: "🎤", enabled: true },
+  { slug: "entrevista", label: "Cita Embajada", icon: "🎤", enabled: true },
   { slug: "resultado", label: "Resultado", icon: "🏆", enabled: true },
 ];
 
@@ -47,7 +48,6 @@ export function loadPipelineConfig(accountCid: string): StageConfig[] {
     const raw = localStorage.getItem(getStorageKey(accountCid));
     if (raw) {
       const parsed = JSON.parse(raw) as StageConfig[];
-      // Merge with defaults in case new stages were added
       const knownSlugs = new Set(parsed.map(s => s.slug));
       const merged = [...parsed];
       for (const def of DEFAULT_STAGES) {
@@ -63,7 +63,17 @@ export function getActiveStages(accountCid: string): StageConfig[] {
   return loadPipelineConfig(accountCid).filter(s => s.enabled);
 }
 
-function SortableStage({ stage, onToggle }: { stage: StageConfig; onToggle: () => void }) {
+function SortableStage({
+  stage,
+  onToggle,
+  onRename,
+}: {
+  stage: StageConfig;
+  onToggle: () => void;
+  onRename: (newLabel: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(stage.label);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: stage.slug,
   });
@@ -72,6 +82,13 @@ function SortableStage({ stage, onToggle }: { stage: StageConfig; onToggle: () =
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : undefined,
+  };
+
+  const commitRename = () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== stage.label) onRename(trimmed);
+    else setDraft(stage.label);
+    setEditing(false);
   };
 
   return (
@@ -94,9 +111,35 @@ function SortableStage({ stage, onToggle }: { stage: StageConfig; onToggle: () =
         <GripVertical className="w-4 h-4 text-muted-foreground/60" />
       </button>
       <span className="text-lg">{stage.icon}</span>
-      <span className={`text-sm font-medium flex-1 ${stage.enabled ? "text-foreground" : "text-muted-foreground line-through"}`}>
-        {stage.label}
-      </span>
+
+      {editing ? (
+        <form
+          className="flex-1 flex items-center gap-1"
+          onSubmit={e => { e.preventDefault(); commitRename(); }}
+        >
+          <Input
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            className="h-7 text-sm"
+            autoFocus
+            onBlur={commitRename}
+          />
+          <button type="submit" className="shrink-0 p-1 text-primary">
+            <Check className="w-3.5 h-3.5" />
+          </button>
+        </form>
+      ) : (
+        <button
+          onClick={() => setEditing(true)}
+          className={`text-sm font-medium flex-1 text-left flex items-center gap-1.5 group/label ${
+            stage.enabled ? "text-foreground" : "text-muted-foreground line-through"
+          }`}
+        >
+          {stage.label}
+          <Pencil className="w-3 h-3 text-muted-foreground/40 opacity-0 group-hover/label:opacity-100 transition-opacity" />
+        </button>
+      )}
+
       <Switch
         checked={stage.enabled}
         onCheckedChange={onToggle}
@@ -132,9 +175,11 @@ export default function PipelineEditor({ accountCid, onSave, onClose }: Props) {
   };
 
   const toggleStage = (slug: string) => {
-    setStages(prev =>
-      prev.map(s => (s.slug === slug ? { ...s, enabled: !s.enabled } : s))
-    );
+    setStages(prev => prev.map(s => (s.slug === slug ? { ...s, enabled: !s.enabled } : s)));
+  };
+
+  const renameStage = (slug: string, newLabel: string) => {
+    setStages(prev => prev.map(s => (s.slug === slug ? { ...s, label: newLabel } : s)));
   };
 
   const handleSave = () => {
@@ -142,9 +187,7 @@ export default function PipelineEditor({ accountCid, onSave, onClose }: Props) {
     onSave(stages);
   };
 
-  const handleReset = () => {
-    setStages(DEFAULT_STAGES);
-  };
+  const handleReset = () => setStages(DEFAULT_STAGES);
 
   const enabledCount = stages.filter(s => s.enabled).length;
 
@@ -154,11 +197,11 @@ export default function PipelineEditor({ accountCid, onSave, onClose }: Props) {
         <div>
           <h3 className="text-sm font-bold">Personalizar Pipeline</h3>
           <p className="text-[10px] text-muted-foreground mt-0.5">
-            Arrastra para reordenar • {enabledCount} de {stages.length} activas
+            Arrastra para reordenar • Click en nombre para editar • {enabledCount}/{stages.length} activas
           </p>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleReset} title="Restaurar orden original">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleReset} title="Restaurar">
             <RotateCcw className="w-3.5 h-3.5" />
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
@@ -175,6 +218,7 @@ export default function PipelineEditor({ accountCid, onSave, onClose }: Props) {
                 key={stage.slug}
                 stage={stage}
                 onToggle={() => toggleStage(stage.slug)}
+                onRename={(label) => renameStage(stage.slug, label)}
               />
             ))}
           </div>
@@ -182,17 +226,10 @@ export default function PipelineEditor({ accountCid, onSave, onClose }: Props) {
       </DndContext>
 
       {enabledCount < 2 && (
-        <p className="text-[10px] text-destructive font-medium">
-          ⚠ Necesitas al menos 2 etapas activas
-        </p>
+        <p className="text-[10px] text-destructive font-medium">⚠ Necesitas al menos 2 etapas activas</p>
       )}
 
-      <Button
-        onClick={handleSave}
-        disabled={enabledCount < 2}
-        className="w-full gap-2"
-        size="sm"
-      >
+      <Button onClick={handleSave} disabled={enabledCount < 2} className="w-full gap-2" size="sm">
         <Save className="w-3.5 h-3.5" />
         Guardar Pipeline
       </Button>

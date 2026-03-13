@@ -33,13 +33,13 @@ interface B1B2Case {
 }
 
 const DEFAULT_STAGE_LABELS: Record<string, string> = {
-  "consulta-inicial": "Consulta",
+  "consulta-inicial": "Caso Activo",
   "ds160": "DS-160",
   "cuenta-cas": "Cuenta CAS",
   "citas-programadas": "Citas",
   "cita-cas": "Cita CAS",
   "pre-entrevista": "Pre-Entrevista",
-  "entrevista": "Entrevista",
+  "entrevista": "Cita Embajada",
   "resultado": "Resultado",
 };
 
