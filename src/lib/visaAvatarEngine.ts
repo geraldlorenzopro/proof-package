@@ -497,19 +497,19 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   { id: 'q_vehicle', step: 3, textEs: '¿Tiene vehículo propio?', textEn: 'Do you own a vehicle?', fieldKey: 'ownsVehicle', type: 'boolean' },
   { id: 'q_bank', step: 3, textEs: '¿Tiene cuentas bancarias?', textEn: 'Do you have bank accounts?', fieldKey: 'hasBankAccounts', type: 'boolean' },
   { id: 'q_invest', step: 3, textEs: '¿Tiene inversiones?', textEn: 'Do you have investments?', fieldKey: 'hasInvestments', type: 'boolean' },
-  { id: 'q_family_ties', step: 3, textEs: '¿Vínculos familiares en su país?', textEn: 'Family ties in home country?', fieldKey: 'familyInHomeCountry', type: 'select',
+  { id: 'q_family_ties', step: 3, textEs: '¿Qué tanta familia tiene en su país?', textEn: 'How much family do you have in your home country?', fieldKey: 'familyInHomeCountry', type: 'select',
     consularQuestion: 'What family do you have in your home country?',
     options: [
-      { value: 'strong', labelEs: 'Fuertes', labelEn: 'Strong' },
-      { value: 'moderate', labelEs: 'Moderados', labelEn: 'Moderate' },
-      { value: 'weak', labelEs: 'Débiles', labelEn: 'Weak' },
+      { value: 'strong', labelEs: 'Mucha familia cercana (padres, hermanos, hijos)', labelEn: 'Lots of close family' },
+      { value: 'moderate', labelEs: 'Algo de familia (tíos, primos)', labelEn: 'Some family' },
+      { value: 'weak', labelEs: 'Casi no tengo familia aquí', labelEn: 'Very little family here' },
     ]},
-  { id: 'q_community', step: 3, textEs: '¿Vínculos comunitarios?', textEn: 'Community ties?', fieldKey: 'communityTies', type: 'select', options: [
-    { value: 'strong', labelEs: 'Fuertes (iglesia, organizaciones, etc.)', labelEn: 'Strong' },
-    { value: 'moderate', labelEs: 'Moderados', labelEn: 'Moderate' },
-    { value: 'weak', labelEs: 'Débiles', labelEn: 'Weak' },
+  { id: 'q_community', step: 3, textEs: '¿Participa en algo en su comunidad?', textEn: 'Do you participate in community activities?', fieldKey: 'communityTies', type: 'select', options: [
+    { value: 'strong', labelEs: 'Sí, voy a la iglesia, club, o soy parte de un grupo', labelEn: 'Yes, church, club, or group' },
+    { value: 'moderate', labelEs: 'A veces participo en actividades', labelEn: 'Sometimes' },
+    { value: 'weak', labelEs: 'No participo en nada', labelEn: 'No participation' },
   ]},
-  { id: 'q_dependents', step: 3, textEs: '¿Tiene dependientes a su cargo?', textEn: 'Do you have dependents?', fieldKey: 'hasDependents', type: 'boolean' },
+  { id: 'q_dependents', step: 3, textEs: '¿Hay personas que dependen de usted económicamente?', textEn: 'Are there people who depend on you financially?', fieldKey: 'hasDependents', type: 'boolean' },
 
   // ── STEP 4: VIAJES ──
   { id: 'q_prev_visa', step: 4, textEs: '¿Ha tenido visa aprobada antes?', textEn: 'Have you had a visa approved before?', fieldKey: 'previousVisaApproved', type: 'boolean',
