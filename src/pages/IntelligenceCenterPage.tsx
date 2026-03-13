@@ -1,17 +1,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, BarChart3, Gauge, Users, Activity, TrendingUp,
   Target, Weight, AlertTriangle, CheckCircle2, Clock,
-  Zap, CalendarClock, ShieldAlert
+  Zap, CalendarClock, ShieldAlert, X, ExternalLink, ChevronRight
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip,
   LineChart, Line, CartesianGrid, PieChart, Pie, Cell
 } from "recharts";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription
+} from "@/components/ui/sheet";
 
 // ═══ TYPES ═══
 interface FirmMetrics {
@@ -22,6 +25,15 @@ interface FirmMetrics {
   pipeline_distribution: Array<{ stage: string; count: number; team_action: number; client_action: number }>;
   monthly_trend: Array<{ month: string; opened: number; closed: number }>;
   period_days: number;
+}
+
+interface DrillDownData {
+  title: string;
+  subtitle: string;
+  icon: any;
+  color: string;
+  cases: Array<{ id: string; client_name: string; case_type: string; status: string; pipeline_stage: string | null; ball_in_court: string | null; updated_at: string }>;
+  loading: boolean;
 }
 
 const STAGE_LABELS: Record<string, string> = {
@@ -54,6 +66,8 @@ export default function IntelligenceCenterPage() {
   const [data, setData] = useState<FirmMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(30);
+  const [drillDown, setDrillDown] = useState<DrillDownData | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => { load(); }, [period]);
 
@@ -69,6 +83,94 @@ export default function IntelligenceCenterPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // ═══ DRILL-DOWN FUNCTIONS ═══
+  async function drillIntoMember(memberName: string, memberId: string) {
+    setDrillDown({
+      title: memberName,
+      subtitle: "Casos activos asignados",
+      icon: Users,
+      color: "text-violet-400",
+      cases: [],
+      loading: true,
+    });
+    setSheetOpen(true);
+
+    const { data: cases } = await supabase
+      .from("client_cases")
+      .select("id, client_name, case_type, status, pipeline_stage, ball_in_court, updated_at")
+      .eq("assigned_to", memberId)
+      .not("status", "eq", "completed")
+      .order("updated_at", { ascending: false });
+
+    setDrillDown(prev => prev ? { ...prev, cases: cases || [], loading: false } : null);
+  }
+
+  async function drillIntoBottleneck(stage: string) {
+    setDrillDown({
+      title: stageLabel(stage),
+      subtitle: "Casos atascados en esta etapa",
+      icon: ShieldAlert,
+      color: "text-rose-400",
+      cases: [],
+      loading: true,
+    });
+    setSheetOpen(true);
+
+    const { data: cases } = await supabase
+      .from("client_cases")
+      .select("id, client_name, case_type, status, pipeline_stage, ball_in_court, updated_at")
+      .eq("pipeline_stage", stage)
+      .not("status", "eq", "completed")
+      .order("updated_at", { ascending: true });
+
+    setDrillDown(prev => prev ? { ...prev, cases: cases || [], loading: false } : null);
+  }
+
+  async function drillIntoPipelineStage(stage: string, filter?: "team" | "client") {
+    setDrillDown({
+      title: stageLabel(stage),
+      subtitle: filter === "team" ? "Acción del equipo" : filter === "client" ? "Esperando al cliente" : "Todos los casos",
+      icon: BarChart3,
+      color: "text-accent",
+      cases: [],
+      loading: true,
+    });
+    setSheetOpen(true);
+
+    let query = supabase
+      .from("client_cases")
+      .select("id, client_name, case_type, status, pipeline_stage, ball_in_court, updated_at")
+      .eq("pipeline_stage", stage)
+      .not("status", "eq", "completed");
+
+    if (filter === "team") query = query.eq("ball_in_court", "team");
+    if (filter === "client") query = query.eq("ball_in_court", "client");
+
+    const { data: cases } = await query.order("updated_at", { ascending: false });
+    setDrillDown(prev => prev ? { ...prev, cases: cases || [], loading: false } : null);
+  }
+
+  async function drillIntoEfficiency(stage: string) {
+    setDrillDown({
+      title: stageLabel(stage),
+      subtitle: "Casos actualmente en esta etapa",
+      icon: Gauge,
+      color: "text-accent",
+      cases: [],
+      loading: true,
+    });
+    setSheetOpen(true);
+
+    const { data: cases } = await supabase
+      .from("client_cases")
+      .select("id, client_name, case_type, status, pipeline_stage, ball_in_court, updated_at")
+      .eq("pipeline_stage", stage)
+      .not("status", "eq", "completed")
+      .order("updated_at", { ascending: true });
+
+    setDrillDown(prev => prev ? { ...prev, cases: cases || [], loading: false } : null);
   }
 
   // ═══ DERIVED DATA ═══
@@ -97,6 +199,7 @@ export default function IntelligenceCenterPage() {
 
   const pipelineData = data?.pipeline_distribution.slice(0, 8).map(p => ({
     name: stageLabel(p.stage).slice(0, 14),
+    stage: p.stage,
     total: p.count,
     team: p.team_action,
     client: p.client_action,
@@ -129,7 +232,6 @@ export default function IntelligenceCenterPage() {
             <h1 className="text-sm font-bold text-foreground tracking-wide">Centro de Inteligencia</h1>
           </div>
 
-          {/* Period Selector */}
           <div className="flex items-center gap-1 bg-card border border-border/30 rounded-lg p-0.5">
             {PERIOD_OPTIONS.map(opt => (
               <button
@@ -170,9 +272,8 @@ export default function IntelligenceCenterPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <SectionHeader icon={Gauge} label="Reloj de Eficiencia" subtitle="Net Case Velocity" color="text-accent" />
+              <SectionHeader icon={Gauge} label="Reloj de Eficiencia" subtitle="Net Case Velocity — Click en una etapa para ver sus casos" color="text-accent" />
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-3">
-                {/* Big efficiency gauge */}
                 <div className="lg:col-span-1 rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/[0.06] to-transparent p-6 flex flex-col items-center justify-center">
                   <p className="text-[10px] uppercase tracking-[0.3em] text-accent/60 font-bold mb-2">Eficiencia Neta</p>
                   <p className="font-display text-6xl font-black text-accent leading-none tracking-tighter">
@@ -183,7 +284,6 @@ export default function IntelligenceCenterPage() {
                   </p>
                 </div>
 
-                {/* Breakdown */}
                 <div className="lg:col-span-2 rounded-2xl border border-border/15 bg-card/50 p-5">
                   <div className="grid grid-cols-3 gap-4 mb-5">
                     <VelocityCard label="Tiempo Bruto" value={`${totalGrossDays.toFixed(1)}d`} color="text-muted-foreground/70" />
@@ -191,17 +291,20 @@ export default function IntelligenceCenterPage() {
                     <VelocityCard label="Tiempo Neto" value={`${totalNetDays.toFixed(1)}d`} color="text-accent" highlight />
                   </div>
 
-                  {/* Per-stage velocity bars */}
                   <p className="text-[9px] uppercase tracking-[0.25em] text-muted-foreground/40 font-bold mb-2">
-                    Velocidad por Etapa (solo tiempo del equipo)
+                    Velocidad por Etapa — <span className="text-accent/60">click para detalles</span>
                   </p>
                   <div className="space-y-1.5">
                     {netVelocity.filter(v => !v.is_client_time).slice(0, 6).map((v, i) => {
                       const maxDays = Math.max(...netVelocity.filter(x => !x.is_client_time).map(x => x.net_days), 1);
                       const pct = (v.net_days / maxDays) * 100;
                       return (
-                        <div key={i} className="flex items-center gap-3">
-                          <span className="text-[10px] text-muted-foreground/60 w-24 truncate font-medium">
+                        <button
+                          key={i}
+                          onClick={() => drillIntoEfficiency(v.stage)}
+                          className="w-full flex items-center gap-3 group hover:bg-foreground/[0.02] rounded-lg px-1 py-0.5 transition-colors"
+                        >
+                          <span className="text-[10px] text-muted-foreground/60 w-24 truncate font-medium text-left group-hover:text-foreground/80 transition-colors">
                             {stageLabel(v.stage)}
                           </span>
                           <div className="flex-1 h-5 rounded bg-foreground/[0.03] relative overflow-hidden">
@@ -215,7 +318,8 @@ export default function IntelligenceCenterPage() {
                               {v.net_days.toFixed(1)}d
                             </span>
                           </div>
-                        </div>
+                          <ChevronRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-accent/60 transition-colors shrink-0" />
+                        </button>
                       );
                     })}
                   </div>
@@ -232,12 +336,12 @@ export default function IntelligenceCenterPage() {
             >
               {/* Weighted Workload */}
               <div>
-                <SectionHeader icon={Weight} label="Carga del Equipo" subtitle="Ponderada por complejidad" color="text-violet-400" />
+                <SectionHeader icon={Weight} label="Carga del Equipo" subtitle="Click en un miembro para ver sus casos" color="text-violet-400" />
                 <div className="rounded-2xl border border-border/15 bg-card/50 p-5 mt-3">
                   <div className="flex items-center gap-3 mb-4">
                     <span className="text-[8px] text-muted-foreground/40 font-bold uppercase tracking-wider">Pesos:</span>
                     <span className="text-[9px] text-emerald-400/80 font-mono bg-emerald-500/10 px-2 py-0.5 rounded">Bajo 2pts</span>
-                    <span className="text-[9px] text-jarvis/80 font-mono bg-jarvis/10 px-2 py-0.5 rounded">Medio 5pts</span>
+                    <span className="text-[9px] text-accent/80 font-mono bg-accent/10 px-2 py-0.5 rounded">Medio 5pts</span>
                     <span className="text-[9px] text-rose-400/80 font-mono bg-rose-500/10 px-2 py-0.5 rounded">Alto 9pts</span>
                   </div>
 
@@ -250,9 +354,13 @@ export default function IntelligenceCenterPage() {
                       const isHigh = weightedPoints >= 25;
 
                       return (
-                        <div key={idx} className="flex items-center gap-3 group">
-                          <div className="w-28 truncate">
-                            <span className="text-xs font-semibold text-foreground/80">{member.member_name}</span>
+                        <button
+                          key={idx}
+                          onClick={() => drillIntoMember(member.member_name, member.member_id)}
+                          className="w-full flex items-center gap-3 group hover:bg-foreground/[0.02] rounded-lg px-1 py-0.5 transition-colors"
+                        >
+                          <div className="w-28 truncate text-left">
+                            <span className="text-xs font-semibold text-foreground/80 group-hover:text-foreground transition-colors">{member.member_name}</span>
                           </div>
                           <div className="flex-1 h-7 rounded-lg bg-foreground/[0.03] relative overflow-hidden">
                             <div
@@ -271,13 +379,14 @@ export default function IntelligenceCenterPage() {
                             <CheckCircle2 className="w-3 h-3 text-emerald-400/50" />
                             <span className="text-[10px] font-mono text-emerald-400/70">{member.completed_in_period}</span>
                           </div>
+                          <ChevronRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-violet-400/60 transition-colors shrink-0" />
                           {isSaturated && (
                             <span className="flex h-2 w-2 shrink-0">
                               <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-rose-400 opacity-75" />
                               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-400" />
                             </span>
                           )}
-                        </div>
+                        </button>
                       );
                     })}
                     {data.team_productivity.length === 0 && (
@@ -289,9 +398,8 @@ export default function IntelligenceCenterPage() {
 
               {/* Pipeline Distribution */}
               <div>
-                <SectionHeader icon={BarChart3} label="Pipeline Distribution" subtitle="Equipo vs Cliente por etapa" color="text-jarvis" />
+                <SectionHeader icon={BarChart3} label="Pipeline Distribution" subtitle="Click en una barra para ver casos" color="text-accent" />
                 <div className="rounded-2xl border border-border/15 bg-card/50 p-5 mt-3">
-                  {/* Summary donut */}
                   <div className="flex items-center gap-6 mb-4">
                     <div className="w-24 h-24">
                       <ResponsiveContainer width="100%" height="100%">
@@ -306,7 +414,7 @@ export default function IntelligenceCenterPage() {
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded bg-jarvis/70" />
+                        <span className="w-3 h-3 rounded bg-accent/70" />
                         <span className="text-xs text-foreground/70 font-medium">Equipo: {teamActionTotal}</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -317,17 +425,43 @@ export default function IntelligenceCenterPage() {
                     </div>
                   </div>
 
-                  {/* Stacked bar chart */}
+                  {/* Clickable pipeline bars */}
                   {pipelineData.length > 0 && (
-                    <ResponsiveContainer width="100%" height={160}>
-                      <BarChart data={pipelineData} barSize={20}>
-                        <XAxis dataKey="name" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground)/0.5)" }} />
-                        <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground)/0.5)" }} width={22} />
-                        <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
-                        <Bar dataKey="team" stackId="a" fill="hsl(var(--jarvis))" name="Equipo" />
-                        <Bar dataKey="client" stackId="a" fill="hsl(195, 100%, 50%, 0.4)" radius={[4, 4, 0, 0]} name="Cliente" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <div className="space-y-1.5">
+                      <p className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/40 font-bold mb-2">
+                        Click en una etapa para detalles
+                      </p>
+                      {pipelineData.map((p, idx) => {
+                        const maxTotal = Math.max(...pipelineData.map(x => x.total), 1);
+                        const teamPct = (p.team / maxTotal) * 100;
+                        const clientPct = (p.client / maxTotal) * 100;
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => drillIntoPipelineStage(p.stage)}
+                            className="w-full flex items-center gap-3 group hover:bg-foreground/[0.02] rounded-lg px-1 py-0.5 transition-colors"
+                          >
+                            <span className="text-[10px] text-muted-foreground/60 w-24 truncate font-medium text-left group-hover:text-foreground/80 transition-colors">
+                              {p.name}
+                            </span>
+                            <div className="flex-1 h-5 rounded bg-foreground/[0.03] relative overflow-hidden flex">
+                              <div
+                                className="h-full bg-accent/30 transition-all duration-700"
+                                style={{ width: `${teamPct}%` }}
+                              />
+                              <div
+                                className="h-full bg-cyan-400/25 transition-all duration-700"
+                                style={{ width: `${clientPct}%` }}
+                              />
+                              <span className="absolute inset-0 flex items-center px-2 text-[10px] font-mono font-bold text-foreground/50">
+                                {p.total} ({p.team}E / {p.client}C)
+                              </span>
+                            </div>
+                            <ChevronRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-accent/60 transition-colors shrink-0" />
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               </div>
@@ -341,10 +475,9 @@ export default function IntelligenceCenterPage() {
             >
               <SectionHeader icon={TrendingUp} label="Tendencias Mensuales" subtitle="Crecimiento y completación" color="text-emerald-400" />
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-3">
-                {/* Monthly trend chart */}
                 <div className="lg:col-span-2 rounded-2xl border border-border/15 bg-card/50 p-5">
                   <div className="flex items-center gap-2 mb-4">
-                    <Activity className="w-3.5 h-3.5 text-jarvis/60" />
+                    <Activity className="w-3.5 h-3.5 text-accent/60" />
                     <span className="text-[10px] font-display font-bold tracking-widest uppercase text-muted-foreground/60">
                       Casos Abiertos vs Cerrados
                     </span>
@@ -365,7 +498,6 @@ export default function IntelligenceCenterPage() {
                   )}
                 </div>
 
-                {/* Completion rate */}
                 <div className="rounded-2xl border border-border/15 bg-card/50 p-5 flex flex-col items-center justify-center">
                   <Target className="w-5 h-5 text-emerald-400/60 mb-3" />
                   <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/50 font-bold mb-2">
@@ -397,17 +529,24 @@ export default function IntelligenceCenterPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.5 }}
               >
-                <SectionHeader icon={ShieldAlert} label="Alertas de Cuellos de Botella" subtitle={`${teamBottlenecks.length} etapas con retraso`} color="text-rose-400" />
+                <SectionHeader icon={ShieldAlert} label="Alertas de Cuellos de Botella" subtitle={`Click para ver casos atascados`} color="text-rose-400" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mt-3">
                   {teamBottlenecks.map((b, idx) => (
-                    <div key={idx} className="rounded-xl border border-rose-500/20 bg-rose-500/[0.04] p-4">
+                    <button
+                      key={idx}
+                      onClick={() => drillIntoBottleneck(b.stage)}
+                      className="rounded-xl border border-rose-500/20 bg-rose-500/[0.04] p-4 text-left hover:bg-rose-500/[0.08] hover:border-rose-500/30 transition-all group"
+                    >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-foreground/80">{stageLabel(b.stage)}</span>
-                        <div className={`w-2 h-2 rounded-full shrink-0 ${b.avg_days_stuck > 14 ? "bg-rose-400 animate-pulse" : "bg-amber-400"}`} />
+                        <span className="text-xs font-bold text-foreground/80 group-hover:text-foreground transition-colors">{stageLabel(b.stage)}</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-2 h-2 rounded-full shrink-0 ${b.avg_days_stuck > 14 ? "bg-rose-400 animate-pulse" : "bg-amber-400"}`} />
+                          <ChevronRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-rose-400/60 transition-colors" />
+                        </div>
                       </div>
                       <p className="font-display text-2xl font-black text-rose-400 leading-none">{b.stuck_cases}</p>
                       <p className="text-[9px] text-muted-foreground/50 mt-1">~{b.avg_days_stuck} días promedio</p>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </motion.section>
@@ -415,6 +554,88 @@ export default function IntelligenceCenterPage() {
           </>
         )}
       </div>
+
+      {/* ═══ DRILL-DOWN SHEET ═══ */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="bg-background border-border/30 w-full sm:max-w-lg overflow-y-auto">
+          {drillDown && (
+            <>
+              <SheetHeader className="pb-4 border-b border-border/15">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl ${
+                    drillDown.color === "text-violet-400" ? "bg-violet-500/10" :
+                    drillDown.color === "text-rose-400" ? "bg-rose-500/10" :
+                    "bg-accent/10"
+                  } flex items-center justify-center`}>
+                    <drillDown.icon className={`w-4 h-4 ${drillDown.color}`} />
+                  </div>
+                  <div>
+                    <SheetTitle className="text-foreground text-base">{drillDown.title}</SheetTitle>
+                    <SheetDescription className="text-muted-foreground/60 text-xs">{drillDown.subtitle}</SheetDescription>
+                  </div>
+                </div>
+              </SheetHeader>
+
+              <div className="mt-4 space-y-2">
+                {drillDown.loading ? (
+                  <div className="space-y-2">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="rounded-lg border border-border/15 bg-card/30 animate-pulse h-[60px]" />
+                    ))}
+                  </div>
+                ) : drillDown.cases.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-400/30 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground/50">No se encontraron casos</p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-bold">
+                      {drillDown.cases.length} caso{drillDown.cases.length !== 1 ? "s" : ""}
+                    </p>
+                    {drillDown.cases.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => navigate(`/case-engine/${c.id}`)}
+                        className="w-full rounded-lg border border-border/15 bg-card/50 p-3.5 text-left hover:bg-card hover:border-foreground/10 transition-all group"
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-sm font-semibold text-foreground/90 group-hover:text-foreground transition-colors">
+                            {c.client_name}
+                          </span>
+                          <ExternalLink className="w-3 h-3 text-muted-foreground/30 group-hover:text-accent/60 transition-colors" />
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="text-[9px] py-0 px-1.5 border-border/20 text-muted-foreground/60">
+                            {c.case_type}
+                          </Badge>
+                          {c.pipeline_stage && (
+                            <Badge variant="outline" className="text-[9px] py-0 px-1.5 border-accent/20 text-accent/70">
+                              {stageLabel(c.pipeline_stage)}
+                            </Badge>
+                          )}
+                          {c.ball_in_court && (
+                            <Badge variant="outline" className={`text-[9px] py-0 px-1.5 ${
+                              c.ball_in_court === "team"
+                                ? "border-amber-500/20 text-amber-400/70"
+                                : "border-cyan-400/20 text-cyan-400/70"
+                            }`}>
+                              {c.ball_in_court === "team" ? "⚡ Equipo" : "⏳ Cliente"}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground/40 mt-1.5">
+                          Actualizado: {new Date(c.updated_at).toLocaleDateString("es")}
+                        </p>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
