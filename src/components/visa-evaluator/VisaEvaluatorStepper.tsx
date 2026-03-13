@@ -161,7 +161,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
               transition={{ duration: 0.3 }}
               className="flex flex-col items-center text-center mb-4"
             >
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[hsl(var(--jarvis)/0.15)] to-[hsl(var(--jarvis)/0.05)] border border-[hsl(var(--jarvis)/0.2)] flex items-center justify-center text-[hsl(var(--jarvis))] mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--jarvis)/0.15)] to-[hsl(var(--jarvis)/0.05)] border border-[hsl(var(--jarvis)/0.2)] flex items-center justify-center text-[hsl(var(--jarvis))] mb-2">
                 {STEP_ICONS[currentStep]}
               </div>
               <h3 className="text-xl font-bold text-foreground tracking-tight">
