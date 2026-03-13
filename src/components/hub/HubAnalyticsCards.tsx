@@ -29,6 +29,7 @@ const fadeUp = {
 export default function HubAnalyticsCards() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => { loadAnalytics(); }, []);
 
@@ -100,7 +101,6 @@ export default function HubAnalyticsCards() {
     );
   }
 
-  const navigate = useNavigate();
 
   if (!data) return null;
 
