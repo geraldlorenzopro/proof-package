@@ -32,6 +32,7 @@ import NotFound from "./pages/NotFound";
 import PdfFieldInspector from "./pages/PdfFieldInspector";
 import CaseWorkspace from "./pages/CaseWorkspace";
 import CaseEnginePage from "./pages/CaseEnginePage";
+import IntelligenceCenterPage from "./pages/IntelligenceCenterPage";
 
 const queryClient = new QueryClient();
 
