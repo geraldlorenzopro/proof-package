@@ -645,24 +645,40 @@ export default function NewCaseFromProfile({
           {/* STEP 3: Case Details */}
           {step === "details" && (
             <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-secondary/30 border border-border space-y-2">
-                <Label className="text-xs flex items-center gap-1.5">
-                  <Package className="w-3.5 h-3.5 text-jarvis" />
-                  Paquete ({selectedForms.length} formularios)
-                </Label>
-                <div className="flex flex-wrap gap-1">
-                  {selectedForms.map(f => (
-                    <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-jarvis/10 text-jarvis border border-jarvis/20">
-                      {f}
-                    </span>
-                  ))}
+              {/* Show form package only if there are forms */}
+              {selectedForms.length > 0 && (
+                <div className="p-3 rounded-lg bg-secondary/30 border border-border space-y-2">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5 text-jarvis" />
+                    Paquete ({selectedForms.length} formularios)
+                  </Label>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedForms.map(f => (
+                      <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-jarvis/10 text-jarvis border border-jarvis/20">
+                        {f}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Tracking-only info banner */}
+              {isTrackingOnly && (
+                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 space-y-1">
+                  <p className="text-xs font-semibold text-blue-400 flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5" />
+                    Pipeline de Seguimiento
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Este proceso no utiliza formularios USCIS. Las etapas del pipeline funcionan como checkpoints de seguimiento.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label className="text-xs">Nombre del Caso *</Label>
                 <Input
-                  placeholder="Ej: AOS Cónyuge, Petición F4 Hermano..."
+                  placeholder={isTrackingOnly ? "Ej: Visa B1/B2 – Juan Pérez" : "Ej: AOS Cónyuge, Petición F4 Hermano..."}
                   value={caseName}
                   onChange={e => setCaseName(e.target.value)}
                   disabled={loading}
@@ -671,19 +687,21 @@ export default function NewCaseFromProfile({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid ${hidePetitioner ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
+                {!hidePetitioner && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Peticionario</Label>
+                    <Input
+                      placeholder="Nombre del peticionario"
+                      value={petitionerName}
+                      onChange={e => setPetitionerName(e.target.value)}
+                      disabled={loading}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
-                  <Label className="text-xs">Peticionario</Label>
-                  <Input
-                    placeholder="Nombre del peticionario"
-                    value={petitionerName}
-                    onChange={e => setPetitionerName(e.target.value)}
-                    disabled={loading}
-                    className="h-9 text-sm"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Beneficiario</Label>
+                  <Label className="text-xs">{hidePetitioner ? "Solicitante" : "Beneficiario"}</Label>
                   <Input
                     value={beneficiaryName}
                     onChange={e => setBeneficiaryName(e.target.value)}
