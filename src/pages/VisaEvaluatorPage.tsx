@@ -145,12 +145,14 @@ export default function VisaEvaluatorPage() {
           />
         )}
 
-        {/* Disclaimer */}
-        <div className="mt-8 p-4 rounded-lg bg-muted/30 border border-border/50">
-          <p className="text-xs text-muted-foreground text-center italic">
-            ⚖️ Este resultado es una guía informativa basada en el manual 9 FAM 402.2-2. La decisión final siempre dependerá del criterio del oficial consular.
-          </p>
-        </div>
+        {/* Disclaimer only shown on form view */}
+        {view === 'form' && (
+          <div className="mt-4 px-2">
+            <p className="text-[10px] text-muted-foreground/40 text-center italic">
+              ⚖️ Este resultado es una guía informativa basada en el manual 9 FAM 402.2-2.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
