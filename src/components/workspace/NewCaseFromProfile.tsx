@@ -53,7 +53,14 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 // Group templates by prefix for visual grouping
+// Process types that have NO USCIS forms (tracking-only pipelines)
+const NO_FORMS_PROCESS_TYPES = ["B1B2-CONSULAR"];
+
+// Process types where petitioner field is not applicable
+const NO_PETITIONER_PROCESS_TYPES = ["B1B2-CONSULAR"];
+
 const TEMPLATE_GROUPS: { prefix: string; label: string; icon: string }[] = [
+  { prefix: "B1B2", label: "Visa B1/B2 — Proceso Consular", icon: "✈️" },
   { prefix: "PF-IR", label: "Petición Familiar — Inmediatos", icon: "👨‍👩‍👧" },
   { prefix: "PF-F", label: "Petición Familiar — Preferencia", icon: "👨‍👩‍👧‍👦" },
   { prefix: "FULL-AOS-IR", label: "FULL AOS — Inmediatos (Concurrente)", icon: "🟢" },
