@@ -799,7 +799,7 @@ export default function CaseWorkspace() {
 
         {/* ═══ QUESTIONNAIRE VIEW ═══ */}
         {activeView === "questionnaire" && selectedClientId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          <div>
             {clientCases.length === 0 ? (
               <div className="text-center py-16">
                 <ClipboardList className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
