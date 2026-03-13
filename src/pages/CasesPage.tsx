@@ -136,7 +136,7 @@ export default function CasesPage() {
               {filterMeta ? filterMeta.label : "Casos"}
             </h1>
             <p className="text-xs text-muted-foreground">
-              {filterMeta ? filterMeta.description : "Gestiona los casos y enlaces de tus clientes"}
+              {filterMeta ? filterMeta.description : "Vista operativa de todos los casos de la firma"}
             </p>
           </div>
           <div className="flex items-center gap-2">
