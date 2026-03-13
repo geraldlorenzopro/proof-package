@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       .join("");
 
     // Build redirect URL
-    const hubBase = "https://proof-package.lovable.app";
+    const hubBase = "https://ner.recursosmigratorios.com";
     const params = new URLSearchParams({
       cid: contactId,
       ts,
