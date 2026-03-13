@@ -64,6 +64,8 @@ const DISPLAY_NAMES: Record<string, string> = {
   "uscis-analyzer": "USCIS Analyzer",
   "checklist-generator": "Checklist Generator",
   "smart-forms": "NER Smart Forms",
+  "visa-evaluator": "Visa Evaluator B1/B2",
+  "interview-sim": "Simulador Consular",
 };
 
 const ROUTE_MAP: Record<string, string> = {
