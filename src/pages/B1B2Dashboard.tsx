@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Loader2, Shield, Plus, Copy, Check, ExternalLink,
+  Loader2, Plus, Copy, Check, ExternalLink,
   Search, Users, ChevronRight, AlertTriangle, Plane,
-  CircleDot, CheckCircle2, Clock, Filter
+  CircleDot, CheckCircle2, Clock, Send, Eye,
+  TrendingUp, ArrowRight, MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,17 @@ const STAGE_LABELS: Record<string, string> = {
   "preparacion": "Preparación",
   "entrevista": "Entrevista",
   "resultado": "Resultado",
+};
+
+const STAGE_ICONS: Record<string, string> = {
+  "consulta-inicial": "💬",
+  "ds160-proceso": "📝",
+  "ds160-completado": "✅",
+  "cita-cas": "📅",
+  "huellas": "🖐",
+  "preparacion": "📋",
+  "entrevista": "🎤",
+  "resultado": "🏆",
 };
 
 const ALL_STAGES = Object.keys(STAGE_LABELS);
@@ -75,7 +87,6 @@ export default function B1B2Dashboard() {
         return;
       }
       setAccountName(data.account_name || "");
-      // resolve-client-portal returns all cases for account
       setCases(data.cases || []);
     } catch (e) {
       console.error(e);
@@ -89,12 +100,19 @@ export default function B1B2Dashboard() {
     loadCases();
   }, [loadCases]);
 
+  const getClientLink = (c: B1B2Case) => `${window.location.origin}/case-track/${c.access_token}`;
+
   const copyClientLink = (c: B1B2Case) => {
-    const link = `${window.location.origin}/case-track/${c.access_token}`;
-    navigator.clipboard.writeText(link);
+    navigator.clipboard.writeText(getClientLink(c));
     setCopiedId(c.id);
     toast({ title: "Link copiado", description: `Link de ${c.client_name} copiado al portapapeles.` });
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const shareWhatsApp = (c: B1B2Case) => {
+    const link = getClientLink(c);
+    const msg = encodeURIComponent(`Hola ${c.client_name}, aquí puedes ver el progreso de tu caso de visa B1/B2:\n${link}`);
+    window.open(`https://wa.me/?text=${msg}`, "_blank");
   };
 
   const createCase = async () => {
@@ -110,12 +128,10 @@ export default function B1B2Dashboard() {
       });
       if (fnErr) throw fnErr;
       if (data?.error) throw new Error(data.error);
-
       toast({ title: "Caso creado", description: `${newName} agregado exitosamente.` });
       setShowNew(false);
       setNewName("");
       setNewEmail("");
-      // Reload cases
       setLoading(true);
       await loadCases();
     } catch (e: any) {
@@ -139,8 +155,9 @@ export default function B1B2Dashboard() {
   const stageDistribution = ALL_STAGES.map(slug => ({
     slug,
     label: STAGE_LABELS[slug],
+    icon: STAGE_ICONS[slug],
     count: cases.filter(c => c.pipeline_stage === slug).length,
-  })).filter(s => s.count > 0);
+  }));
 
   const getDaysAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -153,17 +170,24 @@ export default function B1B2Dashboard() {
     return ALL_STAGES.length > 0 ? Math.round(((Math.max(idx, 0) + 1) / ALL_STAGES.length) * 100) : 0;
   };
 
-  // No CID provided — show entry screen
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : name.slice(0, 2).toUpperCase();
+  };
+
+  // No CID — entry screen
   if (!accountCid) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-sm space-y-6 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-            <Plane className="w-7 h-7 text-primary" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mx-auto shadow-lg shadow-primary/20">
+            <Plane className="w-8 h-8 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">Dashboard B1/B2</h1>
-            <p className="text-sm text-muted-foreground mt-1">Ingresa el ID de la cuenta para continuar</p>
+            <h1 className="text-2xl font-bold">Portal B1/B2</h1>
+            <p className="text-sm text-muted-foreground mt-1">Gestión de Visas de Turismo</p>
           </div>
           <form
             onSubmit={(e) => {
@@ -176,14 +200,14 @@ export default function B1B2Dashboard() {
             className="space-y-3"
           >
             <Input
-              placeholder="ID de cuenta (ej: NgaxlyDdwg93PvQb5KCw)"
+              placeholder="ID de cuenta"
               value={cidInput}
               onChange={e => setCidInput(e.target.value)}
               autoFocus
             />
             <Button type="submit" className="w-full gap-2" disabled={!cidInput.trim()}>
-              <ChevronRight className="w-4 h-4" />
-              Acceder
+              Acceder al Portal
+              <ArrowRight className="w-4 h-4" />
             </Button>
           </form>
         </div>
@@ -196,7 +220,7 @@ export default function B1B2Dashboard() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="text-sm text-muted-foreground">Cargando dashboard...</p>
+          <p className="text-sm text-muted-foreground">Cargando portal...</p>
         </div>
       </div>
     );
@@ -213,104 +237,132 @@ export default function B1B2Dashboard() {
     );
   }
 
+  // Find the most "advanced" stage for the hero stat
+  const avgProgress = cases.length > 0
+    ? Math.round(cases.reduce((sum, c) => sum + getProgressPct(c.pipeline_stage), 0) / cases.length)
+    : 0;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Plane className="w-5 h-5 text-primary" />
+      <div className="max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+
+        {/* ── Branded Header ── */}
+        <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl p-5 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20">
+                <Plane className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Portal de Visas B1/B2</h1>
+                <p className="text-xs text-muted-foreground mt-0.5">{accountName} • {cases.length} cliente{cases.length !== 1 ? "s" : ""}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold">Casos B1/B2</h1>
-              <p className="text-xs text-muted-foreground">{accountName}</p>
-            </div>
+            <Button onClick={() => setShowNew(true)} className="gap-2 shadow-lg shadow-primary/10">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Nuevo Cliente</span>
+            </Button>
           </div>
-          <Button onClick={() => setShowNew(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Nuevo Cliente</span>
-          </Button>
         </div>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="rounded-xl border border-border/50 bg-card p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Users className="w-4 h-4 text-primary" />
-              <span className="text-xs font-medium text-muted-foreground">Total</span>
-            </div>
+        {/* ── KPI Row ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -translate-y-1/3 translate-x-1/3" />
+            <Users className="w-4 h-4 text-primary mb-2" />
             <p className="text-2xl font-bold">{cases.length}</p>
+            <p className="text-[10px] text-muted-foreground font-medium">Total Clientes</p>
           </div>
-          <div className="rounded-xl border border-border/50 bg-card p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <CircleDot className="w-4 h-4 text-primary" />
-              <span className="text-xs font-medium text-muted-foreground">Activos</span>
-            </div>
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-[hsl(var(--jarvis))]/5 rounded-full -translate-y-1/3 translate-x-1/3" />
+            <CircleDot className="w-4 h-4 text-[hsl(var(--jarvis))] mb-2" />
             <p className="text-2xl font-bold">{totalActive}</p>
+            <p className="text-[10px] text-muted-foreground font-medium">En Proceso</p>
           </div>
-          <div className="rounded-xl border border-border/50 bg-card p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <CheckCircle2 className="w-4 h-4 text-accent" />
-              <span className="text-xs font-medium text-muted-foreground">Completados</span>
-            </div>
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-accent/5 rounded-full -translate-y-1/3 translate-x-1/3" />
+            <CheckCircle2 className="w-4 h-4 text-accent mb-2" />
             <p className="text-2xl font-bold">{totalCompleted}</p>
+            <p className="text-[10px] text-muted-foreground font-medium">Completados</p>
+          </div>
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -translate-y-1/3 translate-x-1/3" />
+            <TrendingUp className="w-4 h-4 text-primary mb-2" />
+            <p className="text-2xl font-bold">{avgProgress}%</p>
+            <p className="text-[10px] text-muted-foreground font-medium">Progreso Prom.</p>
           </div>
         </div>
 
-        {/* Stage Pills */}
-        {stageDistribution.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
+        {/* ── Pipeline Funnel ── */}
+        <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 mb-6">
+          <p className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+            <Plane className="w-3.5 h-3.5" />
+            Pipeline de Etapas
+          </p>
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            {stageDistribution.map((s, i) => {
+              const isActive = stageFilter === s.slug;
+              const hasClients = s.count > 0;
+              return (
+                <button
+                  key={s.slug}
+                  onClick={() => setStageFilter(isActive ? null : s.slug)}
+                  className={`flex-1 min-w-[80px] rounded-lg p-2.5 text-center transition-all border ${
+                    isActive
+                      ? "bg-primary/10 border-primary/30 shadow-sm"
+                      : hasClients
+                      ? "bg-card/80 border-border/30 hover:border-border/60"
+                      : "bg-transparent border-border/10 opacity-40"
+                  }`}
+                >
+                  <span className="text-lg block mb-0.5">{s.icon}</span>
+                  <p className={`text-xl font-bold ${isActive ? "text-primary" : hasClients ? "text-foreground" : "text-muted-foreground"}`}>
+                    {s.count}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground leading-tight mt-0.5 line-clamp-2">{s.label}</p>
+                </button>
+              );
+            })}
+          </div>
+          {stageFilter && (
             <button
               onClick={() => setStageFilter(null)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                !stageFilter
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-transparent border-border/50 text-muted-foreground hover:border-border"
-              }`}
+              className="mt-2 text-[10px] text-primary hover:underline"
             >
-              Todos ({cases.length})
+              ✕ Limpiar filtro
             </button>
-            {stageDistribution.map(s => (
-              <button
-                key={s.slug}
-                onClick={() => setStageFilter(stageFilter === s.slug ? null : s.slug)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                  stageFilter === s.slug
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-transparent border-border/50 text-muted-foreground hover:border-border"
-                }`}
-              >
-                {s.label} ({s.count})
-              </button>
-            ))}
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Search */}
+        {/* ── Search ── */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar cliente..."
+            placeholder="Buscar por nombre de cliente..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-10"
           />
         </div>
 
-        {/* Case List */}
+        {/* ── Case List ── */}
         {filtered.length === 0 ? (
-          <div className="text-center py-12 space-y-3">
-            <Plane className="w-10 h-10 text-muted-foreground/30 mx-auto" />
-            <p className="text-sm text-muted-foreground">
-              {cases.length === 0
-                ? "No hay casos B1/B2 aún. Crea el primer cliente."
-                : "No se encontraron resultados."}
-            </p>
+          <div className="text-center py-16 space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto">
+              <Plane className="w-8 h-8 text-muted-foreground/30" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                {cases.length === 0 ? "No hay clientes aún" : "Sin resultados"}
+              </p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                {cases.length === 0 ? "Agrega tu primer cliente para comenzar" : "Intenta con otro término de búsqueda"}
+              </p>
+            </div>
             {cases.length === 0 && (
-              <Button variant="outline" onClick={() => setShowNew(true)} className="gap-2">
+              <Button onClick={() => setShowNew(true)} className="gap-2">
                 <Plus className="w-4 h-4" />
-                Crear primer caso
+                Agregar Primer Cliente
               </Button>
             )}
           </div>
@@ -322,38 +374,77 @@ export default function B1B2Dashboard() {
               const days = getDaysAgo(c.created_at);
               const isCopied = copiedId === c.id;
               const isCompleted = c.status === "completed";
+              const initials = getInitials(c.client_name);
 
               return (
                 <div
                   key={c.id}
-                  className="rounded-xl border border-border/50 bg-card hover:border-border/80 transition-all"
+                  className="group rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm hover:border-border/80 hover:bg-card/80 transition-all"
                 >
                   <div className="p-4">
-                    <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold ${
+                        isCompleted
+                          ? "bg-accent/15 text-accent"
+                          : "bg-primary/10 text-primary"
+                      }`}>
+                        {initials}
+                      </div>
+
+                      {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mb-0.5">
                           <h3 className="font-semibold text-sm truncate">{c.client_name}</h3>
                           {isCompleted && (
-                            <Badge variant="outline" className="text-[9px] bg-accent/10 text-accent border-accent/20">
-                              Completado
+                            <Badge variant="outline" className="text-[8px] bg-accent/10 text-accent border-accent/20 shrink-0">
+                              ✓ Completado
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="secondary" className="text-[10px]">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-lg leading-none">{STAGE_ICONS[c.pipeline_stage] || "📄"}</span>
+                          <span className="text-[11px] font-medium text-muted-foreground">
                             {STAGE_LABELS[c.pipeline_stage] || c.pipeline_stage}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          </span>
+                          <span className="text-[10px] text-muted-foreground/60">•</span>
+                          <span className="text-[10px] text-muted-foreground/60 flex items-center gap-0.5">
                             <Clock className="w-3 h-3" />
                             {days}d
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
+
+                      {/* Stage Dots Mini-Pipeline */}
+                      <div className="hidden sm:flex items-center gap-[3px] shrink-0">
+                        {ALL_STAGES.map((s, i) => (
+                          <div
+                            key={s}
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              i < stageIdx ? "bg-accent" :
+                              i === stageIdx ? "bg-primary ring-2 ring-primary/30" :
+                              "bg-muted"
+                            }`}
+                            title={STAGE_LABELS[s]}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-0.5 shrink-0">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-8 w-8 opacity-60 hover:opacity-100"
+                          onClick={() => shareWhatsApp(c)}
+                          title="Enviar por WhatsApp"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 opacity-60 hover:opacity-100"
                           onClick={() => copyClientLink(c)}
                           title="Copiar link del cliente"
                         >
@@ -362,24 +453,32 @@ export default function B1B2Dashboard() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
-                          onClick={() => window.open(`${window.location.origin}/case-track/${c.access_token}`, "_blank")}
+                          className="h-8 w-8 opacity-60 hover:opacity-100"
+                          onClick={() => window.open(getClientLink(c), "_blank")}
                           title="Ver como cliente"
                         >
-                          <ExternalLink className="w-3.5 h-3.5" />
+                          <Eye className="w-3.5 h-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-8 w-8 opacity-60 hover:opacity-100"
                           onClick={() => navigate(`/b1b2-admin/${accountCid}`)}
-                          title="Abrir detalle"
+                          title="Gestionar caso"
                         >
                           <ChevronRight className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </div>
-                    <Progress value={pct} className="h-1.5" />
+
+                    {/* Progress bar — mobile visible */}
+                    <div className="mt-3 sm:hidden">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[9px] text-muted-foreground font-medium">Progreso</span>
+                        <span className="text-[9px] font-bold text-primary">{pct}%</span>
+                      </div>
+                      <Progress value={pct} className="h-1" />
+                    </div>
                   </div>
                 </div>
               );
@@ -387,20 +486,22 @@ export default function B1B2Dashboard() {
           </div>
         )}
 
-        {/* Footer */}
-        <div className="mt-8 p-3 rounded-lg bg-muted/30 border border-border/50">
-          <p className="text-[10px] text-muted-foreground text-center">
-            Dashboard B1/B2 • {accountName} • {cases.length} caso{cases.length !== 1 ? "s" : ""}
+        {/* ── Footer ── */}
+        <div className="mt-8 text-center">
+          <p className="text-[10px] text-muted-foreground/50">
+            Portal B1/B2 • {accountName} • Powered by NER
           </p>
         </div>
       </div>
 
-      {/* New Case Modal */}
+      {/* ── New Case Modal ── */}
       <Dialog open={showNew} onOpenChange={setShowNew}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plane className="w-5 h-5 text-primary" />
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Plane className="w-4 h-4 text-primary" />
+              </div>
               Nuevo Cliente B1/B2
             </DialogTitle>
           </DialogHeader>
@@ -436,7 +537,7 @@ export default function B1B2Dashboard() {
               className="gap-2"
             >
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Crear Caso
+              Crear Cliente
             </Button>
           </DialogFooter>
         </DialogContent>
