@@ -367,6 +367,23 @@ export default function B1B2Dashboard() {
         </div>
 
         {/* ── Search ── */}
+        {/* Active filters */}
+        {(statusFilter || stageFilter) && (
+          <div className="flex items-center gap-2 mb-3">
+            {statusFilter && (
+              <Badge variant="secondary" className="gap-1 text-xs cursor-pointer" onClick={() => setStatusFilter(null)}>
+                Estado: {STATUS_LABELS[statusFilter]} ✕
+              </Badge>
+            )}
+            {stageFilter && (
+              <Badge variant="secondary" className="gap-1 text-xs cursor-pointer" onClick={() => setStageFilter(null)}>
+                Etapa: {STAGE_LABELS[stageFilter]} ✕
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* ── Search ── */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
