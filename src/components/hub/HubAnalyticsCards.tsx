@@ -115,6 +115,7 @@ export default function HubAnalyticsCards() {
       glow: "shadow-[0_0_20px_hsl(195_100%_50%/0.06)]",
       trend: data.newCasesThisWeek > 0 ? `+${data.newCasesThisWeek} esta semana` : "Sin nuevos",
       trendUp: data.newCasesThisWeek > 0,
+      pulse: false,
       href: "/dashboard/cases?filter=active",
     },
     {
@@ -127,6 +128,7 @@ export default function HubAnalyticsCards() {
       glow: "shadow-[0_0_20px_hsl(270_100%_50%/0.06)]",
       trend: data.newClientsThisMonth > 0 ? `+${data.newClientsThisMonth} este mes` : "Sin nuevos",
       trendUp: data.newClientsThisMonth > 0,
+      pulse: false,
       href: "/dashboard/workspace-demo",
     },
   ];
