@@ -171,7 +171,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-5 py-4 sm:py-5 space-y-4">
+    <div className="max-w-6xl mx-auto px-4 sm:px-5 py-4 sm:py-5 space-y-3">
 
       {/* ═══ HEADER — Greeting + Search + Activity Drawer ═══ */}
       <motion.div
