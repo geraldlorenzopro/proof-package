@@ -143,7 +143,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
   const currentStepLabel = STEP_LABELS.find(s => s.step === currentStep);
 
   return (
-    <div className="space-y-0 max-w-2xl mx-auto">
+    <div className="flex flex-col flex-1 min-h-0 max-w-2xl mx-auto w-full">
       {/* ─── Outer Shell ─── */}
       <div className="relative rounded-2xl overflow-hidden" style={{ boxShadow: '0 0 60px -15px hsl(195 100% 50% / 0.08), 0 25px 50px -12px rgba(0,0,0,0.4)' }}>
         {/* Subtle top glow line */}
