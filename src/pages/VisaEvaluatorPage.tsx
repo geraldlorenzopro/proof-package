@@ -108,10 +108,10 @@ export default function VisaEvaluatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
+      <div className="max-w-2xl mx-auto px-4 py-4 flex flex-col flex-1 min-h-0 w-full">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3 shrink-0">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate('/hub')}>
               <ArrowLeft className="h-5 w-5" />
@@ -131,23 +131,27 @@ export default function VisaEvaluatorPage() {
           </div>
         </div>
 
-        {/* Content */}
-        {view === 'form' && (
-          <VisaEvaluatorStepper onComplete={handleComplete} showAudioPractice />
-        )}
+        {/* Content — fills remaining space */}
+        <div className="flex-1 min-h-0 flex flex-col">
+          {view === 'form' && (
+            <VisaEvaluatorStepper onComplete={handleComplete} showAudioPractice />
+          )}
 
-        {view === 'results' && result && (
-          <VisaEvaluatorResults
-            result={result}
-            shareToken={shareToken || undefined}
-            onRestart={handleRestart}
-            onStartCase={() => navigate('/dashboard/cases')}
-          />
-        )}
+          {view === 'results' && result && (
+            <div className="flex-1 overflow-y-auto">
+              <VisaEvaluatorResults
+                result={result}
+                shareToken={shareToken || undefined}
+                onRestart={handleRestart}
+                onStartCase={() => navigate('/dashboard/cases')}
+              />
+            </div>
+          )}
+        </div>
 
-        {/* Disclaimer only shown on form view */}
+        {/* Disclaimer */}
         {view === 'form' && (
-          <div className="mt-4 px-2">
+          <div className="py-2 shrink-0">
             <p className="text-[10px] text-muted-foreground/40 text-center italic">
               ⚖️ Este resultado es una guía informativa basada en el manual 9 FAM 402.2-2.
             </p>

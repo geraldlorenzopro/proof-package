@@ -143,14 +143,14 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
   const currentStepLabel = STEP_LABELS.find(s => s.step === currentStep);
 
   return (
-    <div className="space-y-0 max-w-2xl mx-auto">
+    <div className="flex flex-col flex-1 min-h-0 max-w-2xl mx-auto w-full">
       {/* ─── Outer Shell ─── */}
-      <div className="relative rounded-2xl overflow-hidden" style={{ boxShadow: '0 0 60px -15px hsl(195 100% 50% / 0.08), 0 25px 50px -12px rgba(0,0,0,0.4)' }}>
+      <div className="relative rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0" style={{ boxShadow: '0 0 60px -15px hsl(195 100% 50% / 0.08), 0 25px 50px -12px rgba(0,0,0,0.4)' }}>
         {/* Subtle top glow line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--jarvis)/0.4)] to-transparent" />
 
         {/* ─── Section Header: Large, centered, unique ─── */}
-        <div className="bg-[hsl(220,30%,8%)] border-b border-border/10 px-8 pt-8 pb-6">
+        <div className="bg-[hsl(220,30%,8%)] border-b border-border/10 px-8 pt-5 pb-4 shrink-0">
           {/* Current section — big hero label */}
           <AnimatePresence mode="wait">
             <motion.div
@@ -159,9 +159,9 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.3 }}
-              className="flex flex-col items-center text-center mb-6"
+              className="flex flex-col items-center text-center mb-4"
             >
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[hsl(var(--jarvis)/0.15)] to-[hsl(var(--jarvis)/0.05)] border border-[hsl(var(--jarvis)/0.2)] flex items-center justify-center text-[hsl(var(--jarvis))] mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--jarvis)/0.15)] to-[hsl(var(--jarvis)/0.05)] border border-[hsl(var(--jarvis)/0.2)] flex items-center justify-center text-[hsl(var(--jarvis))] mb-2">
                 {STEP_ICONS[currentStep]}
               </div>
               <h3 className="text-xl font-bold text-foreground tracking-tight">
@@ -174,7 +174,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </AnimatePresence>
 
           {/* Step navigation pills — small, secondary */}
-          <div className="flex items-center justify-center gap-1.5 mb-5">
+          <div className="flex items-center justify-center gap-1.5 mb-3">
             {STEP_LABELS.map(s => {
               const isActive = currentStep === s.step;
               const isDone = currentStep > s.step;
@@ -216,7 +216,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
         </div>
 
         {/* ─── Question Area ─── */}
-        <div className="bg-[hsl(220,25%,7%)] min-h-[360px] flex flex-col">
+        <div className="bg-[hsl(220,25%,7%)] flex-1 min-h-0 flex flex-col">
           {/* Question counter */}
           <div className="px-8 pt-5 pb-2 flex items-center justify-between">
             <span className="text-[10px] font-mono font-semibold text-muted-foreground/40 tracking-wider">
@@ -252,7 +252,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </div>
 
           {/* Animated question */}
-          <div className="flex-1 px-8 pb-6">
+          <div className="flex-1 min-h-0 overflow-y-auto px-8 pb-4">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={currentQ.id}
@@ -290,7 +290,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                           type="button"
                           onClick={() => handleOptionSelect(currentQ.fieldKey, opt.value)}
                           className={cn(
-                            "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all duration-200 border group",
+                            "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200 border group",
                             isSelected
                               ? "bg-[hsl(var(--jarvis)/0.08)] border-[hsl(var(--jarvis)/0.3)] shadow-[0_0_20px_-5px_hsl(195_100%_50%/0.15)]"
                               : "bg-[hsl(220,25%,10%)] border-border/20 hover:border-border/40 hover:bg-[hsl(220,25%,12%)]"
@@ -331,7 +331,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                           type="button"
                           onClick={() => handleOptionSelect(currentQ.fieldKey, val)}
                           className={cn(
-                            "flex-1 py-4 rounded-xl text-center font-semibold text-sm border transition-all duration-200",
+                            "flex-1 py-3 rounded-xl text-center font-semibold text-sm border transition-all duration-200",
                             isSelected
                               ? "bg-[hsl(var(--jarvis)/0.08)] border-[hsl(var(--jarvis)/0.3)] text-foreground shadow-[0_0_20px_-5px_hsl(195_100%_50%/0.15)]"
                               : "bg-[hsl(220,25%,10%)] border-border/20 text-muted-foreground hover:border-border/40 hover:text-foreground/80"
@@ -348,7 +348,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </div>
 
           {/* ─── Navigation ─── */}
-          <div className="px-8 pb-6 flex items-center gap-3">
+          <div className="px-8 py-3 shrink-0 flex items-center gap-3">
             {qIndex > 0 && (
               <button
                 onClick={goPrev}
@@ -375,7 +375,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
       </div>
 
       {/* ─── Dot progress + Reset ─── */}
-      <div className="pt-4 space-y-3">
+      <div className="pt-3 pb-1 space-y-2 shrink-0">
         {/* Dot indicators */}
         <div className="flex items-center justify-center gap-1 flex-wrap">
           {visibleQuestions.map((q, i) => {
