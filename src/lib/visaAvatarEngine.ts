@@ -38,6 +38,8 @@ export interface VisaEvalAnswers {
   hasDependents: boolean;
 
   // Step 4 — Viajes
+  familyHasVisa: boolean;
+  familyVisaUsage?: 'short_trips' | 'long_trips' | 'mixed' | 'never_used';
   previousVisaApproved: boolean;
   previousUSTravel: boolean;
   travelHistory: 'none' | 'regional' | 'international' | 'extensive';
