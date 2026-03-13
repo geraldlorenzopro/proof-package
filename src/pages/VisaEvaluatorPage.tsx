@@ -14,6 +14,7 @@ export default function VisaEvaluatorPage() {
   const { toast } = useToast();
   const [view, setView] = useState<'form' | 'results'>('form');
   const [result, setResult] = useState<EvalResult | null>(null);
+  const [lastAnswers, setLastAnswers] = useState<VisaEvalAnswers | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
