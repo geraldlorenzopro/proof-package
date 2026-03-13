@@ -144,7 +144,23 @@ export default function CaseWorkspace() {
     if (!selectedClientId) return;
 
     let cancelled = false;
-    setLoading(true);
+    // Only show full skeleton on very first load (no profile yet)
+    // For client switches, keep current UI visible while loading
+    const isFirstLoad = !profile;
+    if (isFirstLoad) setLoading(true);
+
+    // Reset case engine state for new client
+    if (!isFirstLoad) {
+      setCaseData(null);
+      setActiveCaseId(null);
+      setCaseTemplate(null);
+      setCaseNotes([]);
+      setCaseTasks([]);
+      setCaseTags([]);
+      setCaseStageHistory([]);
+      setCaseEvidenceCount(0);
+      setCaseFormsCount(0);
+    }
 
     async function load() {
       // Step 1: Fetch profile + cases in parallel
