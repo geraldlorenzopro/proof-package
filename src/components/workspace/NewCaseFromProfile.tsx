@@ -721,7 +721,7 @@ export default function NewCaseFromProfile({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setStep(step === "details" ? "customize" : "template")}
+                onClick={() => setStep(step === "details" && isTrackingOnly ? "template" : step === "details" ? "customize" : "template")}
                 disabled={loading}
                 className="text-xs"
               >
