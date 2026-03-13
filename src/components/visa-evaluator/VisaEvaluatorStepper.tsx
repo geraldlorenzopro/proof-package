@@ -60,47 +60,6 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Pro
     setShowResetDialog(false);
   };
 
-  const speakQuestion = (question: InterviewQuestion) => {
-    const text = question.consularQuestion || question.textEn;
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.85;
-      utterance.onstart = () => setSpeakingId(question.id);
-      utterance.onend = () => setSpeakingId(null);
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const startRecording = async (questionId: string) => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => chunks.push(e.data);
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        setRecordings(prev => ({ ...prev, [questionId]: url }));
-        stream.getTracks().forEach(t => t.stop());
-      };
-      recorder.start();
-      setMediaRecorder(recorder);
-      setRecordingId(questionId);
-    } catch {
-      console.error('Microphone access denied');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-    }
-    setRecordingId(null);
-    setMediaRecorder(null);
-  };
-
   const currentIsAnswered = currentQ && answers[currentQ.fieldKey] !== undefined && answers[currentQ.fieldKey] !== '';
 
   const goNext = () => {
