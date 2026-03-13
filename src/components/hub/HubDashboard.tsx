@@ -16,6 +16,7 @@ import HubAuditLog from "./HubAuditLog";
 import HubToolPermissions from "./HubToolPermissions";
 import HubNotifications from "./HubNotifications";
 import SlaTracker from "./SlaTracker";
+import HubFirmMetrics from "./HubFirmMetrics";
 
 interface HubApp {
   id: string;
@@ -367,6 +368,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
           </motion.div>
         </section>
       )}
+
+      {/* ═══ FIRM METRICS — Enterprise Analytics ═══ */}
+      <HubFirmMetrics />
 
       {/* ═══ SLA TRACKER — Deadline Countdowns ═══ */}
       <SlaTracker />
