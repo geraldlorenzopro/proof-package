@@ -58,6 +58,7 @@ const ALL_STAGES = Object.keys(STAGE_LABELS);
 const STATUS_LABELS: Record<string, string> = {
   pending: "Nuevo",
   in_progress: "En Proceso",
+  active: "En Proceso",
   completed: "Completado",
 };
 
