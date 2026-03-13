@@ -190,17 +190,21 @@ export default function CaseWorkspace() {
         }
       }
 
-      // Step 2: If we have a target case, load case engine data IN PARALLEL — no cascade
+      // Step 2: If we have a target case, pre-seed and unblock UI immediately
       if (targetCase) {
-        // Pre-seed case data immediately so UI renders the shell
         setCaseData({ ...targetCase, client_name: clientName });
         setActiveCaseId(targetCase.id);
-        initiallyLoadedCaseRef.current = targetCase.id; // prevent duplicate fetch
+        initiallyLoadedCaseRef.current = targetCase.id;
         setCaseEngineTab("resumen");
+      }
 
+      // UNBLOCK UI NOW — case engine details load in background
+      if (!cancelled) setLoading(false);
+
+      // Step 3: Load case engine details (UI is already visible with shell)
+      if (targetCase && !cancelled) {
         const processType = targetCase.process_type || "general";
 
-        // Fire ALL case engine queries at once (no waiting for loadCaseEngine effect)
         const [templateRes, notesRes, tasksRes, tagsRes, historyRes, evidenceRes, formsRes] = await Promise.all([
           supabase.from("pipeline_templates").select("*").eq("process_type", processType).eq("is_active", true).limit(1).maybeSingle(),
           supabase.from("case_notes").select("*").eq("case_id", targetCase.id).order("created_at", { ascending: false }),
@@ -221,9 +225,6 @@ export default function CaseWorkspace() {
           setCaseFormsCount(formsRes.count || 0);
         }
       }
-
-      // Unblock UI
-      if (!cancelled) setLoading(false);
 
       // Background: fetch form counts + activity (non-blocking, UI already visible)
       if (baseCases.length > 0 && !cancelled) {
