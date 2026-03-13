@@ -143,7 +143,7 @@ export default function CaseWorkspace() {
     return () => { cancelled = true; };
   }, []);
 
-  // ── Load client data (fast path first, heavy data in background) ──
+  // ── Load client data + case engine in ONE pass (no cascade) ──
   useEffect(() => {
     if (!selectedClientId) return;
 
@@ -151,6 +151,7 @@ export default function CaseWorkspace() {
     setLoading(true);
 
     async function load() {
+      // Step 1: Fetch profile + cases in parallel
       const [profileRes, casesRes] = await Promise.all([
         supabase
           .from("client_profiles")
@@ -173,83 +174,79 @@ export default function CaseWorkspace() {
       setClientCases(baseCases.map(c => ({ ...c, form_count: 0 })));
       setSelectedCaseForQ(baseCases.length === 1 ? baseCases[0].id : null);
 
-      // Smart default: immediate view decision (no blocking)
+      const clientName = nextProfile
+        ? [nextProfile.first_name, nextProfile.last_name].filter(Boolean).join(" ") || selectedClientName
+        : selectedClientName;
+
+      // Determine which case to auto-open
+      const targetCaseId = initialCaseId || (baseCases.length === 1 ? baseCases[0].id : null);
+      const targetCase = targetCaseId ? baseCases.find(c => c.id === targetCaseId) : null;
+
       if (!initialTab && !initialCaseId) {
         if (baseCases.length === 0) {
           setActiveView("profile");
-        } else if (baseCases.length === 1) {
-          setActiveCaseId(baseCases[0].id);
-          setCaseData({
-            ...baseCases[0],
-            client_name: nextProfile
-              ? [nextProfile.first_name, nextProfile.last_name].filter(Boolean).join(" ") || selectedClientName
-              : selectedClientName,
-          });
-          setCaseTemplate(null);
-          setCaseNotes([]);
-          setCaseTasks([]);
-          setCaseTags([]);
-          setCaseStageHistory([]);
-          setCaseEvidenceCount(0);
-          setCaseFormsCount(0);
-        } else {
+        } else if (baseCases.length > 1) {
           setActiveView("cases");
         }
       }
 
-      // Unblock UI as soon as core data is ready
-      setLoading(false);
+      // Step 2: If we have a target case, load case engine data IN PARALLEL — no cascade
+      if (targetCase) {
+        // Pre-seed case data immediately so UI renders the shell
+        setCaseData({ ...targetCase, client_name: clientName });
+        setActiveCaseId(targetCase.id);
+        setCaseEngineTab("resumen");
 
-      // Background 1: fetch form counts in one query (remove N+1)
-      if (baseCases.length > 0) {
-        const caseIds = baseCases.map(c => c.id);
-        const { data: formRows } = await supabase
-          .from("case_forms")
-          .select("case_id")
-          .in("case_id", caseIds);
+        const processType = targetCase.process_type || "general";
+
+        // Fire ALL case engine queries at once (no waiting for loadCaseEngine effect)
+        const [templateRes, notesRes, tasksRes, tagsRes, historyRes, evidenceRes, formsRes] = await Promise.all([
+          supabase.from("pipeline_templates").select("*").eq("process_type", processType).eq("is_active", true).limit(1).maybeSingle(),
+          supabase.from("case_notes").select("*").eq("case_id", targetCase.id).order("created_at", { ascending: false }),
+          supabase.from("case_tasks").select("*").eq("case_id", targetCase.id).order("created_at", { ascending: false }),
+          supabase.from("case_tags").select("*").eq("case_id", targetCase.id).is("removed_at", null),
+          supabase.from("case_stage_history").select("*").eq("case_id", targetCase.id).order("created_at", { ascending: false }),
+          supabase.from("evidence_items").select("id", { count: "exact", head: true }).eq("case_id", targetCase.id),
+          supabase.from("form_submissions").select("id", { count: "exact", head: true }).eq("case_id", targetCase.id),
+        ]);
 
         if (!cancelled) {
-          const countByCase = (formRows || []).reduce<Record<string, number>>((acc, row: any) => {
+          if (templateRes.data) setCaseTemplate(templateRes.data);
+          if (notesRes.data) setCaseNotes(notesRes.data);
+          if (tasksRes.data) setCaseTasks(tasksRes.data);
+          if (tagsRes.data) setCaseTags(tagsRes.data);
+          if (historyRes.data) setCaseStageHistory(historyRes.data);
+          setCaseEvidenceCount(evidenceRes.count || 0);
+          setCaseFormsCount(formsRes.count || 0);
+        }
+      }
+
+      // Unblock UI
+      if (!cancelled) setLoading(false);
+
+      // Background: fetch form counts + activity (non-blocking, UI already visible)
+      if (baseCases.length > 0 && !cancelled) {
+        const caseIds = baseCases.map(c => c.id);
+
+        const [formRows, stageHistory] = await Promise.all([
+          supabase.from("case_forms").select("case_id").in("case_id", caseIds),
+          supabase.from("case_stage_history").select("created_at, to_stage, note").in("case_id", caseIds).order("created_at", { ascending: false }).limit(20),
+        ]);
+
+        if (!cancelled) {
+          const countByCase = (formRows.data || []).reduce<Record<string, number>>((acc, row: any) => {
             acc[row.case_id] = (acc[row.case_id] || 0) + 1;
             return acc;
           }, {});
+          setClientCases(baseCases.map(c => ({ ...c, form_count: countByCase[c.id] || 0 })));
 
-          setClientCases(baseCases.map(c => ({
-            ...c,
-            form_count: countByCase[c.id] || 0,
-          })));
+          const activities: { date: string; event: string; icon: any }[] = [];
+          if (nextProfile) activities.push({ date: nextProfile.created_at, event: "Perfil de cliente creado", icon: Sparkles });
+          baseCases.forEach(c => activities.push({ date: c.created_at, event: `Caso ${c.case_type} creado`, icon: Briefcase }));
+          (stageHistory.data || []).forEach((sh: any) => activities.push({ date: sh.created_at, event: sh.note || `Etapa: ${sh.to_stage}`, icon: Activity }));
+          activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          setActivityLog(activities);
         }
-      }
-
-      // Background 2: activity timeline
-      const activities: { date: string; event: string; icon: any }[] = [];
-      if (nextProfile) {
-        activities.push({ date: nextProfile.created_at, event: "Perfil de cliente creado", icon: Sparkles });
-      }
-
-      for (const c of baseCases) {
-        activities.push({ date: c.created_at, event: `Caso ${c.case_type} creado`, icon: Briefcase });
-      }
-
-      if (baseCases.length > 0) {
-        const caseIds = baseCases.map(c => c.id);
-        const { data: stageHistory } = await supabase
-          .from("case_stage_history")
-          .select("created_at, to_stage, note")
-          .in("case_id", caseIds)
-          .order("created_at", { ascending: false })
-          .limit(20);
-
-        if (!cancelled && stageHistory) {
-          for (const sh of stageHistory) {
-            activities.push({ date: sh.created_at, event: sh.note || `Etapa: ${sh.to_stage}`, icon: Activity });
-          }
-        }
-      }
-
-      if (!cancelled) {
-        activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setActivityLog(activities);
       }
     }
 
@@ -257,9 +254,7 @@ export default function CaseWorkspace() {
       if (!cancelled) setLoading(false);
     });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [selectedClientId, initialTab, initialCaseId]);
 
   // ── Load case engine data ──
