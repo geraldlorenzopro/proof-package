@@ -76,6 +76,8 @@ export default function B1B2Dashboard() {
   const [stageFilter, setStageFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showPipelineEditor, setShowPipelineEditor] = useState(false);
+  const [activeStages, setActiveStages] = useState<StageConfig[]>([]);
 
   // New case modal
   const [showNew, setShowNew] = useState(false);
