@@ -5,8 +5,9 @@ import {
   Loader2, Plus, Copy, Check, ExternalLink,
   Search, Users, ChevronRight, AlertTriangle, Plane,
   CircleDot, CheckCircle2, Clock, Send, Eye,
-  TrendingUp, ArrowRight, MessageCircle
+  TrendingUp, ArrowRight, MessageCircle, Settings2
 } from "lucide-react";
+import PipelineEditor, { getActiveStages, loadPipelineConfig, type StageConfig } from "@/components/b1b2/PipelineEditor";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,7 @@ interface B1B2Case {
   created_at: string;
 }
 
-const STAGE_LABELS: Record<string, string> = {
+const DEFAULT_STAGE_LABELS: Record<string, string> = {
   "consulta-inicial": "Consulta",
   "ds160": "DS-160",
   "cuenta-cas": "Cuenta CAS",
@@ -42,7 +43,7 @@ const STAGE_LABELS: Record<string, string> = {
   "resultado": "Resultado",
 };
 
-const STAGE_ICONS: Record<string, string> = {
+const DEFAULT_STAGE_ICONS: Record<string, string> = {
   "consulta-inicial": "💬",
   "ds160": "📝",
   "cuenta-cas": "🌐",
@@ -52,8 +53,6 @@ const STAGE_ICONS: Record<string, string> = {
   "entrevista": "🎤",
   "resultado": "🏆",
 };
-
-const ALL_STAGES = Object.keys(STAGE_LABELS);
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Nuevo",
@@ -77,6 +76,8 @@ export default function B1B2Dashboard() {
   const [stageFilter, setStageFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showPipelineEditor, setShowPipelineEditor] = useState(false);
+  const [activeStages, setActiveStages] = useState<StageConfig[]>([]);
 
   // New case modal
   const [showNew, setShowNew] = useState(false);
@@ -85,6 +86,31 @@ export default function B1B2Dashboard() {
   const [creating, setCreating] = useState(false);
 
   const accountCid = paramCid || resolvedCid;
+
+  // Derived stage helpers
+  const ALL_STAGES = activeStages.filter(s => s.enabled).map(s => s.slug);
+  const STAGE_LABELS: Record<string, string> = Object.fromEntries(
+    loadPipelineConfig(accountCid).map(s => [s.slug, s.label])
+  );
+  const STAGE_ICONS: Record<string, string> = Object.fromEntries(
+    loadPipelineConfig(accountCid).map(s => [s.slug, s.icon])
+  );
+  // Fallback to defaults for any missing
+  for (const [k, v] of Object.entries(DEFAULT_STAGE_LABELS)) { if (!STAGE_LABELS[k]) STAGE_LABELS[k] = v; }
+  for (const [k, v] of Object.entries(DEFAULT_STAGE_ICONS)) { if (!STAGE_ICONS[k]) STAGE_ICONS[k] = v; }
+
+  // Initialize active stages on accountCid change
+  useEffect(() => {
+    if (accountCid) {
+      setActiveStages(loadPipelineConfig(accountCid));
+    }
+  }, [accountCid]);
+
+  const handlePipelineSave = (stages: StageConfig[]) => {
+    setActiveStages(stages);
+    setShowPipelineEditor(false);
+    toast({ title: "Pipeline guardado", description: "El orden de etapas se ha actualizado." });
+  };
 
   const loadCases = useCallback(async () => {
     if (!accountCid) return;
@@ -351,42 +377,64 @@ export default function B1B2Dashboard() {
 
         {/* ── Pipeline Funnel ── */}
         <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 mb-6">
-          <p className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-            <Plane className="w-3.5 h-3.5" />
-            Pipeline de Etapas
-          </p>
-          <div className="flex gap-1 overflow-x-auto pb-1">
-            {stageDistribution.map((s, i) => {
-              const isActive = stageFilter === s.slug;
-              const hasClients = s.count > 0;
-              return (
-                <button
-                  key={s.slug}
-                  onClick={() => setStageFilter(isActive ? null : s.slug)}
-                  className={`flex-1 min-w-[80px] rounded-lg p-2.5 text-center transition-all border ${
-                    isActive
-                      ? "bg-primary/10 border-primary/30 shadow-sm"
-                      : hasClients
-                      ? "bg-card/80 border-border/30 hover:border-border/60"
-                      : "bg-transparent border-border/10 opacity-40"
-                  }`}
-                >
-                  <span className="text-lg block mb-0.5">{s.icon}</span>
-                  <p className={`text-xl font-bold ${isActive ? "text-primary" : hasClients ? "text-foreground" : "text-muted-foreground"}`}>
-                    {s.count}
-                  </p>
-                  <p className="text-[9px] text-muted-foreground leading-tight mt-0.5 line-clamp-2">{s.label}</p>
-                </button>
-              );
-            })}
-          </div>
-          {stageFilter && (
-            <button
-              onClick={() => setStageFilter(null)}
-              className="mt-2 text-[10px] text-primary hover:underline"
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+              <Plane className="w-3.5 h-3.5" />
+              Pipeline de Etapas
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+              onClick={() => setShowPipelineEditor(!showPipelineEditor)}
             >
-              ✕ Limpiar filtro
-            </button>
+              <Settings2 className="w-3.5 h-3.5" />
+              {showPipelineEditor ? "Cerrar" : "Personalizar"}
+            </Button>
+          </div>
+
+          {showPipelineEditor ? (
+            <PipelineEditor
+              accountCid={accountCid}
+              onSave={handlePipelineSave}
+              onClose={() => setShowPipelineEditor(false)}
+            />
+          ) : (
+            <>
+              <div className="flex gap-1 overflow-x-auto pb-1">
+                {stageDistribution.map((s, i) => {
+                  const isActive = stageFilter === s.slug;
+                  const hasClients = s.count > 0;
+                  return (
+                    <button
+                      key={s.slug}
+                      onClick={() => setStageFilter(isActive ? null : s.slug)}
+                      className={`flex-1 min-w-[80px] rounded-lg p-2.5 text-center transition-all border ${
+                        isActive
+                          ? "bg-primary/10 border-primary/30 shadow-sm"
+                          : hasClients
+                          ? "bg-card/80 border-border/30 hover:border-border/60"
+                          : "bg-transparent border-border/10 opacity-40"
+                      }`}
+                    >
+                      <span className="text-lg block mb-0.5">{s.icon}</span>
+                      <p className={`text-xl font-bold ${isActive ? "text-primary" : hasClients ? "text-foreground" : "text-muted-foreground"}`}>
+                        {s.count}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground leading-tight mt-0.5 line-clamp-2">{s.label}</p>
+                    </button>
+                  );
+                })}
+              </div>
+              {stageFilter && (
+                <button
+                  onClick={() => setStageFilter(null)}
+                  className="mt-2 text-[10px] text-primary hover:underline"
+                >
+                  ✕ Limpiar filtro
+                </button>
+              )}
+            </>
           )}
         </div>
 
