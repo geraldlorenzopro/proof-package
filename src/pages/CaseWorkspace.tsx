@@ -50,10 +50,21 @@ interface ClientCase {
   status: string;
   process_type: string | null;
   pipeline_stage: string | null;
+  ball_in_court: string | null;
+  stage_entered_at: string | null;
+  assigned_to: string | null;
   created_at: string;
   updated_at: string;
   form_count?: number;
+  template_label?: string | null;
 }
+
+/* Orphan form types that should not appear as standalone cases */
+const ORPHAN_FORM_TYPES = new Set([
+  "I-130", "I-130A", "I-485", "I-765", "I-131", "I-864", "I-693",
+  "G-28", "I-360", "I-751", "I-90", "I-601", "I-601A", "I-589",
+  "I-918", "I-918A", "I-129F", "DS-260", "EOIR-42B",
+]);
 
 /* ── Animation removed for instant rendering ── */
 
@@ -172,7 +183,7 @@ export default function CaseWorkspace() {
           .single(),
         supabase
           .from("client_cases")
-          .select("id, case_type, status, process_type, pipeline_stage, created_at, updated_at")
+          .select("id, case_type, status, process_type, pipeline_stage, ball_in_court, stage_entered_at, assigned_to, created_at, updated_at")
           .eq("client_profile_id", selectedClientId)
           .order("updated_at", { ascending: false }),
       ]);
@@ -180,7 +191,12 @@ export default function CaseWorkspace() {
       if (cancelled) return;
 
       const nextProfile = profileRes.data || null;
-      const baseCases = (casesRes.data || []) as ClientCase[];
+      const allCases = (casesRes.data || []) as ClientCase[];
+      // Filter out orphan records that are just form types without a real process
+      const baseCases = allCases.filter(c =>
+        c.process_type && c.process_type !== "general" ||
+        !ORPHAN_FORM_TYPES.has(c.case_type)
+      );
 
       setProfile(nextProfile);
       setClientCases(baseCases.map(c => ({ ...c, form_count: 0 })));
@@ -238,13 +254,17 @@ export default function CaseWorkspace() {
         }
       }
 
-      // Background: fetch form counts + activity (non-blocking, UI already visible)
+      // Background: fetch form counts, template labels + activity (non-blocking)
       if (baseCases.length > 0 && !cancelled) {
         const caseIds = baseCases.map(c => c.id);
+        const processTypes = [...new Set(baseCases.map(c => c.process_type).filter(Boolean))] as string[];
 
-        const [formRows, stageHistory] = await Promise.all([
+        const [formRows, stageHistory, templateRows] = await Promise.all([
           supabase.from("case_forms").select("case_id").in("case_id", caseIds),
           supabase.from("case_stage_history").select("created_at, to_stage, note").in("case_id", caseIds).order("created_at", { ascending: false }).limit(20),
+          processTypes.length > 0
+            ? supabase.from("pipeline_templates").select("process_type, process_label, stages").in("process_type", processTypes).eq("is_active", true)
+            : Promise.resolve({ data: [] }),
         ]);
 
         if (!cancelled) {
@@ -252,7 +272,14 @@ export default function CaseWorkspace() {
             acc[row.case_id] = (acc[row.case_id] || 0) + 1;
             return acc;
           }, {});
-          setClientCases(baseCases.map(c => ({ ...c, form_count: countByCase[c.id] || 0 })));
+          const labelByType: Record<string, string> = {};
+          (templateRows.data || []).forEach((t: any) => { labelByType[t.process_type] = t.process_label; });
+
+          setClientCases(baseCases.map(c => ({
+            ...c,
+            form_count: countByCase[c.id] || 0,
+            template_label: c.process_type ? labelByType[c.process_type] || null : null,
+          })));
 
           const activities: { date: string; event: string; icon: any }[] = [];
           if (nextProfile) activities.push({ date: nextProfile.created_at, event: "Perfil de cliente creado", icon: Sparkles });
@@ -816,46 +843,86 @@ export default function CaseWorkspace() {
                 </button>
               </div>
             ) : (
-              <div className="space-y-2">
-                {clientCases.map((c, i) => (
-                  <button
-                    key={c.id}
-                    onClick={() => openCase(c.id)}
-                    className="w-full rounded-xl border border-border bg-card hover:border-jarvis/20 transition-all text-left group"
-                  >
-                    <div className="flex items-center gap-4 p-4">
-                      <div className="w-10 h-10 rounded-xl bg-jarvis/10 ring-1 ring-jarvis/20 flex items-center justify-center shrink-0">
-                        <Briefcase className="w-4.5 h-4.5 text-jarvis" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-sm font-bold text-foreground">{c.case_type}</p>
-                          <Badge variant="outline" className={`text-[9px] font-semibold ${
-                            c.status === "active" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-muted text-muted-foreground"
-                          }`}>
-                            {c.status === "active" ? "Activo" : c.status}
+              <div className="space-y-3">
+                {clientCases.map((c) => {
+                  const daysOpen = differenceInDays(new Date(), new Date(c.created_at));
+                  const processLabel = c.template_label || c.case_type;
+                  const stageLabel = c.pipeline_stage?.replace(/-/g, " ") || "Sin etapa";
+                  const ballOwner = c.ball_in_court || "team";
+                  const ownerColors: Record<string, { bg: string; text: string; label: string }> = {
+                    team: { bg: "bg-jarvis/10", text: "text-jarvis", label: "Equipo" },
+                    client: { bg: "bg-accent/10", text: "text-accent", label: "Cliente" },
+                    uscis: { bg: "bg-emerald-500/10", text: "text-emerald-400", label: "USCIS" },
+                  };
+                  const owner = ownerColors[ballOwner] || ownerColors.team;
+
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => openCase(c.id)}
+                      className="w-full rounded-2xl border border-border bg-card hover:border-jarvis/20 hover:shadow-sm transition-all text-left group"
+                    >
+                      <div className="p-4 sm:p-5">
+                        {/* Row 1: Title + Status */}
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-jarvis/10 ring-1 ring-jarvis/20 flex items-center justify-center shrink-0">
+                              <Briefcase className="w-4 h-4 text-jarvis" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-foreground truncate">{processLabel}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{c.case_type} · {format(new Date(c.created_at), "d MMM yyyy", { locale: es })}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge variant="outline" className={`text-[9px] font-semibold ${
+                              c.status === "active" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                              c.status === "pending" ? "bg-accent/10 text-accent border-accent/20" :
+                              "bg-muted text-muted-foreground"
+                            }`}>
+                              {c.status === "active" ? "Activo" : c.status === "pending" ? "Pendiente" : c.status}
+                            </Badge>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-jarvis transition-colors" />
+                          </div>
+                        </div>
+
+                        {/* Row 2: Pipeline stage + Ball in court */}
+                        <div className="flex items-center gap-2 mb-3 ml-[52px]">
+                          <Badge variant="outline" className="text-[9px] bg-jarvis/5 text-jarvis border-jarvis/15 capitalize">
+                            {stageLabel}
                           </Badge>
-                          {c.pipeline_stage && (
-                            <Badge variant="outline" className="text-[9px] bg-jarvis/10 text-jarvis border-jarvis/20">
-                              {c.pipeline_stage.replace(/-/g, " ")}
+                          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md ${owner.bg}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${owner.text.replace("text-", "bg-")}`} />
+                            <span className={`text-[9px] font-semibold ${owner.text}`}>{owner.label}</span>
+                          </div>
+                          {c.assigned_to && (
+                            <Badge variant="outline" className="text-[9px] bg-secondary text-muted-foreground border-border">
+                              <Users className="w-3 h-3 mr-1" />
+                              Asignado
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                          <span>{format(new Date(c.created_at), "d MMM yyyy", { locale: es })}</span>
-                          {c.form_count ? (
+
+                        {/* Row 3: Stats */}
+                        <div className="flex items-center gap-4 ml-[52px] text-[10px] text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {daysOpen} día{daysOpen !== 1 ? "s" : ""}
+                          </span>
+                          {(c.form_count || 0) > 0 && (
                             <span className="flex items-center gap-1">
                               <FileText className="w-3 h-3" />
                               {c.form_count} formulario{c.form_count !== 1 ? "s" : ""}
                             </span>
-                          ) : null}
+                          )}
+                          <span className="flex items-center gap-1 text-muted-foreground/50">
+                            Actualizado {format(new Date(c.updated_at), "d MMM", { locale: es })}
+                          </span>
                         </div>
                       </div>
-
-                      <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-jarvis transition-colors shrink-0" />
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -973,12 +1040,16 @@ export default function CaseWorkspace() {
           onCreated={async () => {
             const casesRes = await supabase
               .from("client_cases")
-              .select("id, case_type, status, process_type, pipeline_stage, created_at, updated_at")
+              .select("id, case_type, status, process_type, pipeline_stage, ball_in_court, stage_entered_at, assigned_to, created_at, updated_at")
               .eq("client_profile_id", selectedClientId)
               .order("updated_at", { ascending: false });
 
             if (casesRes.data) {
-              const baseCases = casesRes.data as ClientCase[];
+              const allCases = casesRes.data as ClientCase[];
+              const baseCases = allCases.filter(c =>
+                c.process_type && c.process_type !== "general" ||
+                !ORPHAN_FORM_TYPES.has(c.case_type)
+              );
 
               if (baseCases.length === 0) {
                 setClientCases([]);
@@ -988,19 +1059,26 @@ export default function CaseWorkspace() {
               }
 
               const caseIds = baseCases.map(c => c.id);
-              const { data: formRows } = await supabase
-                .from("case_forms")
-                .select("case_id")
-                .in("case_id", caseIds);
+              const processTypes = [...new Set(baseCases.map(c => c.process_type).filter(Boolean))] as string[];
 
-              const countByCase = (formRows || []).reduce<Record<string, number>>((acc, row: any) => {
+              const [formRowsRes, templateRowsRes] = await Promise.all([
+                supabase.from("case_forms").select("case_id").in("case_id", caseIds),
+                processTypes.length > 0
+                  ? supabase.from("pipeline_templates").select("process_type, process_label").in("process_type", processTypes).eq("is_active", true)
+                  : Promise.resolve({ data: [] }),
+              ]);
+
+              const countByCase = (formRowsRes.data || []).reduce<Record<string, number>>((acc, row: any) => {
                 acc[row.case_id] = (acc[row.case_id] || 0) + 1;
                 return acc;
               }, {});
+              const labelByType: Record<string, string> = {};
+              (templateRowsRes.data || []).forEach((t: any) => { labelByType[t.process_type] = t.process_label; });
 
               const casesWithForms = baseCases.map(c => ({
                 ...c,
                 form_count: countByCase[c.id] || 0,
+                template_label: c.process_type ? labelByType[c.process_type] || null : null,
               }));
 
               setClientCases(casesWithForms);
