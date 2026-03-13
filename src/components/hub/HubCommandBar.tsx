@@ -145,7 +145,14 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
       if (f === "tool" || f === "all") {
         const toolResults = f === "tool" ? TOOLS : [];
         if (f === "all") {
-          setLoading(true);
+          // Use cache if available, refresh in background
+          if (cachedDefaults.current) {
+            setResults(cachedDefaults.current);
+            setLoading(false);
+          } else {
+            setLoading(true);
+          }
+          
           const { data: recentClients } = await supabase
             .from("client_profiles")
             .select("id, first_name, last_name, email")
@@ -164,7 +171,9 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
             };
           });
 
-          setResults([...clientResults, ...TOOLS.slice(0, 4)]);
+          const defaultResults = [...clientResults, ...TOOLS.slice(0, 4)];
+          cachedDefaults.current = defaultResults;
+          setResults(defaultResults);
           setLoading(false);
           return;
         }
