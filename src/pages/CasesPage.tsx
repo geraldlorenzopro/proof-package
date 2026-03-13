@@ -133,7 +133,7 @@ export default function CasesPage() {
           </button>
           <div className="flex-1">
             <h1 className="text-xl font-bold text-foreground">
-              {filterMeta ? filterMeta.label : "Mis Casos"}
+              {filterMeta ? filterMeta.label : "Casos"}
             </h1>
             <p className="text-xs text-muted-foreground">
               {filterMeta ? filterMeta.description : "Gestiona los casos y enlaces de tus clientes"}
