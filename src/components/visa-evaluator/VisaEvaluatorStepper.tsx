@@ -57,7 +57,6 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Pro
   const handleReset = () => {
     setAnswers({});
     setQIndex(0);
-    setRecordings({});
     setShowResetDialog(false);
   };
 
