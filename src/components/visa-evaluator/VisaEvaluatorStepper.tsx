@@ -174,7 +174,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </AnimatePresence>
 
           {/* Step navigation pills — small, secondary */}
-          <div className="flex items-center justify-center gap-1.5 mb-5">
+          <div className="flex items-center justify-center gap-1.5 mb-3">
             {STEP_LABELS.map(s => {
               const isActive = currentStep === s.step;
               const isDone = currentStep > s.step;
