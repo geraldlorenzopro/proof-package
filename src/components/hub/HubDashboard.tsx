@@ -209,6 +209,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
       {/* ═══ KPI CARDS ═══ */}
       <HubAnalyticsCards />
 
+      {/* ═══ FIRM METRICS — Enterprise Analytics ═══ */}
+      <HubFirmMetrics />
+
       {/* ═══ HERO CARDS — Case Engine + NER Smart Forms side by side ═══ */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -369,8 +372,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         </section>
       )}
 
-      {/* ═══ FIRM METRICS — Enterprise Analytics ═══ */}
-      <HubFirmMetrics />
+      {/* (Firm Metrics moved up) */}
 
       {/* ═══ SLA TRACKER — Deadline Countdowns ═══ */}
       <SlaTracker />
