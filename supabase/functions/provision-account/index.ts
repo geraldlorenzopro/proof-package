@@ -76,11 +76,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { account_name, email, phone, plan, external_crm_id } = body;
+    // Accept multiple field name variants (GHL sends differently depending on context)
+    const account_name = body.account_name || body.location_name || body.locationName || body.name || body.companyName || body.company_name;
+    const email = body.email || body.location_email || body.locationEmail;
+    const phone = body.phone || body.location_phone || body.locationPhone;
+    const plan = body.plan;
+    const external_crm_id = body.external_crm_id || body.location_id || body.locationId;
+
+    // Log received body for debugging
+    console.log("provision-account received body:", JSON.stringify(body));
 
     if (!account_name || !email) {
       return new Response(
-        JSON.stringify({ error: "account_name and email are required" }),
+        JSON.stringify({ 
+          error: "account_name and email are required",
+          received_keys: Object.keys(body),
+          hint: "Send account_name/location_name and email/location_email"
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
