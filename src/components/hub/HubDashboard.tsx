@@ -305,7 +305,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
             initial="hidden"
             animate="visible"
             variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.2 } } }}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-3.5"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
           >
             {categoriesWithApps.map((cat, i) => {
               const isExpanded = expandedCategory === cat.key;
