@@ -219,7 +219,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
         <div className="bg-[hsl(220,25%,7%)] flex-1 min-h-0 flex flex-col">
           {/* Question counter */}
           <div className="px-8 pt-5 pb-2 flex items-center justify-between">
-            <span className="text-[10px] font-mono font-semibold text-muted-foreground/40 tracking-wider">
+            <span className="text-[10px] font-mono font-semibold text-muted-foreground/70 tracking-wider">
               {String(qIndex + 1).padStart(2, '0')} / {String(totalQuestions).padStart(2, '0')}
             </span>
             {/* Audio controls */}
