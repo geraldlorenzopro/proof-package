@@ -250,7 +250,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </div>
 
           {/* Animated question */}
-          <div className="flex-1 px-6 pb-4">
+          <div className="flex-1 px-8 pb-6">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={currentQ.id}
@@ -259,10 +259,10 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: direction * -40 }}
                 transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="space-y-5"
+                className="space-y-6"
               >
                 {/* Question text */}
-                <h2 className="text-lg font-semibold text-foreground leading-snug">
+                <h2 className="text-xl font-semibold text-foreground leading-snug">
                   {currentQ.textEs}
                 </h2>
 
