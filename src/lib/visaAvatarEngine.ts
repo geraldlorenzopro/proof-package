@@ -556,24 +556,24 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     ]},
 
   // ── STEP 5: HISTORIAL ──
-  { id: 'q_denials', step: 5, textEs: '¿Cuántas veces le han negado la visa?', textEn: 'How many times have you been denied a visa?', fieldKey: 'previousDenials', type: 'select',
+  { id: 'q_denials', step: 5, textEs: '¿Cuántas veces le han dicho que NO a la visa?', textEn: 'How many times have you been denied a visa?', fieldKey: 'previousDenials', type: 'select',
     consularQuestion: 'Have you ever been refused a visa to the United States?',
     options: [
-      { value: '0', labelEs: 'Ninguna', labelEn: 'None' },
-      { value: '1', labelEs: '1 vez', labelEn: '1 time' },
-      { value: '2', labelEs: '2 veces', labelEn: '2 times' },
-      { value: '3', labelEs: '3 o más', labelEn: '3 or more' },
+      { value: '0', labelEs: 'Nunca me la han negado', labelEn: 'Never denied' },
+      { value: '1', labelEs: 'Me la negaron 1 vez', labelEn: 'Denied 1 time' },
+      { value: '2', labelEs: 'Me la negaron 2 veces', labelEn: 'Denied 2 times' },
+      { value: '3', labelEs: 'Me la han negado 3 veces o más', labelEn: 'Denied 3+ times' },
     ]},
-  { id: 'q_recent_denial', step: 5, textEs: '¿Cuándo fue la negación más reciente?', textEn: 'When was the most recent denial?', fieldKey: 'mostRecentDenial', type: 'select',
+  { id: 'q_recent_denial', step: 5, textEs: '¿Hace cuánto le negaron la visa?', textEn: 'How long ago was the denial?', fieldKey: 'mostRecentDenial', type: 'select',
     condition: (a) => (a.previousDenials || 0) > 0,
     options: [
-      { value: 'less_1yr', labelEs: 'Menos de 1 año', labelEn: 'Less than 1 year' },
-      { value: '1_3yr', labelEs: '1-3 años', labelEn: '1-3 years' },
-      { value: 'over_3yr', labelEs: 'Más de 3 años', labelEn: 'Over 3 years' },
+      { value: 'less_1yr', labelEs: 'Hace menos de 1 año', labelEn: 'Less than 1 year ago' },
+      { value: '1_3yr', labelEs: 'Hace 1 a 3 años', labelEn: '1-3 years ago' },
+      { value: 'over_3yr', labelEs: 'Hace más de 3 años', labelEn: 'Over 3 years ago' },
     ]},
-  { id: 'q_gaps', step: 5, textEs: '¿Tiene huecos laborales largos?', textEn: 'Do you have long employment gaps?', fieldKey: 'employmentGaps', type: 'boolean' },
-  { id: 'q_inconsistencies', step: 5, textEs: '¿Hay inconsistencias en su perfil?', textEn: 'Are there inconsistencies in your profile?', fieldKey: 'inconsistencies', type: 'boolean' },
-  { id: 'q_criminal', step: 5, textEs: '¿Tiene antecedentes penales?', textEn: 'Do you have a criminal record?', fieldKey: 'criminalRecord', type: 'boolean' },
+  { id: 'q_gaps', step: 5, textEs: '¿Ha estado mucho tiempo sin trabajar?', textEn: 'Have you been unemployed for a long time?', fieldKey: 'employmentGaps', type: 'boolean' },
+  { id: 'q_inconsistencies', step: 5, textEs: '¿Hay algo en su historia que no cuadra o es difícil de explicar?', textEn: 'Is there anything in your history that is hard to explain?', fieldKey: 'inconsistencies', type: 'boolean' },
+  { id: 'q_criminal', step: 5, textEs: '¿Ha tenido problemas con la policía o la justicia?', textEn: 'Have you had issues with the police or justice system?', fieldKey: 'criminalRecord', type: 'boolean' },
 ];
 
 export const STEP_LABELS = [
