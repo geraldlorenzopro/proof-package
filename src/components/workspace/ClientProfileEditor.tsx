@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { IMMIGRATION_STATUSES } from "@/lib/immigrationStatuses";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import {
