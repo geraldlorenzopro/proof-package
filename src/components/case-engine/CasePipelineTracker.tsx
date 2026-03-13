@@ -97,8 +97,8 @@ export default function CasePipelineTracker({ stages, currentStage, stageEntered
       {/* Ball-in-court indicator */}
       <div className="flex items-center gap-2 mb-4">
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">La pelota la tiene:</span>
-        <Badge className={`text-[10px] font-bold ${ownerConfig[ballInCourt as keyof typeof ownerConfig]?.bg || "bg-muted"} ${ownerConfig[ballInCourt as keyof typeof ownerConfig]?.color || "text-muted-foreground"} ${ownerConfig[ballInCourt as keyof typeof ownerConfig]?.border || "border-border"}`}>
-          {ownerConfig[ballInCourt as keyof typeof ownerConfig]?.label || ballInCourt}
+        <Badge className={`text-[10px] font-bold ${(ownerConfig[ballInCourt] || defaultOwner).bg} ${(ownerConfig[ballInCourt] || defaultOwner).color} ${(ownerConfig[ballInCourt] || defaultOwner).border}`}>
+          {(ownerConfig[ballInCourt] || defaultOwner).label}
         </Badge>
       </div>
 
