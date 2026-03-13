@@ -369,6 +369,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         </section>
       )}
 
+      {/* ═══ FIRM METRICS — Enterprise Analytics ═══ */}
+      <HubFirmMetrics />
+
       {/* ═══ SLA TRACKER — Deadline Countdowns ═══ */}
       <SlaTracker />
 
