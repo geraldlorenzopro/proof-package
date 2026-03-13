@@ -108,17 +108,20 @@ export default function CaseWorkspace() {
   }, [initialTab, selectedClientId, initialCaseId]);
 
   const handleSelectClient = (clientId: string, clientName: string) => {
-    setSearchParams({ client: clientId, name: clientName });
+    setSearchParams({ client: clientId, name: clientName }, { replace: false });
     setActiveCaseId(null);
   };
 
   const handleBackToDirectory = () => {
-    setSearchParams({});
-    setActiveView("cases");
-    setActiveCaseId(null);
+    navigate("/dashboard/workspace-demo", { replace: true });
   };
 
   const handleBackToCaseList = () => {
+    // If client has only 1 case, skip the useless intermediate list and go to Portfolio
+    if (clientCases.length <= 1) {
+      handleBackToDirectory();
+      return;
+    }
     setActiveCaseId(null);
     setCaseData(null);
     setActiveView("cases");
