@@ -316,24 +316,6 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                   </div>
                 )}
 
-                {/* Number input */}
-                {currentQ.type === 'number' && (
-                  <Input
-                    type="number"
-                    min={0}
-                    max={120}
-                    autoFocus
-                    placeholder="Ingrese un número"
-                    className="bg-[hsl(220,25%,10%)] border-border/20 w-40 text-lg font-mono focus:ring-[hsl(var(--jarvis)/0.3)] focus:border-[hsl(var(--jarvis)/0.3)]"
-                    value={answers[currentQ.fieldKey] as number || ''}
-                    onChange={(e) => updateAnswer(currentQ.fieldKey, e.target.value ? parseInt(e.target.value) : undefined)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && currentIsAnswered) {
-                        isLastQuestion ? handleSubmit() : goNext();
-                      }
-                    }}
-                  />
-                )}
 
                 {/* Boolean */}
                 {currentQ.type === 'boolean' && (
