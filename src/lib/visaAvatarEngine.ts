@@ -386,6 +386,7 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
       { value: 'visit_partner', labelEs: 'Visitar pareja', labelEn: 'Visit partner' },
       { value: 'visit_family', labelEs: 'Visitar familia', labelEn: 'Visit family' },
       { value: 'event', labelEs: 'Evento', labelEn: 'Event' },
+      { value: 'other', labelEs: 'Otro', labelEn: 'Other' },
     ]},
 
   // ── STEP 2: ESTABILIDAD ──
