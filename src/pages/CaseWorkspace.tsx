@@ -517,7 +517,7 @@ export default function CaseWorkspace() {
                 )}
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* ═══ CASE ENGINE TABS ═══ */}
           <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
