@@ -32,23 +32,23 @@ interface B1B2Case {
 }
 
 const STAGE_LABELS: Record<string, string> = {
-  "consulta-inicial": "Consulta Inicial",
-  "ds160-proceso": "DS-160 En Proceso",
-  "ds160-completado": "DS-160 Completado",
+  "consulta-inicial": "Consulta",
+  "ds160": "DS-160",
+  "cuenta-cas": "Cuenta CAS",
+  "citas-programadas": "Citas",
   "cita-cas": "Cita CAS",
-  "huellas": "Huellas",
-  "preparacion": "Preparación",
+  "pre-entrevista": "Pre-Entrevista",
   "entrevista": "Entrevista",
   "resultado": "Resultado",
 };
 
 const STAGE_ICONS: Record<string, string> = {
   "consulta-inicial": "💬",
-  "ds160-proceso": "📝",
-  "ds160-completado": "✅",
-  "cita-cas": "📅",
-  "huellas": "🖐",
-  "preparacion": "📋",
+  "ds160": "📝",
+  "cuenta-cas": "🌐",
+  "citas-programadas": "📅",
+  "cita-cas": "🖐",
+  "pre-entrevista": "📋",
   "entrevista": "🎤",
   "resultado": "🏆",
 };
