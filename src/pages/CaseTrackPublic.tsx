@@ -38,8 +38,14 @@ export default function CaseTrackPublic() {
       if (pipelineData) {
         const parsed = Array.isArray(pipelineData) ? pipelineData[0] : pipelineData;
         if (parsed?.stages) {
-          const s = typeof parsed.stages === "string" ? JSON.parse(parsed.stages) : parsed.stages;
-          setStages(s);
+          const raw = typeof parsed.stages === "string" ? JSON.parse(parsed.stages) : parsed.stages;
+          setStages((raw as any[]).map((s: any, i: number) => ({
+            order: s.order ?? i + 1,
+            slug: s.slug || s.key || `stage-${i}`,
+            label: s.label || "",
+            owner: s.owner || s.ball_in_court || "team",
+            description: s.description || "",
+          })));
         }
         setCaseData((prev: any) => ({
           ...prev,
