@@ -12,13 +12,9 @@ interface Props {
   initialAnswers?: Partial<VisaEvalAnswers>;
 }
 
-export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showAudioPractice = false }: Props) {
+export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Props) {
   const [answers, setAnswers] = useState<Partial<VisaEvalAnswers>>(initialAnswers || {});
   const [showResetDialog, setShowResetDialog] = useState(false);
-  const [speakingId, setSpeakingId] = useState<string | null>(null);
-  const [recordingId, setRecordingId] = useState<string | null>(null);
-  const [recordings, setRecordings] = useState<Record<string, string>>({});
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [direction, setDirection] = useState(1); // 1=forward, -1=back
 
   // Build flat list of visible questions based on current answers
