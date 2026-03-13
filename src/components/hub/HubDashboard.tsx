@@ -50,6 +50,8 @@ const ICON_MAP: Record<string, any> = {
   "vawa-screener": Scale,
   "vawa-checklist": ClipboardList,
   "smart-forms": FileText,
+  "visa-evaluator": Shield,
+  "interview-sim": Mic,
 };
 
 // ═══ DISPLAY NAME OVERRIDES — Enterprise naming ═══
