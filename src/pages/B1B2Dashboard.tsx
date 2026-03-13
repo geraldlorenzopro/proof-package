@@ -32,7 +32,7 @@ interface B1B2Case {
   created_at: string;
 }
 
-const STAGE_LABELS: Record<string, string> = {
+const DEFAULT_STAGE_LABELS: Record<string, string> = {
   "consulta-inicial": "Consulta",
   "ds160": "DS-160",
   "cuenta-cas": "Cuenta CAS",
@@ -43,7 +43,7 @@ const STAGE_LABELS: Record<string, string> = {
   "resultado": "Resultado",
 };
 
-const STAGE_ICONS: Record<string, string> = {
+const DEFAULT_STAGE_ICONS: Record<string, string> = {
   "consulta-inicial": "💬",
   "ds160": "📝",
   "cuenta-cas": "🌐",
@@ -53,8 +53,6 @@ const STAGE_ICONS: Record<string, string> = {
   "entrevista": "🎤",
   "resultado": "🏆",
 };
-
-const ALL_STAGES = Object.keys(STAGE_LABELS);
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Nuevo",
