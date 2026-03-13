@@ -160,6 +160,8 @@ export default function HubAnalyticsCards() {
       color: "text-cyan-400",
       bg: "bg-cyan-500/10",
       border: "border-cyan-500/20",
+      pulse: false,
+      trend: null as string | null,
       href: "/dashboard/smart-forms",
     },
     {
@@ -170,6 +172,8 @@ export default function HubAnalyticsCards() {
       color: "text-emerald-400",
       bg: "bg-emerald-500/10",
       border: "border-emerald-500/20",
+      pulse: false,
+      trend: null as string | null,
       href: "/dashboard/cases?filter=completed",
     },
   ];
