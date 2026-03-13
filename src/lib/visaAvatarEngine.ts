@@ -475,12 +475,12 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     consularQuestion: 'What does your spouse do for a living?',
     condition: (a) => ['married', 'cohabiting'].includes(a.maritalStatus || ''),
     options: [
-      { value: 'employed', labelEs: 'Empleado/a', labelEn: 'Employed' },
-      { value: 'self_employed', labelEs: 'Independiente', labelEn: 'Self-employed' },
-      { value: 'student', labelEs: 'Estudiante', labelEn: 'Student' },
-      { value: 'homemaker', labelEs: 'Ama de casa', labelEn: 'Homemaker' },
-      { value: 'unemployed', labelEs: 'Desempleado/a', labelEn: 'Unemployed' },
-      { value: 'retired', labelEs: 'Jubilado/a', labelEn: 'Retired' },
+      { value: 'employed', labelEs: 'Trabaja para alguien', labelEn: 'Employed' },
+      { value: 'self_employed', labelEs: 'Tiene su propio negocio', labelEn: 'Self-employed' },
+      { value: 'student', labelEs: 'Estudia', labelEn: 'Student' },
+      { value: 'homemaker', labelEs: 'Se dedica al hogar', labelEn: 'Homemaker' },
+      { value: 'unemployed', labelEs: 'No está trabajando', labelEn: 'Not working' },
+      { value: 'retired', labelEs: 'Está jubilado/a', labelEn: 'Retired' },
     ]},
 
   // ── STEP 3: ARRAIGO ──
