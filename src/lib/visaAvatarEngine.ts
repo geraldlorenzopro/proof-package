@@ -346,7 +346,6 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   { id: 'q_gender', step: 1, textEs: '¿Sexo del solicitante?', textEn: 'Applicant\'s gender?', fieldKey: 'gender', type: 'select', options: [
     { value: 'male', labelEs: 'Masculino', labelEn: 'Male' },
     { value: 'female', labelEs: 'Femenino', labelEn: 'Female' },
-    { value: 'other', labelEs: 'Otro', labelEn: 'Other' },
   ]},
   { id: 'q_marital', step: 1, textEs: '¿Estado civil?', textEn: 'Marital status?', fieldKey: 'maritalStatus', type: 'select', options: [
     { value: 'single', labelEs: 'Soltero/a', labelEn: 'Single' },
