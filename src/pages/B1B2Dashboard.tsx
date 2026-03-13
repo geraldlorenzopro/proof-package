@@ -202,7 +202,7 @@ export default function B1B2Dashboard() {
           </div>
           <div className="rounded-xl border border-border/50 bg-card p-4">
             <div className="flex items-center gap-2 mb-1">
-              <CircleDot className="w-4 h-4 text-warning" />
+              <CircleDot className="w-4 h-4 text-primary" />
               <span className="text-xs font-medium text-muted-foreground">Activos</span>
             </div>
             <p className="text-2xl font-bold">{totalActive}</p>
