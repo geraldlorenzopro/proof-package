@@ -167,7 +167,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
               <h3 className="text-xl font-bold text-foreground tracking-tight">
                 {currentStepLabel?.labelEs}
               </h3>
-              <span className="text-[11px] text-muted-foreground/50 font-medium tracking-wide mt-1">
+              <span className="text-[11px] text-muted-foreground/70 font-medium tracking-wide mt-1">
                 SECCIÓN {currentStep} DE {STEP_LABELS.length}
               </span>
             </motion.div>
@@ -219,7 +219,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
         <div className="bg-[hsl(220,25%,7%)] flex-1 min-h-0 flex flex-col">
           {/* Question counter */}
           <div className="px-8 pt-5 pb-2 flex items-center justify-between">
-            <span className="text-[10px] font-mono font-semibold text-muted-foreground/40 tracking-wider">
+            <span className="text-[10px] font-mono font-semibold text-muted-foreground/70 tracking-wider">
               {String(qIndex + 1).padStart(2, '0')} / {String(totalQuestions).padStart(2, '0')}
             </span>
             {/* Audio controls */}
@@ -306,7 +306,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                           </div>
                           <span className={cn(
                             "text-sm font-medium transition-colors",
-                            isSelected ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"
+                            isSelected ? "text-foreground" : "text-foreground/70 group-hover:text-foreground"
                           )}>
                             {opt.labelEs}
                           </span>
@@ -334,7 +334,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                             "flex-1 py-3 rounded-xl text-center font-semibold text-sm border transition-all duration-200",
                             isSelected
                               ? "bg-[hsl(var(--jarvis)/0.08)] border-[hsl(var(--jarvis)/0.3)] text-foreground shadow-[0_0_20px_-5px_hsl(195_100%_50%/0.15)]"
-                              : "bg-[hsl(220,25%,10%)] border-border/20 text-muted-foreground hover:border-border/40 hover:text-foreground/80"
+                              : "bg-[hsl(220,25%,10%)] border-border/20 text-foreground/70 hover:border-border/40 hover:text-foreground"
                           )}
                         >
                           {label}

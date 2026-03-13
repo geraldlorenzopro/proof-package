@@ -19,15 +19,18 @@ export interface VisaEvalAnswers {
   // Step 2 — Estabilidad
   employmentStatus: 'employed' | 'self_employed' | 'unemployed' | 'student' | 'retired' | 'part_time';
   employmentType?: 'private' | 'public' | 'freelance' | 'family_business' | 'informal';
+  jobTenure?: 'less_1yr' | '1_3yr' | '3_5yr' | 'over_5yr';
   hasRegisteredBusiness?: boolean;
   monthlyIncome: 'none' | 'low' | 'medium' | 'high' | 'very_high';
   isStudying: boolean;
   educationLevel: 'none' | 'high_school' | 'university_current' | 'university_recent' | 'university' | 'postgrad';
   incomeStability: 'stable' | 'irregular' | 'none';
+  partnerOccupation?: 'employed' | 'self_employed' | 'student' | 'homemaker' | 'unemployed' | 'retired';
 
   // Step 3 — Arraigo
   ownsProperty: boolean;
   propertyType?: 'house' | 'land' | 'commercial' | 'multiple';
+  ownsVehicle: boolean;
   hasBankAccounts: boolean;
   hasInvestments: boolean;
   familyInHomeCountry: 'strong' | 'moderate' | 'weak';
@@ -233,9 +236,10 @@ export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
 
   // ── ARRAIGO ECONÓMICO (25 pts) ──
   if (a.ownsProperty) {
-    arraigo_economico += a.propertyType === 'multiple' ? 12 : a.propertyType === 'commercial' ? 10 : 8;
+    arraigo_economico += a.propertyType === 'multiple' ? 10 : a.propertyType === 'commercial' ? 8 : 6;
   }
-  if (a.hasBankAccounts) arraigo_economico += 5;
+  if (a.ownsVehicle) arraigo_economico += 3;
+  if (a.hasBankAccounts) arraigo_economico += 4;
   if (a.hasInvestments) arraigo_economico += 5;
   if (a.hasRegisteredBusiness) arraigo_economico += 5;
   arraigo_economico = Math.min(arraigo_economico, 25);
@@ -259,6 +263,12 @@ export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
   else if (a.employmentStatus === 'student') estabilidad += 2;
   if (a.incomeStability === 'stable') estabilidad += 4;
   else if (a.incomeStability === 'irregular') estabilidad += 1;
+  // Job tenure bonus
+  if (a.jobTenure === 'over_5yr') estabilidad += 3;
+  else if (a.jobTenure === '3_5yr') estabilidad += 2;
+  else if (a.jobTenure === '1_3yr') estabilidad += 1;
+  // Partner occupation bonus (married/cohabiting)
+  if (a.partnerOccupation === 'employed' || a.partnerOccupation === 'self_employed') estabilidad += 2;
   estabilidad = Math.min(estabilidad, 20);
 
   // ── VIAJES (20 pts) ──
@@ -420,6 +430,15 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     ]},
   { id: 'q_registered_biz', step: 2, textEs: '¿Tiene negocio registrado?', textEn: 'Do you have a registered business?', fieldKey: 'hasRegisteredBusiness', type: 'boolean',
     condition: (a) => a.employmentStatus === 'self_employed' },
+  { id: 'q_job_tenure', step: 2, textEs: '¿Cuánto tiempo tiene en su trabajo actual?', textEn: 'How long have you been at your current job?', fieldKey: 'jobTenure', type: 'select',
+    consularQuestion: 'How long have you been working there?',
+    condition: (a) => ['employed', 'self_employed', 'part_time'].includes(a.employmentStatus || ''),
+    options: [
+      { value: 'less_1yr', labelEs: 'Menos de 1 año', labelEn: 'Less than 1 year' },
+      { value: '1_3yr', labelEs: '1 – 3 años', labelEn: '1 – 3 years' },
+      { value: '3_5yr', labelEs: '3 – 5 años', labelEn: '3 – 5 years' },
+      { value: 'over_5yr', labelEs: 'Más de 5 años', labelEn: 'Over 5 years' },
+    ]},
   { id: 'q_income', step: 2, textEs: '¿Nivel de ingresos mensuales?', textEn: 'Monthly income level?', fieldKey: 'monthlyIncome', type: 'select',
     consularQuestion: 'How much do you earn per month?',
     options: [
@@ -443,6 +462,17 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     { value: 'irregular', labelEs: 'Irregular', labelEn: 'Irregular' },
     { value: 'none', labelEs: 'Sin ingresos', labelEn: 'No income' },
   ]},
+  { id: 'q_partner_occupation', step: 2, textEs: '¿A qué se dedica su pareja?', textEn: 'What does your partner do?', fieldKey: 'partnerOccupation', type: 'select',
+    consularQuestion: 'What does your spouse do for a living?',
+    condition: (a) => ['married', 'cohabiting'].includes(a.maritalStatus || ''),
+    options: [
+      { value: 'employed', labelEs: 'Empleado/a', labelEn: 'Employed' },
+      { value: 'self_employed', labelEs: 'Independiente', labelEn: 'Self-employed' },
+      { value: 'student', labelEs: 'Estudiante', labelEn: 'Student' },
+      { value: 'homemaker', labelEs: 'Ama de casa', labelEn: 'Homemaker' },
+      { value: 'unemployed', labelEs: 'Desempleado/a', labelEn: 'Unemployed' },
+      { value: 'retired', labelEs: 'Jubilado/a', labelEn: 'Retired' },
+    ]},
 
   // ── STEP 3: ARRAIGO ──
   { id: 'q_property', step: 3, textEs: '¿Posee propiedades?', textEn: 'Do you own property?', fieldKey: 'ownsProperty', type: 'boolean',
@@ -455,6 +485,7 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
       { value: 'commercial', labelEs: 'Local comercial', labelEn: 'Commercial property' },
       { value: 'multiple', labelEs: 'Múltiples propiedades', labelEn: 'Multiple properties' },
     ]},
+  { id: 'q_vehicle', step: 3, textEs: '¿Tiene vehículo propio?', textEn: 'Do you own a vehicle?', fieldKey: 'ownsVehicle', type: 'boolean' },
   { id: 'q_bank', step: 3, textEs: '¿Tiene cuentas bancarias?', textEn: 'Do you have bank accounts?', fieldKey: 'hasBankAccounts', type: 'boolean' },
   { id: 'q_invest', step: 3, textEs: '¿Tiene inversiones?', textEn: 'Do you have investments?', fieldKey: 'hasInvestments', type: 'boolean' },
   { id: 'q_family_ties', step: 3, textEs: '¿Vínculos familiares en su país?', textEn: 'Family ties in home country?', fieldKey: 'familyInHomeCountry', type: 'select',
