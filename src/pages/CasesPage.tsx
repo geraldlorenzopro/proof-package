@@ -261,6 +261,8 @@ export default function CasesPage() {
               <SelectItem value="team">⚡ Equipo</SelectItem>
               <SelectItem value="client">⏳ Cliente</SelectItem>
               <SelectItem value="uscis">🏛 USCIS</SelectItem>
+              <SelectItem value="nvc">📋 NVC</SelectItem>
+              <SelectItem value="embassy">🏢 Embajada</SelectItem>
             </SelectContent>
           </Select>
           {(searchQuery || statusFilter !== 'all' || ballFilter !== 'all') && (
