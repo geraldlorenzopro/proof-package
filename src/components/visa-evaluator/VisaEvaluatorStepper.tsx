@@ -306,7 +306,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                           </div>
                           <span className={cn(
                             "text-sm font-medium transition-colors",
-                            isSelected ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"
+                            isSelected ? "text-foreground" : "text-foreground/70 group-hover:text-foreground"
                           )}>
                             {opt.labelEs}
                           </span>
