@@ -281,7 +281,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
 
                 {/* Options */}
                 {currentQ.type === 'select' && currentQ.options && (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {currentQ.options.map(opt => {
                       const isSelected = answers[currentQ.fieldKey] === opt.value;
                       return (
@@ -290,7 +290,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                           type="button"
                           onClick={() => handleOptionSelect(currentQ.fieldKey, opt.value)}
                           className={cn(
-                            "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200 border group",
+                            "w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-left transition-all duration-200 border group",
                             isSelected
                               ? "bg-[hsl(var(--jarvis)/0.08)] border-[hsl(var(--jarvis)/0.3)] shadow-[0_0_20px_-5px_hsl(195_100%_50%/0.15)]"
                               : "bg-[hsl(220,25%,10%)] border-border/20 hover:border-border/40 hover:bg-[hsl(220,25%,12%)]"
