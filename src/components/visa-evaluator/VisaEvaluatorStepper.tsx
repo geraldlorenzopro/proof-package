@@ -167,7 +167,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
               <h3 className="text-xl font-bold text-foreground tracking-tight">
                 {currentStepLabel?.labelEs}
               </h3>
-              <span className="text-[11px] text-muted-foreground/50 font-medium tracking-wide mt-1">
+              <span className="text-[11px] text-muted-foreground/70 font-medium tracking-wide mt-1">
                 SECCIÓN {currentStep} DE {STEP_LABELS.length}
               </span>
             </motion.div>
