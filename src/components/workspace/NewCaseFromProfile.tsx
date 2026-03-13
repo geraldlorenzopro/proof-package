@@ -748,11 +748,11 @@ export default function NewCaseFromProfile({
               <Button
                 size="sm"
                 onClick={handleCreate}
-                disabled={loading || selectedForms.length === 0 || !caseName.trim()}
+                disabled={loading || (!isTrackingOnly && selectedForms.length === 0) || !caseName.trim()}
                 className="bg-jarvis hover:bg-jarvis/90 gap-1 text-xs"
               >
                 {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                Crear Caso ({selectedForms.length} forms)
+                {isTrackingOnly ? "Crear Caso" : `Crear Caso (${selectedForms.length} forms)`}
               </Button>
             )}
           </div>
