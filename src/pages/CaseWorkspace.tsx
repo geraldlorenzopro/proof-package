@@ -176,6 +176,19 @@ export default function CaseWorkspace() {
           setActiveView("profile");
         } else if (baseCases.length === 1) {
           setActiveCaseId(baseCases[0].id);
+          setCaseData({
+            ...baseCases[0],
+            client_name: nextProfile
+              ? [nextProfile.first_name, nextProfile.last_name].filter(Boolean).join(" ") || selectedClientName
+              : selectedClientName,
+          });
+          setCaseTemplate(null);
+          setCaseNotes([]);
+          setCaseTasks([]);
+          setCaseTags([]);
+          setCaseStageHistory([]);
+          setCaseEvidenceCount(0);
+          setCaseFormsCount(0);
         } else {
           setActiveView("cases");
         }
