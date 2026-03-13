@@ -32,23 +32,23 @@ interface B1B2Case {
 }
 
 const STAGE_LABELS: Record<string, string> = {
-  "consulta-inicial": "Consulta Inicial",
-  "ds160-proceso": "DS-160 En Proceso",
-  "ds160-completado": "DS-160 Completado",
+  "consulta-inicial": "Consulta",
+  "ds160": "DS-160",
+  "cuenta-cas": "Cuenta CAS",
+  "citas-programadas": "Citas",
   "cita-cas": "Cita CAS",
-  "huellas": "Huellas",
-  "preparacion": "Preparación",
+  "pre-entrevista": "Pre-Entrevista",
   "entrevista": "Entrevista",
   "resultado": "Resultado",
 };
 
 const STAGE_ICONS: Record<string, string> = {
   "consulta-inicial": "💬",
-  "ds160-proceso": "📝",
-  "ds160-completado": "✅",
-  "cita-cas": "📅",
-  "huellas": "🖐",
-  "preparacion": "📋",
+  "ds160": "📝",
+  "cuenta-cas": "🌐",
+  "citas-programadas": "📅",
+  "cita-cas": "🖐",
+  "pre-entrevista": "📋",
   "entrevista": "🎤",
   "resultado": "🏆",
 };
@@ -171,6 +171,26 @@ export default function B1B2Dashboard() {
     } catch (e: any) {
       console.error(e);
       toast({ title: "Error", description: "No se pudo actualizar el estado.", variant: "destructive" });
+    }
+  };
+
+  const updateCaseStage = async (caseItem: B1B2Case, newStage: string) => {
+    try {
+      await supabase.functions.invoke("b1b2-update-case", {
+        body: {
+          account_cid: accountCid,
+          case_id: caseItem.id,
+          pipeline_stage: newStage,
+        },
+      });
+      setCases(prev => prev.map(c => c.id === caseItem.id ? { ...c, pipeline_stage: newStage } : c));
+      toast({
+        title: "Etapa actualizada",
+        description: `${caseItem.client_name} → ${STAGE_LABELS[newStage] || newStage}`,
+      });
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error", description: "No se pudo actualizar la etapa.", variant: "destructive" });
     }
   };
 
@@ -484,10 +504,30 @@ export default function B1B2Dashboard() {
                           </DropdownMenu>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-lg leading-none">{STAGE_ICONS[c.pipeline_stage] || "📄"}</span>
-                          <span className="text-[11px] font-medium text-muted-foreground">
-                            {STAGE_LABELS[c.pipeline_stage] || c.pipeline_stage}
-                          </span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="flex items-center gap-1.5 hover:bg-muted/50 rounded-md px-1.5 py-0.5 transition-colors cursor-pointer">
+                                <span className="text-lg leading-none">{STAGE_ICONS[c.pipeline_stage] || "📄"}</span>
+                                <span className="text-[11px] font-medium text-muted-foreground">
+                                  {STAGE_LABELS[c.pipeline_stage] || c.pipeline_stage}
+                                </span>
+                                <span className="text-[9px] text-muted-foreground/40">▾</span>
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="min-w-[180px]">
+                              {ALL_STAGES.map((stage) => (
+                                <DropdownMenuItem
+                                  key={stage}
+                                  onClick={() => updateCaseStage(c, stage)}
+                                  className={`text-xs gap-2 ${c.pipeline_stage === stage ? "bg-primary/10 font-semibold" : ""}`}
+                                >
+                                  <span>{STAGE_ICONS[stage]}</span>
+                                  {STAGE_LABELS[stage]}
+                                  {stage === "cita-cas" && <span className="text-[9px] text-muted-foreground ml-auto">skip?</span>}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <span className="text-[10px] text-muted-foreground/60">•</span>
                           <span className="text-[10px] text-muted-foreground/60 flex items-center gap-0.5">
                             <Clock className="w-3 h-3" />
