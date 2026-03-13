@@ -28,7 +28,7 @@ export default function VisaEvalPublic() {
       setEvalData(row);
 
       if (row.status === 'completed' && row.score) {
-        const evalResult = evaluateProfile(row.answers as VisaEvalAnswers);
+        const evalResult = evaluateProfile(row.answers as unknown as VisaEvalAnswers);
         setResult(evalResult);
         setView('results');
       }

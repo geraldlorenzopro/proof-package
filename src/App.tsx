@@ -33,6 +33,8 @@ import PdfFieldInspector from "./pages/PdfFieldInspector";
 import CaseWorkspace from "./pages/CaseWorkspace";
 import CaseEnginePage from "./pages/CaseEnginePage";
 import IntelligenceCenterPage from "./pages/IntelligenceCenterPage";
+import VisaEvaluatorPage from "./pages/VisaEvaluatorPage";
+import VisaEvalPublic from "./pages/VisaEvalPublic";
 
 const queryClient = new QueryClient();
 
