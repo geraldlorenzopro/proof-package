@@ -30,6 +30,7 @@ export interface VisaEvalAnswers {
   // Step 3 — Arraigo
   ownsProperty: boolean;
   propertyType?: 'house' | 'land' | 'commercial' | 'multiple';
+  ownsVehicle: boolean;
   hasBankAccounts: boolean;
   hasInvestments: boolean;
   familyInHomeCountry: 'strong' | 'moderate' | 'weak';
