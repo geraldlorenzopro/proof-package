@@ -145,7 +145,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
   return (
     <div className="flex flex-col flex-1 min-h-0 max-w-2xl mx-auto w-full">
       {/* ─── Outer Shell ─── */}
-      <div className="relative rounded-2xl overflow-hidden" style={{ boxShadow: '0 0 60px -15px hsl(195 100% 50% / 0.08), 0 25px 50px -12px rgba(0,0,0,0.4)' }}>
+      <div className="relative rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0" style={{ boxShadow: '0 0 60px -15px hsl(195 100% 50% / 0.08), 0 25px 50px -12px rgba(0,0,0,0.4)' }}>
         {/* Subtle top glow line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--jarvis)/0.4)] to-transparent" />
 
