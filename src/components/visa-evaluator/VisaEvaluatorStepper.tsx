@@ -194,17 +194,6 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Pro
                   {currentQ.textEs}
                 </h2>
 
-                {/* Consular practice hint */}
-                {showAudioPractice && currentQ.consularQuestion && (
-                  <p className="text-xs text-[hsl(var(--jarvis)/0.5)] italic">
-                    🎙️ "{currentQ.consularQuestion}"
-                  </p>
-                )}
-
-                {recordings[currentQ.id] && (
-                  <audio controls src={recordings[currentQ.id]} className="w-full h-8" />
-                )}
-
                 {/* Options */}
                 {currentQ.type === 'select' && currentQ.options && (
                   <div className="space-y-1.5 sm:space-y-2">
