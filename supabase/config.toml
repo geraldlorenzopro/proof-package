@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.resolve-client-portal]
 verify_jwt = false
+
+[functions.b1b2-create-case]
+verify_jwt = false
