@@ -227,7 +227,12 @@ export default function NewCaseFromProfile({
     setSelectedTemplate(template);
     setSelectedForms([...template.form_package]);
     setCaseName(template.process_label);
-    setStep("customize");
+    // Skip customize step for tracking-only pipelines (no USCIS forms)
+    if (NO_FORMS_PROCESS_TYPES.includes(template.process_type)) {
+      setStep("details");
+    } else {
+      setStep("customize");
+    }
   };
 
   const handleStartManual = () => {
