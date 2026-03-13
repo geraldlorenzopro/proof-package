@@ -853,7 +853,7 @@ export default function CaseWorkspace() {
                   .then(({ data }) => { if (data) setProfile(data); });
               }}
             />
-          </motion.div>
+          </div>
         )}
 
         {/* ═══ ACTIVITY VIEW ═══ */}
