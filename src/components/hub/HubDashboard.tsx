@@ -98,8 +98,16 @@ const TOOL_CATEGORIES: ToolCategory[] = [
     label: "Agentes",
     icon: Scale,
     color: { bg: "bg-rose-500/15", border: "border-rose-500/25", text: "text-rose-400", accent: "from-rose-500/[0.03] to-transparent" },
-    slugs: ["vawa-screener", "vawa-checklist"],
+    slugs: ["vawa-screener", "vawa-checklist", "visa-evaluator"],
     description: "Pre-evaluación y elegibilidad",
+  },
+  {
+    key: "practice",
+    label: "Práctica",
+    icon: Mic,
+    color: { bg: "bg-indigo-500/15", border: "border-indigo-500/25", text: "text-indigo-400", accent: "from-indigo-500/[0.03] to-transparent" },
+    slugs: ["interview-sim"],
+    description: "Simulador de entrevista consular",
   },
   {
     key: "calculators",
