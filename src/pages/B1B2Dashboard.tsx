@@ -41,11 +41,13 @@ const STAGE_LABELS: Record<string, string> = {
 const ALL_STAGES = Object.keys(STAGE_LABELS);
 
 export default function B1B2Dashboard() {
-  const { accountCid } = useParams<{ accountCid: string }>();
+  const { accountCid: paramCid } = useParams<{ accountCid: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [loading, setLoading] = useState(true);
+  const [resolvedCid, setResolvedCid] = useState(paramCid || "");
+  const [cidInput, setCidInput] = useState("");
+  const [loading, setLoading] = useState(!!paramCid);
   const [error, setError] = useState<string | null>(null);
   const [cases, setCases] = useState<B1B2Case[]>([]);
   const [accountName, setAccountName] = useState("");
@@ -58,6 +60,8 @@ export default function B1B2Dashboard() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [creating, setCreating] = useState(false);
+
+  const accountCid = paramCid || resolvedCid;
 
   const loadCases = useCallback(async () => {
     if (!accountCid) return;
@@ -148,6 +152,44 @@ export default function B1B2Dashboard() {
     const idx = getStageIndex(stage);
     return ALL_STAGES.length > 0 ? Math.round(((Math.max(idx, 0) + 1) / ALL_STAGES.length) * 100) : 0;
   };
+
+  // No CID provided — show entry screen
+  if (!accountCid) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="w-full max-w-sm space-y-6 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+            <Plane className="w-7 h-7 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">Dashboard B1/B2</h1>
+            <p className="text-sm text-muted-foreground mt-1">Ingresa el ID de la cuenta para continuar</p>
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (cidInput.trim()) {
+                setResolvedCid(cidInput.trim());
+                setLoading(true);
+              }
+            }}
+            className="space-y-3"
+          >
+            <Input
+              placeholder="ID de cuenta (ej: NgaxlyDdwg93PvQb5KCw)"
+              value={cidInput}
+              onChange={e => setCidInput(e.target.value)}
+              autoFocus
+            />
+            <Button type="submit" className="w-full gap-2" disabled={!cidInput.trim()}>
+              <ChevronRight className="w-4 h-4" />
+              Acceder
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
