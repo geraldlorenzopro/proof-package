@@ -377,42 +377,64 @@ export default function B1B2Dashboard() {
 
         {/* ── Pipeline Funnel ── */}
         <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 mb-6">
-          <p className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-            <Plane className="w-3.5 h-3.5" />
-            Pipeline de Etapas
-          </p>
-          <div className="flex gap-1 overflow-x-auto pb-1">
-            {stageDistribution.map((s, i) => {
-              const isActive = stageFilter === s.slug;
-              const hasClients = s.count > 0;
-              return (
-                <button
-                  key={s.slug}
-                  onClick={() => setStageFilter(isActive ? null : s.slug)}
-                  className={`flex-1 min-w-[80px] rounded-lg p-2.5 text-center transition-all border ${
-                    isActive
-                      ? "bg-primary/10 border-primary/30 shadow-sm"
-                      : hasClients
-                      ? "bg-card/80 border-border/30 hover:border-border/60"
-                      : "bg-transparent border-border/10 opacity-40"
-                  }`}
-                >
-                  <span className="text-lg block mb-0.5">{s.icon}</span>
-                  <p className={`text-xl font-bold ${isActive ? "text-primary" : hasClients ? "text-foreground" : "text-muted-foreground"}`}>
-                    {s.count}
-                  </p>
-                  <p className="text-[9px] text-muted-foreground leading-tight mt-0.5 line-clamp-2">{s.label}</p>
-                </button>
-              );
-            })}
-          </div>
-          {stageFilter && (
-            <button
-              onClick={() => setStageFilter(null)}
-              className="mt-2 text-[10px] text-primary hover:underline"
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+              <Plane className="w-3.5 h-3.5" />
+              Pipeline de Etapas
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+              onClick={() => setShowPipelineEditor(!showPipelineEditor)}
             >
-              ✕ Limpiar filtro
-            </button>
+              <Settings2 className="w-3.5 h-3.5" />
+              {showPipelineEditor ? "Cerrar" : "Personalizar"}
+            </Button>
+          </div>
+
+          {showPipelineEditor ? (
+            <PipelineEditor
+              accountCid={accountCid}
+              onSave={handlePipelineSave}
+              onClose={() => setShowPipelineEditor(false)}
+            />
+          ) : (
+            <>
+              <div className="flex gap-1 overflow-x-auto pb-1">
+                {stageDistribution.map((s, i) => {
+                  const isActive = stageFilter === s.slug;
+                  const hasClients = s.count > 0;
+                  return (
+                    <button
+                      key={s.slug}
+                      onClick={() => setStageFilter(isActive ? null : s.slug)}
+                      className={`flex-1 min-w-[80px] rounded-lg p-2.5 text-center transition-all border ${
+                        isActive
+                          ? "bg-primary/10 border-primary/30 shadow-sm"
+                          : hasClients
+                          ? "bg-card/80 border-border/30 hover:border-border/60"
+                          : "bg-transparent border-border/10 opacity-40"
+                      }`}
+                    >
+                      <span className="text-lg block mb-0.5">{s.icon}</span>
+                      <p className={`text-xl font-bold ${isActive ? "text-primary" : hasClients ? "text-foreground" : "text-muted-foreground"}`}>
+                        {s.count}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground leading-tight mt-0.5 line-clamp-2">{s.label}</p>
+                    </button>
+                  );
+                })}
+              </div>
+              {stageFilter && (
+                <button
+                  onClick={() => setStageFilter(null)}
+                  className="mt-2 text-[10px] text-primary hover:underline"
+                >
+                  ✕ Limpiar filtro
+                </button>
+              )}
+            </>
           )}
         </div>
 
