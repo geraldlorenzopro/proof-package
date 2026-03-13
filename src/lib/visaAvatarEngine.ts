@@ -319,6 +319,11 @@ export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
     coherenceFlags.push('Primera visita a EE.UU. para visitar pareja — perfil de alto riesgo');
     penalties -= 5;
   }
+  // Green card petition pending — strong negative factor (9 FAM 402.2-2)
+  if (a.familyPetitionPending === true) {
+    coherenceFlags.push('Petición de residencia pendiente — falta de intención de retorno');
+    penalties -= 12;
+  }
 
   const total = Math.max(0, Math.min(100, arraigo_economico + arraigo_familiar + estabilidad + viajes + historial + penalties));
 
