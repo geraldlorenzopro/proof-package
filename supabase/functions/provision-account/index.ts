@@ -76,22 +76,31 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Accept multiple field name variants (GHL sends differently depending on context)
-    const account_name = body.account_name || body.location_name || body.locationName || body.name || body.companyName || body.company_name;
-    const email = body.email || body.location_email || body.locationEmail;
-    const phone = body.phone || body.location_phone || body.locationPhone;
-    const plan = body.plan;
-    const external_crm_id = body.external_crm_id || body.location_id || body.locationId;
+    // GHL sends custom data nested in body.customData and location info in body.location
+    const custom = body.customData || {};
+    const loc = body.location || {};
+    
+    const account_name = custom.account_name || loc.name || body.account_name || body.location_name;
+    const email = custom.email || loc.email || body.email || body.location_email;
+    const phone = custom.phone || loc.phone || body.phone;
+    const plan = custom.plan || body.plan;
+    const external_crm_id = custom.external_crm_id || loc.id || body.external_crm_id || body.location_id;
 
-    // Log received body for debugging
-    console.log("provision-account received body:", JSON.stringify(body));
+    // Log for debugging
+    console.log("provision-account received:", JSON.stringify({ 
+      customData: custom, 
+      location: loc,
+      resolved: { account_name, email, external_crm_id }
+    }));
 
     if (!account_name || !email) {
       return new Response(
         JSON.stringify({ 
           error: "account_name and email are required",
           received_keys: Object.keys(body),
-          hint: "Send account_name/location_name and email/location_email"
+          customData_keys: Object.keys(custom),
+          location_keys: Object.keys(loc),
+          hint: "Ensure {{location.name}} and {{location.email}} resolve in your webhook custom data"
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
