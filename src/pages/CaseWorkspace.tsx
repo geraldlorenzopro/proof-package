@@ -543,7 +543,7 @@ export default function CaseWorkspace() {
           </div>
 
           {/* ═══ CASE ENGINE CONTENT ═══ */}
-          <motion.div key={caseEngineTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          <div key={caseEngineTab}>
             {caseEngineTab === "resumen" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
