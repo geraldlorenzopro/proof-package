@@ -770,15 +770,15 @@ export default function CaseWorkspace() {
             <ArrowLeft className="w-4 h-4" />
           </button>
 
-          <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center shrink-0">
-            <span className="font-display text-sm font-bold text-jarvis">{initials}</span>
+          <div className="w-12 h-12 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center shrink-0">
+            <span className="font-display text-base font-bold text-jarvis">{initials}</span>
           </div>
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-foreground tracking-tight truncate">{clientFullName}</h1>
-            <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-xl font-bold text-foreground tracking-tight truncate">{clientFullName}</h1>
+            <div className="flex items-center gap-2.5 flex-wrap mt-0.5">
               {clientCases.length > 0 && (
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground font-medium">
                   {clientCases.length} caso{clientCases.length !== 1 ? "s" : ""}
                 </span>
               )}
@@ -786,13 +786,13 @@ export default function CaseWorkspace() {
                 const status = getImmigrationStatus(profile?.immigration_status);
                 if (!status) return null;
                 return (
-                  <Badge variant="outline" className={`text-[9px] font-semibold px-1.5 py-0 ${status.color} ${status.bgColor} ${status.borderColor}`}>
+                  <Badge variant="outline" className={`text-[10px] font-semibold px-2 py-0.5 ${status.color} ${status.bgColor} ${status.borderColor}`}>
                     {status.label}
                   </Badge>
                 );
               })()}
               {profile?.country_of_birth && (
-                <span className="text-[10px] text-muted-foreground">· {profile.country_of_birth}</span>
+                <span className="text-xs text-muted-foreground">· {profile.country_of_birth}</span>
               )}
             </div>
           </div>
