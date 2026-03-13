@@ -754,12 +754,8 @@ export default function CaseWorkspace() {
             ) : (
               <div className="space-y-2">
                 {clientCases.map((c, i) => (
-                  <motion.button
+                  <button
                     key={c.id}
-                    custom={i}
-                    initial="hidden"
-                    animate="visible"
-                    variants={fadeUp}
                     onClick={() => openCase(c.id)}
                     className="w-full rounded-xl border border-border bg-card hover:border-jarvis/20 transition-all text-left group"
                   >
