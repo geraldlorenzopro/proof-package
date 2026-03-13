@@ -299,30 +299,30 @@ export default function B1B2Dashboard() {
 
         {/* ── KPI Row ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -translate-y-1/3 translate-x-1/3" />
-            <Users className="w-4 h-4 text-primary mb-2" />
-            <p className="text-2xl font-bold">{cases.length}</p>
-            <p className="text-[10px] text-muted-foreground font-medium">Total Clientes</p>
-          </div>
-          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-[hsl(var(--jarvis))]/5 rounded-full -translate-y-1/3 translate-x-1/3" />
-            <CircleDot className="w-4 h-4 text-[hsl(var(--jarvis))] mb-2" />
-            <p className="text-2xl font-bold">{totalActive}</p>
-            <p className="text-[10px] text-muted-foreground font-medium">En Proceso</p>
-          </div>
-          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-accent/5 rounded-full -translate-y-1/3 translate-x-1/3" />
-            <CheckCircle2 className="w-4 h-4 text-accent mb-2" />
-            <p className="text-2xl font-bold">{totalCompleted}</p>
-            <p className="text-[10px] text-muted-foreground font-medium">Completados</p>
-          </div>
-          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -translate-y-1/3 translate-x-1/3" />
-            <TrendingUp className="w-4 h-4 text-primary mb-2" />
-            <p className="text-2xl font-bold">{avgProgress}%</p>
-            <p className="text-[10px] text-muted-foreground font-medium">Progreso Prom.</p>
-          </div>
+          {[
+            { key: null, label: "Total Clientes", value: cases.length, icon: Users, colorClass: "text-primary", bgClass: "bg-primary/5" },
+            { key: "in_progress", label: "En Proceso", value: cases.filter(c => c.status === "in_progress" || c.status === "active").length, icon: CircleDot, colorClass: "text-[hsl(var(--jarvis))]", bgClass: "bg-[hsl(var(--jarvis))]/5" },
+            { key: "completed", label: "Completados", value: totalCompleted, icon: CheckCircle2, colorClass: "text-accent", bgClass: "bg-accent/5" },
+            { key: "pending", label: "Nuevos", value: cases.filter(c => c.status === "pending").length, icon: Clock, colorClass: "text-primary", bgClass: "bg-primary/5" },
+          ].map((kpi) => {
+            const isActive = statusFilter === kpi.key;
+            return (
+              <button
+                key={kpi.key || "all"}
+                onClick={() => setStatusFilter(isActive ? null : kpi.key)}
+                className={`rounded-xl border p-4 relative overflow-hidden text-left transition-all ${
+                  isActive
+                    ? "border-primary/40 bg-primary/5 ring-1 ring-primary/20"
+                    : "border-border/50 bg-card/60 backdrop-blur-sm hover:border-border/80"
+                }`}
+              >
+                <div className={`absolute top-0 right-0 w-16 h-16 ${kpi.bgClass} rounded-full -translate-y-1/3 translate-x-1/3`} />
+                <kpi.icon className={`w-4 h-4 ${kpi.colorClass} mb-2`} />
+                <p className="text-2xl font-bold">{kpi.value}</p>
+                <p className="text-[10px] text-muted-foreground font-medium">{kpi.label}</p>
+              </button>
+            );
+          })}
         </div>
 
         {/* ── Pipeline Funnel ── */}
