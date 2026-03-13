@@ -342,7 +342,16 @@ export interface InterviewQuestion {
 
 export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   // ── STEP 1: PERSONAL ──
-  { id: 'q_age', step: 1, textEs: '¿Cuál es la edad del solicitante?', textEn: 'What is the applicant\'s age?', fieldKey: 'age', type: 'number' },
+  { id: 'q_age', step: 1, textEs: '¿Cuál es la edad del solicitante?', textEn: 'What is the applicant\'s age?', fieldKey: 'age', type: 'select', options: [
+    { value: '15', labelEs: 'Menor de 16', labelEn: 'Under 16' },
+    { value: '17', labelEs: '16 – 17', labelEn: '16 – 17' },
+    { value: '20', labelEs: '18 – 21', labelEn: '18 – 21' },
+    { value: '25', labelEs: '22 – 28', labelEn: '22 – 28' },
+    { value: '32', labelEs: '29 – 35', labelEn: '29 – 35' },
+    { value: '42', labelEs: '36 – 49', labelEn: '36 – 49' },
+    { value: '55', labelEs: '50 – 60', labelEn: '50 – 60' },
+    { value: '65', labelEs: '61+', labelEn: '61+' },
+  ]},
   { id: 'q_gender', step: 1, textEs: '¿Sexo del solicitante?', textEn: 'Applicant\'s gender?', fieldKey: 'gender', type: 'select', options: [
     { value: 'male', labelEs: 'Masculino', labelEn: 'Male' },
     { value: 'female', labelEs: 'Femenino', labelEn: 'Female' },
@@ -496,8 +505,14 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     ]},
 
   // ── STEP 5: HISTORIAL ──
-  { id: 'q_denials', step: 5, textEs: '¿Cuántas veces le han negado la visa?', textEn: 'How many times have you been denied a visa?', fieldKey: 'previousDenials', type: 'number',
-    consularQuestion: 'Have you ever been refused a visa to the United States?' },
+  { id: 'q_denials', step: 5, textEs: '¿Cuántas veces le han negado la visa?', textEn: 'How many times have you been denied a visa?', fieldKey: 'previousDenials', type: 'select',
+    consularQuestion: 'Have you ever been refused a visa to the United States?',
+    options: [
+      { value: '0', labelEs: 'Ninguna', labelEn: 'None' },
+      { value: '1', labelEs: '1 vez', labelEn: '1 time' },
+      { value: '2', labelEs: '2 veces', labelEn: '2 times' },
+      { value: '3', labelEs: '3 o más', labelEn: '3 or more' },
+    ]},
   { id: 'q_recent_denial', step: 5, textEs: '¿Cuándo fue la negación más reciente?', textEn: 'When was the most recent denial?', fieldKey: 'mostRecentDenial', type: 'select',
     condition: (a) => (a.previousDenials || 0) > 0,
     options: [

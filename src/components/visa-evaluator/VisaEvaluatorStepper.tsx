@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { RotateCcw, Volume2, Mic, ChevronRight, Eye, Zap } from "lucide-react";
+import { RotateCcw, Volume2, Mic, ChevronRight, Eye, User, Briefcase, Home, Plane, ShieldAlert } from "lucide-react";
 import { INTERVIEW_QUESTIONS, STEP_LABELS, type VisaEvalAnswers, type InterviewQuestion } from "@/lib/visaAvatarEngine";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,13 +40,17 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
   const progress = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
 
   const updateAnswer = useCallback((key: keyof VisaEvalAnswers, value: any) => {
-    setAnswers(prev => ({ ...prev, [key]: value }));
+    // Parse numeric select values to number
+    const numericFields: (keyof VisaEvalAnswers)[] = ['age', 'previousDenials'];
+    const parsed = numericFields.includes(key) ? parseInt(value) : value;
+    setAnswers(prev => ({ ...prev, [key]: parsed }));
   }, []);
 
-  // Auto-advance on selection (for select/boolean, not number)
+  // Auto-advance on selection (for select/boolean)
   const handleOptionSelect = useCallback((key: keyof VisaEvalAnswers, value: any) => {
-    updateAnswer(key, value);
-    // Auto-advance after a brief moment
+    const numericFields: (keyof VisaEvalAnswers)[] = ['age', 'previousDenials'];
+    const parsed = numericFields.includes(key) ? parseInt(value) : value;
+    updateAnswer(key, parsed);
     setTimeout(() => {
       if (qIndex < totalQuestions - 1) {
         setDirection(1);
@@ -128,17 +132,49 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
 
   if (!currentQ) return null;
 
+  const STEP_ICONS: Record<number, React.ReactNode> = {
+    1: <User className="h-5 w-5" />,
+    2: <Briefcase className="h-5 w-5" />,
+    3: <Home className="h-5 w-5" />,
+    4: <Plane className="h-5 w-5" />,
+    5: <ShieldAlert className="h-5 w-5" />,
+  };
+
+  const currentStepLabel = STEP_LABELS.find(s => s.step === currentStep);
+
   return (
-    <div className="space-y-0">
+    <div className="space-y-0 max-w-2xl mx-auto">
       {/* ─── Outer Shell ─── */}
       <div className="relative rounded-2xl overflow-hidden" style={{ boxShadow: '0 0 60px -15px hsl(195 100% 50% / 0.08), 0 25px 50px -12px rgba(0,0,0,0.4)' }}>
         {/* Subtle top glow line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--jarvis)/0.4)] to-transparent" />
 
-        {/* ─── Top Section: Section + Progress ─── */}
-        <div className="bg-[hsl(220,30%,8%)] border-b border-border/10 px-6 pt-5 pb-4">
-          {/* Step chips */}
-          <div className="flex items-center gap-2 mb-4">
+        {/* ─── Section Header: Large, centered, unique ─── */}
+        <div className="bg-[hsl(220,30%,8%)] border-b border-border/10 px-8 pt-8 pb-6">
+          {/* Current section — big hero label */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center text-center mb-6"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[hsl(var(--jarvis)/0.15)] to-[hsl(var(--jarvis)/0.05)] border border-[hsl(var(--jarvis)/0.2)] flex items-center justify-center text-[hsl(var(--jarvis))] mb-3">
+                {STEP_ICONS[currentStep]}
+              </div>
+              <h3 className="text-xl font-bold text-foreground tracking-tight">
+                {currentStepLabel?.labelEs}
+              </h3>
+              <span className="text-[11px] text-muted-foreground/50 font-medium tracking-wide mt-1">
+                SECCIÓN {currentStep} DE {STEP_LABELS.length}
+              </span>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Step navigation pills — small, secondary */}
+          <div className="flex items-center justify-center gap-1.5 mb-5">
             {STEP_LABELS.map(s => {
               const isActive = currentStep === s.step;
               const isDone = currentStep > s.step;
@@ -153,23 +189,21 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                     }
                   }}
                   className={cn(
-                    "px-3 py-1 rounded-full text-[10px] font-semibold tracking-wider uppercase transition-all duration-200 border",
+                    "w-10 h-1.5 rounded-full transition-all duration-300",
                     isActive
-                      ? "bg-[hsl(var(--jarvis)/0.12)] border-[hsl(var(--jarvis)/0.3)] text-[hsl(var(--jarvis))]"
+                      ? "bg-[hsl(var(--jarvis))] shadow-[0_0_8px_hsl(var(--jarvis)/0.4)]"
                       : isDone
-                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400/80"
-                      : "bg-transparent border-border/20 text-muted-foreground/40"
+                      ? "bg-emerald-500/50"
+                      : "bg-muted-foreground/15 hover:bg-muted-foreground/25"
                   )}
-                >
-                  {s.labelEs}
-                </button>
+                />
               );
             })}
           </div>
 
           {/* Progress bar */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-1 rounded-full bg-muted/30 overflow-hidden">
+            <div className="flex-1 h-1 rounded-full bg-muted/20 overflow-hidden">
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--jarvis))] to-emerald-400"
                 initial={false}
@@ -182,9 +216,9 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
         </div>
 
         {/* ─── Question Area ─── */}
-        <div className="bg-[hsl(220,25%,7%)] min-h-[320px] flex flex-col">
+        <div className="bg-[hsl(220,25%,7%)] min-h-[360px] flex flex-col">
           {/* Question counter */}
-          <div className="px-6 pt-4 pb-2 flex items-center justify-between">
+          <div className="px-8 pt-5 pb-2 flex items-center justify-between">
             <span className="text-[10px] font-mono font-semibold text-muted-foreground/40 tracking-wider">
               {String(qIndex + 1).padStart(2, '0')} / {String(totalQuestions).padStart(2, '0')}
             </span>
@@ -218,7 +252,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </div>
 
           {/* Animated question */}
-          <div className="flex-1 px-6 pb-4">
+          <div className="flex-1 px-8 pb-6">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={currentQ.id}
@@ -227,10 +261,10 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: direction * -40 }}
                 transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="space-y-5"
+                className="space-y-6"
               >
                 {/* Question text */}
-                <h2 className="text-lg font-semibold text-foreground leading-snug">
+                <h2 className="text-xl font-semibold text-foreground leading-snug">
                   {currentQ.textEs}
                 </h2>
 
@@ -282,24 +316,6 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                   </div>
                 )}
 
-                {/* Number input */}
-                {currentQ.type === 'number' && (
-                  <Input
-                    type="number"
-                    min={0}
-                    max={120}
-                    autoFocus
-                    placeholder="Ingrese un número"
-                    className="bg-[hsl(220,25%,10%)] border-border/20 w-40 text-lg font-mono focus:ring-[hsl(var(--jarvis)/0.3)] focus:border-[hsl(var(--jarvis)/0.3)]"
-                    value={answers[currentQ.fieldKey] as number || ''}
-                    onChange={(e) => updateAnswer(currentQ.fieldKey, e.target.value ? parseInt(e.target.value) : undefined)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && currentIsAnswered) {
-                        isLastQuestion ? handleSubmit() : goNext();
-                      }
-                    }}
-                  />
-                )}
 
                 {/* Boolean */}
                 {currentQ.type === 'boolean' && (
@@ -332,7 +348,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </div>
 
           {/* ─── Navigation ─── */}
-          <div className="px-6 pb-5 flex items-center gap-3">
+          <div className="px-8 pb-6 flex items-center gap-3">
             {qIndex > 0 && (
               <button
                 onClick={goPrev}
@@ -349,14 +365,6 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                 className="bg-gradient-to-r from-[hsl(var(--jarvis))] to-emerald-500 hover:from-[hsl(var(--jarvis-glow))] hover:to-emerald-400 text-background font-bold px-6 shadow-[0_0_30px_-5px_hsl(195_100%_50%/0.3)]"
               >
                 <Eye className="h-4 w-4 mr-2" /> Ver resultados
-              </Button>
-            ) : currentQ.type === 'number' && currentIsAnswered ? (
-              <Button
-                onClick={goNext}
-                variant="outline"
-                className="border-[hsl(var(--jarvis)/0.3)] text-[hsl(var(--jarvis))] hover:bg-[hsl(var(--jarvis)/0.08)]"
-              >
-                Siguiente <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             ) : null}
           </div>
