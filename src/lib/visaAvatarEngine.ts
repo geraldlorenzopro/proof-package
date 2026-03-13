@@ -274,11 +274,18 @@ export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
   estabilidad = Math.min(estabilidad, 20);
 
   // ── VIAJES (20 pts) ──
-  if (a.previousVisaApproved) viajes += 8;
-  if (a.previousUSTravel) viajes += 4;
+  if (a.previousVisaApproved) viajes += 6;
+  if (a.previousUSTravel) viajes += 3;
+  // Family visa history bonus
+  if (a.familyHasVisa) {
+    viajes += 3;
+    if (a.familyVisaUsage === 'short_trips') viajes += 2; // Good usage pattern
+    else if (a.familyVisaUsage === 'mixed') viajes += 1;
+    else if (a.familyVisaUsage === 'long_trips') viajes -= 1; // Suspicious pattern
+  }
   const travelMap = { none: 0, regional: 2, international: 4, extensive: 6 };
   viajes += travelMap[a.travelHistory] || 0;
-  if (a.complianceRecord === 'perfect') viajes += 4;
+  if (a.complianceRecord === 'perfect') viajes += 3;
   else if (a.complianceRecord === 'minor_issues') viajes += 1;
   viajes = Math.min(viajes, 20);
 
