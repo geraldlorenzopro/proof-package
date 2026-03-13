@@ -300,8 +300,17 @@ export default function CaseWorkspace() {
     }
   }, []);
 
+  // Track which case was already loaded during initial mount to avoid duplicate fetch
+  const initiallyLoadedCaseRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (activeCaseId) loadCaseEngine(activeCaseId);
+    if (!activeCaseId) return;
+    // Skip if this case was already fully loaded during the initial data load
+    if (initiallyLoadedCaseRef.current === activeCaseId) {
+      initiallyLoadedCaseRef.current = null; // Allow future reloads (e.g. stage change)
+      return;
+    }
+    loadCaseEngine(activeCaseId);
   }, [activeCaseId, loadCaseEngine]);
 
   // ── Case engine helpers ──
