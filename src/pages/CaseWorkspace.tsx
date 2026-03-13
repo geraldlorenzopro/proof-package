@@ -195,6 +195,7 @@ export default function CaseWorkspace() {
         // Pre-seed case data immediately so UI renders the shell
         setCaseData({ ...targetCase, client_name: clientName });
         setActiveCaseId(targetCase.id);
+        initiallyLoadedCaseRef.current = targetCase.id; // prevent duplicate fetch
         setCaseEngineTab("resumen");
 
         const processType = targetCase.process_type || "general";
