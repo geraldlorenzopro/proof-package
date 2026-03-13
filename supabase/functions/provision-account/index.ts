@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { account_name, email, phone, plan, external_crm_id } = body;
+    const { account_name, email, phone, plan, external_crm_id, product } = body;
 
     if (!account_name || !email) {
       return new Response(
