@@ -38,6 +38,7 @@ import VisaEvalPublic from "./pages/VisaEvalPublic";
 import CaseTrackPublic from "./pages/CaseTrackPublic";
 import InterviewSimulatorPage from "./pages/InterviewSimulatorPage";
 import B1B2AdminLite from "./pages/B1B2AdminLite";
+import B1B2Dashboard from "./pages/B1B2Dashboard";
 import ClientPortalRouter from "./pages/ClientPortalRouter";
 
 const queryClient = new QueryClient();
@@ -83,6 +84,7 @@ const App = () => (
           <Route path="/visa-eval/:token" element={<VisaEvalPublic />} />
           <Route path="/case-track/:token" element={<CaseTrackPublic />} />
           <Route path="/b1b2-admin/:cid" element={<B1B2AdminLite />} />
+          <Route path="/b1b2-dashboard/:accountCid" element={<B1B2Dashboard />} />
           <Route path="/portal/:cid" element={<ClientPortalRouter />} />
           <Route path="/dashboard/interview-sim" element={<InterviewSimulatorPage />} />
           <Route path="/interview-sim/practice" element={<InterviewSimulatorPage />} />
