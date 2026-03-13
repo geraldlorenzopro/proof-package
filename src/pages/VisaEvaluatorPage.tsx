@@ -21,6 +21,7 @@ export default function VisaEvaluatorPage() {
   const handleComplete = async (answers: VisaEvalAnswers) => {
     const evalResult = evaluateProfile(answers);
     setResult(evalResult);
+    setLastAnswers(answers);
     setView('results');
 
     // Save to database
