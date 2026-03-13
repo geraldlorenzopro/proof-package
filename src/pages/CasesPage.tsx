@@ -38,6 +38,9 @@ export default function CasesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [ballFilter, setBallFilter] = useState('all');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
