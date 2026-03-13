@@ -225,6 +225,61 @@ export default function CasesPage() {
           </div>
         )}
 
+        {/* Search & Filters */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, email o tipo de caso..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-card border-border/40 h-9 text-sm"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[150px] bg-card border-border/40 h-9 text-sm">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los estados</SelectItem>
+              <SelectItem value="pending">Pendiente</SelectItem>
+              <SelectItem value="in_progress">En Progreso</SelectItem>
+              <SelectItem value="completed">Completado</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={ballFilter} onValueChange={setBallFilter}>
+            <SelectTrigger className="w-[150px] bg-card border-border/40 h-9 text-sm">
+              <SelectValue placeholder="Responsable" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="team">⚡ Equipo</SelectItem>
+              <SelectItem value="client">⏳ Cliente</SelectItem>
+              <SelectItem value="uscis">🏛 USCIS</SelectItem>
+            </SelectContent>
+          </Select>
+          {(searchQuery || statusFilter !== 'all' || ballFilter !== 'all') && (
+            <button
+              onClick={() => { setSearchQuery(''); setStatusFilter('all'); setBallFilter('all'); }}
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 whitespace-nowrap"
+            >
+              <X className="w-3 h-3" /> Limpiar
+            </button>
+          )}
+        </div>
+
+        {/* Results count */}
+        {(searchQuery || statusFilter !== 'all' || ballFilter !== 'all') && (
+          <p className="text-xs text-muted-foreground mb-3">
+            {filteredCases.length} resultado{filteredCases.length !== 1 ? 's' : ''}
+          </p>
+        )}
+
         {/* Cases */}
         {loading ? (
           <div className="text-center py-16 text-muted-foreground">Cargando…</div>
