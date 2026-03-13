@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CheckCircle2, CircleDot, User, Users, Shield, AlertTriangle } from "lucide-react";
+import { CheckCircle2, CircleDot, User, Users, Shield, AlertTriangle, Building2, Landmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -11,7 +11,7 @@ export interface PipelineStage {
   order: number;
   slug: string;
   label: string;
-  owner: "team" | "client" | "uscis";
+  owner: string;
   sla_hours: number | null;
   description: string;
 }
@@ -24,11 +24,15 @@ interface Props {
   compact?: boolean;
 }
 
-const ownerConfig = {
+const ownerConfig: Record<string, { label: string; icon: typeof Users; color: string; bg: string; border: string; ring: string; dot: string }> = {
   team: { label: "Equipo", icon: Users, color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/30", ring: "ring-jarvis/40", dot: "bg-jarvis" },
   client: { label: "Cliente", icon: User, color: "text-accent", bg: "bg-accent/10", border: "border-accent/30", ring: "ring-accent/40", dot: "bg-accent" },
   uscis: { label: "USCIS", icon: Shield, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", ring: "ring-emerald-500/40", dot: "bg-emerald-400" },
+  nvc: { label: "NVC", icon: Landmark, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30", ring: "ring-blue-500/40", dot: "bg-blue-400" },
+  embassy: { label: "Embajada", icon: Building2, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", ring: "ring-amber-500/40", dot: "bg-amber-400" },
 };
+
+const defaultOwner = { label: "—", icon: Users, color: "text-muted-foreground", bg: "bg-muted/10", border: "border-border", ring: "ring-border", dot: "bg-muted-foreground" };
 
 function getSlaStatus(stage: PipelineStage, stageEnteredAt: string | null, isCurrent: boolean) {
   if (!isCurrent || !stage.sla_hours || !stageEnteredAt) return null;
