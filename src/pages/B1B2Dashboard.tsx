@@ -68,6 +68,7 @@ export default function B1B2Dashboard() {
   const [accountName, setAccountName] = useState("");
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // New case modal
