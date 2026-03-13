@@ -55,6 +55,12 @@ const STAGE_ICONS: Record<string, string> = {
 
 const ALL_STAGES = Object.keys(STAGE_LABELS);
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Nuevo",
+  in_progress: "En Proceso",
+  completed: "Completado",
+};
+
 export default function B1B2Dashboard() {
   const { accountCid: paramCid } = useParams<{ accountCid: string }>();
   const navigate = useNavigate();
