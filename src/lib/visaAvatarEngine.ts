@@ -505,8 +505,14 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     ]},
 
   // ── STEP 5: HISTORIAL ──
-  { id: 'q_denials', step: 5, textEs: '¿Cuántas veces le han negado la visa?', textEn: 'How many times have you been denied a visa?', fieldKey: 'previousDenials', type: 'number',
-    consularQuestion: 'Have you ever been refused a visa to the United States?' },
+  { id: 'q_denials', step: 5, textEs: '¿Cuántas veces le han negado la visa?', textEn: 'How many times have you been denied a visa?', fieldKey: 'previousDenials', type: 'select',
+    consularQuestion: 'Have you ever been refused a visa to the United States?',
+    options: [
+      { value: '0', labelEs: 'Ninguna', labelEn: 'None' },
+      { value: '1', labelEs: '1 vez', labelEn: '1 time' },
+      { value: '2', labelEs: '2 veces', labelEn: '2 times' },
+      { value: '3', labelEs: '3 o más', labelEn: '3 or more' },
+    ]},
   { id: 'q_recent_denial', step: 5, textEs: '¿Cuándo fue la negación más reciente?', textEn: 'When was the most recent denial?', fieldKey: 'mostRecentDenial', type: 'select',
     condition: (a) => (a.previousDenials || 0) > 0,
     options: [
