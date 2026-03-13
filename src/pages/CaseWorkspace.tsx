@@ -737,7 +737,7 @@ export default function CaseWorkspace() {
 
         {/* ═══ CASES VIEW ═══ */}
         {activeView === "cases" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          <div>
             {clientCases.length === 0 ? (
               <div className="text-center py-20">
                 <Briefcase className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
