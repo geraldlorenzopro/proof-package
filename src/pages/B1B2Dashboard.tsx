@@ -327,19 +327,7 @@ export default function B1B2Dashboard() {
           })}
         </div>
 
-        {/* ── Progress bar ── */}
-        {cases.length > 0 && (
-          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-3 mb-6 flex items-center gap-3">
-            <TrendingUp className="w-4 h-4 text-primary shrink-0" />
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] text-muted-foreground font-medium">Progreso Promedio</span>
-                <span className="text-xs font-bold text-primary">{avgProgress}%</span>
-              </div>
-              <Progress value={avgProgress} className="h-1.5" />
-            </div>
-          </div>
-        )}
+
 
         {/* ── Pipeline Funnel ── */}
         <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 mb-6">
