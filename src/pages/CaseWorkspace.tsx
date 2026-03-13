@@ -254,13 +254,17 @@ export default function CaseWorkspace() {
         }
       }
 
-      // Background: fetch form counts + activity (non-blocking, UI already visible)
+      // Background: fetch form counts, template labels + activity (non-blocking)
       if (baseCases.length > 0 && !cancelled) {
         const caseIds = baseCases.map(c => c.id);
+        const processTypes = [...new Set(baseCases.map(c => c.process_type).filter(Boolean))] as string[];
 
-        const [formRows, stageHistory] = await Promise.all([
+        const [formRows, stageHistory, templateRows] = await Promise.all([
           supabase.from("case_forms").select("case_id").in("case_id", caseIds),
           supabase.from("case_stage_history").select("created_at, to_stage, note").in("case_id", caseIds).order("created_at", { ascending: false }).limit(20),
+          processTypes.length > 0
+            ? supabase.from("pipeline_templates").select("process_type, process_label, stages").in("process_type", processTypes).eq("is_active", true)
+            : Promise.resolve({ data: [] }),
         ]);
 
         if (!cancelled) {
@@ -268,7 +272,14 @@ export default function CaseWorkspace() {
             acc[row.case_id] = (acc[row.case_id] || 0) + 1;
             return acc;
           }, {});
-          setClientCases(baseCases.map(c => ({ ...c, form_count: countByCase[c.id] || 0 })));
+          const labelByType: Record<string, string> = {};
+          (templateRows.data || []).forEach((t: any) => { labelByType[t.process_type] = t.process_label; });
+
+          setClientCases(baseCases.map(c => ({
+            ...c,
+            form_count: countByCase[c.id] || 0,
+            template_label: c.process_type ? labelByType[c.process_type] || null : null,
+          })));
 
           const activities: { date: string; event: string; icon: any }[] = [];
           if (nextProfile) activities.push({ date: nextProfile.created_at, event: "Perfil de cliente creado", icon: Sparkles });
