@@ -478,6 +478,7 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
       { value: 'commercial', labelEs: 'Local comercial', labelEn: 'Commercial property' },
       { value: 'multiple', labelEs: 'Múltiples propiedades', labelEn: 'Multiple properties' },
     ]},
+  { id: 'q_vehicle', step: 3, textEs: '¿Tiene vehículo propio?', textEn: 'Do you own a vehicle?', fieldKey: 'ownsVehicle', type: 'boolean' },
   { id: 'q_bank', step: 3, textEs: '¿Tiene cuentas bancarias?', textEn: 'Do you have bank accounts?', fieldKey: 'hasBankAccounts', type: 'boolean' },
   { id: 'q_invest', step: 3, textEs: '¿Tiene inversiones?', textEn: 'Do you have investments?', fieldKey: 'hasInvestments', type: 'boolean' },
   { id: 'q_family_ties', step: 3, textEs: '¿Vínculos familiares en su país?', textEn: 'Family ties in home country?', fieldKey: 'familyInHomeCountry', type: 'select',
