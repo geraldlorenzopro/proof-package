@@ -444,7 +444,7 @@ export default function CaseWorkspace() {
       <Wrapper>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pt-16 lg:pt-6">
           {/* ═══ BREADCRUMB ═══ */}
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
+          <div className="mb-5">
             <div className="flex items-center gap-2 text-[11px]">
               <button onClick={handleBackToDirectory} className="text-muted-foreground hover:text-foreground transition-colors">
                 Portfolio
