@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Loader2, AlertTriangle, BarChart3, FileText,
   MessageSquare, ListTodo, Clock, FolderOpen, Sparkles,
-  Users, User, Shield, ChevronDown
+  Users, User, Shield, ChevronDown, Share2, Copy, Check
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
