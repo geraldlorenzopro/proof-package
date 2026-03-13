@@ -261,6 +261,8 @@ export default function CasesPage() {
               <SelectItem value="team">⚡ Equipo</SelectItem>
               <SelectItem value="client">⏳ Cliente</SelectItem>
               <SelectItem value="uscis">🏛 USCIS</SelectItem>
+              <SelectItem value="nvc">📋 NVC</SelectItem>
+              <SelectItem value="embassy">🏢 Embajada</SelectItem>
             </SelectContent>
           </Select>
           {(searchQuery || statusFilter !== 'all' || ballFilter !== 'all') && (
@@ -314,13 +316,21 @@ export default function CasesPage() {
                         {statusLabel[c.status]?.label}
                       </span>
                       <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">{c.case_type}</span>
-                      {c.ball_in_court && (
-                        <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${
-                          c.ball_in_court === 'team' ? 'border-amber-500/20 text-amber-400' : 'border-cyan-400/20 text-cyan-400'
-                        }`}>
-                          {c.ball_in_court === 'team' ? '⚡ Equipo' : '⏳ Cliente'}
-                        </Badge>
-                      )}
+                      {c.ball_in_court && (() => {
+                        const ballMap: Record<string, { label: string; style: string }> = {
+                          team: { label: '⚡ Equipo', style: 'border-amber-500/20 text-amber-400' },
+                          client: { label: '⏳ Cliente', style: 'border-cyan-400/20 text-cyan-400' },
+                          uscis: { label: '🏛 USCIS', style: 'border-violet-500/20 text-violet-400' },
+                          nvc: { label: '📋 NVC', style: 'border-blue-500/20 text-blue-400' },
+                          embassy: { label: '🏢 Embajada', style: 'border-orange-500/20 text-orange-400' },
+                        };
+                        const b = ballMap[c.ball_in_court] || { label: c.ball_in_court, style: 'border-border text-muted-foreground' };
+                        return (
+                          <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${b.style}`}>
+                            {b.label}
+                          </Badge>
+                        );
+                      })()}
                       {deadlineCaseIds.has(c.id) && (
                         <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-rose-500/20 text-rose-400">
                           🔥 Deadline
