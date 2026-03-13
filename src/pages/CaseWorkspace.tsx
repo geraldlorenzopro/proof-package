@@ -250,7 +250,9 @@ export default function CaseWorkspace() {
       }
     }
 
-    load();
+    load().catch(() => {
+      if (!cancelled) setLoading(false);
+    });
 
     return () => {
       cancelled = true;
