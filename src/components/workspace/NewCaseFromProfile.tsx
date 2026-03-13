@@ -292,8 +292,11 @@ export default function NewCaseFromProfile({
     }
   };
 
+  const isTrackingOnly = selectedTemplate && NO_FORMS_PROCESS_TYPES.includes(selectedTemplate.process_type);
+  const hidePetitioner = selectedTemplate && NO_PETITIONER_PROCESS_TYPES.includes(selectedTemplate.process_type);
+
   const handleCreate = async () => {
-    if (selectedForms.length === 0) {
+    if (!isTrackingOnly && selectedForms.length === 0) {
       toast.error("Selecciona al menos un formulario");
       return;
     }
