@@ -519,19 +519,19 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   { id: 'q_dependents', step: 3, textEs: '¿Hay personas que dependen de usted económicamente?', textEn: 'Are there people who depend on you financially?', fieldKey: 'hasDependents', type: 'boolean' },
 
   // ── STEP 4: VIAJES ──
-  { id: 'q_family_visa', step: 4, textEs: '¿Alguien en su casa tiene visa americana?', textEn: 'Does anyone in your household have a US visa?', fieldKey: 'familyHasVisa', type: 'boolean',
-    consularQuestion: 'Does anyone in your family have a US visa?' },
+  { id: 'q_family_usa', step: 4, textEs: '¿Tiene familiares viviendo en Estados Unidos?', textEn: 'Do you have family living in the United States?', fieldKey: 'familyInUSA', type: 'boolean' },
+  { id: 'q_family_petition', step: 4, textEs: '¿Algún familiar en EE.UU. lo ha pedido para residencia (green card)?', textEn: 'Has a family member in the US petitioned for your green card?', fieldKey: 'familyPetitionPending', type: 'boolean',
+    condition: (a) => a.familyInUSA === true },
+  { id: 'q_family_visa', step: 4, textEs: '¿Alguien en su casa tiene visa americana?', textEn: 'Does anyone in your household have a US visa?', fieldKey: 'familyHasVisa', type: 'boolean' },
   { id: 'q_family_visa_usage', step: 4, textEs: '¿Cómo han usado la visa en su familia?', textEn: 'How has your family used the visa?', fieldKey: 'familyVisaUsage', type: 'select',
     condition: (a) => a.familyHasVisa === true,
-    consularQuestion: 'How has your family member used their visa?',
     options: [
       { value: 'short_trips', labelEs: 'Han ido por poco tiempo y regresan rápido', labelEn: 'Short trips, return quickly' },
       { value: 'long_trips', labelEs: 'Se han quedado por mucho tiempo', labelEn: 'Stayed for long periods' },
       { value: 'mixed', labelEs: 'A veces corto, a veces largo', labelEn: 'Sometimes short, sometimes long' },
       { value: 'never_used', labelEs: 'Tienen visa pero nunca la han usado', labelEn: 'Have visa but never used it' },
     ]},
-  { id: 'q_prev_visa', step: 4, textEs: '¿A usted le han aprobado una visa antes?', textEn: 'Have you had a visa approved before?', fieldKey: 'previousVisaApproved', type: 'boolean',
-    consularQuestion: 'Have you ever been to the United States before?' },
+  { id: 'q_prev_visa', step: 4, textEs: '¿A usted le han aprobado una visa antes?', textEn: 'Have you had a visa approved before?', fieldKey: 'previousVisaApproved', type: 'boolean' },
   { id: 'q_prev_us', step: 4, textEs: '¿Usted ha ido a Estados Unidos antes?', textEn: 'Have you traveled to the US before?', fieldKey: 'previousUSTravel', type: 'boolean' },
   { id: 'q_travel_hist', step: 4, textEs: '¿Ha viajado a otros países?', textEn: 'Have you traveled to other countries?', fieldKey: 'travelHistory', type: 'select', options: [
     { value: 'none', labelEs: 'Nunca he salido de mi país', labelEn: 'Never left my country' },
