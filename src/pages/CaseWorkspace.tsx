@@ -182,10 +182,10 @@ export default function CaseWorkspace() {
           .eq("id", selectedClientId)
           .single(),
         supabase
-          .from("client_cases")
-          .select("id, case_type, status, process_type, pipeline_stage, created_at, updated_at")
-          .eq("client_profile_id", selectedClientId)
-          .order("updated_at", { ascending: false }),
+174:           .from("client_cases")
+175:           .select("id, case_type, status, process_type, pipeline_stage, ball_in_court, stage_entered_at, assigned_to, created_at, updated_at")
+176:           .eq("client_profile_id", selectedClientId)
+177:           .order("updated_at", { ascending: false }),
       ]);
 
       if (cancelled) return;
