@@ -281,33 +281,41 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         )}
       </motion.div>
 
-      {/* ═══ QUICK ACTIONS — 3-column grid ═══ */}
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={{ visible: { transition: { staggerChildren: 0.04, delayChildren: 0.2 } } }}
-        className="grid grid-cols-3 gap-2.5"
-      >
-        {PRIMARY_ACTIONS.map((action, i) => (
-          <motion.button
-            key={action.label}
-            custom={i}
-            variants={fadeUp}
-            onClick={() => {
-              if (action.label === "Buscar") {
-                setCommandBarFilter("all");
-                setCommandBarOpen(true);
-              } else {
-                goTo(action.route);
-              }
-            }}
-            className={`flex items-center justify-center gap-2.5 rounded-xl border ${action.border} ${action.bg} px-4 py-3.5 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
+      {/* ═══ QUICK ACTIONS — dynamic grid ═══ */}
+      {(() => {
+        const filteredActions = ALL_PRIMARY_ACTIONS.filter(a =>
+          a.requiresSlug === null || accessibleSlugs.has(a.requiresSlug) || a.requiresSlug === "case-engine" && hasCaseEngine
+        );
+        const cols = filteredActions.length >= 4 ? "grid-cols-4" : filteredActions.length === 3 ? "grid-cols-3" : "grid-cols-2";
+        return (
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{ visible: { transition: { staggerChildren: 0.04, delayChildren: 0.2 } } }}
+            className={`grid ${cols} gap-2.5`}
           >
-            <action.icon className={`w-4 h-4 ${action.color}`} />
-            <span className="text-sm font-semibold text-foreground whitespace-nowrap">{action.label}</span>
-          </motion.button>
-        ))}
-      </motion.div>
+            {filteredActions.map((action, i) => (
+              <motion.button
+                key={action.label}
+                custom={i}
+                variants={fadeUp}
+                onClick={() => {
+                  if (action.label === "Buscar") {
+                    setCommandBarFilter("all");
+                    setCommandBarOpen(true);
+                  } else {
+                    goTo(action.route);
+                  }
+                }}
+                className={`flex items-center justify-center gap-2.5 rounded-xl border ${action.border} ${action.bg} px-4 py-3.5 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
+              >
+                <action.icon className={`w-4 h-4 ${action.color}`} />
+                <span className="text-sm font-semibold text-foreground whitespace-nowrap">{action.label}</span>
+              </motion.button>
+            ))}
+          </motion.div>
+        );
+      })()}
 
       {/* ═══ TOOL CATEGORIES — 4-column horizontal grid ═══ */}
       {categoriesWithApps.length > 0 && (
