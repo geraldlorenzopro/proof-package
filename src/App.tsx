@@ -38,6 +38,7 @@ import VisaEvalPublic from "./pages/VisaEvalPublic";
 import CaseTrackPublic from "./pages/CaseTrackPublic";
 import InterviewSimulatorPage from "./pages/InterviewSimulatorPage";
 import B1B2AdminLite from "./pages/B1B2AdminLite";
+import B1B2Dashboard from "./pages/B1B2Dashboard";
 import ClientPortalRouter from "./pages/ClientPortalRouter";
 
 const queryClient = new QueryClient();
