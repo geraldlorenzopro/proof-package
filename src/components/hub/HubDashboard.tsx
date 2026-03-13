@@ -78,6 +78,8 @@ const ROUTE_MAP: Record<string, string> = {
   "vawa-screener": "/dashboard/vawa-screener",
   "vawa-checklist": "/dashboard/vawa-checklist",
   "smart-forms": "/dashboard/smart-forms",
+  "visa-evaluator": "/dashboard/visa-evaluator",
+  "interview-sim": "/dashboard/interview-sim",
 };
 
 // ═══ TOOL CATEGORIES ═══
