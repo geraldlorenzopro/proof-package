@@ -143,10 +143,11 @@ const fadeUp = {
   }),
 };
 
-const PRIMARY_ACTIONS = [
-  { label: "Buscar", icon: Search, route: "", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
-  { label: "Nuevo Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-  { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
+const ALL_PRIMARY_ACTIONS = [
+  { label: "Buscar", icon: Search, route: "", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20", requiresSlug: null },
+  { label: "Nuevo Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", requiresSlug: "case-engine" },
+  { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", requiresSlug: "uscis-analyzer" },
+  { label: "Evaluador Visa", icon: Shield, route: "/dashboard/visa-evaluator", color: "text-accent", bg: "bg-accent/10", border: "border-accent/20", requiresSlug: "visa-evaluator" },
 ];
 
 export default function HubDashboard({ accountName, staffName, plan, apps, userRole, canAccessApp, stats }: Props) {
@@ -168,6 +169,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
   const accessibleSlugs = new Set(
     apps.filter(a => a.slug !== "case-engine" && (canAccessApp ? canAccessApp(a.slug) : true)).map(a => a.slug)
   );
+
+  const hasCaseEngine = apps.some(a => a.slug === "case-engine") && (canAccessApp ? canAccessApp("case-engine") : true);
+  const hasSmartForms = apps.some(a => a.slug === "smart-forms") && (canAccessApp ? canAccessApp("smart-forms") : true);
 
   const appsBySlug = Object.fromEntries(apps.map(a => [a.slug, a]));
 
@@ -223,83 +227,95 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
       {/* ═══ KPI CARDS ═══ */}
       <HubAnalyticsCards />
 
-      {/* ═══ HERO CARDS — Case Engine + NER Smart Forms side by side ═══ */}
+      {/* ═══ HERO CARDS — Conditional based on app access ═══ */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.12, duration: 0.4 }}
-        className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
+        className={`grid grid-cols-1 ${hasCaseEngine && hasSmartForms ? "sm:grid-cols-2" : ""} gap-2.5`}
       >
-        {/* Case Engine */}
-        <button
-          onClick={() => goTo("/dashboard/workspace-demo")}
-          className="w-full group relative overflow-hidden rounded-xl border border-jarvis/20 bg-gradient-to-r from-jarvis/[0.06] via-card/80 to-accent/[0.04] p-5 text-left transition-all hover:border-jarvis/30 hover:shadow-[0_2px_30px_hsl(195_100%_50%/0.08)]"
-        >
-          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-jarvis/50 to-accent/30 opacity-50 group-hover:opacity-100 transition-opacity" />
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Briefcase className="w-6 h-6 text-jarvis" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-lg font-bold text-foreground">Case Engine</h3>
-                <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[7px] font-display uppercase tracking-wider">Master</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground leading-snug truncate">Portfolio, Casos y Flujos de Trabajo</p>
-            </div>
-            <ArrowUpRight className="w-5 h-5 text-jarvis/40 group-hover:text-jarvis group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-          </div>
-        </button>
-
-        {/* NER Smart Forms */}
-        <button
-          onClick={() => goTo("/dashboard/smart-forms")}
-          className="w-full group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] via-card/80 to-cyan-400/[0.04] p-5 text-left transition-all hover:border-cyan-500/30 hover:shadow-[0_2px_30px_hsl(185_100%_50%/0.08)]"
-        >
-          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-cyan-500/50 to-cyan-400/30 opacity-50 group-hover:opacity-100 transition-opacity" />
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <FileText className="w-6 h-6 text-cyan-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-lg font-bold text-foreground">NER Smart Forms</h3>
-                <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[7px] font-display uppercase tracking-wider">Forms</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground leading-snug truncate">Formularios USCIS · Autocompletado desde perfil</p>
-            </div>
-            <ArrowUpRight className="w-5 h-5 text-cyan-400/40 group-hover:text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-          </div>
-        </button>
-      </motion.div>
-
-      {/* ═══ QUICK ACTIONS — 3-column grid ═══ */}
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={{ visible: { transition: { staggerChildren: 0.04, delayChildren: 0.2 } } }}
-        className="grid grid-cols-3 gap-2.5"
-      >
-        {PRIMARY_ACTIONS.map((action, i) => (
-          <motion.button
-            key={action.label}
-            custom={i}
-            variants={fadeUp}
-            onClick={() => {
-              if (action.label === "Buscar") {
-                setCommandBarFilter("all");
-                setCommandBarOpen(true);
-              } else {
-                goTo(action.route);
-              }
-            }}
-            className={`flex items-center justify-center gap-2.5 rounded-xl border ${action.border} ${action.bg} px-4 py-3.5 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
+        {/* Case Engine — always show if accessible */}
+        {hasCaseEngine && (
+          <button
+            onClick={() => goTo("/dashboard/workspace-demo")}
+            className="w-full group relative overflow-hidden rounded-xl border border-jarvis/20 bg-gradient-to-r from-jarvis/[0.06] via-card/80 to-accent/[0.04] p-5 text-left transition-all hover:border-jarvis/30 hover:shadow-[0_2px_30px_hsl(195_100%_50%/0.08)]"
           >
-            <action.icon className={`w-4 h-4 ${action.color}`} />
-            <span className="text-sm font-semibold text-foreground whitespace-nowrap">{action.label}</span>
-          </motion.button>
-        ))}
+            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-jarvis/50 to-accent/30 opacity-50 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Briefcase className="w-6 h-6 text-jarvis" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-bold text-foreground">Case Engine</h3>
+                  <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[7px] font-display uppercase tracking-wider">Master</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground leading-snug truncate">Portfolio, Casos y Flujos de Trabajo</p>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-jarvis/40 group-hover:text-jarvis group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+            </div>
+          </button>
+        )}
+
+        {/* NER Smart Forms — only show if accessible */}
+        {hasSmartForms && (
+          <button
+            onClick={() => goTo("/dashboard/smart-forms")}
+            className="w-full group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] via-card/80 to-cyan-400/[0.04] p-5 text-left transition-all hover:border-cyan-500/30 hover:shadow-[0_2px_30px_hsl(185_100%_50%/0.08)]"
+          >
+            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-cyan-500/50 to-cyan-400/30 opacity-50 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <FileText className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-bold text-foreground">NER Smart Forms</h3>
+                  <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[7px] font-display uppercase tracking-wider">Forms</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground leading-snug truncate">Formularios USCIS · Autocompletado desde perfil</p>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-cyan-400/40 group-hover:text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+            </div>
+          </button>
+        )}
       </motion.div>
+
+      {/* ═══ QUICK ACTIONS — dynamic grid ═══ */}
+      {(() => {
+        const filteredActions = ALL_PRIMARY_ACTIONS.filter(a =>
+          a.requiresSlug === null || accessibleSlugs.has(a.requiresSlug) || a.requiresSlug === "case-engine" && hasCaseEngine
+        );
+        const cols = filteredActions.length >= 4 ? "grid-cols-4" : filteredActions.length === 3 ? "grid-cols-3" : "grid-cols-2";
+        return (
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{ visible: { transition: { staggerChildren: 0.04, delayChildren: 0.2 } } }}
+            className={`grid ${cols} gap-2.5`}
+          >
+            {filteredActions.map((action, i) => (
+              <motion.button
+                key={action.label}
+                custom={i}
+                variants={fadeUp}
+                onClick={() => {
+                  if (action.label === "Buscar") {
+                    setCommandBarFilter("all");
+                    setCommandBarOpen(true);
+                  } else {
+                    goTo(action.route);
+                  }
+                }}
+                className={`flex items-center justify-center gap-2.5 rounded-xl border ${action.border} ${action.bg} px-4 py-3.5 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
+              >
+                <action.icon className={`w-4 h-4 ${action.color}`} />
+                <span className="text-sm font-semibold text-foreground whitespace-nowrap">{action.label}</span>
+              </motion.button>
+            ))}
+          </motion.div>
+        );
+      })()}
 
       {/* ═══ TOOL CATEGORIES — 4-column horizontal grid ═══ */}
       {categoriesWithApps.length > 0 && (
