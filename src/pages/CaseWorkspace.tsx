@@ -858,7 +858,7 @@ export default function CaseWorkspace() {
 
         {/* ═══ ACTIVITY VIEW ═══ */}
         {activeView === "activity" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="relative pl-8">
+          <div className="relative pl-8">
             <div className="absolute left-[13px] top-3 bottom-3 w-px bg-gradient-to-b from-jarvis/30 via-border to-transparent" />
             {activityLog.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">Sin actividad registrada</div>
