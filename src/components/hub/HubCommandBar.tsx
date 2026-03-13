@@ -136,6 +136,31 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
     }
   }, [open, defaultFilter]);
 
+  // Prefetch defaults on mount so first open is instant
+  useEffect(() => {
+    if (!cachedDefaults.current) {
+      supabase
+        .from("client_profiles")
+        .select("id, first_name, last_name, email")
+        .order("updated_at", { ascending: false })
+        .limit(5)
+        .then(({ data }) => {
+          const clientResults: SearchResult[] = (data || []).map(c => {
+            const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre";
+            return {
+              id: `c-${c.id}`,
+              type: "client" as ResultType,
+              title: name,
+              subtitle: c.email || undefined,
+              route: `/dashboard/workspace-demo?client=${c.id}&name=${encodeURIComponent(name)}`,
+              meta: { email: c.email || undefined },
+            };
+          });
+          cachedDefaults.current = [...clientResults, ...TOOLS.slice(0, 4)];
+        });
+    }
+  }, []);
+
   // Search logic
   const performSearch = useCallback(async (q: string, f: FilterTab) => {
     const sanitized = sanitizeSearchInput(q).toLowerCase();
