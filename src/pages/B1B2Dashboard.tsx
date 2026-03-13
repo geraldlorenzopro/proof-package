@@ -484,10 +484,30 @@ export default function B1B2Dashboard() {
                           </DropdownMenu>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-lg leading-none">{STAGE_ICONS[c.pipeline_stage] || "📄"}</span>
-                          <span className="text-[11px] font-medium text-muted-foreground">
-                            {STAGE_LABELS[c.pipeline_stage] || c.pipeline_stage}
-                          </span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="flex items-center gap-1.5 hover:bg-muted/50 rounded-md px-1.5 py-0.5 transition-colors cursor-pointer">
+                                <span className="text-lg leading-none">{STAGE_ICONS[c.pipeline_stage] || "📄"}</span>
+                                <span className="text-[11px] font-medium text-muted-foreground">
+                                  {STAGE_LABELS[c.pipeline_stage] || c.pipeline_stage}
+                                </span>
+                                <span className="text-[9px] text-muted-foreground/40">▾</span>
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="min-w-[180px]">
+                              {ALL_STAGES.map((stage) => (
+                                <DropdownMenuItem
+                                  key={stage}
+                                  onClick={() => updateCaseStage(c, stage)}
+                                  className={`text-xs gap-2 ${c.pipeline_stage === stage ? "bg-primary/10 font-semibold" : ""}`}
+                                >
+                                  <span>{STAGE_ICONS[stage]}</span>
+                                  {STAGE_LABELS[stage]}
+                                  {stage === "cita-cas" && <span className="text-[9px] text-muted-foreground ml-auto">skip?</span>}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <span className="text-[10px] text-muted-foreground/60">•</span>
                           <span className="text-[10px] text-muted-foreground/60 flex items-center gap-0.5">
                             <Clock className="w-3 h-3" />
