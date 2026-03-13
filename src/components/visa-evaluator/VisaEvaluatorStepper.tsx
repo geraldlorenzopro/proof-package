@@ -331,7 +331,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                           type="button"
                           onClick={() => handleOptionSelect(currentQ.fieldKey, val)}
                           className={cn(
-                            "flex-1 py-4 rounded-xl text-center font-semibold text-sm border transition-all duration-200",
+                            "flex-1 py-3 rounded-xl text-center font-semibold text-sm border transition-all duration-200",
                             isSelected
                               ? "bg-[hsl(var(--jarvis)/0.08)] border-[hsl(var(--jarvis)/0.3)] text-foreground shadow-[0_0_20px_-5px_hsl(195_100%_50%/0.15)]"
                               : "bg-[hsl(220,25%,10%)] border-border/20 text-muted-foreground hover:border-border/40 hover:text-foreground/80"
