@@ -178,7 +178,8 @@ export default function B1B2Dashboard() {
   const filtered = cases.filter(c => {
     if (search && !c.client_name.toLowerCase().includes(search.toLowerCase())) return false;
     if (stageFilter && c.pipeline_stage !== stageFilter) return false;
-    if (statusFilter && c.status !== statusFilter) return false;
+    if (statusFilter === "in_progress" && c.status !== "in_progress" && c.status !== "active") return false;
+    if (statusFilter && statusFilter !== "in_progress" && c.status !== statusFilter) return false;
     return true;
   });
 
