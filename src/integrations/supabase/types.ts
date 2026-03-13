@@ -1720,6 +1720,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_firm_metrics: { Args: { _days?: number }; Returns: Json }
       get_form_by_token: {
         Args: { _token: string }
         Returns: {
