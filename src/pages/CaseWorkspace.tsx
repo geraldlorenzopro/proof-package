@@ -838,7 +838,7 @@ export default function CaseWorkspace() {
                 <CaseQuestionnaire caseId={selectedCaseForQ} accountId={userAccountId} />
               </div>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* ═══ PROFILE VIEW ═══ */}
