@@ -143,11 +143,10 @@ const fadeUp = {
   }),
 };
 
-const ALL_PRIMARY_ACTIONS = [
-  { label: "Buscar", icon: Search, route: "", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20", requiresSlug: null },
-  { label: "Nuevo Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", requiresSlug: "case-engine" },
-  { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", requiresSlug: "uscis-analyzer" },
-  { label: "Evaluador Visa", icon: Shield, route: "/dashboard/visa-evaluator", color: "text-accent", bg: "bg-accent/10", border: "border-accent/20", requiresSlug: "visa-evaluator" },
+const PRIMARY_ACTIONS = [
+  { label: "Buscar", icon: Search, route: "", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
+  { label: "Nuevo Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
 ];
 
 export default function HubDashboard({ accountName, staffName, plan, apps, userRole, canAccessApp, stats }: Props) {
@@ -169,9 +168,6 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
   const accessibleSlugs = new Set(
     apps.filter(a => a.slug !== "case-engine" && (canAccessApp ? canAccessApp(a.slug) : true)).map(a => a.slug)
   );
-
-  const hasCaseEngine = apps.some(a => a.slug === "case-engine") && (canAccessApp ? canAccessApp("case-engine") : true);
-  const hasSmartForms = apps.some(a => a.slug === "smart-forms") && (canAccessApp ? canAccessApp("smart-forms") : true);
 
   const appsBySlug = Object.fromEntries(apps.map(a => [a.slug, a]));
 
@@ -227,277 +223,205 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
       {/* ═══ KPI CARDS ═══ */}
       <HubAnalyticsCards />
 
-      {/* ═══ HERO CARDS — Conditional based on app access ═══ */}
+      {/* ═══ HERO CARDS — Case Engine + NER Smart Forms side by side ═══ */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.12, duration: 0.4 }}
-        className={`grid grid-cols-1 ${hasCaseEngine && hasSmartForms ? "sm:grid-cols-2" : ""} gap-2.5`}
+        className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
       >
-        {/* Case Engine — always show if accessible */}
-        {hasCaseEngine && (
-          <button
-            onClick={() => goTo("/dashboard/workspace-demo")}
-            className="w-full group relative overflow-hidden rounded-xl border border-jarvis/20 bg-gradient-to-r from-jarvis/[0.06] via-card/80 to-accent/[0.04] p-5 text-left transition-all hover:border-jarvis/30 hover:shadow-[0_2px_30px_hsl(195_100%_50%/0.08)]"
-          >
-            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-jarvis/50 to-accent/30 opacity-50 group-hover:opacity-100 transition-opacity" />
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <Briefcase className="w-6 h-6 text-jarvis" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-bold text-foreground">Case Engine</h3>
-                  <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[7px] font-display uppercase tracking-wider">Master</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground leading-snug truncate">Portfolio, Casos y Flujos de Trabajo</p>
-              </div>
-              <ArrowUpRight className="w-5 h-5 text-jarvis/40 group-hover:text-jarvis group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+        {/* Case Engine */}
+        <button
+          onClick={() => goTo("/dashboard/workspace-demo")}
+          className="w-full group relative overflow-hidden rounded-xl border border-jarvis/20 bg-gradient-to-r from-jarvis/[0.06] via-card/80 to-accent/[0.04] p-5 text-left transition-all hover:border-jarvis/30 hover:shadow-[0_2px_30px_hsl(195_100%_50%/0.08)]"
+        >
+          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-jarvis/50 to-accent/30 opacity-50 group-hover:opacity-100 transition-opacity" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Briefcase className="w-6 h-6 text-jarvis" />
             </div>
-          </button>
-        )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-lg font-bold text-foreground">Case Engine</h3>
+                <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[7px] font-display uppercase tracking-wider">Master</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground leading-snug truncate">Portfolio, Casos y Flujos de Trabajo</p>
+            </div>
+            <ArrowUpRight className="w-5 h-5 text-jarvis/40 group-hover:text-jarvis group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+          </div>
+        </button>
 
-        {/* NER Smart Forms — only show if accessible */}
-        {hasSmartForms && (
-          <button
-            onClick={() => goTo("/dashboard/smart-forms")}
-            className="w-full group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] via-card/80 to-cyan-400/[0.04] p-5 text-left transition-all hover:border-cyan-500/30 hover:shadow-[0_2px_30px_hsl(185_100%_50%/0.08)]"
-          >
-            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-cyan-500/50 to-cyan-400/30 opacity-50 group-hover:opacity-100 transition-opacity" />
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <FileText className="w-6 h-6 text-cyan-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-bold text-foreground">NER Smart Forms</h3>
-                  <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[7px] font-display uppercase tracking-wider">Forms</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground leading-snug truncate">Formularios USCIS · Autocompletado desde perfil</p>
-              </div>
-              <ArrowUpRight className="w-5 h-5 text-cyan-400/40 group-hover:text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+        {/* NER Smart Forms */}
+        <button
+          onClick={() => goTo("/dashboard/smart-forms")}
+          className="w-full group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] via-card/80 to-cyan-400/[0.04] p-5 text-left transition-all hover:border-cyan-500/30 hover:shadow-[0_2px_30px_hsl(185_100%_50%/0.08)]"
+        >
+          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-cyan-500/50 to-cyan-400/30 opacity-50 group-hover:opacity-100 transition-opacity" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <FileText className="w-6 h-6 text-cyan-400" />
             </div>
-          </button>
-        )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-lg font-bold text-foreground">NER Smart Forms</h3>
+                <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[7px] font-display uppercase tracking-wider">Forms</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground leading-snug truncate">Formularios USCIS · Autocompletado desde perfil</p>
+            </div>
+            <ArrowUpRight className="w-5 h-5 text-cyan-400/40 group-hover:text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+          </div>
+        </button>
       </motion.div>
 
-      {/* ═══ QUICK ACTIONS — dynamic grid ═══ */}
-      {(() => {
-        const filteredActions = ALL_PRIMARY_ACTIONS.filter(a =>
-          a.requiresSlug === null || accessibleSlugs.has(a.requiresSlug) || a.requiresSlug === "case-engine" && hasCaseEngine
-        );
-        const cols = filteredActions.length >= 4 ? "grid-cols-4" : filteredActions.length === 3 ? "grid-cols-3" : "grid-cols-2";
-        return (
+      {/* ═══ QUICK ACTIONS — 3-column grid ═══ */}
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={{ visible: { transition: { staggerChildren: 0.04, delayChildren: 0.2 } } }}
+        className="grid grid-cols-3 gap-2.5"
+      >
+        {PRIMARY_ACTIONS.map((action, i) => (
+          <motion.button
+            key={action.label}
+            custom={i}
+            variants={fadeUp}
+            onClick={() => {
+              if (action.label === "Buscar") {
+                setCommandBarFilter("all");
+                setCommandBarOpen(true);
+              } else {
+                goTo(action.route);
+              }
+            }}
+            className={`flex items-center justify-center gap-2.5 rounded-xl border ${action.border} ${action.bg} px-4 py-3.5 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
+          >
+            <action.icon className={`w-4 h-4 ${action.color}`} />
+            <span className="text-sm font-semibold text-foreground whitespace-nowrap">{action.label}</span>
+          </motion.button>
+        ))}
+      </motion.div>
+
+      {/* ═══ TOOL CATEGORIES — 4-column horizontal grid ═══ */}
+      {categoriesWithApps.length > 0 && (
+        <section className="pt-2">
+          <div className="flex items-center gap-2 mb-4">
+            <LayoutGrid className="w-4 h-4 text-muted-foreground/40" strokeWidth={2.5} />
+            <h3 className="text-[11px] font-display font-bold tracking-[0.25em] uppercase text-muted-foreground/60">
+              Herramientas
+            </h3>
+            <div className="h-px flex-1 bg-border/15" />
+          </div>
+
           <motion.div
             initial="hidden"
             animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.04, delayChildren: 0.2 } } }}
-            className={`grid ${cols} gap-2.5`}
+            variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.2 } } }}
+            className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
           >
-            {filteredActions.map((action, i) => (
-              <motion.button
-                key={action.label}
-                custom={i}
-                variants={fadeUp}
-                onClick={() => {
-                  if (action.label === "Buscar") {
-                    setCommandBarFilter("all");
-                    setCommandBarOpen(true);
-                  } else {
-                    goTo(action.route);
-                  }
-                }}
-                className={`flex items-center justify-center gap-2.5 rounded-xl border ${action.border} ${action.bg} px-4 py-3.5 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
-              >
-                <action.icon className={`w-4 h-4 ${action.color}`} />
-                <span className="text-sm font-semibold text-foreground whitespace-nowrap">{action.label}</span>
-              </motion.button>
-            ))}
-          </motion.div>
-        );
-      })()}
+            {categoriesWithApps.map((cat, i) => {
+              const isExpanded = expandedCategory === cat.key;
+              const CatIcon = cat.icon;
 
-      {/* ═══ STANDALONE TOOLS — shown when few tools (e.g. B1/B2 product) ═══ */}
-      {(() => {
-        const allAccessibleTools = apps.filter(a => a.slug !== "case-engine" && a.slug !== "smart-forms" && (canAccessApp ? canAccessApp(a.slug) : true));
-        const isCompactMode = allAccessibleTools.length <= 4;
-
-        if (isCompactMode && allAccessibleTools.length > 0) {
-          return (
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.2 } } }}
-              className={`grid grid-cols-1 ${allAccessibleTools.length >= 2 ? "sm:grid-cols-2" : ""} gap-2.5`}
-            >
-              {allAccessibleTools.map((app, i) => {
-                const ToolIcon = ICON_MAP[app.slug] || Shield;
-                const route = ROUTE_MAP[app.slug];
-                const colorMap: Record<string, { border: string; bg: string; text: string; glow: string }> = {
-                  "visa-evaluator": { border: "border-accent/20", bg: "from-accent/[0.06] via-card/80 to-accent/[0.02]", text: "text-accent", glow: "hsl(var(--accent)/0.08)" },
-                  "interview-sim": { border: "border-indigo-500/20", bg: "from-indigo-500/[0.06] via-card/80 to-indigo-400/[0.02]", text: "text-indigo-400", glow: "rgba(99,102,241,0.08)" },
-                  "vawa-screener": { border: "border-rose-500/20", bg: "from-rose-500/[0.06] via-card/80 to-rose-400/[0.02]", text: "text-rose-400", glow: "rgba(244,63,94,0.08)" },
-                  "vawa-checklist": { border: "border-rose-500/20", bg: "from-rose-500/[0.06] via-card/80 to-rose-400/[0.02]", text: "text-rose-400", glow: "rgba(244,63,94,0.08)" },
-                };
-                const colors = colorMap[app.slug] || { border: "border-muted-foreground/20", bg: "from-muted/[0.06] via-card/80 to-muted/[0.02]", text: "text-muted-foreground", glow: "rgba(128,128,128,0.08)" };
-
-                return (
-                  <motion.button
-                    key={app.id}
-                    custom={i}
-                    variants={fadeUp}
-                    onClick={() => { if (route) goTo(route); }}
-                    disabled={!route}
-                    className={`w-full group relative overflow-hidden rounded-xl border ${colors.border} bg-gradient-to-r ${colors.bg} p-5 text-left transition-all hover:shadow-[0_2px_30px_${colors.glow}] disabled:opacity-40`}
+              return (
+                <motion.div
+                  key={cat.key}
+                  custom={i}
+                  variants={fadeUp}
+                  className={`rounded-2xl border ${cat.color.border} bg-white/[0.03] backdrop-blur-xl transition-all duration-300 overflow-hidden ${isExpanded ? "ring-1 ring-white/10 border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" : "hover:border-white/12 hover:bg-white/[0.05] hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)]"}`}
+                >
+                  <button
+                    onClick={() => setExpandedCategory(isExpanded ? null : cat.key)}
+                    className="w-full flex items-center gap-4 p-5 text-left group"
                   >
-                    <div className={`absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-current to-transparent opacity-20 ${colors.text} group-hover:opacity-50 transition-opacity`} />
-                    <div className="flex items-center gap-4">
-                      <div className={`w-11 h-11 rounded-xl bg-current/10 border ${colors.border} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
-                        <ToolIcon className={`w-5 h-5 ${colors.text}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-bold text-foreground">{DISPLAY_NAMES[app.slug] || app.name}</h3>
-                        <p className="text-[11px] text-muted-foreground/60 leading-snug mt-0.5">{app.description || ""}</p>
-                      </div>
-                      <ArrowUpRight className={`w-4 h-4 ${colors.text} opacity-30 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0`} />
+                    <div className={`w-11 h-11 rounded-xl ${cat.color.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                      <CatIcon className={`w-5 h-5 ${cat.color.text}`} strokeWidth={2.5} />
                     </div>
-                  </motion.button>
-                );
-              })}
-            </motion.div>
-          );
-        }
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2.5">
+                        <h4 className="text-sm font-bold text-foreground tracking-wide">{cat.label}</h4>
+                        <span className={`${cat.color.text} text-[9px] font-mono font-bold opacity-60`}>
+                          {cat.tools.length}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground/50 leading-snug mt-0.5">{cat.description}</p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground/30 transition-transform duration-300 ${isExpanded ? "rotate-180 text-muted-foreground/60" : ""}`} strokeWidth={2.5} />
+                  </button>
 
-        // Full category grid for accounts with many tools
-        if (categoriesWithApps.length > 0 && !isCompactMode) {
-          return (
-            <section className="pt-2">
-              <div className="flex items-center gap-2 mb-4">
-                <LayoutGrid className="w-4 h-4 text-muted-foreground/40" strokeWidth={2.5} />
-                <h3 className="text-[11px] font-display font-bold tracking-[0.25em] uppercase text-muted-foreground/60">
-                  Herramientas
-                </h3>
-                <div className="h-px flex-1 bg-border/15" />
-              </div>
-
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.2 } } }}
-                className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
-              >
-                {categoriesWithApps.map((cat, i) => {
-                  const isExpanded = expandedCategory === cat.key;
-                  const CatIcon = cat.icon;
-
-                  return (
+                  {isExpanded && (
                     <motion.div
-                      key={cat.key}
-                      custom={i}
-                      variants={fadeUp}
-                      className={`rounded-2xl border ${cat.color.border} bg-white/[0.03] backdrop-blur-xl transition-all duration-300 overflow-hidden ${isExpanded ? "ring-1 ring-white/10 border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" : "hover:border-white/12 hover:bg-white/[0.05] hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)]"}`}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="border-t border-foreground/5 px-5 pb-4 pt-3 space-y-1"
                     >
-                      <button
-                        onClick={() => setExpandedCategory(isExpanded ? null : cat.key)}
-                        className="w-full flex items-center gap-4 p-5 text-left group"
-                      >
-                        <div className={`w-11 h-11 rounded-xl ${cat.color.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                          <CatIcon className={`w-5 h-5 ${cat.color.text}`} strokeWidth={2.5} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2.5">
-                            <h4 className="text-sm font-bold text-foreground tracking-wide">{cat.label}</h4>
-                            <span className={`${cat.color.text} text-[9px] font-mono font-bold opacity-60`}>
-                              {cat.tools.length}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-muted-foreground/50 leading-snug mt-0.5">{cat.description}</p>
-                        </div>
-                        <ChevronDown className={`w-4 h-4 text-muted-foreground/30 transition-transform duration-300 ${isExpanded ? "rotate-180 text-muted-foreground/60" : ""}`} strokeWidth={2.5} />
-                      </button>
-
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.25 }}
-                          className="border-t border-foreground/5 px-5 pb-4 pt-3 space-y-1"
-                        >
-                          {cat.tools.map(app => {
-                            const SubIcon = ICON_MAP[app.slug] || Shield;
-                            const route = ROUTE_MAP[app.slug];
-                            return (
-                              <button
-                                key={app.id}
-                                onClick={() => { if (route) goTo(route); }}
-                                disabled={!route}
-                                className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-foreground/[0.06] transition-all duration-200 group disabled:opacity-30"
-                              >
-                                <SubIcon className={`w-4 h-4 ${cat.color.text}`} strokeWidth={2.5} />
-                                <span className="text-[13px] font-semibold text-foreground/90 flex-1 text-left tracking-wide">{DISPLAY_NAMES[app.slug] || app.name}</span>
-                                <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/15 group-hover:text-muted-foreground/50 transition-colors" strokeWidth={2.5} />
-                              </button>
-                            );
-                          })}
-                        </motion.div>
-                      )}
+                      {cat.tools.map(app => {
+                        const SubIcon = ICON_MAP[app.slug] || Shield;
+                        const route = ROUTE_MAP[app.slug];
+                        return (
+                          <button
+                            key={app.id}
+                            onClick={() => { if (route) goTo(route); }}
+                            disabled={!route}
+                            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-foreground/[0.06] transition-all duration-200 group disabled:opacity-30"
+                          >
+                            <SubIcon className={`w-4 h-4 ${cat.color.text}`} strokeWidth={2.5} />
+                            <span className="text-[13px] font-semibold text-foreground/90 flex-1 text-left tracking-wide">{DISPLAY_NAMES[app.slug] || app.name}</span>
+                            <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/15 group-hover:text-muted-foreground/50 transition-colors" strokeWidth={2.5} />
+                          </button>
+                        );
+                      })}
                     </motion.div>
-                  );
-                })}
-              </motion.div>
-            </section>
-          );
-        }
-
-        return null;
-      })()}
-
-      {/* ═══ INTELLIGENCE CENTER LINK — only for accounts with many tools ═══ */}
-      {accessibleSlugs.size > 4 && (
-        <motion.button
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          onClick={() => goTo("/hub/intelligence")}
-          className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-accent/15 bg-accent/[0.04] px-4 py-3 text-sm font-semibold text-accent hover:bg-accent/[0.08] hover:border-accent/25 transition-all group"
-        >
-          <BarChart3 className="w-4 h-4" />
-          Ver Reportes de Eficiencia
-          <ArrowUpRight className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
-        </motion.button>
+                  )}
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </section>
       )}
+
+      {/* ═══ INTELLIGENCE CENTER LINK ═══ */}
+      <motion.button
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        onClick={() => goTo("/hub/intelligence")}
+        className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-accent/15 bg-accent/[0.04] px-4 py-3 text-sm font-semibold text-accent hover:bg-accent/[0.08] hover:border-accent/25 transition-all group"
+      >
+        <BarChart3 className="w-4 h-4" />
+        Ver Reportes de Eficiencia
+        <ArrowUpRight className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+      </motion.button>
 
       {/* ═══ SLA TRACKER — Deadline Countdowns ═══ */}
       <SlaTracker />
 
-      {/* ═══ AUDIT LOG & PERMISSIONS — only for full accounts ═══ */}
-      {accessibleSlugs.size > 4 && (
-        <section>
-          <button
-            onClick={() => setShowAudit(!showAudit)}
-            className="flex items-center gap-2 mb-3 w-full group"
+      {/* ═══ AUDIT LOG & PERMISSIONS — Compliance Section ═══ */}
+      <section>
+        <button
+          onClick={() => setShowAudit(!showAudit)}
+          className="flex items-center gap-2 mb-3 w-full group"
+        >
+          <Shield className="w-3.5 h-3.5 text-muted-foreground/30" />
+          <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/70">
+            Seguridad & Compliance
+          </h3>
+          <div className="h-px flex-1 bg-border/20" />
+          <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground/30 transition-transform ${showAudit ? "rotate-180" : ""}`} />
+        </button>
+        {showAudit && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
           >
-            <Shield className="w-3.5 h-3.5 text-muted-foreground/30" />
-            <h3 className="text-[10px] font-display font-semibold tracking-[0.2em] uppercase text-muted-foreground/70">
-              Seguridad & Compliance
-            </h3>
-            <div className="h-px flex-1 bg-border/20" />
-            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground/30 transition-transform ${showAudit ? "rotate-180" : ""}`} />
-          </button>
-          {showAudit && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
-            >
-              <HubAuditLog />
-              {isAdmin && <HubToolPermissions />}
-            </motion.div>
-          )}
-        </section>
-      )}
+            <HubAuditLog />
+            {isAdmin && <HubToolPermissions />}
+          </motion.div>
+        )}
+      </section>
 
       {/* Footer */}
       <motion.p

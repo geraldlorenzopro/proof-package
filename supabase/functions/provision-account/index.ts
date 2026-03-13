@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { account_name, email, phone, plan, external_crm_id, product } = body;
+    const { account_name, email, phone, plan, external_crm_id } = body;
 
     if (!account_name || !email) {
       return new Response(
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
       role: "owner",
     });
 
-    // 5. Grant app access based on plan and product
+    // 5. Grant app access based on plan with seat limits
     const { data: apps } = await supabaseAdmin
       .from("hub_apps")
       .select("id, slug")
@@ -167,15 +167,7 @@ Deno.serve(async (req) => {
 
     if (apps && apps.length > 0) {
       const allSlugs = apps.map((a) => a.slug);
-
-      // Product-specific app bundles
-      const PRODUCT_APPS: Record<string, string[]> = {
-        b1b2: ["case-engine", "visa-evaluator", "interview-sim"],
-        vawa: ["case-engine", "vawa-screener", "vawa-checklist"],
-        full: allSlugs,
-      };
-
-      // Plan-based app access (fallback if no product specified)
+      // Essential: evidence + cspa. Professional: all. Elite/Enterprise: all.
       const planApps: Record<string, string[]> = {
         essential: ["evidence", "cspa"],
         professional: allSlugs,
@@ -191,11 +183,7 @@ Deno.serve(async (req) => {
         enterprise: 0,
       };
 
-      // If product is specified, use product bundle; otherwise use plan-based
-      const allowedSlugs = product && PRODUCT_APPS[product]
-        ? PRODUCT_APPS[product]
-        : planApps[selectedPlan] || ["evidence", "cspa"];
-      
+      const allowedSlugs = planApps[selectedPlan] || ["evidence", "cspa"];
       const seats = defaultSeats[selectedPlan] ?? 1;
       const grantApps = apps.filter((a) => allowedSlugs.includes(a.slug));
 
