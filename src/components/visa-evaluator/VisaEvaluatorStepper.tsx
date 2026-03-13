@@ -218,8 +218,8 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
         {/* ─── Question Area ─── */}
         <div className="bg-[hsl(220,25%,7%)] flex-1 min-h-0 flex flex-col">
           {/* Question counter */}
-          <div className="px-8 pt-5 pb-2 flex items-center justify-between">
-            <span className="text-[10px] font-mono font-semibold text-muted-foreground/70 tracking-wider">
+          <div className="px-4 sm:px-8 pt-3 sm:pt-5 pb-1 sm:pb-2 flex items-center justify-between">
+            <span className="text-[9px] sm:text-[10px] font-mono font-semibold text-muted-foreground/70 tracking-wider">
               {String(qIndex + 1).padStart(2, '0')} / {String(totalQuestions).padStart(2, '0')}
             </span>
             {/* Audio controls */}
@@ -252,7 +252,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </div>
 
           {/* Animated question */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-8 pb-4">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 pb-3 sm:pb-4">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={currentQ.id}
@@ -261,10 +261,10 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: direction * -40 }}
                 transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 {/* Question text */}
-                <h2 className="text-xl font-semibold text-foreground leading-snug">
+                <h2 className="text-lg sm:text-xl font-semibold text-foreground leading-snug">
                   {currentQ.textEs}
                 </h2>
 
