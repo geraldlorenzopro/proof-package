@@ -423,6 +423,15 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     ]},
   { id: 'q_registered_biz', step: 2, textEs: '¿Tiene negocio registrado?', textEn: 'Do you have a registered business?', fieldKey: 'hasRegisteredBusiness', type: 'boolean',
     condition: (a) => a.employmentStatus === 'self_employed' },
+  { id: 'q_job_tenure', step: 2, textEs: '¿Cuánto tiempo tiene en su trabajo actual?', textEn: 'How long have you been at your current job?', fieldKey: 'jobTenure', type: 'select',
+    consularQuestion: 'How long have you been working there?',
+    condition: (a) => ['employed', 'self_employed', 'part_time'].includes(a.employmentStatus || ''),
+    options: [
+      { value: 'less_1yr', labelEs: 'Menos de 1 año', labelEn: 'Less than 1 year' },
+      { value: '1_3yr', labelEs: '1 – 3 años', labelEn: '1 – 3 years' },
+      { value: '3_5yr', labelEs: '3 – 5 años', labelEn: '3 – 5 years' },
+      { value: 'over_5yr', labelEs: 'Más de 5 años', labelEn: 'Over 5 years' },
+    ]},
   { id: 'q_income', step: 2, textEs: '¿Nivel de ingresos mensuales?', textEn: 'Monthly income level?', fieldKey: 'monthlyIncome', type: 'select',
     consularQuestion: 'How much do you earn per month?',
     options: [
