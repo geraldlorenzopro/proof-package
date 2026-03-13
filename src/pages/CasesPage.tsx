@@ -144,8 +144,8 @@ export default function CasesPage() {
               onClick={() => navigate('/dashboard/workspace-demo')}
               className="flex items-center gap-2 border border-primary/30 text-primary font-semibold px-4 py-2.5 rounded-xl hover:bg-primary/10 transition-colors text-sm"
             >
-              <Eye className="w-4 h-4" />
-              Demo Workspace
+              <Users className="w-4 h-4" />
+              Portfolio
             </button>
             <button
               onClick={() => setShowModal(true)}
