@@ -265,8 +265,3 @@ export default function HubAnalyticsCards() {
     </motion.div>
   );
 }
-        ))}
-      </div>
-    </motion.div>
-  );
-}
