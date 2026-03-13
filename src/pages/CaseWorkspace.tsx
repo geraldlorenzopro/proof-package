@@ -883,7 +883,7 @@ export default function CaseWorkspace() {
                           </div>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
