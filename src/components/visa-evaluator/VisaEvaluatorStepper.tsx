@@ -39,13 +39,15 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
   const progress = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
 
   const updateAnswer = useCallback((key: keyof VisaEvalAnswers, value: any) => {
-    setAnswers(prev => ({ ...prev, [key]: value }));
+    // Parse age select values to number
+    const parsed = key === 'age' ? parseInt(value) : value;
+    setAnswers(prev => ({ ...prev, [key]: parsed }));
   }, []);
 
-  // Auto-advance on selection (for select/boolean, not number)
+  // Auto-advance on selection (for select/boolean)
   const handleOptionSelect = useCallback((key: keyof VisaEvalAnswers, value: any) => {
-    updateAnswer(key, value);
-    // Auto-advance after a brief moment
+    const parsed = key === 'age' ? parseInt(value) : value;
+    updateAnswer(key, parsed);
     setTimeout(() => {
       if (qIndex < totalQuestions - 1) {
         setDirection(1);
