@@ -209,9 +209,6 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
       {/* ═══ KPI CARDS ═══ */}
       <HubAnalyticsCards />
 
-      {/* ═══ FIRM METRICS — Enterprise Analytics ═══ */}
-      <HubFirmMetrics />
-
       {/* ═══ HERO CARDS — Case Engine + NER Smart Forms side by side ═══ */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -290,7 +287,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         ))}
       </motion.div>
 
-      {/* ═══ TOOL CATEGORIES — Pure black cards, filled icons ═══ */}
+      {/* ═══ TOOL CATEGORIES — 4-column horizontal grid ═══ */}
       {categoriesWithApps.length > 0 && (
         <section className="pt-2">
           <div className="flex items-center gap-2 mb-4">
@@ -318,7 +315,6 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
                   variants={fadeUp}
                   className={`rounded-2xl border ${cat.color.border} bg-white/[0.03] backdrop-blur-xl transition-all duration-300 overflow-hidden ${isExpanded ? "ring-1 ring-white/10 border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" : "hover:border-white/12 hover:bg-white/[0.05] hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)]"}`}
                 >
-                  {/* Category header */}
                   <button
                     onClick={() => setExpandedCategory(isExpanded ? null : cat.key)}
                     className="w-full flex items-center gap-4 p-5 text-left group"
@@ -338,7 +334,6 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
                     <ChevronDown className={`w-4 h-4 text-muted-foreground/30 transition-transform duration-300 ${isExpanded ? "rotate-180 text-muted-foreground/60" : ""}`} strokeWidth={2.5} />
                   </button>
 
-                  {/* Expanded sub-tools */}
                   {isExpanded && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
@@ -372,7 +367,8 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         </section>
       )}
 
-      {/* (Firm Metrics moved up) */}
+      {/* ═══ FIRM METRICS — Enterprise Analytics (collapsible) ═══ */}
+      <HubFirmMetrics />
 
       {/* ═══ SLA TRACKER — Deadline Countdowns ═══ */}
       <SlaTracker />
