@@ -867,7 +867,7 @@ export default function CaseWorkspace() {
                 {activityLog.map((item, i) => {
                   const Icon = item.icon;
                   return (
-                    <motion.div key={i} custom={i} initial="hidden" animate="visible" variants={fadeUp} className="relative">
+                    <div key={i} className="relative">
                       <div className="absolute -left-[22px] top-3 w-4 h-4 rounded-full border-2 border-jarvis bg-jarvis/20 flex items-center justify-center">
                         <div className="w-1.5 h-1.5 rounded-full bg-jarvis" />
                       </div>
