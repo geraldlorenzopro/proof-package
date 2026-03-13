@@ -1040,12 +1040,16 @@ export default function CaseWorkspace() {
           onCreated={async () => {
             const casesRes = await supabase
               .from("client_cases")
-              .select("id, case_type, status, process_type, pipeline_stage, created_at, updated_at")
+              .select("id, case_type, status, process_type, pipeline_stage, ball_in_court, stage_entered_at, assigned_to, created_at, updated_at")
               .eq("client_profile_id", selectedClientId)
               .order("updated_at", { ascending: false });
 
             if (casesRes.data) {
-              const baseCases = casesRes.data as ClientCase[];
+              const allCases = casesRes.data as ClientCase[];
+              const baseCases = allCases.filter(c =>
+                c.process_type && c.process_type !== "general" ||
+                !ORPHAN_FORM_TYPES.has(c.case_type)
+              );
 
               if (baseCases.length === 0) {
                 setClientCases([]);
@@ -1055,19 +1059,26 @@ export default function CaseWorkspace() {
               }
 
               const caseIds = baseCases.map(c => c.id);
-              const { data: formRows } = await supabase
-                .from("case_forms")
-                .select("case_id")
-                .in("case_id", caseIds);
+              const processTypes = [...new Set(baseCases.map(c => c.process_type).filter(Boolean))] as string[];
 
-              const countByCase = (formRows || []).reduce<Record<string, number>>((acc, row: any) => {
+              const [formRowsRes, templateRowsRes] = await Promise.all([
+                supabase.from("case_forms").select("case_id").in("case_id", caseIds),
+                processTypes.length > 0
+                  ? supabase.from("pipeline_templates").select("process_type, process_label").in("process_type", processTypes).eq("is_active", true)
+                  : Promise.resolve({ data: [] }),
+              ]);
+
+              const countByCase = (formRowsRes.data || []).reduce<Record<string, number>>((acc, row: any) => {
                 acc[row.case_id] = (acc[row.case_id] || 0) + 1;
                 return acc;
               }, {});
+              const labelByType: Record<string, string> = {};
+              (templateRowsRes.data || []).forEach((t: any) => { labelByType[t.process_type] = t.process_label; });
 
               const casesWithForms = baseCases.map(c => ({
                 ...c,
                 form_count: countByCase[c.id] || 0,
+                template_label: c.process_type ? labelByType[c.process_type] || null : null,
               }));
 
               setClientCases(casesWithForms);
