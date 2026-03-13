@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
   Copy, RotateCcw, ArrowRight, Shield, CheckCircle2,
   AlertTriangle, ShieldAlert, TrendingUp, Users, Home, Plane, History,
-  Save, MessageCircle,
+  Save, Zap,
 } from "lucide-react";
 import type { EvalResult } from "@/lib/visaAvatarEngine";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface Props {
   result: EvalResult;
@@ -18,28 +18,31 @@ interface Props {
 
 const RISK_CONFIG = {
   low: {
-    color: 'text-emerald-400',
-    iconBg: 'bg-emerald-500/10 border-emerald-500/30',
-    label: 'PERFIL CON BUENAS PROBABILIDADES',
+    gradient: 'from-emerald-500/20 via-emerald-500/5 to-transparent',
+    borderColor: 'border-emerald-500/30',
+    accentColor: 'text-emerald-400',
+    glowColor: 'hsl(158 64% 52% / 0.15)',
+    label: 'PERFIL FAVORABLE',
     sublabel: 'Proceder con la solicitud',
-    icon: <CheckCircle2 className="h-10 w-10 text-emerald-400" />,
-    shieldColor: 'text-emerald-400',
+    icon: <CheckCircle2 className="h-8 w-8" />,
   },
   medium: {
-    color: 'text-amber-400',
-    iconBg: 'bg-amber-500/10 border-amber-500/30',
-    label: 'PERFIL CON POTENCIAL DE MEJORA',
-    sublabel: 'Fortalecer su perfil antes de aplicar',
-    icon: <Shield className="h-10 w-10 text-amber-400" />,
-    shieldColor: 'text-amber-400',
+    gradient: 'from-amber-500/20 via-amber-500/5 to-transparent',
+    borderColor: 'border-amber-500/30',
+    accentColor: 'text-amber-400',
+    glowColor: 'hsl(43 85% 52% / 0.15)',
+    label: 'PERFIL CON POTENCIAL',
+    sublabel: 'Fortalecer antes de aplicar',
+    icon: <Shield className="h-8 w-8" />,
   },
   high: {
-    color: 'text-red-400',
-    iconBg: 'bg-red-500/10 border-red-500/30',
-    label: 'PERFIL DE ALTO RIESGO',
-    sublabel: 'Se recomienda consulta legal antes de aplicar',
-    icon: <ShieldAlert className="h-10 w-10 text-red-400" />,
-    shieldColor: 'text-red-400',
+    gradient: 'from-red-500/20 via-red-500/5 to-transparent',
+    borderColor: 'border-red-500/30',
+    accentColor: 'text-red-400',
+    glowColor: 'hsl(0 72% 51% / 0.15)',
+    label: 'ALTO RIESGO',
+    sublabel: 'Se recomienda consulta legal',
+    icon: <ShieldAlert className="h-8 w-8" />,
   },
 };
 
@@ -51,210 +54,217 @@ export default function VisaEvaluatorResults({ result, shareToken, onRestart, on
   const copyLink = () => {
     if (shareToken) {
       navigator.clipboard.writeText(`${window.location.origin}/visa-eval/${shareToken}`);
-      toast({ title: "Enlace copiado", description: "El enlace de resultados se copió al portapapeles." });
+      toast({ title: "Enlace copiado" });
     }
   };
 
   const scoreCategories = [
-    { label: 'Arraigo Económico', value: score.arraigo_economico, max: 25, icon: <TrendingUp className="h-4 w-4" /> },
-    { label: 'Arraigo Familiar', value: score.arraigo_familiar, max: 25, icon: <Users className="h-4 w-4" /> },
-    { label: 'Estabilidad', value: score.estabilidad, max: 20, icon: <Home className="h-4 w-4" /> },
-    { label: 'Viajes', value: score.viajes, max: 20, icon: <Plane className="h-4 w-4" /> },
-    { label: 'Historial', value: score.historial, max: 10, icon: <History className="h-4 w-4" /> },
+    { label: 'Arraigo Económico', value: score.arraigo_economico, max: 25, icon: <TrendingUp className="h-3.5 w-3.5" /> },
+    { label: 'Arraigo Familiar', value: score.arraigo_familiar, max: 25, icon: <Users className="h-3.5 w-3.5" /> },
+    { label: 'Estabilidad', value: score.estabilidad, max: 20, icon: <Home className="h-3.5 w-3.5" /> },
+    { label: 'Viajes', value: score.viajes, max: 20, icon: <Plane className="h-3.5 w-3.5" /> },
+    { label: 'Historial', value: score.historial, max: 10, icon: <History className="h-3.5 w-3.5" /> },
   ];
 
-  // Derive strengths and risk factors for the pros/cons display
   const strengths = avatar.strengths;
-  const weaknesses = [
-    ...avatar.riskFactors,
-    ...score.coherenceFlags,
-  ];
+  const weaknesses = [...avatar.riskFactors, ...score.coherenceFlags];
 
   return (
-    <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl overflow-hidden shadow-lg">
-      {/* ─── Header Bar (same as stepper) ─── */}
-      <div className="px-6 py-4 bg-gradient-to-r from-[hsl(220,50%,12%)] to-[hsl(220,40%,18%)] border-b border-border/20">
-        <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground/70 uppercase">
-          Evaluador Visa de Paseo USA
-        </p>
-      </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="relative rounded-2xl overflow-hidden"
+      style={{ boxShadow: `0 0 60px -15px ${config.glowColor}, 0 25px 50px -12px rgba(0,0,0,0.4)` }}
+    >
+      {/* Top glow */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--jarvis)/0.4)] to-transparent" />
 
-      {/* ─── Progress 100% ─── */}
-      <div className="px-6 pt-5 pb-3 space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Progreso</span>
-          <span className="text-sm font-bold text-emerald-400">100%</span>
-        </div>
-        <Progress value={100} className="h-1.5" />
-      </div>
-
-      {/* ─── Result Hero ─── */}
-      <div className="px-6 py-6">
-        <div className={cn("rounded-xl border p-6 text-center space-y-3", config.iconBg)}>
-          <div className="flex justify-center">
-            <div className={cn("w-20 h-20 rounded-full flex items-center justify-center", config.iconBg)}>
-              {config.icon}
+      {/* ─── Score Hero ─── */}
+      <div className={cn("relative bg-[hsl(220,30%,8%)] px-6 pt-8 pb-6 overflow-hidden")}>
+        {/* Radial gradient background */}
+        <div className={cn("absolute inset-0 bg-gradient-to-b", config.gradient)} />
+        
+        <div className="relative text-center space-y-3">
+          {/* Score ring */}
+          <div className="relative w-28 h-28 mx-auto">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="hsl(220 25% 14%)" strokeWidth="4" />
+              <motion.circle
+                cx="50" cy="50" r="42" fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 42}`}
+                initial={{ strokeDashoffset: 2 * Math.PI * 42 }}
+                animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - score.total / 100) }}
+                transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
+                className={config.accentColor}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <motion.span
+                className={cn("text-3xl font-bold font-mono", config.accentColor)}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                {score.total}
+              </motion.span>
+              <span className="text-[10px] text-muted-foreground/50 font-mono">/100</span>
             </div>
           </div>
-          <p className={cn("text-xs font-bold tracking-[0.15em] uppercase", config.color)}>
-            {config.label}
-          </p>
-          <p className="text-sm font-medium text-foreground">
-            {config.sublabel}
-          </p>
-          <div className="flex items-center justify-center gap-2 pt-1">
-            <span className={cn("text-3xl font-bold", config.color)}>{score.total}</span>
-            <span className="text-muted-foreground/50 text-lg">/100</span>
+
+          <div className="space-y-1">
+            <p className={cn("text-[11px] font-bold tracking-[0.2em] uppercase", config.accentColor)}>
+              {config.label}
+            </p>
+            <p className="text-sm text-muted-foreground">{config.sublabel}</p>
+          </div>
+
+          {/* Avatar badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[hsl(220,25%,12%)] border border-border/20">
+            <Zap className="h-3 w-3 text-[hsl(var(--jarvis))]" />
+            <span className="text-[10px] font-bold text-[hsl(var(--jarvis))] tracking-wider">{avatar.code}</span>
+            <span className="text-[10px] text-muted-foreground">·</span>
+            <span className="text-[10px] text-muted-foreground">{avatar.label}</span>
           </div>
         </div>
       </div>
 
-      {/* ─── Message ─── */}
-      <div className="px-6 pb-4">
-        <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
-          <p>
-            <span className="font-semibold text-foreground">Estimado:</span>{' '}
+      {/* ─── Content ─── */}
+      <div className="bg-[hsl(220,25%,7%)] space-y-0">
+        {/* Recommendation */}
+        <div className="px-6 py-5 border-b border-border/10">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             {result.recommendation}
           </p>
-          {result.riskLevel === 'medium' && (
-            <p>Trabajar estos puntos de manera adecuada puede mejorar significativamente sus probabilidades.</p>
-          )}
-          {result.riskLevel === 'low' && (
-            <p>Su perfil presenta indicadores sólidos. Recomendamos proceder con la preparación documental.</p>
-          )}
         </div>
-      </div>
 
-      {/* ─── Analysis: Pros & Cons ─── */}
-      <div className="px-6 pb-4">
-        <div className="rounded-lg border border-border/30 bg-muted/20 p-4 space-y-4">
-          <p className="text-[10px] font-semibold tracking-[0.15em] text-muted-foreground/60 uppercase">
-            Análisis de su perfil
+        {/* ─── Analysis ─── */}
+        <div className="px-6 py-5 border-b border-border/10 space-y-4">
+          <p className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground/50 uppercase">
+            Análisis de Perfil
           </p>
 
-          {/* Strengths */}
           {strengths.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Puntos a su favor
+              <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Puntos a favor
               </p>
-              <div className="space-y-1.5 pl-5">
-                {strengths.map((s, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                    <span className="text-xs text-emerald-400/90">{s}</span>
-                  </div>
-                ))}
-              </div>
+              {strengths.map((s, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.8 + i * 0.1 }}
+                  className="flex items-center gap-2 pl-5"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-xs text-emerald-400/80">{s}</span>
+                </motion.div>
+              ))}
             </div>
           )}
 
-          {/* Weaknesses */}
           {weaknesses.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" /> Aspectos a fortalecer
+              <p className="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5" /> Aspectos a fortalecer
               </p>
-              <div className="space-y-1.5 pl-5">
-                {weaknesses.map((w, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                    <span className="text-xs text-amber-400/90">{w}</span>
-                  </div>
-                ))}
-              </div>
+              {weaknesses.map((w, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 1 + i * 0.1 }}
+                  className="flex items-center gap-2 pl-5"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span className="text-xs text-amber-400/80">{w}</span>
+                </motion.div>
+              ))}
             </div>
           )}
         </div>
-      </div>
 
-      {/* ─── Score Breakdown ─── */}
-      <div className="px-6 pb-4">
-        <div className="rounded-lg border border-border/30 bg-muted/20 p-4 space-y-3">
-          <p className="text-[10px] font-semibold tracking-[0.15em] text-muted-foreground/60 uppercase">
-            Desglose de puntuación
+        {/* ─── Score Breakdown ─── */}
+        <div className="px-6 py-5 border-b border-border/10 space-y-3">
+          <p className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground/50 uppercase">
+            Desglose
           </p>
-          {scoreCategories.map(cat => (
+          {scoreCategories.map((cat, i) => (
             <div key={cat.label} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
+                <span className="flex items-center gap-1.5 text-muted-foreground/70">
                   {cat.icon} {cat.label}
                 </span>
-                <span className="font-mono font-semibold text-foreground">{cat.value}/{cat.max}</span>
+                <span className="font-mono font-bold text-foreground/80">{cat.value}/{cat.max}</span>
               </div>
-              <Progress value={(cat.value / cat.max) * 100} className="h-1" />
+              <div className="h-1 rounded-full bg-muted/20 overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-[hsl(var(--jarvis))]"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(cat.value / cat.max) * 100}%` }}
+                  transition={{ duration: 0.6, delay: 0.3 + i * 0.1 }}
+                />
+              </div>
             </div>
           ))}
           {score.penalties !== 0 && (
-            <div className="flex items-center justify-between text-xs pt-2 border-t border-border/20">
-              <span className="flex items-center gap-1.5 text-red-400">
+            <div className="flex items-center justify-between text-xs pt-2 border-t border-border/10">
+              <span className="text-red-400 flex items-center gap-1.5">
                 <AlertTriangle className="h-3.5 w-3.5" /> Penalizaciones
               </span>
-              <span className="font-mono font-semibold text-red-400">{score.penalties}</span>
+              <span className="font-mono font-bold text-red-400">{score.penalties}</span>
             </div>
           )}
         </div>
-      </div>
 
-      {/* ─── Avatar Badge ─── */}
-      <div className="px-6 pb-4">
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/10 border border-border/20">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center">
-            <span className="text-xs font-bold text-primary">{avatar.code}</span>
+        {/* ─── Actions ─── */}
+        <div className="px-6 py-5 space-y-3">
+          {result.riskLevel === 'low' && onStartCase && (
+            <Button
+              onClick={onStartCase}
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold shadow-[0_0_30px_-5px_hsl(158_64%_52%/0.3)]"
+            >
+              <ArrowRight className="h-4 w-4 mr-2" /> Iniciar Caso
+            </Button>
+          )}
+
+          <div className="flex items-center gap-2">
+            {shareToken && (
+              <Button variant="outline" onClick={copyLink} className="flex-1 border-border/20 text-muted-foreground hover:text-foreground">
+                <Save className="h-4 w-4 mr-2" /> Guardar
+              </Button>
+            )}
+            {shareToken && (
+              <Button variant="outline" size="icon" onClick={copyLink} className="border-border/20 text-muted-foreground hover:text-foreground">
+                <Copy className="h-4 w-4" />
+              </Button>
+            )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-foreground">{avatar.label}</p>
-            <p className="text-[10px] text-muted-foreground truncate">{avatar.description}</p>
-          </div>
+
+          {onRestart && (
+            <button
+              onClick={onRestart}
+              className="w-full text-[10px] text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors py-1 flex items-center justify-center gap-1"
+            >
+              <RotateCcw className="h-2.5 w-2.5" /> Reiniciar evaluación
+            </button>
+          )}
         </div>
-      </div>
 
-      {/* ─── Motivational CTA ─── */}
-      <div className="px-6 pb-4">
-        <div className="p-3 rounded-lg bg-muted/10 border border-border/20 text-center">
-          <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-            ✦ Prepararse bien hoy puede cambiar el resultado mañana.
+        {/* Disclaimer */}
+        <div className="px-6 pb-5">
+          <p className="text-[9px] text-muted-foreground/25 text-center italic">
+            ⚖️ Guía informativa basada en 9 FAM 402.2-2. La decisión final depende del oficial consular.
           </p>
         </div>
       </div>
 
-      {/* ─── Actions ─── */}
-      <div className="px-6 pb-6 space-y-3">
-        {result.riskLevel === 'low' && onStartCase && (
-          <Button onClick={onStartCase} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
-            <ArrowRight className="h-4 w-4 mr-2" /> Iniciar Caso en Case Engine
-          </Button>
-        )}
-
-        <div className="flex items-center gap-2">
-          {shareToken && (
-            <Button variant="outline" onClick={copyLink} className="flex-1 border-border/40">
-              <Save className="h-4 w-4 mr-2" /> Guardar resultado
-            </Button>
-          )}
-          {shareToken && (
-            <Button variant="outline" size="icon" onClick={copyLink} className="border-border/40">
-              <Copy className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-
-        {onRestart && (
-          <button
-            onClick={onRestart}
-            className="w-full text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors py-2"
-          >
-            Reiniciar evaluación
-          </button>
-        )}
-      </div>
-
-      {/* ─── Disclaimer ─── */}
-      <div className="px-6 pb-6">
-        <p className="text-[10px] text-muted-foreground/40 text-center italic leading-relaxed">
-          ⚖️ Este resultado es una guía informativa basada en el manual 9 FAM 402.2-2. La decisión final siempre dependerá del criterio del oficial consular.
-        </p>
-      </div>
-    </div>
+      {/* Bottom glow */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--jarvis)/0.2)] to-transparent" />
+    </motion.div>
   );
 }
