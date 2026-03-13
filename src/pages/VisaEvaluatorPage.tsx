@@ -134,7 +134,7 @@ export default function VisaEvaluatorPage() {
         {/* Content — fills remaining space */}
         <div className="flex-1 min-h-0 flex flex-col">
           {view === 'form' && (
-            <VisaEvaluatorStepper onComplete={handleComplete} showAudioPractice />
+            <VisaEvaluatorStepper onComplete={handleComplete} />
           )}
 
           {view === 'results' && result && (
