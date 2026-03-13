@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       .from("client_cases")
       .select("id, client_name, case_type, process_type, pipeline_stage, status, access_token, created_at")
       .eq("account_id", account.id)
-      .in("process_type", ["b1b2-visa", "b1-b2-tourist"])
+      .or("process_type.ilike.%b1b2%,process_type.ilike.%b1-b2%,process_type.ilike.%tourist%")
       .neq("status", "archived")
       .order("created_at", { ascending: false });
 
