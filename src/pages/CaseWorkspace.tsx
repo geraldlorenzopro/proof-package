@@ -882,13 +882,33 @@ export default function CaseWorkspace() {
               .select("id, case_type, status, process_type, pipeline_stage, created_at, updated_at")
               .eq("client_profile_id", selectedClientId)
               .order("updated_at", { ascending: false });
+
             if (casesRes.data) {
-              const casesWithForms = await Promise.all(
-                casesRes.data.map(async (c) => {
-                  const { count } = await supabase.from("case_forms").select("id", { count: "exact", head: true }).eq("case_id", c.id);
-                  return { ...c, form_count: count || 0 };
-                })
-              );
+              const baseCases = casesRes.data as ClientCase[];
+
+              if (baseCases.length === 0) {
+                setClientCases([]);
+                setSelectedCaseForQ(null);
+                setActiveView("cases");
+                return;
+              }
+
+              const caseIds = baseCases.map(c => c.id);
+              const { data: formRows } = await supabase
+                .from("case_forms")
+                .select("case_id")
+                .in("case_id", caseIds);
+
+              const countByCase = (formRows || []).reduce<Record<string, number>>((acc, row: any) => {
+                acc[row.case_id] = (acc[row.case_id] || 0) + 1;
+                return acc;
+              }, {});
+
+              const casesWithForms = baseCases.map(c => ({
+                ...c,
+                form_count: countByCase[c.id] || 0,
+              }));
+
               setClientCases(casesWithForms);
               if (casesWithForms.length === 1) setSelectedCaseForQ(casesWithForms[0].id);
               setActiveView("cases");
