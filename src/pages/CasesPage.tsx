@@ -176,8 +176,8 @@ export default function CasesPage() {
           <div className="grid grid-cols-4 gap-3 mb-6">
             {[
               { label: 'Total', value: stats.total, icon: Users, color: 'text-jarvis', filter: undefined },
-              { label: 'Pendientes', value: stats.pending, icon: Clock, color: 'text-accent', filter: 'active' },
-              { label: 'En progreso', value: stats.inProgress, icon: ChevronRight, color: 'text-jarvis', filter: 'needs-action' },
+              { label: 'Pendientes', value: stats.pending, icon: Clock, color: 'text-accent', filter: 'pending' },
+              { label: 'En Progreso', value: stats.inProgress, icon: ChevronRight, color: 'text-jarvis', filter: 'in-progress' },
               { label: 'Completados', value: stats.completed, icon: CheckCircle, color: 'text-emerald-400', filter: 'completed' },
             ].map(s => (
               <button
