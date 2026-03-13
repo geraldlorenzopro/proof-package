@@ -456,10 +456,10 @@ export default function CaseWorkspace() {
               <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
               <span className="text-foreground font-semibold">{processLabel}</span>
             </div>
-          </motion.div>
+          </div>
 
           {/* ═══ CASE HERO CARD ═══ */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-6">
+          <div className="mb-6">
             <div className="relative overflow-hidden rounded-2xl border border-jarvis/15 bg-gradient-to-br from-card via-card to-jarvis/[0.03]">
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-jarvis/50 to-accent/50" />
               <div className="p-5 sm:p-6">
