@@ -216,7 +216,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
         </div>
 
         {/* ─── Question Area ─── */}
-        <div className="bg-[hsl(220,25%,7%)] min-h-[360px] flex flex-col">
+        <div className="bg-[hsl(220,25%,7%)] flex-1 min-h-0 flex flex-col">
           {/* Question counter */}
           <div className="px-8 pt-5 pb-2 flex items-center justify-between">
             <span className="text-[10px] font-mono font-semibold text-muted-foreground/40 tracking-wider">
