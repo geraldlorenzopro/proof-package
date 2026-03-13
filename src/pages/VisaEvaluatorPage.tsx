@@ -144,6 +144,7 @@ export default function VisaEvaluatorPage() {
             <div className="flex-1 overflow-y-auto">
               <VisaEvaluatorResults
                 result={result}
+                answers={lastAnswers || undefined}
                 shareToken={shareToken || undefined}
                 onRestart={handleRestart}
                 onStartCase={() => navigate('/dashboard/cases')}
