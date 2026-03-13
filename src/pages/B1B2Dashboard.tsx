@@ -174,6 +174,26 @@ export default function B1B2Dashboard() {
     }
   };
 
+  const updateCaseStage = async (caseItem: B1B2Case, newStage: string) => {
+    try {
+      await supabase.functions.invoke("b1b2-update-case", {
+        body: {
+          account_cid: accountCid,
+          case_id: caseItem.id,
+          pipeline_stage: newStage,
+        },
+      });
+      setCases(prev => prev.map(c => c.id === caseItem.id ? { ...c, pipeline_stage: newStage } : c));
+      toast({
+        title: "Etapa actualizada",
+        description: `${caseItem.client_name} → ${STAGE_LABELS[newStage] || newStage}`,
+      });
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error", description: "No se pudo actualizar la etapa.", variant: "destructive" });
+    }
+  };
+
   // Filters
   const filtered = cases.filter(c => {
     if (search && !c.client_name.toLowerCase().includes(search.toLowerCase())) return false;
