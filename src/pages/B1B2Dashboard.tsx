@@ -299,12 +299,12 @@ export default function B1B2Dashboard() {
         </div>
 
         {/* ── KPI Row ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-4 gap-3 mb-6">
           {[
             { key: null, label: "Total Clientes", value: cases.length, icon: Users, colorClass: "text-primary", bgClass: "bg-primary/5" },
+            { key: "pending", label: "Nuevos", value: cases.filter(c => c.status === "pending").length, icon: Clock, colorClass: "text-yellow-400", bgClass: "bg-yellow-400/5" },
             { key: "in_progress", label: "En Proceso", value: cases.filter(c => c.status === "in_progress" || c.status === "active").length, icon: CircleDot, colorClass: "text-[hsl(var(--jarvis))]", bgClass: "bg-[hsl(var(--jarvis))]/5" },
             { key: "completed", label: "Completados", value: totalCompleted, icon: CheckCircle2, colorClass: "text-accent", bgClass: "bg-accent/5" },
-            { key: "pending", label: "Nuevos", value: cases.filter(c => c.status === "pending").length, icon: Clock, colorClass: "text-primary", bgClass: "bg-primary/5" },
           ].map((kpi) => {
             const isActive = statusFilter === kpi.key;
             return (
@@ -325,6 +325,20 @@ export default function B1B2Dashboard() {
             );
           })}
         </div>
+
+        {/* ── Progress bar ── */}
+        {cases.length > 0 && (
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-3 mb-6 flex items-center gap-3">
+            <TrendingUp className="w-4 h-4 text-primary shrink-0" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-muted-foreground font-medium">Progreso Promedio</span>
+                <span className="text-xs font-bold text-primary">{avgProgress}%</span>
+              </div>
+              <Progress value={avgProgress} className="h-1.5" />
+            </div>
+          </div>
+        )}
 
         {/* ── Pipeline Funnel ── */}
         <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 mb-6">
