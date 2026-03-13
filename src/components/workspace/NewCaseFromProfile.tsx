@@ -53,7 +53,14 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 // Group templates by prefix for visual grouping
+// Process types that have NO USCIS forms (tracking-only pipelines)
+const NO_FORMS_PROCESS_TYPES = ["B1B2-CONSULAR"];
+
+// Process types where petitioner field is not applicable
+const NO_PETITIONER_PROCESS_TYPES = ["B1B2-CONSULAR"];
+
 const TEMPLATE_GROUPS: { prefix: string; label: string; icon: string }[] = [
+  { prefix: "B1B2", label: "Visa B1/B2 — Proceso Consular", icon: "✈️" },
   { prefix: "PF-IR", label: "Petición Familiar — Inmediatos", icon: "👨‍👩‍👧" },
   { prefix: "PF-F", label: "Petición Familiar — Preferencia", icon: "👨‍👩‍👧‍👦" },
   { prefix: "FULL-AOS-IR", label: "FULL AOS — Inmediatos (Concurrente)", icon: "🟢" },
@@ -220,7 +227,12 @@ export default function NewCaseFromProfile({
     setSelectedTemplate(template);
     setSelectedForms([...template.form_package]);
     setCaseName(template.process_label);
-    setStep("customize");
+    // Skip customize step for tracking-only pipelines (no USCIS forms)
+    if (NO_FORMS_PROCESS_TYPES.includes(template.process_type)) {
+      setStep("details");
+    } else {
+      setStep("customize");
+    }
   };
 
   const handleStartManual = () => {
@@ -280,8 +292,11 @@ export default function NewCaseFromProfile({
     }
   };
 
+  const isTrackingOnly = selectedTemplate && NO_FORMS_PROCESS_TYPES.includes(selectedTemplate.process_type);
+  const hidePetitioner = selectedTemplate && NO_PETITIONER_PROCESS_TYPES.includes(selectedTemplate.process_type);
+
   const handleCreate = async () => {
-    if (selectedForms.length === 0) {
+    if (!isTrackingOnly && selectedForms.length === 0) {
       toast.error("Selecciona al menos un formulario");
       return;
     }
@@ -630,24 +645,40 @@ export default function NewCaseFromProfile({
           {/* STEP 3: Case Details */}
           {step === "details" && (
             <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-secondary/30 border border-border space-y-2">
-                <Label className="text-xs flex items-center gap-1.5">
-                  <Package className="w-3.5 h-3.5 text-jarvis" />
-                  Paquete ({selectedForms.length} formularios)
-                </Label>
-                <div className="flex flex-wrap gap-1">
-                  {selectedForms.map(f => (
-                    <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-jarvis/10 text-jarvis border border-jarvis/20">
-                      {f}
-                    </span>
-                  ))}
+              {/* Show form package only if there are forms */}
+              {selectedForms.length > 0 && (
+                <div className="p-3 rounded-lg bg-secondary/30 border border-border space-y-2">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5 text-jarvis" />
+                    Paquete ({selectedForms.length} formularios)
+                  </Label>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedForms.map(f => (
+                      <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-jarvis/10 text-jarvis border border-jarvis/20">
+                        {f}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Tracking-only info banner */}
+              {isTrackingOnly && (
+                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 space-y-1">
+                  <p className="text-xs font-semibold text-blue-400 flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5" />
+                    Pipeline de Seguimiento
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Este proceso no utiliza formularios USCIS. Las etapas del pipeline funcionan como checkpoints de seguimiento.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label className="text-xs">Nombre del Caso *</Label>
                 <Input
-                  placeholder="Ej: AOS Cónyuge, Petición F4 Hermano..."
+                  placeholder={isTrackingOnly ? "Ej: Visa B1/B2 – Juan Pérez" : "Ej: AOS Cónyuge, Petición F4 Hermano..."}
                   value={caseName}
                   onChange={e => setCaseName(e.target.value)}
                   disabled={loading}
@@ -656,19 +687,21 @@ export default function NewCaseFromProfile({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid ${hidePetitioner ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
+                {!hidePetitioner && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Peticionario</Label>
+                    <Input
+                      placeholder="Nombre del peticionario"
+                      value={petitionerName}
+                      onChange={e => setPetitionerName(e.target.value)}
+                      disabled={loading}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
-                  <Label className="text-xs">Peticionario</Label>
-                  <Input
-                    placeholder="Nombre del peticionario"
-                    value={petitionerName}
-                    onChange={e => setPetitionerName(e.target.value)}
-                    disabled={loading}
-                    className="h-9 text-sm"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Beneficiario</Label>
+                  <Label className="text-xs">{hidePetitioner ? "Solicitante" : "Beneficiario"}</Label>
                   <Input
                     value={beneficiaryName}
                     onChange={e => setBeneficiaryName(e.target.value)}
@@ -688,7 +721,7 @@ export default function NewCaseFromProfile({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setStep(step === "details" ? "customize" : "template")}
+                onClick={() => setStep(step === "details" && isTrackingOnly ? "template" : step === "details" ? "customize" : "template")}
                 disabled={loading}
                 className="text-xs"
               >
@@ -715,11 +748,11 @@ export default function NewCaseFromProfile({
               <Button
                 size="sm"
                 onClick={handleCreate}
-                disabled={loading || selectedForms.length === 0 || !caseName.trim()}
+                disabled={loading || (!isTrackingOnly && selectedForms.length === 0) || !caseName.trim()}
                 className="bg-jarvis hover:bg-jarvis/90 gap-1 text-xs"
               >
                 {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                Crear Caso ({selectedForms.length} forms)
+                {isTrackingOnly ? "Crear Caso" : `Crear Caso (${selectedForms.length} forms)`}
               </Button>
             )}
           </div>
