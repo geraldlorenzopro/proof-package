@@ -59,9 +59,19 @@ const TEMPLATE_GROUPS: { prefix: string; label: string; icon: string }[] = [
   { prefix: "FULL-AOS-IR", label: "FULL AOS — Inmediatos", icon: "🟢" },
   { prefix: "FULL-AOS-F", label: "FULL AOS — Preferencia", icon: "🔵" },
   { prefix: "AOS-ONLY", label: "AOS — Solo Ajuste (Petición Aprobada)", icon: "📋" },
-  { prefix: "CONSULAR", label: "Proceso Consular", icon: "🏛️" },
-  { prefix: "VAWA", label: "VAWA", icon: "🛡️" },
+  { prefix: "AOS-K", label: "AOS — K-1 Prometido(a)", icon: "💍" },
+  { prefix: "VAWA", label: "VAWA — Violencia Doméstica", icon: "🛡️" },
+  { prefix: "Remove-Conditions", label: "Remoción de Condiciones", icon: "📝" },
   { prefix: "Waiver", label: "Perdón / Waiver", icon: "⚖️" },
+  { prefix: "U-Visa", label: "U-Visa", icon: "🔒" },
+  { prefix: "Fiance", label: "Visa de Prometido(a)", icon: "💍" },
+  { prefix: "Replace", label: "Reemplazo / Renovación", icon: "🔄" },
+  { prefix: "Cancel", label: "Cancelación de Remoción", icon: "🚫" },
+  { prefix: "TPS", label: "TPS", icon: "🌎" },
+  { prefix: "DACA", label: "DACA", icon: "📋" },
+  { prefix: "Asylum", label: "Asilo", icon: "🏠" },
+  { prefix: "Citizen", label: "Ciudadanía", icon: "🇺🇸" },
+  { prefix: "Natural", label: "Naturalización", icon: "🗽" },
 ];
 
 type Step = "template" | "customize" | "details";
