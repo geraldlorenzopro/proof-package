@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, Sparkles } from "lucide-react";
+import { ArrowLeft, Shield, Sparkles, BarChart3, Home } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -23,45 +23,82 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   const location = useLocation();
 
   const isOnDashboard = location.pathname === "/hub";
+  const isOnIntelligence = location.pathname === "/hub/intelligence";
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Compact top bar — only visible when inside a tool (not on dashboard) */}
-      {!isOnDashboard && (
-        <motion.header
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
+    <div className="min-h-screen bg-background flex">
+      {/* ═══ SIDEBAR — Minimal icon rail ═══ */}
+      {isOnDashboard && (
+        <motion.aside
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3 }}
-          className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40"
+          className="hidden lg:flex flex-col items-center w-14 border-r border-border/20 bg-card/30 py-5 gap-3 shrink-0"
         >
-          <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-2.5">
-            <button
-              onClick={() => navigate("/hub")}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
-            >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-              <Shield className="w-3.5 h-3.5 text-jarvis" />
-              <span className="font-medium">Hub</span>
-            </button>
+          <button
+            onClick={() => navigate("/hub")}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+              isOnDashboard && !isOnIntelligence
+                ? "bg-jarvis/15 text-jarvis border border-jarvis/20"
+                : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
+            }`}
+            title="Dashboard"
+          >
+            <Home className="w-4 h-4" />
+          </button>
 
-            <div className="flex items-center gap-3">
-              {accountName && (
-                <span className="text-xs text-muted-foreground hidden sm:inline">{staffName || accountName}</span>
-              )}
-              {plan && (
-                <span className={`text-[9px] font-display font-bold uppercase tracking-wider ${planColors[plan] || "text-muted-foreground"}`}>
-                  {plan}
-                </span>
-              )}
-            </div>
-          </div>
-        </motion.header>
+          <button
+            onClick={() => navigate("/hub/intelligence")}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+              isOnIntelligence
+                ? "bg-accent/15 text-accent border border-accent/20"
+                : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
+            }`}
+            title="Centro de Inteligencia"
+          >
+            <BarChart3 className="w-4 h-4" />
+          </button>
+        </motion.aside>
       )}
 
-      {/* Main content — full width, no sidebar offset */}
-      <main className="min-h-screen">
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Compact top bar — only visible when inside a tool (not on dashboard) */}
+        {!isOnDashboard && !isOnIntelligence && (
+          <motion.header
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40"
+          >
+            <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-2.5">
+              <button
+                onClick={() => navigate("/hub")}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+              >
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                <Shield className="w-3.5 h-3.5 text-jarvis" />
+                <span className="font-medium">Hub</span>
+              </button>
+
+              <div className="flex items-center gap-3">
+                {accountName && (
+                  <span className="text-xs text-muted-foreground hidden sm:inline">{staffName || accountName}</span>
+                )}
+                {plan && (
+                  <span className={`text-[9px] font-display font-bold uppercase tracking-wider ${planColors[plan] || "text-muted-foreground"}`}>
+                    {plan}
+                  </span>
+                )}
+              </div>
+            </div>
+          </motion.header>
+        )}
+
+        {/* Main content */}
+        <main className="min-h-screen">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
