@@ -790,11 +790,11 @@ export default function CaseWorkspace() {
 
                       <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-jarvis transition-colors shrink-0" />
                     </div>
-                  </motion.button>
+                  </button>
                 ))}
               </div>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* ═══ QUESTIONNAIRE VIEW ═══ */}
