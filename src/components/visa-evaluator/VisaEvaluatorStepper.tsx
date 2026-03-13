@@ -1,11 +1,11 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { RotateCcw, Volume2, Mic, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { RotateCcw, Volume2, Mic, ChevronRight, Eye, Zap } from "lucide-react";
 import { INTERVIEW_QUESTIONS, STEP_LABELS, type VisaEvalAnswers, type InterviewQuestion } from "@/lib/visaAvatarEngine";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Props {
   onComplete: (answers: VisaEvalAnswers) => void;
@@ -14,42 +14,50 @@ interface Props {
 }
 
 export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showAudioPractice = false }: Props) {
-  const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState<Partial<VisaEvalAnswers>>(initialAnswers || {});
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [recordingId, setRecordingId] = useState<string | null>(null);
   const [recordings, setRecordings] = useState<Record<string, string>>({});
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [direction, setDirection] = useState(1); // 1=forward, -1=back
 
+  // Build flat list of visible questions based on current answers
   const visibleQuestions = useMemo(() => {
-    return INTERVIEW_QUESTIONS.filter(q => q.step === step && (!q.condition || q.condition(answers)));
-  }, [step, answers]);
-
-  const allQuestions = useMemo(() => {
     return INTERVIEW_QUESTIONS.filter(q => !q.condition || q.condition(answers));
   }, [answers]);
 
+  // Current question index
+  const [qIndex, setQIndex] = useState(0);
+  const currentQ = visibleQuestions[qIndex] || visibleQuestions[0];
+  const totalQuestions = visibleQuestions.length;
+  const currentStep = currentQ?.step || 1;
+
+  // Progress
   const answeredCount = useMemo(() => {
-    return allQuestions.filter(q => answers[q.fieldKey] !== undefined && answers[q.fieldKey] !== '').length;
-  }, [allQuestions, answers]);
-
-  const progress = allQuestions.length > 0 ? Math.round((answeredCount / allQuestions.length) * 100) : 0;
-
-  // Current question index across all visible questions
-  const currentStepFirstQuestion = useMemo(() => {
-    const allVisible = INTERVIEW_QUESTIONS.filter(q => !q.condition || q.condition(answers));
-    const idx = allVisible.findIndex(q => q.step === step);
-    return idx >= 0 ? idx + 1 : 1;
-  }, [step, answers]);
+    return visibleQuestions.filter(q => answers[q.fieldKey] !== undefined && answers[q.fieldKey] !== '').length;
+  }, [visibleQuestions, answers]);
+  const progress = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
 
   const updateAnswer = useCallback((key: keyof VisaEvalAnswers, value: any) => {
     setAnswers(prev => ({ ...prev, [key]: value }));
   }, []);
 
+  // Auto-advance on selection (for select/boolean, not number)
+  const handleOptionSelect = useCallback((key: keyof VisaEvalAnswers, value: any) => {
+    updateAnswer(key, value);
+    // Auto-advance after a brief moment
+    setTimeout(() => {
+      if (qIndex < totalQuestions - 1) {
+        setDirection(1);
+        setQIndex(prev => Math.min(prev + 1, totalQuestions - 1));
+      }
+    }, 300);
+  }, [qIndex, totalQuestions, updateAnswer]);
+
   const handleReset = () => {
     setAnswers({});
-    setStep(1);
+    setQIndex(0);
     setRecordings({});
     setShowResetDialog(false);
   };
@@ -95,305 +103,302 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
     setMediaRecorder(null);
   };
 
-  const canProceed = visibleQuestions.every(q => {
-    const val = answers[q.fieldKey];
-    return val !== undefined && val !== '';
-  });
+  const currentIsAnswered = currentQ && answers[currentQ.fieldKey] !== undefined && answers[currentQ.fieldKey] !== '';
 
-  const handleNext = () => {
-    if (step < 5) setStep(step + 1);
-    else onComplete(answers as VisaEvalAnswers);
+  const goNext = () => {
+    if (qIndex < totalQuestions - 1) {
+      setDirection(1);
+      setQIndex(qIndex + 1);
+    }
   };
 
-  const renderRadioCard = (
-    q: InterviewQuestion,
-    optionValue: string,
-    label: string,
-  ) => {
-    const isSelected = answers[q.fieldKey] === optionValue;
-    return (
-      <button
-        key={optionValue}
-        type="button"
-        onClick={() => updateAnswer(q.fieldKey, optionValue)}
-        className={cn(
-          "w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all duration-150",
-          isSelected
-            ? "bg-primary/10 border-primary/50 ring-1 ring-primary/30"
-            : "bg-card/50 border-border/40 hover:border-border/70 hover:bg-card/80"
-        )}
-      >
-        <div className={cn(
-          "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
-          isSelected ? "border-primary bg-primary" : "border-muted-foreground/40"
-        )}>
-          {isSelected && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
-        </div>
-        <span className={cn(
-          "text-sm font-medium",
-          isSelected ? "text-foreground" : "text-muted-foreground"
-        )}>
-          {label}
-        </span>
-      </button>
-    );
+  const goPrev = () => {
+    if (qIndex > 0) {
+      setDirection(-1);
+      setQIndex(qIndex - 1);
+    }
   };
 
-  const renderBooleanCards = (q: InterviewQuestion) => {
-    const value = answers[q.fieldKey];
-    return (
-      <div className="space-y-2">
-        {renderRadioCard(q, 'true_val', 'Sí')}
-        {renderRadioCard(q, 'false_val', 'No')}
-      </div>
-    );
+  const handleSubmit = () => {
+    onComplete(answers as VisaEvalAnswers);
   };
 
-  const renderField = (q: InterviewQuestion) => {
-    const value = answers[q.fieldKey];
+  const isLastQuestion = qIndex === totalQuestions - 1;
+  const allAnswered = answeredCount === totalQuestions;
 
-    return (
-      <div key={q.id} className="space-y-3">
-        {/* Question text */}
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-foreground leading-snug">{q.textEs}</h3>
-          {showAudioPractice && q.consularQuestion && (
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                className={cn(
-                  "p-1.5 rounded-md transition-colors",
-                  speakingId === q.id ? "text-primary animate-pulse bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                )}
-                onClick={() => speakQuestion(q)}
-              >
-                <Volume2 className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  "p-1.5 rounded-md transition-colors",
-                  recordingId === q.id ? "text-destructive animate-pulse bg-destructive/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                )}
-                onClick={() => recordingId === q.id ? stopRecording() : startRecording(q.id)}
-              >
-                <Mic className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {showAudioPractice && q.consularQuestion && (
-          <p className="text-xs text-muted-foreground/70 italic pl-0.5">🎙️ "{q.consularQuestion}"</p>
-        )}
-
-        {recordings[q.id] && (
-          <audio controls src={recordings[q.id]} className="w-full h-8" />
-        )}
-
-        {/* Select → Radio cards */}
-        {q.type === 'select' && q.options && (
-          <div className="space-y-2">
-            {q.options.map(opt => renderRadioCard(q, opt.value, opt.labelEs))}
-          </div>
-        )}
-
-        {/* Number input */}
-        {q.type === 'number' && (
-          <Input
-            type="number"
-            min={0}
-            max={120}
-            placeholder="Ingrese un número"
-            className="bg-card/50 border-border/40 w-40 focus:ring-primary/30"
-            value={value as number || ''}
-            onChange={(e) => updateAnswer(q.fieldKey, e.target.value ? parseInt(e.target.value) : undefined)}
-          />
-        )}
-
-        {/* Boolean → Radio cards */}
-        {q.type === 'boolean' && (
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => updateAnswer(q.fieldKey, true)}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all duration-150",
-                value === true
-                  ? "bg-primary/10 border-primary/50 ring-1 ring-primary/30"
-                  : "bg-card/50 border-border/40 hover:border-border/70 hover:bg-card/80"
-              )}
-            >
-              <div className={cn(
-                "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
-                value === true ? "border-primary bg-primary" : "border-muted-foreground/40"
-              )}>
-                {value === true && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
-              </div>
-              <span className={cn("text-sm font-medium", value === true ? "text-foreground" : "text-muted-foreground")}>Sí</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => updateAnswer(q.fieldKey, false)}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all duration-150",
-                value === false
-                  ? "bg-primary/10 border-primary/50 ring-1 ring-primary/30"
-                  : "bg-card/50 border-border/40 hover:border-border/70 hover:bg-card/80"
-              )}
-            >
-              <div className={cn(
-                "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
-                value === false ? "border-primary bg-primary" : "border-muted-foreground/40"
-              )}>
-                {value === false && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
-              </div>
-              <span className={cn("text-sm font-medium", value === false ? "text-foreground" : "text-muted-foreground")}>No</span>
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Dot progress indicator
-  const DotProgress = () => {
-    const allVisible = INTERVIEW_QUESTIONS.filter(q => !q.condition || q.condition(answers));
-    return (
-      <div className="flex items-center gap-1 flex-wrap justify-end">
-        {allVisible.map((q, i) => {
-          const isAnswered = answers[q.fieldKey] !== undefined && answers[q.fieldKey] !== '';
-          const isCurrent = q.step === step && visibleQuestions.includes(q);
-          return (
-            <div
-              key={q.id}
-              className={cn(
-                "w-2 h-2 rounded-full transition-all",
-                isAnswered ? "bg-emerald-500" :
-                isCurrent ? "bg-primary w-2.5 h-2.5" :
-                "bg-muted-foreground/25"
-              )}
-            />
-          );
-        })}
-      </div>
-    );
-  };
+  if (!currentQ) return null;
 
   return (
     <div className="space-y-0">
-      {/* ─── Card Container ─── */}
-      <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl overflow-hidden shadow-lg">
-        {/* ─── Header Bar ─── */}
-        <div className="px-6 py-4 bg-gradient-to-r from-[hsl(220,50%,12%)] to-[hsl(220,40%,18%)] border-b border-border/20">
-          <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground/70 uppercase">
-            Evaluador Visa de Paseo USA
-          </p>
-        </div>
+      {/* ─── Outer Shell ─── */}
+      <div className="relative rounded-2xl overflow-hidden" style={{ boxShadow: '0 0 60px -15px hsl(195 100% 50% / 0.08), 0 25px 50px -12px rgba(0,0,0,0.4)' }}>
+        {/* Subtle top glow line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--jarvis)/0.4)] to-transparent" />
 
-        {/* ─── Progress Section ─── */}
-        <div className="px-6 pt-5 pb-3 space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Progreso</span>
-            <span className="text-sm font-bold text-emerald-400">{progress}%</span>
-          </div>
-          <Progress value={progress} className="h-1.5" />
-        </div>
-
-        {/* ─── Step Navigation ─── */}
-        <div className="px-6 pb-4">
-          <div className="flex items-center justify-between border-b border-border/20 pb-3">
-            {STEP_LABELS.map((s, i) => {
-              const isActive = step === s.step;
-              const isDone = step > s.step;
+        {/* ─── Top Section: Section + Progress ─── */}
+        <div className="bg-[hsl(220,30%,8%)] border-b border-border/10 px-6 pt-5 pb-4">
+          {/* Step chips */}
+          <div className="flex items-center gap-2 mb-4">
+            {STEP_LABELS.map(s => {
+              const isActive = currentStep === s.step;
+              const isDone = currentStep > s.step;
               return (
                 <button
                   key={s.step}
-                  onClick={() => setStep(s.step)}
-                  className="flex flex-col items-center gap-1.5 group"
+                  onClick={() => {
+                    const targetQ = visibleQuestions.findIndex(q => q.step === s.step);
+                    if (targetQ >= 0) {
+                      setDirection(s.step > currentStep ? 1 : -1);
+                      setQIndex(targetQ);
+                    }
+                  }}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-[10px] font-semibold tracking-wider uppercase transition-all duration-200 border",
+                    isActive
+                      ? "bg-[hsl(var(--jarvis)/0.12)] border-[hsl(var(--jarvis)/0.3)] text-[hsl(var(--jarvis))]"
+                      : isDone
+                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400/80"
+                      : "bg-transparent border-border/20 text-muted-foreground/40"
+                  )}
                 >
-                  <div className={cn(
-                    "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all",
-                    isActive ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" :
-                    isDone ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" :
-                    "border-muted-foreground/30 text-muted-foreground/50"
-                  )}>
-                    {s.step}
-                  </div>
-                  <span className={cn(
-                    "text-[10px] font-semibold tracking-wider uppercase transition-colors",
-                    isActive || isDone ? "text-foreground" : "text-muted-foreground/50"
-                  )}>
-                    {s.labelEs}
-                  </span>
-                  {/* Active underline */}
-                  <div className={cn(
-                    "h-0.5 w-full rounded-full transition-all",
-                    isActive ? "bg-emerald-500" :
-                    isDone ? "bg-emerald-500/40" :
-                    "bg-transparent"
-                  )} />
+                  {s.labelEs}
                 </button>
               );
             })}
           </div>
-        </div>
 
-        {/* ─── Question Counter + Dots ─── */}
-        <div className="px-6 pb-2 flex items-center justify-between">
-          <span className="text-[10px] font-semibold tracking-wider text-muted-foreground/60 uppercase">
-            Pregunta {currentStepFirstQuestion} de {allQuestions.length}
-          </span>
-          <DotProgress />
-        </div>
-
-        {/* ─── Questions ─── */}
-        <div className="px-6 pb-6 space-y-6">
-          {visibleQuestions.map((q, i) => (
-            <div key={q.id}>
-              {i > 0 && <div className="border-t border-border/10 my-4" />}
-              {renderField(q)}
+          {/* Progress bar */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-1 rounded-full bg-muted/30 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--jarvis))] to-emerald-400"
+                initial={false}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              />
             </div>
-          ))}
+            <span className="text-xs font-mono font-bold text-[hsl(var(--jarvis))]">{progress}%</span>
+          </div>
         </div>
 
-        {/* ─── Navigation ─── */}
-        <div className="px-6 pb-6 flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="default"
-            disabled={step === 1}
-            onClick={() => setStep(step - 1)}
-            className="border-border/40 text-muted-foreground hover:text-foreground"
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
-          </Button>
-          <Button
-            onClick={handleNext}
-            disabled={!canProceed}
-            className="flex-1 bg-gradient-to-r from-[hsl(220,50%,25%)] to-[hsl(220,45%,35%)] hover:from-[hsl(220,50%,30%)] hover:to-[hsl(220,45%,40%)] text-foreground font-semibold tracking-wide"
-          >
-            {step === 5 ? (
-              <>
-                <Eye className="h-4 w-4 mr-2" /> Ver resultados
-              </>
-            ) : (
-              <>
-                Siguiente <ChevronRight className="h-4 w-4 ml-1" />
-              </>
+        {/* ─── Question Area ─── */}
+        <div className="bg-[hsl(220,25%,7%)] min-h-[320px] flex flex-col">
+          {/* Question counter */}
+          <div className="px-6 pt-4 pb-2 flex items-center justify-between">
+            <span className="text-[10px] font-mono font-semibold text-muted-foreground/40 tracking-wider">
+              {String(qIndex + 1).padStart(2, '0')} / {String(totalQuestions).padStart(2, '0')}
+            </span>
+            {/* Audio controls */}
+            {showAudioPractice && currentQ.consularQuestion && (
+              <div className="flex items-center gap-1">
+                <button
+                  className={cn(
+                    "p-1.5 rounded-md transition-all",
+                    speakingId === currentQ.id
+                      ? "text-[hsl(var(--jarvis))] bg-[hsl(var(--jarvis)/0.1)] animate-pulse"
+                      : "text-muted-foreground/40 hover:text-muted-foreground"
+                  )}
+                  onClick={() => speakQuestion(currentQ)}
+                >
+                  <Volume2 className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  className={cn(
+                    "p-1.5 rounded-md transition-all",
+                    recordingId === currentQ.id
+                      ? "text-red-400 bg-red-400/10 animate-pulse"
+                      : "text-muted-foreground/40 hover:text-muted-foreground"
+                  )}
+                  onClick={() => recordingId === currentQ.id ? stopRecording() : startRecording(currentQ.id)}
+                >
+                  <Mic className="h-3.5 w-3.5" />
+                </button>
+              </div>
             )}
-          </Button>
+          </div>
+
+          {/* Animated question */}
+          <div className="flex-1 px-6 pb-4">
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={currentQ.id}
+                custom={direction}
+                initial={{ opacity: 0, x: direction * 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction * -40 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="space-y-5"
+              >
+                {/* Question text */}
+                <h2 className="text-lg font-semibold text-foreground leading-snug">
+                  {currentQ.textEs}
+                </h2>
+
+                {/* Consular practice hint */}
+                {showAudioPractice && currentQ.consularQuestion && (
+                  <p className="text-xs text-[hsl(var(--jarvis)/0.5)] italic">
+                    🎙️ "{currentQ.consularQuestion}"
+                  </p>
+                )}
+
+                {recordings[currentQ.id] && (
+                  <audio controls src={recordings[currentQ.id]} className="w-full h-8" />
+                )}
+
+                {/* Options */}
+                {currentQ.type === 'select' && currentQ.options && (
+                  <div className="space-y-2">
+                    {currentQ.options.map(opt => {
+                      const isSelected = answers[currentQ.fieldKey] === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => handleOptionSelect(currentQ.fieldKey, opt.value)}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all duration-200 border group",
+                            isSelected
+                              ? "bg-[hsl(var(--jarvis)/0.08)] border-[hsl(var(--jarvis)/0.3)] shadow-[0_0_20px_-5px_hsl(195_100%_50%/0.15)]"
+                              : "bg-[hsl(220,25%,10%)] border-border/20 hover:border-border/40 hover:bg-[hsl(220,25%,12%)]"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                            isSelected
+                              ? "border-[hsl(var(--jarvis))] bg-[hsl(var(--jarvis))]"
+                              : "border-muted-foreground/30 group-hover:border-muted-foreground/50"
+                          )}>
+                            {isSelected && <div className="w-2 h-2 rounded-full bg-background" />}
+                          </div>
+                          <span className={cn(
+                            "text-sm font-medium transition-colors",
+                            isSelected ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"
+                          )}>
+                            {opt.labelEs}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Number input */}
+                {currentQ.type === 'number' && (
+                  <Input
+                    type="number"
+                    min={0}
+                    max={120}
+                    autoFocus
+                    placeholder="Ingrese un número"
+                    className="bg-[hsl(220,25%,10%)] border-border/20 w-40 text-lg font-mono focus:ring-[hsl(var(--jarvis)/0.3)] focus:border-[hsl(var(--jarvis)/0.3)]"
+                    value={answers[currentQ.fieldKey] as number || ''}
+                    onChange={(e) => updateAnswer(currentQ.fieldKey, e.target.value ? parseInt(e.target.value) : undefined)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && currentIsAnswered) {
+                        isLastQuestion ? handleSubmit() : goNext();
+                      }
+                    }}
+                  />
+                )}
+
+                {/* Boolean */}
+                {currentQ.type === 'boolean' && (
+                  <div className="flex items-center gap-3">
+                    {[
+                      { val: true, label: 'Sí' },
+                      { val: false, label: 'No' },
+                    ].map(({ val, label }) => {
+                      const isSelected = answers[currentQ.fieldKey] === val;
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => handleOptionSelect(currentQ.fieldKey, val)}
+                          className={cn(
+                            "flex-1 py-4 rounded-xl text-center font-semibold text-sm border transition-all duration-200",
+                            isSelected
+                              ? "bg-[hsl(var(--jarvis)/0.08)] border-[hsl(var(--jarvis)/0.3)] text-foreground shadow-[0_0_20px_-5px_hsl(195_100%_50%/0.15)]"
+                              : "bg-[hsl(220,25%,10%)] border-border/20 text-muted-foreground hover:border-border/40 hover:text-foreground/80"
+                          )}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* ─── Navigation ─── */}
+          <div className="px-6 pb-5 flex items-center gap-3">
+            {qIndex > 0 && (
+              <button
+                onClick={goPrev}
+                className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors font-medium"
+              >
+                ← Anterior
+              </button>
+            )}
+            <div className="flex-1" />
+
+            {isLastQuestion && allAnswered ? (
+              <Button
+                onClick={handleSubmit}
+                className="bg-gradient-to-r from-[hsl(var(--jarvis))] to-emerald-500 hover:from-[hsl(var(--jarvis-glow))] hover:to-emerald-400 text-background font-bold px-6 shadow-[0_0_30px_-5px_hsl(195_100%_50%/0.3)]"
+              >
+                <Eye className="h-4 w-4 mr-2" /> Ver resultados
+              </Button>
+            ) : currentQ.type === 'number' && currentIsAnswered ? (
+              <Button
+                onClick={goNext}
+                variant="outline"
+                className="border-[hsl(var(--jarvis)/0.3)] text-[hsl(var(--jarvis))] hover:bg-[hsl(var(--jarvis)/0.08)]"
+              >
+                Siguiente <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            ) : null}
+          </div>
         </div>
+
+        {/* Bottom glow line */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--jarvis)/0.2)] to-transparent" />
       </div>
 
-      {/* Reset floating button */}
-      <div className="flex justify-center pt-4">
-        <button
-          onClick={() => setShowResetDialog(true)}
-          className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors flex items-center gap-1"
-        >
-          <RotateCcw className="h-3 w-3" /> Reiniciar evaluación
-        </button>
+      {/* ─── Dot progress + Reset ─── */}
+      <div className="pt-4 space-y-3">
+        {/* Dot indicators */}
+        <div className="flex items-center justify-center gap-1 flex-wrap">
+          {visibleQuestions.map((q, i) => {
+            const isAnswered = answers[q.fieldKey] !== undefined && answers[q.fieldKey] !== '';
+            const isCurrent = i === qIndex;
+            return (
+              <button
+                key={q.id}
+                onClick={() => { setDirection(i > qIndex ? 1 : -1); setQIndex(i); }}
+                className={cn(
+                  "rounded-full transition-all duration-200",
+                  isCurrent
+                    ? "w-6 h-2 bg-[hsl(var(--jarvis))]"
+                    : isAnswered
+                    ? "w-2 h-2 bg-emerald-500/70 hover:bg-emerald-400"
+                    : "w-2 h-2 bg-muted-foreground/20 hover:bg-muted-foreground/40"
+                )}
+              />
+            );
+          })}
+        </div>
+
+        {/* Reset */}
+        <div className="flex justify-center">
+          <button
+            onClick={() => setShowResetDialog(true)}
+            className="text-[10px] text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors flex items-center gap-1"
+          >
+            <RotateCcw className="h-2.5 w-2.5" /> Reiniciar
+          </button>
+        </div>
       </div>
 
       {/* Reset Dialog */}
