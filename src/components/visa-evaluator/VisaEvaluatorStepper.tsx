@@ -375,7 +375,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
       </div>
 
       {/* ─── Dot progress + Reset ─── */}
-      <div className="pt-4 space-y-3">
+      <div className="pt-3 pb-1 space-y-2 shrink-0">
         {/* Dot indicators */}
         <div className="flex items-center justify-center gap-1 flex-wrap">
           {visibleQuestions.map((q, i) => {
