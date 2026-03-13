@@ -40,8 +40,9 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
   const progress = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
 
   const updateAnswer = useCallback((key: keyof VisaEvalAnswers, value: any) => {
-    // Parse age select values to number
-    const parsed = key === 'age' ? parseInt(value) : value;
+    // Parse numeric select values to number
+    const numericFields: (keyof VisaEvalAnswers)[] = ['age', 'previousDenials'];
+    const parsed = numericFields.includes(key) ? parseInt(value) : value;
     setAnswers(prev => ({ ...prev, [key]: parsed }));
   }, []);
 
