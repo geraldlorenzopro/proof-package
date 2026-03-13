@@ -13,6 +13,7 @@ export default function VisaEvalPublic() {
   const [evalData, setEvalData] = useState<any>(null);
   const [view, setView] = useState<'form' | 'results'>('form');
   const [result, setResult] = useState<EvalResult | null>(null);
+  const [lastAnswers, setLastAnswers] = useState<VisaEvalAnswers | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -28,8 +29,10 @@ export default function VisaEvalPublic() {
       setEvalData(row);
 
       if (row.status === 'completed' && row.score) {
-        const evalResult = evaluateProfile(row.answers as unknown as VisaEvalAnswers);
+        const answers = row.answers as unknown as VisaEvalAnswers;
+        const evalResult = evaluateProfile(answers);
         setResult(evalResult);
+        setLastAnswers(answers);
         setView('results');
       }
     } catch (e) {
@@ -43,9 +46,9 @@ export default function VisaEvalPublic() {
   const handleComplete = async (answers: VisaEvalAnswers) => {
     const evalResult = evaluateProfile(answers);
     setResult(evalResult);
+    setLastAnswers(answers);
     setView('results');
 
-    // Save via public function
     try {
       await supabase.rpc('update_visa_eval_by_token', {
         _token: token!,
@@ -97,7 +100,9 @@ export default function VisaEvalPublic() {
         {view === 'results' && result && (
           <VisaEvaluatorResults
             result={result}
-            onRestart={() => setView('form')}
+            answers={lastAnswers || undefined}
+            isPublicView={true}
+            onRestart={() => { setView('form'); setLastAnswers(null); }}
           />
         )}
 
