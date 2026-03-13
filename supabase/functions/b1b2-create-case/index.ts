@@ -20,11 +20,35 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { account_cid, client_name, client_email } = body;
+    console.log("b1b2-create-case received:", JSON.stringify(body));
 
-    if (!account_cid || !client_name || client_name.trim().length < 2) {
+    // Support both direct payload and GHL webhook format
+    const account_cid =
+      body.account_cid ||
+      body.location?.id ||
+      body.customData?.account_cid ||
+      body.customData?.external_crm_id;
+
+    const client_name =
+      body.client_name ||
+      body.contact_name ||
+      [body.contact?.first_name, body.contact?.last_name].filter(Boolean).join(" ") ||
+      body.contact?.name ||
+      body.first_name && body.last_name ? `${body.first_name} ${body.last_name}`.trim() : null ||
+      body.customData?.client_name;
+
+    const client_email =
+      body.client_email ||
+      body.contact?.email ||
+      body.email ||
+      body.customData?.client_email;
+
+    if (!account_cid || !client_name || String(client_name).trim().length < 2) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: account_cid, client_name" }),
+        JSON.stringify({
+          error: "Missing required fields: account_cid, client_name",
+          debug: { account_cid, client_name, keys: Object.keys(body) },
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
