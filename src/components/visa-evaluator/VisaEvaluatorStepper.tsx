@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { RotateCcw, Volume2, Mic, ChevronRight, Eye, User, Briefcase, Home, Plane, ShieldAlert } from "lucide-react";
+import { RotateCcw, ChevronRight, Eye, User, Briefcase, Home, Plane, ShieldAlert } from "lucide-react";
 import { INTERVIEW_QUESTIONS, STEP_LABELS, type VisaEvalAnswers, type InterviewQuestion } from "@/lib/visaAvatarEngine";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from "framer-motion";
 interface Props {
   onComplete: (answers: VisaEvalAnswers) => void;
   initialAnswers?: Partial<VisaEvalAnswers>;
-  showAudioPractice?: boolean;
 }
 
 export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showAudioPractice = false }: Props) {
