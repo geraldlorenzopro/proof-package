@@ -843,7 +843,7 @@ export default function CaseWorkspace() {
 
         {/* ═══ PROFILE VIEW ═══ */}
         {activeView === "profile" && selectedClientId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          <div>
             <ClientProfileEditor
               clientId={selectedClientId}
               onUpdated={() => {
