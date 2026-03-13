@@ -22,26 +22,25 @@ Deno.serve(async (req) => {
     const body = await req.json();
     console.log("b1b2-create-case received:", JSON.stringify(body));
 
-    // Support both direct payload and GHL webhook format
+    // GHL sends custom data nested under "customData" key
+    const cd = body.customData || {};
+
     const account_cid =
+      cd.account_cid ||
       body.account_cid ||
-      body.location?.id ||
-      body.customData?.account_cid ||
-      body.customData?.external_crm_id;
+      body.location?.id;
 
     const client_name =
+      cd.client_name ||
       body.client_name ||
       body.contact_name ||
-      [body.contact?.first_name, body.contact?.last_name].filter(Boolean).join(" ") ||
-      body.contact?.name ||
-      body.first_name && body.last_name ? `${body.first_name} ${body.last_name}`.trim() : null ||
-      body.customData?.client_name;
+      (body.contact?.first_name ? `${body.contact.first_name} ${body.contact.last_name || ""}`.trim() : null);
 
     const client_email =
+      cd.client_email ||
       body.client_email ||
       body.contact?.email ||
-      body.email ||
-      body.customData?.client_email;
+      body.email;
 
     if (!account_cid || !client_name || String(client_name).trim().length < 2) {
       return new Response(
