@@ -348,7 +348,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
           </div>
 
           {/* ─── Navigation ─── */}
-          <div className="px-8 py-3 shrink-0 flex items-center gap-3">
+          <div className="px-4 sm:px-8 py-2 sm:py-3 shrink-0 flex items-center gap-3">
             {qIndex > 0 && (
               <button
                 onClick={goPrev}
@@ -362,7 +362,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
             {isLastQuestion && allAnswered ? (
               <Button
                 onClick={handleSubmit}
-                className="bg-gradient-to-r from-[hsl(var(--jarvis))] to-emerald-500 hover:from-[hsl(var(--jarvis-glow))] hover:to-emerald-400 text-background font-bold px-6 shadow-[0_0_30px_-5px_hsl(195_100%_50%/0.3)]"
+                className="bg-gradient-to-r from-[hsl(var(--jarvis))] to-emerald-500 hover:from-[hsl(var(--jarvis-glow))] hover:to-emerald-400 text-background font-bold px-4 sm:px-6 text-sm shadow-[0_0_30px_-5px_hsl(195_100%_50%/0.3)]"
               >
                 <Eye className="h-4 w-4 mr-2" /> Ver resultados
               </Button>
