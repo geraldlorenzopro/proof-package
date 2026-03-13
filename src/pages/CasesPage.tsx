@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight, X, Filter } from 'lucide-react';
+import { Plus, Copy, Check, ExternalLink, Trash2, FileText, ArrowLeft, Users, Clock, CheckCircle, ChevronRight, X, Filter, Search } from 'lucide-react';
 import NewCaseModal from '@/components/NewCaseModal';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Case = {
   id: string;
