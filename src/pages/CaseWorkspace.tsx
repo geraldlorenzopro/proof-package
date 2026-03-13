@@ -420,8 +420,56 @@ export default function CaseWorkspace() {
   if (loading) {
     return (
       <Wrapper>
-        <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="w-6 h-6 text-jarvis animate-spin" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pt-16 lg:pt-6">
+          {/* Breadcrumb skeleton */}
+          <div className="mb-5">
+            <div className="flex items-center gap-2 text-[11px]">
+              <span className="text-muted-foreground">Portfolio</span>
+              <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
+              <span className="text-jarvis font-semibold">{selectedClientName}</span>
+            </div>
+          </div>
+
+          {/* Hero card skeleton */}
+          <div className="mb-6">
+            <div className="relative overflow-hidden rounded-2xl border border-jarvis/15 bg-gradient-to-br from-card via-card to-jarvis/[0.03]">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-jarvis/50 to-accent/50" />
+              <div className="p-5 sm:p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-6 w-40 bg-muted/40 rounded animate-pulse" />
+                </div>
+                <div className="flex items-center gap-2 ml-0">
+                  <div className="h-5 w-64 bg-jarvis/10 rounded animate-pulse" />
+                  <div className="h-5 w-24 bg-muted/30 rounded animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Pipeline skeleton */}
+          <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-8 w-8 rounded-full bg-muted/30 animate-pulse shrink-0" />
+            ))}
+          </div>
+
+          {/* Tabs skeleton */}
+          <div className="flex items-center gap-4 mb-6 border-b border-border/40 pb-3">
+            {["Resumen", "Documentos", "Formularios", "Decisión", "Historial"].map(t => (
+              <div key={t} className="h-4 w-20 bg-muted/30 rounded animate-pulse" />
+            ))}
+          </div>
+
+          {/* Content area skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              <div className="h-48 bg-muted/20 rounded-xl animate-pulse border border-border/20" />
+              <div className="h-32 bg-muted/20 rounded-xl animate-pulse border border-border/20" />
+            </div>
+            <div className="space-y-4">
+              <div className="h-56 bg-muted/20 rounded-xl animate-pulse border border-border/20" />
+            </div>
+          </div>
         </div>
       </Wrapper>
     );
