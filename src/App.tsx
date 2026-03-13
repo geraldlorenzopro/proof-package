@@ -75,6 +75,8 @@ const App = () => (
           <Route path="/dashboard/workspace-demo" element={<CaseWorkspace />} />
           <Route path="/case-engine/:caseId" element={<CaseEnginePage />} />
           <Route path="/hub/intelligence" element={<IntelligenceCenterPage />} />
+          <Route path="/dashboard/visa-evaluator" element={<VisaEvaluatorPage />} />
+          <Route path="/visa-eval/:token" element={<VisaEvalPublic />} />
           <Route path="/debug/pdf-fields" element={<PdfFieldInspector />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
