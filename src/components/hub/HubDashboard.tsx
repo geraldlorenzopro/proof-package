@@ -6,7 +6,7 @@ import {
   FileSearch, Scale, ClipboardList, ChevronRight,
   ArrowUpRight, Briefcase,
   Shield, PlusCircle, Search,
-  Zap, LayoutGrid, ChevronDown
+  Zap, LayoutGrid, ChevronDown, BarChart3
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import HubAnalyticsCards from "./HubAnalyticsCards";
@@ -16,7 +16,6 @@ import HubAuditLog from "./HubAuditLog";
 import HubToolPermissions from "./HubToolPermissions";
 import HubNotifications from "./HubNotifications";
 import SlaTracker from "./SlaTracker";
-import HubFirmMetrics from "./HubFirmMetrics";
 
 interface HubApp {
   id: string;
@@ -367,8 +366,18 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         </section>
       )}
 
-      {/* ═══ FIRM METRICS — Enterprise Analytics (collapsible) ═══ */}
-      <HubFirmMetrics />
+      {/* ═══ INTELLIGENCE CENTER LINK ═══ */}
+      <motion.button
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        onClick={() => goTo("/hub/intelligence")}
+        className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-accent/15 bg-accent/[0.04] px-4 py-3 text-sm font-semibold text-accent hover:bg-accent/[0.08] hover:border-accent/25 transition-all group"
+      >
+        <BarChart3 className="w-4 h-4" />
+        Ver Reportes de Eficiencia
+        <ArrowUpRight className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+      </motion.button>
 
       {/* ═══ SLA TRACKER — Deadline Countdowns ═══ */}
       <SlaTracker />

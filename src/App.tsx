@@ -32,6 +32,7 @@ import NotFound from "./pages/NotFound";
 import PdfFieldInspector from "./pages/PdfFieldInspector";
 import CaseWorkspace from "./pages/CaseWorkspace";
 import CaseEnginePage from "./pages/CaseEnginePage";
+import IntelligenceCenterPage from "./pages/IntelligenceCenterPage";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => (
           </Route>
           <Route path="/dashboard/workspace-demo" element={<CaseWorkspace />} />
           <Route path="/case-engine/:caseId" element={<CaseEnginePage />} />
+          <Route path="/hub/intelligence" element={<IntelligenceCenterPage />} />
           <Route path="/debug/pdf-fields" element={<PdfFieldInspector />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
