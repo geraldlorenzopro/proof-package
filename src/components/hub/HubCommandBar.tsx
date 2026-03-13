@@ -106,6 +106,9 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
   const openRef = useRef(open);
   openRef.current = open;
 
+  // Cache for initial results to avoid re-fetching on every open
+  const cachedDefaults = useRef<SearchResult[] | null>(null);
+
   // ⌘K listener — uses ref to avoid stale closure
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -119,10 +122,14 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
     return () => window.removeEventListener("keydown", onKey);
   }, [setOpen]);
 
-  // Reset on open
+  // Reset on open — show cached results instantly, refresh in background
   useEffect(() => {
     if (open) {
-      setTimeout(() => inputRef.current?.focus(), 80);
+      // Show cached defaults immediately for instant feel
+      if (cachedDefaults.current) {
+        setResults(cachedDefaults.current);
+      }
+      setTimeout(() => inputRef.current?.focus(), 50);
       setQuery("");
       setFilter(defaultFilter || "all");
       setSelectedIdx(0);
