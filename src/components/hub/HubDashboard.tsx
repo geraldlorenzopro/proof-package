@@ -169,6 +169,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
     apps.filter(a => a.slug !== "case-engine" && (canAccessApp ? canAccessApp(a.slug) : true)).map(a => a.slug)
   );
 
+  const hasCaseEngine = apps.some(a => a.slug === "case-engine") && (canAccessApp ? canAccessApp("case-engine") : true);
+  const hasSmartForms = apps.some(a => a.slug === "smart-forms") && (canAccessApp ? canAccessApp("smart-forms") : true);
+
   const appsBySlug = Object.fromEntries(apps.map(a => [a.slug, a]));
 
   const categoriesWithApps = TOOL_CATEGORIES
