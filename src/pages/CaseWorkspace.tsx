@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
+import { getImmigrationStatus } from "@/lib/immigrationStatuses";
 import CaseQuestionnaire from "@/components/workspace/CaseQuestionnaire";
 import {
   ArrowLeft, FileText, ClipboardList, Clock, ChevronRight,
@@ -781,24 +782,12 @@ export default function CaseWorkspace() {
                   {clientCases.length} caso{clientCases.length !== 1 ? "s" : ""}
                 </span>
               )}
-              {profile?.immigration_status && (() => {
-                const statusMap: Record<string, { label: string; color: string }> = {
-                  "undocumented": { label: "Sin Estatus", color: "text-destructive border-destructive/20 bg-destructive/5" },
-                  "permanent_resident": { label: "Residente Permanente", color: "text-emerald-400 border-emerald-500/20 bg-emerald-500/5" },
-                  "us_citizen": { label: "Ciudadano US", color: "text-emerald-400 border-emerald-500/20 bg-emerald-500/5" },
-                  "conditional_resident": { label: "Residente Condicional", color: "text-accent border-accent/20 bg-accent/5" },
-                  "asylee": { label: "Asilado", color: "text-jarvis border-jarvis/20 bg-jarvis/5" },
-                  "refugee": { label: "Refugiado", color: "text-jarvis border-jarvis/20 bg-jarvis/5" },
-                  "tps": { label: "TPS", color: "text-accent border-accent/20 bg-accent/5" },
-                  "daca": { label: "DACA", color: "text-accent border-accent/20 bg-accent/5" },
-                  "parolee": { label: "Parolee", color: "text-accent border-accent/20 bg-accent/5" },
-                  "visa_holder": { label: "Visa Vigente", color: "text-jarvis border-jarvis/20 bg-jarvis/5" },
-                  "overstay": { label: "Visa Vencida", color: "text-destructive border-destructive/20 bg-destructive/5" },
-                };
-                const mapped = statusMap[profile.immigration_status!] || { label: profile.immigration_status, color: "text-accent border-accent/20 bg-accent/5" };
+              {(() => {
+                const status = getImmigrationStatus(profile?.immigration_status);
+                if (!status) return null;
                 return (
-                  <Badge variant="outline" className={`text-[9px] font-semibold px-1.5 py-0 ${mapped.color}`}>
-                    {mapped.label}
+                  <Badge variant="outline" className={`text-[9px] font-semibold px-1.5 py-0 ${status.color} ${status.bgColor} ${status.borderColor}`}>
+                    {status.label}
                   </Badge>
                 );
               })()}
