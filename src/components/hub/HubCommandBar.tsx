@@ -325,7 +325,11 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
     setOpen(false);
     sessionStorage.setItem("ner_hub_return", "/hub");
     sessionStorage.setItem("ner_auth_redirect", result.route);
-    navigate(result.route);
+    // Use replace when already on workspace-demo to avoid stacking history
+    const currentPath = window.location.pathname;
+    const isWorkspace = currentPath.includes("/workspace-demo");
+    const targetIsWorkspace = result.route.includes("/workspace-demo");
+    navigate(result.route, { replace: isWorkspace && targetIsWorkspace });
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
