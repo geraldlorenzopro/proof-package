@@ -100,6 +100,8 @@ export default function HubAnalyticsCards() {
     );
   }
 
+  const navigate = useNavigate();
+
   if (!data) return null;
 
   const primaryCards = [
@@ -113,6 +115,7 @@ export default function HubAnalyticsCards() {
       glow: "shadow-[0_0_20px_hsl(195_100%_50%/0.06)]",
       trend: data.newCasesThisWeek > 0 ? `+${data.newCasesThisWeek} esta semana` : "Sin nuevos",
       trendUp: data.newCasesThisWeek > 0,
+      href: "/dashboard/cases?filter=active",
     },
     {
       label: "Requieren Acción",
@@ -125,6 +128,7 @@ export default function HubAnalyticsCards() {
       trend: data.needAction > 0 ? "Pendientes del equipo" : "Todo al día ✓",
       trendUp: data.needAction === 0,
       pulse: data.needAction > 5,
+      href: "/dashboard/cases?filter=needs-action",
     },
   ];
 
@@ -138,6 +142,7 @@ export default function HubAnalyticsCards() {
       bg: data.urgentDeadlines > 0 ? "bg-rose-500/10" : "bg-emerald-500/10",
       border: data.urgentDeadlines > 0 ? "border-rose-500/20" : "border-emerald-500/20",
       pulse: data.urgentDeadlines > 0,
+      href: "/dashboard/cases?filter=deadlines",
     },
     {
       label: "En Preparación",
@@ -146,6 +151,7 @@ export default function HubAnalyticsCards() {
       color: "text-cyan-400",
       bg: "bg-cyan-500/10",
       border: "border-cyan-500/20",
+      href: "/dashboard/smart-forms",
     },
     {
       label: "Completados",
@@ -155,6 +161,7 @@ export default function HubAnalyticsCards() {
       color: "text-emerald-400",
       bg: "bg-emerald-500/10",
       border: "border-emerald-500/20",
+      href: "/dashboard/cases?filter=completed",
     },
     {
       label: "Clientes",
@@ -164,6 +171,7 @@ export default function HubAnalyticsCards() {
       bg: "bg-violet-500/10",
       border: "border-violet-500/20",
       trend: data.newClientsThisMonth > 0 ? `+${data.newClientsThisMonth} este mes` : null,
+      href: "/dashboard/workspace-demo",
     },
   ];
 
