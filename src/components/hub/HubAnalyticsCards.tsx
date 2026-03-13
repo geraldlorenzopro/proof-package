@@ -118,21 +118,30 @@ export default function HubAnalyticsCards() {
       href: "/dashboard/cases?filter=active",
     },
     {
+      label: "Clientes",
+      value: data.totalClients,
+      icon: Users,
+      color: "text-violet-400",
+      bg: "bg-violet-500/10",
+      border: "border-violet-500/20",
+      glow: "shadow-[0_0_20px_hsl(270_100%_50%/0.06)]",
+      trend: data.newClientsThisMonth > 0 ? `+${data.newClientsThisMonth} este mes` : "Sin nuevos",
+      trendUp: data.newClientsThisMonth > 0,
+      href: "/dashboard/workspace-demo",
+    },
+  ];
+
+  const secondaryCards = [
+    {
       label: "Requieren Acción",
       value: data.needAction,
       icon: AlertTriangle,
       color: data.needAction > 0 ? "text-amber-400" : "text-emerald-400",
       bg: data.needAction > 0 ? "bg-amber-500/10" : "bg-emerald-500/10",
       border: data.needAction > 0 ? "border-amber-500/20" : "border-emerald-500/20",
-      glow: data.needAction > 0 ? "shadow-[0_0_20px_hsl(38_100%_50%/0.06)]" : "",
-      trend: data.needAction > 0 ? "Pendientes del equipo" : "Todo al día ✓",
-      trendUp: data.needAction === 0,
       pulse: data.needAction > 5,
       href: "/dashboard/cases?filter=needs-action",
     },
-  ];
-
-  const secondaryCards = [
     {
       label: "Deadlines",
       subtitle: "próx. 7d",
@@ -162,16 +171,6 @@ export default function HubAnalyticsCards() {
       bg: "bg-emerald-500/10",
       border: "border-emerald-500/20",
       href: "/dashboard/cases?filter=completed",
-    },
-    {
-      label: "Clientes",
-      value: data.totalClients,
-      icon: Users,
-      color: "text-violet-400",
-      bg: "bg-violet-500/10",
-      border: "border-violet-500/20",
-      trend: data.newClientsThisMonth > 0 ? `+${data.newClientsThisMonth} este mes` : null,
-      href: "/dashboard/workspace-demo",
     },
   ];
 
