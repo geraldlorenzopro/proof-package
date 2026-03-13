@@ -888,7 +888,7 @@ export default function CaseWorkspace() {
                 })}
               </div>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* Footer */}
