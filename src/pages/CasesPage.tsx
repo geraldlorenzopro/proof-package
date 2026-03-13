@@ -263,7 +263,7 @@ export default function CasesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => navigate(`/case/${c.id}`)} className="text-xs text-jarvis hover:underline font-medium px-2 py-1">
+                    <button onClick={() => navigate(`/case-engine/${c.id}`)} className="text-xs text-jarvis hover:underline font-medium px-2 py-1">
                       Revisar
                     </button>
                     <button onClick={() => deleteCase(c.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-destructive/10">
