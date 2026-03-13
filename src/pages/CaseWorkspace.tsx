@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+
 import { supabase } from "@/integrations/supabase/client";
 import CaseQuestionnaire from "@/components/workspace/CaseQuestionnaire";
 import {
@@ -55,11 +55,7 @@ interface ClientCase {
   form_count?: number;
 }
 
-/* ── Animation ── */
-const fadeUp = {
-  hidden: { opacity: 0, y: 12 },
-  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.35, ease: [0.22, 1, 0.36, 1] } }),
-};
+/* ── Animation removed for instant rendering ── */
 
 type ClientView = "cases" | "questionnaire" | "profile" | "activity";
 type CaseEngineTab = "resumen" | "documentos" | "formularios" | "decision" | "historial";
@@ -448,7 +444,7 @@ export default function CaseWorkspace() {
       <Wrapper>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pt-16 lg:pt-6">
           {/* ═══ BREADCRUMB ═══ */}
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
+          <div className="mb-5">
             <div className="flex items-center gap-2 text-[11px]">
               <button onClick={handleBackToDirectory} className="text-muted-foreground hover:text-foreground transition-colors">
                 Portfolio
@@ -460,10 +456,10 @@ export default function CaseWorkspace() {
               <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
               <span className="text-foreground font-semibold">{processLabel}</span>
             </div>
-          </motion.div>
+          </div>
 
           {/* ═══ CASE HERO CARD ═══ */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-6">
+          <div className="mb-6">
             <div className="relative overflow-hidden rounded-2xl border border-jarvis/15 bg-gradient-to-br from-card via-card to-jarvis/[0.03]">
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-jarvis/50 to-accent/50" />
               <div className="p-5 sm:p-6">
@@ -521,7 +517,7 @@ export default function CaseWorkspace() {
                 )}
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* ═══ CASE ENGINE TABS ═══ */}
           <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
@@ -547,7 +543,7 @@ export default function CaseWorkspace() {
           </div>
 
           {/* ═══ CASE ENGINE CONTENT ═══ */}
-          <motion.div key={caseEngineTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          <div key={caseEngineTab}>
             {caseEngineTab === "resumen" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
@@ -645,7 +641,7 @@ export default function CaseWorkspace() {
                 <CaseStageHistory history={caseStageHistory} stageLabels={stageLabels} />
               </div>
             )}
-          </motion.div>
+          </div>
         </div>
       </Wrapper>
     );
@@ -741,7 +737,7 @@ export default function CaseWorkspace() {
 
         {/* ═══ CASES VIEW ═══ */}
         {activeView === "cases" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          <div>
             {clientCases.length === 0 ? (
               <div className="text-center py-20">
                 <Briefcase className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
@@ -758,12 +754,8 @@ export default function CaseWorkspace() {
             ) : (
               <div className="space-y-2">
                 {clientCases.map((c, i) => (
-                  <motion.button
+                  <button
                     key={c.id}
-                    custom={i}
-                    initial="hidden"
-                    animate="visible"
-                    variants={fadeUp}
                     onClick={() => openCase(c.id)}
                     className="w-full rounded-xl border border-border bg-card hover:border-jarvis/20 transition-all text-left group"
                   >
@@ -798,16 +790,16 @@ export default function CaseWorkspace() {
 
                       <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-jarvis transition-colors shrink-0" />
                     </div>
-                  </motion.button>
+                  </button>
                 ))}
               </div>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* ═══ QUESTIONNAIRE VIEW ═══ */}
         {activeView === "questionnaire" && selectedClientId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          <div>
             {clientCases.length === 0 ? (
               <div className="text-center py-16">
                 <ClipboardList className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
@@ -846,12 +838,12 @@ export default function CaseWorkspace() {
                 <CaseQuestionnaire caseId={selectedCaseForQ} accountId={userAccountId} />
               </div>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* ═══ PROFILE VIEW ═══ */}
         {activeView === "profile" && selectedClientId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          <div>
             <ClientProfileEditor
               clientId={selectedClientId}
               onUpdated={() => {
@@ -861,12 +853,12 @@ export default function CaseWorkspace() {
                   .then(({ data }) => { if (data) setProfile(data); });
               }}
             />
-          </motion.div>
+          </div>
         )}
 
         {/* ═══ ACTIVITY VIEW ═══ */}
         {activeView === "activity" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="relative pl-8">
+          <div className="relative pl-8">
             <div className="absolute left-[13px] top-3 bottom-3 w-px bg-gradient-to-b from-jarvis/30 via-border to-transparent" />
             {activityLog.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">Sin actividad registrada</div>
@@ -875,7 +867,7 @@ export default function CaseWorkspace() {
                 {activityLog.map((item, i) => {
                   const Icon = item.icon;
                   return (
-                    <motion.div key={i} custom={i} initial="hidden" animate="visible" variants={fadeUp} className="relative">
+                    <div key={i} className="relative">
                       <div className="absolute -left-[22px] top-3 w-4 h-4 rounded-full border-2 border-jarvis bg-jarvis/20 flex items-center justify-center">
                         <div className="w-1.5 h-1.5 rounded-full bg-jarvis" />
                       </div>
@@ -891,12 +883,12 @@ export default function CaseWorkspace() {
                           </div>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* Footer */}
