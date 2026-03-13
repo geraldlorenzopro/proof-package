@@ -342,7 +342,16 @@ export interface InterviewQuestion {
 
 export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   // ── STEP 1: PERSONAL ──
-  { id: 'q_age', step: 1, textEs: '¿Cuál es la edad del solicitante?', textEn: 'What is the applicant\'s age?', fieldKey: 'age', type: 'number' },
+  { id: 'q_age', step: 1, textEs: '¿Cuál es la edad del solicitante?', textEn: 'What is the applicant\'s age?', fieldKey: 'age', type: 'select', options: [
+    { value: '15', labelEs: 'Menor de 16', labelEn: 'Under 16' },
+    { value: '17', labelEs: '16 – 17', labelEn: '16 – 17' },
+    { value: '20', labelEs: '18 – 21', labelEn: '18 – 21' },
+    { value: '25', labelEs: '22 – 28', labelEn: '22 – 28' },
+    { value: '32', labelEs: '29 – 35', labelEn: '29 – 35' },
+    { value: '42', labelEs: '36 – 49', labelEn: '36 – 49' },
+    { value: '55', labelEs: '50 – 60', labelEn: '50 – 60' },
+    { value: '65', labelEs: '61+', labelEn: '61+' },
+  ]},
   { id: 'q_gender', step: 1, textEs: '¿Sexo del solicitante?', textEn: 'Applicant\'s gender?', fieldKey: 'gender', type: 'select', options: [
     { value: 'male', labelEs: 'Masculino', labelEn: 'Male' },
     { value: 'female', labelEs: 'Femenino', labelEn: 'Female' },
