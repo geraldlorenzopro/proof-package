@@ -50,10 +50,21 @@ interface ClientCase {
   status: string;
   process_type: string | null;
   pipeline_stage: string | null;
+  ball_in_court: string | null;
+  stage_entered_at: string | null;
+  assigned_to: string | null;
   created_at: string;
   updated_at: string;
   form_count?: number;
+  template_label?: string | null;
 }
+
+/* Orphan form types that should not appear as standalone cases */
+const ORPHAN_FORM_TYPES = new Set([
+  "I-130", "I-130A", "I-485", "I-765", "I-131", "I-864", "I-693",
+  "G-28", "I-360", "I-751", "I-90", "I-601", "I-601A", "I-589",
+  "I-918", "I-918A", "I-129F", "DS-260", "EOIR-42B",
+]);
 
 /* ── Animation removed for instant rendering ── */
 
