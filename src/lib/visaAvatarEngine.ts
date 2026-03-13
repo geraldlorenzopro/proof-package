@@ -455,6 +455,17 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     { value: 'irregular', labelEs: 'Irregular', labelEn: 'Irregular' },
     { value: 'none', labelEs: 'Sin ingresos', labelEn: 'No income' },
   ]},
+  { id: 'q_partner_occupation', step: 2, textEs: '¿A qué se dedica su pareja?', textEn: 'What does your partner do?', fieldKey: 'partnerOccupation', type: 'select',
+    consularQuestion: 'What does your spouse do for a living?',
+    condition: (a) => ['married', 'cohabiting'].includes(a.maritalStatus || ''),
+    options: [
+      { value: 'employed', labelEs: 'Empleado/a', labelEn: 'Employed' },
+      { value: 'self_employed', labelEs: 'Independiente', labelEn: 'Self-employed' },
+      { value: 'student', labelEs: 'Estudiante', labelEn: 'Student' },
+      { value: 'homemaker', labelEs: 'Ama de casa', labelEn: 'Homemaker' },
+      { value: 'unemployed', labelEs: 'Desempleado/a', labelEn: 'Unemployed' },
+      { value: 'retired', labelEs: 'Jubilado/a', labelEn: 'Retired' },
+    ]},
 
   // ── STEP 3: ARRAIGO ──
   { id: 'q_property', step: 3, textEs: '¿Posee propiedades?', textEn: 'Do you own property?', fieldKey: 'ownsProperty', type: 'boolean',
