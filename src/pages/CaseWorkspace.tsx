@@ -356,6 +356,20 @@ export default function CaseWorkspace() {
   }
 
   function openCase(caseId: string) {
+    const seeded = clientCases.find(c => c.id === caseId);
+    if (seeded) {
+      setCaseData({
+        ...seeded,
+        client_name: clientFullName,
+      });
+      setCaseTemplate(null);
+      setCaseNotes([]);
+      setCaseTasks([]);
+      setCaseTags([]);
+      setCaseStageHistory([]);
+      setCaseEvidenceCount(0);
+      setCaseFormsCount(0);
+    }
     setActiveCaseId(caseId);
     setCaseEngineTab("resumen");
   }
