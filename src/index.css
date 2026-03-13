@@ -208,7 +208,11 @@
   50% { transform: translateY(-6px); }
 }
 
-/* Hide scrollbar but keep scrollable */
-.scrollbar-hide::-webkit-scrollbar {
+/* Hide all scrollbars globally — enterprise aesthetic */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
   display: none;
 }
