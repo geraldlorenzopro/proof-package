@@ -70,6 +70,7 @@ export default function VisaEvaluatorPage() {
   const handleRestart = () => {
     setView('form');
     setResult(null);
+    setLastAnswers(null);
     setShareToken(null);
   };
 
