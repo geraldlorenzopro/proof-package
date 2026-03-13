@@ -810,10 +810,10 @@ export default function CaseWorkspace() {
 
           <button
             onClick={() => setShowNewCase(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-jarvis/10 border border-jarvis/20 text-jarvis text-[11px] font-semibold hover:bg-jarvis/20 transition-all shrink-0"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-jarvis text-background text-sm font-bold hover:bg-jarvis/90 transition-all shrink-0 shadow-sm"
           >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Nuevo Caso</span>
+            <PlusCircle className="w-4 h-4" />
+            <span>Nuevo Caso</span>
           </button>
         </div>
 
