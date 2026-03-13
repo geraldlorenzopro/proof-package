@@ -106,6 +106,9 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
   const openRef = useRef(open);
   openRef.current = open;
 
+  // Cache for initial results to avoid re-fetching on every open
+  const cachedDefaults = useRef<SearchResult[] | null>(null);
+
   // ⌘K listener — uses ref to avoid stale closure
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -119,15 +122,44 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
     return () => window.removeEventListener("keydown", onKey);
   }, [setOpen]);
 
-  // Reset on open
+  // Reset on open — show cached results instantly, refresh in background
   useEffect(() => {
     if (open) {
-      setTimeout(() => inputRef.current?.focus(), 80);
+      // Show cached defaults immediately for instant feel
+      if (cachedDefaults.current) {
+        setResults(cachedDefaults.current);
+      }
+      setTimeout(() => inputRef.current?.focus(), 50);
       setQuery("");
       setFilter(defaultFilter || "all");
       setSelectedIdx(0);
     }
   }, [open, defaultFilter]);
+
+  // Prefetch defaults on mount so first open is instant
+  useEffect(() => {
+    if (!cachedDefaults.current) {
+      supabase
+        .from("client_profiles")
+        .select("id, first_name, last_name, email")
+        .order("updated_at", { ascending: false })
+        .limit(5)
+        .then(({ data }) => {
+          const clientResults: SearchResult[] = (data || []).map(c => {
+            const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre";
+            return {
+              id: `c-${c.id}`,
+              type: "client" as ResultType,
+              title: name,
+              subtitle: c.email || undefined,
+              route: `/dashboard/workspace-demo?client=${c.id}&name=${encodeURIComponent(name)}`,
+              meta: { email: c.email || undefined },
+            };
+          });
+          cachedDefaults.current = [...clientResults, ...TOOLS.slice(0, 4)];
+        });
+    }
+  }, []);
 
   // Search logic
   const performSearch = useCallback(async (q: string, f: FilterTab) => {
@@ -138,7 +170,14 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
       if (f === "tool" || f === "all") {
         const toolResults = f === "tool" ? TOOLS : [];
         if (f === "all") {
-          setLoading(true);
+          // Use cache if available, refresh in background
+          if (cachedDefaults.current) {
+            setResults(cachedDefaults.current);
+            setLoading(false);
+          } else {
+            setLoading(true);
+          }
+          
           const { data: recentClients } = await supabase
             .from("client_profiles")
             .select("id, first_name, last_name, email")
@@ -157,7 +196,9 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
             };
           });
 
-          setResults([...clientResults, ...TOOLS.slice(0, 4)]);
+          const defaultResults = [...clientResults, ...TOOLS.slice(0, 4)];
+          cachedDefaults.current = defaultResults;
+          setResults(defaultResults);
           setLoading(false);
           return;
         }
@@ -341,7 +382,7 @@ export default function HubCommandBar({ externalOpen, onExternalOpenChange, defa
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.1 }}
-              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100]"
+              className="fixed inset-0 bg-background/90 z-[100]"
               onClick={() => setOpen(false)}
             />
             <motion.div
