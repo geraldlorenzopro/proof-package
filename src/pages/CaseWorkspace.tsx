@@ -843,46 +843,86 @@ export default function CaseWorkspace() {
                 </button>
               </div>
             ) : (
-              <div className="space-y-2">
-                {clientCases.map((c, i) => (
-                  <button
-                    key={c.id}
-                    onClick={() => openCase(c.id)}
-                    className="w-full rounded-xl border border-border bg-card hover:border-jarvis/20 transition-all text-left group"
-                  >
-                    <div className="flex items-center gap-4 p-4">
-                      <div className="w-10 h-10 rounded-xl bg-jarvis/10 ring-1 ring-jarvis/20 flex items-center justify-center shrink-0">
-                        <Briefcase className="w-4.5 h-4.5 text-jarvis" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-sm font-bold text-foreground">{c.case_type}</p>
-                          <Badge variant="outline" className={`text-[9px] font-semibold ${
-                            c.status === "active" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-muted text-muted-foreground"
-                          }`}>
-                            {c.status === "active" ? "Activo" : c.status}
+              <div className="space-y-3">
+                {clientCases.map((c) => {
+                  const daysOpen = differenceInDays(new Date(), new Date(c.created_at));
+                  const processLabel = c.template_label || c.case_type;
+                  const stageLabel = c.pipeline_stage?.replace(/-/g, " ") || "Sin etapa";
+                  const ballOwner = c.ball_in_court || "team";
+                  const ownerColors: Record<string, { bg: string; text: string; label: string }> = {
+                    team: { bg: "bg-jarvis/10", text: "text-jarvis", label: "Equipo" },
+                    client: { bg: "bg-accent/10", text: "text-accent", label: "Cliente" },
+                    uscis: { bg: "bg-emerald-500/10", text: "text-emerald-400", label: "USCIS" },
+                  };
+                  const owner = ownerColors[ballOwner] || ownerColors.team;
+
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => openCase(c.id)}
+                      className="w-full rounded-2xl border border-border bg-card hover:border-jarvis/20 hover:shadow-sm transition-all text-left group"
+                    >
+                      <div className="p-4 sm:p-5">
+                        {/* Row 1: Title + Status */}
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-jarvis/10 ring-1 ring-jarvis/20 flex items-center justify-center shrink-0">
+                              <Briefcase className="w-4 h-4 text-jarvis" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-foreground truncate">{processLabel}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{c.case_type} · {format(new Date(c.created_at), "d MMM yyyy", { locale: es })}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge variant="outline" className={`text-[9px] font-semibold ${
+                              c.status === "active" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                              c.status === "pending" ? "bg-accent/10 text-accent border-accent/20" :
+                              "bg-muted text-muted-foreground"
+                            }`}>
+                              {c.status === "active" ? "Activo" : c.status === "pending" ? "Pendiente" : c.status}
+                            </Badge>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-jarvis transition-colors" />
+                          </div>
+                        </div>
+
+                        {/* Row 2: Pipeline stage + Ball in court */}
+                        <div className="flex items-center gap-2 mb-3 ml-[52px]">
+                          <Badge variant="outline" className="text-[9px] bg-jarvis/5 text-jarvis border-jarvis/15 capitalize">
+                            {stageLabel}
                           </Badge>
-                          {c.pipeline_stage && (
-                            <Badge variant="outline" className="text-[9px] bg-jarvis/10 text-jarvis border-jarvis/20">
-                              {c.pipeline_stage.replace(/-/g, " ")}
+                          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md ${owner.bg}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${owner.text.replace("text-", "bg-")}`} />
+                            <span className={`text-[9px] font-semibold ${owner.text}`}>{owner.label}</span>
+                          </div>
+                          {c.assigned_to && (
+                            <Badge variant="outline" className="text-[9px] bg-secondary text-muted-foreground border-border">
+                              <Users className="w-3 h-3 mr-1" />
+                              Asignado
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                          <span>{format(new Date(c.created_at), "d MMM yyyy", { locale: es })}</span>
-                          {c.form_count ? (
+
+                        {/* Row 3: Stats */}
+                        <div className="flex items-center gap-4 ml-[52px] text-[10px] text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {daysOpen} día{daysOpen !== 1 ? "s" : ""}
+                          </span>
+                          {(c.form_count || 0) > 0 && (
                             <span className="flex items-center gap-1">
                               <FileText className="w-3 h-3" />
                               {c.form_count} formulario{c.form_count !== 1 ? "s" : ""}
                             </span>
-                          ) : null}
+                          )}
+                          <span className="flex items-center gap-1 text-muted-foreground/50">
+                            Actualizado {format(new Date(c.updated_at), "d MMM", { locale: es })}
+                          </span>
                         </div>
                       </div>
-
-                      <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-jarvis transition-colors shrink-0" />
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
