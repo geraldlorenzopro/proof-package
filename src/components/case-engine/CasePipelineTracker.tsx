@@ -24,10 +24,12 @@ interface Props {
   compact?: boolean;
 }
 
-const ownerConfig = {
+const ownerConfig: Record<string, { label: string; icon: typeof Users; color: string; bg: string; border: string; ring: string; dot: string }> = {
   team: { label: "Equipo", icon: Users, color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/30", ring: "ring-jarvis/40", dot: "bg-jarvis" },
   client: { label: "Cliente", icon: User, color: "text-accent", bg: "bg-accent/10", border: "border-accent/30", ring: "ring-accent/40", dot: "bg-accent" },
   uscis: { label: "USCIS", icon: Shield, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", ring: "ring-emerald-500/40", dot: "bg-emerald-400" },
+  nvc: { label: "NVC", icon: Shield, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30", ring: "ring-blue-500/40", dot: "bg-blue-400" },
+  embassy: { label: "Embajada", icon: Shield, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", ring: "ring-amber-500/40", dot: "bg-amber-400" },
 };
 
 function getSlaStatus(stage: PipelineStage, stageEnteredAt: string | null, isCurrent: boolean) {
