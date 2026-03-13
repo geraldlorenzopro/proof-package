@@ -6,7 +6,7 @@ import {
   FileSearch, Scale, ClipboardList, ChevronRight,
   ArrowUpRight, Briefcase,
   Shield, PlusCircle, Search,
-  Zap, LayoutGrid, ChevronDown
+  Zap, LayoutGrid, ChevronDown, BarChart3
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import HubAnalyticsCards from "./HubAnalyticsCards";
