@@ -366,14 +366,6 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers, showA
               >
                 <Eye className="h-4 w-4 mr-2" /> Ver resultados
               </Button>
-            ) : currentQ.type === 'number' && currentIsAnswered ? (
-              <Button
-                onClick={goNext}
-                variant="outline"
-                className="border-[hsl(var(--jarvis)/0.3)] text-[hsl(var(--jarvis))] hover:bg-[hsl(var(--jarvis)/0.08)]"
-              >
-                Siguiente <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
             ) : null}
           </div>
         </div>
