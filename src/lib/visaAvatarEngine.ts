@@ -236,9 +236,10 @@ export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
 
   // ── ARRAIGO ECONÓMICO (25 pts) ──
   if (a.ownsProperty) {
-    arraigo_economico += a.propertyType === 'multiple' ? 12 : a.propertyType === 'commercial' ? 10 : 8;
+    arraigo_economico += a.propertyType === 'multiple' ? 10 : a.propertyType === 'commercial' ? 8 : 6;
   }
-  if (a.hasBankAccounts) arraigo_economico += 5;
+  if (a.ownsVehicle) arraigo_economico += 3;
+  if (a.hasBankAccounts) arraigo_economico += 4;
   if (a.hasInvestments) arraigo_economico += 5;
   if (a.hasRegisteredBusiness) arraigo_economico += 5;
   arraigo_economico = Math.min(arraigo_economico, 25);
