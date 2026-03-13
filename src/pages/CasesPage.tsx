@@ -79,6 +79,10 @@ export default function CasesPage() {
         return cases.filter(c => deadlineCaseIds.has(c.id));
       case 'completed':
         return cases.filter(c => c.status === 'completed' && c.updated_at && new Date(c.updated_at) >= startOfMonth);
+      case 'pending':
+        return cases.filter(c => c.status === 'pending');
+      case 'in-progress':
+        return cases.filter(c => c.status === 'in_progress');
       default:
         return cases;
     }
