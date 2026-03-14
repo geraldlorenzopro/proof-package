@@ -119,8 +119,8 @@ export default function VisaEvaluatorResults({ result, answers, shareToken, onRe
 
   const TABS: { id: ActiveTab; label: string; icon: React.ReactNode; proOnly?: boolean }[] = [
     { id: 'overview', label: 'Resumen', icon: <Zap className="h-4 w-4" /> },
-    { id: 'strategy', label: 'Estrategia', icon: <Lightbulb className="h-4 w-4" /> },
-    { id: 'documents', label: 'Documentos', icon: <ListChecks className="h-4 w-4" /> },
+    { id: 'strategy', label: 'Estrategia', icon: <Lightbulb className="h-4 w-4" />, proOnly: true },
+    { id: 'documents', label: 'Documentos', icon: <ListChecks className="h-4 w-4" />, proOnly: true },
     { id: 'simulator', label: 'Simulador', icon: <SlidersHorizontal className="h-4 w-4" />, proOnly: true },
   ];
 
