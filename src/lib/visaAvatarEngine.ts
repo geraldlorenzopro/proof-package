@@ -578,7 +578,8 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
       { value: '1_3yr', labelEs: 'Hace 1 a 3 años', labelEn: '1-3 years ago' },
       { value: 'over_3yr', labelEs: 'Hace más de 3 años', labelEn: 'Over 3 years ago' },
     ]},
-  { id: 'q_gaps', step: 5, textEs: '¿Ha estado mucho tiempo sin trabajar?', textEn: 'Have you been unemployed for a long time?', fieldKey: 'employmentGaps', type: 'boolean' },
+  { id: 'q_gaps', step: 5, textEs: '¿Ha estado mucho tiempo sin trabajar?', textEn: 'Have you been unemployed for a long time?', fieldKey: 'employmentGaps', type: 'boolean',
+    condition: (a) => !['unemployed', 'student', 'retired'].includes(a.employmentStatus || '') },
   { id: 'q_inconsistencies', step: 5, textEs: '¿Hay algo en su historia que no cuadra o es difícil de explicar?', textEn: 'Is there anything in your history that is hard to explain?', fieldKey: 'inconsistencies', type: 'boolean' },
   { id: 'q_criminal', step: 5, textEs: '¿Ha tenido problemas con la policía o la justicia?', textEn: 'Have you had issues with the police or justice system?', fieldKey: 'criminalRecord', type: 'boolean' },
 ];
