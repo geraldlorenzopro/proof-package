@@ -505,18 +505,22 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
 
   // ── STEP 3: ARRAIGO ──
   { id: 'q_property', step: 3, textEs: '¿Posee propiedades?', textEn: 'Do you own property?', fieldKey: 'ownsProperty', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 18,
     consularQuestion: 'Do you own any property in your home country?' },
   { id: 'q_property_type', step: 3, textEs: '¿Qué tipo de propiedad?', textEn: 'What type of property?', fieldKey: 'propertyType', type: 'select',
-    condition: (a) => a.ownsProperty === true,
+    condition: (a) => (a.age || 0) >= 18 && a.ownsProperty === true,
     options: [
       { value: 'house', labelEs: 'Casa/Apartamento', labelEn: 'House/Apartment' },
       { value: 'land', labelEs: 'Terreno', labelEn: 'Land' },
       { value: 'commercial', labelEs: 'Local comercial', labelEn: 'Commercial property' },
       { value: 'multiple', labelEs: 'Múltiples propiedades', labelEn: 'Multiple properties' },
     ]},
-  { id: 'q_vehicle', step: 3, textEs: '¿Tiene vehículo propio?', textEn: 'Do you own a vehicle?', fieldKey: 'ownsVehicle', type: 'boolean' },
-  { id: 'q_bank', step: 3, textEs: '¿Tiene cuentas bancarias?', textEn: 'Do you have bank accounts?', fieldKey: 'hasBankAccounts', type: 'boolean' },
-  { id: 'q_invest', step: 3, textEs: '¿Tiene inversiones?', textEn: 'Do you have investments?', fieldKey: 'hasInvestments', type: 'boolean' },
+  { id: 'q_vehicle', step: 3, textEs: '¿Tiene vehículo propio?', textEn: 'Do you own a vehicle?', fieldKey: 'ownsVehicle', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 18 },
+  { id: 'q_bank', step: 3, textEs: '¿Tiene cuentas bancarias?', textEn: 'Do you have bank accounts?', fieldKey: 'hasBankAccounts', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 18 },
+  { id: 'q_invest', step: 3, textEs: '¿Tiene inversiones?', textEn: 'Do you have investments?', fieldKey: 'hasInvestments', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 18 },
   { id: 'q_family_ties', step: 3, textEs: '¿Qué tanta familia tiene en su país?', textEn: 'How much family do you have in your home country?', fieldKey: 'familyInHomeCountry', type: 'select',
     consularQuestion: 'What family do you have in your home country?',
     options: [
