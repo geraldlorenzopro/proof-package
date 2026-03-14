@@ -197,8 +197,8 @@ export function classifyAvatar(a: VisaEvalAnswers): AvatarResult {
   if (a.employmentStatus === 'self_employed') {
     if (a.hasRegisteredBusiness) return { ...AVATARS.F1, riskFactors, strengths: ['Negocio registrado'] };
     if (a.employmentType === 'family_business') return { ...AVATARS.F3, riskFactors, strengths: ['Negocio familiar'] };
-    if (a.employmentType === 'freelance') return { ...AVATARS.F4, riskFactors: ['Sin empresa formal'], strengths: ['Independiente'] };
-    return { ...AVATARS.F2, riskFactors: ['Negocio informal'], strengths };
+    // Self-employed without registration = informal/freelance
+    return { ...AVATARS.F2, riskFactors: ['Negocio sin registro formal'], strengths: ['Independiente'] };
   }
 
   // GROUP B — Estudiantes (18-28)
@@ -436,17 +436,16 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
       { value: 'part_time', labelEs: 'Trabajo medio tiempo', labelEn: 'Part-time' },
     ]},
   { id: 'q_emp_type', step: 2, textEs: '¿En qué tipo de lugar trabaja?', textEn: 'What type of workplace?', fieldKey: 'employmentType', type: 'select',
-    condition: (a) => ['employed', 'self_employed', 'part_time'].includes(a.employmentStatus || ''),
+    condition: (a) => ['employed', 'part_time'].includes(a.employmentStatus || ''),
     options: [
       { value: 'private', labelEs: 'Empresa privada', labelEn: 'Private company' },
       { value: 'public', labelEs: 'Gobierno o sector público', labelEn: 'Government' },
-      { value: 'freelance', labelEs: 'Trabajo por mi cuenta (freelance)', labelEn: 'Freelance' },
       { value: 'family_business', labelEs: 'Negocio de la familia', labelEn: 'Family business' },
       { value: 'informal', labelEs: 'Trabajo informal (sin contrato)', labelEn: 'Informal' },
     ]},
   { id: 'q_registered_biz', step: 2, textEs: '¿Su negocio está registrado legalmente?', textEn: 'Is your business legally registered?', fieldKey: 'hasRegisteredBusiness', type: 'boolean',
     condition: (a) => a.employmentStatus === 'self_employed' },
-  { id: 'q_job_tenure', step: 2, textEs: '¿Hace cuánto tiempo trabaja ahí?', textEn: 'How long have you been working there?', fieldKey: 'jobTenure', type: 'select',
+  { id: 'q_job_tenure', step: 2, textEs: '¿Hace cuánto tiempo trabaja ahí o tiene su negocio?', textEn: 'How long have you been working there or running your business?', fieldKey: 'jobTenure', type: 'select',
     consularQuestion: 'How long have you been working there?',
     condition: (a) => ['employed', 'self_employed', 'part_time'].includes(a.employmentStatus || ''),
     options: [
@@ -473,10 +472,11 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     { value: 'university', labelEs: 'Ya me gradué de la universidad', labelEn: 'University (graduate)' },
     { value: 'postgrad', labelEs: 'Tengo maestría o doctorado', labelEn: 'Postgraduate' },
   ]},
-  { id: 'q_income_stability', step: 2, textEs: '¿Cómo le llega el dinero cada mes?', textEn: 'How does your income arrive each month?', fieldKey: 'incomeStability', type: 'select', options: [
+  { id: 'q_income_stability', step: 2, textEs: '¿Cómo le llega el dinero cada mes?', textEn: 'How does your income arrive each month?', fieldKey: 'incomeStability', type: 'select',
+    condition: (a) => !['unemployed', 'student'].includes(a.employmentStatus || '') && a.monthlyIncome !== 'none',
+    options: [
     { value: 'stable', labelEs: 'Me pagan siempre la misma cantidad y a tiempo', labelEn: 'Always the same amount, on time' },
     { value: 'irregular', labelEs: 'A veces gano más, a veces menos', labelEn: 'Sometimes more, sometimes less' },
-    { value: 'none', labelEs: 'No me entra dinero', labelEn: 'No income coming in' },
   ]},
   { id: 'q_partner_occupation', step: 2, textEs: '¿A qué se dedica su pareja?', textEn: 'What does your partner do?', fieldKey: 'partnerOccupation', type: 'select',
     consularQuestion: 'What does your spouse do for a living?',
@@ -578,7 +578,8 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
       { value: '1_3yr', labelEs: 'Hace 1 a 3 años', labelEn: '1-3 years ago' },
       { value: 'over_3yr', labelEs: 'Hace más de 3 años', labelEn: 'Over 3 years ago' },
     ]},
-  { id: 'q_gaps', step: 5, textEs: '¿Ha estado mucho tiempo sin trabajar?', textEn: 'Have you been unemployed for a long time?', fieldKey: 'employmentGaps', type: 'boolean' },
+  { id: 'q_gaps', step: 5, textEs: '¿Ha estado mucho tiempo sin trabajar?', textEn: 'Have you been unemployed for a long time?', fieldKey: 'employmentGaps', type: 'boolean',
+    condition: (a) => !['unemployed', 'student', 'retired'].includes(a.employmentStatus || '') },
   { id: 'q_inconsistencies', step: 5, textEs: '¿Hay algo en su historia que no cuadra o es difícil de explicar?', textEn: 'Is there anything in your history that is hard to explain?', fieldKey: 'inconsistencies', type: 'boolean' },
   { id: 'q_criminal', step: 5, textEs: '¿Ha tenido problemas con la policía o la justicia?', textEn: 'Have you had issues with the police or justice system?', fieldKey: 'criminalRecord', type: 'boolean' },
 ];
