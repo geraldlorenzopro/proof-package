@@ -473,8 +473,11 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
       { value: 'high', labelEs: 'Entre $1,500 y $5,000 al mes', labelEn: '$1,500 – $5,000/month' },
       { value: 'very_high', labelEs: 'Más de $5,000 al mes', labelEn: 'More than $5,000/month' },
     ]},
-  { id: 'q_studying', step: 2, textEs: '¿Está estudiando en este momento?', textEn: 'Are you currently studying?', fieldKey: 'isStudying', type: 'boolean' },
-  { id: 'q_education', step: 2, textEs: '¿Hasta qué grado estudió?', textEn: 'What is your education level?', fieldKey: 'educationLevel', type: 'select', options: [
+  { id: 'q_studying', step: 2, textEs: '¿Está estudiando en este momento?', textEn: 'Are you currently studying?', fieldKey: 'isStudying', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 16 },
+  { id: 'q_education', step: 2, textEs: '¿Hasta qué grado estudió?', textEn: 'What is your education level?', fieldKey: 'educationLevel', type: 'select',
+    condition: (a) => (a.age || 0) >= 18,
+    options: [
     { value: 'none', labelEs: 'No fui a la escuela', labelEn: 'No formal education' },
     { value: 'high_school', labelEs: 'Terminé la secundaria o bachillerato', labelEn: 'High school' },
     { value: 'university_current', labelEs: 'Estoy en la universidad ahora', labelEn: 'University (current)' },
