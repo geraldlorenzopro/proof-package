@@ -247,16 +247,6 @@ export default function B1B2AdminLite() {
               <Badge variant="outline" className="text-[10px] shrink-0">Incluido</Badge>
             </div>
 
-            <div className="rounded-xl border border-border/40 bg-card/50 p-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/15">
-                <FileText className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold">Checklist de Documentos</p>
-                <p className="text-xs text-muted-foreground">Lista de documentos para la cita</p>
-              </div>
-              <Badge variant="outline" className="text-[10px] shrink-0">Incluido</Badge>
-            </div>
           </div>
         </div>
 
