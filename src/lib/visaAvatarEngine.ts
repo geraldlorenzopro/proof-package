@@ -465,6 +465,7 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     ]},
   { id: 'q_income', step: 2, textEs: '¿Cuánto dinero gana al mes?', textEn: 'How much money do you earn per month?', fieldKey: 'monthlyIncome', type: 'select',
     consularQuestion: 'How much do you earn per month?',
+    condition: (a) => (a.age || 0) >= 18,
     options: [
       { value: 'none', labelEs: 'No gano dinero', labelEn: 'No income' },
       { value: 'low', labelEs: 'Menos de $500 al mes', labelEn: 'Less than $500/month' },
