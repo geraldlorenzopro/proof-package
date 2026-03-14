@@ -472,10 +472,11 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     { value: 'university', labelEs: 'Ya me gradué de la universidad', labelEn: 'University (graduate)' },
     { value: 'postgrad', labelEs: 'Tengo maestría o doctorado', labelEn: 'Postgraduate' },
   ]},
-  { id: 'q_income_stability', step: 2, textEs: '¿Cómo le llega el dinero cada mes?', textEn: 'How does your income arrive each month?', fieldKey: 'incomeStability', type: 'select', options: [
+  { id: 'q_income_stability', step: 2, textEs: '¿Cómo le llega el dinero cada mes?', textEn: 'How does your income arrive each month?', fieldKey: 'incomeStability', type: 'select',
+    condition: (a) => !['unemployed', 'student'].includes(a.employmentStatus || '') && a.monthlyIncome !== 'none',
+    options: [
     { value: 'stable', labelEs: 'Me pagan siempre la misma cantidad y a tiempo', labelEn: 'Always the same amount, on time' },
     { value: 'irregular', labelEs: 'A veces gano más, a veces menos', labelEn: 'Sometimes more, sometimes less' },
-    { value: 'none', labelEs: 'No me entra dinero', labelEn: 'No income coming in' },
   ]},
   { id: 'q_partner_occupation', step: 2, textEs: '¿A qué se dedica su pareja?', textEn: 'What does your partner do?', fieldKey: 'partnerOccupation', type: 'select',
     consularQuestion: 'What does your spouse do for a living?',
