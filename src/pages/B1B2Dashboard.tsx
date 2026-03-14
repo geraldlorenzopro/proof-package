@@ -659,35 +659,10 @@ export default function B1B2Dashboard() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 opacity-60 hover:opacity-100"
-                          onClick={() => shareWhatsApp(c)}
-                          title="Enviar por WhatsApp"
-                        >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 opacity-60 hover:opacity-100"
                           onClick={() => copyClientLink(c)}
                           title="Copiar link del cliente"
                         >
                           {isCopied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`h-8 w-8 transition-all ${simSentId === c.id ? "opacity-100 text-accent" : "opacity-60 hover:opacity-100"}`}
-                          onClick={() => {
-                            const simLink = `${window.location.origin}/case-track/${c.access_token}`;
-                            const msg = encodeURIComponent(`Hola ${c.client_name}, prepárate para tu entrevista consular con nuestro simulador interactivo:\n${simLink}`);
-                            window.open(`https://wa.me/?text=${msg}`, "_blank");
-                            setSimSentId(c.id);
-                            toast({ title: "Simulador enviado", description: `Link del simulador de ${c.client_name} abierto en WhatsApp.` });
-                            setTimeout(() => setSimSentId(null), 3000);
-                          }}
-                          title={simSentId === c.id ? "¡Link enviado!" : "Enviar simulador al cliente"}
-                        >
-                          {simSentId === c.id ? <Check className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
                         </Button>
                         <Button
                           variant="ghost"
