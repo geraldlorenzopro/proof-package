@@ -230,6 +230,7 @@ export function classifyAvatar(a: VisaEvalAnswers): AvatarResult {
 
 // ── Scoring Engine (100 points) ──────────────────────────
 export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
+  const isMinor = a.age < 18;
   let arraigo_economico = 0; // max 25
   let arraigo_familiar = 0;  // max 25
   let estabilidad = 0;       // max 20
@@ -238,60 +239,126 @@ export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
   let penalties = 0;
   const coherenceFlags: string[] = [];
 
-  // ── ARRAIGO ECONÓMICO (25 pts) ──
-  if (a.ownsProperty) {
-    arraigo_economico += a.propertyType === 'multiple' ? 10 : a.propertyType === 'commercial' ? 8 : 6;
+  if (isMinor) {
+    // ── MINOR SCORING: based on companion, family ties, purpose ──
+    // Arraigo económico: minors inherit parent stability
+    if (a.travelCompanion === 'both_parents') arraigo_economico += 15;
+    else if (a.travelCompanion === 'one_parent') arraigo_economico += 10;
+    else if (a.travelCompanion === 'relatives') arraigo_economico += 6;
+    else arraigo_economico += 2; // alone = risky
+    if (a.familyHasVisa) arraigo_economico += 5;
+    if (a.tripFinancedBy === 'self' || a.tripFinancedBy === 'family_local') arraigo_economico += 5;
+    arraigo_economico = Math.min(arraigo_economico, 25);
+
+    // Arraigo familiar
+    if (a.livingSituation === 'with_parents') arraigo_familiar += 15;
+    else if (a.livingSituation === 'with_family') arraigo_familiar += 10;
+    if (a.familyInHomeCountry === 'strong') arraigo_familiar += 8;
+    else if (a.familyInHomeCountry === 'moderate') arraigo_familiar += 5;
+    if (a.communityTies === 'strong') arraigo_familiar += 3;
+    arraigo_familiar = Math.min(arraigo_familiar, 25);
+
+    // Estabilidad: based on studying + purpose
+    if (a.isStudying) estabilidad += 12;
+    if (a.travelPurpose === 'education') estabilidad += 5;
+    else if (a.travelPurpose === 'tourism') estabilidad += 3;
+    estabilidad = Math.min(estabilidad, 20);
+
+    // Viajes
+    if (a.previousVisaApproved) viajes += 6;
+    if (a.previousUSTravel) viajes += 3;
+    if (a.familyHasVisa) {
+      viajes += 3;
+      if (a.familyVisaUsage === 'short_trips') viajes += 2;
+      else if (a.familyVisaUsage === 'mixed') viajes += 1;
+      else if (a.familyVisaUsage === 'long_trips') viajes -= 1;
+    }
+    const travelMap = { none: 0, regional: 2, international: 4, extensive: 6 };
+    viajes += travelMap[a.travelHistory] || 0;
+    if (a.complianceRecord === 'perfect' || a.complianceRecord === 'unknown') viajes += 3;
+    viajes = Math.min(viajes, 20);
+
+    // Coherence for minors
+    if (a.travelCompanion === 'alone' && a.travelPurpose !== 'education') {
+      coherenceFlags.push('Menor viajando solo sin motivo educativo');
+      penalties -= 5;
+    }
+    if (a.tripFinancedBy === 'family_usa') {
+      coherenceFlags.push('Viaje del menor financiado por familiar en USA');
+      penalties -= 3;
+    }
+  } else {
+    // ── ADULT SCORING (original logic) ──
+
+    // ── ARRAIGO ECONÓMICO (25 pts) ──
+    if (a.ownsProperty) {
+      arraigo_economico += a.propertyType === 'multiple' ? 10 : a.propertyType === 'commercial' ? 8 : 6;
+    }
+    if (a.ownsVehicle) arraigo_economico += 3;
+    if (a.hasBankAccounts) arraigo_economico += 4;
+    if (a.hasInvestments) arraigo_economico += 5;
+    if (a.hasRegisteredBusiness) arraigo_economico += 5;
+    arraigo_economico = Math.min(arraigo_economico, 25);
+
+    // ── ARRAIGO FAMILIAR (25 pts) ──
+    if (a.hasChildren) arraigo_familiar += a.childrenAges === 'minor' ? 12 : 8;
+    if (a.maritalStatus === 'married') arraigo_familiar += 8;
+    else if (a.maritalStatus === 'cohabiting') arraigo_familiar += 4;
+    if (a.familyInHomeCountry === 'strong') arraigo_familiar += 5;
+    else if (a.familyInHomeCountry === 'moderate') arraigo_familiar += 3;
+    if (a.communityTies === 'strong') arraigo_familiar += 3;
+    arraigo_familiar = Math.min(arraigo_familiar, 25);
+
+    // ── ESTABILIDAD (20 pts) ──
+    const incomeMap = { none: 0, low: 2, medium: 5, high: 8, very_high: 10 };
+    estabilidad += incomeMap[a.monthlyIncome] || 0;
+    if (a.employmentStatus === 'employed') estabilidad += 6;
+    else if (a.employmentStatus === 'self_employed') estabilidad += 5;
+    else if (a.employmentStatus === 'retired') estabilidad += 5;
+    else if (a.employmentStatus === 'part_time') estabilidad += 3;
+    else if (a.employmentStatus === 'student') estabilidad += 2;
+    if (a.incomeStability === 'stable') estabilidad += 4;
+    else if (a.incomeStability === 'irregular') estabilidad += 1;
+    // Job tenure bonus
+    if (a.jobTenure === 'over_5yr') estabilidad += 3;
+    else if (a.jobTenure === '3_5yr') estabilidad += 2;
+    else if (a.jobTenure === '1_3yr') estabilidad += 1;
+    // Partner occupation bonus (married/cohabiting)
+    if (a.partnerOccupation === 'employed' || a.partnerOccupation === 'self_employed') estabilidad += 2;
+    estabilidad = Math.min(estabilidad, 20);
+
+    // ── VIAJES (20 pts) ──
+    if (a.previousVisaApproved) viajes += 6;
+    if (a.previousUSTravel) viajes += 3;
+    // Family visa history bonus
+    if (a.familyHasVisa) {
+      viajes += 3;
+      if (a.familyVisaUsage === 'short_trips') viajes += 2;
+      else if (a.familyVisaUsage === 'mixed') viajes += 1;
+      else if (a.familyVisaUsage === 'long_trips') viajes -= 1;
+    }
+    const travelMap = { none: 0, regional: 2, international: 4, extensive: 6 };
+    viajes += travelMap[a.travelHistory] || 0;
+    if (a.complianceRecord === 'perfect') viajes += 3;
+    else if (a.complianceRecord === 'minor_issues') viajes += 1;
+    viajes = Math.min(viajes, 20);
+
+    // ── COHERENCE CHECKS (adults) ──
+    if (a.tripDuration === 'long' && (a.monthlyIncome === 'low' || a.monthlyIncome === 'none')) {
+      coherenceFlags.push('Viaje largo con ingresos bajos — riesgo de intención de trabajo');
+      penalties -= 5;
+    }
+    if (a.tripFinancedBy === 'family_usa' && a.employmentStatus === 'unemployed') {
+      coherenceFlags.push('Sin empleo y financiado por familiar en USA — riesgo de intención migratoria');
+      penalties -= 5;
+    }
+    if (a.travelPurpose === 'visit_partner' && !a.previousUSTravel) {
+      coherenceFlags.push('Primera visita a EE.UU. para visitar pareja — perfil de alto riesgo');
+      penalties -= 5;
+    }
   }
-  if (a.ownsVehicle) arraigo_economico += 3;
-  if (a.hasBankAccounts) arraigo_economico += 4;
-  if (a.hasInvestments) arraigo_economico += 5;
-  if (a.hasRegisteredBusiness) arraigo_economico += 5;
-  arraigo_economico = Math.min(arraigo_economico, 25);
 
-  // ── ARRAIGO FAMILIAR (25 pts) ──
-  if (a.hasChildren) arraigo_familiar += a.childrenAges === 'minor' ? 12 : 8;
-  if (a.maritalStatus === 'married') arraigo_familiar += 8;
-  else if (a.maritalStatus === 'cohabiting') arraigo_familiar += 4;
-  if (a.familyInHomeCountry === 'strong') arraigo_familiar += 5;
-  else if (a.familyInHomeCountry === 'moderate') arraigo_familiar += 3;
-  if (a.communityTies === 'strong') arraigo_familiar += 3;
-  arraigo_familiar = Math.min(arraigo_familiar, 25);
-
-  // ── ESTABILIDAD (20 pts) ──
-  const incomeMap = { none: 0, low: 2, medium: 5, high: 8, very_high: 10 };
-  estabilidad += incomeMap[a.monthlyIncome] || 0;
-  if (a.employmentStatus === 'employed') estabilidad += 6;
-  else if (a.employmentStatus === 'self_employed') estabilidad += 5;
-  else if (a.employmentStatus === 'retired') estabilidad += 5;
-  else if (a.employmentStatus === 'part_time') estabilidad += 3;
-  else if (a.employmentStatus === 'student') estabilidad += 2;
-  if (a.incomeStability === 'stable') estabilidad += 4;
-  else if (a.incomeStability === 'irregular') estabilidad += 1;
-  // Job tenure bonus
-  if (a.jobTenure === 'over_5yr') estabilidad += 3;
-  else if (a.jobTenure === '3_5yr') estabilidad += 2;
-  else if (a.jobTenure === '1_3yr') estabilidad += 1;
-  // Partner occupation bonus (married/cohabiting)
-  if (a.partnerOccupation === 'employed' || a.partnerOccupation === 'self_employed') estabilidad += 2;
-  estabilidad = Math.min(estabilidad, 20);
-
-  // ── VIAJES (20 pts) ──
-  if (a.previousVisaApproved) viajes += 6;
-  if (a.previousUSTravel) viajes += 3;
-  // Family visa history bonus
-  if (a.familyHasVisa) {
-    viajes += 3;
-    if (a.familyVisaUsage === 'short_trips') viajes += 2; // Good usage pattern
-    else if (a.familyVisaUsage === 'mixed') viajes += 1;
-    else if (a.familyVisaUsage === 'long_trips') viajes -= 1; // Suspicious pattern
-  }
-  const travelMap = { none: 0, regional: 2, international: 4, extensive: 6 };
-  viajes += travelMap[a.travelHistory] || 0;
-  if (a.complianceRecord === 'perfect') viajes += 3;
-  else if (a.complianceRecord === 'minor_issues') viajes += 1;
-  viajes = Math.min(viajes, 20);
-
-  // ── HISTORIAL (10 pts, with penalties) ──
+  // ── HISTORIAL (10 pts, shared for all ages) ──
   if (a.previousDenials >= 2) { penalties -= 20; historial = 0; }
   else if (a.previousDenials === 1) {
     if (a.mostRecentDenial === 'less_1yr') { penalties -= 15; historial = 0; }
@@ -302,23 +369,6 @@ export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
   if (a.inconsistencies) { penalties -= 5; historial = Math.max(historial - 3, 0); }
   if (a.complianceRecord === 'overstay') { penalties -= 10; historial = 0; }
 
-  // ── COHERENCE CHECKS ──
-  if (a.tripDuration === 'long' && (a.monthlyIncome === 'low' || a.monthlyIncome === 'none')) {
-    coherenceFlags.push('Viaje largo con ingresos bajos — riesgo de intención de trabajo');
-    penalties -= 5;
-  }
-  if (a.age < 18 && a.travelCompanion === 'alone' && a.travelPurpose !== 'education') {
-    coherenceFlags.push('Menor viajando solo sin motivo educativo');
-    penalties -= 5;
-  }
-  if (a.tripFinancedBy === 'family_usa' && a.employmentStatus === 'unemployed') {
-    coherenceFlags.push('Sin empleo y financiado por familiar en USA — riesgo de intención migratoria');
-    penalties -= 5;
-  }
-  if (a.travelPurpose === 'visit_partner' && !a.previousUSTravel) {
-    coherenceFlags.push('Primera visita a EE.UU. para visitar pareja — perfil de alto riesgo');
-    penalties -= 5;
-  }
   // Green card petition pending — strong negative factor (9 FAM 402.2-2)
   if (a.familyPetitionPending === true) {
     coherenceFlags.push('Petición de residencia pendiente — falta de intención de retorno');
