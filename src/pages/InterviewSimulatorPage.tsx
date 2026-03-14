@@ -36,12 +36,16 @@ export default function InterviewSimulatorPage() {
 
   const progress = Math.round((completedQuestions.size / questions.length) * 100);
 
+  // Speak the question in Spanish but with an English (American) voice
+  // to simulate how a US consul would ask in broken/accented Spanish
   const speakQuestion = (q: ConsularQuestion) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(q.questionEn);
+      const utterance = new SpeechSynthesisUtterance(q.questionEs);
+      // Use en-US voice speaking Spanish text = American accent speaking Spanish
       utterance.lang = 'en-US';
-      utterance.rate = 0.8;
+      utterance.rate = 0.75;
+      utterance.pitch = 0.95;
       utterance.onstart = () => setSpeakingId(q.id);
       utterance.onend = () => setSpeakingId(null);
       window.speechSynthesis.speak(utterance);
@@ -121,19 +125,19 @@ export default function InterviewSimulatorPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-2 sm:mb-3 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
-            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => navigate('/hub')}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => navigate('/b1b2-dashboard')}>
               <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
             <div>
               <h1 className="text-base sm:text-xl font-bold flex items-center gap-2">
                 <Mic className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                Simulador Consular
+                Simulador de Entrevista
               </h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Practica tu entrevista de visa B1/B2</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Practica tu entrevista consular B1/B2</p>
             </div>
           </div>
           <Button variant="outline" size="sm" className="text-xs sm:text-sm h-7 sm:h-8" onClick={generateClientLink}>
-            <Link2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> <span className="hidden sm:inline">Link Cliente</span><span className="sm:hidden">Link</span>
+            <Link2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> <span className="hidden sm:inline">Enviar a Cliente</span><span className="sm:hidden">Enlace</span>
           </Button>
         </div>
 
@@ -202,31 +206,31 @@ export default function InterviewSimulatorPage() {
                     transition={{ duration: 0.25, ease: "easeInOut" }}
                     className="space-y-4 sm:space-y-5"
                   >
-                    {/* English question (what the consul would say) */}
+                    {/* Spanish question — what the consul says */}
                     <div className="space-y-2">
-                      <p className="text-[10px] text-muted-foreground/60 font-mono uppercase tracking-wider">El cónsul pregunta:</p>
+                      <p className="text-[10px] text-muted-foreground/60 font-mono uppercase tracking-wider">🇺🇸 El oficial consular pregunta:</p>
                       <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug">
-                        "{currentQ.questionEn}"
+                        "{currentQ.questionEs}"
                       </h2>
                     </div>
 
-                    {/* Spanish translation */}
-                    <p className="text-sm text-muted-foreground/80 italic">
-                      📝 {currentQ.questionEs}
+                    {/* English reference (smaller) */}
+                    <p className="text-xs text-muted-foreground/50 italic">
+                      🇬🇧 In English: "{currentQ.questionEn}"
                     </p>
 
-                    {/* Listen button */}
+                    {/* Listen button — American accent speaking Spanish */}
                     <button
                       onClick={() => speakQuestion(currentQ)}
                       className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-sm font-medium",
+                        "flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all text-sm font-medium",
                         speakingId === currentQ.id
                           ? "border-[hsl(var(--jarvis)/0.4)] bg-[hsl(var(--jarvis)/0.1)] text-[hsl(var(--jarvis))] animate-pulse"
                           : "border-border/30 bg-[hsl(220,25%,10%)] text-muted-foreground hover:text-foreground hover:border-border/50"
                       )}
                     >
                       <Volume2 className="h-4 w-4" />
-                      {speakingId === currentQ.id ? 'Escuchando...' : 'Escuchar pregunta'}
+                      {speakingId === currentQ.id ? '🔊 Escuchando...' : '🎧 Escuchar pregunta (acento americano)'}
                     </button>
 
                     {/* Record button */}
@@ -243,7 +247,7 @@ export default function InterviewSimulatorPage() {
                         <Mic className={cn("h-6 w-6 sm:h-8 sm:w-8", isRecording ? "text-red-400" : "text-[hsl(var(--jarvis))]")} />
                       </button>
                       <p className="text-xs text-muted-foreground/60">
-                        {isRecording ? 'Grabando... toque para detener' : 'Toque para grabar su respuesta'}
+                        {isRecording ? '🔴 Grabando... toque para detener' : '🎙️ Toque para grabar su respuesta'}
                       </p>
                     </div>
 
@@ -261,7 +265,7 @@ export default function InterviewSimulatorPage() {
                       className="flex items-center gap-2 text-xs text-amber-400/70 hover:text-amber-400 transition-colors"
                     >
                       <Lightbulb className="h-3.5 w-3.5" />
-                      {showTip ? 'Ocultar consejo' : 'Ver consejo de respuesta'}
+                      {showTip ? 'Ocultar consejo' : '💡 Ver consejo de respuesta'}
                     </button>
 
                     {showTip && (
