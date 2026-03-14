@@ -150,7 +150,7 @@ export default function VisaEvaluatorPage() {
                 answers={lastAnswers || undefined}
                 shareToken={shareToken || undefined}
                 onRestart={handleRestart}
-                onStartCase={() => navigate('/dashboard/cases')}
+                onStartCase={() => navigate('/b1b2-dashboard')}
               />
             </div>
           )}
