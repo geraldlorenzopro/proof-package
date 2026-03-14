@@ -435,6 +435,7 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   // ── STEP 2: ESTABILIDAD ──
   { id: 'q_employment', step: 2, textEs: '¿Qué hace para ganarse la vida?', textEn: 'What do you do for a living?', fieldKey: 'employmentStatus', type: 'select',
     consularQuestion: 'What do you do for a living?',
+    condition: (a) => (a.age || 0) >= 18,
     options: [
       { value: 'employed', labelEs: 'Trabajo para una empresa o alguien', labelEn: 'Employed' },
       { value: 'self_employed', labelEs: 'Tengo mi propio negocio', labelEn: 'Self-employed' },
