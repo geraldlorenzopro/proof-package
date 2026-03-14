@@ -290,6 +290,17 @@ export default function B1B2Dashboard() {
       : name.slice(0, 2).toUpperCase();
   };
 
+  if (autoResolving && !accountCid) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Preparando portal...</p>
+        </div>
+      </div>
+    );
+  }
+
   // No CID — entry screen
   if (!accountCid) {
     return (
