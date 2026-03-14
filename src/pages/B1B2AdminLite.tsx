@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Loader2, Shield, Copy, Check, CheckCircle2, CircleDot,
@@ -30,6 +30,7 @@ interface StageInfo {
 
 export default function B1B2AdminLite() {
   const { cid } = useParams<{ cid: string }>();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -160,10 +161,7 @@ export default function B1B2AdminLite() {
               <Button
                 variant="outline"
                 className="gap-2 h-auto py-3.5"
-                onClick={() => {
-                  const link = `${window.location.origin}/case-track/${selectedCase.access_token}`;
-                  window.open(link, "_blank");
-                }}
+                onClick={() => navigate(`/case-track/${selectedCase.access_token}`)}
               >
                 <ExternalLink className="w-4 h-4" />
                 <span className="text-xs">Ver como Cliente</span>
