@@ -30,6 +30,7 @@ interface StageInfo {
 
 export default function B1B2AdminLite() {
   const { cid } = useParams<{ cid: string }>();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
