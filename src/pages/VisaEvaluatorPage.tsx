@@ -113,7 +113,7 @@ export default function VisaEvaluatorPage() {
 
   return (
     <div className="h-[100dvh] bg-background text-foreground flex flex-col overflow-hidden">
-      <div className="max-w-2xl mx-auto px-3 sm:px-4 py-2 sm:py-4 flex flex-col flex-1 min-h-0 w-full">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-2 sm:py-4 flex flex-col flex-1 min-h-0 w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-2 sm:mb-3 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
