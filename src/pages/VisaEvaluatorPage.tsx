@@ -118,7 +118,7 @@ export default function VisaEvaluatorPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-2 sm:mb-3 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
-            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => navigate('/hub')}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => navigate(destination)}>
               <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
             <div>
