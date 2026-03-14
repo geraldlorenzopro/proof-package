@@ -178,7 +178,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Pro
           </div>
 
           {/* Animated question */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 pb-3 sm:pb-4">
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 sm:px-10 pb-4 sm:pb-6">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={currentQ.id}
