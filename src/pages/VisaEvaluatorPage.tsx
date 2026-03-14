@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useBackDestination } from "@/hooks/useBackDestination";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import { evaluateProfile, type VisaEvalAnswers, type EvalResult } from "@/lib/vi
 
 export default function VisaEvaluatorPage() {
   const navigate = useNavigate();
+  const { destination } = useBackDestination('/b1b2-dashboard');
   const { toast } = useToast();
   const [view, setView] = useState<'form' | 'results'>('form');
   const [result, setResult] = useState<EvalResult | null>(null);
@@ -116,7 +118,7 @@ export default function VisaEvaluatorPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-2 sm:mb-3 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
-            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => navigate('/hub')}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => navigate(destination)}>
               <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
             <div>
