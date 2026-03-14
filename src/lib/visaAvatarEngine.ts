@@ -533,7 +533,8 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     { value: 'moderate', labelEs: 'A veces participo en actividades', labelEn: 'Sometimes' },
     { value: 'weak', labelEs: 'No participo en nada', labelEn: 'No participation' },
   ]},
-  { id: 'q_dependents', step: 3, textEs: '¿Hay personas que dependen de usted económicamente?', textEn: 'Are there people who depend on you financially?', fieldKey: 'hasDependents', type: 'boolean' },
+  { id: 'q_dependents', step: 3, textEs: '¿Hay personas que dependen de usted económicamente?', textEn: 'Are there people who depend on you financially?', fieldKey: 'hasDependents', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 18 },
 
   // ── STEP 4: VIAJES ──
   { id: 'q_family_usa', step: 4, textEs: '¿Tiene familiares viviendo en Estados Unidos?', textEn: 'Do you have family living in the United States?', fieldKey: 'familyInUSA', type: 'boolean' },
