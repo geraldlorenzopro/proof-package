@@ -125,15 +125,26 @@ export default function CaseTrackPublic() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-lg mx-auto px-4 py-6">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
         {/* Header */}
-        <div className="text-center mb-6">
-          <Shield className="h-9 w-9 text-primary mx-auto mb-2" />
-          <h1 className="text-xl font-bold">Mi Portal B1/B2</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {caseData.process_label || caseData.case_type}
-          </p>
-          <p className="text-xs text-muted-foreground">{caseData.client_name}</p>
+        <div className="flex items-center gap-4 mb-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
+            <Shield className="h-6 w-6 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold truncate">{caseData.client_name}</h1>
+            <p className="text-sm text-muted-foreground">
+              {caseData.process_label || caseData.case_type} — Mi Portal
+            </p>
+          </div>
         </div>
 
         {/* Tabs */}
