@@ -117,6 +117,7 @@ export default function B1B2Dashboard() {
   const [newEmail, setNewEmail] = useState("");
   const [creating, setCreating] = useState(false);
   const [simSentId, setSimSentId] = useState<string | null>(null);
+  const [loadingSimId, setLoadingSimId] = useState<string | null>(null);
 
   const accountCid = paramCid || resolvedCid;
 
@@ -250,6 +251,32 @@ export default function B1B2Dashboard() {
     } catch (e: any) {
       console.error(e);
       toast({ title: "Error", description: "No se pudo actualizar la etapa.", variant: "destructive" });
+    }
+  };
+
+  const openSimulator = async (c: B1B2Case) => {
+    setLoadingSimId(c.id);
+    try {
+      const { data } = await supabase
+        .from('visa_evaluations')
+        .select('access_token, status')
+        .eq('client_name', c.client_name)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data?.access_token && data.status === 'completed') {
+        // Has a completed evaluation — open results view
+        window.open(`${window.location.origin}/visa-eval/${data.access_token}`, '_blank');
+      } else {
+        // No evaluation yet — open evaluator
+        navigate('/visa-evaluator');
+      }
+    } catch (e) {
+      console.error(e);
+      navigate('/visa-evaluator');
+    } finally {
+      setLoadingSimId(null);
     }
   };
 
@@ -655,6 +682,18 @@ export default function B1B2Dashboard() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-0.5 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 opacity-60 hover:opacity-100"
+                          onClick={() => openSimulator(c)}
+                          disabled={loadingSimId === c.id}
+                          title="Simulador de Visa"
+                        >
+                          {loadingSimId === c.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <Shield className="w-3.5 h-3.5" />}
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
