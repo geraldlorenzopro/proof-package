@@ -230,6 +230,7 @@ export function classifyAvatar(a: VisaEvalAnswers): AvatarResult {
 
 // ── Scoring Engine (100 points) ──────────────────────────
 export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
+  const isMinor = a.age < 18;
   let arraigo_economico = 0; // max 25
   let arraigo_familiar = 0;  // max 25
   let estabilidad = 0;       // max 20
@@ -238,60 +239,126 @@ export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
   let penalties = 0;
   const coherenceFlags: string[] = [];
 
-  // ── ARRAIGO ECONÓMICO (25 pts) ──
-  if (a.ownsProperty) {
-    arraigo_economico += a.propertyType === 'multiple' ? 10 : a.propertyType === 'commercial' ? 8 : 6;
+  if (isMinor) {
+    // ── MINOR SCORING: based on companion, family ties, purpose ──
+    // Arraigo económico: minors inherit parent stability
+    if (a.travelCompanion === 'both_parents') arraigo_economico += 15;
+    else if (a.travelCompanion === 'one_parent') arraigo_economico += 10;
+    else if (a.travelCompanion === 'relatives') arraigo_economico += 6;
+    else arraigo_economico += 2; // alone = risky
+    if (a.familyHasVisa) arraigo_economico += 5;
+    if (a.tripFinancedBy === 'self' || a.tripFinancedBy === 'family_local') arraigo_economico += 5;
+    arraigo_economico = Math.min(arraigo_economico, 25);
+
+    // Arraigo familiar
+    if (a.livingSituation === 'with_parents') arraigo_familiar += 15;
+    else if (a.livingSituation === 'with_family') arraigo_familiar += 10;
+    if (a.familyInHomeCountry === 'strong') arraigo_familiar += 8;
+    else if (a.familyInHomeCountry === 'moderate') arraigo_familiar += 5;
+    if (a.communityTies === 'strong') arraigo_familiar += 3;
+    arraigo_familiar = Math.min(arraigo_familiar, 25);
+
+    // Estabilidad: based on studying + purpose
+    if (a.isStudying) estabilidad += 12;
+    if (a.travelPurpose === 'education') estabilidad += 5;
+    else if (a.travelPurpose === 'tourism') estabilidad += 3;
+    estabilidad = Math.min(estabilidad, 20);
+
+    // Viajes
+    if (a.previousVisaApproved) viajes += 6;
+    if (a.previousUSTravel) viajes += 3;
+    if (a.familyHasVisa) {
+      viajes += 3;
+      if (a.familyVisaUsage === 'short_trips') viajes += 2;
+      else if (a.familyVisaUsage === 'mixed') viajes += 1;
+      else if (a.familyVisaUsage === 'long_trips') viajes -= 1;
+    }
+    const travelMap = { none: 0, regional: 2, international: 4, extensive: 6 };
+    viajes += travelMap[a.travelHistory] || 0;
+    if (a.complianceRecord === 'perfect' || a.complianceRecord === 'unknown') viajes += 3;
+    viajes = Math.min(viajes, 20);
+
+    // Coherence for minors
+    if (a.travelCompanion === 'alone' && a.travelPurpose !== 'education') {
+      coherenceFlags.push('Menor viajando solo sin motivo educativo');
+      penalties -= 5;
+    }
+    if (a.tripFinancedBy === 'family_usa') {
+      coherenceFlags.push('Viaje del menor financiado por familiar en USA');
+      penalties -= 3;
+    }
+  } else {
+    // ── ADULT SCORING (original logic) ──
+
+    // ── ARRAIGO ECONÓMICO (25 pts) ──
+    if (a.ownsProperty) {
+      arraigo_economico += a.propertyType === 'multiple' ? 10 : a.propertyType === 'commercial' ? 8 : 6;
+    }
+    if (a.ownsVehicle) arraigo_economico += 3;
+    if (a.hasBankAccounts) arraigo_economico += 4;
+    if (a.hasInvestments) arraigo_economico += 5;
+    if (a.hasRegisteredBusiness) arraigo_economico += 5;
+    arraigo_economico = Math.min(arraigo_economico, 25);
+
+    // ── ARRAIGO FAMILIAR (25 pts) ──
+    if (a.hasChildren) arraigo_familiar += a.childrenAges === 'minor' ? 12 : 8;
+    if (a.maritalStatus === 'married') arraigo_familiar += 8;
+    else if (a.maritalStatus === 'cohabiting') arraigo_familiar += 4;
+    if (a.familyInHomeCountry === 'strong') arraigo_familiar += 5;
+    else if (a.familyInHomeCountry === 'moderate') arraigo_familiar += 3;
+    if (a.communityTies === 'strong') arraigo_familiar += 3;
+    arraigo_familiar = Math.min(arraigo_familiar, 25);
+
+    // ── ESTABILIDAD (20 pts) ──
+    const incomeMap = { none: 0, low: 2, medium: 5, high: 8, very_high: 10 };
+    estabilidad += incomeMap[a.monthlyIncome] || 0;
+    if (a.employmentStatus === 'employed') estabilidad += 6;
+    else if (a.employmentStatus === 'self_employed') estabilidad += 5;
+    else if (a.employmentStatus === 'retired') estabilidad += 5;
+    else if (a.employmentStatus === 'part_time') estabilidad += 3;
+    else if (a.employmentStatus === 'student') estabilidad += 2;
+    if (a.incomeStability === 'stable') estabilidad += 4;
+    else if (a.incomeStability === 'irregular') estabilidad += 1;
+    // Job tenure bonus
+    if (a.jobTenure === 'over_5yr') estabilidad += 3;
+    else if (a.jobTenure === '3_5yr') estabilidad += 2;
+    else if (a.jobTenure === '1_3yr') estabilidad += 1;
+    // Partner occupation bonus (married/cohabiting)
+    if (a.partnerOccupation === 'employed' || a.partnerOccupation === 'self_employed') estabilidad += 2;
+    estabilidad = Math.min(estabilidad, 20);
+
+    // ── VIAJES (20 pts) ──
+    if (a.previousVisaApproved) viajes += 6;
+    if (a.previousUSTravel) viajes += 3;
+    // Family visa history bonus
+    if (a.familyHasVisa) {
+      viajes += 3;
+      if (a.familyVisaUsage === 'short_trips') viajes += 2;
+      else if (a.familyVisaUsage === 'mixed') viajes += 1;
+      else if (a.familyVisaUsage === 'long_trips') viajes -= 1;
+    }
+    const travelMap = { none: 0, regional: 2, international: 4, extensive: 6 };
+    viajes += travelMap[a.travelHistory] || 0;
+    if (a.complianceRecord === 'perfect') viajes += 3;
+    else if (a.complianceRecord === 'minor_issues') viajes += 1;
+    viajes = Math.min(viajes, 20);
+
+    // ── COHERENCE CHECKS (adults) ──
+    if (a.tripDuration === 'long' && (a.monthlyIncome === 'low' || a.monthlyIncome === 'none')) {
+      coherenceFlags.push('Viaje largo con ingresos bajos — riesgo de intención de trabajo');
+      penalties -= 5;
+    }
+    if (a.tripFinancedBy === 'family_usa' && a.employmentStatus === 'unemployed') {
+      coherenceFlags.push('Sin empleo y financiado por familiar en USA — riesgo de intención migratoria');
+      penalties -= 5;
+    }
+    if (a.travelPurpose === 'visit_partner' && !a.previousUSTravel) {
+      coherenceFlags.push('Primera visita a EE.UU. para visitar pareja — perfil de alto riesgo');
+      penalties -= 5;
+    }
   }
-  if (a.ownsVehicle) arraigo_economico += 3;
-  if (a.hasBankAccounts) arraigo_economico += 4;
-  if (a.hasInvestments) arraigo_economico += 5;
-  if (a.hasRegisteredBusiness) arraigo_economico += 5;
-  arraigo_economico = Math.min(arraigo_economico, 25);
 
-  // ── ARRAIGO FAMILIAR (25 pts) ──
-  if (a.hasChildren) arraigo_familiar += a.childrenAges === 'minor' ? 12 : 8;
-  if (a.maritalStatus === 'married') arraigo_familiar += 8;
-  else if (a.maritalStatus === 'cohabiting') arraigo_familiar += 4;
-  if (a.familyInHomeCountry === 'strong') arraigo_familiar += 5;
-  else if (a.familyInHomeCountry === 'moderate') arraigo_familiar += 3;
-  if (a.communityTies === 'strong') arraigo_familiar += 3;
-  arraigo_familiar = Math.min(arraigo_familiar, 25);
-
-  // ── ESTABILIDAD (20 pts) ──
-  const incomeMap = { none: 0, low: 2, medium: 5, high: 8, very_high: 10 };
-  estabilidad += incomeMap[a.monthlyIncome] || 0;
-  if (a.employmentStatus === 'employed') estabilidad += 6;
-  else if (a.employmentStatus === 'self_employed') estabilidad += 5;
-  else if (a.employmentStatus === 'retired') estabilidad += 5;
-  else if (a.employmentStatus === 'part_time') estabilidad += 3;
-  else if (a.employmentStatus === 'student') estabilidad += 2;
-  if (a.incomeStability === 'stable') estabilidad += 4;
-  else if (a.incomeStability === 'irregular') estabilidad += 1;
-  // Job tenure bonus
-  if (a.jobTenure === 'over_5yr') estabilidad += 3;
-  else if (a.jobTenure === '3_5yr') estabilidad += 2;
-  else if (a.jobTenure === '1_3yr') estabilidad += 1;
-  // Partner occupation bonus (married/cohabiting)
-  if (a.partnerOccupation === 'employed' || a.partnerOccupation === 'self_employed') estabilidad += 2;
-  estabilidad = Math.min(estabilidad, 20);
-
-  // ── VIAJES (20 pts) ──
-  if (a.previousVisaApproved) viajes += 6;
-  if (a.previousUSTravel) viajes += 3;
-  // Family visa history bonus
-  if (a.familyHasVisa) {
-    viajes += 3;
-    if (a.familyVisaUsage === 'short_trips') viajes += 2; // Good usage pattern
-    else if (a.familyVisaUsage === 'mixed') viajes += 1;
-    else if (a.familyVisaUsage === 'long_trips') viajes -= 1; // Suspicious pattern
-  }
-  const travelMap = { none: 0, regional: 2, international: 4, extensive: 6 };
-  viajes += travelMap[a.travelHistory] || 0;
-  if (a.complianceRecord === 'perfect') viajes += 3;
-  else if (a.complianceRecord === 'minor_issues') viajes += 1;
-  viajes = Math.min(viajes, 20);
-
-  // ── HISTORIAL (10 pts, with penalties) ──
+  // ── HISTORIAL (10 pts, shared for all ages) ──
   if (a.previousDenials >= 2) { penalties -= 20; historial = 0; }
   else if (a.previousDenials === 1) {
     if (a.mostRecentDenial === 'less_1yr') { penalties -= 15; historial = 0; }
@@ -302,23 +369,6 @@ export function calculateScore(a: VisaEvalAnswers): ScoreBreakdown {
   if (a.inconsistencies) { penalties -= 5; historial = Math.max(historial - 3, 0); }
   if (a.complianceRecord === 'overstay') { penalties -= 10; historial = 0; }
 
-  // ── COHERENCE CHECKS ──
-  if (a.tripDuration === 'long' && (a.monthlyIncome === 'low' || a.monthlyIncome === 'none')) {
-    coherenceFlags.push('Viaje largo con ingresos bajos — riesgo de intención de trabajo');
-    penalties -= 5;
-  }
-  if (a.age < 18 && a.travelCompanion === 'alone' && a.travelPurpose !== 'education') {
-    coherenceFlags.push('Menor viajando solo sin motivo educativo');
-    penalties -= 5;
-  }
-  if (a.tripFinancedBy === 'family_usa' && a.employmentStatus === 'unemployed') {
-    coherenceFlags.push('Sin empleo y financiado por familiar en USA — riesgo de intención migratoria');
-    penalties -= 5;
-  }
-  if (a.travelPurpose === 'visit_partner' && !a.previousUSTravel) {
-    coherenceFlags.push('Primera visita a EE.UU. para visitar pareja — perfil de alto riesgo');
-    penalties -= 5;
-  }
   // Green card petition pending — strong negative factor (9 FAM 402.2-2)
   if (a.familyPetitionPending === true) {
     coherenceFlags.push('Petición de residencia pendiente — falta de intención de retorno');
@@ -397,11 +447,19 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
       { value: 'adult', labelEs: 'Son mayores de edad', labelEn: 'Adults' },
       { value: 'both', labelEs: 'Tengo de los dos', labelEn: 'Both' },
     ]},
-  { id: 'q_living', step: 1, textEs: '¿Con quién vive en su casa?', textEn: 'Who do you live with?', fieldKey: 'livingSituation', type: 'select', options: [
+  { id: 'q_living', step: 1, textEs: '¿Con quién vive en su casa?', textEn: 'Who do you live with?', fieldKey: 'livingSituation', type: 'select',
+    condition: (a) => (a.age || 0) >= 18,
+    options: [
     { value: 'alone', labelEs: 'Vivo solo/a', labelEn: 'Alone' },
     { value: 'with_parents', labelEs: 'Con mis padres', labelEn: 'With parents' },
     { value: 'with_partner', labelEs: 'Con mi pareja', labelEn: 'With partner' },
     { value: 'with_family', labelEs: 'Con otros familiares', labelEn: 'With family' },
+  ]},
+  { id: 'q_living_minor', step: 1, textEs: '¿Con quién vive el menor?', textEn: 'Who does the minor live with?', fieldKey: 'livingSituation', type: 'select',
+    condition: (a) => (a.age || 99) < 18,
+    options: [
+    { value: 'with_parents', labelEs: 'Con ambos padres', labelEn: 'With both parents' },
+    { value: 'with_family', labelEs: 'Con un solo padre o familiar', labelEn: 'With one parent or relative' },
   ]},
   { id: 'q_companion', step: 1, textEs: '¿Con quién va a viajar?', textEn: 'Who will you travel with?', fieldKey: 'travelCompanion', type: 'select', options: [
     { value: 'alone', labelEs: 'Voy solo/a', labelEn: 'Alone' },
@@ -427,6 +485,7 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   // ── STEP 2: ESTABILIDAD ──
   { id: 'q_employment', step: 2, textEs: '¿Qué hace para ganarse la vida?', textEn: 'What do you do for a living?', fieldKey: 'employmentStatus', type: 'select',
     consularQuestion: 'What do you do for a living?',
+    condition: (a) => (a.age || 0) >= 18,
     options: [
       { value: 'employed', labelEs: 'Trabajo para una empresa o alguien', labelEn: 'Employed' },
       { value: 'self_employed', labelEs: 'Tengo mi propio negocio', labelEn: 'Self-employed' },
@@ -456,6 +515,7 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     ]},
   { id: 'q_income', step: 2, textEs: '¿Cuánto dinero gana al mes?', textEn: 'How much money do you earn per month?', fieldKey: 'monthlyIncome', type: 'select',
     consularQuestion: 'How much do you earn per month?',
+    condition: (a) => (a.age || 0) >= 18,
     options: [
       { value: 'none', labelEs: 'No gano dinero', labelEn: 'No income' },
       { value: 'low', labelEs: 'Menos de $500 al mes', labelEn: 'Less than $500/month' },
@@ -463,8 +523,11 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
       { value: 'high', labelEs: 'Entre $1,500 y $5,000 al mes', labelEn: '$1,500 – $5,000/month' },
       { value: 'very_high', labelEs: 'Más de $5,000 al mes', labelEn: 'More than $5,000/month' },
     ]},
-  { id: 'q_studying', step: 2, textEs: '¿Está estudiando en este momento?', textEn: 'Are you currently studying?', fieldKey: 'isStudying', type: 'boolean' },
-  { id: 'q_education', step: 2, textEs: '¿Hasta qué grado estudió?', textEn: 'What is your education level?', fieldKey: 'educationLevel', type: 'select', options: [
+  { id: 'q_studying', step: 2, textEs: '¿Está estudiando en este momento?', textEn: 'Are you currently studying?', fieldKey: 'isStudying', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 16 },
+  { id: 'q_education', step: 2, textEs: '¿Hasta qué grado estudió?', textEn: 'What is your education level?', fieldKey: 'educationLevel', type: 'select',
+    condition: (a) => (a.age || 0) >= 18,
+    options: [
     { value: 'none', labelEs: 'No fui a la escuela', labelEn: 'No formal education' },
     { value: 'high_school', labelEs: 'Terminé la secundaria o bachillerato', labelEn: 'High school' },
     { value: 'university_current', labelEs: 'Estoy en la universidad ahora', labelEn: 'University (current)' },
@@ -492,18 +555,22 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
 
   // ── STEP 3: ARRAIGO ──
   { id: 'q_property', step: 3, textEs: '¿Posee propiedades?', textEn: 'Do you own property?', fieldKey: 'ownsProperty', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 18,
     consularQuestion: 'Do you own any property in your home country?' },
   { id: 'q_property_type', step: 3, textEs: '¿Qué tipo de propiedad?', textEn: 'What type of property?', fieldKey: 'propertyType', type: 'select',
-    condition: (a) => a.ownsProperty === true,
+    condition: (a) => (a.age || 0) >= 18 && a.ownsProperty === true,
     options: [
       { value: 'house', labelEs: 'Casa/Apartamento', labelEn: 'House/Apartment' },
       { value: 'land', labelEs: 'Terreno', labelEn: 'Land' },
       { value: 'commercial', labelEs: 'Local comercial', labelEn: 'Commercial property' },
       { value: 'multiple', labelEs: 'Múltiples propiedades', labelEn: 'Multiple properties' },
     ]},
-  { id: 'q_vehicle', step: 3, textEs: '¿Tiene vehículo propio?', textEn: 'Do you own a vehicle?', fieldKey: 'ownsVehicle', type: 'boolean' },
-  { id: 'q_bank', step: 3, textEs: '¿Tiene cuentas bancarias?', textEn: 'Do you have bank accounts?', fieldKey: 'hasBankAccounts', type: 'boolean' },
-  { id: 'q_invest', step: 3, textEs: '¿Tiene inversiones?', textEn: 'Do you have investments?', fieldKey: 'hasInvestments', type: 'boolean' },
+  { id: 'q_vehicle', step: 3, textEs: '¿Tiene vehículo propio?', textEn: 'Do you own a vehicle?', fieldKey: 'ownsVehicle', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 18 },
+  { id: 'q_bank', step: 3, textEs: '¿Tiene cuentas bancarias?', textEn: 'Do you have bank accounts?', fieldKey: 'hasBankAccounts', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 18 },
+  { id: 'q_invest', step: 3, textEs: '¿Tiene inversiones?', textEn: 'Do you have investments?', fieldKey: 'hasInvestments', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 18 },
   { id: 'q_family_ties', step: 3, textEs: '¿Qué tanta familia tiene en su país?', textEn: 'How much family do you have in your home country?', fieldKey: 'familyInHomeCountry', type: 'select',
     consularQuestion: 'What family do you have in your home country?',
     options: [
@@ -516,7 +583,8 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     { value: 'moderate', labelEs: 'A veces participo en actividades', labelEn: 'Sometimes' },
     { value: 'weak', labelEs: 'No participo en nada', labelEn: 'No participation' },
   ]},
-  { id: 'q_dependents', step: 3, textEs: '¿Hay personas que dependen de usted económicamente?', textEn: 'Are there people who depend on you financially?', fieldKey: 'hasDependents', type: 'boolean' },
+  { id: 'q_dependents', step: 3, textEs: '¿Hay personas que dependen de usted económicamente?', textEn: 'Are there people who depend on you financially?', fieldKey: 'hasDependents', type: 'boolean',
+    condition: (a) => (a.age || 0) >= 18 },
 
   // ── STEP 4: VIAJES ──
   { id: 'q_family_usa', step: 4, textEs: '¿Tiene familiares viviendo en Estados Unidos?', textEn: 'Do you have family living in the United States?', fieldKey: 'familyInUSA', type: 'boolean' },
