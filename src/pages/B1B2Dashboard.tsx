@@ -254,6 +254,32 @@ export default function B1B2Dashboard() {
     }
   };
 
+  const openSimulator = async (c: B1B2Case) => {
+    setLoadingSimId(c.id);
+    try {
+      const { data } = await supabase
+        .from('visa_evaluations')
+        .select('access_token, status')
+        .eq('client_name', c.client_name)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data?.access_token && data.status === 'completed') {
+        // Has a completed evaluation — open results view
+        window.open(`${window.location.origin}/visa-eval/${data.access_token}`, '_blank');
+      } else {
+        // No evaluation yet — open evaluator
+        navigate('/visa-evaluator');
+      }
+    } catch (e) {
+      console.error(e);
+      navigate('/visa-evaluator');
+    } finally {
+      setLoadingSimId(null);
+    }
+  };
+
   // Filters
   const filtered = cases.filter(c => {
     if (search && !c.client_name.toLowerCase().includes(search.toLowerCase())) return false;
