@@ -190,7 +190,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Pro
                 className="space-y-4 sm:space-y-6"
               >
                 {/* Question text */}
-                <h2 className="text-lg sm:text-xl font-semibold text-foreground leading-snug">
+                <h2 className="text-xl sm:text-2xl font-semibold text-foreground leading-snug">
                   {currentQ.textEs}
                 </h2>
 
