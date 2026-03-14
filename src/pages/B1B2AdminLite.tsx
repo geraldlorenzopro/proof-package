@@ -161,10 +161,7 @@ export default function B1B2AdminLite() {
               <Button
                 variant="outline"
                 className="gap-2 h-auto py-3.5"
-                onClick={() => {
-                  const link = `${window.location.origin}/case-track/${selectedCase.access_token}`;
-                  window.open(link, "_blank");
-                }}
+                onClick={() => navigate(`/case-track/${selectedCase.access_token}`)}
               >
                 <ExternalLink className="w-4 h-4" />
                 <span className="text-xs">Ver como Cliente</span>
