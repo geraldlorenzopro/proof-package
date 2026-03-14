@@ -5,7 +5,7 @@ import {
   Loader2, Plus, Copy, Check, ExternalLink,
   Search, Users, ChevronRight, AlertTriangle, Plane,
   CircleDot, CheckCircle2, Clock, Send, Eye,
-  TrendingUp, ArrowRight, MessageCircle, Settings2
+  TrendingUp, ArrowRight, MessageCircle, Settings2, Shield, Zap
 } from "lucide-react";
 import PipelineEditor, { getActiveStages, loadPipelineConfig, type StageConfig } from "@/components/b1b2/PipelineEditor";
 import { Button } from "@/components/ui/button";
@@ -116,6 +116,7 @@ export default function B1B2Dashboard() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [creating, setCreating] = useState(false);
+  const [simSentId, setSimSentId] = useState<string | null>(null);
 
   const accountCid = paramCid || resolvedCid;
 
@@ -370,10 +371,20 @@ export default function B1B2Dashboard() {
                 <p className="text-xs text-muted-foreground mt-0.5">{accountName} • {cases.length} cliente{cases.length !== 1 ? "s" : ""}</p>
               </div>
             </div>
-            <Button onClick={() => setShowNew(true)} className="gap-2 shadow-lg shadow-primary/10">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Nuevo Cliente</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/dashboard/visa-evaluator')}
+                className="gap-2 shadow-sm"
+              >
+                <Shield className="w-4 h-4" />
+                <span className="hidden sm:inline">Evaluador de Visa</span>
+              </Button>
+              <Button onClick={() => setShowNew(true)} className="gap-2 shadow-lg shadow-primary/10">
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Nuevo Cliente</span>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -650,6 +661,22 @@ export default function B1B2Dashboard() {
                           title="Copiar link del cliente"
                         >
                           {isCopied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`h-8 w-8 transition-all ${simSentId === c.id ? "opacity-100 text-accent" : "opacity-60 hover:opacity-100"}`}
+                          onClick={() => {
+                            const simLink = `${window.location.origin}/case-track/${c.access_token}`;
+                            const msg = encodeURIComponent(`Hola ${c.client_name}, prepárate para tu entrevista consular con nuestro simulador interactivo:\n${simLink}`);
+                            window.open(`https://wa.me/?text=${msg}`, "_blank");
+                            setSimSentId(c.id);
+                            toast({ title: "Simulador enviado", description: `Link del simulador de ${c.client_name} abierto en WhatsApp.` });
+                            setTimeout(() => setSimSentId(null), 3000);
+                          }}
+                          title={simSentId === c.id ? "¡Link enviado!" : "Enviar simulador al cliente"}
+                        >
+                          {simSentId === c.id ? <Check className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
                         </Button>
                         <Button
                           variant="ghost"
