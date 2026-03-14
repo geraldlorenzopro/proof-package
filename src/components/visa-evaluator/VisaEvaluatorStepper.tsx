@@ -171,7 +171,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Pro
         {/* ─── Question Area ─── */}
         <div className="bg-[hsl(220,25%,7%)] flex-1 min-h-0 flex flex-col">
           {/* Question counter */}
-          <div className="px-4 sm:px-8 pt-3 sm:pt-5 pb-1 sm:pb-2 flex items-center justify-between">
+          <div className="px-6 sm:px-10 pt-4 sm:pt-6 pb-1 sm:pb-2 flex items-center justify-between">
             <span className="text-[9px] sm:text-[10px] font-mono font-semibold text-muted-foreground/70 tracking-wider">
               {String(qIndex + 1).padStart(2, '0')} / {String(totalQuestions).padStart(2, '0')}
             </span>
