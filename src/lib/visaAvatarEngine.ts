@@ -397,11 +397,19 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
       { value: 'adult', labelEs: 'Son mayores de edad', labelEn: 'Adults' },
       { value: 'both', labelEs: 'Tengo de los dos', labelEn: 'Both' },
     ]},
-  { id: 'q_living', step: 1, textEs: '¿Con quién vive en su casa?', textEn: 'Who do you live with?', fieldKey: 'livingSituation', type: 'select', options: [
+  { id: 'q_living', step: 1, textEs: '¿Con quién vive en su casa?', textEn: 'Who do you live with?', fieldKey: 'livingSituation', type: 'select',
+    condition: (a) => (a.age || 0) >= 18,
+    options: [
     { value: 'alone', labelEs: 'Vivo solo/a', labelEn: 'Alone' },
     { value: 'with_parents', labelEs: 'Con mis padres', labelEn: 'With parents' },
     { value: 'with_partner', labelEs: 'Con mi pareja', labelEn: 'With partner' },
     { value: 'with_family', labelEs: 'Con otros familiares', labelEn: 'With family' },
+  ]},
+  { id: 'q_living_minor', step: 1, textEs: '¿Con quién vive el menor?', textEn: 'Who does the minor live with?', fieldKey: 'livingSituation', type: 'select',
+    condition: (a) => (a.age || 99) < 18,
+    options: [
+    { value: 'with_parents', labelEs: 'Con ambos padres', labelEn: 'With both parents' },
+    { value: 'with_family', labelEs: 'Con un solo padre o familiar', labelEn: 'With one parent or relative' },
   ]},
   { id: 'q_companion', step: 1, textEs: '¿Con quién va a viajar?', textEn: 'Who will you travel with?', fieldKey: 'travelCompanion', type: 'select', options: [
     { value: 'alone', labelEs: 'Voy solo/a', labelEn: 'Alone' },
