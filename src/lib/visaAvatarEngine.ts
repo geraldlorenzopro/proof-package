@@ -436,11 +436,10 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
       { value: 'part_time', labelEs: 'Trabajo medio tiempo', labelEn: 'Part-time' },
     ]},
   { id: 'q_emp_type', step: 2, textEs: '¿En qué tipo de lugar trabaja?', textEn: 'What type of workplace?', fieldKey: 'employmentType', type: 'select',
-    condition: (a) => ['employed', 'self_employed', 'part_time'].includes(a.employmentStatus || ''),
+    condition: (a) => ['employed', 'part_time'].includes(a.employmentStatus || ''),
     options: [
       { value: 'private', labelEs: 'Empresa privada', labelEn: 'Private company' },
       { value: 'public', labelEs: 'Gobierno o sector público', labelEn: 'Government' },
-      { value: 'freelance', labelEs: 'Trabajo por mi cuenta (freelance)', labelEn: 'Freelance' },
       { value: 'family_business', labelEs: 'Negocio de la familia', labelEn: 'Family business' },
       { value: 'informal', labelEs: 'Trabajo informal (sin contrato)', labelEn: 'Informal' },
     ]},
