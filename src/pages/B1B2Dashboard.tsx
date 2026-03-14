@@ -686,6 +686,18 @@ export default function B1B2Dashboard() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 opacity-60 hover:opacity-100"
+                          onClick={() => openSimulator(c)}
+                          disabled={loadingSimId === c.id}
+                          title="Simulador de Visa"
+                        >
+                          {loadingSimId === c.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <Shield className="w-3.5 h-3.5" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 opacity-60 hover:opacity-100"
                           onClick={() => copyClientLink(c)}
                           title="Copiar link del cliente"
                         >
