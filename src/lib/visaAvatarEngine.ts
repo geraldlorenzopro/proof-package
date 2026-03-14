@@ -197,8 +197,8 @@ export function classifyAvatar(a: VisaEvalAnswers): AvatarResult {
   if (a.employmentStatus === 'self_employed') {
     if (a.hasRegisteredBusiness) return { ...AVATARS.F1, riskFactors, strengths: ['Negocio registrado'] };
     if (a.employmentType === 'family_business') return { ...AVATARS.F3, riskFactors, strengths: ['Negocio familiar'] };
-    if (a.employmentType === 'freelance') return { ...AVATARS.F4, riskFactors: ['Sin empresa formal'], strengths: ['Independiente'] };
-    return { ...AVATARS.F2, riskFactors: ['Negocio informal'], strengths };
+    // Self-employed without registration = informal/freelance
+    return { ...AVATARS.F2, riskFactors: ['Negocio sin registro formal'], strengths: ['Independiente'] };
   }
 
   // GROUP B — Estudiantes (18-28)
