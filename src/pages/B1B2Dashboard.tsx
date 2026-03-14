@@ -5,7 +5,7 @@ import {
   Loader2, Plus, Copy, Check, ExternalLink,
   Search, Users, ChevronRight, AlertTriangle, Plane,
   CircleDot, CheckCircle2, Clock, Send, Eye,
-  TrendingUp, ArrowRight, MessageCircle, Settings2
+  TrendingUp, ArrowRight, MessageCircle, Settings2, Shield, Zap
 } from "lucide-react";
 import PipelineEditor, { getActiveStages, loadPipelineConfig, type StageConfig } from "@/components/b1b2/PipelineEditor";
 import { Button } from "@/components/ui/button";
