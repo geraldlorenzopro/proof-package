@@ -371,10 +371,20 @@ export default function B1B2Dashboard() {
                 <p className="text-xs text-muted-foreground mt-0.5">{accountName} • {cases.length} cliente{cases.length !== 1 ? "s" : ""}</p>
               </div>
             </div>
-            <Button onClick={() => setShowNew(true)} className="gap-2 shadow-lg shadow-primary/10">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Nuevo Cliente</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/dashboard/visa-evaluator')}
+                className="gap-2 shadow-sm"
+              >
+                <Shield className="w-4 h-4" />
+                <span className="hidden sm:inline">Evaluador de Visa</span>
+              </Button>
+              <Button onClick={() => setShowNew(true)} className="gap-2 shadow-lg shadow-primary/10">
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Nuevo Cliente</span>
+              </Button>
+            </div>
           </div>
         </div>
 
