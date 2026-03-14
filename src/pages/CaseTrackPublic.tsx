@@ -33,6 +33,7 @@ const B1B2_CHECKLIST = [
 
 export default function CaseTrackPublic() {
   const { token } = useParams<{ token: string }>();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [caseData, setCaseData] = useState<any>(null);
