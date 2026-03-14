@@ -103,7 +103,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Pro
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--jarvis)/0.4)] to-transparent" />
 
         {/* ─── Section Header ─── */}
-        <div className="bg-[hsl(220,30%,8%)] border-b border-border/10 px-4 sm:px-8 pt-3 sm:pt-5 pb-3 sm:pb-4 shrink-0">
+        <div className="bg-[hsl(220,30%,8%)] border-b border-border/10 px-6 sm:px-10 pt-4 sm:pt-6 pb-3 sm:pb-4 shrink-0">
           {/* Current section — big hero label */}
           <AnimatePresence mode="wait">
             <motion.div
