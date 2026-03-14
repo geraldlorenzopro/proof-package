@@ -445,7 +445,7 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
     ]},
   { id: 'q_registered_biz', step: 2, textEs: '¿Su negocio está registrado legalmente?', textEn: 'Is your business legally registered?', fieldKey: 'hasRegisteredBusiness', type: 'boolean',
     condition: (a) => a.employmentStatus === 'self_employed' },
-  { id: 'q_job_tenure', step: 2, textEs: '¿Hace cuánto tiempo trabaja ahí?', textEn: 'How long have you been working there?', fieldKey: 'jobTenure', type: 'select',
+  { id: 'q_job_tenure', step: 2, textEs: '¿Hace cuánto tiempo trabaja ahí o tiene su negocio?', textEn: 'How long have you been working there or running your business?', fieldKey: 'jobTenure', type: 'select',
     consularQuestion: 'How long have you been working there?',
     condition: (a) => ['employed', 'self_employed', 'part_time'].includes(a.employmentStatus || ''),
     options: [
