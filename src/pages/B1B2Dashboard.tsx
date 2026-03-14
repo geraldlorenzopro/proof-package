@@ -68,7 +68,39 @@ export default function B1B2Dashboard() {
 
   const [resolvedCid, setResolvedCid] = useState(paramCid || "");
   const [cidInput, setCidInput] = useState("");
-  const [loading, setLoading] = useState(!!paramCid);
+  const [loading, setLoading] = useState(true);
+  const [autoResolving, setAutoResolving] = useState(!paramCid);
+
+  // Auto-resolve account from logged-in user when no CID in URL
+  useEffect(() => {
+    if (paramCid) { setAutoResolving(false); return; }
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setAutoResolving(false); setLoading(false); return; }
+        const { data: member } = await supabase
+          .from('account_members')
+          .select('account_id')
+          .eq('user_id', user.id)
+          .limit(1)
+          .single();
+        if (!member) { setAutoResolving(false); setLoading(false); return; }
+        const { data: account } = await supabase
+          .from('ner_accounts')
+          .select('external_crm_id')
+          .eq('id', member.account_id)
+          .single();
+        if (account?.external_crm_id) {
+          setResolvedCid(account.external_crm_id);
+        }
+      } catch (e) {
+        console.error('Auto-resolve failed:', e);
+      } finally {
+        setAutoResolving(false);
+        setLoading(false);
+      }
+    })();
+  }, [paramCid]);
   const [error, setError] = useState<string | null>(null);
   const [cases, setCases] = useState<B1B2Case[]>([]);
   const [accountName, setAccountName] = useState("");
