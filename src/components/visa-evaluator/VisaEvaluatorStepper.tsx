@@ -196,7 +196,12 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Pro
 
                 {/* Options */}
                 {currentQ.type === 'select' && currentQ.options && (
-                  <div className="space-y-1.5 sm:space-y-2">
+                  <div className={cn(
+                    "gap-2",
+                    currentQ.options.length <= 4
+                      ? "grid grid-cols-1 sm:grid-cols-2"
+                      : "space-y-2"
+                  )}>
                     {currentQ.options.map(opt => {
                       const isSelected = answers[currentQ.fieldKey] === opt.value;
                       return (
