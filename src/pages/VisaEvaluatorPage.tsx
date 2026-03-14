@@ -12,6 +12,7 @@ import { evaluateProfile, type VisaEvalAnswers, type EvalResult } from "@/lib/vi
 
 export default function VisaEvaluatorPage() {
   const navigate = useNavigate();
+  const { destination } = useBackDestination('/b1b2-dashboard');
   const { toast } = useToast();
   const [view, setView] = useState<'form' | 'results'>('form');
   const [result, setResult] = useState<EvalResult | null>(null);
