@@ -121,54 +121,63 @@ export default function InterviewSimulatorPage() {
 
   return (
     <div className="h-[100dvh] bg-background text-foreground flex flex-col overflow-hidden">
-      <div className="max-w-2xl mx-auto px-3 sm:px-4 py-2 sm:py-4 flex flex-col flex-1 min-h-0 w-full">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-col flex-1 min-h-0 w-full">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2 sm:mb-3 shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => navigate('/b1b2-dashboard')}>
-              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+        <div className="flex items-center justify-between mb-3 shrink-0">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-base sm:text-xl font-bold flex items-center gap-2">
-                <Mic className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <h1 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <Mic className="h-5 w-5 text-primary" />
                 Simulador de Entrevista
               </h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Practica tu entrevista consular B1/B2</p>
+              <p className="text-xs text-muted-foreground">Practica tu entrevista consular B1/B2</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="text-xs sm:text-sm h-7 sm:h-8" onClick={generateClientLink}>
-            <Link2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> <span className="hidden sm:inline">Enviar a Cliente</span><span className="sm:hidden">Enlace</span>
+          <Button variant="outline" size="sm" className="text-xs h-8" onClick={generateClientLink}>
+            <Link2 className="h-4 w-4 mr-1" /> Enviar a Cliente
           </Button>
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 min-h-0 flex flex-col">
-          <div className="relative rounded-xl sm:rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0" style={{ boxShadow: '0 0 60px -15px hsl(195 100% 50% / 0.08), 0 25px 50px -12px rgba(0,0,0,0.4)' }}>
+        {/* Main content — wide two-column layout */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+          {/* Left: Question card */}
+          <div className="relative rounded-2xl overflow-hidden flex flex-col min-h-0" style={{ boxShadow: '0 0 60px -15px hsl(195 100% 50% / 0.08), 0 25px 50px -12px rgba(0,0,0,0.4)' }}>
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--jarvis)/0.4)] to-transparent" />
 
             {/* Category header */}
-            <div className="bg-[hsl(220,30%,8%)] border-b border-border/10 px-4 sm:px-8 pt-3 sm:pt-5 pb-3 sm:pb-4 shrink-0">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentQ.category}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex flex-col items-center text-center mb-3 sm:mb-4"
-                >
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-[hsl(var(--jarvis)/0.15)] to-[hsl(var(--jarvis)/0.05)] border border-[hsl(var(--jarvis)/0.2)] flex items-center justify-center text-[hsl(var(--jarvis))] mb-1.5 sm:mb-2">
-                    <CatIcon className="h-5 w-5" />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-                    {currentCategory.es}
-                  </h3>
-                </motion.div>
-              </AnimatePresence>
+            <div className="bg-[hsl(220,30%,8%)] border-b border-border/10 px-6 sm:px-8 pt-4 pb-3 shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentQ.category}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[hsl(var(--jarvis)/0.15)] to-[hsl(var(--jarvis)/0.05)] border border-[hsl(var(--jarvis)/0.2)] flex items-center justify-center text-[hsl(var(--jarvis))]">
+                      <CatIcon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-foreground">{currentCategory.es}</h3>
+                      <span className="text-[10px] text-muted-foreground/60 font-mono">
+                        {String(currentIndex + 1).padStart(2, '0')} / {String(questions.length).padStart(2, '0')}
+                      </span>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+                <Badge className={cn("text-[9px] border", difficultyColor[currentQ.difficulty])}>
+                  {difficultyLabel[currentQ.difficulty]}
+                </Badge>
+              </div>
 
               {/* Progress bar */}
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="flex-1 h-1 rounded-full bg-muted/20 overflow-hidden">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-1.5 rounded-full bg-muted/20 overflow-hidden">
                   <motion.div
                     className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--jarvis))] to-emerald-400"
                     initial={false}
@@ -176,7 +185,7 @@ export default function InterviewSimulatorPage() {
                     transition={{ duration: 0.4, ease: "easeOut" }}
                   />
                 </div>
-                <span className="text-[10px] sm:text-xs font-mono font-bold text-[hsl(var(--jarvis))]">
+                <span className="text-xs font-mono font-bold text-[hsl(var(--jarvis))]">
                   {completedQuestions.size}/{questions.length}
                 </span>
               </div>
@@ -184,18 +193,7 @@ export default function InterviewSimulatorPage() {
 
             {/* Question area */}
             <div className="bg-[hsl(220,25%,7%)] flex-1 min-h-0 flex flex-col">
-              {/* Question counter + difficulty */}
-              <div className="px-4 sm:px-8 pt-3 sm:pt-5 pb-1 sm:pb-2 flex items-center justify-between">
-                <span className="text-[9px] sm:text-[10px] font-mono font-semibold text-muted-foreground/70 tracking-wider">
-                  {String(currentIndex + 1).padStart(2, '0')} / {String(questions.length).padStart(2, '0')}
-                </span>
-                <Badge className={cn("text-[9px] border", difficultyColor[currentQ.difficulty])}>
-                  {difficultyLabel[currentQ.difficulty]}
-                </Badge>
-              </div>
-
-              {/* Animated question */}
-              <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 pb-3 sm:pb-4">
+              <div className="flex-1 min-h-0 overflow-y-auto px-6 sm:px-8 py-5">
                 <AnimatePresence mode="wait" custom={direction}>
                   <motion.div
                     key={currentQ.id}
@@ -204,129 +202,146 @@ export default function InterviewSimulatorPage() {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: direction * -40 }}
                     transition={{ duration: 0.25, ease: "easeInOut" }}
-                    className="space-y-4 sm:space-y-5"
+                    className="space-y-5"
                   >
-                    {/* Spanish question — what the consul says */}
+                    {/* Spanish question */}
                     <div className="space-y-2">
                       <p className="text-[10px] text-muted-foreground/60 font-mono uppercase tracking-wider">🇺🇸 El oficial consular pregunta:</p>
-                      <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug">
+                      <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-snug">
                         "{currentQ.questionEs}"
                       </h2>
                     </div>
 
-                    {/* English reference (smaller) */}
-                    <p className="text-xs text-muted-foreground/50 italic">
+                    {/* English reference */}
+                    <p className="text-sm text-muted-foreground/50 italic">
                       🇬🇧 In English: "{currentQ.questionEn}"
                     </p>
 
-                    {/* Listen button — American accent speaking Spanish */}
-                    <button
-                      onClick={() => speakQuestion(currentQ)}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all text-sm font-medium",
-                        speakingId === currentQ.id
-                          ? "border-[hsl(var(--jarvis)/0.4)] bg-[hsl(var(--jarvis)/0.1)] text-[hsl(var(--jarvis))] animate-pulse"
-                          : "border-border/30 bg-[hsl(220,25%,10%)] text-muted-foreground hover:text-foreground hover:border-border/50"
-                      )}
-                    >
-                      <Volume2 className="h-4 w-4" />
-                      {speakingId === currentQ.id ? '🔊 Escuchando...' : '🎧 Escuchar pregunta (acento americano)'}
-                    </button>
-
-                    {/* Record button */}
-                    <div className="flex flex-col items-center gap-3 py-2">
+                    {/* Actions row */}
+                    <div className="flex flex-wrap items-center gap-3">
+                      {/* Listen button */}
                       <button
-                        onClick={isRecording ? stopRecording : startRecording}
+                        onClick={() => speakQuestion(currentQ)}
                         className={cn(
-                          "w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all duration-300",
-                          isRecording
-                            ? "bg-red-500/20 border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-pulse"
-                            : "bg-[hsl(var(--jarvis)/0.1)] border-2 border-[hsl(var(--jarvis)/0.3)] hover:border-[hsl(var(--jarvis)/0.5)] hover:shadow-[0_0_30px_hsl(195_100%_50%/0.15)]"
+                          "flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all text-sm font-medium",
+                          speakingId === currentQ.id
+                            ? "border-[hsl(var(--jarvis)/0.4)] bg-[hsl(var(--jarvis)/0.1)] text-[hsl(var(--jarvis))] animate-pulse"
+                            : "border-border/30 bg-[hsl(220,25%,10%)] text-muted-foreground hover:text-foreground hover:border-border/50"
                         )}
                       >
-                        <Mic className={cn("h-6 w-6 sm:h-8 sm:w-8", isRecording ? "text-red-400" : "text-[hsl(var(--jarvis))]")} />
+                        <Volume2 className="h-4 w-4" />
+                        {speakingId === currentQ.id ? '🔊 Escuchando...' : '🎧 Escuchar pregunta'}
                       </button>
-                      <p className="text-xs text-muted-foreground/60">
-                        {isRecording ? '🔴 Grabando... toque para detener' : '🎙️ Toque para grabar su respuesta'}
-                      </p>
+
+                      {/* Tip toggle */}
+                      <button
+                        onClick={() => setShowTip(!showTip)}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 text-sm text-amber-400/80 hover:text-amber-400 transition-colors font-medium"
+                      >
+                        <Lightbulb className="h-4 w-4" />
+                        {showTip ? 'Ocultar consejo' : 'Ver consejo'}
+                      </button>
                     </div>
-
-                    {/* Playback */}
-                    {recordings[currentQ.id] && (
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                        <audio controls src={recordings[currentQ.id]} className="flex-1 h-8" />
-                      </div>
-                    )}
-
-                    {/* Tip toggle */}
-                    <button
-                      onClick={() => setShowTip(!showTip)}
-                      className="flex items-center gap-2 text-xs text-amber-400/70 hover:text-amber-400 transition-colors"
-                    >
-                      <Lightbulb className="h-3.5 w-3.5" />
-                      {showTip ? 'Ocultar consejo' : '💡 Ver consejo de respuesta'}
-                    </button>
 
                     {showTip && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
-                        className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/15 text-sm text-amber-200/80 leading-relaxed"
+                        className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/15 text-sm text-amber-200/80 leading-relaxed"
                       >
                         💡 {currentQ.tipEs}
                       </motion.div>
                     )}
+
+                    {/* Record section */}
+                    <div className="flex items-center gap-4 py-2">
+                      <button
+                        onClick={isRecording ? stopRecording : startRecording}
+                        className={cn(
+                          "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shrink-0",
+                          isRecording
+                            ? "bg-red-500/20 border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-pulse"
+                            : "bg-[hsl(var(--jarvis)/0.1)] border-2 border-[hsl(var(--jarvis)/0.3)] hover:border-[hsl(var(--jarvis)/0.5)] hover:shadow-[0_0_30px_hsl(195_100%_50%/0.15)]"
+                        )}
+                      >
+                        <Mic className={cn("h-7 w-7", isRecording ? "text-red-400" : "text-[hsl(var(--jarvis))]")} />
+                      </button>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground/80">
+                          {isRecording ? '🔴 Grabando... toque para detener' : '🎙️ Grabe su respuesta'}
+                        </p>
+                        {recordings[currentQ.id] && (
+                          <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                            <audio controls src={recordings[currentQ.id]} className="flex-1 h-7" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </motion.div>
                 </AnimatePresence>
               </div>
 
               {/* Navigation */}
-              <div className="px-4 sm:px-8 py-2 sm:py-3 shrink-0 flex items-center gap-3">
-                {currentIndex > 0 && (
-                  <button
-                    onClick={goPrev}
-                    className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors font-medium flex items-center gap-1"
-                  >
-                    <ChevronLeft className="h-3 w-3" /> Anterior
-                  </button>
-                )}
+              <div className="px-6 sm:px-8 py-3 shrink-0 flex items-center gap-3 border-t border-border/10">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={goPrev}
+                  disabled={currentIndex === 0}
+                  className="text-xs"
+                >
+                  <ChevronLeft className="h-3 w-3 mr-1" /> Anterior
+                </Button>
                 <div className="flex-1" />
-                {currentIndex < questions.length - 1 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={goNext}
-                    className="text-xs text-muted-foreground/70 hover:text-foreground"
-                  >
-                    Siguiente <ChevronRight className="h-3 w-3 ml-1" />
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={goNext}
+                  disabled={currentIndex === questions.length - 1}
+                  className="text-xs"
+                >
+                  Siguiente <ChevronRight className="h-3 w-3 ml-1" />
+                </Button>
               </div>
             </div>
 
             <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--jarvis)/0.2)] to-transparent" />
           </div>
 
-          {/* Dot indicators */}
-          <div className="pt-3 pb-1 space-y-2 shrink-0">
-            <div className="flex items-center justify-center gap-1 flex-wrap">
+          {/* Right sidebar: Question navigator */}
+          <div className="hidden lg:flex flex-col rounded-2xl border border-border/20 bg-card/30 overflow-hidden">
+            <div className="px-4 py-3 border-b border-border/10 shrink-0">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Preguntas</p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
               {questions.map((q, i) => {
                 const isDone = completedQuestions.has(q.id);
                 const isCurrent = i === currentIndex;
+                const QIcon = CATEGORY_ICONS[q.category] || Plane;
                 return (
                   <button
                     key={q.id}
                     onClick={() => { setDirection(i > currentIndex ? 1 : -1); setCurrentIndex(i); setShowTip(false); }}
                     className={cn(
-                      "rounded-full transition-all duration-200",
+                      "w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all text-[11px]",
                       isCurrent
-                        ? "w-6 h-2 bg-[hsl(var(--jarvis))]"
+                        ? "bg-[hsl(var(--jarvis)/0.08)] border border-[hsl(var(--jarvis)/0.2)] text-foreground"
                         : isDone
-                        ? "w-2 h-2 bg-emerald-500/70 hover:bg-emerald-400"
-                        : "w-2 h-2 bg-muted-foreground/20 hover:bg-muted-foreground/40"
+                        ? "text-emerald-400/70 hover:bg-muted/20"
+                        : "text-muted-foreground/50 hover:bg-muted/20 hover:text-muted-foreground"
                     )}
-                  />
+                  >
+                    <div className={cn(
+                      "w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-bold",
+                      isCurrent ? "bg-[hsl(var(--jarvis)/0.2)] text-[hsl(var(--jarvis))]" :
+                      isDone ? "bg-emerald-500/15 text-emerald-400" :
+                      "bg-muted text-muted-foreground/40"
+                    )}>
+                      {isDone ? <CheckCircle2 className="w-3 h-3" /> : i + 1}
+                    </div>
+                    <span className="truncate">{q.questionEs.substring(0, 35)}…</span>
+                  </button>
                 );
               })}
             </div>
@@ -334,8 +349,8 @@ export default function InterviewSimulatorPage() {
         </div>
 
         {/* Disclaimer */}
-        <div className="py-1 sm:py-2 shrink-0">
-          <p className="text-[9px] sm:text-[10px] text-muted-foreground/40 text-center italic">
+        <div className="py-2 shrink-0">
+          <p className="text-[10px] text-muted-foreground/40 text-center italic">
             🎙️ Practique sus respuestas en voz alta. Las grabaciones se quedan en su dispositivo.
           </p>
         </div>
