@@ -127,7 +127,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Pro
           </AnimatePresence>
 
           {/* Step navigation pills */}
-          <div className="flex items-center justify-center gap-1.5 mb-2 sm:mb-3">
+          <div className="flex items-center justify-center gap-2 mb-3">
             {STEP_LABELS.map(s => {
               const isActive = currentStep === s.step;
               const isDone = currentStep > s.step;
@@ -142,7 +142,7 @@ export default function VisaEvaluatorStepper({ onComplete, initialAnswers }: Pro
                     }
                   }}
                   className={cn(
-                    "w-8 sm:w-10 h-1.5 rounded-full transition-all duration-300",
+                    "flex-1 h-2 rounded-full transition-all duration-300 max-w-20",
                     isActive
                       ? "bg-[hsl(var(--jarvis))] shadow-[0_0_8px_hsl(var(--jarvis)/0.4)]"
                       : isDone
