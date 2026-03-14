@@ -116,6 +116,7 @@ export default function B1B2Dashboard() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [creating, setCreating] = useState(false);
+  const [simSentId, setSimSentId] = useState<string | null>(null);
 
   const accountCid = paramCid || resolvedCid;
 
