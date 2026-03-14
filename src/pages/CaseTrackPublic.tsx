@@ -165,30 +165,33 @@ export default function CaseTrackPublic() {
           </TabsList>
 
           {/* Tab: Estado del Caso */}
-          <TabsContent value="status" className="space-y-4">
-            {/* Progress bar */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-muted-foreground">Progreso</span>
-                <span className="text-xs font-bold text-primary">{progressPct}%</span>
+          <TabsContent value="status" className="space-y-6">
+            {/* Progress card */}
+            <div className="rounded-xl border border-border/40 bg-card/50 p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Progreso</span>
+                <span className="text-lg font-bold text-primary">{progressPct}%</span>
               </div>
-              <Progress value={progressPct} className="h-2" />
+              <Progress value={progressPct} className="h-2.5" />
+              <p className="text-[11px] text-muted-foreground">
+                Etapa {Math.max(currentIdx, 0) + 1} de {stages.length}
+              </p>
             </div>
 
-            {/* Pipeline stages */}
-            <div className="space-y-2">
+            {/* Pipeline stages — 2-col grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {stages.map((stage, i) => {
                 const isPast = i < currentIdx;
                 const isCurrent = i === currentIdx;
                 return (
                   <div
                     key={stage.slug}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 border transition-all ${
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3.5 border transition-all ${
                       isCurrent
-                        ? "bg-primary/5 border-primary/20 shadow-sm"
+                        ? "bg-primary/5 border-primary/25 shadow-md shadow-primary/5"
                         : isPast
-                        ? "bg-accent/5 border-accent/10"
-                        : "bg-transparent border-border/30 opacity-40"
+                        ? "bg-accent/5 border-accent/15"
+                        : "bg-card/30 border-border/20 opacity-50"
                     }`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
@@ -209,11 +212,11 @@ export default function CaseTrackPublic() {
                         {stage.label}
                       </p>
                       {isCurrent && stage.description && (
-                        <p className="text-[11px] text-muted-foreground mt-0.5">{stage.description}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{stage.description}</p>
                       )}
                     </div>
                     {isCurrent && (
-                      <Badge className="text-[9px] bg-primary/10 text-primary border-primary/20">Aquí estás</Badge>
+                      <Badge className="text-[9px] bg-primary/10 text-primary border-primary/20 shrink-0">Aquí estás</Badge>
                     )}
                   </div>
                 );
