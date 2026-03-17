@@ -502,9 +502,11 @@ export default function CSPACalculator() {
         if (hasApproval) {
           requestBody.approval_date = form.approvalDate;
         }
+        console.log('[CSPA] Calling get-visa-date with:', JSON.stringify(requestBody));
         const { data, error: fnError } = await supabase.functions.invoke("get-visa-date", {
           body: requestBody,
         });
+        console.log('[CSPA] get-visa-date response:', JSON.stringify({ data, fnError: fnError?.message }));
         if (thisRequestId !== requestIdRef.current) return;
         if (fnError) throw new Error(fnError.message);
         if (!data.success) {
