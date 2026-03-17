@@ -533,9 +533,10 @@ export default function CSPACalculator() {
         setForm((prev) => ({ ...prev, visaAvailableDate: visaDate }));
         const mName = MONTH_NAMES[data.bulletin_month - 1];
         setVisaAutoInfo(data.is_current ? t.bulletinCurrent(mName, data.bulletin_year) : t.bulletinFinal(mName, data.bulletin_year, data.raw_value));
-      } catch (e) {
+      } catch (e: any) {
         if (thisRequestId !== requestIdRef.current) return;
-        setVisaError(t.noConsult); console.error(e);
+        console.error('[CSPA] get-visa-date error:', e?.message || e, 'body:', JSON.stringify({ priority_date: form.priorityDate, category: form.category, chargeability: form.chargeability }));
+        setVisaError(t.noConsult);
       } finally {
         if (thisRequestId === requestIdRef.current) setLoadingVisa(false);
       }
