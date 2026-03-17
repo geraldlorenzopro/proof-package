@@ -79,7 +79,7 @@ const T = {
     approvalDate: "✅ ¿Cuándo aprobó USCIS la petición?",
     approvalDateHint: "La fecha en que USCIS aprobó el caso",
     visaDate: "🌐 ¿Cuándo estuvo disponible la visa?",
-    consulting: "Buscando información…",
+    consulting: "Consultando el Boletín de Visas del Departamento de Estado…",
     autoDetect: "Se detectará automáticamente",
     completePriority: "Primero completa la fecha de prioridad, categoría y país.",
     cspaUsesApproval: "⚖️ Se usa la fecha de aprobación porque fue después de que la visa estuvo disponible.",
