@@ -502,9 +502,11 @@ export default function CSPACalculator() {
         if (hasApproval) {
           requestBody.approval_date = form.approvalDate;
         }
+        console.log('[CSPA] Calling get-visa-date with:', JSON.stringify(requestBody));
         const { data, error: fnError } = await supabase.functions.invoke("get-visa-date", {
           body: requestBody,
         });
+        console.log('[CSPA] get-visa-date response:', JSON.stringify({ data, fnError: fnError?.message }));
         if (thisRequestId !== requestIdRef.current) return;
         if (fnError) throw new Error(fnError.message);
         if (!data.success) {
@@ -533,9 +535,10 @@ export default function CSPACalculator() {
         setForm((prev) => ({ ...prev, visaAvailableDate: visaDate }));
         const mName = MONTH_NAMES[data.bulletin_month - 1];
         setVisaAutoInfo(data.is_current ? t.bulletinCurrent(mName, data.bulletin_year) : t.bulletinFinal(mName, data.bulletin_year, data.raw_value));
-      } catch (e) {
+      } catch (e: any) {
         if (thisRequestId !== requestIdRef.current) return;
-        setVisaError(t.noConsult); console.error(e);
+        console.error('[CSPA] get-visa-date error:', e?.message || e, 'body:', JSON.stringify({ priority_date: form.priorityDate, category: form.category, chargeability: form.chargeability }));
+        setVisaError(t.noConsult);
       } finally {
         if (thisRequestId === requestIdRef.current) setLoadingVisa(false);
       }
