@@ -332,12 +332,14 @@ Deno.serve(async (req) => {
   const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
   const fillGaps = body.fill_gaps ?? false;
 
-  // Require webhook secret or authenticated admin (except for fill_gaps which is safe)
+  // Require webhook secret or authenticated admin
+  // Auto-sync (cron) and fill_gaps are always allowed — they only read public DOS data
   const secret = req.headers.get('x-webhook-secret');
   const expectedSecret = Deno.env.get('GHL_WEBHOOK_SECRET');
   const authHeader = req.headers.get('Authorization');
+  const isCronAutoSync = !body.year && !body.month && !body.backfill && !body.fill_gaps;
 
-  let authorized = fillGaps; // fill_gaps is always allowed (public data backfill)
+  let authorized = fillGaps || isCronAutoSync; // safe: only reads public data and upserts
 
   // Option 1: webhook secret
   if (!authorized && secret && expectedSecret && secret === expectedSecret) {
