@@ -26,20 +26,20 @@ const liveTools = [
       { icon: FileCheck, text: 'Genera un paquete PDF organizado cronológicamente' },
     ],
   },
-];
-
-const betaTools = [
   {
     name: 'CSPA Calculator',
-    description: 'Calcula la edad CSPA del beneficiario, determina elegibilidad y genera reportes PDF profesionales.',
+    description: 'Calcula la edad CSPA del beneficiario con datos del Visa Bulletin en tiempo real, genera reportes PDF y analiza Sought to Acquire.',
     icon: BarChart3,
     href: '/dashboard/cspa',
     features: [
-      { icon: Calculator, text: 'Cálculo automático de edad CSPA con datos del Visa Bulletin' },
-      { icon: FileCheck, text: 'Reportes PDF profesionales listos para el expediente' },
-      { icon: Activity, text: 'Simulador de naturalización y alertas de matrimonio' },
+      { icon: Calculator, text: 'Cálculo automático con Visa Bulletin actualizado (F1–F4, F2A/F2B)' },
+      { icon: FileCheck, text: 'Reportes PDF profesionales con desglose paso a paso' },
+      { icon: Activity, text: 'Simulador de naturalización, alertas de matrimonio y Sought to Acquire' },
     ],
   },
+];
+
+const betaTools = [
   {
     name: 'USCIS Document Analyzer',
     description: 'Analiza documentos de USCIS (RFE, NOID, I-797, etc.) con IA y recibe un desglose estratégico punto por punto.',
