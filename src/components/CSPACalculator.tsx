@@ -187,7 +187,7 @@ const T = {
     approvalDate: "✅ When did USCIS approve the petition?",
     approvalDateHint: "The date USCIS approved the case",
     visaDate: "🌐 When was the visa available?",
-    consulting: "Looking up information…",
+    consulting: "Checking the Department of State Visa Bulletin…",
     autoDetect: "Will be detected automatically",
     completePriority: "First complete the priority date, category and country.",
     cspaUsesApproval: "⚖️ Using the approval date because it came after the visa was available.",
