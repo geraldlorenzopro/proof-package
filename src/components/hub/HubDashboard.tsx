@@ -301,7 +301,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
         ))}
       </motion.div>
 
-      {/* ═══ TOOL CATEGORIES — 4-column horizontal grid ═══ */}
+      {/* ═══ TOOL CATEGORIES — visible tools by default ═══ */}
       {categoriesWithApps.length > 0 && (
         <section className="pt-2">
           <div className="flex items-center gap-2 mb-4">
@@ -316,10 +316,9 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
             initial="hidden"
             animate="visible"
             variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.2 } } }}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"
           >
             {categoriesWithApps.map((cat, i) => {
-              const isExpanded = expandedCategory === cat.key;
               const CatIcon = cat.icon;
 
               return (
@@ -327,59 +326,57 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
                   key={cat.key}
                   custom={i}
                   variants={fadeUp}
-                  className={`rounded-2xl border ${cat.color.border} bg-white/[0.03] backdrop-blur-xl transition-all duration-300 overflow-hidden ${isExpanded ? "ring-1 ring-white/10 border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" : "hover:border-white/12 hover:bg-white/[0.05] hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)]"}`}
+                  className={`rounded-2xl border ${cat.color.border} bg-white/[0.03] backdrop-blur-xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.2)]`}
                 >
-                  <button
-                    onClick={() => setExpandedCategory(isExpanded ? null : cat.key)}
-                    className="w-full flex items-center gap-4 p-5 text-left group"
-                  >
-                    <div className={`w-11 h-11 rounded-xl ${cat.color.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                  <div className="flex items-center gap-4 p-5 border-b border-foreground/5">
+                    <div className={`w-11 h-11 rounded-xl ${cat.color.bg} flex items-center justify-center shrink-0`}>
                       <CatIcon className={`w-5 h-5 ${cat.color.text}`} strokeWidth={2.5} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2.5">
                         <h4 className="text-sm font-bold text-foreground tracking-wide">{cat.label}</h4>
-                        <span className={`${cat.color.text} text-[9px] font-mono font-bold opacity-60`}>
+                        <span className={`${cat.color.text} text-[9px] font-mono font-bold opacity-70`}>
                           {cat.tools.length}
                         </span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground/50 leading-snug mt-0.5">{cat.description}</p>
+                      <p className="text-[11px] text-muted-foreground/60 leading-snug mt-0.5">{cat.description}</p>
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-muted-foreground/30 transition-transform duration-300 ${isExpanded ? "rotate-180 text-muted-foreground/60" : ""}`} strokeWidth={2.5} />
-                  </button>
+                  </div>
 
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25 }}
-                      className="border-t border-foreground/5 px-5 pb-4 pt-3 space-y-1"
-                    >
-                      {cat.tools.map(app => {
-                        const SubIcon = ICON_MAP[app.slug] || Shield;
-                        const route = ROUTE_MAP[app.slug];
-                        return (
-                          <button
-                            key={app.id}
-                            onClick={() => { if (route) goTo(route); }}
-                            disabled={!route}
-                            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-foreground/[0.06] transition-all duration-200 group disabled:opacity-30"
-                          >
+                  <div className="p-3 space-y-2">
+                    {cat.tools.map(app => {
+                      const SubIcon = ICON_MAP[app.slug] || Shield;
+                      const route = ROUTE_MAP[app.slug];
+                      return (
+                        <button
+                          key={app.id}
+                          onClick={() => { if (route) goTo(route); }}
+                          disabled={!route}
+                          className="w-full flex items-center gap-3 rounded-xl border border-border/50 bg-background/40 px-3 py-3 hover:bg-foreground/[0.06] hover:border-border transition-all duration-200 group disabled:opacity-30"
+                        >
+                          <div className={`w-9 h-9 rounded-lg ${cat.color.bg} flex items-center justify-center shrink-0`}>
                             <SubIcon className={`w-4 h-4 ${cat.color.text}`} strokeWidth={2.5} />
-                            <span className="text-[13px] font-semibold text-foreground/90 flex-1 text-left tracking-wide">{DISPLAY_NAMES[app.slug] || app.name}</span>
-                            <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/15 group-hover:text-muted-foreground/50 transition-colors" strokeWidth={2.5} />
-                          </button>
-                        );
-                      })}
-                    </motion.div>
-                  )}
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <div className="text-[13px] font-semibold text-foreground/90 tracking-wide truncate">
+                              {DISPLAY_NAMES[app.slug] || app.name}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground/55 truncate">
+                              {app.description || cat.description}
+                            </div>
+                          </div>
+                          <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/70 transition-colors shrink-0" strokeWidth={2.5} />
+                        </button>
+                      );
+                    })}
+                  </div>
                 </motion.div>
               );
             })}
           </motion.div>
         </section>
       )}
+
 
       {/* ═══ INTELLIGENCE CENTER LINK ═══ */}
       <motion.button
