@@ -52,6 +52,22 @@ export default function Auth() {
     });
   }, [navigate]);
 
+  async function resolvePostLoginDestination(userId: string): Promise<string> {
+    try {
+      const { data: membership } = await supabase
+        .from("account_members")
+        .select("account_id, role")
+        .eq("user_id", userId)
+        .limit(1)
+        .maybeSingle();
+      if (membership) {
+        sessionStorage.setItem("ner_active_account_id", membership.account_id);
+        return "/hub";
+      }
+    } catch { /* fall through */ }
+    return "/dashboard";
+  }
+
   async function startMfaChallenge() {
     const { data: factors } = await supabase.auth.mfa.listFactors();
     const totpFactor = factors?.totp?.find((f: any) => f.status === 'verified');
