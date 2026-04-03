@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, Sparkles, BarChart3, Home } from "lucide-react";
+import { ArrowLeft, Shield, BarChart3, Home, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   children: ReactNode;
@@ -21,6 +22,13 @@ const planColors: Record<string, string> = {
 export default function HubLayout({ children, accountName, staffName, plan }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
+
+  async function handleLogout() {
+    sessionStorage.removeItem("ner_hub_data");
+    sessionStorage.removeItem("ner_active_account_id");
+    await supabase.auth.signOut();
+    navigate("/auth", { replace: true });
+  }
 
   const isOnDashboard = location.pathname === "/hub";
   const isOnIntelligence = location.pathname === "/hub/intelligence";
@@ -57,6 +65,16 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             title="Centro de Inteligencia"
           >
             <BarChart3 className="w-4 h-4" />
+          </button>
+
+          <div className="flex-1" />
+
+          <button
+            onClick={handleLogout}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
+            title="Cerrar sesión"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
         </motion.aside>
       )}
