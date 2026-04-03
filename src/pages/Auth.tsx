@@ -81,11 +81,17 @@ export default function Auth() {
           return;
         }
 
-        // No MFA — go straight to dashboard
+        // No MFA — check if user belongs to a firm account
         logAudit({ action: "auth.login", entity_type: "auth", entity_label: email });
-        const returnTo = sessionStorage.getItem('ner_auth_redirect') || '/dashboard';
+        const explicitRedirect = sessionStorage.getItem('ner_auth_redirect');
         sessionStorage.removeItem('ner_auth_redirect');
-        navigate(returnTo, { replace: true });
+        if (explicitRedirect) {
+          navigate(explicitRedirect, { replace: true });
+        } else {
+          // Check for firm membership to decide Hub vs Dashboard
+          const destination = await resolvePostLoginDestination(data.user!.id);
+          navigate(destination, { replace: true });
+        }
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
