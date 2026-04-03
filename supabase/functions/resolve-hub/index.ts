@@ -332,6 +332,15 @@ Deno.serve(async (req) => {
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+      if (errMsg.startsWith("CROSS_ACCOUNT:")) {
+        return new Response(
+          JSON.stringify({
+            error: "cross_account",
+            message: "Este usuario ya pertenece a otra firma. No se puede agregar a esta cuenta.",
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       console.error("Auto-login failed (non-blocking):", authErr);
     }
 
