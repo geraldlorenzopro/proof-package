@@ -198,6 +198,9 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
         <div className="min-w-0 flex items-center gap-2.5">
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate">
             {greeting}, <span className="text-jarvis">{staffName || accountName}</span>
+            {staffName && accountName && staffName !== accountName && (
+              <span className="text-base font-normal text-muted-foreground ml-1">— {accountName}</span>
+            )}
           </h2>
           {plan && (
             <Badge className={`text-[9px] font-display font-bold uppercase tracking-wider border shrink-0 ${

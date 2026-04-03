@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, AlertTriangle, Shield } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
 import HubDashboard from "@/components/hub/HubDashboard";
 import { useAppPermissions } from "@/hooks/useAppPermissions";
@@ -70,7 +70,6 @@ export default function HubPage() {
         return;
       } catch { /* fall through */ }
     }
-    // No query params and no cache — try to recover from existing auth session
     recoverFromSession();
   }, [cid, sig, ts]);
 
@@ -84,37 +83,84 @@ export default function HubPage() {
       }
       const userId = sessionData.session.user.id;
 
-      // Get account info
-      const { data: member } = await supabase
-        .from("account_members")
-        .select("account_id, role")
-        .eq("user_id", userId)
-        .limit(1)
-        .single();
+      // Step 1: Check sessionStorage for pinned account
+      let resolvedAccountId = sessionStorage.getItem("ner_active_account_id");
+      let resolvedAccountName = "";
+      let resolvedPlan = "essential";
 
-      if (!member) {
-        setError("No se encontró una cuenta asociada.");
-        setLoading(false);
-        return;
+      if (resolvedAccountId) {
+        // Validate it still exists
+        const { data: account } = await supabase
+          .from("ner_accounts")
+          .select("account_name, plan")
+          .eq("id", resolvedAccountId)
+          .single();
+        if (account) {
+          resolvedAccountName = account.account_name;
+          resolvedPlan = account.plan;
+        } else {
+          resolvedAccountId = null;
+          sessionStorage.removeItem("ner_active_account_id");
+        }
       }
 
-      const { data: account } = await supabase
-        .from("ner_accounts")
-        .select("account_name, plan")
-        .eq("id", member.account_id)
-        .single();
+      // Step 2: If not pinned, resolve from account_members with priority
+      if (!resolvedAccountId) {
+        const { data: members } = await supabase
+          .from("account_members")
+          .select("account_id, role")
+          .eq("user_id", userId);
 
-      if (!account) {
-        setError("Cuenta no encontrada.");
-        setLoading(false);
-        return;
+        if (!members || members.length === 0) {
+          setError("No se encontró una cuenta asociada.");
+          setLoading(false);
+          return;
+        }
+
+        // Fetch account details for all memberships
+        const accountIds = [...new Set(members.map(m => m.account_id))];
+        const { data: accounts } = await supabase
+          .from("ner_accounts")
+          .select("id, account_name, plan, external_crm_id, is_active")
+          .in("id", accountIds)
+          .eq("is_active", true);
+
+        if (!accounts || accounts.length === 0) {
+          setError("No se encontró una cuenta activa.");
+          setLoading(false);
+          return;
+        }
+
+        // Sort: owner role first, then GHL-linked accounts
+        const enriched = members
+          .map(m => ({
+            ...m,
+            account: accounts.find(a => a.id === m.account_id),
+          }))
+          .filter(m => m.account);
+
+        enriched.sort((a, b) => {
+          if (a.role === "owner" && b.role !== "owner") return -1;
+          if (b.role === "owner" && a.role !== "owner") return 1;
+          const aHasGHL = a.account?.external_crm_id ? 0 : 1;
+          const bHasGHL = b.account?.external_crm_id ? 0 : 1;
+          return aHasGHL - bHasGHL;
+        });
+
+        const best = enriched[0];
+        resolvedAccountId = best.account_id;
+        resolvedAccountName = best.account?.account_name || "";
+        resolvedPlan = best.account?.plan || "essential";
+
+        // Pin for this session
+        sessionStorage.setItem("ner_active_account_id", resolvedAccountId);
       }
 
-      // Get apps the account has access to
+      // Get apps
       const { data: appAccess } = await supabase
         .from("account_app_access")
         .select("app_id")
-        .eq("account_id", member.account_id);
+        .eq("account_id", resolvedAccountId);
 
       let apps: HubApp[] = [];
       if (appAccess && appAccess.length > 0) {
@@ -135,11 +181,13 @@ export default function HubPage() {
         .single();
 
       const recovered: HubData = {
-        account_id: member.account_id,
-        account_name: account.account_name,
-        plan: account.plan,
+        account_id: resolvedAccountId,
+        account_name: resolvedAccountName,
+        plan: resolvedPlan,
         apps,
-        staff_info: profile?.full_name ? { ghl_user_email: "", display_name: profile.full_name } : null,
+        staff_info: profile?.full_name
+          ? { ghl_user_email: "", display_name: profile.full_name }
+          : null,
       };
 
       setData(recovered);
@@ -153,7 +201,6 @@ export default function HubPage() {
     }
   }
 
-  // Load stats once auth is ready
   useEffect(() => {
     if (!authReady) return;
     loadStats();
@@ -204,6 +251,10 @@ export default function HubPage() {
       } else {
         setData(json);
         sessionStorage.setItem("ner_hub_data", JSON.stringify(json));
+        // Pin the account for this session
+        if (json.account_id) {
+          sessionStorage.setItem("ner_active_account_id", json.account_id);
+        }
         if (json.auth_token) {
           await establishSession(json.auth_token);
         } else {
