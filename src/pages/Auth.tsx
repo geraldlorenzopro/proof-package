@@ -37,15 +37,18 @@ export default function Auth() {
           return;
         }
 
-        // Check if MFA is fully verified by checking AAL
+        // Check if MFA is fully verified
         supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
           if (data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2') {
-            // Need MFA verification
             startMfaChallenge();
           } else {
-            const returnTo = sessionStorage.getItem('ner_auth_redirect') || '/dashboard';
+            const explicitRedirect = sessionStorage.getItem('ner_auth_redirect');
             sessionStorage.removeItem('ner_auth_redirect');
-            navigate(returnTo, { replace: true });
+            if (explicitRedirect) {
+              navigate(explicitRedirect, { replace: true });
+            } else {
+              resolvePostLoginDestination(user.id).then(dest => navigate(dest, { replace: true }));
+            }
           }
         });
       }
