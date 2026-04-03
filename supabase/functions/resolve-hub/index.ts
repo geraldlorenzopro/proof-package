@@ -81,16 +81,45 @@ async function getOrCreateHubUser(
     console.log("Created new hub user:", hubUserId, "for staff:", ghlUserEmail || "shared");
   }
 
-  // Ensure hub user is in account_members
-  const { error: memberErr } = await supabaseAdmin.from("account_members").upsert(
-    { account_id: accountId, user_id: hubUserId, role: "member" },
-    { onConflict: "account_id,user_id" }
+  // Guard: prevent user from being added to a different account
+  const { data: existingMemberships } = await supabaseAdmin
+    .from("account_members")
+    .select("account_id")
+    .eq("user_id", hubUserId);
+
+  const otherAccounts = (existingMemberships || []).filter(
+    (m: any) => m.account_id !== accountId
   );
-  if (memberErr) {
-    console.error("Failed to link member:", memberErr);
-    await supabaseAdmin.from("account_members").insert(
-      { account_id: accountId, user_id: hubUserId, role: "member" }
+
+  if (otherAccounts.length > 0) {
+    console.warn(
+      `Hub user ${hubUserId} already belongs to account(s): ${otherAccounts
+        .map((m: any) => m.account_id)
+        .join(", ")}. Skipping membership for account ${accountId}.`
     );
+    // Still allow login if they already belong to THIS account
+    const belongsToThis = (existingMemberships || []).some(
+      (m: any) => m.account_id === accountId
+    );
+    if (!belongsToThis) {
+      console.warn(
+        `User ${hubUserId} does NOT belong to requested account ${accountId}. ` +
+        `They belong to a different firm. Denying cross-account access.`
+      );
+      throw new Error("CROSS_ACCOUNT:User already belongs to a different firm account");
+    }
+  } else {
+    // No existing membership in other accounts — safe to upsert
+    const { error: memberErr } = await supabaseAdmin.from("account_members").upsert(
+      { account_id: accountId, user_id: hubUserId, role: "member" },
+      { onConflict: "account_id,user_id" }
+    );
+    if (memberErr) {
+      console.error("Failed to link member:", memberErr);
+      await supabaseAdmin.from("account_members").insert(
+        { account_id: accountId, user_id: hubUserId, role: "member" }
+      );
+    }
   }
 
   // Ensure profile exists — copy firm data from existing account member if available
@@ -273,18 +302,21 @@ Deno.serve(async (req) => {
     let auth_token: { access_token: string; refresh_token: string } | null = null;
     let staff_info: { ghl_user_email: string; display_name: string } | null = null;
 
+    // Clean display name: strip "(NER)" suffix that GHL may append
+    const cleanDisplayName = (uname || "").replace(/\s*\(NER\)\s*/gi, "").trim() || null;
+
     try {
       const result = await getOrCreateHubUser(
         supabaseAdmin,
         account.id,
         account.account_name,
         uemail,
-        uname,
+        cleanDisplayName,
         account.max_users
       );
       auth_token = { access_token: result.access_token, refresh_token: result.refresh_token };
       if (uemail) {
-        staff_info = { ghl_user_email: uemail, display_name: uname || uemail };
+        staff_info = { ghl_user_email: uemail, display_name: cleanDisplayName || uemail };
       }
       console.log("Auto-login token generated for account:", account.id, "staff:", uemail || "shared");
     } catch (authErr: any) {
@@ -296,6 +328,15 @@ Deno.serve(async (req) => {
             error: "staff_limit_exceeded",
             message: `Tu plan permite máximo ${max} usuarios. Contacta al administrador para actualizar tu plan.`,
             max_users: Number(max),
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (errMsg.startsWith("CROSS_ACCOUNT:")) {
+        return new Response(
+          JSON.stringify({
+            error: "cross_account",
+            message: "Este usuario ya pertenece a otra firma. No se puede agregar a esta cuenta.",
           }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
