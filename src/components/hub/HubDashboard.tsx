@@ -27,6 +27,7 @@ interface HubApp {
 }
 
 interface Props {
+  accountId: string;
   accountName: string;
   staffName?: string;
   plan: string;
