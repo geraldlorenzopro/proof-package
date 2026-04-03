@@ -221,7 +221,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
       </motion.div>
 
       {/* ═══ KPI CARDS ═══ */}
-      <HubAnalyticsCards />
+      <HubAnalyticsCards accountId={accountId} />
 
       {/* ═══ HERO CARDS — Case Engine + NER Smart Forms side by side ═══ */}
       <motion.div
