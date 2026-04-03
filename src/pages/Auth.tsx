@@ -131,9 +131,15 @@ export default function Auth() {
       if (verifyError) throw verifyError;
 
       logAudit({ action: "auth.login", entity_type: "auth", entity_label: email, metadata: { mfa: true } });
-      const returnTo = sessionStorage.getItem('ner_auth_redirect') || '/dashboard';
+      const explicitRedirect = sessionStorage.getItem('ner_auth_redirect');
       sessionStorage.removeItem('ner_auth_redirect');
-      navigate(returnTo, { replace: true });
+      if (explicitRedirect) {
+        navigate(explicitRedirect, { replace: true });
+      } else {
+        const { data: sessionData } = await supabase.auth.getUser();
+        const destination = await resolvePostLoginDestination(sessionData.user!.id);
+        navigate(destination, { replace: true });
+      }
     } catch (err: any) {
       setError(err.message === 'Invalid TOTP code' ? 'Código incorrecto. Intenta de nuevo.' : (err.message || 'Error de verificación'));
       setMfaCode('');
