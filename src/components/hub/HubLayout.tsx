@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, Sparkles, BarChart3, Home } from "lucide-react";
+import { ArrowLeft, Shield, BarChart3, Home, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   children: ReactNode;
