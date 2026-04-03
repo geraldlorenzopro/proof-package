@@ -66,6 +66,16 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
           >
             <BarChart3 className="w-4 h-4" />
           </button>
+
+          <div className="flex-1" />
+
+          <button
+            onClick={handleLogout}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
+            title="Cerrar sesión"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </motion.aside>
       )}
 
