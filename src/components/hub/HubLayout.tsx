@@ -23,6 +23,13 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   const navigate = useNavigate();
   const location = useLocation();
 
+  async function handleLogout() {
+    sessionStorage.removeItem("ner_hub_data");
+    sessionStorage.removeItem("ner_active_account_id");
+    await supabase.auth.signOut();
+    navigate("/auth", { replace: true });
+  }
+
   const isOnDashboard = location.pathname === "/hub";
   const isOnIntelligence = location.pathname === "/hub/intelligence";
 
