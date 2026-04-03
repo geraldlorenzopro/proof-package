@@ -273,18 +273,21 @@ Deno.serve(async (req) => {
     let auth_token: { access_token: string; refresh_token: string } | null = null;
     let staff_info: { ghl_user_email: string; display_name: string } | null = null;
 
+    // Clean display name: strip "(NER)" suffix that GHL may append
+    const cleanDisplayName = (uname || "").replace(/\s*\(NER\)\s*/gi, "").trim() || null;
+
     try {
       const result = await getOrCreateHubUser(
         supabaseAdmin,
         account.id,
         account.account_name,
         uemail,
-        uname,
+        cleanDisplayName,
         account.max_users
       );
       auth_token = { access_token: result.access_token, refresh_token: result.refresh_token };
       if (uemail) {
-        staff_info = { ghl_user_email: uemail, display_name: uname || uemail };
+        staff_info = { ghl_user_email: uemail, display_name: cleanDisplayName || uemail };
       }
       console.log("Auto-login token generated for account:", account.id, "staff:", uemail || "shared");
     } catch (authErr: any) {
