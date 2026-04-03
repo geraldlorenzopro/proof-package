@@ -255,6 +255,7 @@ export default function HubPage() {
       availableApps={availableAppSlugs}
     >
       <HubDashboard
+        accountId={data.account_id}
         accountName={data.account_name}
         staffName={data.staff_info?.display_name}
         plan={data.plan}

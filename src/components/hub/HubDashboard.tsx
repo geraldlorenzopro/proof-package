@@ -27,6 +27,7 @@ interface HubApp {
 }
 
 interface Props {
+  accountId: string;
   accountName: string;
   staffName?: string;
   plan: string;
@@ -149,7 +150,7 @@ const PRIMARY_ACTIONS = [
   { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
 ];
 
-export default function HubDashboard({ accountName, staffName, plan, apps, userRole, canAccessApp, stats }: Props) {
+export default function HubDashboard({ accountId, accountName, staffName, plan, apps, userRole, canAccessApp, stats }: Props) {
   const navigate = useNavigate();
   const [showAudit, setShowAudit] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -221,7 +222,7 @@ export default function HubDashboard({ accountName, staffName, plan, apps, userR
       </motion.div>
 
       {/* ═══ KPI CARDS ═══ */}
-      <HubAnalyticsCards />
+      <HubAnalyticsCards accountId={accountId} />
 
       {/* ═══ HERO CARDS — Case Engine + NER Smart Forms side by side ═══ */}
       <motion.div
