@@ -375,12 +375,11 @@ export default function CasesPage() {
         )}
       </div>
 
-      {showModal && (
-        <NewCaseModal
-          onClose={() => setShowModal(false)}
-          onCreated={(newCase) => { setCases(prev => [newCase, ...prev]); setShowModal(false); }}
-        />
-      )}
+      <IntakeWizard
+        open={showModal}
+        onOpenChange={setShowModal}
+        onCreated={(newCase) => { setCases(prev => [newCase, ...prev]); setShowModal(false); }}
+      />
     </div>
   );
 }
