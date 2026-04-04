@@ -1,8 +1,9 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, BarChart3, Home, LogOut } from "lucide-react";
+import { ArrowLeft, Shield, BarChart3, Home, LogOut, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 
 interface Props {
   children: ReactNode;
@@ -22,6 +23,21 @@ const planColors: Record<string, string> = {
 export default function HubLayout({ children, accountName, staffName, plan }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isPlatformAdmin } = usePlatformAdmin();
+
+  // Impersonation banner
+  const impersonateData = (() => {
+    try {
+      const raw = sessionStorage.getItem("ner_impersonate");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (new Date(parsed.expires_at) < new Date()) {
+        sessionStorage.removeItem("ner_impersonate");
+        return null;
+      }
+      return parsed;
+    } catch { return null; }
+  })();
 
   async function handleLogout() {
     sessionStorage.removeItem("ner_hub_data");
@@ -67,6 +83,16 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             <BarChart3 className="w-4 h-4" />
           </button>
 
+          {isPlatformAdmin && (
+            <button
+              onClick={() => navigate("/admin")}
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-red-400/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
+              title="Panel Admin"
+            >
+              <Crown className="w-4 h-4" />
+            </button>
+          )}
+
           <div className="flex-1" />
 
           <button
@@ -80,6 +106,18 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Impersonation banner */}
+        {impersonateData && (
+          <div className="bg-amber-500/90 text-black px-4 py-2 flex items-center justify-between text-sm font-medium z-50">
+            <span>⚠️ MODO SOPORTE — Estás viendo la cuenta de {impersonateData.account_name}</span>
+            <button
+              onClick={() => { sessionStorage.removeItem("ner_impersonate"); navigate("/admin/accounts"); }}
+              className="bg-black/20 hover:bg-black/30 px-3 py-1 rounded text-xs font-bold transition-colors"
+            >
+              Salir
+            </button>
+          </div>
+        )}
         {/* Compact top bar — only visible when inside a tool (not on dashboard) */}
         {!isOnDashboard && !isOnIntelligence && (
           <motion.header
