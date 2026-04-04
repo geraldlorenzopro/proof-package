@@ -17,9 +17,9 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsErr) throw claimsErr;
-    const adminUserId = claimsData?.claims?.sub;
+    const { data: { user: adminUser }, error: userErr } = await userClient.auth.getUser();
+    if (userErr) throw userErr;
+    const adminUserId = adminUser?.id;
 
     const { data: isAdmin } = await userClient.rpc("is_platform_admin");
     if (!isAdmin) {
