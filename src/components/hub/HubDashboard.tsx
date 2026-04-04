@@ -295,6 +295,8 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
               if (action.label === "Buscar") {
                 setCommandBarFilter("all");
                 setCommandBarOpen(true);
+              } else if (action.route === "__intake__") {
+                setIntakeOpen(true);
               } else {
                 goTo(action.route);
               }
