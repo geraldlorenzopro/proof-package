@@ -13,7 +13,6 @@ import AffidavitTool from "./pages/AffidavitTool";
 import CspaTool from "./pages/CspaTool";
 import ClientUpload from "./pages/ClientUpload";
 import CaseReview from "./pages/CaseReview";
-// AdminPanel removed — consolidated into Dashboard
 import Features from "./pages/Features";
 import UscisAnalyzer from "./pages/UscisAnalyzer";
 import SharedAnalysis from "./pages/SharedAnalysis";
@@ -40,6 +39,14 @@ import InterviewSimulatorPage from "./pages/InterviewSimulatorPage";
 import B1B2AdminLite from "./pages/B1B2AdminLite";
 import B1B2Dashboard from "./pages/B1B2Dashboard";
 import ClientPortalRouter from "./pages/ClientPortalRouter";
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import AdminAccountsPage from "./pages/admin/AdminAccountsPage";
+import AdminAccountDetailPage from "./pages/admin/AdminAccountDetailPage";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminBillingPage from "./pages/admin/AdminBillingPage";
+import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
+import AdminLogsPage from "./pages/admin/AdminLogsPage";
 
 const queryClient = new QueryClient();
 
@@ -61,7 +68,6 @@ const App = () => (
           <Route path="/dashboard/tracker" element={<PlaceholderTool tool="tracker" />} />
           <Route path="/upload/:token" element={<ClientUpload />} />
           <Route path="/q/:token" element={<ClientQuestionnaire />} />
-          {/* Admin Panel consolidated into Dashboard */}
           <Route path="/case/:id" element={<CaseReview />} />
           <Route path="/dashboard/uscis-analyzer" element={<UscisAnalyzer />} />
           <Route path="/shared-analysis/:token" element={<SharedAnalysis />} />
@@ -90,6 +96,14 @@ const App = () => (
           <Route path="/dashboard/interview-sim" element={<InterviewSimulatorPage />} />
           <Route path="/interview-sim/practice" element={<InterviewSimulatorPage />} />
           <Route path="/debug/pdf-fields" element={<PdfFieldInspector />} />
+          {/* Platform Admin Routes */}
+          <Route path="/admin" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
+          <Route path="/admin/accounts" element={<AdminLayout><AdminAccountsPage /></AdminLayout>} />
+          <Route path="/admin/accounts/:accountId" element={<AdminLayout><AdminAccountDetailPage /></AdminLayout>} />
+          <Route path="/admin/users" element={<AdminLayout><AdminUsersPage /></AdminLayout>} />
+          <Route path="/admin/billing" element={<AdminLayout><AdminBillingPage /></AdminLayout>} />
+          <Route path="/admin/analytics" element={<AdminLayout><AdminAnalyticsPage /></AdminLayout>} />
+          <Route path="/admin/logs" element={<AdminLayout><AdminLogsPage /></AdminLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
