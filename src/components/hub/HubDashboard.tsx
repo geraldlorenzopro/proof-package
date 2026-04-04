@@ -444,5 +444,3 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
     </>
   );
 }
-  );
-}
