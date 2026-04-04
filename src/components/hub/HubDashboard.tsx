@@ -17,6 +17,7 @@ import HubAuditLog from "./HubAuditLog";
 import HubToolPermissions from "./HubToolPermissions";
 import HubNotifications from "./HubNotifications";
 import SlaTracker from "./SlaTracker";
+import IntakeWizard from "../intake/IntakeWizard";
 
 interface HubApp {
   id: string;
@@ -146,7 +147,7 @@ const fadeUp = {
 
 const PRIMARY_ACTIONS = [
   { label: "Buscar", icon: Search, route: "", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
-  { label: "Nuevo Caso", icon: PlusCircle, route: "/dashboard/workspace-demo", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  { label: "Nuevo Caso", icon: PlusCircle, route: "__intake__", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
   { label: "Analizar Doc", icon: FileSearch, route: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
 ];
 
@@ -156,6 +157,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [commandBarOpen, setCommandBarOpen] = useState(false);
   const [commandBarFilter, setCommandBarFilter] = useState<"all" | "client" | "case" | "tool">("all");
+  const [intakeOpen, setIntakeOpen] = useState(false);
 
   const isAdmin = !userRole || userRole === "owner" || userRole === "admin";
 
@@ -186,6 +188,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
   }
 
   return (
+    <>
     <div className="max-w-6xl mx-auto px-4 sm:px-5 py-4 sm:py-5 space-y-3">
 
       {/* ═══ HEADER — Greeting + Search + Activity Drawer ═══ */}
@@ -293,6 +296,8 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
               if (action.label === "Buscar") {
                 setCommandBarFilter("all");
                 setCommandBarOpen(true);
+              } else if (action.route === "__intake__") {
+                setIntakeOpen(true);
               } else {
                 goTo(action.route);
               }
@@ -434,5 +439,8 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
         NER Legal Operations · Powered by AI
       </motion.p>
     </div>
+
+    <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
+    </>
   );
 }

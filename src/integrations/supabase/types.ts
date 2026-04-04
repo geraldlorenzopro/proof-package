@@ -1399,6 +1399,133 @@ export type Database = {
         }
         Relationships: []
       }
+      intake_sessions: {
+        Row: {
+          account_id: string
+          ai_confidence_score: number | null
+          ai_flags: string[] | null
+          ai_reasoning: string | null
+          ai_suggested_case_type: string | null
+          case_id: string | null
+          client_email: string | null
+          client_first_name: string | null
+          client_goal: string | null
+          client_language: string | null
+          client_last_name: string | null
+          client_phone: string | null
+          client_profile_id: string | null
+          created_at: string | null
+          created_by: string
+          current_documents: string[] | null
+          current_status: string | null
+          deadline_date: string | null
+          entry_channel: string | null
+          entry_date: string | null
+          entry_method: string | null
+          final_case_type: string | null
+          has_criminal_record: boolean | null
+          has_pending_deadline: boolean | null
+          has_prior_deportation: boolean | null
+          id: string
+          is_existing_client: boolean | null
+          notes: string | null
+          referral_source: string | null
+          status: string | null
+          updated_at: string | null
+          urgency_level: string | null
+        }
+        Insert: {
+          account_id: string
+          ai_confidence_score?: number | null
+          ai_flags?: string[] | null
+          ai_reasoning?: string | null
+          ai_suggested_case_type?: string | null
+          case_id?: string | null
+          client_email?: string | null
+          client_first_name?: string | null
+          client_goal?: string | null
+          client_language?: string | null
+          client_last_name?: string | null
+          client_phone?: string | null
+          client_profile_id?: string | null
+          created_at?: string | null
+          created_by: string
+          current_documents?: string[] | null
+          current_status?: string | null
+          deadline_date?: string | null
+          entry_channel?: string | null
+          entry_date?: string | null
+          entry_method?: string | null
+          final_case_type?: string | null
+          has_criminal_record?: boolean | null
+          has_pending_deadline?: boolean | null
+          has_prior_deportation?: boolean | null
+          id?: string
+          is_existing_client?: boolean | null
+          notes?: string | null
+          referral_source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          urgency_level?: string | null
+        }
+        Update: {
+          account_id?: string
+          ai_confidence_score?: number | null
+          ai_flags?: string[] | null
+          ai_reasoning?: string | null
+          ai_suggested_case_type?: string | null
+          case_id?: string | null
+          client_email?: string | null
+          client_first_name?: string | null
+          client_goal?: string | null
+          client_language?: string | null
+          client_last_name?: string | null
+          client_phone?: string | null
+          client_profile_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          current_documents?: string[] | null
+          current_status?: string | null
+          deadline_date?: string | null
+          entry_channel?: string | null
+          entry_date?: string | null
+          entry_method?: string | null
+          final_case_type?: string | null
+          has_criminal_record?: boolean | null
+          has_pending_deadline?: boolean | null
+          has_prior_deportation?: boolean | null
+          id?: string
+          is_existing_client?: boolean | null
+          notes?: string | null
+          referral_source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          urgency_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_sessions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_sessions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_sessions_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ner_accounts: {
         Row: {
           account_name: string
