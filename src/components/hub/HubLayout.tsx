@@ -94,6 +94,18 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             </button>
           )}
 
+          <button
+            onClick={() => navigate("/hub/settings/office")}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+              isOnOfficeSettings
+                ? "bg-jarvis/15 text-jarvis border border-jarvis/20"
+                : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
+            }`}
+            title="Mi Firma"
+          >
+            <Building2 className="w-4 h-4" />
+          </button>
+
           <div className="flex-1" />
 
           <button
