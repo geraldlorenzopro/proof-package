@@ -140,8 +140,8 @@ export default function StepCreate({ data, created, creating, onDone, onCreate, 
           Notas adicionales (opcional)
         </label>
         <textarea
-          value={data.notes}
-          onChange={e => onDone && (data.notes = e.target.value)}
+          defaultValue={data.notes}
+          onBlur={e => { data.notes = e.target.value; }}
           placeholder="Agrega notas internas sobre este caso..."
           rows={3}
           className="w-full border border-input bg-background rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
