@@ -83,6 +83,16 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             <BarChart3 className="w-4 h-4" />
           </button>
 
+          {isPlatformAdmin && (
+            <button
+              onClick={() => navigate("/admin")}
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-red-400/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
+              title="Panel Admin"
+            >
+              <Crown className="w-4 h-4" />
+            </button>
+          )}
+
           <div className="flex-1" />
 
           <button
