@@ -358,6 +358,11 @@ export default function CaseEnginePage() {
                   </div>
                 )}
 
+                {/* Intake Data */}
+                <div className="rounded-2xl border border-border bg-card p-5">
+                  <CaseIntakePanel caseId={caseId!} />
+                </div>
+
                 {/* Notes */}
                 <div className="rounded-2xl border border-border bg-card p-5">
                   <CaseNotesPanel
