@@ -132,7 +132,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
           </div>
         )}
         {/* Compact top bar — only visible when inside a tool (not on dashboard) */}
-        {!isOnDashboard && !isOnIntelligence && (
+        {!isOnDashboard && !isOnIntelligence && !isOnOfficeSettings && (
           <motion.header
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
