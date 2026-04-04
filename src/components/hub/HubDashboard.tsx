@@ -17,6 +17,7 @@ import HubAuditLog from "./HubAuditLog";
 import HubToolPermissions from "./HubToolPermissions";
 import HubNotifications from "./HubNotifications";
 import SlaTracker from "./SlaTracker";
+import IntakeWizard from "../intake/IntakeWizard";
 
 interface HubApp {
   id: string;
