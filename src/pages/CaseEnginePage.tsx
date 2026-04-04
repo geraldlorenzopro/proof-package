@@ -17,6 +17,7 @@ import CaseDecisionPanel from "@/components/case-engine/CaseDecisionPanel";
 import CaseNotesPanel from "@/components/case-engine/CaseNotesPanel";
 import CaseTasksPanel from "@/components/case-engine/CaseTasksPanel";
 import CaseStageHistory from "@/components/case-engine/CaseStageHistory";
+import CaseIntakePanel, { IntakeBadge } from "@/components/case-engine/CaseIntakePanel";
 import {
   Select,
   SelectContent,
@@ -260,6 +261,7 @@ export default function CaseEnginePage() {
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[10px] font-semibold">{processLabel}</Badge>
                     <Badge variant="outline" className="text-[10px]">{daysOpen} días abierto</Badge>
+                    <IntakeBadge caseId={caseId!} />
                     {caseData.assigned_to && (
                       <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent border-accent/20">
                         <Users className="w-3 h-3 mr-1" />
@@ -355,6 +357,11 @@ export default function CaseEnginePage() {
                     />
                   </div>
                 )}
+
+                {/* Intake Data */}
+                <div className="rounded-2xl border border-border bg-card p-5">
+                  <CaseIntakePanel caseId={caseId!} />
+                </div>
 
                 {/* Notes */}
                 <div className="rounded-2xl border border-border bg-card p-5">
