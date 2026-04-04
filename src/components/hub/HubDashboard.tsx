@@ -438,5 +438,10 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
         NER Legal Operations · Powered by AI
       </motion.p>
     </div>
+
+    <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
+    </>
+  );
+}
   );
 }
