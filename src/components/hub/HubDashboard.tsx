@@ -188,6 +188,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
   }
 
   return (
+    <>
     <div className="max-w-6xl mx-auto px-4 sm:px-5 py-4 sm:py-5 space-y-3">
 
       {/* ═══ HEADER — Greeting + Search + Activity Drawer ═══ */}
