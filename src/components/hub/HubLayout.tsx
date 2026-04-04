@@ -106,6 +106,18 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Impersonation banner */}
+        {impersonateData && (
+          <div className="bg-amber-500/90 text-black px-4 py-2 flex items-center justify-between text-sm font-medium z-50">
+            <span>⚠️ MODO SOPORTE — Estás viendo la cuenta de {impersonateData.account_name}</span>
+            <button
+              onClick={() => { sessionStorage.removeItem("ner_impersonate"); navigate("/admin/accounts"); }}
+              className="bg-black/20 hover:bg-black/30 px-3 py-1 rounded text-xs font-bold transition-colors"
+            >
+              Salir
+            </button>
+          </div>
+        )}
         {/* Compact top bar — only visible when inside a tool (not on dashboard) */}
         {!isOnDashboard && !isOnIntelligence && (
           <motion.header
