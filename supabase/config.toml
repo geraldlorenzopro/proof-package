@@ -41,3 +41,21 @@ verify_jwt = false
 
 [functions.b1b2-update-case]
 verify_jwt = false
+
+[functions.admin-get-all-accounts]
+verify_jwt = false
+
+[functions.admin-get-all-users]
+verify_jwt = false
+
+[functions.admin-get-metrics]
+verify_jwt = false
+
+[functions.admin-update-account]
+verify_jwt = false
+
+[functions.admin-get-logs]
+verify_jwt = false
+
+[functions.admin-impersonate]
+verify_jwt = false
