@@ -48,6 +48,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
 
   const isOnDashboard = location.pathname === "/hub";
   const isOnIntelligence = location.pathname === "/hub/intelligence";
+  const isOnOfficeSettings = location.pathname === "/hub/settings/office";
 
   return (
     <div className="min-h-screen bg-background flex">
