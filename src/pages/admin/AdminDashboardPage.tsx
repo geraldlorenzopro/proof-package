@@ -145,6 +145,8 @@ export default function AdminDashboardPage() {
                       borderRadius: "8px",
                       color: "#fff",
                     }}
+                    itemStyle={{ color: "#fff" }}
+                    labelStyle={{ color: "rgba(255,255,255,0.7)" }}
                     formatter={(value: number, name: string, props: any) => [
                       `${value} firmas — $${props.payload.revenue.toLocaleString()}/mo`,
                       name,

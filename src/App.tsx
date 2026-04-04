@@ -98,6 +98,7 @@ const App = () => (
           <Route path="/debug/pdf-fields" element={<PdfFieldInspector />} />
           {/* Platform Admin Routes */}
           <Route path="/admin" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
+          <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
           <Route path="/admin/accounts" element={<AdminLayout><AdminAccountsPage /></AdminLayout>} />
           <Route path="/admin/accounts/:accountId" element={<AdminLayout><AdminAccountDetailPage /></AdminLayout>} />
           <Route path="/admin/users" element={<AdminLayout><AdminUsersPage /></AdminLayout>} />
