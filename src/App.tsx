@@ -47,6 +47,7 @@ import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminBillingPage from "./pages/admin/AdminBillingPage";
 import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
 import AdminLogsPage from "./pages/admin/AdminLogsPage";
+import OfficeSettingsPage from "./pages/OfficeSettingsPage";
 
 const queryClient = new QueryClient();
 
