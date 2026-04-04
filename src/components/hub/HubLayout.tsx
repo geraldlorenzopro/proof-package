@@ -1,8 +1,9 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, BarChart3, Home, LogOut } from "lucide-react";
+import { ArrowLeft, Shield, BarChart3, Home, LogOut, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 
 interface Props {
   children: ReactNode;
