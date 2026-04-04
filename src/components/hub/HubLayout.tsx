@@ -23,6 +23,21 @@ const planColors: Record<string, string> = {
 export default function HubLayout({ children, accountName, staffName, plan }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isPlatformAdmin } = usePlatformAdmin();
+
+  // Impersonation banner
+  const impersonateData = (() => {
+    try {
+      const raw = sessionStorage.getItem("ner_impersonate");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (new Date(parsed.expires_at) < new Date()) {
+        sessionStorage.removeItem("ner_impersonate");
+        return null;
+      }
+      return parsed;
+    } catch { return null; }
+  })();
 
   async function handleLogout() {
     sessionStorage.removeItem("ner_hub_data");
