@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, BarChart3, Home, LogOut, Crown } from "lucide-react";
+import { ArrowLeft, Shield, BarChart3, Home, LogOut, Crown, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 
@@ -48,11 +48,12 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
 
   const isOnDashboard = location.pathname === "/hub";
   const isOnIntelligence = location.pathname === "/hub/intelligence";
+  const isOnOfficeSettings = location.pathname === "/hub/settings/office";
 
   return (
     <div className="min-h-screen bg-background flex">
       {/* ═══ SIDEBAR — Minimal icon rail ═══ */}
-      {isOnDashboard && (
+      {(isOnDashboard || isOnOfficeSettings) && (
         <motion.aside
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
@@ -93,6 +94,18 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             </button>
           )}
 
+          <button
+            onClick={() => navigate("/hub/settings/office")}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+              isOnOfficeSettings
+                ? "bg-jarvis/15 text-jarvis border border-jarvis/20"
+                : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
+            }`}
+            title="Mi Firma"
+          >
+            <Building2 className="w-4 h-4" />
+          </button>
+
           <div className="flex-1" />
 
           <button
@@ -119,7 +132,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
           </div>
         )}
         {/* Compact top bar — only visible when inside a tool (not on dashboard) */}
-        {!isOnDashboard && !isOnIntelligence && (
+        {!isOnDashboard && !isOnIntelligence && !isOnOfficeSettings && (
           <motion.header
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}

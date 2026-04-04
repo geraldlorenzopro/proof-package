@@ -85,6 +85,56 @@ export type Database = {
           },
         ]
       }
+      active_case_types: {
+        Row: {
+          account_id: string
+          case_type: string
+          created_at: string | null
+          description: string | null
+          display_name: string
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          is_custom: boolean | null
+          main_form: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          account_id: string
+          case_type: string
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          main_form?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          account_id?: string
+          case_type?: string
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          main_form?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "active_case_types_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_history: {
         Row: {
           checklist: Json | null
@@ -931,6 +981,50 @@ export type Database = {
           },
         ]
       }
+      consultation_types: {
+        Row: {
+          account_id: string
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number | null
+          sort_order: number | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price?: number | null
+          sort_order?: number | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_types_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cspa_calculations: {
         Row: {
           approval_date: string | null
@@ -1340,6 +1434,80 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      office_config: {
+        Row: {
+          account_id: string
+          attorney_name: string | null
+          attorney_signature_url: string | null
+          bar_number: string | null
+          bar_state: string | null
+          created_at: string | null
+          firm_address: string | null
+          firm_email: string | null
+          firm_fax: string | null
+          firm_logo_url: string | null
+          firm_name: string | null
+          firm_phone: string | null
+          ghl_last_sync: string | null
+          ghl_location_id: string | null
+          id: string
+          preferred_channel: string | null
+          preferred_language: string | null
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          attorney_name?: string | null
+          attorney_signature_url?: string | null
+          bar_number?: string | null
+          bar_state?: string | null
+          created_at?: string | null
+          firm_address?: string | null
+          firm_email?: string | null
+          firm_fax?: string | null
+          firm_logo_url?: string | null
+          firm_name?: string | null
+          firm_phone?: string | null
+          ghl_last_sync?: string | null
+          ghl_location_id?: string | null
+          id?: string
+          preferred_channel?: string | null
+          preferred_language?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          attorney_name?: string | null
+          attorney_signature_url?: string | null
+          bar_number?: string | null
+          bar_state?: string | null
+          created_at?: string | null
+          firm_address?: string | null
+          firm_email?: string | null
+          firm_fax?: string | null
+          firm_logo_url?: string | null
+          firm_name?: string | null
+          firm_phone?: string | null
+          ghl_last_sync?: string | null
+          ghl_location_id?: string | null
+          id?: string
+          preferred_channel?: string | null
+          preferred_language?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_config_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pipeline_templates: {
         Row: {
