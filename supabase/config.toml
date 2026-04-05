@@ -59,3 +59,9 @@ verify_jwt = false
 
 [functions.admin-impersonate]
 verify_jwt = false
+
+[functions.summarize-consultation]
+verify_jwt = false
+
+[functions.sync-case-stage-to-ghl]
+verify_jwt = false
