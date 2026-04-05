@@ -2,10 +2,16 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   MessageSquare, Phone, Mail, Globe, User, FileText,
-  AlertTriangle, Brain, Target, Calendar, Clock, Sparkles
+  AlertTriangle, Brain, Target, Calendar, Clock, Sparkles, Pencil
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 
 interface IntakeSession {
   id: string;
@@ -30,6 +36,12 @@ interface IntakeSession {
   ai_flags: string[] | null;
   final_case_type: string | null;
   notes: string | null;
+}
+
+interface CaseType {
+  case_type: string;
+  display_name: string;
+  icon: string | null;
 }
 
 const CHANNEL_ICONS: Record<string, string> = {
@@ -69,9 +81,23 @@ export function IntakeBadge({ caseId }: { caseId: string }) {
   return <Badge variant="outline" className="text-[10px] border-jarvis/30 text-jarvis gap-1">📋 Intake completado</Badge>;
 }
 
-export default function CaseIntakePanel({ caseId }: { caseId: string }) {
+interface CaseIntakePanelProps {
+  caseId: string;
+  currentCaseType?: string;
+  accountId?: string;
+  userRole?: string | null;
+  onCaseTypeChanged?: (newType: string) => void;
+}
+
+export default function CaseIntakePanel({ caseId, currentCaseType, accountId, userRole, onCaseTypeChanged }: CaseIntakePanelProps) {
   const [intake, setIntake] = useState<IntakeSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [caseTypes, setCaseTypes] = useState<CaseType[]>([]);
+  const [correctedType, setCorrectedType] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const canEdit = userRole === "owner" || userRole === "admin";
 
   useEffect(() => {
     supabase.from("intake_sessions")
@@ -85,6 +111,63 @@ export default function CaseIntakePanel({ caseId }: { caseId: string }) {
       });
   }, [caseId]);
 
+  // Load case types when editing starts
+  useEffect(() => {
+    if (editing && accountId && caseTypes.length === 0) {
+      supabase.from("active_case_types")
+        .select("case_type, display_name, icon")
+        .eq("account_id", accountId)
+        .eq("is_active", true)
+        .order("sort_order")
+        .then(({ data }) => {
+          if (data) setCaseTypes(data);
+        });
+    }
+  }, [editing, accountId, caseTypes.length]);
+
+  // Determine if AI type was corrected (comparing ai suggestion vs current case type)
+  const aiType = intake?.ai_suggested_case_type || null;
+  const wasCorrected = correctedType !== null && correctedType !== aiType;
+
+  async function handleTypeChange(newType: string) {
+    if (!caseId || !currentCaseType) return;
+    const oldType = currentCaseType;
+    if (newType === oldType) {
+      setEditing(false);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await supabase.from("client_cases")
+        .update({ case_type: newType } as any)
+        .eq("id", caseId);
+
+      setCorrectedType(newType);
+      setEditing(false);
+
+      await logAudit({
+        action: "case.updated" as any,
+        entity_type: "case",
+        entity_id: caseId,
+        entity_label: `Tipo cambiado de ${oldType} a ${newType} (corrección de AI)`,
+        metadata: {
+          correction_type: "case_type_corrected",
+          old_type: oldType,
+          new_type: newType,
+          ai_suggested: aiType,
+        },
+      });
+
+      toast.success("Tipo de caso actualizado correctamente");
+      onCaseTypeChanged?.(newType);
+    } catch (err) {
+      toast.error("Error al actualizar tipo de caso");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading || !intake) return null;
 
   const channel = intake.entry_channel || "";
@@ -92,6 +175,8 @@ export default function CaseIntakePanel({ caseId }: { caseId: string }) {
   const docs = (intake.current_documents || []).filter(d => d && d !== "ninguno");
   const flags = intake.ai_flags || [];
   const confidence = intake.ai_confidence_score || 0;
+
+  const displayType = correctedType || currentCaseType || aiType;
 
   return (
     <div className="space-y-4">
@@ -196,12 +281,65 @@ export default function CaseIntakePanel({ caseId }: { caseId: string }) {
             <Brain className="w-3.5 h-3.5" /> Análisis AI
           </p>
           <div className="space-y-2 text-sm">
-            {intake.ai_suggested_case_type && (
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground text-xs">Tipo sugerido:</span>
-                <Badge variant="outline" className="text-[10px] border-jarvis/30 text-jarvis">
-                  {intake.ai_suggested_case_type}
-                </Badge>
+            {/* Type display with edit */}
+            {aiType && (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground text-xs">Tipo sugerido:</span>
+                  {editing ? (
+                    <Select
+                      value={displayType || ""}
+                      onValueChange={handleTypeChange}
+                      disabled={saving}
+                    >
+                      <SelectTrigger className="h-7 text-[10px] w-[180px] border-jarvis/30">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {caseTypes.map(ct => (
+                          <SelectItem key={ct.case_type} value={ct.case_type} className="text-xs">
+                            <span className="flex items-center gap-1.5">
+                              <span>{ct.icon || "📋"}</span>
+                              {ct.display_name}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <>
+                      {wasCorrected ? (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground line-through">
+                            {aiType}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px] border-jarvis/30 text-jarvis">
+                            {correctedType}
+                          </Badge>
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] border-jarvis/30 text-jarvis">
+                          {displayType}
+                        </Badge>
+                      )}
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-jarvis"
+                          onClick={() => setEditing(true)}
+                        >
+                          <Pencil className="w-3 h-3 mr-0.5" /> Cambiar
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+                {wasCorrected && (
+                  <Badge variant="outline" className="text-[9px] border-accent/30 text-accent">
+                    🔄 Corregido por preparador
+                  </Badge>
+                )}
               </div>
             )}
             {confidence > 0 && (

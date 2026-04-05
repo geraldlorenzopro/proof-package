@@ -64,6 +64,7 @@ export default function CaseEnginePage() {
   const [stageHistory, setStageHistory] = useState<any[]>([]);
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [formsCount, setFormsCount] = useState(0);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const hubData = useMemo(() => {
     try {
