@@ -298,6 +298,7 @@ export default function CaseEnginePage() {
                     ) : (
                       <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[10px] font-semibold">{processLabel}</Badge>
                     )}
+                    <Badge variant="outline" className="text-[10px]">{daysOpen} días abierto</Badge>
                     <IntakeBadge caseId={caseId!} />
                     {caseData.assigned_to && (
                       <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent border-accent/20">
