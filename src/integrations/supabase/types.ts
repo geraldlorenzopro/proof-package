@@ -1025,6 +1025,109 @@ export type Database = {
           },
         ]
       }
+      consultations: {
+        Row: {
+          account_id: string
+          ai_action_items: string[] | null
+          ai_eligibility_assessment: string | null
+          ai_flags: string[] | null
+          ai_recommended_case_type: string | null
+          ai_risks: string[] | null
+          ai_strengths: string[] | null
+          ai_summary: string | null
+          case_id: string | null
+          client_profile_id: string | null
+          contract_amount: number | null
+          created_at: string | null
+          created_by: string
+          decision: string | null
+          decision_notes: string | null
+          derivatives: Json | null
+          duration_minutes: number | null
+          ended_at: string | null
+          follow_up_date: string | null
+          id: string
+          raw_notes: string | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          ai_action_items?: string[] | null
+          ai_eligibility_assessment?: string | null
+          ai_flags?: string[] | null
+          ai_recommended_case_type?: string | null
+          ai_risks?: string[] | null
+          ai_strengths?: string[] | null
+          ai_summary?: string | null
+          case_id?: string | null
+          client_profile_id?: string | null
+          contract_amount?: number | null
+          created_at?: string | null
+          created_by: string
+          decision?: string | null
+          decision_notes?: string | null
+          derivatives?: Json | null
+          duration_minutes?: number | null
+          ended_at?: string | null
+          follow_up_date?: string | null
+          id?: string
+          raw_notes?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          ai_action_items?: string[] | null
+          ai_eligibility_assessment?: string | null
+          ai_flags?: string[] | null
+          ai_recommended_case_type?: string | null
+          ai_risks?: string[] | null
+          ai_strengths?: string[] | null
+          ai_summary?: string | null
+          case_id?: string | null
+          client_profile_id?: string | null
+          contract_amount?: number | null
+          created_at?: string | null
+          created_by?: string
+          decision?: string | null
+          decision_notes?: string | null
+          derivatives?: Json | null
+          duration_minutes?: number | null
+          ended_at?: string | null
+          follow_up_date?: string | null
+          id?: string
+          raw_notes?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultations_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cspa_calculations: {
         Row: {
           approval_date: string | null

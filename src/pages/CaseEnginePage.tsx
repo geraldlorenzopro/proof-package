@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Loader2, AlertTriangle, BarChart3, FileText,
-  MessageSquare, ListTodo, Clock, FolderOpen, Sparkles,
+  MessageSquare, ListTodo, Clock, FolderOpen, Sparkles, Mic,
   Users, User, Shield, ChevronDown, Share2, Copy, Check, Pencil
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
@@ -19,6 +19,7 @@ import CaseNotesPanel from "@/components/case-engine/CaseNotesPanel";
 import CaseTasksPanel from "@/components/case-engine/CaseTasksPanel";
 import CaseStageHistory from "@/components/case-engine/CaseStageHistory";
 import CaseIntakePanel, { IntakeBadge } from "@/components/case-engine/CaseIntakePanel";
+import ConsultationPanel, { ConsultationLiveBadge } from "@/components/case-engine/ConsultationPanel";
 import {
   Select,
   SelectContent,
@@ -47,7 +48,7 @@ function ShareCaseButton({ accessToken }: { accessToken: string }) {
   );
 }
 
-type TabId = "resumen" | "documentos" | "formularios" | "decision" | "historial";
+type TabId = "resumen" | "consulta" | "documentos" | "formularios" | "decision" | "historial";
 
 export default function CaseEnginePage() {
   const { caseId } = useParams<{ caseId: string }>();
@@ -203,6 +204,7 @@ export default function CaseEnginePage() {
 
   const tabs = [
     { id: "resumen" as const, label: "Resumen", icon: BarChart3 },
+    { id: "consulta" as const, label: "Consulta", icon: Mic, liveBadge: true },
     { id: "documentos" as const, label: "Documentos", icon: FolderOpen, count: evidenceCount },
     { id: "formularios" as const, label: "Formularios", icon: FileText, count: formsCount },
     { id: "decision" as const, label: "Decisión", icon: AlertTriangle },
@@ -367,6 +369,7 @@ export default function CaseEnginePage() {
               >
                 <tab.icon className="w-3.5 h-3.5" />
                 {tab.label}
+                {(tab as any).liveBadge && caseId && <ConsultationLiveBadge caseId={caseId} />}
                 {tab.count !== undefined && tab.count > 0 && (
                   <span className="text-[9px] bg-jarvis/10 text-jarvis px-1.5 py-0.5 rounded-full">{tab.count}</span>
                 )}
@@ -448,6 +451,17 @@ export default function CaseEnginePage() {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === "consulta" && (
+            <ConsultationPanel
+              caseId={caseId!}
+              accountId={caseData.account_id}
+              clientName={caseData.client_name}
+              caseType={caseData.case_type}
+              currentStatus={caseData.status}
+              clientProfileId={(caseData as any).client_profile_id}
+            />
           )}
 
           {activeTab === "documentos" && (
