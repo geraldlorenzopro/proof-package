@@ -204,6 +204,7 @@ export default function CaseEnginePage() {
 
   const tabs = [
     { id: "resumen" as const, label: "Resumen", icon: BarChart3 },
+    { id: "consulta" as const, label: "Consulta", icon: Mic, liveBadge: true },
     { id: "documentos" as const, label: "Documentos", icon: FolderOpen, count: evidenceCount },
     { id: "formularios" as const, label: "Formularios", icon: FileText, count: formsCount },
     { id: "decision" as const, label: "Decisión", icon: AlertTriangle },
