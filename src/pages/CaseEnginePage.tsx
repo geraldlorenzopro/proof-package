@@ -373,7 +373,15 @@ export default function CaseEnginePage() {
 
                 {/* Intake Data */}
                 <div className="rounded-2xl border border-border bg-card p-5">
-                  <CaseIntakePanel caseId={caseId!} />
+                  <CaseIntakePanel
+                    caseId={caseId!}
+                    currentCaseType={caseData.case_type}
+                    accountId={caseData.account_id}
+                    userRole={userRole}
+                    onCaseTypeChanged={(newType) => {
+                      setCaseData((prev: any) => prev ? { ...prev, case_type: newType } : prev);
+                    }}
+                  />
                 </div>
 
                 {/* Notes */}
