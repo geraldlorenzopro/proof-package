@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Loader2, AlertTriangle, BarChart3, FileText,
-  MessageSquare, ListTodo, Clock, FolderOpen, Sparkles,
+  MessageSquare, ListTodo, Clock, FolderOpen, Sparkles, Mic,
   Users, User, Shield, ChevronDown, Share2, Copy, Check, Pencil
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
