@@ -48,7 +48,7 @@ function ShareCaseButton({ accessToken }: { accessToken: string }) {
   );
 }
 
-type TabId = "resumen" | "documentos" | "formularios" | "decision" | "historial";
+type TabId = "resumen" | "consulta" | "documentos" | "formularios" | "decision" | "historial";
 
 export default function CaseEnginePage() {
   const { caseId } = useParams<{ caseId: string }>();
