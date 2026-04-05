@@ -273,8 +273,31 @@ export default function CaseEnginePage() {
                 <div>
                   <h1 className="text-xl font-bold text-foreground tracking-tight">{caseData.client_name}</h1>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[10px] font-semibold">{processLabel}</Badge>
-                    <Badge variant="outline" className="text-[10px]">{daysOpen} días abierto</Badge>
+                    {(userRole === "owner" || userRole === "admin") ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => {
+                                setActiveTab("resumen");
+                                setTimeout(() => {
+                                  document.querySelector('[data-intake-edit]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+                                }, 200);
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[10px] font-semibold hover:bg-jarvis/20 transition-colors">
+                                {processLabel}
+                                <Pencil className="w-2.5 h-2.5 ml-1 opacity-50" />
+                              </Badge>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent><p className="text-xs">Click para cambiar el tipo de caso</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[10px] font-semibold">{processLabel}</Badge>
+                    )}
                     <IntakeBadge caseId={caseId!} />
                     {caseData.assigned_to && (
                       <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent border-accent/20">
