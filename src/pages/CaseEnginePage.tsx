@@ -453,6 +453,17 @@ export default function CaseEnginePage() {
             </div>
           )}
 
+          {activeTab === "consulta" && (
+            <ConsultationPanel
+              caseId={caseId!}
+              accountId={caseData.account_id}
+              clientName={caseData.client_name}
+              caseType={caseData.case_type}
+              currentStatus={caseData.status}
+              clientProfileId={(caseData as any).client_profile_id}
+            />
+          )}
+
           {activeTab === "documentos" && (
             <div className="rounded-2xl border border-border bg-card p-8 text-center">
               <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
