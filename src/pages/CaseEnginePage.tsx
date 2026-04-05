@@ -97,6 +97,18 @@ export default function CaseEnginePage() {
 
       setCaseData(c);
 
+      // Load user role
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: member } = await supabase
+          .from("account_members")
+          .select("role")
+          .eq("user_id", user.id)
+          .limit(1)
+          .single();
+        if (member) setUserRole(member.role);
+      }
+
       // Load template, notes, tasks, tags, history in parallel
       const processType = (c as any).process_type || "general";
       const [templateRes, notesRes, tasksRes, tagsRes, historyRes, evidenceRes, formsRes] = await Promise.all([
