@@ -13,7 +13,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
 
     // Auth check
     const authHeader = req.headers.get("Authorization");
@@ -45,8 +45,8 @@ serve(async (req) => {
       (ct: any) => `${ct.case_type}: ${ct.display_name} - ${ct.description || ""}`
     ).join("\n");
 
-    // Try AI detection
-    if (lovableKey) {
+    // Try AI detection via Anthropic Claude
+    if (anthropicKey) {
       try {
         const systemPrompt = `Eres un experto en derecho de inmigración de Estados Unidos. Basándote en la información del cliente, determina el tipo de caso más probable de la lista disponible.
 
@@ -79,16 +79,18 @@ ${availableTypes}`;
 - Urgencia: ${urgency_level || "normal"}
 - Deadline pendiente: ${has_pending_deadline ? "SÍ" : "No"}`;
 
-        const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${lovableKey}`,
-            "Content-Type": "application/json",
+            "x-api-key": anthropicKey,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 1024,
+            system: systemPrompt,
             messages: [
-              { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt },
             ],
           }),
@@ -96,7 +98,7 @@ ${availableTypes}`;
 
         if (aiRes.ok) {
           const aiData = await aiRes.json();
-          const content = aiData.choices?.[0]?.message?.content || "";
+          const content = aiData.content?.[0]?.text || "";
           // Extract JSON from response
           const jsonMatch = content.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
