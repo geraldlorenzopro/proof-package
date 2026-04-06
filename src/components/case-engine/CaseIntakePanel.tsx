@@ -414,6 +414,7 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
       )}
     </div>
   );
+}
 
 interface HouseholdMember {
   name: string;
