@@ -714,7 +714,14 @@ function ReceiptNumbersSection({ caseId, caseData, canEdit, onCaseDataChanged }:
       )}
     </div>
   );
+
+interface HouseholdMember {
+  name: string;
+  relationship: string;
+  income: string;
 }
+
+function CaseRolesSection({ caseId, caseData, canEdit, onCaseDataChanged }: {
   caseId: string;
   caseData: any;
   canEdit: boolean;
