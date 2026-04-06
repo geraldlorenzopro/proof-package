@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  Building2, Users, Briefcase, Search, Loader2, Eye, UserCheck,
+  Building2, Users, Briefcase, Search, Loader2, Eye, UserCheck, Plus,
 } from "lucide-react";
 import { toast } from "sonner";
+import NewFirmModal from "@/components/admin/NewFirmModal";
 
 interface Account {
   id: string;
@@ -40,6 +41,7 @@ export default function AdminAccountsPage() {
   const [planFilter, setPlanFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [toggling, setToggling] = useState<string | null>(null);
+  const [showNewFirm, setShowNewFirm] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => { loadAccounts(); }, []);
@@ -113,10 +115,21 @@ export default function AdminAccountsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-xl font-bold text-white">Gestión de Firmas</h1>
-        <p className="text-sm text-white/40">{accounts.length} cuentas registradas</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-white">Gestión de Firmas</h1>
+          <p className="text-sm text-white/40">{accounts.length} cuentas registradas</p>
+        </div>
+        <Button onClick={() => setShowNewFirm(true)} className="bg-red-600 hover:bg-red-700 text-white">
+          <Plus className="w-4 h-4 mr-1" /> Nueva Firma
+        </Button>
       </div>
+
+      <NewFirmModal
+        open={showNewFirm}
+        onClose={() => setShowNewFirm(false)}
+        onCreated={loadAccounts}
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">

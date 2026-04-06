@@ -85,6 +85,8 @@ Deno.serve(async (req) => {
     const phone = custom.phone || loc.phone || body.phone;
     const plan = custom.plan || body.plan;
     const external_crm_id = custom.external_crm_id || loc.id || body.external_crm_id || body.location_id;
+    const skipAuthCreate = body.__skip_auth_create === true;
+    const attorney_name = body.attorney_name;
 
     // Log for debugging
     console.log("provision-account received:", JSON.stringify({ 
@@ -128,22 +130,36 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 1. Create auth user with temp password
-    const tempPassword = generateTempPassword();
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: tempPassword,
-      email_confirm: true,
-    });
+    let userId: string;
 
-    if (authError) {
-      return new Response(
-        JSON.stringify({ error: "Failed to create user", detail: authError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (skipAuthCreate) {
+      // User already created via client-side signUp — find them
+      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const found = existingUsers?.users?.find((u: any) => u.email === email);
+      if (!found) {
+        return new Response(
+          JSON.stringify({ error: "User not found for email" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      userId = found.id;
+    } else {
+      // 1. Create auth user with temp password
+      const tempPassword = generateTempPassword();
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: tempPassword,
+        email_confirm: true,
+      });
+
+      if (authError) {
+        return new Response(
+          JSON.stringify({ error: "Failed to create user", detail: authError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      userId = authUser.user.id;
     }
-
-    const userId = authUser.user.id;
 
     // 2. Create profile
     await supabaseAdmin.from("profiles").insert({
@@ -179,6 +195,22 @@ Deno.serve(async (req) => {
       user_id: userId,
       role: "owner",
     });
+
+    // 4b. Sync ghl_location_id to office_config if it exists
+    if (external_crm_id) {
+      const { data: existingConfig } = await supabaseAdmin
+        .from("office_config")
+        .select("id")
+        .eq("account_id", account.id)
+        .maybeSingle();
+
+      if (existingConfig) {
+        await supabaseAdmin
+          .from("office_config")
+          .update({ ghl_location_id: external_crm_id })
+          .eq("account_id", account.id);
+      }
+    }
 
     // 5. Grant app access based on plan with seat limits
     const { data: apps } = await supabaseAdmin
@@ -219,16 +251,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Return credentials for GHL to send welcome email
+    // Return credentials
+    const result: Record<string, unknown> = {
+      success: true,
+      account_id: account.id,
+      user_id: userId,
+      email,
+      plan: selectedPlan,
+    };
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        account_id: account.id,
-        user_id: userId,
-        email,
-        temp_password: tempPassword,
-        plan: selectedPlan,
-      }),
+      JSON.stringify(result),
       { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

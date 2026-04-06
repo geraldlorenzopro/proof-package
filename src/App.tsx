@@ -48,6 +48,7 @@ import AdminBillingPage from "./pages/admin/AdminBillingPage";
 import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
 import AdminLogsPage from "./pages/admin/AdminLogsPage";
 import OfficeSettingsPage from "./pages/OfficeSettingsPage";
+import Register from "./pages/Register";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="/" element={<Features />} />
           <Route path="/features" element={<Features />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/cases" element={<CasesPage />} />
           <Route path="/dashboard/evidence" element={<EvidenceTool />} />
