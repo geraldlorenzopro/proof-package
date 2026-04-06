@@ -534,10 +534,13 @@ export default function CaseWorkspace() {
   // ── CASE ENGINE INLINE VIEW ──
   if (activeCaseId && caseData) {
     const daysOpen = differenceInDays(new Date(), new Date(caseData.created_at));
-    const processLabel = caseTemplate?.process_label || caseData.case_type;
+    const daysText = daysOpen === 1 ? '1 día abierto' : `${daysOpen} días abiertos`;
+    const processLabel = getCaseTypeLabel(caseTemplate?.process_label || caseData.case_type);
 
     const caseEngineTabs = [
       { id: "resumen" as const, label: "Resumen", icon: BarChart3 },
+      { id: "consulta" as const, label: "Consulta", icon: Mic, liveBadge: true },
+      { id: "equipo" as const, label: "Equipo", icon: Bot },
       { id: "documentos" as const, label: "Documentos", icon: FolderOpen, count: caseEvidenceCount },
       { id: "formularios" as const, label: "Formularios", icon: FileText, count: caseFormsCount },
       { id: "decision" as const, label: "Decisión", icon: AlertTriangle },
@@ -577,7 +580,12 @@ export default function CaseWorkspace() {
                     </div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap ml-8">
                       <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[10px] font-semibold">{processLabel}</Badge>
-                      <Badge variant="outline" className="text-[10px]">{daysOpen} días abierto</Badge>
+                      {caseData.file_number && (
+                        <Badge variant="outline" className="text-[10px] font-mono bg-muted/50 border-border text-muted-foreground">
+                          {caseData.file_number}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-[10px]">{daysText}</Badge>
                       <IntakeBadge caseId={activeCaseId} />
                       {caseData.assigned_to && (
                         <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent border-accent/20">
