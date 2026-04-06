@@ -124,7 +124,32 @@ async function getOrCreateHubUser(
     }
   }
 
-  // Ensure profile exists — copy firm data from existing account member if available
+  // Ensure profile exists — resolve display name properly
+  // For shared users (no ghlUserEmail): use owner's name from the account
+  let resolvedDisplayName = displayName;
+  if (!ghlUserEmail) {
+    // Look up the owner's profile name
+    const { data: ownerMember } = await supabaseAdmin
+      .from("account_members")
+      .select("user_id")
+      .eq("account_id", accountId)
+      .eq("role", "owner")
+      .neq("user_id", hubUserId)
+      .limit(1);
+
+    if (ownerMember && ownerMember.length > 0) {
+      const { data: ownerProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", ownerMember[0].user_id)
+        .maybeSingle();
+
+      if (ownerProfile?.full_name) {
+        resolvedDisplayName = ownerProfile.full_name;
+      }
+    }
+  }
+
   const { data: existingProfile } = await supabaseAdmin
     .from("profiles")
     .select("*")
@@ -140,7 +165,7 @@ async function getOrCreateHubUser(
       .neq("user_id", hubUserId)
       .limit(1);
 
-    let firmProfile: Record<string, any> = { user_id: hubUserId, full_name: displayName };
+    let firmProfile: Record<string, any> = { user_id: hubUserId, full_name: resolvedDisplayName };
 
     if (existingMembers && existingMembers.length > 0) {
       const { data: sourceProfile } = await supabaseAdmin
@@ -158,8 +183,8 @@ async function getOrCreateHubUser(
 
     await supabaseAdmin.from("profiles").insert(firmProfile);
   } else {
-    // Profile exists, just update display name
-    await supabaseAdmin.from("profiles").update({ full_name: displayName }).eq("user_id", hubUserId);
+    // Profile exists, update display name
+    await supabaseAdmin.from("profiles").update({ full_name: resolvedDisplayName }).eq("user_id", hubUserId);
   }
 
   console.log("Hub user ready:", hubUserId);
