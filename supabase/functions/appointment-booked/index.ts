@@ -143,9 +143,73 @@ serve(async (req) => {
       });
     }
 
+    // ── Create appointment record ──
+    const appointmentDatetime =
+      body.appointment_start_time ||
+      body.start_time ||
+      body.appointmentStartTime ||
+      body.customData?.appointment_start_time ||
+      new Date().toISOString();
+
+    const appointmentDate = appointmentDatetime.split("T")[0];
+    const appointmentTime = appointmentDatetime.split("T")[1]?.slice(0, 5) || null;
+
+    const { data: appointment, error: apptErr } = await adminClient
+      .from("appointments")
+      .insert({
+        account_id: accountId,
+        client_profile_id: clientProfileId,
+        client_name: contactName,
+        client_email: contactEmail || null,
+        client_phone: contactPhone || null,
+        appointment_datetime: appointmentDatetime,
+        appointment_date: appointmentDate,
+        appointment_time: appointmentTime,
+        appointment_type: appointmentType || "consultation",
+        intake_session_id: session?.id || null,
+        ghl_contact_id: contactId || null,
+        status: "scheduled",
+        pre_intake_sent: false,
+      })
+      .select("id, pre_intake_token")
+      .single();
+
+    if (apptErr) {
+      console.error("Appointment insert error:", apptErr);
+      // Don't fail the whole request — the intake was already created
+    }
+
+    // Send pre-intake email if email available
+    if (contactEmail && appointment) {
+      try {
+        const appUrl = Deno.env.get("APP_URL") || "https://proof-package.lovable.app";
+        await adminClient.functions.invoke("send-email", {
+          body: {
+            template_type: "questionnaire",
+            to_email: contactEmail,
+            to_name: contactName,
+            account_id: accountId,
+            variables: {
+              client_name: contactName,
+              questionnaire_link: `${appUrl}/intake/${appointment.pre_intake_token}`,
+            },
+          },
+        });
+
+        await adminClient
+          .from("appointments")
+          .update({ pre_intake_sent: true })
+          .eq("id", appointment.id);
+      } catch (emailErr) {
+        console.error("Pre-intake email error:", emailErr);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
-      intake_session_id: session.id,
+      intake_session_id: session?.id,
+      appointment_id: appointment?.id || null,
+      pre_intake_token: appointment?.pre_intake_token || null,
       is_existing_client: isExisting,
       client_profile_id: clientProfileId,
     }), {
