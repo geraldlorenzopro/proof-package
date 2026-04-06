@@ -755,8 +755,10 @@ export type Database = {
         Row: {
           access_token: string
           account_id: string | null
+          alien_number: string | null
           assigned_to: string | null
           ball_in_court: string | null
+          beneficiary_country: string | null
           beneficiary_name: string | null
           case_roles: Json | null
           case_type: string
@@ -774,18 +776,23 @@ export type Database = {
           notes: string | null
           petitioner_name: string | null
           pipeline_stage: string | null
+          priority_date: string | null
           process_type: string | null
           professional_id: string
           stage_entered_at: string | null
           status: string
           updated_at: string
+          uscis_receipt_numbers: Json | null
+          visa_category: string | null
           webhook_url: string | null
         }
         Insert: {
           access_token?: string
           account_id?: string | null
+          alien_number?: string | null
           assigned_to?: string | null
           ball_in_court?: string | null
+          beneficiary_country?: string | null
           beneficiary_name?: string | null
           case_roles?: Json | null
           case_type?: string
@@ -803,18 +810,23 @@ export type Database = {
           notes?: string | null
           petitioner_name?: string | null
           pipeline_stage?: string | null
+          priority_date?: string | null
           process_type?: string | null
           professional_id: string
           stage_entered_at?: string | null
           status?: string
           updated_at?: string
+          uscis_receipt_numbers?: Json | null
+          visa_category?: string | null
           webhook_url?: string | null
         }
         Update: {
           access_token?: string
           account_id?: string | null
+          alien_number?: string | null
           assigned_to?: string | null
           ball_in_court?: string | null
+          beneficiary_country?: string | null
           beneficiary_name?: string | null
           case_roles?: Json | null
           case_type?: string
@@ -832,11 +844,14 @@ export type Database = {
           notes?: string | null
           petitioner_name?: string | null
           pipeline_stage?: string | null
+          priority_date?: string | null
           process_type?: string | null
           professional_id?: string
           stage_entered_at?: string | null
           status?: string
           updated_at?: string
+          uscis_receipt_numbers?: Json | null
+          visa_category?: string | null
           webhook_url?: string | null
         }
         Relationships: [

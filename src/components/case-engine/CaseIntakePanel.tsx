@@ -3,8 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   MessageSquare, Phone, Mail, Globe, User, FileText,
   AlertTriangle, Brain, Target, Calendar, Clock, Sparkles, Pencil,
-  Plus, Trash2, Users, ChevronDown, ChevronUp
+  Plus, Trash2, Users, ChevronDown, ChevronUp, ExternalLink, Hash
 } from "lucide-react";
+import { format } from "date-fns";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -412,9 +421,299 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
           onCaseDataChanged={onCaseDataChanged}
         />
       )}
+
+      {/* Priority Date & Visa Category */}
+      {caseData && (
+        <CasePrioritySection
+          caseId={caseId}
+          caseData={caseData}
+          canEdit={canEdit}
+          onCaseDataChanged={onCaseDataChanged}
+        />
+      )}
+
+      {/* USCIS Receipt Numbers */}
+      {caseData && (
+        <ReceiptNumbersSection
+          caseId={caseId}
+          caseData={caseData}
+          canEdit={canEdit}
+          onCaseDataChanged={onCaseDataChanged}
+        />
+      )}
     </div>
   );
 }
+
+/* ──────── Priority Date & Beneficiary Info Section ──────── */
+function CasePrioritySection({ caseId, caseData, canEdit, onCaseDataChanged }: {
+  caseId: string; caseData: any; canEdit: boolean;
+  onCaseDataChanged?: (u: Record<string, any>) => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const [priorityDate, setPriorityDate] = useState<Date | undefined>(
+    caseData.priority_date ? new Date(caseData.priority_date + "T00:00:00") : undefined
+  );
+  const [visaCategory, setVisaCategory] = useState(caseData.visa_category || "");
+  const [beneficiaryCountry, setBeneficiaryCountry] = useState(caseData.beneficiary_country || "");
+  const [alienNumber, setAlienNumber] = useState(caseData.alien_number || "");
+
+  async function saveField(field: string, value: any) {
+    await supabase.from("client_cases").update({ [field]: value } as any).eq("id", caseId);
+    onCaseDataChanged?.({ [field]: value });
+  }
+
+  return (
+    <div className="mt-4 pt-4 border-t border-border">
+      <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-2 w-full text-left">
+        <FileText className="w-4 h-4 text-jarvis" />
+        <h3 className="text-sm font-bold text-foreground flex-1">Información del Caso</h3>
+        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </button>
+      {expanded && (
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Priority Date */}
+          <div className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fecha de Prioridad</p>
+            {canEdit ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("h-8 text-xs w-full justify-start", !priorityDate && "text-muted-foreground")}>
+                    <Calendar className="w-3.5 h-3.5 mr-2" />
+                    {priorityDate ? format(priorityDate, "PPP") : "Seleccionar fecha..."}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={priorityDate}
+                    onSelect={(d) => {
+                      setPriorityDate(d);
+                      saveField("priority_date", d ? format(d, "yyyy-MM-dd") : null);
+                    }}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <p className="text-sm text-foreground">{priorityDate ? format(priorityDate, "PPP") : "—"}</p>
+            )}
+          </div>
+
+          {/* Visa Category */}
+          <div className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categoría de Visa</p>
+            {canEdit ? (
+              <Input value={visaCategory} onChange={e => setVisaCategory(e.target.value)}
+                onBlur={() => saveField("visa_category", visaCategory)}
+                placeholder="Ej: F2A, EB-3, IR-1" className="h-8 text-xs bg-background" />
+            ) : (
+              <p className="text-sm text-foreground">{visaCategory || "—"}</p>
+            )}
+          </div>
+
+          {/* Beneficiary Country */}
+          <div className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">País del Beneficiario</p>
+            {canEdit ? (
+              <Input value={beneficiaryCountry} onChange={e => setBeneficiaryCountry(e.target.value)}
+                onBlur={() => saveField("beneficiary_country", beneficiaryCountry)}
+                placeholder="Ej: México, Honduras..." className="h-8 text-xs bg-background" />
+            ) : (
+              <p className="text-sm text-foreground">{beneficiaryCountry || "—"}</p>
+            )}
+          </div>
+
+          {/* Alien Number */}
+          <div className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Número A (Alien Number)</p>
+            {canEdit ? (
+              <Input value={alienNumber}
+                onChange={e => {
+                  let v = e.target.value.toUpperCase().replace(/[^A0-9-]/g, '');
+                  if (v && !v.startsWith('A')) v = 'A' + v.replace(/^A*/, '');
+                  setAlienNumber(v);
+                }}
+                onBlur={() => saveField("alien_number", alienNumber || null)}
+                placeholder="A-XXX-XXX-XXX" className="h-8 text-xs bg-background font-mono" maxLength={13} />
+            ) : (
+              <p className="text-sm text-foreground font-mono">{alienNumber || "—"}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ──────── USCIS Receipt Numbers Section ──────── */
+interface ReceiptEntry {
+  form: string;
+  receipt_number: string;
+  received_date: string;
+  status: string;
+}
+
+const FORM_OPTIONS = [
+  "I-130","I-485","I-765","I-131","N-400","I-864","I-539","I-90","I-751","I-589","I-360","Otro"
+];
+
+function ReceiptNumbersSection({ caseId, caseData, canEdit, onCaseDataChanged }: {
+  caseId: string; caseData: any; canEdit: boolean;
+  onCaseDataChanged?: (u: Record<string, any>) => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const [receipts, setReceipts] = useState<ReceiptEntry[]>(() => {
+    try {
+      const raw = caseData.uscis_receipt_numbers;
+      return Array.isArray(raw) ? raw : typeof raw === "string" ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
+  const [showAdd, setShowAdd] = useState(false);
+  const [newForm, setNewForm] = useState("I-130");
+  const [newNumber, setNewNumber] = useState("");
+  const [newDate, setNewDate] = useState<Date | undefined>();
+  const [newStatus, setNewStatus] = useState("Case Was Received");
+  const [saving, setSaving] = useState(false);
+
+  const receiptRegex = /^[A-Z]{3}-?\d{10}$/i;
+
+  async function saveReceipts(updated: ReceiptEntry[]) {
+    setSaving(true);
+    await supabase.from("client_cases").update({ uscis_receipt_numbers: updated } as any).eq("id", caseId);
+    onCaseDataChanged?.({ uscis_receipt_numbers: updated });
+    setSaving(false);
+  }
+
+  function handleAdd() {
+    if (!newNumber.trim()) { toast.error("Ingresa el número de recibo"); return; }
+    const entry: ReceiptEntry = {
+      form: newForm,
+      receipt_number: newNumber.trim().toUpperCase(),
+      received_date: newDate ? format(newDate, "yyyy-MM-dd") : "",
+      status: newStatus,
+    };
+    const updated = [...receipts, entry];
+    setReceipts(updated);
+    saveReceipts(updated);
+    setShowAdd(false);
+    setNewNumber("");
+    setNewDate(undefined);
+    setNewStatus("Case Was Received");
+    toast.success("Receipt number agregado");
+  }
+
+  function handleRemove(idx: number) {
+    const updated = receipts.filter((_, i) => i !== idx);
+    setReceipts(updated);
+    saveReceipts(updated);
+  }
+
+  return (
+    <div className="mt-4 pt-4 border-t border-border">
+      <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-2 w-full text-left">
+        <Hash className="w-4 h-4 text-jarvis" />
+        <h3 className="text-sm font-bold text-foreground flex-1">Números de Recibo USCIS</h3>
+        {receipts.length > 0 && (
+          <Badge variant="outline" className="text-[10px] mr-2">{receipts.length}</Badge>
+        )}
+        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-2">
+          {receipts.length === 0 && (
+            <p className="text-xs text-muted-foreground italic">Sin números de recibo registrados</p>
+          )}
+          {receipts.map((r, i) => (
+            <div key={i} className="rounded-xl border border-border bg-secondary/30 p-3 flex items-center gap-3">
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px]">{r.form}</Badge>
+                  <a
+                    href="https://egov.uscis.gov/casestatus/landing.do"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-mono font-bold text-jarvis hover:underline flex items-center gap-1"
+                  >
+                    {r.receipt_number}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  {r.received_date && <span>📅 {r.received_date}</span>}
+                  {r.status && <span>📋 {r.status}</span>}
+                </div>
+              </div>
+              {canEdit && (
+                <button onClick={() => handleRemove(i)} className="text-muted-foreground hover:text-destructive">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+
+          {canEdit && !showAdd && (
+            <Button variant="outline" size="sm" onClick={() => setShowAdd(true)} className="text-xs gap-1 w-full border-dashed">
+              <Plus className="w-3.5 h-3.5" /> Agregar Receipt Number
+            </Button>
+          )}
+
+          {showAdd && (
+            <Dialog open={showAdd} onOpenChange={setShowAdd}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-sm">Agregar Número de Recibo</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Formulario</label>
+                    <Select value={newForm} onValueChange={setNewForm}>
+                      <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {FORM_OPTIONS.map(f => <SelectItem key={f} value={f} className="text-xs">{f}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Número de Recibo</label>
+                    <Input value={newNumber} onChange={e => setNewNumber(e.target.value.toUpperCase())}
+                      placeholder="IOE-XXXXXXXXXX" className="h-8 text-xs mt-1 font-mono" maxLength={14} />
+                    {newNumber && !receiptRegex.test(newNumber.replace(/-/g, '').replace(/^([A-Z]{3})/, '$1')) && (
+                      <p className="text-[10px] text-amber-400 mt-0.5">Formato: 3 letras + 10 dígitos (ej: IOE0123456789)</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Fecha de Recibo</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("h-8 text-xs w-full justify-start mt-1", !newDate && "text-muted-foreground")}>
+                          <Calendar className="w-3.5 h-3.5 mr-2" />
+                          {newDate ? format(newDate, "PPP") : "Seleccionar..."}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent mode="single" selected={newDate} onSelect={setNewDate} className={cn("p-3 pointer-events-auto")} />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Status Actual</label>
+                    <Input value={newStatus} onChange={e => setNewStatus(e.target.value)}
+                      placeholder="Case Was Received" className="h-8 text-xs mt-1" />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button onClick={handleAdd} size="sm" className="flex-1 text-xs" disabled={saving}>Guardar</Button>
+                    <Button variant="outline" size="sm" onClick={() => setShowAdd(false)} className="text-xs">Cancelar</Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
 interface HouseholdMember {
   name: string;
