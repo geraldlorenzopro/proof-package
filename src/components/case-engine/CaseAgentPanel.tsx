@@ -316,9 +316,25 @@ export default function CaseAgentPanel({ caseId, accountId }: { caseId: string; 
   );
 }
 
+const AI_DISCLAIMER = "⚠️ Este análisis es generado por AI como herramienta de apoyo. No constituye asesoría legal. Verifica siempre con la regulación vigente (INA, CFR, USCIS Policy Manual). El preparador o abogado es responsable de toda decisión legal.";
+
+function AiDisclaimer() {
+  return (
+    <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 flex items-start gap-2">
+      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+      <p className="text-[10px] text-amber-300/80 leading-relaxed">{AI_DISCLAIMER}</p>
+    </div>
+  );
+}
+
 function AgentOutputDisplay({ agent, output }: { agent: Agent; output: any }) {
   if (!output || output.raw) {
-    return <pre className="text-xs whitespace-pre-wrap text-muted-foreground bg-muted/20 p-4 rounded-lg">{output?.raw || "Sin datos"}</pre>;
+    return (
+      <div>
+        <pre className="text-xs whitespace-pre-wrap text-muted-foreground bg-muted/20 p-4 rounded-lg">{output?.raw || "Sin datos"}</pre>
+        <AiDisclaimer />
+      </div>
+    );
   }
 
   const colors = AGENT_COLORS[agent.color] || AGENT_COLORS.blue;
