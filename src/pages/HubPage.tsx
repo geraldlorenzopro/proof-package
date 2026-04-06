@@ -255,6 +255,10 @@ export default function HubPage() {
         if (json.account_id) {
           sessionStorage.setItem("ner_active_account_id", json.account_id);
         }
+        // Clean GHL params from URL without reload
+        if (window.location.search.includes('cid=')) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
         if (json.auth_token) {
           await establishSession(json.auth_token);
         } else {
