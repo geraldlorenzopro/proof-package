@@ -3,12 +3,13 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getImmigrationStatus } from "@/lib/immigrationStatuses";
+import { getCaseTypeLabel, normalizeClientName } from "@/lib/caseTypeLabels";
 import CaseQuestionnaire from "@/components/workspace/CaseQuestionnaire";
 import {
   ArrowLeft, FileText, ClipboardList, Clock, ChevronRight,
   Activity, Calendar, Sparkles, Loader2, PlusCircle, Users,
   Briefcase, CheckCircle2, BarChart3, FolderOpen, AlertTriangle,
-  MessageSquare, ListTodo, ChevronDown
+  MessageSquare, ListTodo, ChevronDown, Mic, Bot, Mail
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,9 @@ import CaseNotesPanel from "@/components/case-engine/CaseNotesPanel";
 import CaseTasksPanel from "@/components/case-engine/CaseTasksPanel";
 import CaseStageHistory from "@/components/case-engine/CaseStageHistory";
 import CaseIntakePanel, { IntakeBadge } from "@/components/case-engine/CaseIntakePanel";
+import ConsultationPanel, { ConsultationLiveBadge } from "@/components/case-engine/ConsultationPanel";
+import CaseAgentPanel from "@/components/case-engine/CaseAgentPanel";
+import CaseEmailHistory from "@/components/case-engine/CaseEmailHistory";
 import {
   Select,
   SelectContent,
@@ -71,7 +75,7 @@ const ORPHAN_FORM_TYPES = new Set([
 /* ── Animation removed for instant rendering ── */
 
 type ClientView = "cases" | "questionnaire" | "profile" | "activity";
-type CaseEngineTab = "resumen" | "documentos" | "formularios" | "decision" | "historial";
+type CaseEngineTab = "resumen" | "consulta" | "equipo" | "documentos" | "formularios" | "decision" | "historial";
 
 export default function CaseWorkspace() {
   const navigate = useNavigate();
@@ -530,10 +534,13 @@ export default function CaseWorkspace() {
   // ── CASE ENGINE INLINE VIEW ──
   if (activeCaseId && caseData) {
     const daysOpen = differenceInDays(new Date(), new Date(caseData.created_at));
-    const processLabel = caseTemplate?.process_label || caseData.case_type;
+    const daysText = daysOpen === 1 ? '1 día abierto' : `${daysOpen} días abiertos`;
+    const processLabel = getCaseTypeLabel(caseTemplate?.process_label || caseData.case_type);
 
     const caseEngineTabs = [
       { id: "resumen" as const, label: "Resumen", icon: BarChart3 },
+      { id: "consulta" as const, label: "Consulta", icon: Mic, liveBadge: true },
+      { id: "equipo" as const, label: "Equipo", icon: Bot },
       { id: "documentos" as const, label: "Documentos", icon: FolderOpen, count: caseEvidenceCount },
       { id: "formularios" as const, label: "Formularios", icon: FileText, count: caseFormsCount },
       { id: "decision" as const, label: "Decisión", icon: AlertTriangle },
@@ -573,7 +580,12 @@ export default function CaseWorkspace() {
                     </div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap ml-8">
                       <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[10px] font-semibold">{processLabel}</Badge>
-                      <Badge variant="outline" className="text-[10px]">{daysOpen} días abierto</Badge>
+                      {caseData.file_number && (
+                        <Badge variant="outline" className="text-[10px] font-mono bg-muted/50 border-border text-muted-foreground">
+                          {caseData.file_number}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-[10px]">{daysText}</Badge>
                       <IntakeBadge caseId={activeCaseId} />
                       {caseData.assigned_to && (
                         <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent border-accent/20">
@@ -635,6 +647,7 @@ export default function CaseWorkspace() {
                 >
                   <tab.icon className="w-3.5 h-3.5" />
                   {tab.label}
+                  {(tab as any).liveBadge && activeCaseId && <ConsultationLiveBadge caseId={activeCaseId} />}
                   {tab.count !== undefined && tab.count > 0 && (
                     <span className="text-[9px] bg-jarvis/10 text-jarvis px-1.5 py-0.5 rounded-full">{tab.count}</span>
                   )}
@@ -703,26 +716,34 @@ export default function CaseWorkspace() {
               </div>
             )}
 
+            {caseEngineTab === "consulta" && (
+              <ConsultationPanel
+                caseId={activeCaseId}
+                accountId={caseData.account_id}
+                clientName={caseData.client_name}
+                caseType={caseData.case_type}
+                currentStatus={caseData.status}
+                clientProfileId={caseData.client_profile_id}
+              />
+            )}
+
+            {caseEngineTab === "equipo" && (
+              <CaseAgentPanel caseId={activeCaseId} accountId={caseData.account_id} />
+            )}
+
             {caseEngineTab === "documentos" && (
               <div className="rounded-2xl border border-border bg-card p-8 text-center">
                 <FolderOpen className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
                 <p className="text-sm font-semibold text-foreground mb-1">Panel de Documentación</p>
                 <p className="text-xs text-muted-foreground">{caseEvidenceCount} evidencia{caseEvidenceCount !== 1 ? "s" : ""} en el caso</p>
                 <Button variant="outline" className="mt-4 text-xs" onClick={() => navigate(`/case/${activeCaseId}`)}>
-                  Abrir Evidence Tool
+                  Gestionar documentos
                 </Button>
               </div>
             )}
 
             {caseEngineTab === "formularios" && (
-              <div className="rounded-2xl border border-border bg-card p-8 text-center">
-                <FileText className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
-                <p className="text-sm font-semibold text-foreground mb-1">Formularios del Caso</p>
-                <p className="text-xs text-muted-foreground">{caseFormsCount} formulario{caseFormsCount !== 1 ? "s" : ""} asociados</p>
-                <Button variant="outline" className="mt-4 text-xs" onClick={() => navigate("/dashboard/smart-forms")}>
-                  Abrir Smart Forms
-                </Button>
-              </div>
+              <FormsTabContent caseId={activeCaseId} formsCount={caseFormsCount} onNavigate={() => navigate("/dashboard/smart-forms")} />
             )}
 
             {caseEngineTab === "decision" && (
@@ -742,9 +763,7 @@ export default function CaseWorkspace() {
             )}
 
             {caseEngineTab === "historial" && (
-              <div className="max-w-2xl">
-                <CaseStageHistory history={caseStageHistory} stageLabels={stageLabels} />
-              </div>
+              <HistorialTabContent caseId={activeCaseId} stageHistory={caseStageHistory} stageLabels={stageLabels} />
             )}
           </div>
         </div>
@@ -1107,5 +1126,163 @@ export default function CaseWorkspace() {
         />
       )}
     </Wrapper>
+  );
+}
+
+/* ── Historial Tab with agent sessions ── */
+function HistorialTabContent({ caseId, stageHistory, stageLabels }: { caseId: string; stageHistory: any[]; stageLabels: Record<string, string> }) {
+  const [agentSessions, setAgentSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("ai_agent_sessions")
+        .select("id, agent_slug, status, credits_used, created_at, input_data, case_id")
+        .eq("case_id", caseId)
+        .order("created_at", { ascending: false });
+      setAgentSessions(data || []);
+      setLoading(false);
+    })();
+  }, [caseId]);
+
+  const AGENT_ACTIONS: Record<string, (input: any) => string> = {
+    felix: (input) => `📋 Felix llenó el ${(input as any)?.form_type || 'formulario'}`,
+    nina: () => "✍️ Nina ensambló el paquete",
+    max: () => "📊 Max evaluó el paquete",
+  };
+
+  return (
+    <div className="max-w-2xl space-y-8">
+      {/* Agent Activity */}
+      {agentSessions.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-4">
+            <Bot className="w-4 h-4 text-jarvis" />
+            Actividad de Agentes AI
+          </h3>
+          <div className="space-y-3">
+            {agentSessions.map(s => {
+              const actionFn = AGENT_ACTIONS[s.agent_slug];
+              const label = actionFn ? actionFn(s.input_data) : `🤖 ${s.agent_slug} completó una tarea`;
+              const timeAgo = (() => {
+                const hours = Math.floor((Date.now() - new Date(s.created_at).getTime()) / 3600000);
+                if (hours < 1) return "hace menos de 1 hora";
+                if (hours === 1) return "hace 1 hora";
+                if (hours < 24) return `hace ${hours} horas`;
+                const days = Math.floor(hours / 24);
+                return days === 1 ? "hace 1 día" : `hace ${days} días`;
+              })();
+
+              return (
+                <div key={s.id} className="flex items-start gap-3 p-3 rounded-xl border border-border/50 bg-muted/10">
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-foreground">{label}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{timeAgo} · {s.credits_used || 0} créditos</p>
+                  </div>
+                  <Badge variant="outline" className={`text-[9px] ${s.status === 'completed' ? 'text-emerald-400 border-emerald-500/20' : 'text-amber-400 border-amber-500/20'}`}>
+                    {s.status === 'completed' ? '✓' : s.status}
+                  </Badge>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Stage History */}
+      <CaseStageHistory history={stageHistory} stageLabels={stageLabels} />
+
+      {/* Email History */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <CaseEmailHistory caseId={caseId} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Forms Tab with Felix output ── */
+function FormsTabContent({ caseId, formsCount, onNavigate }: { caseId: string; formsCount: number; onNavigate: () => void }) {
+  const [felixSessions, setFelixSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("ai_agent_sessions")
+        .select("id, agent_slug, status, output_data, input_data, credits_used, created_at")
+        .eq("case_id", caseId)
+        .eq("agent_slug", "felix")
+        .eq("status", "completed")
+        .order("created_at", { ascending: false });
+      setFelixSessions(data || []);
+      setLoading(false);
+    })();
+  }, [caseId]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (felixSessions.length === 0 && formsCount === 0) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-8 text-center">
+        <FileText className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+        <p className="text-sm font-semibold text-foreground mb-1">Sin formularios</p>
+        <p className="text-xs text-muted-foreground mb-4">Activa a Felix en el tab Equipo para llenar formularios automáticamente.</p>
+        <Button variant="outline" className="text-xs" onClick={onNavigate}>
+          Gestionar formularios
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {felixSessions.map(s => {
+        const output = s.output_data;
+        const formType = (s.input_data as any)?.form_type || output?.form || "Formulario";
+        return (
+          <div key={s.id} className="rounded-2xl border border-border bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📋</span>
+                <div>
+                  <p className="text-sm font-bold text-foreground">{formType}</p>
+                  <p className="text-[10px] text-muted-foreground">Generado por Felix · {s.credits_used} créditos</p>
+                </div>
+              </div>
+              {output?.completion_percentage !== undefined && (
+                <Badge variant="outline" className="text-[10px] font-mono">
+                  {output.completion_percentage}% completo
+                </Badge>
+              )}
+            </div>
+
+            {/* Show parts summary */}
+            {output?.parts && Object.entries(output.parts).map(([key, part]: [string, any]) => (
+              <div key={key} className="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg bg-muted/20 mb-1">
+                <span className="text-muted-foreground">{part.title}</span>
+                <span className="font-mono text-foreground">{part.completion}%</span>
+              </div>
+            ))}
+
+            {output?.missing_fields?.length > 0 && (
+              <p className="text-[10px] text-amber-400 mt-2">⚠️ {output.missing_fields.length} campo(s) faltante(s)</p>
+            )}
+          </div>
+        );
+      })}
+
+      {formsCount > 0 && (
+        <Button variant="outline" className="w-full text-xs" onClick={onNavigate}>
+          Gestionar formularios ({formsCount})
+        </Button>
+      )}
+    </div>
   );
 }
