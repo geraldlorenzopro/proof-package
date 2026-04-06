@@ -64,8 +64,7 @@ export default function AdminAnalytics() {
     const [usageRes, emailRes] = await Promise.all([
       supabase.rpc('get_usage_stats', { _days: parseInt(days) }),
       supabase.functions.invoke('admin-get-email-stats', {
-        body: null,
-        method: 'GET',
+        body: { days: parseInt(days) },
       }).catch(() => ({ data: null, error: true })),
     ]);
 
