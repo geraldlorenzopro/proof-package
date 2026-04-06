@@ -119,7 +119,8 @@ export default function ClientDirectory({ onSelectClient }: Props) {
 
   const getClientName = (c: ClientProfile) => {
     const parts = [c.first_name, c.middle_name, c.last_name].filter(Boolean);
-    return parts.length > 0 ? parts.join(" ") : "Sin nombre";
+    const raw = parts.length > 0 ? parts.join(" ") : "Sin nombre";
+    return normalizeClientName(raw);
   };
 
   const getInitials = (c: ClientProfile) => {
@@ -245,6 +246,16 @@ export default function ClientDirectory({ onSelectClient }: Props) {
                           <StatusIcon className="w-3 h-3 mr-1" />
                           {status.label}
                         </Badge>
+                        {clientCases[client.id] && (
+                          <Badge variant="outline" className="mt-1 text-[9px] ml-1">
+                            {getCaseTypeLabel(clientCases[client.id].case_type)}
+                          </Badge>
+                        )}
+                        {!clientCases[client.id] && (
+                          <Badge variant="outline" className="mt-1 text-[9px] text-muted-foreground/50 ml-1">
+                            Sin caso activo
+                          </Badge>
+                        )}
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
