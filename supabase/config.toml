@@ -65,3 +65,15 @@ verify_jwt = false
 
 [functions.sync-case-stage-to-ghl]
 verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.payment-confirmed]
+verify_jwt = false
+
+[functions.contract-signed]
+verify_jwt = false
+
+[functions.admin-get-email-stats]
+verify_jwt = false
