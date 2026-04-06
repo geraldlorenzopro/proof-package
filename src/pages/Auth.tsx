@@ -24,6 +24,9 @@ export default function Auth() {
   const [mfaCode, setMfaCode] = useState('');
   const [mfaVerifying, setMfaVerifying] = useState(false);
 
+  // Read redirect param from URL
+  const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+
   // If already logged in, redirect
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -33,7 +36,7 @@ export default function Auth() {
         const hubData = sessionStorage.getItem('ner_hub_data');
 
         if (isHubUser || hubData) {
-          navigate('/hub', { replace: true });
+          navigate(redirectParam || '/hub', { replace: true });
           return;
         }
 
@@ -42,7 +45,7 @@ export default function Auth() {
           if (data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2') {
             startMfaChallenge();
           } else {
-            const explicitRedirect = sessionStorage.getItem('ner_auth_redirect');
+            const explicitRedirect = redirectParam || sessionStorage.getItem('ner_auth_redirect');
             sessionStorage.removeItem('ner_auth_redirect');
             if (explicitRedirect) {
               navigate(explicitRedirect, { replace: true });
@@ -102,7 +105,7 @@ export default function Auth() {
 
         // No MFA — check if user belongs to a firm account
         logAudit({ action: "auth.login", entity_type: "auth", entity_label: email });
-        const explicitRedirect = sessionStorage.getItem('ner_auth_redirect');
+        const explicitRedirect = redirectParam || sessionStorage.getItem('ner_auth_redirect');
         sessionStorage.removeItem('ner_auth_redirect');
         if (explicitRedirect) {
           navigate(explicitRedirect, { replace: true });
