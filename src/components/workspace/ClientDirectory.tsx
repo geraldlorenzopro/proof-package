@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { getCaseTypeLabel, normalizeClientName } from "@/lib/caseTypeLabels";
 import {
   Search, Users, UserPlus, Filter, SortAsc, ChevronRight,
   Phone, Mail, Calendar, MapPin, FileText, Clock, Sparkles,
@@ -59,6 +60,7 @@ const statusColors = {
 
 export default function ClientDirectory({ onSelectClient }: Props) {
   const [clients, setClients] = useState<ClientProfile[]>([]);
+  const [clientCases, setClientCases] = useState<Record<string, { case_type: string; file_number: string | null; status: string }>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "recent">("recent");
@@ -70,14 +72,32 @@ export default function ClientDirectory({ onSelectClient }: Props) {
 
   async function fetchClients() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("client_profiles")
-      .select("id, first_name, middle_name, last_name, email, phone, dob, country_of_birth, address_city, address_state, immigration_status, created_at, updated_at")
-      .order("updated_at", { ascending: false });
+    const [profilesRes, casesRes] = await Promise.all([
+      supabase
+        .from("client_profiles")
+        .select("id, first_name, middle_name, last_name, email, phone, dob, country_of_birth, address_city, address_state, immigration_status, created_at, updated_at")
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("client_cases")
+        .select("client_profile_id, case_type, file_number, status")
+        .order("created_at", { ascending: false }),
+    ]);
 
-    if (!error && data) {
-      setClients(data);
+    if (!profilesRes.error && profilesRes.data) {
+      setClients(profilesRes.data);
     }
+
+    // Build a map: profile_id -> latest case
+    if (casesRes.data) {
+      const map: Record<string, { case_type: string; file_number: string | null; status: string }> = {};
+      for (const c of casesRes.data as any[]) {
+        if (c.client_profile_id && !map[c.client_profile_id]) {
+          map[c.client_profile_id] = { case_type: c.case_type, file_number: c.file_number, status: c.status };
+        }
+      }
+      setClientCases(map);
+    }
+
     setLoading(false);
   }
 
