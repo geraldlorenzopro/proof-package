@@ -87,9 +87,11 @@ interface CaseIntakePanelProps {
   accountId?: string;
   userRole?: string | null;
   onCaseTypeChanged?: (newType: string) => void;
+  caseData?: any;
+  onCaseDataChanged?: (updates: Record<string, any>) => void;
 }
 
-export default function CaseIntakePanel({ caseId, currentCaseType, accountId, userRole, onCaseTypeChanged }: CaseIntakePanelProps) {
+export default function CaseIntakePanel({ caseId, currentCaseType, accountId, userRole, onCaseTypeChanged, caseData, onCaseDataChanged }: CaseIntakePanelProps) {
   const [intake, setIntake] = useState<IntakeSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
