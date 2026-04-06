@@ -427,6 +427,26 @@ export default function CaseEnginePage() {
                   </div>
                 )}
 
+                {/* Email Sender */}
+                <div className="rounded-2xl border border-border bg-card p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-jarvis" />
+                      Comunicaciones
+                    </h3>
+                    <CaseEmailSender
+                      caseId={caseId!}
+                      accountId={caseData.account_id}
+                      clientEmail={caseData.client_email}
+                      clientName={caseData.client_name}
+                      caseType={caseData.case_type}
+                      fileNumber={caseData.file_number}
+                      accessToken={caseData.access_token}
+                    />
+                  </div>
+                  <CaseEmailHistory caseId={caseId!} />
+                </div>
+
                 {/* Intake Data */}
                 <div className="rounded-2xl border border-border bg-card p-5">
                   <CaseIntakePanel
@@ -535,8 +555,11 @@ export default function CaseEnginePage() {
           )}
 
           {activeTab === "historial" && (
-            <div className="max-w-2xl">
+            <div className="max-w-2xl space-y-8">
               <CaseStageHistory history={stageHistory} stageLabels={stageLabels} />
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <CaseEmailHistory caseId={caseId!} />
+              </div>
             </div>
           )}
         </motion.div>
