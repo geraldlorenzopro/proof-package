@@ -85,6 +85,8 @@ Deno.serve(async (req) => {
     const phone = custom.phone || loc.phone || body.phone;
     const plan = custom.plan || body.plan;
     const external_crm_id = custom.external_crm_id || loc.id || body.external_crm_id || body.location_id;
+    const skipAuthCreate = body.__skip_auth_create === true;
+    const attorney_name = body.attorney_name;
 
     // Log for debugging
     console.log("provision-account received:", JSON.stringify({ 
@@ -128,22 +130,36 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 1. Create auth user with temp password
-    const tempPassword = generateTempPassword();
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: tempPassword,
-      email_confirm: true,
-    });
+    let userId: string;
 
-    if (authError) {
-      return new Response(
-        JSON.stringify({ error: "Failed to create user", detail: authError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (skipAuthCreate) {
+      // User already created via client-side signUp — find them
+      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const found = existingUsers?.users?.find((u: any) => u.email === email);
+      if (!found) {
+        return new Response(
+          JSON.stringify({ error: "User not found for email" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      userId = found.id;
+    } else {
+      // 1. Create auth user with temp password
+      const tempPassword = generateTempPassword();
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: tempPassword,
+        email_confirm: true,
+      });
+
+      if (authError) {
+        return new Response(
+          JSON.stringify({ error: "Failed to create user", detail: authError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      userId = authUser.user.id;
     }
-
-    const userId = authUser.user.id;
 
     // 2. Create profile
     await supabaseAdmin.from("profiles").insert({
