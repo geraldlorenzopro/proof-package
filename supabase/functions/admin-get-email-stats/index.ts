@@ -20,8 +20,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    const url = new URL(req.url);
-    const days = parseInt(url.searchParams.get("days") || "30");
+    let days = 30;
+    try {
+      const body = await req.json();
+      if (body?.days) days = parseInt(body.days) || 30;
+    } catch { /* no body, use default */ }
 
     // Total emails this month
     const { count: totalMonth } = await supabase
