@@ -198,8 +198,8 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
   }, [toolsOpen]);
 
   useEffect(() => {
-    if (accountId) loadDashboardData();
-  }, [accountId]);
+    if (accountId && !permLoading) loadDashboardData();
+  }, [accountId, permLoading]);
 
   async function loadDashboardData() {
     try {
