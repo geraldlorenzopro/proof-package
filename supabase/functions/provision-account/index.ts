@@ -251,17 +251,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Return credentials for GHL to send welcome email
+    // Return credentials
+    const result: Record<string, unknown> = {
+      success: true,
+      account_id: account.id,
+      user_id: userId,
+      email,
+      plan: selectedPlan,
+    };
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        account_id: account.id,
-        user_id: userId,
-        email,
-        temp_password: tempPassword,
-        plan: selectedPlan,
-      }),
+      JSON.stringify(result),
       { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
     );
   } catch (err) {
     return new Response(
