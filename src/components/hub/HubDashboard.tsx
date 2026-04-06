@@ -140,10 +140,34 @@ interface RecentCase {
 
 export default function HubDashboard({ accountId, accountName, staffName, plan, apps, userRole, canAccessApp }: Props) {
   const navigate = useNavigate();
-  const { can, isOwner: permIsOwner, role: permRole } = usePermissions();
+  const { can, isOwner: permIsOwner, role: permRole, isLoading: permLoading } = usePermissions();
   const [commandBarOpen, setCommandBarOpen] = useState(false);
   const [commandBarFilter, setCommandBarFilter] = useState<"all" | "client" | "case" | "tool">("all");
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [resolvedName, setResolvedName] = useState<string | null>(null);
+
+  // Fetch user's actual name from profile or auth metadata
+  useEffect(() => {
+    async function fetchUserName() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user.id)
+          .single();
+        if (profile?.full_name) {
+          setResolvedName(profile.full_name);
+        } else if (user.user_metadata?.full_name) {
+          setResolvedName(user.user_metadata.full_name as string);
+        } else {
+          setResolvedName(user.email?.split("@")[0] || null);
+        }
+      } catch { /* keep staffName fallback */ }
+    }
+    fetchUserName();
+  }, []);
 
   // Collapsible state
   const [aiTeamOpen, setAiTeamOpen] = useState(() => {
