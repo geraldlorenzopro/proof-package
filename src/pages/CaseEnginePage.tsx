@@ -23,6 +23,7 @@ import CaseIntakePanel, { IntakeBadge } from "@/components/case-engine/CaseIntak
 import ConsultationPanel, { ConsultationLiveBadge } from "@/components/case-engine/ConsultationPanel";
 import CaseEmailHistory from "@/components/case-engine/CaseEmailHistory";
 import CaseEmailSender from "@/components/case-engine/CaseEmailSender";
+import CaseAgentPanel from "@/components/case-engine/CaseAgentPanel";
 import {
   Select,
   SelectContent,
@@ -51,7 +52,7 @@ function ShareCaseButton({ accessToken }: { accessToken: string }) {
   );
 }
 
-type TabId = "resumen" | "consulta" | "documentos" | "formularios" | "decision" | "historial";
+type TabId = "resumen" | "consulta" | "equipo" | "documentos" | "formularios" | "decision" | "historial";
 
 export default function CaseEnginePage() {
   const { caseId } = useParams<{ caseId: string }>();
@@ -208,6 +209,7 @@ export default function CaseEnginePage() {
   const tabs = [
     { id: "resumen" as const, label: "Resumen", icon: BarChart3 },
     { id: "consulta" as const, label: "Consulta", icon: Mic, liveBadge: true },
+    { id: "equipo" as const, label: "Equipo", icon: Users },
     { id: "documentos" as const, label: "Documentos", icon: FolderOpen, count: evidenceCount },
     { id: "formularios" as const, label: "Formularios", icon: FileText, count: formsCount },
     { id: "decision" as const, label: "Decisión", icon: AlertTriangle },
@@ -514,6 +516,10 @@ export default function CaseEnginePage() {
               currentStatus={caseData.status}
               clientProfileId={(caseData as any).client_profile_id}
             />
+          )}
+
+          {activeTab === "equipo" && (
+            <CaseAgentPanel caseId={caseId!} accountId={caseData.account_id} />
           )}
 
           {activeTab === "documentos" && (
