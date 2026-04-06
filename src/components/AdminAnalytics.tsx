@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart3, Users, Zap, TrendingUp } from 'lucide-react';
+import { Loader2, BarChart3, Users, Zap, TrendingUp, Mail, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 interface UsageStats {
@@ -29,8 +29,29 @@ const CHART_COLORS = [
   'hsl(15, 80%, 55%)',    // orange
 ];
 
+interface EmailStats {
+  total_month: number;
+  by_template: Record<string, number>;
+  failed: number;
+  pending: number;
+  top_firms: { account_id: string; account_name: string; count: number }[];
+}
+
+const TEMPLATE_LABELS: Record<string, string> = {
+  welcome: "Bienvenida",
+  questionnaire: "Cuestionario",
+  document_checklist: "Lista de documentos",
+  document_received: "Documento recibido",
+  payment_confirmed: "Pago confirmado",
+  case_update: "Actualización",
+  appointment_reminder: "Recordatorio",
+  case_approved: "Aprobación",
+  firm_welcome: "Bienvenida firma",
+};
+
 export default function AdminAnalytics() {
   const [stats, setStats] = useState<UsageStats | null>(null);
+  const [emailStats, setEmailStats] = useState<EmailStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState('30');
 
@@ -40,15 +61,23 @@ export default function AdminAnalytics() {
 
   async function loadStats() {
     setLoading(true);
-    const { data, error } = await supabase.rpc('get_usage_stats', { _days: parseInt(days) });
-    if (!error && data && typeof data === 'object' && !Array.isArray(data)) {
-      const d = data as Record<string, unknown>;
-      if (d.error) {
-        console.error('Stats error:', d.error);
-      } else {
-        setStats(d as unknown as UsageStats);
-      }
+    const [usageRes, emailRes] = await Promise.all([
+      supabase.rpc('get_usage_stats', { _days: parseInt(days) }),
+      supabase.functions.invoke('admin-get-email-stats', {
+        body: null,
+        method: 'GET',
+      }).catch(() => ({ data: null, error: true })),
+    ]);
+
+    if (!usageRes.error && usageRes.data && typeof usageRes.data === 'object' && !Array.isArray(usageRes.data)) {
+      const d = usageRes.data as Record<string, unknown>;
+      if (!d.error) setStats(d as unknown as UsageStats);
     }
+
+    if (emailRes?.data && !emailRes.error) {
+      setEmailStats(emailRes.data as EmailStats);
+    }
+
     setLoading(false);
   }
 
