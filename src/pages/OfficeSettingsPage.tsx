@@ -414,6 +414,7 @@ export default function OfficeSettingsPage() {
                 </div>
               </FieldRow>
 
+              <FieldRow label="Logo">
                 <div className="flex items-center gap-4">
                   {config?.firm_logo_url && (
                     <img src={config.firm_logo_url} alt="Logo" className="w-16 h-16 rounded-lg object-contain bg-white/5 border border-border/20" />
