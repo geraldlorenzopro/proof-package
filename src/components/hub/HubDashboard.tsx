@@ -321,7 +321,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate">
-                {greeting}, <span className="text-jarvis">{resolvedName || staffName || accountName}</span>
+                {greeting}, <span className="text-jarvis">{resolvedName || staffName || "Usuario"}</span>
               </h2>
               {accountName && (resolvedName || staffName) && (resolvedName || staffName) !== accountName && (
                 <p className="text-sm text-muted-foreground/60 mt-0.5">{accountName}</p>
