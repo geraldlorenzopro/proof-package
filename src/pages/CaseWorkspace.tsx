@@ -1129,3 +1129,161 @@ export default function CaseWorkspace() {
     </Wrapper>
   );
 }
+
+/* ── Historial Tab with agent sessions ── */
+function HistorialTabContent({ caseId, stageHistory, stageLabels }: { caseId: string; stageHistory: any[]; stageLabels: Record<string, string> }) {
+  const [agentSessions, setAgentSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("ai_agent_sessions")
+        .select("id, agent_slug, status, credits_used, created_at, input_data, case_id")
+        .eq("case_id", caseId)
+        .order("created_at", { ascending: false });
+      setAgentSessions(data || []);
+      setLoading(false);
+    })();
+  }, [caseId]);
+
+  const AGENT_ACTIONS: Record<string, (input: any) => string> = {
+    felix: (input) => `📋 Felix llenó el ${(input as any)?.form_type || 'formulario'}`,
+    nina: () => "✍️ Nina ensambló el paquete",
+    max: () => "📊 Max evaluó el paquete",
+  };
+
+  return (
+    <div className="max-w-2xl space-y-8">
+      {/* Agent Activity */}
+      {agentSessions.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-4">
+            <Bot className="w-4 h-4 text-jarvis" />
+            Actividad de Agentes AI
+          </h3>
+          <div className="space-y-3">
+            {agentSessions.map(s => {
+              const actionFn = AGENT_ACTIONS[s.agent_slug];
+              const label = actionFn ? actionFn(s.input_data) : `🤖 ${s.agent_slug} completó una tarea`;
+              const timeAgo = (() => {
+                const hours = Math.floor((Date.now() - new Date(s.created_at).getTime()) / 3600000);
+                if (hours < 1) return "hace menos de 1 hora";
+                if (hours === 1) return "hace 1 hora";
+                if (hours < 24) return `hace ${hours} horas`;
+                const days = Math.floor(hours / 24);
+                return days === 1 ? "hace 1 día" : `hace ${days} días`;
+              })();
+
+              return (
+                <div key={s.id} className="flex items-start gap-3 p-3 rounded-xl border border-border/50 bg-muted/10">
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-foreground">{label}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{timeAgo} · {s.credits_used || 0} créditos</p>
+                  </div>
+                  <Badge variant="outline" className={`text-[9px] ${s.status === 'completed' ? 'text-emerald-400 border-emerald-500/20' : 'text-amber-400 border-amber-500/20'}`}>
+                    {s.status === 'completed' ? '✓' : s.status}
+                  </Badge>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Stage History */}
+      <CaseStageHistory history={stageHistory} stageLabels={stageLabels} />
+
+      {/* Email History */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <CaseEmailHistory caseId={caseId} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Forms Tab with Felix output ── */
+function FormsTabContent({ caseId, formsCount, onNavigate }: { caseId: string; formsCount: number; onNavigate: () => void }) {
+  const [felixSessions, setFelixSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("ai_agent_sessions")
+        .select("id, agent_slug, status, output_data, input_data, credits_used, created_at")
+        .eq("case_id", caseId)
+        .eq("agent_slug", "felix")
+        .eq("status", "completed")
+        .order("created_at", { ascending: false });
+      setFelixSessions(data || []);
+      setLoading(false);
+    })();
+  }, [caseId]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (felixSessions.length === 0 && formsCount === 0) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-8 text-center">
+        <FileText className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+        <p className="text-sm font-semibold text-foreground mb-1">Sin formularios</p>
+        <p className="text-xs text-muted-foreground mb-4">Activa a Felix en el tab Equipo para llenar formularios automáticamente.</p>
+        <Button variant="outline" className="text-xs" onClick={onNavigate}>
+          Gestionar formularios
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {felixSessions.map(s => {
+        const output = s.output_data;
+        const formType = (s.input_data as any)?.form_type || output?.form || "Formulario";
+        return (
+          <div key={s.id} className="rounded-2xl border border-border bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📋</span>
+                <div>
+                  <p className="text-sm font-bold text-foreground">{formType}</p>
+                  <p className="text-[10px] text-muted-foreground">Generado por Felix · {s.credits_used} créditos</p>
+                </div>
+              </div>
+              {output?.completion_percentage !== undefined && (
+                <Badge variant="outline" className="text-[10px] font-mono">
+                  {output.completion_percentage}% completo
+                </Badge>
+              )}
+            </div>
+
+            {/* Show parts summary */}
+            {output?.parts && Object.entries(output.parts).map(([key, part]: [string, any]) => (
+              <div key={key} className="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg bg-muted/20 mb-1">
+                <span className="text-muted-foreground">{part.title}</span>
+                <span className="font-mono text-foreground">{part.completion}%</span>
+              </div>
+            ))}
+
+            {output?.missing_fields?.length > 0 && (
+              <p className="text-[10px] text-amber-400 mt-2">⚠️ {output.missing_fields.length} campo(s) faltante(s)</p>
+            )}
+          </div>
+        );
+      })}
+
+      {formsCount > 0 && (
+        <Button variant="outline" className="w-full text-xs" onClick={onNavigate}>
+          Gestionar formularios ({formsCount})
+        </Button>
+      )}
+    </div>
+  );
+}
