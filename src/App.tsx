@@ -77,7 +77,7 @@ const App = () => (
           <Route path="/intake/:token" element={<PreIntakePage />} />
 
           {/* ═══ PROTECTED ROUTES ═══ */}
-          <Route path="/hub" element={<ProtectedRoute><HubPage /></ProtectedRoute>} />
+          <Route path="/hub" element={<HubPage />} />
           <Route path="/hub/intelligence" element={<ProtectedRoute><IntelligenceCenterPage /></ProtectedRoute>} />
           <Route path="/hub/settings/office" element={<ProtectedRoute><OfficeSettingsPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
