@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Loader2, AlertTriangle, BarChart3, FileText,
   MessageSquare, ListTodo, Clock, FolderOpen, Sparkles, Mic,
-  Users, User, Shield, ChevronDown, Share2, Copy, Check, Pencil
+  Users, User, Shield, ChevronDown, Share2, Copy, Check, Pencil, Mail
+
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,8 @@ import CaseTasksPanel from "@/components/case-engine/CaseTasksPanel";
 import CaseStageHistory from "@/components/case-engine/CaseStageHistory";
 import CaseIntakePanel, { IntakeBadge } from "@/components/case-engine/CaseIntakePanel";
 import ConsultationPanel, { ConsultationLiveBadge } from "@/components/case-engine/ConsultationPanel";
+import CaseEmailHistory from "@/components/case-engine/CaseEmailHistory";
+import CaseEmailSender from "@/components/case-engine/CaseEmailSender";
 import {
   Select,
   SelectContent,
@@ -424,6 +427,26 @@ export default function CaseEnginePage() {
                   </div>
                 )}
 
+                {/* Email Sender */}
+                <div className="rounded-2xl border border-border bg-card p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-jarvis" />
+                      Comunicaciones
+                    </h3>
+                    <CaseEmailSender
+                      caseId={caseId!}
+                      accountId={caseData.account_id}
+                      clientEmail={caseData.client_email}
+                      clientName={caseData.client_name}
+                      caseType={caseData.case_type}
+                      fileNumber={caseData.file_number}
+                      accessToken={caseData.access_token}
+                    />
+                  </div>
+                  <CaseEmailHistory caseId={caseId!} />
+                </div>
+
                 {/* Intake Data */}
                 <div className="rounded-2xl border border-border bg-card p-5">
                   <CaseIntakePanel
@@ -532,8 +555,11 @@ export default function CaseEnginePage() {
           )}
 
           {activeTab === "historial" && (
-            <div className="max-w-2xl">
+            <div className="max-w-2xl space-y-8">
               <CaseStageHistory history={stageHistory} stageLabels={stageLabels} />
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <CaseEmailHistory caseId={caseId!} />
+              </div>
             </div>
           )}
         </motion.div>

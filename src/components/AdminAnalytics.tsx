@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart3, Users, Zap, TrendingUp } from 'lucide-react';
+import { Loader2, BarChart3, Users, Zap, TrendingUp, Mail, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 interface UsageStats {
@@ -29,8 +29,29 @@ const CHART_COLORS = [
   'hsl(15, 80%, 55%)',    // orange
 ];
 
+interface EmailStats {
+  total_month: number;
+  by_template: Record<string, number>;
+  failed: number;
+  pending: number;
+  top_firms: { account_id: string; account_name: string; count: number }[];
+}
+
+const TEMPLATE_LABELS: Record<string, string> = {
+  welcome: "Bienvenida",
+  questionnaire: "Cuestionario",
+  document_checklist: "Lista de documentos",
+  document_received: "Documento recibido",
+  payment_confirmed: "Pago confirmado",
+  case_update: "Actualización",
+  appointment_reminder: "Recordatorio",
+  case_approved: "Aprobación",
+  firm_welcome: "Bienvenida firma",
+};
+
 export default function AdminAnalytics() {
   const [stats, setStats] = useState<UsageStats | null>(null);
+  const [emailStats, setEmailStats] = useState<EmailStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState('30');
 
@@ -40,15 +61,22 @@ export default function AdminAnalytics() {
 
   async function loadStats() {
     setLoading(true);
-    const { data, error } = await supabase.rpc('get_usage_stats', { _days: parseInt(days) });
-    if (!error && data && typeof data === 'object' && !Array.isArray(data)) {
-      const d = data as Record<string, unknown>;
-      if (d.error) {
-        console.error('Stats error:', d.error);
-      } else {
-        setStats(d as unknown as UsageStats);
-      }
+    const [usageRes, emailRes] = await Promise.all([
+      supabase.rpc('get_usage_stats', { _days: parseInt(days) }),
+      supabase.functions.invoke('admin-get-email-stats', {
+        body: { days: parseInt(days) },
+      }).catch(() => ({ data: null, error: true })),
+    ]);
+
+    if (!usageRes.error && usageRes.data && typeof usageRes.data === 'object' && !Array.isArray(usageRes.data)) {
+      const d = usageRes.data as Record<string, unknown>;
+      if (!d.error) setStats(d as unknown as UsageStats);
     }
+
+    if (emailRes?.data && !emailRes.error) {
+      setEmailStats(emailRes.data as EmailStats);
+    }
+
     setLoading(false);
   }
 
@@ -265,6 +293,100 @@ export default function AdminAnalytics() {
           )}
         </CardContent>
       </Card>
+
+      {/* Email Stats Section */}
+      {emailStats && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Mail className="w-5 h-5 text-jarvis" />
+            Emails del Sistema
+          </h2>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="glow-border">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Mail className="w-4 h-4 text-jarvis" />
+                  <span className="text-xs text-muted-foreground">Este mes</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{emailStats.total_month}</p>
+              </CardContent>
+            </Card>
+            <Card className="glow-border">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                  <span className="text-xs text-muted-foreground">Fallidos</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{emailStats.failed}</p>
+              </CardContent>
+            </Card>
+            <Card className="glow-border">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap className="w-4 h-4 text-yellow-400" />
+                  <span className="text-xs text-muted-foreground">Pendientes</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{emailStats.pending}</p>
+              </CardContent>
+            </Card>
+            <Card className="glow-border">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <BarChart3 className="w-4 h-4 text-accent" />
+                  <span className="text-xs text-muted-foreground">Templates</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{Object.keys(emailStats.by_template).length}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* By template breakdown */}
+          <Card className="glow-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground">Emails por Tipo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {Object.keys(emailStats.by_template).length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Sin emails en este período</p>
+              ) : (
+                <div className="space-y-2">
+                  {Object.entries(emailStats.by_template)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([template, count]) => (
+                      <div key={template} className="flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/50">
+                        <span className="text-sm text-foreground">{TEMPLATE_LABELS[template] || template}</span>
+                        <Badge variant="outline" className="border-jarvis/30 text-jarvis">{count}</Badge>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top firms by emails */}
+          {emailStats.top_firms.length > 0 && (
+            <Card className="glow-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">Top Firmas por Emails</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {emailStats.top_firms.map((firm, i) => (
+                    <div key={firm.account_id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/50">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-mono text-muted-foreground w-5">{i + 1}</span>
+                        <span className="text-sm text-foreground">{firm.account_name}</span>
+                      </div>
+                      <Badge variant="outline" className="border-jarvis/30 text-jarvis">{firm.count} emails</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

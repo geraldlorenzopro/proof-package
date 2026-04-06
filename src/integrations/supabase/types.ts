@@ -1256,6 +1256,69 @@ export type Database = {
           },
         ]
       }
+      email_logs: {
+        Row: {
+          account_id: string | null
+          case_id: string | null
+          created_at: string | null
+          file_number: string | null
+          ghl_message_id: string | null
+          id: string
+          metadata: Json | null
+          recipient_email: string
+          recipient_name: string | null
+          sent_at: string | null
+          status: string | null
+          subject: string
+          template_type: string
+        }
+        Insert: {
+          account_id?: string | null
+          case_id?: string | null
+          created_at?: string | null
+          file_number?: string | null
+          ghl_message_id?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient_email: string
+          recipient_name?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject: string
+          template_type: string
+        }
+        Update: {
+          account_id?: string | null
+          case_id?: string | null
+          created_at?: string | null
+          file_number?: string | null
+          ghl_message_id?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient_email?: string
+          recipient_name?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string
+          template_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_logs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evidence_items: {
         Row: {
           caption: string | null
