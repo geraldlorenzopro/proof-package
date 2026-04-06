@@ -504,6 +504,123 @@ export type Database = {
           },
         ]
       }
+      appointments: {
+        Row: {
+          account_id: string
+          appointment_date: string
+          appointment_datetime: string | null
+          appointment_time: string | null
+          appointment_type: string | null
+          case_id: string | null
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          client_profile_id: string | null
+          consultation_id: string | null
+          converted_to_case: boolean | null
+          created_at: string
+          ghl_appointment_id: string | null
+          ghl_contact_id: string | null
+          id: string
+          intake_session_id: string | null
+          notes: string | null
+          pre_intake_completed: boolean | null
+          pre_intake_data: Json | null
+          pre_intake_sent: boolean | null
+          pre_intake_token: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          appointment_date: string
+          appointment_datetime?: string | null
+          appointment_time?: string | null
+          appointment_type?: string | null
+          case_id?: string | null
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          client_profile_id?: string | null
+          consultation_id?: string | null
+          converted_to_case?: boolean | null
+          created_at?: string
+          ghl_appointment_id?: string | null
+          ghl_contact_id?: string | null
+          id?: string
+          intake_session_id?: string | null
+          notes?: string | null
+          pre_intake_completed?: boolean | null
+          pre_intake_data?: Json | null
+          pre_intake_sent?: boolean | null
+          pre_intake_token?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          appointment_date?: string
+          appointment_datetime?: string | null
+          appointment_time?: string | null
+          appointment_type?: string | null
+          case_id?: string | null
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          client_profile_id?: string | null
+          consultation_id?: string | null
+          converted_to_case?: boolean | null
+          created_at?: string
+          ghl_appointment_id?: string | null
+          ghl_contact_id?: string | null
+          id?: string
+          intake_session_id?: string | null
+          notes?: string | null
+          pre_intake_completed?: boolean | null
+          pre_intake_data?: Json | null
+          pre_intake_sent?: boolean | null
+          pre_intake_token?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_consultation_id_fkey"
+            columns: ["consultation_id"]
+            isOneToOne: false
+            referencedRelation: "consultations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_intake_session_id_fkey"
+            columns: ["intake_session_id"]
+            isOneToOne: false
+            referencedRelation: "intake_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           account_id: string
@@ -2519,11 +2636,31 @@ export type Database = {
         Args: { _tool_slug: string; _user_id: string }
         Returns: Json
       }
+      complete_pre_intake: {
+        Args: { _data: Json; _token: string }
+        Returns: undefined
+      }
       delete_evidence_by_token: {
         Args: { _evidence_id: string; _token: string }
         Returns: string
       }
       generate_file_number: { Args: { p_account_id: string }; Returns: string }
+      get_appointment_by_token: {
+        Args: { _token: string }
+        Returns: {
+          account_id: string
+          appointment_date: string
+          appointment_datetime: string
+          appointment_type: string
+          client_email: string
+          client_name: string
+          id: string
+          intake_session_id: string
+          pre_intake_completed: boolean
+          pre_intake_data: Json
+          status: string
+        }[]
+      }
       get_case_by_token: {
         Args: { _token: string }
         Returns: {
