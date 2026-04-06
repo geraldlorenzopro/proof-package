@@ -1691,6 +1691,7 @@ export type Database = {
           bar_number: string | null
           bar_state: string | null
           created_at: string | null
+          file_prefix: string | null
           firm_address: string | null
           firm_email: string | null
           firm_fax: string | null
@@ -1712,6 +1713,7 @@ export type Database = {
           bar_number?: string | null
           bar_state?: string | null
           created_at?: string | null
+          file_prefix?: string | null
           firm_address?: string | null
           firm_email?: string | null
           firm_fax?: string | null
@@ -1733,6 +1735,7 @@ export type Database = {
           bar_number?: string | null
           bar_state?: string | null
           created_at?: string | null
+          file_prefix?: string | null
           firm_address?: string | null
           firm_email?: string | null
           firm_fax?: string | null
