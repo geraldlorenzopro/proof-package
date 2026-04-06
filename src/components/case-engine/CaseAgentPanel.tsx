@@ -545,4 +545,3 @@ function AgentOutputDisplay({ agent, output }: { agent: Agent; output: any }) {
     </div>
   );
 }
-}
