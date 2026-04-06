@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Bot, CheckCircle, FileText, UserPlus } from "lucide-react";
+import { Bot } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -12,6 +12,28 @@ interface ActivityItem {
   text: string;
   time: string;
   caseId?: string;
+}
+
+const AGENT_EMOJI: Record<string, string> = {
+  felix: "📋",
+  nina: "✍️",
+  max: "📊",
+};
+
+function describeAgent(slug: string, clientName: string, inputData: any): string {
+  const name = clientName || "un caso";
+  switch (slug) {
+    case "felix": {
+      const formType = inputData?.form_type || "formulario";
+      return `Felix llenó el ${formType} de ${name}`;
+    }
+    case "nina":
+      return `Nina ensambló el paquete de ${name}`;
+    case "max":
+      return `Max evaluó el paquete de ${name}`;
+    default:
+      return `${slug} completó una tarea en ${name}`;
+  }
 }
 
 export default function HubRecentActivity({ accountId }: { accountId: string }) {
@@ -26,55 +48,41 @@ export default function HubRecentActivity({ accountId }: { accountId: string }) 
     try {
       const twoDaysAgo = new Date(Date.now() - 48 * 3600000).toISOString();
 
-      const [agentRes, intakeRes] = await Promise.all([
-        supabase.from("ai_agent_sessions")
-          .select("id, agent_slug, case_id, created_at, output_text, status")
-          .eq("account_id", accountId)
-          .eq("status", "completed")
-          .gte("created_at", twoDaysAgo)
-          .order("created_at", { ascending: false })
-          .limit(5),
-        supabase.from("intake_sessions")
-          .select("id, client_first_name, client_last_name, created_at")
-          .eq("account_id", accountId)
-          .gte("created_at", twoDaysAgo)
-          .order("created_at", { ascending: false })
-          .limit(3),
-      ]);
+      const { data: sessions } = await supabase
+        .from("ai_agent_sessions")
+        .select("id, agent_slug, case_id, created_at, input_data, status")
+        .eq("account_id", accountId)
+        .eq("status", "completed")
+        .gte("created_at", twoDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(6);
 
-      const result: ActivityItem[] = [];
+      if (!sessions || sessions.length === 0) { setItems([]); return; }
 
-      const agentNames: Record<string, string> = {
-        felix: "Felix",
-        nina: "Nina",
-        max: "Max",
-      };
+      // Fetch case names for all case_ids
+      const caseIds = [...new Set(sessions.map(s => s.case_id).filter(Boolean))] as string[];
+      let caseMap = new Map<string, string>();
+      if (caseIds.length > 0) {
+        const { data: cases } = await supabase
+          .from("client_cases")
+          .select("id, client_name")
+          .in("id", caseIds);
+        (cases || []).forEach((c: any) => caseMap.set(c.id, c.client_name));
+      }
 
-      (agentRes.data || []).forEach((s: any) => {
-        const name = agentNames[s.agent_slug] || s.agent_slug;
-        result.push({
+      const result: ActivityItem[] = sessions.map((s: any) => {
+        const clientName = s.case_id ? (caseMap.get(s.case_id) || "") : "";
+        const emoji = AGENT_EMOJI[s.agent_slug] || "🤖";
+        return {
           id: `agent-${s.id}`,
           icon: Bot,
           iconColor: "text-jarvis",
-          text: `${name} completó una tarea`,
+          text: `${emoji} ${describeAgent(s.agent_slug, clientName, s.input_data)}`,
           time: formatDistanceToNow(new Date(s.created_at), { addSuffix: true, locale: es }),
           caseId: s.case_id,
-        });
+        };
       });
 
-      (intakeRes.data || []).forEach((i: any) => {
-        const clientName = [i.client_first_name, i.client_last_name].filter(Boolean).join(" ") || "Cliente";
-        result.push({
-          id: `intake-${i.id}`,
-          icon: UserPlus,
-          iconColor: "text-emerald-400",
-          text: `Nuevo intake — ${clientName}`,
-          time: formatDistanceToNow(new Date(i.created_at), { addSuffix: true, locale: es }),
-        });
-      });
-
-      // Sort by time (most recent first) - already sorted from DB
-      result.sort((a, b) => 0); // keep as-is since both queries are desc
       setItems(result.slice(0, 5));
     } catch (err) {
       console.warn("[HubRecentActivity]", err);

@@ -514,6 +514,9 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
                 <span className="text-[11px] font-display font-bold tracking-[0.25em] uppercase text-muted-foreground/60">
                   Herramientas
                 </span>
+                <span className="text-[10px] text-muted-foreground/40 font-medium">
+                  {accessibleSlugs.size} disponibles
+                </span>
                 <div className="h-px flex-1 bg-border/15" />
                 {toolsOpen ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground/40" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/40" />}
               </button>
@@ -571,7 +574,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
         {/* Footer */}
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
           className="text-center text-[9px] text-muted-foreground/70 tracking-[0.3em] uppercase font-display pt-1 pb-2">
-          NER Legal Operations · Powered by AI
+          NER Legal Operations · Powered by AI · v1.0
         </motion.p>
       </div>
 
