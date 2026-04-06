@@ -760,8 +760,7 @@ export default function CaseWorkspace() {
                   />
                 </div>
               </div>
-            )}
-
+          </div>
             {caseEngineTab === "historial" && (
               <HistorialTabContent caseId={activeCaseId} stageHistory={caseStageHistory} stageLabels={stageLabels} />
             )}
