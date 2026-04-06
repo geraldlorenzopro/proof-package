@@ -39,20 +39,24 @@ export function generatePrefix(firmName: string): string {
     .slice(0, 8) || 'NER';
 }
 
-export async function initializeOfficeConfig(accountId: string) {
-  // Get account name for prefix generation
+export async function initializeOfficeConfig(accountId: string, locationId?: string) {
+  // Get account name and external_crm_id for prefix generation and GHL sync
   const { data: acct } = await supabase
     .from('ner_accounts')
-    .select('account_name')
+    .select('account_name, external_crm_id')
     .eq('id', accountId)
     .single();
 
   const filePrefix = acct?.account_name ? generatePrefix(acct.account_name) : 'NER';
+  const ghlLocationId = locationId || acct?.external_crm_id || null;
 
-  // 1. Upsert office_config with auto-generated prefix
+  // 1. Upsert office_config with auto-generated prefix and GHL location
+  const configPayload: Record<string, unknown> = { account_id: accountId, file_prefix: filePrefix };
+  if (ghlLocationId) configPayload.ghl_location_id = ghlLocationId;
+
   const { error: ocErr } = await supabase
     .from('office_config')
-    .upsert({ account_id: accountId, file_prefix: filePrefix } as any, { onConflict: 'account_id' });
+    .upsert(configPayload as any, { onConflict: 'account_id' });
   if (ocErr) console.error('office_config upsert error', ocErr);
 
   // 2. Insert standard case types
