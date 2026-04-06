@@ -98,13 +98,25 @@ const TOOL_CATEGORIES = [
 
 const STAGE_CONFIG: Record<string, { label: string; color: string }> = {
   "caso-no-iniciado": { label: "Intake", color: "bg-sky-500/15 text-sky-400 border-sky-500/20" },
+  "caso-activado": { label: "Activado", color: "bg-teal-500/15 text-teal-400 border-teal-500/20" },
+  intake: { label: "Intake", color: "bg-sky-500/15 text-sky-400 border-sky-500/20" },
   elegibilidad: { label: "Elegibilidad", color: "bg-violet-500/15 text-violet-400 border-violet-500/20" },
   "recopilacion-evidencias": { label: "Evidencias", color: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
+  documents: { label: "Documentos", color: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
   "preparacion-formularios": { label: "Formularios", color: "bg-orange-500/15 text-orange-400 border-orange-500/20" },
+  forms: { label: "Formularios", color: "bg-orange-500/15 text-orange-400 border-orange-500/20" },
   "revision-qa": { label: "Revisión QA", color: "bg-purple-500/15 text-purple-400 border-purple-500/20" },
+  review: { label: "En revisión", color: "bg-purple-500/15 text-purple-400 border-purple-500/20" },
   filing: { label: "Filing", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
-  "seguimiento-uscis": { label: "USCIS", color: "bg-blue-500/15 text-blue-400 border-blue-500/20" },
-  aprobado: { label: "Aprobado", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
+  "ready_to_send": { label: "Listo para enviar", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
+  sent: { label: "Enviado", color: "bg-slate-500/15 text-slate-400 border-slate-500/20" },
+  submitted: { label: "Enviado", color: "bg-slate-500/15 text-slate-400 border-slate-500/20" },
+  "seguimiento-uscis": { label: "En USCIS", color: "bg-blue-600/15 text-blue-400 border-blue-600/20" },
+  pending_uscis: { label: "En USCIS", color: "bg-blue-600/15 text-blue-400 border-blue-600/20" },
+  aprobado: { label: "Aprobado", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/25" },
+  approved: { label: "Aprobado", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/25" },
+  rfe: { label: "RFE", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  denied: { label: "Denegado", color: "bg-red-500/15 text-red-400 border-red-500/20" },
 };
 
 const fadeUp = {
@@ -462,9 +474,6 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
             <CollapsibleContent>
               <div className="space-y-3 pb-2">
                 <HubAgentTeam accountId={accountId} plan={plan} />
-                <div className="max-w-xs">
-                  <HubCreditsWidget accountId={accountId} />
-                </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
