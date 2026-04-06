@@ -17,6 +17,7 @@ type Case = {
   created_at: string;
   ball_in_court?: string | null;
   updated_at?: string;
+  file_number?: string | null;
 };
 
 type DeadlineCase = {
@@ -98,7 +99,8 @@ export default function CasesPage() {
       result = result.filter(c =>
         c.client_name.toLowerCase().includes(q) ||
         c.client_email.toLowerCase().includes(q) ||
-        c.case_type.toLowerCase().includes(q)
+        c.case_type.toLowerCase().includes(q) ||
+        (c.file_number && c.file_number.toLowerCase().includes(q))
       );
     }
 
@@ -312,6 +314,11 @@ export default function CasesPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h3 className="font-semibold text-foreground">{c.client_name}</h3>
+                      {c.file_number && (
+                        <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 border border-border px-1.5 py-0.5 rounded">
+                          {c.file_number}
+                        </span>
+                      )}
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${statusLabel[c.status]?.color}`}>
                         {statusLabel[c.status]?.label}
                       </span>
