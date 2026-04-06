@@ -3,12 +3,13 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getImmigrationStatus } from "@/lib/immigrationStatuses";
+import { getCaseTypeLabel, normalizeClientName } from "@/lib/caseTypeLabels";
 import CaseQuestionnaire from "@/components/workspace/CaseQuestionnaire";
 import {
   ArrowLeft, FileText, ClipboardList, Clock, ChevronRight,
   Activity, Calendar, Sparkles, Loader2, PlusCircle, Users,
   Briefcase, CheckCircle2, BarChart3, FolderOpen, AlertTriangle,
-  MessageSquare, ListTodo, ChevronDown
+  MessageSquare, ListTodo, ChevronDown, Mic, Bot, Mail
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,9 @@ import CaseNotesPanel from "@/components/case-engine/CaseNotesPanel";
 import CaseTasksPanel from "@/components/case-engine/CaseTasksPanel";
 import CaseStageHistory from "@/components/case-engine/CaseStageHistory";
 import CaseIntakePanel, { IntakeBadge } from "@/components/case-engine/CaseIntakePanel";
+import ConsultationPanel, { ConsultationLiveBadge } from "@/components/case-engine/ConsultationPanel";
+import CaseAgentPanel from "@/components/case-engine/CaseAgentPanel";
+import CaseEmailHistory from "@/components/case-engine/CaseEmailHistory";
 import {
   Select,
   SelectContent,
@@ -71,7 +75,7 @@ const ORPHAN_FORM_TYPES = new Set([
 /* ── Animation removed for instant rendering ── */
 
 type ClientView = "cases" | "questionnaire" | "profile" | "activity";
-type CaseEngineTab = "resumen" | "documentos" | "formularios" | "decision" | "historial";
+type CaseEngineTab = "resumen" | "consulta" | "equipo" | "documentos" | "formularios" | "decision" | "historial";
 
 export default function CaseWorkspace() {
   const navigate = useNavigate();
