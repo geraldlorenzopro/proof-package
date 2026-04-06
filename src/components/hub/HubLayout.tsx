@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Shield, BarChart3, Home, LogOut, Crown, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
+import HubCreditsWidget from "./HubCreditsWidget";
 
 interface Props {
   children: ReactNode;
@@ -24,6 +25,14 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   const navigate = useNavigate();
   const location = useLocation();
   const { isPlatformAdmin } = usePlatformAdmin();
+
+  // Get account ID for credits widget
+  const accountId = (() => {
+    try {
+      const raw = sessionStorage.getItem("ner_hub_data");
+      return raw ? JSON.parse(raw).account_id : null;
+    } catch { return null; }
+  })();
 
   // Impersonation banner
   const impersonateData = (() => {
@@ -107,6 +116,13 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
           </button>
 
           <div className="flex-1" />
+
+          {/* Credits Widget */}
+          {accountId && (
+            <div className="w-full px-1.5">
+              <HubCreditsWidget accountId={accountId} />
+            </div>
+          )}
 
           <button
             onClick={handleLogout}

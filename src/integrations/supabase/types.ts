@@ -135,6 +135,255 @@ export type Database = {
           },
         ]
       }
+      ai_agent_sessions: {
+        Row: {
+          account_id: string
+          agent_slug: string
+          case_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          credits_used: number | null
+          error_message: string | null
+          id: string
+          input_data: Json | null
+          model_used: string | null
+          output_data: Json | null
+          output_text: string | null
+          started_at: string | null
+          status: string | null
+          tokens_used: number | null
+          triggered_by: string
+        }
+        Insert: {
+          account_id: string
+          agent_slug: string
+          case_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          credits_used?: number | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          model_used?: string | null
+          output_data?: Json | null
+          output_text?: string | null
+          started_at?: string | null
+          status?: string | null
+          tokens_used?: number | null
+          triggered_by: string
+        }
+        Update: {
+          account_id?: string
+          agent_slug?: string
+          case_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          credits_used?: number | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          model_used?: string | null
+          output_data?: Json | null
+          output_text?: string | null
+          started_at?: string | null
+          status?: string | null
+          tokens_used?: number | null
+          triggered_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_agent_sessions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_agent_sessions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_agents: {
+        Row: {
+          auto_trigger: boolean | null
+          available_plans: string[] | null
+          category: string | null
+          color: string | null
+          compatible_case_types: string[] | null
+          created_at: string | null
+          credit_cost: number
+          description: string
+          edge_function: string
+          emoji: string
+          id: string
+          is_active: boolean | null
+          is_beta: boolean | null
+          max_tokens: number | null
+          model: string
+          name: string
+          personality: string
+          slug: string
+          sort_order: number | null
+          title: string
+          trigger_on: string[] | null
+        }
+        Insert: {
+          auto_trigger?: boolean | null
+          available_plans?: string[] | null
+          category?: string | null
+          color?: string | null
+          compatible_case_types?: string[] | null
+          created_at?: string | null
+          credit_cost?: number
+          description: string
+          edge_function: string
+          emoji: string
+          id?: string
+          is_active?: boolean | null
+          is_beta?: boolean | null
+          max_tokens?: number | null
+          model?: string
+          name: string
+          personality: string
+          slug: string
+          sort_order?: number | null
+          title: string
+          trigger_on?: string[] | null
+        }
+        Update: {
+          auto_trigger?: boolean | null
+          available_plans?: string[] | null
+          category?: string | null
+          color?: string | null
+          compatible_case_types?: string[] | null
+          created_at?: string | null
+          credit_cost?: number
+          description?: string
+          edge_function?: string
+          emoji?: string
+          id?: string
+          is_active?: boolean | null
+          is_beta?: boolean | null
+          max_tokens?: number | null
+          model?: string
+          name?: string
+          personality?: string
+          slug?: string
+          sort_order?: number | null
+          title?: string
+          trigger_on?: string[] | null
+        }
+        Relationships: []
+      }
+      ai_credit_transactions: {
+        Row: {
+          account_id: string
+          agent_slug: string | null
+          amount: number
+          balance_after: number
+          case_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          session_id: string | null
+          type: string
+        }
+        Insert: {
+          account_id: string
+          agent_slug?: string | null
+          amount: number
+          balance_after: number
+          case_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          session_id?: string | null
+          type: string
+        }
+        Update: {
+          account_id?: string
+          agent_slug?: string | null
+          amount?: number
+          balance_after?: number
+          case_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          session_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_credit_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_credit_transactions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_credit_transactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agent_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_credits: {
+        Row: {
+          account_id: string
+          balance: number | null
+          created_at: string | null
+          id: string
+          last_updated: string | null
+          monthly_allowance: number | null
+          reset_date: string | null
+          rollover_balance: number | null
+          used_this_month: number | null
+        }
+        Insert: {
+          account_id: string
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          monthly_allowance?: number | null
+          reset_date?: string | null
+          rollover_balance?: number | null
+          used_this_month?: number | null
+        }
+        Update: {
+          account_id?: string
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          monthly_allowance?: number | null
+          reset_date?: string | null
+          rollover_balance?: number | null
+          used_this_month?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_credits_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_history: {
         Row: {
           checklist: Json | null
