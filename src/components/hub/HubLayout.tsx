@@ -5,6 +5,7 @@ import { ArrowLeft, Shield, BarChart3, Home, LogOut, Crown, Building2, FlaskConi
 import { supabase } from "@/integrations/supabase/client";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import HubCreditsWidget from "./HubCreditsWidget";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 interface Props {
   children: ReactNode;
@@ -69,68 +70,89 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
           transition={{ duration: 0.3 }}
           className="hidden lg:flex flex-col items-center w-14 border-r border-border/20 bg-card/30 py-5 gap-3 shrink-0"
         >
-          <button
-            onClick={() => navigate("/hub")}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-              isOnDashboard && !isOnIntelligence
-                ? "bg-jarvis/15 text-jarvis border border-jarvis/20"
-                : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
-            }`}
-            title="Dashboard"
-          >
-            <Home className="w-4 h-4" />
-          </button>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => navigate("/hub")}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                    isOnDashboard && !isOnIntelligence
+                      ? "bg-jarvis/15 text-jarvis border border-jarvis/20"
+                      : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
+                  }`}
+                >
+                  <Home className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Inicio</TooltipContent>
+            </Tooltip>
 
-          <button
-            onClick={() => navigate("/hub/intelligence")}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-              isOnIntelligence
-                ? "bg-accent/15 text-accent border border-accent/20"
-                : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
-            }`}
-            title="Centro de Inteligencia"
-          >
-            <BarChart3 className="w-4 h-4" />
-          </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => navigate("/hub/intelligence")}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                    isOnIntelligence
+                      ? "bg-accent/15 text-accent border border-accent/20"
+                      : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Reportes</TooltipContent>
+            </Tooltip>
 
-          {isPlatformAdmin && (
-            <button
-              onClick={() => navigate("/admin")}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-red-400/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
-              title="Panel Admin"
-            >
-              <Crown className="w-4 h-4" />
-            </button>
-          )}
+            {isPlatformAdmin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => navigate("/admin")}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-red-400/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  >
+                    <Crown className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Panel Admin</TooltipContent>
+              </Tooltip>
+            )}
 
-          <button
-            onClick={() => navigate("/hub/settings/office")}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-              isOnOfficeSettings
-                ? "bg-jarvis/15 text-jarvis border border-jarvis/20"
-                : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
-            }`}
-            title="Mi Firma"
-          >
-            <Building2 className="w-4 h-4" />
-          </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => navigate("/hub/settings/office")}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                    isOnOfficeSettings
+                      ? "bg-jarvis/15 text-jarvis border border-jarvis/20"
+                      : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
+                  }`}
+                >
+                  <Building2 className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Mi Firma</TooltipContent>
+            </Tooltip>
 
-          <div className="flex-1" />
+            <div className="flex-1" />
 
-          {/* Credits Widget */}
-          {accountId && (
-            <div className="w-full px-1.5">
-              <HubCreditsWidget accountId={accountId} />
-            </div>
-          )}
+            {accountId && (
+              <div className="w-full px-1.5">
+                <HubCreditsWidget accountId={accountId} />
+              </div>
+            )}
 
-          <button
-            onClick={handleLogout}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
-            title="Cerrar sesión"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleLogout}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Cerrar sesión</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </motion.aside>
       )}
 
