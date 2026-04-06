@@ -196,6 +196,22 @@ Deno.serve(async (req) => {
       role: "owner",
     });
 
+    // 4b. Sync ghl_location_id to office_config if it exists
+    if (external_crm_id) {
+      const { data: existingConfig } = await supabaseAdmin
+        .from("office_config")
+        .select("id")
+        .eq("account_id", account.id)
+        .maybeSingle();
+
+      if (existingConfig) {
+        await supabaseAdmin
+          .from("office_config")
+          .update({ ghl_location_id: external_crm_id })
+          .eq("account_id", account.id);
+      }
+    }
+
     // 5. Grant app access based on plan with seat limits
     const { data: apps } = await supabaseAdmin
       .from("hub_apps")
