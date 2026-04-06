@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import HubCommandBar from "./HubCommandBar";
 import HubNotifications from "./HubNotifications";
 import HubAgentTeam from "./HubAgentTeam";
-import HubCreditsWidget from "./HubCreditsWidget";
+import SlaTracker from "./SlaTracker";
 import SlaTracker from "./SlaTracker";
 import TodayAppointments from "./TodayAppointments";
 import HubAlerts from "./HubAlerts";
