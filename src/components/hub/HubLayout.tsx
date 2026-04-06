@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, BarChart3, Home, LogOut, Crown, Building2 } from "lucide-react";
+import { ArrowLeft, Shield, BarChart3, Home, LogOut, Crown, Building2, FlaskConical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import HubCreditsWidget from "./HubCreditsWidget";
@@ -146,6 +146,17 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
               Salir
             </button>
           </div>
+        )}
+        {/* Test mode badge for platform admin */}
+        {isPlatformAdmin && (
+          <button
+            onClick={() => navigate("/admin/test-suite")}
+            className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-1.5 flex items-center justify-center gap-2 text-xs text-amber-400 hover:bg-amber-500/15 transition-colors"
+          >
+            <FlaskConical className="w-3.5 h-3.5" />
+            <span className="font-bold">🧪 MODO PRUEBA</span>
+            <span className="text-amber-400/60">— Click para abrir checklist</span>
+          </button>
         )}
         {/* Compact top bar — only visible when inside a tool (not on dashboard) */}
         {!isOnDashboard && !isOnIntelligence && !isOnOfficeSettings && (
