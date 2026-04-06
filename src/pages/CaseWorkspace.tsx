@@ -716,26 +716,34 @@ export default function CaseWorkspace() {
               </div>
             )}
 
+            {caseEngineTab === "consulta" && (
+              <ConsultationPanel
+                caseId={activeCaseId}
+                accountId={caseData.account_id}
+                clientName={caseData.client_name}
+                caseType={caseData.case_type}
+                currentStatus={caseData.status}
+                clientProfileId={caseData.client_profile_id}
+              />
+            )}
+
+            {caseEngineTab === "equipo" && (
+              <CaseAgentPanel caseId={activeCaseId} accountId={caseData.account_id} />
+            )}
+
             {caseEngineTab === "documentos" && (
               <div className="rounded-2xl border border-border bg-card p-8 text-center">
                 <FolderOpen className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
                 <p className="text-sm font-semibold text-foreground mb-1">Panel de Documentación</p>
                 <p className="text-xs text-muted-foreground">{caseEvidenceCount} evidencia{caseEvidenceCount !== 1 ? "s" : ""} en el caso</p>
                 <Button variant="outline" className="mt-4 text-xs" onClick={() => navigate(`/case/${activeCaseId}`)}>
-                  Abrir Evidence Tool
+                  Gestionar documentos
                 </Button>
               </div>
             )}
 
             {caseEngineTab === "formularios" && (
-              <div className="rounded-2xl border border-border bg-card p-8 text-center">
-                <FileText className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
-                <p className="text-sm font-semibold text-foreground mb-1">Formularios del Caso</p>
-                <p className="text-xs text-muted-foreground">{caseFormsCount} formulario{caseFormsCount !== 1 ? "s" : ""} asociados</p>
-                <Button variant="outline" className="mt-4 text-xs" onClick={() => navigate("/dashboard/smart-forms")}>
-                  Abrir Smart Forms
-                </Button>
-              </div>
+              <FormsTabContent caseId={activeCaseId} formsCount={caseFormsCount} onNavigate={() => navigate("/dashboard/smart-forms")} />
             )}
 
             {caseEngineTab === "decision" && (
@@ -755,9 +763,8 @@ export default function CaseWorkspace() {
             )}
 
             {caseEngineTab === "historial" && (
-              <div className="max-w-2xl">
-                <CaseStageHistory history={caseStageHistory} stageLabels={stageLabels} />
-              </div>
+              <HistorialTabContent caseId={activeCaseId} stageHistory={caseStageHistory} stageLabels={stageLabels} />
+            )}
             )}
           </div>
         </div>
