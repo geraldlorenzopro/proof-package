@@ -57,21 +57,27 @@ export type Database = {
         Row: {
           account_id: string
           created_at: string
+          custom_permissions: Json | null
           id: string
+          permissions: Json | null
           role: Database["public"]["Enums"]["account_role"]
           user_id: string
         }
         Insert: {
           account_id: string
           created_at?: string
+          custom_permissions?: Json | null
           id?: string
+          permissions?: Json | null
           role?: Database["public"]["Enums"]["account_role"]
           user_id: string
         }
         Update: {
           account_id?: string
           created_at?: string
+          custom_permissions?: Json | null
           id?: string
+          permissions?: Json | null
           role?: Database["public"]["Enums"]["account_role"]
           user_id?: string
         }
@@ -2738,6 +2744,7 @@ export type Database = {
         }[]
       }
       get_usage_stats: { Args: { _days?: number }; Returns: Json }
+      get_user_role: { Args: { p_account_id: string }; Returns: string }
       get_visa_eval_by_token: {
         Args: { _token: string }
         Returns: {
@@ -2816,7 +2823,14 @@ export type Database = {
       user_account_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
-      account_role: "owner" | "admin" | "member"
+      account_role:
+        | "owner"
+        | "admin"
+        | "member"
+        | "attorney"
+        | "paralegal"
+        | "assistant"
+        | "readonly"
       ner_plan: "essential" | "professional" | "elite" | "enterprise"
     }
     CompositeTypes: {
@@ -2945,7 +2959,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      account_role: ["owner", "admin", "member"],
+      account_role: [
+        "owner",
+        "admin",
+        "member",
+        "attorney",
+        "paralegal",
+        "assistant",
+        "readonly",
+      ],
       ner_plan: ["essential", "professional", "elite", "enterprise"],
     },
   },
