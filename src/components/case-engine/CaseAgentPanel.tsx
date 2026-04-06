@@ -400,6 +400,7 @@ function AgentOutputDisplay({ agent, output }: { agent: Agent; output: any }) {
             <p className="text-xs text-foreground">{output.felix_note}</p>
           </div>
         )}
+        <AiDisclaimer />
       </div>
     );
   }
@@ -455,6 +456,7 @@ function AgentOutputDisplay({ agent, output }: { agent: Agent; output: any }) {
             <p className="text-xs text-foreground">{output.nina_note}</p>
           </div>
         )}
+        <AiDisclaimer />
       </div>
     );
   }
@@ -530,10 +532,17 @@ function AgentOutputDisplay({ agent, output }: { agent: Agent; output: any }) {
             <p className="text-xs text-foreground">{output.max_note}</p>
           </div>
         )}
+        <AiDisclaimer />
       </div>
     );
   }
 
   // Fallback
-  return <pre className="text-xs whitespace-pre-wrap text-muted-foreground bg-muted/20 p-4 rounded-lg">{JSON.stringify(output, null, 2)}</pre>;
+  return (
+    <div>
+      <pre className="text-xs whitespace-pre-wrap text-muted-foreground bg-muted/20 p-4 rounded-lg">{JSON.stringify(output, null, 2)}</pre>
+      <AiDisclaimer />
+    </div>
+  );
+}
 }
