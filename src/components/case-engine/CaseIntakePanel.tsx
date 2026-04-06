@@ -3,8 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   MessageSquare, Phone, Mail, Globe, User, FileText,
   AlertTriangle, Brain, Target, Calendar, Clock, Sparkles, Pencil,
-  Plus, Trash2, Users, ChevronDown, ChevronUp
+  Plus, Trash2, Users, ChevronDown, ChevronUp, ExternalLink, Hash
 } from "lucide-react";
+import { format } from "date-fns";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
