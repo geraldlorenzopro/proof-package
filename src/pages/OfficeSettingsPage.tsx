@@ -396,6 +396,24 @@ export default function OfficeSettingsPage() {
                 <Input value={config?.firm_name || ''} onChange={e => setConfig(prev => prev ? { ...prev, firm_name: e.target.value } : prev)} className="bg-secondary/50 border-border/30" />
               </FieldRow>
 
+              <FieldRow label="Prefijo de expedientes">
+                <div className="space-y-1">
+                  <Input
+                    value={(config as any)?.file_prefix || ''}
+                    onChange={e => {
+                      const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+                      setConfig(prev => prev ? { ...prev, file_prefix: val } as any : prev);
+                    }}
+                    placeholder="MRVISA"
+                    maxLength={8}
+                    className="bg-secondary/50 border-border/30 font-mono uppercase"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Aparece en todos los números de expediente. Ej: {(config as any)?.file_prefix || 'NER'}-2026-0001-JP
+                  </p>
+                </div>
+              </FieldRow>
+
               <FieldRow label="Logo">
                 <div className="flex items-center gap-4">
                   {config?.firm_logo_url && (

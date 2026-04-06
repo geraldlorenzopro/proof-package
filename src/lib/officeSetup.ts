@@ -32,11 +32,27 @@ const DEFAULT_CONSULTATIONS = [
 
 export { STANDARD_CASE_TYPES, AI_CASE_TYPES, DEFAULT_CONSULTATIONS };
 
+export function generatePrefix(firmName: string): string {
+  return firmName
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 8) || 'NER';
+}
+
 export async function initializeOfficeConfig(accountId: string) {
-  // 1. Upsert office_config
+  // Get account name for prefix generation
+  const { data: acct } = await supabase
+    .from('ner_accounts')
+    .select('account_name')
+    .eq('id', accountId)
+    .single();
+
+  const filePrefix = acct?.account_name ? generatePrefix(acct.account_name) : 'NER';
+
+  // 1. Upsert office_config with auto-generated prefix
   const { error: ocErr } = await supabase
     .from('office_config')
-    .upsert({ account_id: accountId }, { onConflict: 'account_id' });
+    .upsert({ account_id: accountId, file_prefix: filePrefix } as any, { onConflict: 'account_id' });
   if (ocErr) console.error('office_config upsert error', ocErr);
 
   // 2. Insert standard case types
