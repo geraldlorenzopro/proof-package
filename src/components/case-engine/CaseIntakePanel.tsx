@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   MessageSquare, Phone, Mail, Globe, User, FileText,
-  AlertTriangle, Brain, Target, Calendar, Clock, Sparkles, Pencil
+  AlertTriangle, Brain, Target, Calendar, Clock, Sparkles, Pencil,
+  Plus, Trash2, Users, ChevronDown, ChevronUp
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -400,6 +402,16 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
           </div>
         </div>
       </div>
+
+      {/* Case Roles Section */}
+      {caseData && (
+        <CaseRolesSection
+          caseId={caseId}
+          caseData={caseData}
+          canEdit={canEdit}
+          onCaseDataChanged={onCaseDataChanged}
+        />
+      )}
     </div>
   );
 }
