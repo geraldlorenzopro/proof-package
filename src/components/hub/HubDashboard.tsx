@@ -15,7 +15,6 @@ import HubCommandBar from "./HubCommandBar";
 import HubNotifications from "./HubNotifications";
 import HubAgentTeam from "./HubAgentTeam";
 import SlaTracker from "./SlaTracker";
-import SlaTracker from "./SlaTracker";
 import TodayAppointments from "./TodayAppointments";
 import HubAlerts from "./HubAlerts";
 import HubRecentActivity from "./HubRecentActivity";
