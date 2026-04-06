@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   MessageSquare, Phone, Mail, Globe, User, FileText,
-  AlertTriangle, Brain, Target, Calendar, Clock, Sparkles, Pencil
+  AlertTriangle, Brain, Target, Calendar, Clock, Sparkles, Pencil,
+  Plus, Trash2, Users, ChevronDown, ChevronUp
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -87,9 +89,11 @@ interface CaseIntakePanelProps {
   accountId?: string;
   userRole?: string | null;
   onCaseTypeChanged?: (newType: string) => void;
+  caseData?: any;
+  onCaseDataChanged?: (updates: Record<string, any>) => void;
 }
 
-export default function CaseIntakePanel({ caseId, currentCaseType, accountId, userRole, onCaseTypeChanged }: CaseIntakePanelProps) {
+export default function CaseIntakePanel({ caseId, currentCaseType, accountId, userRole, onCaseTypeChanged, caseData, onCaseDataChanged }: CaseIntakePanelProps) {
   const [intake, setIntake] = useState<IntakeSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -398,6 +402,182 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
           </div>
         </div>
       </div>
+
+      {/* Case Roles Section */}
+      {caseData && (
+        <CaseRolesSection
+          caseId={caseId}
+          caseData={caseData}
+          canEdit={canEdit}
+          onCaseDataChanged={onCaseDataChanged}
+        />
+      )}
+    </div>
+  );
+}
+
+interface HouseholdMember {
+  name: string;
+  relationship: string;
+  income: string;
+}
+
+function CaseRolesSection({ caseId, caseData, canEdit, onCaseDataChanged }: {
+  caseId: string;
+  caseData: any;
+  canEdit: boolean;
+  onCaseDataChanged?: (updates: Record<string, any>) => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const [petitioner, setPetitioner] = useState(caseData.petitioner_name || "");
+  const [coSponsor, setCoSponsor] = useState(caseData.co_sponsor_name || "");
+  const [showCoSponsor, setShowCoSponsor] = useState(!!caseData.co_sponsor_name);
+  const [members, setMembers] = useState<HouseholdMember[]>(() => {
+    try {
+      const raw = caseData.household_members;
+      return Array.isArray(raw) ? raw : typeof raw === "string" ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function saveField(field: string, value: any) {
+    setSaving(true);
+    try {
+      await supabase.from("client_cases").update({ [field]: value } as any).eq("id", caseId);
+      onCaseDataChanged?.({ [field]: value });
+    } catch { /* silent */ }
+    setSaving(false);
+  }
+
+  function addMember() {
+    const updated = [...members, { name: "", relationship: "", income: "" }];
+    setMembers(updated);
+  }
+
+  function removeMember(idx: number) {
+    const updated = members.filter((_, i) => i !== idx);
+    setMembers(updated);
+    saveField("household_members", updated);
+  }
+
+  function updateMember(idx: number, field: keyof HouseholdMember, val: string) {
+    const updated = members.map((m, i) => i === idx ? { ...m, [field]: val } : m);
+    setMembers(updated);
+  }
+
+  return (
+    <div className="mt-4 pt-4 border-t border-border">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 w-full text-left"
+      >
+        <Users className="w-4 h-4 text-jarvis" />
+        <h3 className="text-sm font-bold text-foreground flex-1">Partes del Caso</h3>
+        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-4">
+          {/* Petitioner */}
+          <div className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Peticionario</p>
+            {canEdit ? (
+              <Input
+                value={petitioner}
+                onChange={e => setPetitioner(e.target.value)}
+                onBlur={() => saveField("petitioner_name", petitioner)}
+                placeholder="Nombre del peticionario..."
+                className="h-8 text-xs bg-background"
+              />
+            ) : (
+              <p className="text-sm text-foreground">{petitioner || "—"}</p>
+            )}
+          </div>
+
+          {/* Co-Sponsor toggle */}
+          <div className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Co-Sponsor</p>
+              {canEdit && (
+                <button
+                  onClick={() => {
+                    setShowCoSponsor(!showCoSponsor);
+                    if (showCoSponsor) {
+                      setCoSponsor("");
+                      saveField("co_sponsor_name", null);
+                    }
+                  }}
+                  className="text-[10px] text-jarvis hover:underline"
+                >
+                  {showCoSponsor ? "Quitar" : "+ Agregar"}
+                </button>
+              )}
+            </div>
+            {showCoSponsor && (
+              canEdit ? (
+                <Input
+                  value={coSponsor}
+                  onChange={e => setCoSponsor(e.target.value)}
+                  onBlur={() => saveField("co_sponsor_name", coSponsor)}
+                  placeholder="Nombre del co-sponsor..."
+                  className="h-8 text-xs bg-background"
+                />
+              ) : (
+                <p className="text-sm text-foreground">{coSponsor || "—"}</p>
+              )
+            )}
+          </div>
+
+          {/* Household Members */}
+          <div className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Household Members</p>
+              {canEdit && (
+                <button onClick={addMember} className="text-[10px] text-jarvis hover:underline flex items-center gap-0.5">
+                  <Plus className="w-3 h-3" /> Agregar
+                </button>
+              )}
+            </div>
+            {members.length === 0 && (
+              <p className="text-xs text-muted-foreground italic">Sin miembros adicionales</p>
+            )}
+            {members.map((m, i) => (
+              <div key={i} className="flex items-center gap-2">
+                {canEdit ? (
+                  <>
+                    <Input
+                      value={m.name}
+                      onChange={e => updateMember(i, "name", e.target.value)}
+                      onBlur={() => saveField("household_members", members)}
+                      placeholder="Nombre"
+                      className="h-7 text-[11px] bg-background flex-1"
+                    />
+                    <Input
+                      value={m.relationship}
+                      onChange={e => updateMember(i, "relationship", e.target.value)}
+                      onBlur={() => saveField("household_members", members)}
+                      placeholder="Relación"
+                      className="h-7 text-[11px] bg-background w-24"
+                    />
+                    <Input
+                      value={m.income}
+                      onChange={e => updateMember(i, "income", e.target.value)}
+                      onBlur={() => saveField("household_members", members)}
+                      placeholder="Ingresos"
+                      className="h-7 text-[11px] bg-background w-20"
+                    />
+                    <button onClick={() => removeMember(i)} className="text-muted-foreground hover:text-destructive">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-xs text-foreground">{m.name} — {m.relationship} {m.income ? `($${m.income})` : ""}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -56,6 +56,9 @@ export default function StepCreate({ data, created, creating, onDone, onCreate, 
         </div>
         <div className="text-center">
           <h3 className="text-lg font-bold text-foreground mb-1">¡Expediente creado exitosamente!</h3>
+          {created?.file_number && (
+            <p className="text-sm font-mono text-jarvis font-bold mb-1">{created.file_number}</p>
+          )}
           <p className="text-sm text-muted-foreground">
             {data.client_first_name} {data.client_last_name} — {caseType?.display_name || data.final_case_type}
           </p>

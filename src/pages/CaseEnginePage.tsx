@@ -274,7 +274,27 @@ export default function CaseEnginePage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h1 className="text-xl font-bold text-foreground tracking-tight">{caseData.client_name}</h1>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                   <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {caseData.file_number && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(caseData.file_number);
+                                toast.success("Número de expediente copiado");
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Badge variant="outline" className="text-[10px] font-mono bg-muted/50 border-border text-muted-foreground hover:bg-muted transition-colors">
+                                {caseData.file_number}
+                              </Badge>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent><p className="text-xs">Copiar número de expediente</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                     {(userRole === "owner" || userRole === "admin") ? (
                       <TooltipProvider>
                         <Tooltip>
@@ -408,6 +428,10 @@ export default function CaseEnginePage() {
                     userRole={userRole}
                     onCaseTypeChanged={(newType) => {
                       setCaseData((prev: any) => prev ? { ...prev, case_type: newType } : prev);
+                    }}
+                    caseData={caseData}
+                    onCaseDataChanged={(updates) => {
+                      setCaseData((prev: any) => prev ? { ...prev, ...updates } : prev);
                     }}
                   />
                 </div>
