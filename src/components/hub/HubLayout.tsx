@@ -157,7 +157,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             <span className="font-bold">🧪 MODO PRUEBA</span>
             <span className="text-amber-400/60">— Click para abrir checklist</span>
           </button>
-        )
+        )}
         {/* Compact top bar — only visible when inside a tool (not on dashboard) */}
         {!isOnDashboard && !isOnIntelligence && !isOnOfficeSettings && (
           <motion.header
