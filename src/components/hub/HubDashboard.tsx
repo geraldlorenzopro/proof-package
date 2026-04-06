@@ -458,7 +458,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[11px] text-muted-foreground/60">{c.case_type}</span>
+                        <span className="text-[11px] text-muted-foreground/60">{getCaseTypeLabel(c.case_type)}</span>
                         <Badge variant="outline" className={`${stageInfo.color} text-[8px] py-0 px-1.5 h-4`}>
                           {stageInfo.label}
                         </Badge>
