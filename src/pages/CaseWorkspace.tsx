@@ -647,6 +647,7 @@ export default function CaseWorkspace() {
                 >
                   <tab.icon className="w-3.5 h-3.5" />
                   {tab.label}
+                  {(tab as any).liveBadge && activeCaseId && <ConsultationLiveBadge caseId={activeCaseId} />}
                   {tab.count !== undefined && tab.count > 0 && (
                     <span className="text-[9px] bg-jarvis/10 text-jarvis px-1.5 py-0.5 rounded-full">{tab.count}</span>
                   )}
