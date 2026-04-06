@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -61,59 +62,63 @@ const App = () => (
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
+          {/* ═══ PUBLIC ROUTES ═══ */}
           <Route path="/" element={<Features />} />
           <Route path="/features" element={<Features />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/cases" element={<CasesPage />} />
-          <Route path="/dashboard/evidence" element={<EvidenceTool />} />
-          <Route path="/dashboard/affidavit" element={<AffidavitTool />} />
-          <Route path="/dashboard/cspa" element={<CspaTool />} />
-          <Route path="/dashboard/tracker" element={<PlaceholderTool tool="tracker" />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/upload/:token" element={<ClientUpload />} />
           <Route path="/q/:token" element={<ClientQuestionnaire />} />
-          <Route path="/case/:id" element={<CaseReview />} />
-          <Route path="/dashboard/uscis-analyzer" element={<UscisAnalyzer />} />
           <Route path="/shared-analysis/:token" element={<SharedAnalysis />} />
-          <Route path="/hub" element={<HubPage />} />
-          <Route path="/dashboard/settings" element={<Settings />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/dashboard/checklist" element={<ChecklistGenerator />} />
-          <Route path="/dashboard/vawa-screener" element={<VawaScreener />} />
-          <Route path="/dashboard/vawa-checklist" element={<VawaChecklistPage />} />
-          <Route path="/dashboard/smart-forms" element={<SmartFormsLayout />}>
+          <Route path="/visa-eval/:token" element={<VisaEvalPublic />} />
+          <Route path="/case-track/:token" element={<CaseTrackPublic />} />
+          <Route path="/portal/:cid" element={<ClientPortalRouter />} />
+          <Route path="/intake/:token" element={<PreIntakePage />} />
+
+          {/* ═══ PROTECTED ROUTES ═══ */}
+          <Route path="/hub" element={<ProtectedRoute><HubPage /></ProtectedRoute>} />
+          <Route path="/hub/intelligence" element={<ProtectedRoute><IntelligenceCenterPage /></ProtectedRoute>} />
+          <Route path="/hub/settings/office" element={<ProtectedRoute><OfficeSettingsPage /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/cases" element={<ProtectedRoute><CasesPage /></ProtectedRoute>} />
+          <Route path="/dashboard/evidence" element={<ProtectedRoute><EvidenceTool /></ProtectedRoute>} />
+          <Route path="/dashboard/affidavit" element={<ProtectedRoute><AffidavitTool /></ProtectedRoute>} />
+          <Route path="/dashboard/cspa" element={<ProtectedRoute><CspaTool /></ProtectedRoute>} />
+          <Route path="/dashboard/tracker" element={<ProtectedRoute><PlaceholderTool tool="tracker" /></ProtectedRoute>} />
+          <Route path="/dashboard/uscis-analyzer" element={<ProtectedRoute><UscisAnalyzer /></ProtectedRoute>} />
+          <Route path="/dashboard/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/dashboard/checklist" element={<ProtectedRoute><ChecklistGenerator /></ProtectedRoute>} />
+          <Route path="/dashboard/vawa-screener" element={<ProtectedRoute><VawaScreener /></ProtectedRoute>} />
+          <Route path="/dashboard/vawa-checklist" element={<ProtectedRoute><VawaChecklistPage /></ProtectedRoute>} />
+          <Route path="/dashboard/smart-forms" element={<ProtectedRoute><SmartFormsLayout /></ProtectedRoute>}>
             <Route index element={<SmartFormsList />} />
             <Route path="new" element={<SmartFormPage />} />
             <Route path="settings" element={<SmartFormsSettings />} />
             <Route path=":id" element={<SmartFormPage />} />
           </Route>
-          <Route path="/dashboard/workspace-demo" element={<CaseWorkspace />} />
-          <Route path="/case-engine/:caseId" element={<CaseEnginePage />} />
-          <Route path="/hub/intelligence" element={<IntelligenceCenterPage />} />
-          <Route path="/hub/settings/office" element={<OfficeSettingsPage />} />
-          <Route path="/dashboard/visa-evaluator" element={<VisaEvaluatorPage />} />
-          <Route path="/visa-eval/:token" element={<VisaEvalPublic />} />
-          <Route path="/case-track/:token" element={<CaseTrackPublic />} />
-          <Route path="/b1b2-admin/:cid" element={<B1B2AdminLite />} />
-          <Route path="/b1b2-dashboard" element={<B1B2Dashboard />} />
-          <Route path="/b1b2-dashboard/:accountCid" element={<B1B2Dashboard />} />
-          <Route path="/portal/:cid" element={<ClientPortalRouter />} />
-          <Route path="/dashboard/interview-sim" element={<InterviewSimulatorPage />} />
-          <Route path="/interview-sim/practice" element={<InterviewSimulatorPage />} />
-          <Route path="/debug/pdf-fields" element={<PdfFieldInspector />} />
-          {/* Platform Admin Routes */}
-          <Route path="/admin" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
-          <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
-          <Route path="/admin/accounts" element={<AdminLayout><AdminAccountsPage /></AdminLayout>} />
-          <Route path="/admin/accounts/:accountId" element={<AdminLayout><AdminAccountDetailPage /></AdminLayout>} />
-          <Route path="/admin/users" element={<AdminLayout><AdminUsersPage /></AdminLayout>} />
-          <Route path="/admin/billing" element={<AdminLayout><AdminBillingPage /></AdminLayout>} />
-          <Route path="/admin/analytics" element={<AdminLayout><AdminAnalyticsPage /></AdminLayout>} />
-          <Route path="/admin/logs" element={<AdminLayout><AdminLogsPage /></AdminLayout>} />
-          <Route path="/admin/test-suite" element={<AdminTestSuite />} />
-          {/* Public pre-intake (no auth) */}
-          <Route path="/intake/:token" element={<PreIntakePage />} />
+          <Route path="/dashboard/workspace-demo" element={<ProtectedRoute><CaseWorkspace /></ProtectedRoute>} />
+          <Route path="/dashboard/visa-evaluator" element={<ProtectedRoute><VisaEvaluatorPage /></ProtectedRoute>} />
+          <Route path="/dashboard/interview-sim" element={<ProtectedRoute><InterviewSimulatorPage /></ProtectedRoute>} />
+          <Route path="/case/:id" element={<ProtectedRoute><CaseReview /></ProtectedRoute>} />
+          <Route path="/case-engine/:caseId" element={<ProtectedRoute><CaseEnginePage /></ProtectedRoute>} />
+          <Route path="/b1b2-admin/:cid" element={<ProtectedRoute><B1B2AdminLite /></ProtectedRoute>} />
+          <Route path="/b1b2-dashboard" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
+          <Route path="/b1b2-dashboard/:accountCid" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
+          <Route path="/interview-sim/practice" element={<ProtectedRoute><InterviewSimulatorPage /></ProtectedRoute>} />
+          <Route path="/debug/pdf-fields" element={<ProtectedRoute><PdfFieldInspector /></ProtectedRoute>} />
+
+          {/* ═══ ADMIN ROUTES (auth + platform_admin check inside AdminLayout) ═══ */}
+          <Route path="/admin" element={<ProtectedRoute><AdminLayout><AdminDashboardPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin/dashboard" element={<ProtectedRoute><AdminLayout><AdminDashboardPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin/accounts" element={<ProtectedRoute><AdminLayout><AdminAccountsPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin/accounts/:accountId" element={<ProtectedRoute><AdminLayout><AdminAccountDetailPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute><AdminLayout><AdminUsersPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin/billing" element={<ProtectedRoute><AdminLayout><AdminBillingPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin/analytics" element={<ProtectedRoute><AdminLayout><AdminAnalyticsPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin/logs" element={<ProtectedRoute><AdminLayout><AdminLogsPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin/test-suite" element={<ProtectedRoute><AdminTestSuite /></ProtectedRoute>} />
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
