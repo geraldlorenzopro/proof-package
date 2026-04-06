@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Loader2, AlertTriangle, BarChart3, FileText,
   MessageSquare, ListTodo, Clock, FolderOpen, Sparkles, Mic,
-  Users, User, Shield, ChevronDown, Share2, Copy, Check, Pencil
+  Users, User, Shield, ChevronDown, Share2, Copy, Check, Pencil, Mail
+
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,8 @@ import CaseTasksPanel from "@/components/case-engine/CaseTasksPanel";
 import CaseStageHistory from "@/components/case-engine/CaseStageHistory";
 import CaseIntakePanel, { IntakeBadge } from "@/components/case-engine/CaseIntakePanel";
 import ConsultationPanel, { ConsultationLiveBadge } from "@/components/case-engine/ConsultationPanel";
+import CaseEmailHistory from "@/components/case-engine/CaseEmailHistory";
+import CaseEmailSender from "@/components/case-engine/CaseEmailSender";
 import {
   Select,
   SelectContent,
