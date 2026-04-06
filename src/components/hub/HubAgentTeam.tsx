@@ -76,15 +76,7 @@ export default function HubAgentTeam({ accountId, plan }: { accountId: string; p
   if (agents.length === 0) return null;
 
   return (
-    <section className="pt-1">
-      <div className="flex items-center gap-2 mb-4">
-        <Bot className="w-4 h-4 text-muted-foreground/40" strokeWidth={2.5} />
-        <h3 className="text-[11px] font-display font-bold tracking-[0.25em] uppercase text-muted-foreground/60">
-          Mi Equipo AI
-        </h3>
-        <div className="h-px flex-1 bg-border/15" />
-      </div>
-
+    <section>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {agents.map((agent, i) => {
           const isAvailable = agent.available_plans.includes(plan);
