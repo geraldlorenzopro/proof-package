@@ -714,6 +714,7 @@ function ReceiptNumbersSection({ caseId, caseData, canEdit, onCaseDataChanged }:
       )}
     </div>
   );
+}
 
 interface HouseholdMember {
   name: string;
