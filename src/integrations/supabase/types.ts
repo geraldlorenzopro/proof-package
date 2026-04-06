@@ -758,12 +758,18 @@ export type Database = {
           assigned_to: string | null
           ball_in_court: string | null
           beneficiary_name: string | null
+          case_roles: Json | null
           case_type: string
           client_email: string
           client_name: string
           client_profile_id: string | null
+          co_sponsor_name: string | null
           created_at: string
           custom_fields: Json | null
+          drive_folder_id: string | null
+          drive_folder_url: string | null
+          file_number: string | null
+          household_members: Json | null
           id: string
           notes: string | null
           petitioner_name: string | null
@@ -781,12 +787,18 @@ export type Database = {
           assigned_to?: string | null
           ball_in_court?: string | null
           beneficiary_name?: string | null
+          case_roles?: Json | null
           case_type?: string
           client_email: string
           client_name: string
           client_profile_id?: string | null
+          co_sponsor_name?: string | null
           created_at?: string
           custom_fields?: Json | null
+          drive_folder_id?: string | null
+          drive_folder_url?: string | null
+          file_number?: string | null
+          household_members?: Json | null
           id?: string
           notes?: string | null
           petitioner_name?: string | null
@@ -804,12 +816,18 @@ export type Database = {
           assigned_to?: string | null
           ball_in_court?: string | null
           beneficiary_name?: string | null
+          case_roles?: Json | null
           case_type?: string
           client_email?: string
           client_name?: string
           client_profile_id?: string | null
+          co_sponsor_name?: string | null
           created_at?: string
           custom_fields?: Json | null
+          drive_folder_id?: string | null
+          drive_folder_url?: string | null
+          file_number?: string | null
+          household_members?: Json | null
           id?: string
           notes?: string | null
           petitioner_name?: string | null
@@ -2175,6 +2193,7 @@ export type Database = {
         Args: { _evidence_id: string; _token: string }
         Returns: string
       }
+      generate_file_number: { Args: { p_account_id: string }; Returns: string }
       get_case_by_token: {
         Args: { _token: string }
         Returns: {
