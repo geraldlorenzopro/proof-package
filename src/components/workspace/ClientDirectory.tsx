@@ -260,6 +260,15 @@ export default function ClientDirectory({ onSelectClient }: Props) {
                       <ChevronRight className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
 
+                    {/* File number */}
+                    {clientCases[client.id]?.file_number && (
+                      <div className="mb-2">
+                        <Badge variant="outline" className="text-[9px] font-mono bg-muted/50">
+                          {clientCases[client.id].file_number}
+                        </Badge>
+                      </div>
+                    )}
+
                     {/* Details */}
                     <div className="space-y-1.5 text-xs text-muted-foreground">
                       {client.email && (
