@@ -17,6 +17,7 @@ import HubAuditLog from "./HubAuditLog";
 import HubToolPermissions from "./HubToolPermissions";
 import HubNotifications from "./HubNotifications";
 import SlaTracker from "./SlaTracker";
+import HubAgentTeam from "./HubAgentTeam";
 import IntakeWizard from "../intake/IntakeWizard";
 
 interface HubApp {
@@ -386,6 +387,9 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
         </section>
       )}
 
+
+      {/* ═══ MI EQUIPO AI ═══ */}
+      <HubAgentTeam accountId={accountId} plan={plan} />
 
       {/* ═══ INTELLIGENCE CENTER LINK ═══ */}
       <motion.button
