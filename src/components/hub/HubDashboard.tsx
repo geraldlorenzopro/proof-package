@@ -16,6 +16,7 @@ import HubNotifications from "./HubNotifications";
 import HubAgentTeam from "./HubAgentTeam";
 import HubCreditsWidget from "./HubCreditsWidget";
 import SlaTracker from "./SlaTracker";
+import TodayAppointments from "./TodayAppointments";
 import IntakeWizard from "../intake/IntakeWizard";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -413,6 +414,11 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
             </motion.button>
           ))}
         </motion.div>
+
+        {/* ═══════════════════════════════════════════
+            SECCIÓN 3.5 — CONSULTAS DE HOY
+        ═══════════════════════════════════════════ */}
+        <TodayAppointments accountId={accountId} />
 
         {/* ═══════════════════════════════════════════
             SECCIÓN 4 — CASOS ACTIVOS RECIENTES

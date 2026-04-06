@@ -49,6 +49,7 @@ import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
 import AdminLogsPage from "./pages/admin/AdminLogsPage";
 import OfficeSettingsPage from "./pages/OfficeSettingsPage";
 import Register from "./pages/Register";
+import PreIntakePage from "./pages/PreIntakePage";
 
 const queryClient = new QueryClient();
 
@@ -109,6 +110,8 @@ const App = () => (
           <Route path="/admin/billing" element={<AdminLayout><AdminBillingPage /></AdminLayout>} />
           <Route path="/admin/analytics" element={<AdminLayout><AdminAnalyticsPage /></AdminLayout>} />
           <Route path="/admin/logs" element={<AdminLayout><AdminLogsPage /></AdminLayout>} />
+          {/* Public pre-intake (no auth) */}
+          <Route path="/intake/:token" element={<PreIntakePage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
