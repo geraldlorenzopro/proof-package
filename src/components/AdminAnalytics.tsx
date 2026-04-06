@@ -294,6 +294,100 @@ export default function AdminAnalytics() {
           )}
         </CardContent>
       </Card>
+
+      {/* Email Stats Section */}
+      {emailStats && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Mail className="w-5 h-5 text-jarvis" />
+            Emails del Sistema
+          </h2>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="glow-border">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Mail className="w-4 h-4 text-jarvis" />
+                  <span className="text-xs text-muted-foreground">Este mes</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{emailStats.total_month}</p>
+              </CardContent>
+            </Card>
+            <Card className="glow-border">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                  <span className="text-xs text-muted-foreground">Fallidos</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{emailStats.failed}</p>
+              </CardContent>
+            </Card>
+            <Card className="glow-border">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap className="w-4 h-4 text-yellow-400" />
+                  <span className="text-xs text-muted-foreground">Pendientes</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{emailStats.pending}</p>
+              </CardContent>
+            </Card>
+            <Card className="glow-border">
+              <CardContent className="pt-4 pb-3 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <BarChart3 className="w-4 h-4 text-accent" />
+                  <span className="text-xs text-muted-foreground">Templates</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{Object.keys(emailStats.by_template).length}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* By template breakdown */}
+          <Card className="glow-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground">Emails por Tipo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {Object.keys(emailStats.by_template).length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Sin emails en este período</p>
+              ) : (
+                <div className="space-y-2">
+                  {Object.entries(emailStats.by_template)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([template, count]) => (
+                      <div key={template} className="flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/50">
+                        <span className="text-sm text-foreground">{TEMPLATE_LABELS[template] || template}</span>
+                        <Badge variant="outline" className="border-jarvis/30 text-jarvis">{count}</Badge>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top firms by emails */}
+          {emailStats.top_firms.length > 0 && (
+            <Card className="glow-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">Top Firmas por Emails</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {emailStats.top_firms.map((firm, i) => (
+                    <div key={firm.account_id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/50">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-mono text-muted-foreground w-5">{i + 1}</span>
+                        <span className="text-sm text-foreground">{firm.account_name}</span>
+                      </div>
+                      <Badge variant="outline" className="border-jarvis/30 text-jarvis">{firm.count} emails</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }
