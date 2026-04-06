@@ -320,9 +320,9 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate">
-                {greeting}, <span className="text-jarvis">{staffName || accountName}</span>
+                {greeting}, <span className="text-jarvis">{resolvedName || staffName || accountName}</span>
               </h2>
-              {staffName && accountName && staffName !== accountName && (
+              {accountName && (resolvedName || staffName) && (resolvedName || staffName) !== accountName && (
                 <p className="text-sm text-muted-foreground/60 mt-0.5">{accountName}</p>
               )}
             </div>
@@ -370,7 +370,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
         )}
 
         {/* ═══ ZONA 2: MÉTRICAS ═══ */}
-        {!loading && (
+        {!loading && !permLoading && (
           <motion.div
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08, duration: 0.4 }}
