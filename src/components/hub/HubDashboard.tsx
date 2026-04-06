@@ -160,6 +160,7 @@ interface RecentCase {
   file_number: string | null;
   updated_at: string;
   ball_in_court: string | null;
+  actionBadge?: { label: string; color: string } | null;
 }
 
 export default function HubDashboard({ accountId, accountName, staffName, plan, apps, userRole, canAccessApp }: Props) {
@@ -216,8 +217,41 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
       setTotalClients(clientsRes.count || 0);
       setCompletedMonth(completedRes.count || 0);
       setUrgentDeadlines(deadlinesRes.count || 0);
-      setRecentCases((casesRes.data || []) as RecentCase[]);
       setHasDeadlines((slaRes.count || 0) > 0);
+
+      // Enrich cases with contextual badges
+      const rawCases = (casesRes.data || []) as RecentCase[];
+      if (rawCases.length > 0) {
+        const caseIds = rawCases.map(c => c.id);
+        const [intakeRes, deadlineRes] = await Promise.all([
+          supabase.from("intake_sessions").select("case_id, status").in("case_id", caseIds),
+          supabase.from("case_deadlines").select("case_id, deadline_date").eq("status", "active")
+            .in("case_id", caseIds)
+            .lte("deadline_date", new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0]),
+        ]);
+        const intakeMap = new Map((intakeRes.data || []).map((i: any) => [i.case_id, i.status]));
+        const deadlineSet = new Set((deadlineRes.data || []).map((d: any) => d.case_id));
+
+        const enriched = rawCases.map(c => {
+          if (deadlineSet.has(c.id)) {
+            return { ...c, actionBadge: { label: "Deadline próximo", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" } };
+          }
+          const intakeStatus = intakeMap.get(c.id);
+          if (!intakeStatus || intakeStatus === "in_progress") {
+            return { ...c, actionBadge: { label: "Completar intake", color: "bg-amber-500/15 text-amber-400 border-amber-500/20" } };
+          }
+          if (c.pipeline_stage === "caso-no-iniciado") {
+            return { ...c, actionBadge: { label: "Docs pendientes", color: "bg-orange-500/15 text-orange-400 border-orange-500/20" } };
+          }
+          if (c.ball_in_court === "team") {
+            return { ...c, actionBadge: { label: "Requiere acción", color: "bg-amber-500/15 text-amber-400 border-amber-500/20" } };
+          }
+          return { ...c, actionBadge: { label: "Al día", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" } };
+        });
+        setRecentCases(enriched);
+      } else {
+        setRecentCases([]);
+      }
     } catch (err) {
       console.error("Dashboard load error:", err);
     } finally {
@@ -434,9 +468,9 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
                       )}
                     </div>
                   </div>
-                  {c.ball_in_court === "team" && (
-                    <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[8px] shrink-0">
-                      Tu acción
+                  {c.actionBadge && (
+                    <Badge className={`${c.actionBadge.color} text-[8px] shrink-0`}>
+                      {c.actionBadge.label}
                     </Badge>
                   )}
                   <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0" />
@@ -446,55 +480,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
           </motion.section>
         )}
 
-        {/* ═══════════════════════════════════════════
-            SECCIÓN 5 — HERO CARDS (Case Engine + Smart Forms)
-        ═══════════════════════════════════════════ */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
-        >
-          <button
-            onClick={() => goTo("/dashboard/workspace-demo")}
-            className="w-full group relative overflow-hidden rounded-xl border border-jarvis/20 bg-gradient-to-r from-jarvis/[0.06] via-card/80 to-accent/[0.04] p-5 text-left transition-all hover:border-jarvis/30 hover:shadow-[0_2px_30px_hsl(195_100%_50%/0.08)]"
-          >
-            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-jarvis/50 to-accent/30 opacity-50 group-hover:opacity-100 transition-opacity" />
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <Briefcase className="w-6 h-6 text-jarvis" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-bold text-foreground">Case Engine</h3>
-                  <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[7px] font-display uppercase tracking-wider">Master</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground leading-snug truncate">Portfolio, Casos y Flujos de Trabajo</p>
-              </div>
-              <ArrowUpRight className="w-5 h-5 text-jarvis/40 group-hover:text-jarvis group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-            </div>
-          </button>
-
-          <button
-            onClick={() => goTo("/dashboard/smart-forms")}
-            className="w-full group relative overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] via-card/80 to-cyan-400/[0.04] p-5 text-left transition-all hover:border-cyan-500/30 hover:shadow-[0_2px_30px_hsl(185_100%_50%/0.08)]"
-          >
-            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-cyan-500/50 to-cyan-400/30 opacity-50 group-hover:opacity-100 transition-opacity" />
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <FileText className="w-6 h-6 text-cyan-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-bold text-foreground">NER Smart Forms</h3>
-                  <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[7px] font-display uppercase tracking-wider">Forms</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground leading-snug truncate">Formularios USCIS · Autocompletado desde perfil</p>
-              </div>
-              <ArrowUpRight className="w-5 h-5 text-cyan-400/40 group-hover:text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-            </div>
-          </button>
-        </motion.div>
+        {/* Hero cards removed — Case Engine accessible via Casos Activos list, Smart Forms via Herramientas */}
 
         {/* ═══════════════════════════════════════════
             SECCIÓN 6 — MI EQUIPO AI + Créditos
