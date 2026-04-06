@@ -69,7 +69,7 @@ export default function CaseDecisionPanel({ currentStage, stageEnteredAt, ballIn
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">¿Quién tiene la pelota?</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Responsable actual</p>
             <div className="flex items-center gap-2">
               <OwnerIcon className={`w-4 h-4 ${owner.color}`} />
               <span className={`text-sm font-semibold ${owner.color}`}>{owner.label}</span>

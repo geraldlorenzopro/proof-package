@@ -257,7 +257,8 @@ export default function CaseEnginePage() {
   }
 
   const daysOpen = differenceInDays(new Date(), new Date(caseData.created_at));
-  const processLabel = template?.process_label || caseData.case_type;
+  const daysText = daysOpen === 1 ? '1 día abierto' : `${daysOpen} días abiertos`;
+  const processLabel = getCaseTypeLabel(template?.process_label || caseData.case_type);
 
   return (
     <Wrapper>
@@ -330,7 +331,7 @@ export default function CaseEnginePage() {
                         PD: {caseData.priority_date}
                       </Badge>
                     )}
-                    <Badge variant="outline" className="text-[10px]">{daysOpen} días abierto</Badge>
+                    <Badge variant="outline" className="text-[10px]">{daysText}</Badge>
                     <IntakeBadge caseId={caseId!} />
                     {caseData.assigned_to && (
                       <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent border-accent/20">
@@ -528,7 +529,7 @@ export default function CaseEnginePage() {
               <p className="text-sm font-semibold text-foreground mb-1">Panel de Documentación</p>
               <p className="text-xs text-muted-foreground">{evidenceCount} evidencia{evidenceCount !== 1 ? "s" : ""} en el caso</p>
               <Button variant="outline" className="mt-4 text-xs" onClick={() => navigate(`/case/${caseId}`)}>
-                Abrir Evidence Tool
+                Gestionar documentos
               </Button>
             </div>
           )}
@@ -539,7 +540,7 @@ export default function CaseEnginePage() {
               <p className="text-sm font-semibold text-foreground mb-1">Formularios del Caso</p>
               <p className="text-xs text-muted-foreground">{formsCount} formulario{formsCount !== 1 ? "s" : ""} asociados</p>
               <Button variant="outline" className="mt-4 text-xs" onClick={() => navigate("/dashboard/smart-forms")}>
-                Abrir Smart Forms
+                Gestionar formularios
               </Button>
             </div>
           )}
