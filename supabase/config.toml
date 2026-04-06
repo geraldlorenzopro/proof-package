@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.admin-get-email-stats]
 verify_jwt = false
+
+[functions.appointment-booked]
+verify_jwt = false
