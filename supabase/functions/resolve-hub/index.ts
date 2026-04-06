@@ -110,14 +110,16 @@ async function getOrCreateHubUser(
     }
   } else {
     // No existing membership in other accounts — safe to upsert
+    // Shared hub users (no ghlUserEmail) get owner role; staff users get member role
+    const assignedRole = ghlUserEmail ? "member" : "owner";
     const { error: memberErr } = await supabaseAdmin.from("account_members").upsert(
-      { account_id: accountId, user_id: hubUserId, role: "member" },
+      { account_id: accountId, user_id: hubUserId, role: assignedRole },
       { onConflict: "account_id,user_id" }
     );
     if (memberErr) {
       console.error("Failed to link member:", memberErr);
       await supabaseAdmin.from("account_members").insert(
-        { account_id: accountId, user_id: hubUserId, role: "member" }
+        { account_id: accountId, user_id: hubUserId, role: assignedRole }
       );
     }
   }
