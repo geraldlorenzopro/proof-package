@@ -493,11 +493,19 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
                         </Badge>
                       </div>
                     </div>
-                    {c.actionBadge && (
-                      <Badge className={`${c.actionBadge.color} text-[8px] shrink-0`}>
-                        {c.actionBadge.label}
-                      </Badge>
-                    )}
+                    {/* Alert tag badges (max 2) */}
+                    {(() => {
+                      const alertBadges = getAlertBadges(c.case_tags_array);
+                      if (alertBadges.length > 0) {
+                        return alertBadges.map((ab, idx) => (
+                          <Badge key={idx} variant="outline" className={`${ab.color} text-[8px] shrink-0`}>{ab.label}</Badge>
+                        ));
+                      }
+                      if (c.actionBadge) {
+                        return <Badge className={`${c.actionBadge.color} text-[8px] shrink-0`}>{c.actionBadge.label}</Badge>;
+                      }
+                      return null;
+                    })()}
                     <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0" />
                   </button>
                 );
