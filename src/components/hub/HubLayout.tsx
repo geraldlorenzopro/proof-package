@@ -63,7 +63,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   return (
     <div className="min-h-screen bg-background flex">
       {/* ═══ SIDEBAR — Minimal icon rail ═══ */}
-      {(isOnDashboard || isOnOfficeSettings) && (
+      {(isOnDashboard || isOnOfficeSettings || isOnIntelligence) && (
         <motion.aside
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
