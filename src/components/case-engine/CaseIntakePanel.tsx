@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/auditLog";
+import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 
 interface IntakeSession {
   id: string;
