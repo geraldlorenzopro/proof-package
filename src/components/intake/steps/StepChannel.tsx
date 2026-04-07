@@ -28,8 +28,13 @@ export default function StepChannel({ data, update }: Props) {
         <p className="text-sm text-muted-foreground">Selecciona el canal de entrada</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {CHANNELS.map(ch => {
+      {(() => {
+        const cols = 3;
+        const remainder = CHANNELS.length % cols;
+        const fullRows = CHANNELS.slice(0, CHANNELS.length - (remainder || cols));
+        const lastRow = CHANNELS.slice(CHANNELS.length - (remainder || cols));
+
+        const renderCard = (ch: typeof CHANNELS[number]) => {
           const Icon = ch.icon;
           const selected = data.entry_channel === ch.key;
           return (
@@ -50,8 +55,25 @@ export default function StepChannel({ data, update }: Props) {
               </span>
             </button>
           );
-        })}
-      </div>
+        };
+
+        return (
+          <>
+            <div className="grid grid-cols-3 gap-3">
+              {fullRows.map(renderCard)}
+            </div>
+            {remainder > 0 && (
+              <div className="flex justify-center gap-3 mt-3">
+                {lastRow.map(ch => (
+                  <div key={ch.key} className="w-[calc((100%-1.5rem)/3)]">
+                    {renderCard(ch)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {(data.entry_channel === "whatsapp" || data.entry_channel === "instagram") && (
         <div>
