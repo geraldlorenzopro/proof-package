@@ -83,23 +83,26 @@ export default function SmartFormPage() {
             prefillData.lastName = cp.last_name || "";
             prefillData.dateOfBirth = cp.dob || "";
             prefillData.countryOfBirth = cp.country_of_birth || "";
-            prefillData.countryOfCitizenship = cp.country_of_citizenship || "";
+            prefillData.countryOfCitizenship1 = cp.country_of_citizenship || "";
             prefillData.applicantEmail = cp.email || "";
             prefillData.applicantPhone = cp.phone || "";
-            prefillData.streetAddress = cp.address_street || "";
-            prefillData.aptNumber = cp.address_apt || "";
-            prefillData.city = cp.address_city || "";
-            prefillData.state = cp.address_state || "";
-            prefillData.zipCode = cp.address_zip || "";
-            prefillData.gender = cp.gender || "";
-            prefillData.maritalStatus = cp.marital_status || "";
+            prefillData.mailingStreet = cp.address_street || "";
+            prefillData.mailingApt = cp.address_apt || "";
+            prefillData.mailingCity = cp.address_city || "";
+            prefillData.mailingState = cp.address_state || "";
+            prefillData.mailingZip = cp.address_zip || "";
+            prefillData.sex = cp.gender === "male" ? "male" : cp.gender === "female" ? "female" : "";
+            const ms = cp.marital_status || "";
+            if (["single", "married", "divorced", "widowed"].includes(ms)) {
+              prefillData.maritalStatus = ms as any;
+            }
             prefillData.i94Number = cp.i94_number || "";
             prefillData.passportNumber = cp.passport_number || "";
             prefillData.passportCountry = cp.passport_country || "";
             prefillData.passportExpiration = cp.passport_expiration || "";
-            prefillData.countryOfLastEntry = cp.place_of_last_entry || "";
-            prefillData.dateOfLastEntry = cp.date_of_last_entry || "";
-            prefillData.classOfAdmission = cp.class_of_admission || "";
+            prefillData.lastArrivalPlace = cp.place_of_last_entry || "";
+            prefillData.lastArrivalDate = cp.date_of_last_entry || "";
+            prefillData.statusAtArrival = cp.class_of_admission || "";
           }
         }
 
@@ -111,7 +114,7 @@ export default function SmartFormPage() {
             .eq("id", linkedCaseId)
             .maybeSingle();
           if (cc) {
-            prefillData.alienNumber = (cc as any).alien_number || "";
+            prefillData.aNumber = (cc as any).alien_number || "";
           }
         }
 
@@ -124,12 +127,16 @@ export default function SmartFormPage() {
             .eq("account_id", accountId)
             .maybeSingle();
           if (oc) {
-            prefillData.preparerName = oc.attorney_name || "";
-            prefillData.preparerBarNumber = oc.bar_number || "";
-            prefillData.preparerOrgName = oc.firm_name || "";
-            prefillData.preparerStreetAddress = oc.firm_address || "";
+            // Split attorney name into first/last
+            const nameParts = (oc.attorney_name || "").trim().split(/\s+/);
+            prefillData.preparerLastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+            prefillData.preparerFirstName = nameParts[0] || "";
+            prefillData.preparerOrg = oc.firm_name || "";
+            prefillData.preparerStreet = oc.firm_address || "";
             prefillData.preparerPhone = oc.firm_phone || "";
             prefillData.preparerEmail = oc.firm_email || "";
+            prefillData.attorneyBarNumber = oc.bar_number || "";
+          }
           }
         }
 
