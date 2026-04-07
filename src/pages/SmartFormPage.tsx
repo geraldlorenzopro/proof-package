@@ -217,7 +217,7 @@ export default function SmartFormPage() {
       if (session) {
         const accountId = await getAccountId(session.user.id);
         if (accountId) {
-          const payload = {
+          const payload: any = {
             account_id: accountId,
             user_id: session.user.id,
             form_type: "i-765" as string,
@@ -228,6 +228,7 @@ export default function SmartFormPage() {
             client_email: formData.applicantEmail || null,
             beneficiary_profile_id: beneficiaryProfileId,
           };
+          if (linkedCaseId) payload.case_id = linkedCaseId;
 
           if (submissionId) {
             await supabase.from("form_submissions").update(payload).eq("id", submissionId);
