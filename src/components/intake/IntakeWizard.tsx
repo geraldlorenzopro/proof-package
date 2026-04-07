@@ -14,6 +14,7 @@ export interface IntakeData {
   // Step 1
   entry_channel: string;
   referral_source: string;
+  entry_channel_detail: string;
   // Step 2
   client_profile_id: string | null;
   is_existing_client: boolean;
@@ -49,6 +50,7 @@ export interface IntakeData {
 const INITIAL_DATA: IntakeData = {
   entry_channel: "",
   referral_source: "",
+  entry_channel_detail: "",
   client_profile_id: null,
   is_existing_client: false,
   client_first_name: "",
@@ -231,7 +233,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 gap-0 bg-card border-border overflow-hidden max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl p-0 gap-0 bg-card border-border overflow-hidden max-h-[90vh] flex flex-col [&>button.absolute]:hidden">
         {/* Header + Progress */}
         <div className="border-b border-border p-4 sm:p-5 shrink-0">
           <div className="flex items-center justify-between mb-3">
