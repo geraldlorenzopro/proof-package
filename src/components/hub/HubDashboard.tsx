@@ -197,9 +197,12 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
     localStorage.setItem("hub_tools_open", String(toolsOpen));
   }, [toolsOpen]);
 
+  const canSeeAllCases = can("ver_todos_casos");
+  const canSeeConsultas = can("ver_consultas");
+
   useEffect(() => {
     if (accountId && !permLoading) loadDashboardData();
-  }, [accountId, permLoading]);
+  }, [accountId, permLoading, canSeeAllCases]);
 
   async function loadDashboardData() {
     try {
