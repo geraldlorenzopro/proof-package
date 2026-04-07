@@ -423,7 +423,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
         )}
 
         {/* ═══ ZONA 3: CASOS ACTIVOS ═══ */}
-        {can("ver_consultas") && recentCases.length > 0 && (
+        {canSeeConsultas && recentCases.length > 0 && (
           <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.16 }}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
