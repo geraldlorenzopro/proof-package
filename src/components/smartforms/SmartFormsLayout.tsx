@@ -96,6 +96,11 @@ function TopNavBar() {
   const { wizardNav, lang, setLang } = useSmartFormsContext();
   const { destination: backDest, isHub } = useBackDestination();
 
+  // Check if coming from a case
+  const navState = location.state as { fromCase?: boolean; caseId?: string } | null;
+  const fromCase = navState?.fromCase || false;
+  const caseId = navState?.caseId || null;
+
   const navItems = [
     { label: "Formularios", path: "/dashboard/smart-forms", icon: List, end: true },
   ];
@@ -107,6 +112,14 @@ function TopNavBar() {
 
   const isSettingsActive = location.pathname === "/dashboard/smart-forms/settings";
 
+  const handleBack = () => {
+    if (fromCase && caseId) {
+      navigate(`/case-engine/${caseId}`);
+    } else {
+      navigate(backDest);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-30">
       {/* Top nav row */}
@@ -115,11 +128,15 @@ function TopNavBar() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate(backDest)}
+          onClick={handleBack}
           className="gap-1.5 text-muted-foreground hover:text-foreground shrink-0 px-2 absolute left-3"
         >
           <ArrowLeft className="w-4 h-4" />
-          {isHub ? (
+          {fromCase && caseId ? (
+            <span className="text-xs flex items-center gap-1">
+              <FileText className="w-3.5 h-3.5 text-accent" /> Volver al caso
+            </span>
+          ) : isHub ? (
             <span className="text-xs flex items-center gap-1">
               <Shield className="w-3.5 h-3.5 text-accent" /> Hub
             </span>

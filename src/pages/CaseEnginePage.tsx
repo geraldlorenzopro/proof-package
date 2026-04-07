@@ -25,6 +25,8 @@ import ConsultationPanel, { ConsultationLiveBadge } from "@/components/case-engi
 import CaseEmailHistory from "@/components/case-engine/CaseEmailHistory";
 import CaseEmailSender from "@/components/case-engine/CaseEmailSender";
 import CaseAgentPanel from "@/components/case-engine/CaseAgentPanel";
+import CaseFormsPanel from "@/components/case-engine/CaseFormsPanel";
+import CaseDocumentsPanel from "@/components/case-engine/CaseDocumentsPanel";
 import {
   Select,
   SelectContent,
@@ -525,25 +527,16 @@ export default function CaseEnginePage() {
           )}
 
           {activeTab === "documentos" && (
-            <div className="rounded-2xl border border-border bg-card p-8 text-center">
-              <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm font-semibold text-foreground mb-1">Panel de Documentación</p>
-              <p className="text-xs text-muted-foreground">{evidenceCount} evidencia{evidenceCount !== 1 ? "s" : ""} en el caso</p>
-              <Button variant="outline" className="mt-4 text-xs" onClick={() => navigate(`/case/${caseId}`)}>
-                Gestionar documentos
-              </Button>
-            </div>
+            <CaseDocumentsPanel caseId={caseId!} accountId={caseData.account_id} />
           )}
 
           {activeTab === "formularios" && (
-            <div className="rounded-2xl border border-border bg-card p-8 text-center">
-              <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm font-semibold text-foreground mb-1">Formularios del Caso</p>
-              <p className="text-xs text-muted-foreground">{formsCount} formulario{formsCount !== 1 ? "s" : ""} asociados</p>
-              <Button variant="outline" className="mt-4 text-xs" onClick={() => navigate("/dashboard/smart-forms")}>
-                Gestionar formularios
-              </Button>
-            </div>
+            <CaseFormsPanel
+              caseId={caseId!}
+              accountId={caseData.account_id}
+              clientProfileId={(caseData as any).client_profile_id}
+              clientName={caseData.client_name}
+            />
           )}
 
           {activeTab === "decision" && (
