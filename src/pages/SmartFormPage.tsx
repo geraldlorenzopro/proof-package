@@ -14,8 +14,17 @@ export default function SmartFormPage() {
   const { id } = useParams<{ id: string }>();
   const isNew = !id || id === "new";
 
-  // Read beneficiary from navigation state (passed from SmartFormsList)
-  const navState = location.state as { beneficiaryId?: string | null; formType?: string } | null;
+  // Read context from navigation state (from SmartFormsList or CaseEngine)
+  const navState = location.state as {
+    beneficiaryId?: string | null;
+    formType?: string;
+    fromCase?: boolean;
+    caseId?: string;
+    accountId?: string;
+  } | null;
+
+  const fromCase = navState?.fromCase || false;
+  const linkedCaseId = navState?.caseId || null;
 
   const { lang } = useSmartFormsContext();
   const [saving, setSaving] = useState(false);
@@ -43,7 +52,7 @@ export default function SmartFormPage() {
       if (!isNew && id) {
         const { data: sub, error } = await supabase
           .from("form_submissions")
-          .select("id, form_data, share_token, beneficiary_profile_id")
+          .select("id, form_data, share_token, beneficiary_profile_id, case_id")
           .eq("id", id)
           .maybeSingle();
         if (error || !sub) {
@@ -56,6 +65,77 @@ export default function SmartFormPage() {
         setShareToken((sub as any).share_token || null);
         setBeneficiaryProfileId((sub as any).beneficiary_profile_id || null);
       }
+
+      // If coming from a case with a beneficiary, pre-fill from client_profile + case data
+      if (isNew && fromCase && (navState?.beneficiaryId || linkedCaseId)) {
+        const prefillData: Partial<I765Data> = {};
+
+        // Load client profile data
+        if (navState?.beneficiaryId) {
+          const { data: cp } = await supabase
+            .from("client_profiles")
+            .select("*")
+            .eq("id", navState.beneficiaryId)
+            .maybeSingle();
+          if (cp) {
+            prefillData.firstName = cp.first_name || "";
+            prefillData.middleName = cp.middle_name || "";
+            prefillData.lastName = cp.last_name || "";
+            prefillData.dateOfBirth = cp.dob || "";
+            prefillData.countryOfBirth = cp.country_of_birth || "";
+            prefillData.countryOfCitizenship = cp.country_of_citizenship || "";
+            prefillData.applicantEmail = cp.email || "";
+            prefillData.applicantPhone = cp.phone || "";
+            prefillData.streetAddress = cp.address_street || "";
+            prefillData.aptNumber = cp.address_apt || "";
+            prefillData.city = cp.address_city || "";
+            prefillData.state = cp.address_state || "";
+            prefillData.zipCode = cp.address_zip || "";
+            prefillData.gender = cp.gender || "";
+            prefillData.maritalStatus = cp.marital_status || "";
+            prefillData.i94Number = cp.i94_number || "";
+            prefillData.passportNumber = cp.passport_number || "";
+            prefillData.passportCountry = cp.passport_country || "";
+            prefillData.passportExpiration = cp.passport_expiration || "";
+            prefillData.countryOfLastEntry = cp.place_of_last_entry || "";
+            prefillData.dateOfLastEntry = cp.date_of_last_entry || "";
+            prefillData.classOfAdmission = cp.class_of_admission || "";
+          }
+        }
+
+        // Load case-level data (alien number etc)
+        if (linkedCaseId) {
+          const { data: cc } = await supabase
+            .from("client_cases")
+            .select("alien_number")
+            .eq("id", linkedCaseId)
+            .maybeSingle();
+          if (cc) {
+            prefillData.alienNumber = (cc as any).alien_number || "";
+          }
+        }
+
+        // Load office/attorney data
+        const accountId = navState?.accountId || await getAccountId(session.user.id);
+        if (accountId) {
+          const { data: oc } = await supabase
+            .from("office_config")
+            .select("attorney_name, bar_number, bar_state, firm_name, firm_address, firm_phone, firm_email")
+            .eq("account_id", accountId)
+            .maybeSingle();
+          if (oc) {
+            prefillData.preparerName = oc.attorney_name || "";
+            prefillData.preparerBarNumber = oc.bar_number || "";
+            prefillData.preparerOrgName = oc.firm_name || "";
+            prefillData.preparerStreetAddress = oc.firm_address || "";
+            prefillData.preparerPhone = oc.firm_phone || "";
+            prefillData.preparerEmail = oc.firm_email || "";
+          }
+        }
+
+        setInitialData(prefillData);
+      }
+
       setLoaded(true);
     };
     init();
