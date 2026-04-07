@@ -137,7 +137,6 @@ export default function SmartFormPage() {
             prefillData.preparerEmail = oc.firm_email || "";
             prefillData.attorneyBarNumber = oc.bar_number || "";
           }
-          }
         }
 
         setInitialData(prefillData);
