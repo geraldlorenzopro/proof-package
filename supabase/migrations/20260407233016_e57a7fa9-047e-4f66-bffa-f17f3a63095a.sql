@@ -1,0 +1,1 @@
+ALTER TABLE intake_sessions ADD COLUMN IF NOT EXISTS entry_channel_detail TEXT;

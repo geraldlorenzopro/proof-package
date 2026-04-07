@@ -2156,6 +2156,7 @@ export type Database = {
           current_status: string | null
           deadline_date: string | null
           entry_channel: string | null
+          entry_channel_detail: string | null
           entry_date: string | null
           entry_method: string | null
           final_case_type: string | null
@@ -2190,6 +2191,7 @@ export type Database = {
           current_status?: string | null
           deadline_date?: string | null
           entry_channel?: string | null
+          entry_channel_detail?: string | null
           entry_date?: string | null
           entry_method?: string | null
           final_case_type?: string | null
@@ -2224,6 +2226,7 @@ export type Database = {
           current_status?: string | null
           deadline_date?: string | null
           entry_channel?: string | null
+          entry_channel_detail?: string | null
           entry_date?: string | null
           entry_method?: string | null
           final_case_type?: string | null
