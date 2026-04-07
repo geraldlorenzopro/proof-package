@@ -119,6 +119,10 @@ const App = () => (
           <Route path="/admin/logs" element={<ProtectedRoute><AdminLayout><AdminLogsPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/test-suite" element={<ProtectedRoute><AdminTestSuite /></ProtectedRoute>} />
 
+          {/* ═══ REDIRECT ROUTES ═══ */}
+          <Route path="/portfolio" element={<Navigate to="/dashboard/workspace-demo" replace />} />
+          <Route path="/hub/cases" element={<Navigate to="/dashboard/workspace-demo" replace />} />
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
