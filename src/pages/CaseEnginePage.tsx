@@ -352,6 +352,7 @@ export default function CaseEnginePage() {
                       onTagsChanged={(t) => setCaseData((prev: any) => prev ? { ...prev, case_tags_array: t } : prev)}
                     />
                    </div>
+                </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Stage changer */}
