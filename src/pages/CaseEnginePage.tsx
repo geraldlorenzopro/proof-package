@@ -24,6 +24,7 @@ import CaseIntakePanel, { IntakeBadge } from "@/components/case-engine/CaseIntak
 import ConsultationPanel, { ConsultationLiveBadge } from "@/components/case-engine/ConsultationPanel";
 import CaseEmailHistory from "@/components/case-engine/CaseEmailHistory";
 import CaseEmailSender from "@/components/case-engine/CaseEmailSender";
+import CaseAgentHistory from "@/components/case-engine/CaseAgentHistory";
 import CaseAgentPanel from "@/components/case-engine/CaseAgentPanel";
 import CaseFormsPanel from "@/components/case-engine/CaseFormsPanel";
 import CaseDocumentsPanel from "@/components/case-engine/CaseDocumentsPanel";
@@ -553,6 +554,9 @@ export default function CaseEnginePage() {
 
           {activeTab === "historial" && (
             <div className="max-w-2xl space-y-8">
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <CaseAgentHistory caseId={caseId!} />
+              </div>
               <CaseStageHistory history={stageHistory} stageLabels={stageLabels} />
               <div className="rounded-2xl border border-border bg-card p-5">
                 <CaseEmailHistory caseId={caseId!} />
