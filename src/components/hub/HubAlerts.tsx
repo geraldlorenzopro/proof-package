@@ -117,6 +117,31 @@ export default function HubAlerts({ accountId }: { accountId: string }) {
         }
       });
 
+      // Interview date alerts
+      (interviewRes.data || []).forEach((c: any) => {
+        const dates = [
+          { date: c.interview_date, label: "Entrevista" },
+          { date: c.cas_interview_date, label: "Cita CAS" },
+          { date: c.emb_interview_date, label: "Cita Embajada" },
+        ];
+        dates.forEach(({ date, label }) => {
+          if (!date) return;
+          const d = new Date(date);
+          const daysUntil = Math.floor((d.getTime() - now.getTime()) / 86400000);
+          if (daysUntil >= 0 && daysUntil <= 30) {
+            newAlerts.push({
+              id: `interview-${c.id}-${label}`,
+              type: "deadline",
+              severity: daysUntil <= 7 ? "critical" : "warning",
+              title: `${label}: ${c.client_name}`,
+              description: `En ${daysUntil} día${daysUntil !== 1 ? "s" : ""} — ${new Date(date).toLocaleDateString("es")}${c.interview_city ? ` · ${c.interview_city}` : ""}`,
+              caseId: c.id,
+              dismissible: true,
+            });
+          }
+        });
+      });
+
       setAlerts(newAlerts);
     } catch (err) {
       console.warn("[HubAlerts]", err);
