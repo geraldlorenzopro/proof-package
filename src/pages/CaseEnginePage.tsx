@@ -30,6 +30,9 @@ import CaseEmailSender from "@/components/case-engine/CaseEmailSender";
 import CaseAgentHistory from "@/components/case-engine/CaseAgentHistory";
 import CaseAgentPanel from "@/components/case-engine/CaseAgentPanel";
 import CaseFormsPanel from "@/components/case-engine/CaseFormsPanel";
+import ProcessStageStepper from "@/components/case-engine/ProcessStageStepper";
+import PortalTrackingPanel from "@/components/case-engine/PortalTrackingPanel";
+import CaseTagsSelector, { CaseTagBadges } from "@/components/case-engine/CaseTagsSelector";
 import CaseDocumentsPanel from "@/components/case-engine/CaseDocumentsPanel";
 import {
   Select,
