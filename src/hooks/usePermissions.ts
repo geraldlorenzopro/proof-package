@@ -135,42 +135,40 @@ const DEFAULT_PERMISSIONS: Record<string, Permissions> = {
   },
 };
 
-export function usePermissions() {
+export function usePermissions(accountIdOverride?: string | null) {
   const [role, setRole] = useState<UserRole>("readonly");
   const [permissions, setPermissions] = useState<Permissions>(DEFAULT_PERMISSIONS.readonly);
   const [isLoading, setIsLoading] = useState(true);
-  const [accountId, setAccountId] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(accountIdOverride ?? null);
 
   useEffect(() => {
     loadPermissions();
-  }, []);
+  }, [accountIdOverride]);
 
   async function loadPermissions() {
+    setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setIsLoading(false); return; }
+      if (!user) return;
 
-      const { data: member } = await supabase
+      const membershipQuery = supabase
         .from("account_members")
         .select("account_id, role, custom_permissions")
-        .eq("user_id", user.id)
-        .limit(1)
-        .single();
+        .eq("user_id", user.id);
 
-      if (!member) { setIsLoading(false); return; }
+      const { data: member } = await (accountIdOverride
+        ? membershipQuery.eq("account_id", accountIdOverride).maybeSingle()
+        : membershipQuery.limit(1).maybeSingle());
+
+      if (!member) return;
 
       const userRole = (member.role as UserRole) || "readonly";
       setRole(userRole);
       setAccountId(member.account_id);
 
-      // Get base permissions for role
       const base = DEFAULT_PERMISSIONS[userRole] || DEFAULT_PERMISSIONS.readonly;
-
-      // Apply custom overrides
       const custom = (member.custom_permissions as Record<string, boolean>) || {};
-      const merged = { ...base, ...custom };
-
-      setPermissions(merged);
+      setPermissions({ ...base, ...custom });
     } catch (err) {
       console.warn("[usePermissions]", err);
     } finally {

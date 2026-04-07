@@ -141,7 +141,7 @@ interface RecentCase {
 
 export default function HubDashboard({ accountId, accountName, staffName, plan, apps, userRole, canAccessApp }: Props) {
   const navigate = useNavigate();
-  const { can, isOwner: permIsOwner, role: permRole, isLoading: permLoading } = usePermissions();
+  const { can, isOwner: permIsOwner, role: permRole, isLoading: permLoading } = usePermissions(accountId);
   const [commandBarOpen, setCommandBarOpen] = useState(false);
   const [commandBarFilter, setCommandBarFilter] = useState<"all" | "client" | "case" | "tool">("all");
   const [intakeOpen, setIntakeOpen] = useState(false);

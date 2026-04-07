@@ -43,7 +43,7 @@ export default function HubPage() {
   const [authReady, setAuthReady] = useState(false);
   const [stats, setStats] = useState<HubStats>({ totalClients: 0, activeForms: 0, recentActivity: 0 });
   const navigate = useNavigate();
-  const { canAccess, userRole, loading: permLoading } = useAppPermissions();
+  const { canAccess, userRole, loading: permLoading } = useAppPermissions(data?.account_id ?? null);
 
   const cid = searchParams.get("cid");
   const sig = searchParams.get("sig");
