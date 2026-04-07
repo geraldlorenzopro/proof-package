@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, EyeOff, Globe, Building2, Landmark, Save } from "lucide-react";
+import { Eye, EyeOff, Globe, Building2, Landmark, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -14,32 +14,45 @@ interface Props {
   onCaseDataChanged: (updates: any) => void;
 }
 
+function useAutoSave(value: string, originalValue: string, field: string, caseId: string, onSaved: (field: string, val: string) => void) {
+  const [saved, setSaved] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (value === (originalValue || "")) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(async () => {
+      try {
+        await supabase.from("client_cases").update({ [field]: value || null } as any).eq("id", caseId);
+        onSaved(field, value);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } catch { toast.error("Error al guardar"); }
+    }, 1500);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [value, originalValue, field, caseId, onSaved]);
+
+  return saved;
+}
+
 function PasswordField({ label, value, field, caseId, onSaved }: {
   label: string; value: string; field: string; caseId: string; onSaved: (field: string, val: string) => void;
 }) {
   const [show, setShow] = useState(false);
   const [val, setVal] = useState(value || "");
-  const [saving, setSaving] = useState(false);
-
-  const save = useCallback(async () => {
-    if (val === (value || "")) return;
-    setSaving(true);
-    try {
-      await supabase.from("client_cases").update({ [field]: val } as any).eq("id", caseId);
-      onSaved(field, val);
-    } catch { toast.error("Error al guardar"); }
-    finally { setSaving(false); }
-  }, [val, value, field, caseId, onSaved]);
+  const saved = useAutoSave(val, value, field, caseId, onSaved);
 
   return (
     <div className="space-y-1">
-      <Label className="text-[11px] text-muted-foreground">{label}</Label>
+      <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+        {label}
+        {saved && <Check className="w-3 h-3 text-emerald-400" />}
+      </Label>
       <div className="flex items-center gap-1">
         <Input
           type={show ? "text" : "password"}
           value={val}
           onChange={e => setVal(e.target.value)}
-          onBlur={save}
           className="h-8 text-xs font-mono"
           placeholder="••••••••"
         />
@@ -56,25 +69,17 @@ function TextField({ label, value, field, caseId, onSaved, placeholder, mono }: 
   onSaved: (field: string, val: string) => void; placeholder?: string; mono?: boolean;
 }) {
   const [val, setVal] = useState(value || "");
-  const [saving, setSaving] = useState(false);
-
-  const save = useCallback(async () => {
-    if (val === (value || "")) return;
-    setSaving(true);
-    try {
-      await supabase.from("client_cases").update({ [field]: val } as any).eq("id", caseId);
-      onSaved(field, val);
-    } catch { toast.error("Error al guardar"); }
-    finally { setSaving(false); }
-  }, [val, value, field, caseId, onSaved]);
+  const saved = useAutoSave(val, value, field, caseId, onSaved);
 
   return (
     <div className="space-y-1">
-      <Label className="text-[11px] text-muted-foreground">{label}</Label>
+      <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+        {label}
+        {saved && <Check className="w-3 h-3 text-emerald-400" />}
+      </Label>
       <Input
         value={val}
         onChange={e => setVal(e.target.value)}
-        onBlur={save}
         className={cn("h-8 text-xs", mono && "font-mono")}
         placeholder={placeholder || "—"}
       />
@@ -87,19 +92,15 @@ function DateField({ label, value, field, caseId, onSaved }: {
   onSaved: (field: string, val: string) => void;
 }) {
   const [val, setVal] = useState(value || "");
-
-  const save = useCallback(async () => {
-    if (val === (value || "")) return;
-    try {
-      await supabase.from("client_cases").update({ [field]: val || null } as any).eq("id", caseId);
-      onSaved(field, val);
-    } catch { toast.error("Error al guardar"); }
-  }, [val, value, field, caseId, onSaved]);
+  const saved = useAutoSave(val, value, field, caseId, onSaved);
 
   return (
     <div className="space-y-1">
-      <Label className="text-[11px] text-muted-foreground">{label}</Label>
-      <Input type="date" value={val} onChange={e => setVal(e.target.value)} onBlur={save} className="h-8 text-xs" />
+      <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+        {label}
+        {saved && <Check className="w-3 h-3 text-emerald-400" />}
+      </Label>
+      <Input type="date" value={val} onChange={e => setVal(e.target.value)} className="h-8 text-xs" />
     </div>
   );
 }
@@ -107,22 +108,24 @@ function DateField({ label, value, field, caseId, onSaved }: {
 const STAGE_ORDER = ["uscis", "nvc", "embajada", "cas", "aprobado", "denegado"];
 
 export default function PortalTrackingPanel({ caseId, caseData, onCaseDataChanged }: Props) {
-  const [activeSection, setActiveSection] = useState<string>("uscis");
   const processStage = caseData?.process_stage || "uscis";
   const stageIdx = STAGE_ORDER.indexOf(processStage);
 
+  // Default to the current stage's section
+  const defaultSection = stageIdx >= 2 ? "embajada" : stageIdx >= 1 ? "nvc" : "uscis";
+  const [activeSection, setActiveSection] = useState<string>(defaultSection);
+
   const handleSaved = useCallback((field: string, val: string) => {
     onCaseDataChanged({ [field]: val });
-    toast.success("Guardado");
   }, [onCaseDataChanged]);
 
   const sections = [
-    { key: "uscis", label: "USCIS", icon: Globe, always: true },
-    { key: "nvc", label: "NVC", icon: Building2, minStage: 1 },
-    { key: "embajada", label: "CAS / Embajada", icon: Landmark, minStage: 2 },
+    { key: "uscis", label: "USCIS", icon: Globe, completed: stageIdx > 0 },
+    { key: "nvc", label: "NVC", icon: Building2, completed: stageIdx > 1, visible: stageIdx >= 1 },
+    { key: "embajada", label: "CAS / Embajada", icon: Landmark, completed: stageIdx > 3, visible: stageIdx >= 2 },
   ];
 
-  const visibleSections = sections.filter(s => s.always || stageIdx >= (s.minStage || 0));
+  const visibleSections = sections.filter(s => s.visible !== false);
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
@@ -136,16 +139,19 @@ export default function PortalTrackingPanel({ caseId, caseData, onCaseDataChange
         {visibleSections.map(s => (
           <button
             key={s.key}
-            onClick={() => setActiveSection(s.key)}
+            onClick={() => !s.completed && setActiveSection(s.key)}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all",
-              activeSection === s.key
-                ? "bg-jarvis/10 text-jarvis border border-jarvis/20"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+              s.completed
+                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 cursor-default"
+                : activeSection === s.key
+                  ? "bg-jarvis/10 text-jarvis border border-jarvis/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
             )}
           >
-            <s.icon className="w-3 h-3" />
+            {s.completed ? <Check className="w-3 h-3" /> : <s.icon className="w-3 h-3" />}
             {s.label}
+            {s.completed && <span className="text-[9px]">✓</span>}
           </button>
         ))}
       </div>

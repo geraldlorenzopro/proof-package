@@ -386,7 +386,8 @@ export default function CaseEnginePage() {
                 <ProcessStageStepper
                   caseId={caseId!}
                   currentStage={caseData.process_stage || "uscis"}
-                  onStageChanged={(stage) => setCaseData((prev: any) => prev ? { ...prev, process_stage: stage } : prev)}
+                  onStageChanged={(stage) => { setCaseData((prev: any) => prev ? { ...prev, process_stage: stage } : prev); loadCase(); }}
+                  caseData={caseData}
                 />
               </div>
 
@@ -433,9 +434,9 @@ export default function CaseEnginePage() {
         {/* Tab content */}
         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
           {activeTab === "resumen" && (
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
-              {/* Left column — case data */}
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:items-start">
+              {/* Left column — scrolleable independently */}
+              <div className="space-y-4 min-w-0">
                 {/* 1. Análisis AI + Intake Data */}
                 <div className="rounded-2xl border border-border bg-card p-5">
                   <CaseIntakePanel
@@ -477,8 +478,8 @@ export default function CaseEnginePage() {
                 )}
               </div>
 
-              {/* Right sidebar — sticky */}
-              <div className="space-y-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:scrollbar-thin">
+              {/* Right sidebar — STICKY */}
+              <div className="space-y-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto scrollbar-thin">
                 {/* Panel de Decisión */}
                 <div className="rounded-2xl border border-border bg-card p-4">
                   <CaseDecisionPanel
