@@ -242,7 +242,7 @@ export default function CaseNotesPanel({ notes, caseId, accountId, onNoteAdded }
 
                   {/* Edit/Delete buttons — visible on hover */}
                   {!isEditing && (
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <div className="flex gap-1 shrink-0">
                       <button
                         onClick={() => { setEditingId(note.id); setEditContent(note.content); }}
                         className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
