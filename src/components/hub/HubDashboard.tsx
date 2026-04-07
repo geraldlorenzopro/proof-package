@@ -127,6 +127,31 @@ const fadeUp = {
   }),
 };
 
+// Priority tags that should show as alert badges in the Hub
+const ALERT_TAG_CONFIG: Record<string, { label: string; color: string }> = {
+  "caso:urgente": { label: "Urgente", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "pendiente:RFE-respuesta": { label: "RFE", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "pendiente:NOID-respuesta": { label: "NOID", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "cli-pend:documentos": { label: "Falta docs", color: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
+  "cli-pend:pago": { label: "Pago pend.", color: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
+  "nvc:221g-pendiente": { label: "221(g)", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "corte:detenido-ICE": { label: "Detenido ICE", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "corte:orden-remocion": { label: "Remoción", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "docs:faltante-critico": { label: "Doc crítico", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+};
+
+function getAlertBadges(tags: string[] | null): { label: string; color: string }[] {
+  if (!tags || tags.length === 0) return [];
+  const badges: { label: string; color: string }[] = [];
+  for (const tag of tags) {
+    if (ALERT_TAG_CONFIG[tag]) {
+      badges.push(ALERT_TAG_CONFIG[tag]);
+      if (badges.length >= 2) break;
+    }
+  }
+  return badges;
+}
+
 interface RecentCase {
   id: string;
   client_name: string;
@@ -136,6 +161,7 @@ interface RecentCase {
   updated_at: string;
   ball_in_court: string | null;
   assigned_to: string | null;
+  case_tags_array: string[] | null;
   actionBadge?: { label: string; color: string } | null;
 }
 
