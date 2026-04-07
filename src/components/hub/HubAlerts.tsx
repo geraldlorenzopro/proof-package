@@ -34,7 +34,10 @@ export default function HubAlerts({ accountId }: { accountId: string }) {
       const sevenDaysAgo = new Date(now);
       sevenDaysAgo.setDate(now.getDate() - 7);
 
-      const [deadlinesRes, staleCasesRes, readyRes] = await Promise.all([
+      const thirtyDaysFromNow = new Date(now);
+      thirtyDaysFromNow.setDate(now.getDate() + 30);
+
+      const [deadlinesRes, staleCasesRes, readyRes, interviewRes] = await Promise.all([
         // Deadlines in 3 days or less
         supabase.from("case_deadlines")
           .select("id, client_name, deadline_date, deadline_type, case_id")
@@ -61,6 +64,12 @@ export default function HubAlerts({ accountId }: { accountId: string }) {
           .gte("created_at", sevenDaysAgo.toISOString())
           .order("created_at", { ascending: false })
           .limit(10),
+        // Interview dates in next 30 days
+        supabase.from("client_cases")
+          .select("id, client_name, interview_date, cas_interview_date, emb_interview_date, interview_city")
+          .eq("account_id", accountId)
+          .not("status", "eq", "completed")
+          .limit(200),
       ]);
 
       const newAlerts: Alert[] = [];
