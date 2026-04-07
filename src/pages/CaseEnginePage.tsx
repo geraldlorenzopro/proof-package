@@ -452,7 +452,14 @@ export default function CaseEnginePage() {
                   />
                 </div>
 
-                {/* 2. Pipeline full view */}
+                {/* 2. Portal de Seguimiento */}
+                <PortalTrackingPanel
+                  caseId={caseId!}
+                  caseData={caseData}
+                  onCaseDataChanged={(updates) => setCaseData((prev: any) => prev ? { ...prev, ...updates } : prev)}
+                />
+
+                {/* 3. Pipeline full view */}
                 {stages.length > 0 && (
                   <div className="rounded-2xl border border-border bg-card p-5">
                     <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
