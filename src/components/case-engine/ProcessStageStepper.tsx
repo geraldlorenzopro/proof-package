@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Check, Bot, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -11,13 +12,18 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const STAGES = [
-  { key: "uscis", label: "USCIS", color: "bg-blue-500", text: "text-blue-500", border: "border-blue-500" },
-  { key: "nvc", label: "NVC", color: "bg-amber-500", text: "text-amber-500", border: "border-amber-500" },
-  { key: "embajada", label: "Embajada", color: "bg-orange-500", text: "text-orange-500", border: "border-orange-500" },
-  { key: "cas", label: "CAS", color: "bg-orange-400", text: "text-orange-400", border: "border-orange-400" },
-  { key: "aprobado", label: "Aprobado", color: "bg-emerald-500", text: "text-emerald-500", border: "border-emerald-500" },
-  { key: "denegado", label: "Denegado", color: "bg-rose-500", text: "text-rose-500", border: "border-rose-500" },
+  { key: "uscis", label: "USCIS", color: "bg-blue-500", text: "text-blue-400", border: "border-blue-500", icon: "🏛️", description: "Petición en proceso ante USCIS" },
+  { key: "nvc", label: "NVC", color: "bg-amber-500", text: "text-amber-400", border: "border-amber-500", icon: "📋", description: "National Visa Center" },
+  { key: "embajada", label: "Embajada", color: "bg-orange-500", text: "text-orange-400", border: "border-orange-500", icon: "🏛️", description: "Entrevista consular / CAS" },
+  { key: "aprobado", label: "Aprobado", color: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500", icon: "✅", description: "Visa o beneficio aprobado" },
 ] as const;
+
+const FINAL_STATES = [
+  { key: "negado", label: "Negado", color: "bg-rose-500", text: "text-rose-400", border: "border-rose-500", icon: "❌" },
+  { key: "admin-processing", label: "Proceso Admin", color: "bg-purple-500", text: "text-purple-400", border: "border-purple-500", icon: "⚖️", description: "221g o revisión adicional" },
+] as const;
+
+const ALL_STAGES = [...STAGES, ...FINAL_STATES];
 
 interface Props {
   caseId: string;
@@ -29,8 +35,9 @@ interface Props {
 function suggestStage(caseData: any): { stage: string; reason: string } | null {
   if (!caseData) return null;
   const tags: string[] = caseData.case_tags_array || [];
-  if (tags.includes("Visa aprobada")) return { stage: "aprobado", reason: "El caso tiene etiqueta 'Visa aprobada'" };
-  if (tags.includes("Visa negada")) return { stage: "denegado", reason: "El caso tiene etiqueta 'Visa negada'" };
+  if (tags.includes("nvc:visa-aprobada") || tags.includes("Visa aprobada")) return { stage: "aprobado", reason: "El caso tiene etiqueta de visa aprobada" };
+  if (tags.includes("nvc:visa-negada") || tags.includes("Visa negada")) return { stage: "negado", reason: "El caso tiene etiqueta de visa negada" };
+  if (tags.includes("nvc:221g-pendiente")) return { stage: "admin-processing", reason: "El caso tiene 221(g) pendiente" };
   if (caseData.emb_interview_date || caseData.cas_interview_date) return { stage: "embajada", reason: "El caso tiene fecha de entrevista registrada" };
   if (caseData.nvc_case_number) return { stage: "nvc", reason: "El caso tiene número de caso NVC registrado" };
   const receipts = caseData.uscis_receipt_numbers;
@@ -41,8 +48,10 @@ function suggestStage(caseData: any): { stage: string; reason: string } | null {
 }
 
 export default function ProcessStageStepper({ caseId, currentStage, onStageChanged, caseData }: Props) {
-  const currentIdx = STAGES.findIndex(s => s.key === currentStage);
   const [pendingStage, setPendingStage] = useState<string | null>(null);
+
+  const isFinalState = FINAL_STATES.some(s => s.key === currentStage);
+  const currentIdx = STAGES.findIndex(s => s.key === currentStage);
 
   const suggestion = useMemo(() => {
     const s = suggestStage(caseData);
@@ -56,10 +65,11 @@ export default function ProcessStageStepper({ caseId, currentStage, onStageChang
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
+      const stageLabel = ALL_STAGES.find(s => s.key === stageKey)?.label || stageKey;
+      const currentLabel = ALL_STAGES.find(s => s.key === currentStage)?.label || currentStage;
 
       await supabase.from("client_cases").update({ process_stage: stageKey } as any).eq("id", caseId);
 
-      // Record in case_stage_history
       const accountRes = await supabase.from("client_cases").select("account_id").eq("id", caseId).single();
       if (accountRes.data) {
         await supabase.from("case_stage_history").insert({
@@ -69,12 +79,12 @@ export default function ProcessStageStepper({ caseId, currentStage, onStageChang
           to_stage: stageKey,
           changed_by: user.id,
           changed_by_name: profile?.full_name || "Staff",
-          note: `Etapa del proceso cambiada de ${STAGES.find(s => s.key === currentStage)?.label || currentStage} a ${STAGES.find(s => s.key === stageKey)?.label || stageKey}`,
+          note: `Etapa del proceso cambiada de ${currentLabel} a ${stageLabel}`,
         });
       }
 
       onStageChanged(stageKey);
-      toast.success(`Etapa del proceso: ${STAGES.find(s => s.key === stageKey)?.label}`);
+      toast.success(`Etapa del proceso: ${stageLabel}`);
     } catch {
       toast.error("Error al cambiar etapa");
     }
@@ -85,51 +95,67 @@ export default function ProcessStageStepper({ caseId, currentStage, onStageChang
     setPendingStage(stageKey);
   }
 
-  const linearStages = STAGES.filter(s => s.key !== "denegado");
-  const isDenegado = currentStage === "denegado";
-  const pendingLabel = STAGES.find(s => s.key === pendingStage)?.label || pendingStage;
+  const pendingInfo = ALL_STAGES.find(s => s.key === pendingStage);
 
   return (
     <div className="space-y-2">
+      {/* Linear stepper: USCIS → NVC → Embajada → Aprobado */}
       <div className="flex items-center gap-1 flex-wrap">
-        {linearStages.map((stage, i) => {
-          const isPast = !isDenegado && currentIdx >= 0 && i < currentIdx;
+        {STAGES.map((stage, i) => {
+          const isPast = !isFinalState && currentIdx >= 0 && i < currentIdx;
           const isCurrent = stage.key === currentStage;
           return (
             <div key={stage.key} className="flex items-center gap-1">
               <button
                 onClick={() => handleClick(stage.key)}
                 className={cn(
-                  "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border",
+                  "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border",
                   isCurrent
                     ? `${stage.color} text-white border-transparent shadow-sm`
                     : isPast
                       ? `bg-muted/50 ${stage.text} ${stage.border}/30`
-                      : "bg-muted/30 text-muted-foreground border-border/50 hover:border-border"
+                      : isFinalState
+                        ? "bg-muted/20 text-muted-foreground/40 border-border/30"
+                        : "bg-muted/30 text-muted-foreground border-border/50 hover:border-border"
                 )}
               >
                 {isPast && <Check className="w-2.5 h-2.5" />}
+                <span>{stage.icon}</span>
                 {stage.label}
               </button>
-              {i < linearStages.length - 1 && (
+              {i < STAGES.length - 1 && (
                 <div className={cn("w-3 h-px", isPast ? "bg-muted-foreground/30" : "bg-border")} />
               )}
             </div>
           );
         })}
-        <div className="ml-2">
-          <button
-            onClick={() => handleClick("denegado")}
-            className={cn(
-              "px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border",
-              isDenegado
-                ? "bg-rose-500 text-white border-transparent"
-                : "bg-muted/30 text-muted-foreground border-border/50 hover:border-rose-500/30 hover:text-rose-400"
-            )}
-          >
-            Denegado
-          </button>
-        </div>
+      </div>
+
+      {/* Final states: Negado / Proceso Admin */}
+      <div className="flex items-center gap-2">
+        <Separator className="flex-1" />
+        <span className="text-[9px] text-muted-foreground/40 uppercase tracking-wider font-semibold">Estados finales</span>
+        <Separator className="flex-1" />
+      </div>
+      <div className="flex items-center gap-2">
+        {FINAL_STATES.map(state => {
+          const isActive = currentStage === state.key;
+          return (
+            <button
+              key={state.key}
+              onClick={() => handleClick(state.key)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border",
+                isActive
+                  ? `${state.color} text-white border-transparent shadow-sm`
+                  : `bg-muted/30 text-muted-foreground border-border/50 hover:${state.border}/30 hover:${state.text}`
+              )}
+            >
+              <span>{state.icon}</span>
+              {state.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* AI suggestion */}
@@ -137,7 +163,7 @@ export default function ProcessStageStepper({ caseId, currentStage, onStageChang
         <div className="flex items-center gap-2 text-[11px] bg-jarvis/5 border border-jarvis/15 rounded-lg px-3 py-1.5">
           <Bot className="w-3.5 h-3.5 text-jarvis shrink-0" />
           <span className="text-muted-foreground">
-            AI sugiere: <strong className="text-jarvis">{STAGES.find(s => s.key === suggestion.stage)?.label}</strong> — {suggestion.reason}
+            AI sugiere: <strong className="text-jarvis">{ALL_STAGES.find(s => s.key === suggestion.stage)?.label}</strong> — {suggestion.reason}
           </span>
           <Button
             variant="ghost"
@@ -155,9 +181,9 @@ export default function ProcessStageStepper({ caseId, currentStage, onStageChang
       <AlertDialog open={!!pendingStage} onOpenChange={(open) => { if (!open) setPendingStage(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Mover el caso a {pendingLabel}?</AlertDialogTitle>
+            <AlertDialogTitle>¿Mover el caso a {pendingInfo?.label}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción quedará registrada en el historial del caso. La etapa actual es <strong>{STAGES.find(s => s.key === currentStage)?.label}</strong>.
+              Esta acción quedará registrada en el historial del caso. La etapa actual es <strong>{ALL_STAGES.find(s => s.key === currentStage)?.label}</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -127,6 +127,31 @@ const fadeUp = {
   }),
 };
 
+// Priority tags that should show as alert badges in the Hub
+const ALERT_TAG_CONFIG: Record<string, { label: string; color: string }> = {
+  "caso:urgente": { label: "Urgente", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "pendiente:RFE-respuesta": { label: "RFE", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "pendiente:NOID-respuesta": { label: "NOID", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "cli-pend:documentos": { label: "Falta docs", color: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
+  "cli-pend:pago": { label: "Pago pend.", color: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
+  "nvc:221g-pendiente": { label: "221(g)", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "corte:detenido-ICE": { label: "Detenido ICE", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "corte:orden-remocion": { label: "Remoción", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+  "docs:faltante-critico": { label: "Doc crítico", color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+};
+
+function getAlertBadges(tags: string[] | null): { label: string; color: string }[] {
+  if (!tags || tags.length === 0) return [];
+  const badges: { label: string; color: string }[] = [];
+  for (const tag of tags) {
+    if (ALERT_TAG_CONFIG[tag]) {
+      badges.push(ALERT_TAG_CONFIG[tag]);
+      if (badges.length >= 2) break;
+    }
+  }
+  return badges;
+}
+
 interface RecentCase {
   id: string;
   client_name: string;
@@ -136,6 +161,7 @@ interface RecentCase {
   updated_at: string;
   ball_in_court: string | null;
   assigned_to: string | null;
+  case_tags_array: string[] | null;
   actionBadge?: { label: string; color: string } | null;
 }
 
@@ -231,10 +257,10 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
           .not("status", "eq", "cancelled"),
         // Cases query: if user can see all, fetch all; otherwise only assigned
         canSeeAllCases
-          ? supabase.from("client_cases").select("id, client_name, case_type, pipeline_stage, file_number, updated_at, ball_in_court, assigned_to")
+          ? supabase.from("client_cases").select("id, client_name, case_type, pipeline_stage, file_number, updated_at, ball_in_court, assigned_to, case_tags_array")
               .eq("account_id", accountId).not("status", "eq", "completed")
               .order("updated_at", { ascending: false }).limit(8)
-          : supabase.from("client_cases").select("id, client_name, case_type, pipeline_stage, file_number, updated_at, ball_in_court, assigned_to")
+          : supabase.from("client_cases").select("id, client_name, case_type, pipeline_stage, file_number, updated_at, ball_in_court, assigned_to, case_tags_array")
               .eq("account_id", accountId).not("status", "eq", "completed")
               .eq("assigned_to", userId || "")
               .order("updated_at", { ascending: false }).limit(8),
@@ -467,11 +493,19 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
                         </Badge>
                       </div>
                     </div>
-                    {c.actionBadge && (
-                      <Badge className={`${c.actionBadge.color} text-[8px] shrink-0`}>
-                        {c.actionBadge.label}
-                      </Badge>
-                    )}
+                    {/* Alert tag badges (max 2) */}
+                    {(() => {
+                      const alertBadges = getAlertBadges(c.case_tags_array);
+                      if (alertBadges.length > 0) {
+                        return alertBadges.map((ab, idx) => (
+                          <Badge key={idx} variant="outline" className={`${ab.color} text-[8px] shrink-0`}>{ab.label}</Badge>
+                        ));
+                      }
+                      if (c.actionBadge) {
+                        return <Badge className={`${c.actionBadge.color} text-[8px] shrink-0`}>{c.actionBadge.label}</Badge>;
+                      }
+                      return null;
+                    })()}
                     <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0" />
                   </button>
                 );

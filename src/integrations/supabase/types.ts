@@ -1060,6 +1060,51 @@ export type Database = {
           },
         ]
       }
+      case_tag_definitions: {
+        Row: {
+          category: string
+          color: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          relevant_case_types: string[] | null
+          relevant_stages: string[] | null
+          sort_order: number | null
+          subcategory: string | null
+          tag_key: string
+          tag_label: string
+        }
+        Insert: {
+          category: string
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          relevant_case_types?: string[] | null
+          relevant_stages?: string[] | null
+          sort_order?: number | null
+          subcategory?: string | null
+          tag_key: string
+          tag_label: string
+        }
+        Update: {
+          category?: string
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          relevant_case_types?: string[] | null
+          relevant_stages?: string[] | null
+          sort_order?: number | null
+          subcategory?: string | null
+          tag_key?: string
+          tag_label?: string
+        }
+        Relationships: []
+      }
       case_tags: {
         Row: {
           account_id: string
