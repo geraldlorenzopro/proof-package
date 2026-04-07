@@ -15,10 +15,10 @@ const STAGES = [
   { key: "uscis", label: "USCIS", color: "bg-blue-500", text: "text-blue-400", border: "border-blue-500", icon: "🏛️", description: "Petición en proceso ante USCIS" },
   { key: "nvc", label: "NVC", color: "bg-amber-500", text: "text-amber-400", border: "border-amber-500", icon: "📋", description: "National Visa Center" },
   { key: "embajada", label: "Embajada", color: "bg-orange-500", text: "text-orange-400", border: "border-orange-500", icon: "🏛️", description: "Entrevista consular / CAS" },
-  { key: "aprobado", label: "Aprobado", color: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500", icon: "✅", description: "Visa o beneficio aprobado" },
 ] as const;
 
 const FINAL_STATES = [
+  { key: "aprobado", label: "Aprobado", color: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500", icon: "✅", description: "Visa o beneficio aprobado" },
   { key: "negado", label: "Negado", color: "bg-rose-500", text: "text-rose-400", border: "border-rose-500", icon: "❌" },
   { key: "admin-processing", label: "Proceso Admin", color: "bg-purple-500", text: "text-purple-400", border: "border-purple-500", icon: "⚖️", description: "221g o revisión adicional" },
 ] as const;
