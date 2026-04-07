@@ -163,7 +163,7 @@ export default function SmartFormPage() {
       const accountId = await getAccountId(session.user.id);
       if (!accountId) { toast({ title: "Error", description: "No account found", variant: "destructive" }); return; }
 
-      const payload = {
+      const payload: any = {
         account_id: accountId,
         user_id: session.user.id,
         form_type: "i-765" as string,
@@ -174,6 +174,7 @@ export default function SmartFormPage() {
         client_email: formData.applicantEmail || null,
         beneficiary_profile_id: beneficiaryProfileId,
       };
+      if (linkedCaseId) payload.case_id = linkedCaseId;
 
       if (submissionId) {
         const { error } = await supabase
