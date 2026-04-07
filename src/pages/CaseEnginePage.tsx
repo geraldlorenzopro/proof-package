@@ -345,7 +345,7 @@ export default function CaseEnginePage() {
                         Asignado
                       </Badge>
                     )}
-                  </div>
+                    <CaseTagBadges tags={caseData.case_tags_array || []} />
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -375,9 +375,18 @@ export default function CaseEnginePage() {
                 </div>
               </div>
 
+              {/* Process Stage Stepper */}
+              <div className="mt-4">
+                <ProcessStageStepper
+                  caseId={caseId!}
+                  currentStage={caseData.process_stage || "uscis"}
+                  onStageChanged={(stage) => setCaseData((prev: any) => prev ? { ...prev, process_stage: stage } : prev)}
+                />
+              </div>
+
               {/* Compact pipeline tracker */}
               {stages.length > 0 && (
-                <div className="mt-5">
+                <div className="mt-4">
                   <CasePipelineTracker
                     stages={stages}
                     currentStage={currentStageSlug}
