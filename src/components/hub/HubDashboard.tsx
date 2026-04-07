@@ -230,7 +230,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
           .lte("appointment_date", endOfWeek.toISOString().split("T")[0])
           .not("status", "eq", "cancelled"),
         // Cases query: if user can see all, fetch all; otherwise only assigned
-        can("ver_todos_casos")
+        canSeeAllCases
           ? supabase.from("client_cases").select("id, client_name, case_type, pipeline_stage, file_number, updated_at, ball_in_court, assigned_to")
               .eq("account_id", accountId).not("status", "eq", "completed")
               .order("updated_at", { ascending: false }).limit(8)
