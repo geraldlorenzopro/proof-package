@@ -257,10 +257,10 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
           .not("status", "eq", "cancelled"),
         // Cases query: if user can see all, fetch all; otherwise only assigned
         canSeeAllCases
-          ? supabase.from("client_cases").select("id, client_name, case_type, pipeline_stage, file_number, updated_at, ball_in_court, assigned_to")
+          ? supabase.from("client_cases").select("id, client_name, case_type, pipeline_stage, file_number, updated_at, ball_in_court, assigned_to, case_tags_array")
               .eq("account_id", accountId).not("status", "eq", "completed")
               .order("updated_at", { ascending: false }).limit(8)
-          : supabase.from("client_cases").select("id, client_name, case_type, pipeline_stage, file_number, updated_at, ball_in_court, assigned_to")
+          : supabase.from("client_cases").select("id, client_name, case_type, pipeline_stage, file_number, updated_at, ball_in_court, assigned_to, case_tags_array")
               .eq("account_id", accountId).not("status", "eq", "completed")
               .eq("assigned_to", userId || "")
               .order("updated_at", { ascending: false }).limit(8),
