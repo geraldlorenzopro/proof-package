@@ -346,7 +346,12 @@ export default function CaseEnginePage() {
                       </Badge>
                     )}
                     <CaseTagBadges tags={caseData.case_tags_array || []} />
-                </div>
+                    <CaseTagsSelector
+                      caseId={caseId!}
+                      tags={caseData.case_tags_array || []}
+                      onTagsChanged={(t) => setCaseData((prev: any) => prev ? { ...prev, case_tags_array: t } : prev)}
+                    />
+                   </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Stage changer */}
