@@ -28,11 +28,6 @@ export default function StepChannel({ data, update }: Props) {
         <p className="text-sm text-muted-foreground">Selecciona el canal de entrada</p>
       </div>
 
-      {(() => {
-        const cols = 3;
-        const remainder = CHANNELS.length % cols;
-        const fullRows = CHANNELS.slice(0, CHANNELS.length - (remainder || cols));
-        const lastRow = CHANNELS.slice(CHANNELS.length - (remainder || cols));
       <div className="flex flex-wrap justify-center gap-3">
         {CHANNELS.map(ch => {
           const Icon = ch.icon;
