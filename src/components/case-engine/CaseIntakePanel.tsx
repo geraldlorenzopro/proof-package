@@ -325,15 +325,15 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
                       {wasCorrected ? (
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground line-through">
-                            {aiType}
+                            {getCaseTypeLabel(aiType)}
                           </Badge>
                           <Badge variant="outline" className="text-[10px] border-jarvis/30 text-jarvis">
-                            {correctedType}
+                            {getCaseTypeLabel(correctedType!)}
                           </Badge>
                         </div>
                       ) : (
                         <Badge variant="outline" className="text-[10px] border-jarvis/30 text-jarvis">
-                          {displayType}
+                          {getCaseTypeLabel(displayType || '')}
                         </Badge>
                       )}
                       {canEdit && (
