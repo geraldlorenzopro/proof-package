@@ -19,6 +19,9 @@ import CasePipelineTracker, { type PipelineStage } from "@/components/case-engin
 import CaseDecisionPanel from "@/components/case-engine/CaseDecisionPanel";
 import CaseNotesPanel from "@/components/case-engine/CaseNotesPanel";
 import CaseTasksPanel from "@/components/case-engine/CaseTasksPanel";
+import SidebarTasksCompact from "@/components/case-engine/SidebarTasksCompact";
+import SidebarNotesCompact from "@/components/case-engine/SidebarNotesCompact";
+import SidebarCommsCompact from "@/components/case-engine/SidebarCommsCompact";
 import CaseStageHistory from "@/components/case-engine/CaseStageHistory";
 import CaseIntakePanel, { IntakeBadge } from "@/components/case-engine/CaseIntakePanel";
 import ConsultationPanel, { ConsultationLiveBadge } from "@/components/case-engine/ConsultationPanel";
