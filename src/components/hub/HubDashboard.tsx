@@ -429,7 +429,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
               <div className="flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-muted-foreground/40" strokeWidth={2.5} />
                 <h3 className="text-[11px] font-display font-bold tracking-[0.25em] uppercase text-muted-foreground/60">
-                  {can("ver_todos_casos") ? "Casos Activos" : "Mis Casos"}
+                  {canSeeAllCases ? "Casos Activos" : "Mis Casos"}
                 </h3>
                 <div className="h-px flex-1 bg-border/15 ml-2" />
               </div>
