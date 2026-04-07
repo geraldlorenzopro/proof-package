@@ -1189,7 +1189,13 @@ export type Database = {
           ball_in_court: string | null
           beneficiary_country: string | null
           beneficiary_name: string | null
+          cas_anio_nacimiento: string | null
+          cas_apellido: string | null
+          cas_interview_date: string | null
+          cas_interview_time: string | null
+          cas_pr_seguridad: string | null
           case_roles: Json | null
+          case_tags_array: string[] | null
           case_type: string
           client_email: string
           client_name: string
@@ -1199,19 +1205,34 @@ export type Database = {
           custom_fields: Json | null
           drive_folder_id: string | null
           drive_folder_url: string | null
+          emb_interview_date: string | null
+          emb_interview_time: string | null
           file_number: string | null
           household_members: Json | null
           id: string
+          interview_city: string | null
+          interview_date: string | null
+          interview_time: string | null
+          interview_type: string | null
           notes: string | null
+          nvc_cas_email: string | null
+          nvc_cas_password: string | null
+          nvc_case_number: string | null
+          nvc_ds260_code: string | null
+          nvc_invoice_id: string | null
           petitioner_name: string | null
           pipeline_stage: string | null
           priority_date: string | null
+          process_stage: string | null
           process_type: string | null
           professional_id: string
           stage_entered_at: string | null
           status: string
           updated_at: string
+          uscis_email: string | null
+          uscis_password: string | null
           uscis_receipt_numbers: Json | null
+          uscis_recovery_codes: string | null
           visa_category: string | null
           webhook_url: string | null
         }
@@ -1223,7 +1244,13 @@ export type Database = {
           ball_in_court?: string | null
           beneficiary_country?: string | null
           beneficiary_name?: string | null
+          cas_anio_nacimiento?: string | null
+          cas_apellido?: string | null
+          cas_interview_date?: string | null
+          cas_interview_time?: string | null
+          cas_pr_seguridad?: string | null
           case_roles?: Json | null
+          case_tags_array?: string[] | null
           case_type?: string
           client_email: string
           client_name: string
@@ -1233,19 +1260,34 @@ export type Database = {
           custom_fields?: Json | null
           drive_folder_id?: string | null
           drive_folder_url?: string | null
+          emb_interview_date?: string | null
+          emb_interview_time?: string | null
           file_number?: string | null
           household_members?: Json | null
           id?: string
+          interview_city?: string | null
+          interview_date?: string | null
+          interview_time?: string | null
+          interview_type?: string | null
           notes?: string | null
+          nvc_cas_email?: string | null
+          nvc_cas_password?: string | null
+          nvc_case_number?: string | null
+          nvc_ds260_code?: string | null
+          nvc_invoice_id?: string | null
           petitioner_name?: string | null
           pipeline_stage?: string | null
           priority_date?: string | null
+          process_stage?: string | null
           process_type?: string | null
           professional_id: string
           stage_entered_at?: string | null
           status?: string
           updated_at?: string
+          uscis_email?: string | null
+          uscis_password?: string | null
           uscis_receipt_numbers?: Json | null
+          uscis_recovery_codes?: string | null
           visa_category?: string | null
           webhook_url?: string | null
         }
@@ -1257,7 +1299,13 @@ export type Database = {
           ball_in_court?: string | null
           beneficiary_country?: string | null
           beneficiary_name?: string | null
+          cas_anio_nacimiento?: string | null
+          cas_apellido?: string | null
+          cas_interview_date?: string | null
+          cas_interview_time?: string | null
+          cas_pr_seguridad?: string | null
           case_roles?: Json | null
+          case_tags_array?: string[] | null
           case_type?: string
           client_email?: string
           client_name?: string
@@ -1267,19 +1315,34 @@ export type Database = {
           custom_fields?: Json | null
           drive_folder_id?: string | null
           drive_folder_url?: string | null
+          emb_interview_date?: string | null
+          emb_interview_time?: string | null
           file_number?: string | null
           household_members?: Json | null
           id?: string
+          interview_city?: string | null
+          interview_date?: string | null
+          interview_time?: string | null
+          interview_type?: string | null
           notes?: string | null
+          nvc_cas_email?: string | null
+          nvc_cas_password?: string | null
+          nvc_case_number?: string | null
+          nvc_ds260_code?: string | null
+          nvc_invoice_id?: string | null
           petitioner_name?: string | null
           pipeline_stage?: string | null
           priority_date?: string | null
+          process_stage?: string | null
           process_type?: string | null
           professional_id?: string
           stage_entered_at?: string | null
           status?: string
           updated_at?: string
+          uscis_email?: string | null
+          uscis_password?: string | null
           uscis_receipt_numbers?: Json | null
+          uscis_recovery_codes?: string | null
           visa_category?: string | null
           webhook_url?: string | null
         }

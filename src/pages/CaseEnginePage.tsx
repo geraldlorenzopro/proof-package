@@ -30,6 +30,9 @@ import CaseEmailSender from "@/components/case-engine/CaseEmailSender";
 import CaseAgentHistory from "@/components/case-engine/CaseAgentHistory";
 import CaseAgentPanel from "@/components/case-engine/CaseAgentPanel";
 import CaseFormsPanel from "@/components/case-engine/CaseFormsPanel";
+import ProcessStageStepper from "@/components/case-engine/ProcessStageStepper";
+import PortalTrackingPanel from "@/components/case-engine/PortalTrackingPanel";
+import CaseTagsSelector, { CaseTagBadges } from "@/components/case-engine/CaseTagsSelector";
 import CaseDocumentsPanel from "@/components/case-engine/CaseDocumentsPanel";
 import {
   Select,
@@ -342,8 +345,13 @@ export default function CaseEnginePage() {
                         Asignado
                       </Badge>
                     )}
-                  </div>
-                </div>
+                    <CaseTagBadges tags={caseData.case_tags_array || []} />
+                    <CaseTagsSelector
+                      caseId={caseId!}
+                      tags={caseData.case_tags_array || []}
+                      onTagsChanged={(t) => setCaseData((prev: any) => prev ? { ...prev, case_tags_array: t } : prev)}
+                    />
+                   </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Stage changer */}
@@ -372,9 +380,18 @@ export default function CaseEnginePage() {
                 </div>
               </div>
 
+              {/* Process Stage Stepper */}
+              <div className="mt-4">
+                <ProcessStageStepper
+                  caseId={caseId!}
+                  currentStage={caseData.process_stage || "uscis"}
+                  onStageChanged={(stage) => setCaseData((prev: any) => prev ? { ...prev, process_stage: stage } : prev)}
+                />
+              </div>
+
               {/* Compact pipeline tracker */}
               {stages.length > 0 && (
-                <div className="mt-5">
+                <div className="mt-4">
                   <CasePipelineTracker
                     stages={stages}
                     currentStage={currentStageSlug}
@@ -435,7 +452,14 @@ export default function CaseEnginePage() {
                   />
                 </div>
 
-                {/* 2. Pipeline full view */}
+                {/* 2. Portal de Seguimiento */}
+                <PortalTrackingPanel
+                  caseId={caseId!}
+                  caseData={caseData}
+                  onCaseDataChanged={(updates) => setCaseData((prev: any) => prev ? { ...prev, ...updates } : prev)}
+                />
+
+                {/* 3. Pipeline full view */}
                 {stages.length > 0 && (
                   <div className="rounded-2xl border border-border bg-card p-5">
                     <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">

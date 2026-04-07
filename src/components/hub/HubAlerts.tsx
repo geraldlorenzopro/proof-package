@@ -34,7 +34,10 @@ export default function HubAlerts({ accountId }: { accountId: string }) {
       const sevenDaysAgo = new Date(now);
       sevenDaysAgo.setDate(now.getDate() - 7);
 
-      const [deadlinesRes, staleCasesRes, readyRes] = await Promise.all([
+      const thirtyDaysFromNow = new Date(now);
+      thirtyDaysFromNow.setDate(now.getDate() + 30);
+
+      const [deadlinesRes, staleCasesRes, readyRes, interviewRes] = await Promise.all([
         // Deadlines in 3 days or less
         supabase.from("case_deadlines")
           .select("id, client_name, deadline_date, deadline_type, case_id")
@@ -61,6 +64,12 @@ export default function HubAlerts({ accountId }: { accountId: string }) {
           .gte("created_at", sevenDaysAgo.toISOString())
           .order("created_at", { ascending: false })
           .limit(10),
+        // Interview dates in next 30 days
+        supabase.from("client_cases")
+          .select("id, client_name, interview_date, cas_interview_date, emb_interview_date, interview_city")
+          .eq("account_id", accountId)
+          .not("status", "eq", "completed")
+          .limit(200),
       ]);
 
       const newAlerts: Alert[] = [];
@@ -106,6 +115,31 @@ export default function HubAlerts({ accountId }: { accountId: string }) {
             dismissible: true,
           });
         }
+      });
+
+      // Interview date alerts
+      (interviewRes.data || []).forEach((c: any) => {
+        const dates = [
+          { date: c.interview_date, label: "Entrevista" },
+          { date: c.cas_interview_date, label: "Cita CAS" },
+          { date: c.emb_interview_date, label: "Cita Embajada" },
+        ];
+        dates.forEach(({ date, label }) => {
+          if (!date) return;
+          const d = new Date(date);
+          const daysUntil = Math.floor((d.getTime() - now.getTime()) / 86400000);
+          if (daysUntil >= 0 && daysUntil <= 30) {
+            newAlerts.push({
+              id: `interview-${c.id}-${label}`,
+              type: "deadline",
+              severity: daysUntil <= 7 ? "critical" : "warning",
+              title: `${label}: ${c.client_name}`,
+              description: `En ${daysUntil} día${daysUntil !== 1 ? "s" : ""} — ${new Date(date).toLocaleDateString("es")}${c.interview_city ? ` · ${c.interview_city}` : ""}`,
+              caseId: c.id,
+              dismissible: true,
+            });
+          }
+        });
       });
 
       setAlerts(newAlerts);
