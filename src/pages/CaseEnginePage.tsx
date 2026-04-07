@@ -19,6 +19,9 @@ import CasePipelineTracker, { type PipelineStage } from "@/components/case-engin
 import CaseDecisionPanel from "@/components/case-engine/CaseDecisionPanel";
 import CaseNotesPanel from "@/components/case-engine/CaseNotesPanel";
 import CaseTasksPanel from "@/components/case-engine/CaseTasksPanel";
+import SidebarTasksCompact from "@/components/case-engine/SidebarTasksCompact";
+import SidebarNotesCompact from "@/components/case-engine/SidebarNotesCompact";
+import SidebarCommsCompact from "@/components/case-engine/SidebarCommsCompact";
 import CaseStageHistory from "@/components/case-engine/CaseStageHistory";
 import CaseIntakePanel, { IntakeBadge } from "@/components/case-engine/CaseIntakePanel";
 import ConsultationPanel, { ConsultationLiveBadge } from "@/components/case-engine/ConsultationPanel";
@@ -412,45 +415,10 @@ export default function CaseEnginePage() {
         {/* Tab content */}
         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
           {activeTab === "resumen" && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left: Pipeline full view */}
-              <div className="lg:col-span-2 space-y-6">
-                {stages.length > 0 && (
-                  <div className="rounded-2xl border border-border bg-card p-5">
-                    <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-jarvis" />
-                      Pipeline del Caso
-                    </h3>
-                    <CasePipelineTracker
-                      stages={stages}
-                      currentStage={currentStageSlug}
-                      stageEnteredAt={stageEnteredAt}
-                      ballInCourt={ballInCourt}
-                    />
-                  </div>
-                )}
-
-                {/* Email Sender */}
-                <div className="rounded-2xl border border-border bg-card p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-jarvis" />
-                      Comunicaciones
-                    </h3>
-                    <CaseEmailSender
-                      caseId={caseId!}
-                      accountId={caseData.account_id}
-                      clientEmail={caseData.client_email}
-                      clientName={caseData.client_name}
-                      caseType={caseData.case_type}
-                      fileNumber={caseData.file_number}
-                      accessToken={caseData.access_token}
-                    />
-                  </div>
-                  <CaseEmailHistory caseId={caseId!} />
-                </div>
-
-                {/* Intake Data */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+              {/* Left column — case data */}
+              <div className="space-y-4">
+                {/* 1. Análisis AI + Intake Data */}
                 <div className="rounded-2xl border border-border bg-card p-5">
                   <CaseIntakePanel
                     caseId={caseId!}
@@ -467,24 +435,27 @@ export default function CaseEnginePage() {
                   />
                 </div>
 
-                {/* Notes */}
-                <div className="rounded-2xl border border-border bg-card p-5">
-                  <CaseNotesPanel
-                    notes={notes}
-                    caseId={caseId!}
-                    accountId={caseData.account_id}
-                    onNoteAdded={loadCase}
-                  />
-                </div>
+                {/* 2. Pipeline full view */}
+                {stages.length > 0 && (
+                  <div className="rounded-2xl border border-border bg-card p-5">
+                    <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-jarvis" />
+                      Pipeline del Caso
+                    </h3>
+                    <CasePipelineTracker
+                      stages={stages}
+                      currentStage={currentStageSlug}
+                      stageEnteredAt={stageEnteredAt}
+                      ballInCourt={ballInCourt}
+                    />
+                  </div>
+                )}
               </div>
 
-              {/* Right: Decision panel + Tasks */}
-              <div className="space-y-6">
-                <div className="rounded-2xl border border-border bg-card p-5">
-                  <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-accent" />
-                    Panel de Decisión
-                  </h3>
+              {/* Right sidebar — sticky */}
+              <div className="space-y-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:scrollbar-thin">
+                {/* Panel de Decisión */}
+                <div className="rounded-2xl border border-border bg-card p-4">
                   <CaseDecisionPanel
                     currentStage={currentStage}
                     stageEnteredAt={stageEnteredAt}
@@ -496,12 +467,36 @@ export default function CaseEnginePage() {
                   />
                 </div>
 
-                <div className="rounded-2xl border border-border bg-card p-5">
-                  <CaseTasksPanel
+                {/* Tareas compactas */}
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <SidebarTasksCompact
                     tasks={tasks}
                     caseId={caseId!}
                     accountId={caseData.account_id}
                     onTaskChanged={loadCase}
+                  />
+                </div>
+
+                {/* Notas compactas */}
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <SidebarNotesCompact
+                    notes={notes}
+                    caseId={caseId!}
+                    accountId={caseData.account_id}
+                    onNoteAdded={loadCase}
+                  />
+                </div>
+
+                {/* Comunicaciones compactas */}
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <SidebarCommsCompact
+                    caseId={caseId!}
+                    accountId={caseData.account_id}
+                    clientEmail={caseData.client_email}
+                    clientName={caseData.client_name}
+                    caseType={caseData.case_type}
+                    fileNumber={caseData.file_number}
+                    accessToken={caseData.access_token}
                   />
                 </div>
               </div>
