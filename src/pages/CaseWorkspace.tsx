@@ -419,22 +419,8 @@ export default function CaseWorkspace() {
   }
 
   function openCase(caseId: string) {
-    const seeded = clientCases.find(c => c.id === caseId);
-    if (seeded) {
-      setCaseData({
-        ...seeded,
-        client_name: clientFullName,
-      });
-      setCaseTemplate(null);
-      setCaseNotes([]);
-      setCaseTasks([]);
-      setCaseTags([]);
-      setCaseStageHistory([]);
-      setCaseEvidenceCount(0);
-      setCaseFormsCount(0);
-    }
-    setActiveCaseId(caseId);
-    setCaseEngineTab("resumen");
+    sessionStorage.setItem("ner_hub_return", "/hub");
+    navigate(`/case-engine/${caseId}`);
   }
 
   const clientFullName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") || selectedClientName : selectedClientName;
