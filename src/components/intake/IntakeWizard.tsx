@@ -121,6 +121,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
     deliveryChannel: string;
     preIntakeUrl: string;
     appointmentId: string | null;
+    clientProfileId: string | null;
   } | null>(null);
   const navigate = useNavigate();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -287,7 +288,9 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         deliveryChannel: data.intake_delivery_channel,
         preIntakeUrl,
         appointmentId: appointment?.id || null,
+        clientProfileId: profileId || null,
       });
+      toast.success("Cliente registrado correctamente");
     } catch (err) {
       console.error("Intake submit error:", err);
       toast.error("Error al registrar el cliente");
