@@ -190,10 +190,13 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
             first_name: data.client_first_name,
             last_name: data.client_last_name,
             phone: data.client_phone,
+            phone_label: data.client_phone_label || "mobile",
+            mobile_phone: data.client_mobile_phone || null,
+            mobile_phone_label: data.client_mobile_phone_label || "mobile",
             email: data.client_email || null,
             source_channel: data.entry_channel,
             source_detail: data.referral_source || data.entry_channel_detail || null,
-          })
+          } as any)
           .select("id")
           .single();
         if (profErr) throw profErr;
