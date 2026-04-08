@@ -35,57 +35,33 @@ const DR_AREA = /^(809|829|849)/;
  */
 export function detectPhone(input: string): PhoneDetectResult {
   const digits = input.replace(/\D/g, "");
+  if (!digits) return { countryCode: "+1", flag: "🇺🇸", country: "US", localNumber: "", fullPhone: "", isValid: false };
 
-  // For numbers with > 10 digits, try international parse
-  if (digits.length > 10) {
-    try {
-      const parsed = parsePhoneNumber("+" + digits);
-      if (parsed && parsed.isValid()) {
-        return {
-          countryCode: "+" + parsed.countryCallingCode,
-          flag: getFlag(parsed.country || "US"),
-          country: parsed.country || "US",
-          localNumber: parsed.nationalNumber as string,
-          fullPhone: parsed.format("E.164"),
-          isValid: true,
-        };
-      }
-    } catch { /* fall through */ }
-  }
-
-  // 10 digits — check DR area codes first (primary market)
+  // 10 digits — check DR area codes first (primary market), then US
   if (digits.length === 10 && DR_AREA.test(digits)) {
-    return {
-      countryCode: "+1",
-      flag: "🇩🇴",
-      country: "DO",
-      localNumber: digits,
-      fullPhone: "+1" + digits,
-      isValid: true,
-    };
+    return { countryCode: "+1", flag: "🇩🇴", country: "DO", localNumber: digits, fullPhone: "+1" + digits, isValid: true };
   }
-
-  // 10 digits — default to US
   if (digits.length === 10) {
-    return {
-      countryCode: "+1",
-      flag: "🇺🇸",
-      country: "US",
-      localNumber: digits,
-      fullPhone: "+1" + digits,
-      isValid: true,
-    };
+    return { countryCode: "+1", flag: "🇺🇸", country: "US", localNumber: digits, fullPhone: "+1" + digits, isValid: true };
   }
 
-  // Fewer than 10 digits or unrecognized — default US, mark invalid
-  return {
-    countryCode: "+1",
-    flag: "🇺🇸",
-    country: "US",
-    localNumber: digits,
-    fullPhone: "+1" + digits,
-    isValid: digits.length >= 7,
-  };
+  // For anything else, try parsing as international with + prefix
+  try {
+    const parsed = parsePhoneNumber("+" + digits);
+    if (parsed) {
+      return {
+        countryCode: "+" + parsed.countryCallingCode,
+        flag: getFlag(parsed.country || "US"),
+        country: parsed.country || "US",
+        localNumber: parsed.nationalNumber as string,
+        fullPhone: parsed.format("E.164"),
+        isValid: parsed.isValid(),
+      };
+    }
+  } catch { /* fall through */ }
+
+  // Fallback — default US
+  return { countryCode: "+1", flag: "🇺🇸", country: "US", localNumber: digits, fullPhone: "+1" + digits, isValid: false };
 }
 
 /**
