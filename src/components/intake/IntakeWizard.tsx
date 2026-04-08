@@ -286,7 +286,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 gap-0 bg-card border-border overflow-hidden max-h-[90vh] flex flex-col [&>button.absolute]:hidden">
+      <DialogContent className="max-w-4xl p-0 gap-0 bg-card border-border overflow-hidden flex flex-col [&>button.absolute]:hidden">
         {/* Header + Progress */}
         <div className="border-b border-border p-4 sm:p-5 shrink-0">
           <div className="flex items-center justify-between mb-3">
@@ -320,7 +320,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+        <div className="flex-1 p-4 sm:p-5">
           {completed ? (
             <div className="space-y-4">
               <div className="text-center mb-2">
