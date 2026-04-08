@@ -8,7 +8,7 @@ import {
   ArrowUpRight, Briefcase,
   Shield, PlusCircle, Search,
   Zap, LayoutGrid,
-  Mic, Bot, ChevronDown, ChevronUp, CheckCircle2
+  Mic, Bot, ChevronDown, ChevronUp, CheckCircle2, UserPlus
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
