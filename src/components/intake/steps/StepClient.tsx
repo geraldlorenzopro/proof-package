@@ -145,12 +145,20 @@ export default function StepClient({ data, update, accountId }: Props) {
     const digits = stripNonDigits(val);
     if (digits.length > 15) return;
 
-    // Auto-detect country in real-time as user types
-    if (!showManual && digits.length >= 3) {
+    // Reset auto-detection when field is cleared
+    if (digits.length === 0) {
+      setAutoDetected(false);
+      setLocalNumber("");
+      return;
+    }
+
+    // Auto-detect country only once — prevents cascading re-detection
+    // after the prefix has already been stripped
+    if (!showManual && !autoDetected && digits.length >= 3) {
       const result = normalizePhone(digits);
       if (result.countryIdx !== countryIdx) {
         setCountryIdx(result.countryIdx);
-        // If prefix was stripped, update local number too
+        setAutoDetected(true);
         if (result.localNumber !== digits) {
           setLocalNumber(result.localNumber);
           return;
