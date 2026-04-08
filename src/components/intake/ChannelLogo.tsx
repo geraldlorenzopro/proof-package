@@ -67,12 +67,21 @@ export default function ChannelLogo({ channel, size = 20, showLabel = true }: Ch
   const match = CHANNEL_LOGOS[key] || CHANNEL_LOGOS.otro;
 
   return (
-    <span className="inline-flex items-center gap-1.5">
+    <span className="inline-flex items-center gap-1.5" style={{ flexShrink: 0 }}>
       <span
-        style={{ width: size, height: size, display: "inline-flex" }}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: size,
+          height: size,
+          minWidth: size,
+          minHeight: size,
+          flexShrink: 0,
+        }}
         dangerouslySetInnerHTML={{ __html: match.svg }}
       />
-      {showLabel && <span>{match.label}</span>}
+      {showLabel && <span className="truncate">{match.label}</span>}
     </span>
   );
 }
