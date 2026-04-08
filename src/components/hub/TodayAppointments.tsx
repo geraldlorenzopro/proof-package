@@ -193,7 +193,7 @@ export default function TodayAppointments({ accountId, maxItems }: Props) {
         </div>
       ) : appointments.length > 0 ? (
         <div className="space-y-1.5">
-          {appointments.map(appt => (
+          {appointments.slice(0, maxItems ?? appointments.length).map(appt => (
             <div
               key={appt.id}
               className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/60 px-4 py-3 hover:bg-card hover:border-border transition-all"
