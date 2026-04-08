@@ -54,21 +54,6 @@ export default function StepChannel({ data, update }: Props) {
         })}
       </div>
 
-      {(data.entry_channel === "whatsapp" || data.entry_channel === "instagram") && (
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
-            {data.entry_channel === "whatsapp" ? "Número (opcional)" : "Usuario (opcional)"}
-          </label>
-          <input
-            type="text"
-            value={data.referral_source}
-            onChange={e => update({ referral_source: e.target.value })}
-            placeholder={data.entry_channel === "whatsapp" ? "+1 (555) 123-4567" : "@usuario"}
-            className="w-full border border-input bg-background rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-      )}
-
       {data.entry_channel === "referido" && (
         <div>
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
