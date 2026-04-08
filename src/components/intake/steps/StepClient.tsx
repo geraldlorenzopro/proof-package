@@ -332,7 +332,7 @@ export default function StepClient({ data, update, accountId }: Props) {
               {showManual ? (
                 <span className="text-muted-foreground">🌐 +{stripNonDigits(manualCode) || "?"}</span>
               ) : (
-                <span>{selectedCountry.flag} {selectedCountry.code}</span>
+                <span>{detectedFlag} {detectedCode}</span>
               )}
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
