@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Search, RefreshCw, ChevronDown, Check, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { COUNTRY_CODES, FREQUENT_COUNT } from "@/lib/countryCodes";
-import { detectPhone, parseExisting, getFlag } from "@/lib/phoneDetect";
+import { detectInternational, validateForCountry, detectLocal10, parseExisting, getFlag } from "@/lib/phoneDetect";
 import type { IntakeData } from "../IntakeWizard";
 interface Props {
   data: IntakeData;
@@ -28,6 +28,12 @@ interface DuplicateMatch {
 }
 
 function stripNonDigits(val: string) {
+  return val.replace(/\D/g, "");
+}
+
+/** Allow + as first char, then only digits */
+function stripPhoneInput(val: string) {
+  if (val.startsWith("+")) return "+" + val.slice(1).replace(/\D/g, "");
   return val.replace(/\D/g, "");
 }
 
