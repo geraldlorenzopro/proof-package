@@ -189,42 +189,64 @@ async function getOrCreateHubUser(
 
   console.log("Hub user ready:", hubUserId);
 
-  // Generate session tokens via magic link + server-side verify
-  const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
-    type: "magiclink",
-    email: hubEmail,
-  });
-
-  if (linkErr || !linkData) {
-    throw new Error(`Failed to generate session link: ${linkErr?.message}`);
-  }
-
+  // Generate session tokens via magic link + server-side verify (with retry)
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const verifyRes = await fetch(`${supabaseUrl}/auth/v1/verify`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": anonKey,
-    },
-    body: JSON.stringify({
-      type: "magiclink",
-      token_hash: linkData.properties.hashed_token,
-    }),
-  });
 
-  if (!verifyRes.ok) {
-    const errText = await verifyRes.text();
-    throw new Error(`OTP verification failed: ${errText}`);
+  async function attemptSessionGeneration(): Promise<{ access_token: string; refresh_token: string }> {
+    const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: hubEmail,
+    });
+
+    if (linkErr || !linkData) {
+      console.error("generateLink failed:", linkErr?.message);
+      throw new Error(`Failed to generate session link: ${linkErr?.message}`);
+    }
+
+    console.log("Magic link generated, verifying OTP for:", hubEmail);
+
+    const verifyRes = await fetch(`${supabaseUrl}/auth/v1/verify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": anonKey,
+      },
+      body: JSON.stringify({
+        type: "magiclink",
+        token_hash: linkData.properties.hashed_token,
+      }),
+    });
+
+    if (!verifyRes.ok) {
+      const errText = await verifyRes.text();
+      console.error("OTP verify failed:", verifyRes.status, errText);
+      throw new Error(`OTP verification failed (${verifyRes.status}): ${errText}`);
+    }
+
+    const session = await verifyRes.json();
+    if (!session.access_token) {
+      console.error("Verify returned no access_token:", JSON.stringify(session).substring(0, 200));
+      throw new Error("Verify response missing access_token");
+    }
+    return { access_token: session.access_token, refresh_token: session.refresh_token };
   }
 
-  const session = await verifyRes.json();
+  // Try up to 2 times with a small delay
+  let lastErr: Error | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const tokens = await attemptSessionGeneration();
+      console.log("Session generated successfully on attempt", attempt + 1);
+      return { user_id: hubUserId, ...tokens };
+    } catch (e) {
+      lastErr = e as Error;
+      console.warn(`Session generation attempt ${attempt + 1} failed:`, lastErr.message);
+      if (attempt < 1) await new Promise(r => setTimeout(r, 500));
+    }
+  }
 
-  return {
-    user_id: hubUserId,
-    access_token: session.access_token,
-    refresh_token: session.refresh_token,
-  };
+  throw lastErr || new Error("Session generation failed after retries");
 }
 
 Deno.serve(async (req) => {

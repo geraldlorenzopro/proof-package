@@ -240,13 +240,17 @@ export default function HubPage() {
       const params = new URLSearchParams({ cid: contactId, sig: signature, ts: timestamp });
       if (staffEmail) params.set("uemail", staffEmail);
       if (staffName) params.set("uname", staffName);
+      
+      console.log("[Hub] Resolving hub session...", { contactId: contactId.substring(0, 8) + "..." });
+      
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/resolve-hub?${params.toString()}`,
         { headers: { "Content-Type": "application/json" } }
       );
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error || "Error al resolver la cuenta.");
+        console.error("[Hub] resolve-hub error:", json.error);
+        setError(json.message || json.error || "Error al resolver la cuenta.");
         setLoading(false);
       } else {
         setData(json);
@@ -260,13 +264,17 @@ export default function HubPage() {
           window.history.replaceState({}, '', window.location.pathname);
         }
         if (json.auth_token) {
+          console.log("[Hub] Auth token received, establishing session...");
           await establishSession(json.auth_token);
         } else {
+          console.warn("[Hub] No auth_token in response — auto-login may have failed on server");
+          // Still show hub but warn — session won't work for protected routes
           setAuthReady(true);
         }
         setLoading(false);
       }
     } catch (err: any) {
+      console.error("[Hub] Connection error:", err);
       setError("Error de conexión. Intente de nuevo.");
       setLoading(false);
     }
