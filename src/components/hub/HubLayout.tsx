@@ -1,13 +1,11 @@
 import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   ArrowLeft, Shield, Home, LogOut, Users, MessageSquare,
   FolderOpen, Calendar, BarChart3, Bot, Settings
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import HubCreditsWidget from "./HubCreditsWidget";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface Props {
   children: ReactNode;
@@ -87,30 +85,26 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
       )}
 
       <div className="flex flex-1 min-h-0">
-        {/* ═══ SIDEBAR ═══ */}
+        {/* ═══ SIDEBAR — 72px fixed ═══ */}
         {isHubSection && (
-          <motion.aside
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-            className="hidden lg:flex flex-col items-center w-[72px] border-r border-border/20 bg-card/30 py-4 gap-0.5 shrink-0"
-          >
-            <TooltipProvider delayDuration={200}>
-              {/* Logo */}
-              <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center mb-3">
-                <span className="text-jarvis font-display font-extrabold text-sm">N</span>
-              </div>
+          <aside className="hidden lg:flex flex-col items-center w-[72px] border-r border-border/20 bg-card/30 py-4 shrink-0">
+            {/* Logo */}
+            <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center mb-4">
+              <span className="text-jarvis font-display font-extrabold text-sm">N</span>
+            </div>
 
+            {/* Nav items */}
+            <div className="flex flex-col items-center gap-0.5">
               {NAV_ITEMS.map((item) => {
                 const isActive = item.match(currentPath);
                 return (
                   <button
                     key={item.path}
                     onClick={() => navigate(item.path)}
-                    className={`w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all relative ${
+                    className={`w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all duration-150 relative ${
                       isActive
                         ? "bg-jarvis/15 text-jarvis"
-                        : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
+                        : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-muted/40"
                     }`}
                   >
                     {isActive && (
@@ -121,38 +115,33 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                   </button>
                 );
               })}
+            </div>
 
-              <div className="flex-1" />
+            {/* Spacer */}
+            <div className="flex-1" />
 
-              {/* Credits */}
-              {accountId && (
-                <div className="w-full px-1.5">
-                  <HubCreditsWidget accountId={accountId} />
-                </div>
-              )}
+            {/* Credits Widget */}
+            {accountId && (
+              <div className="mb-1">
+                <HubCreditsWidget accountId={accountId} />
+              </div>
+            )}
 
-              {/* Logout */}
-              <button
-                onClick={handleLogout}
-                className="w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="text-[9px] font-medium leading-none">Salir</span>
-              </button>
-            </TooltipProvider>
-          </motion.aside>
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all duration-150"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-[9px] font-medium leading-none">Salir</span>
+            </button>
+          </aside>
         )}
 
         {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          {/* Compact top bar for non-hub routes */}
           {!isHubSection && (
-            <motion.header
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40 shrink-0"
-            >
+            <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40 shrink-0">
               <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-2.5">
                 <button
                   onClick={() => navigate("/hub")}
@@ -168,7 +157,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                   )}
                 </div>
               </div>
-            </motion.header>
+            </header>
           )}
 
           <main className="flex-1 min-h-0 overflow-auto">

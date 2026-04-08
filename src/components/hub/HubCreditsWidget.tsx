@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bot, TrendingDown, Clock } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Battery, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -13,44 +11,36 @@ interface CreditData {
   reset_date: string | null;
 }
 
-interface Transaction {
-  id: string;
-  type: string;
-  amount: number;
-  balance_after: number;
-  description: string | null;
-  agent_slug: string | null;
-  created_at: string;
-}
+const AGENT_COSTS = [
+  { name: "Felix", cost: 5 },
+  { name: "Nina", cost: 10 },
+  { name: "Max", cost: 10 },
+];
 
 export default function HubCreditsWidget({ accountId }: { accountId: string }) {
   const [credits, setCredits] = useState<CreditData | null>(null);
-  const [showUsage, setShowUsage] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [expanded, setExpanded] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadCredits();
-  }, [accountId]);
-
-  async function loadCredits() {
-    const { data } = await supabase
+    supabase
       .from("ai_credits")
       .select("balance, monthly_allowance, used_this_month, reset_date")
       .eq("account_id", accountId)
-      .single();
-    if (data) setCredits(data as any);
-  }
+      .single()
+      .then(({ data }) => { if (data) setCredits(data as any); });
+  }, [accountId]);
 
-  async function openUsage() {
-    setShowUsage(true);
-    const { data } = await supabase
-      .from("ai_credit_transactions")
-      .select("*")
-      .eq("account_id", accountId)
-      .order("created_at", { ascending: false })
-      .limit(20);
-    if (data) setTransactions(data as any);
-  }
+  useEffect(() => {
+    if (!expanded) return;
+    function handleClick(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setExpanded(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [expanded]);
 
   if (!credits) return null;
 
@@ -59,83 +49,60 @@ export default function HubCreditsWidget({ accountId }: { accountId: string }) {
   const daysUntilReset = credits.reset_date
     ? Math.max(0, Math.ceil((new Date(credits.reset_date).getTime() - Date.now()) / 86400000))
     : null;
-
-  const AGENT_EMOJIS: Record<string, string> = { felix: "📋", nina: "✍️", max: "📊" };
+  const isLow = credits.balance < 200;
 
   return (
-    <>
+    <div className="relative" ref={panelRef}>
+      {/* Collapsed — just icon + bar */}
       <button
-        onClick={openUsage}
-        className="w-full p-3 rounded-xl border border-border/30 bg-card/50 hover:bg-card/80 transition-all text-left group"
+        onClick={() => setExpanded(!expanded)}
+        className="w-[44px] mx-auto flex flex-col items-center gap-1.5 py-2 rounded-lg hover:bg-muted/40 transition-all"
       >
-        <div className="flex items-center gap-2 mb-2">
-          <Bot className="w-3.5 h-3.5 text-jarvis" />
-          <span className="text-[10px] font-bold text-foreground/80 uppercase tracking-wider">Créditos AI</span>
-        </div>
-        <div className="flex items-center gap-2 mb-1.5">
-          <div className="flex-1 h-1.5 rounded-full bg-muted/30 overflow-hidden">
-            <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${Math.min(pct, 100)}%` }} />
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] text-muted-foreground font-mono">{credits.balance}/{credits.monthly_allowance}</span>
-          {daysUntilReset !== null && (
-            <span className="text-[9px] text-muted-foreground/50">
-              Renueva en {daysUntilReset}d
-            </span>
-          )}
+        <Battery className={`w-4 h-4 ${pct > 50 ? "text-emerald-400" : pct > 20 ? "text-amber-400" : "text-red-400"}`} />
+        <div className="w-8 h-1 rounded-full bg-muted/30 overflow-hidden">
+          <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${Math.min(pct, 100)}%` }} />
         </div>
       </button>
 
-      <Dialog open={showUsage} onOpenChange={setShowUsage}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bot className="w-5 h-5 text-jarvis" />
-              Uso de Créditos AI
-            </DialogTitle>
-            <DialogDescription>
-              {credits.balance} de {credits.monthly_allowance} créditos disponibles
-            </DialogDescription>
-          </DialogHeader>
+      {/* Expanded panel — slides right */}
+      {expanded && (
+        <div
+          className="fixed z-50 bg-card border border-border rounded-r-xl shadow-xl p-4 animate-in slide-in-from-left-2 duration-200"
+          style={{ left: 72, bottom: 60, width: 220 }}
+        >
+          <h4 className="text-xs font-bold text-foreground mb-2">Créditos AI</h4>
+          <p className="text-lg font-extrabold font-mono text-foreground leading-none">
+            {credits.balance.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">/ {credits.monthly_allowance.toLocaleString()}</span>
+          </p>
 
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex-1 h-2 rounded-full bg-muted/30 overflow-hidden">
-                <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-              </div>
-              <span className="text-xs font-mono text-muted-foreground">{Math.round(pct)}%</span>
+          <div className="mt-2 h-2 rounded-full bg-muted/30 overflow-hidden">
+            <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${Math.min(pct, 100)}%` }} />
+          </div>
+
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {Math.round(pct)}% disponibles
+          </p>
+          {daysUntilReset !== null && (
+            <p className="text-[10px] text-muted-foreground/60">Se renueva en {daysUntilReset} días</p>
+          )}
+
+          {isLow && (
+            <div className="flex items-center gap-1.5 mt-3 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+              <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+              <span className="text-[10px] font-semibold text-red-400">Créditos bajos — Recargar</span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Usados este mes: {credits.used_this_month}
-              {daysUntilReset !== null && ` · Se renuevan en ${daysUntilReset} días`}
-            </p>
-          </div>
+          )}
 
-          <div className="space-y-1.5 max-h-64 overflow-y-auto">
-            {transactions.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">Sin transacciones aún</p>
-            ) : (
-              transactions.map(t => (
-                <div key={t.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border/30 bg-muted/10">
-                  <span className="text-sm">{t.agent_slug ? AGENT_EMOJIS[t.agent_slug] || "🤖" : "💰"}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-medium text-foreground truncate">
-                      {t.description || t.type}
-                    </p>
-                    <p className="text-[9px] text-muted-foreground">
-                      {formatDistanceToNow(new Date(t.created_at), { locale: es, addSuffix: true })}
-                    </p>
-                  </div>
-                  <span className={`text-xs font-mono font-bold ${t.amount < 0 ? "text-red-400" : "text-emerald-400"}`}>
-                    {t.amount > 0 ? "+" : ""}{t.amount}
-                  </span>
-                </div>
-              ))
-            )}
+          <div className="mt-3 pt-3 border-t border-border/30 space-y-1.5">
+            {AGENT_COSTS.map(a => (
+              <div key={a.name} className="flex items-center justify-between text-[10px]">
+                <span className="text-muted-foreground">{a.name}</span>
+                <span className="text-muted-foreground/60">{a.cost} cr/sesión</span>
+              </div>
+            ))}
           </div>
-        </DialogContent>
-      </Dialog>
-    </>
+        </div>
+      )}
+    </div>
   );
 }
