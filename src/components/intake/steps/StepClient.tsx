@@ -454,10 +454,10 @@ export default function StepClient({ data, update, accountId }: Props) {
           <div className="relative flex-1">
             <input
               type="tel"
-              value={formatPhoneDisplay(localNumber)}
+              value={rawInput.startsWith("+") ? rawInput : formatPhoneDisplay(localNumber)}
               onChange={e => handleLocalChange(e.target.value)}
               onBlur={handlePhoneBlur}
-              placeholder="(809) 676-5653"
+              placeholder="+57 o (809) 676-5653"
               className="w-full border border-input bg-background rounded-r-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-8"
             />
             {phoneValid === true && digits.length >= 7 && (
@@ -468,6 +468,9 @@ export default function StepClient({ data, update, accountId }: Props) {
             )}
           </div>
         </div>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Escribe + para detectar país automáticamente (ej: +57, +34)
+        </p>
         {phoneInvalid && (
           <p className="text-[10px] text-destructive mt-1">Mínimo 7 dígitos</p>
         )}
