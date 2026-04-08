@@ -291,7 +291,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         <div className="border-b border-border p-4 sm:p-5 shrink-0">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-foreground">
-              {completed ? "✅ ¡Registro completado!" : "Nuevo Intake"}
+              {completed ? "✅ ¡Registro completado!" : "Nueva consulta"}
             </h2>
             <button onClick={() => onOpenChange(false)} className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-all">
               <X className="w-4 h-4" />
