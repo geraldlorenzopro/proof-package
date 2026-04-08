@@ -235,7 +235,7 @@ export default function NewContactModal({ open, onOpenChange, accountId, onCreat
             </div>
 
             {/* Primary phone */}
-            <PhoneRow
+            <PhoneInput
               label="Teléfono *"
               phoneLabel={phoneLabel}
               onPhoneLabelChange={setPhoneLabel}
@@ -253,7 +253,7 @@ export default function NewContactModal({ open, onOpenChange, accountId, onCreat
 
             {/* Secondary phone */}
             {showSecond ? (
-              <PhoneRow
+              <PhoneInput
                 label="Teléfono secundario"
                 phoneLabel={label2}
                 onPhoneLabelChange={setLabel2}
