@@ -32,6 +32,7 @@ interface Appointment {
 interface Props {
   accountId: string;
   maxItems?: number;
+  hideStats?: boolean;
 }
 
 function formatTime12h(time24: string): string {
@@ -42,7 +43,7 @@ function formatTime12h(time24: string): string {
   return `${hour12}:${m} ${ampm}`;
 }
 
-export default function TodayAppointments({ accountId, maxItems }: Props) {
+export default function TodayAppointments({ accountId, maxItems, hideStats }: Props) {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [weekCount, setWeekCount] = useState(0);
@@ -260,22 +261,24 @@ export default function TodayAppointments({ accountId, maxItems }: Props) {
       )}
 
       {/* Weekly/Monthly stats — FIX 3: Conversion calc */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { label: "Esta semana", value: String(weekCount) },
-          { label: "Este mes", value: String(monthCount) },
-          { label: "Conversión", value: conversionRate === null ? "—" : `${conversionRate}%` },
-        ].map(s => (
-          <div key={s.label} className="rounded-lg border border-border/30 bg-card/30 px-3 py-2 text-center">
-            <p className={`text-lg font-bold leading-none ${
-              s.label === "Conversión" && conversionRate !== null && conversionRate > 0
-                ? "text-emerald-400"
-                : "text-foreground"
-            }`}>{s.value}</p>
-            <p className="text-[10px] text-muted-foreground/50 mt-1">{s.label}</p>
-          </div>
-        ))}
-      </div>
+      {!hideStats && (
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "Esta semana", value: String(weekCount) },
+            { label: "Este mes", value: String(monthCount) },
+            { label: "Conversión", value: conversionRate === null ? "—" : `${conversionRate}%` },
+          ].map(s => (
+            <div key={s.label} className="rounded-lg border border-border/30 bg-card/30 px-3 py-2 text-center">
+              <p className={`text-lg font-bold leading-none ${
+                s.label === "Conversión" && conversionRate !== null && conversionRate > 0
+                  ? "text-emerald-400"
+                  : "text-foreground"
+              }`}>{s.value}</p>
+              <p className="text-[10px] text-muted-foreground/50 mt-1">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* FIX 1: Start consultation modal */}
       <StartConsultationModal

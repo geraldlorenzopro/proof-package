@@ -71,7 +71,25 @@ export default function HubRecentConsultations({ accountId, maxItems }: Props) {
         return;
       }
 
-      const sessionIds = sessions.map(s => s.id);
+      // Filter out test profiles
+      const profileIds = sessions.map(s => (s as any).client_profile_id).filter(Boolean);
+      let testProfileIds = new Set<string>();
+      if (profileIds.length > 0) {
+        const { data: testProfiles } = await supabase
+          .from("client_profiles")
+          .select("id")
+          .in("id", profileIds)
+          .eq("is_test", true);
+        testProfileIds = new Set((testProfiles || []).map(p => p.id));
+      }
+      const filteredSessions = sessions.filter((s: any) => !s.client_profile_id || !testProfileIds.has(s.client_profile_id));
+
+      const sessionIds = filteredSessions.map((s: any) => s.id);
+      if (sessionIds.length === 0) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
       const { data: appointments } = await supabase
         .from("appointments")
         .select("id, intake_session_id, pre_intake_token, pre_intake_sent, pre_intake_completed, converted_to_case, case_id")
@@ -79,7 +97,7 @@ export default function HubRecentConsultations({ accountId, maxItems }: Props) {
 
       const apptMap = new Map((appointments || []).map((a: any) => [a.intake_session_id, a]));
 
-      const merged: RecentConsultation[] = sessions.map((s: any) => {
+      const merged: RecentConsultation[] = filteredSessions.map((s: any) => {
         const appt = apptMap.get(s.id);
         return {
           ...s,
