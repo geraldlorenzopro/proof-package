@@ -54,6 +54,7 @@ import PreIntakePage from "./pages/PreIntakePage";
 import AdminTestSuite from "./pages/AdminTestSuite";
 import ConsultationsPage from "./pages/ConsultationsPage";
 import ClientProfilePage from "./pages/ClientProfilePage";
+import HubClientsPage from "./pages/HubClientsPage";
 
 const queryClient = new QueryClient();
 

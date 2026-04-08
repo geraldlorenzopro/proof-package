@@ -58,7 +58,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
 
   const navItems = [
     { icon: Home, label: "Inicio", path: "/hub", match: (p: string) => p === "/hub" },
-    { icon: Users, label: "Clientes", path: "/dashboard/workspace-demo", match: (p: string) => p === "/dashboard/workspace-demo" },
+    { icon: Users, label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients") },
     { icon: ClipboardList, label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations" },
     { icon: BarChart3, label: "Reportes", path: "/hub/intelligence", match: (p: string) => p === "/hub/intelligence" },
     { icon: Building2, label: "Firma", path: "/hub/settings/office", match: (p: string) => p === "/hub/settings/office" },
