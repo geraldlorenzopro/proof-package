@@ -260,20 +260,29 @@ export default function StepClient({ data, update, accountId }: Props) {
 
   function handleLocalChange(val: string) {
     const digits = stripNonDigits(val);
-    if (digits.length <= 15) {
-      setLocalNumber(digits);
+    if (digits.length > 15) return;
+
+    // Auto-detect country in real-time as user types
+    if (!showManual && digits.length >= 3) {
+      const result = normalizePhone(digits);
+      // Only split prefix from local when we have enough digits to be confident
+      if (result.countryIdx !== countryIdx && result.localNumber !== digits) {
+        setCountryIdx(result.countryIdx);
+        setLocalNumber(result.localNumber);
+        return;
+      }
     }
+    setLocalNumber(digits);
   }
 
-  // Auto-detect country on blur from raw input
+  // Normalize and check duplicates on blur
   function handlePhoneBlur() {
     const digits = stripNonDigits(localNumber);
     if (digits.length >= 7 && !showManual) {
       const result = normalizePhone(digits);
-      if (result.localNumber) {
+      if (result.localNumber && result.localNumber !== digits) {
         setCountryIdx(result.countryIdx);
         setLocalNumber(result.localNumber);
-        // Update parent with normalized full phone
         update({ client_phone: result.fullPhone });
       }
     }
