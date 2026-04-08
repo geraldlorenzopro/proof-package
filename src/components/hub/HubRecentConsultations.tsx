@@ -84,7 +84,12 @@ export default function HubRecentConsultations({ accountId, maxItems }: Props) {
       }
       const filteredSessions = sessions.filter((s: any) => !s.client_profile_id || !testProfileIds.has(s.client_profile_id));
 
-      const sessionIds = sessions.map(s => s.id);
+      const sessionIds = filteredSessions.map((s: any) => s.id);
+      if (sessionIds.length === 0) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
       const { data: appointments } = await supabase
         .from("appointments")
         .select("id, intake_session_id, pre_intake_token, pre_intake_sent, pre_intake_completed, converted_to_case, case_id")
@@ -92,7 +97,7 @@ export default function HubRecentConsultations({ accountId, maxItems }: Props) {
 
       const apptMap = new Map((appointments || []).map((a: any) => [a.intake_session_id, a]));
 
-      const merged: RecentConsultation[] = sessions.map((s: any) => {
+      const merged: RecentConsultation[] = filteredSessions.map((s: any) => {
         const appt = apptMap.get(s.id);
         return {
           ...s,
