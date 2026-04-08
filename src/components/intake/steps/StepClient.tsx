@@ -419,17 +419,28 @@ export default function StepClient({ data, update, accountId }: Props) {
           )}
 
           {/* Number input */}
-          <input
-            type="tel"
-            value={formatPhoneDisplay(localNumber)}
-            onChange={e => handleLocalChange(e.target.value)}
-            onBlur={handlePhoneBlur}
-            placeholder="(809) 676-5653"
-            className="flex-1 border border-input bg-background rounded-r-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+          <div className="relative flex-1">
+            <input
+              type="tel"
+              value={formatPhoneDisplay(localNumber)}
+              onChange={e => handleLocalChange(e.target.value)}
+              onBlur={handlePhoneBlur}
+              placeholder="(809) 676-5653"
+              className="w-full border border-input bg-background rounded-r-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-8"
+            />
+            {phoneValid === true && digits.length >= 7 && (
+              <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />
+            )}
+            {phoneValid === false && digits.length >= 7 && (
+              <AlertTriangle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-400" />
+            )}
+          </div>
         </div>
         {phoneInvalid && (
-          <p className="text-[10px] text-rose-400 mt-1">Mínimo 7 dígitos</p>
+          <p className="text-[10px] text-destructive mt-1">Mínimo 7 dígitos</p>
+        )}
+        {phoneValid === false && digits.length >= 7 && (
+          <p className="text-[10px] text-yellow-400 mt-1">⚠️ Número incompleto</p>
         )}
 
         {/* Phone duplicate warning */}
