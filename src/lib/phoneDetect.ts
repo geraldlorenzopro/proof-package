@@ -1,4 +1,5 @@
 import { parsePhoneNumber, type CountryCode } from "libphonenumber-js";
+import { COUNTRY_CODES } from "./countryCodes";
 
 const FLAG_MAP: Record<string, string> = {
   US:"🇺🇸",DO:"🇩🇴",MX:"🇲🇽",GT:"🇬🇹",HN:"🇭🇳",SV:"🇸🇻",NI:"🇳🇮",CR:"🇨🇷",
@@ -27,6 +28,20 @@ export interface PhoneDetectResult {
 }
 
 /**
+ * NANP disambiguation: For +1 numbers, check the area code (first 3 digits
+ * of the national number) against known Caribbean/territory area codes.
+ * If no match → default to US.
+ */
+function resolveNanpCountry(nationalNumber: string): string {
+  const areaCode = nationalNumber.slice(0, 3);
+  const nanpCountries = COUNTRY_CODES.filter(c => c.code === "+1" && c.areaCodes?.length);
+  for (const cc of nanpCountries) {
+    if (cc.areaCodes!.includes(areaCode)) return cc.iso;
+  }
+  return "US"; // Default for +1 numbers without a matching area code
+}
+
+/**
  * Parse an international number that starts with "+".
  * ONLY called when user explicitly types "+".
  */
@@ -37,10 +52,16 @@ export function detectInternational(input: string): PhoneDetectResult | null {
   try {
     const parsed = parsePhoneNumber(raw);
     if (parsed) {
+      let country = parsed.country || "US";
+      // NANP fix: libphonenumber may return "US" for all +1 numbers
+      // We use area code disambiguation to get the correct country
+      if (parsed.countryCallingCode === "1") {
+        country = resolveNanpCountry(parsed.nationalNumber as string);
+      }
       return {
         countryCode: "+" + parsed.countryCallingCode,
-        flag: getFlag(parsed.country || "US"),
-        country: parsed.country || "US",
+        flag: getFlag(country),
+        country,
         localNumber: parsed.nationalNumber as string,
         fullPhone: parsed.format("E.164"),
         isValid: parsed.isValid(),
@@ -70,10 +91,11 @@ export function validateForCountry(
   try {
     const parsed = parsePhoneNumber(digits, countryIso as CountryCode);
     if (parsed) {
+      // IMPORTANT: Keep the user-selected country as truth — do NOT override
       return {
         countryCode: "+" + parsed.countryCallingCode,
-        flag: getFlag(parsed.country || countryIso),
-        country: parsed.country || countryIso,
+        flag,
+        country: countryIso,
         localNumber: parsed.nationalNumber as string,
         fullPhone: parsed.format("E.164"),
         isValid: parsed.isValid(),
@@ -109,6 +131,7 @@ export function formatNational(digits: string, countryIso: string): string {
 
 /**
  * Parse an existing E.164 phone string into country + local.
+ * Uses NANP area code disambiguation for +1 numbers.
  */
 export function parseExisting(phone: string): { country: string; flag: string; code: string; local: string } {
   if (!phone) return { country: "US", flag: "🇺🇸", code: "+1", local: "" };
@@ -116,9 +139,14 @@ export function parseExisting(phone: string): { country: string; flag: string; c
   try {
     const parsed = parsePhoneNumber(clean);
     if (parsed) {
+      let country = parsed.country || "US";
+      // NANP disambiguation
+      if (parsed.countryCallingCode === "1") {
+        country = resolveNanpCountry(parsed.nationalNumber as string);
+      }
       return {
-        country: parsed.country || "US",
-        flag: getFlag(parsed.country || "US"),
+        country,
+        flag: getFlag(country),
         code: "+" + parsed.countryCallingCode,
         local: parsed.nationalNumber as string,
       };
@@ -127,3 +155,14 @@ export function parseExisting(phone: string): { country: string; flag: string; c
   const digits = phone.replace(/\D/g, "");
   return { country: "US", flag: "🇺🇸", code: "+1", local: digits };
 }
+
+/** Phone label/type options */
+export const PHONE_LABELS = [
+  { key: "whatsapp", label: "WhatsApp", emoji: "💬" },
+  { key: "mobile", label: "Mobile", emoji: "📱" },
+  { key: "home", label: "Home", emoji: "🏠" },
+  { key: "work", label: "Work", emoji: "💼" },
+  { key: "landline", label: "Landline", emoji: "☎️" },
+] as const;
+
+export type PhoneLabel = typeof PHONE_LABELS[number]["key"];
