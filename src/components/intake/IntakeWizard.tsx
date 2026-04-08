@@ -49,15 +49,15 @@ const INITIAL_DATA: IntakeData = {
   client_mobile_phone_label: "mobile",
   client_email: "",
   client_language: "es",
-  client_relationship: "solicitante",
+  client_relationship: "",
   client_relationship_detail: "",
-  urgency_level: "prioritario",
+  urgency_level: "",
   consultation_reason: "",
   consultation_reason_detail: "",
   consultation_topic: "",
   consultation_topic_tag: "",
   consultation_topic_detail: "",
-  intake_delivery_channel: "whatsapp",
+  intake_delivery_channel: "",
   notes: "",
 };
 
