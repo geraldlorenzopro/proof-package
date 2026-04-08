@@ -221,14 +221,29 @@ export default function HubPage() {
 
   async function establishSession(authToken: { access_token: string; refresh_token: string }) {
     try {
+      console.log("[Hub] Setting Supabase session...");
       const { error: sessionErr } = await supabase.auth.setSession({
         access_token: authToken.access_token,
         refresh_token: authToken.refresh_token,
       });
-      if (sessionErr) console.error("Auto-login session error:", sessionErr.message);
-      else console.log("Auto-login session established successfully");
+      if (sessionErr) {
+        console.error("[Hub] setSession error:", sessionErr.message);
+        // Try once more after a brief delay
+        await new Promise(r => setTimeout(r, 300));
+        const { error: retryErr } = await supabase.auth.setSession({
+          access_token: authToken.access_token,
+          refresh_token: authToken.refresh_token,
+        });
+        if (retryErr) {
+          console.error("[Hub] setSession retry also failed:", retryErr.message);
+        } else {
+          console.log("[Hub] Session established on retry");
+        }
+      } else {
+        console.log("[Hub] Session established successfully");
+      }
     } catch (err) {
-      console.error("Auto-login failed:", err);
+      console.error("[Hub] establishSession exception:", err);
     } finally {
       setAuthReady(true);
     }
@@ -240,13 +255,17 @@ export default function HubPage() {
       const params = new URLSearchParams({ cid: contactId, sig: signature, ts: timestamp });
       if (staffEmail) params.set("uemail", staffEmail);
       if (staffName) params.set("uname", staffName);
+      
+      console.log("[Hub] Resolving hub session...", { contactId: contactId.substring(0, 8) + "..." });
+      
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/resolve-hub?${params.toString()}`,
         { headers: { "Content-Type": "application/json" } }
       );
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error || "Error al resolver la cuenta.");
+        console.error("[Hub] resolve-hub error:", json.error);
+        setError(json.message || json.error || "Error al resolver la cuenta.");
         setLoading(false);
       } else {
         setData(json);
@@ -260,13 +279,17 @@ export default function HubPage() {
           window.history.replaceState({}, '', window.location.pathname);
         }
         if (json.auth_token) {
+          console.log("[Hub] Auth token received, establishing session...");
           await establishSession(json.auth_token);
         } else {
+          console.warn("[Hub] No auth_token in response — auto-login may have failed on server");
+          // Still show hub but warn — session won't work for protected routes
           setAuthReady(true);
         }
         setLoading(false);
       }
     } catch (err: any) {
+      console.error("[Hub] Connection error:", err);
       setError("Error de conexión. Intente de nuevo.");
       setLoading(false);
     }
