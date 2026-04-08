@@ -401,45 +401,80 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
             }`}>
               {completed ? (
                 <div className="space-y-4 animate-fade-in">
+                  {/* Header */}
                   <div className="text-center mb-2">
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-2">
-                      <Check className="w-6 h-6 text-emerald-400" />
+                    <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
+                      <Check className="w-7 h-7 text-emerald-400" />
                     </div>
-                    <p className="text-base font-semibold text-foreground">{completed.clientName}</p>
-                    <p className="text-sm text-muted-foreground">fue registrado correctamente.</p>
+                    <h3 className="text-lg font-bold text-foreground">¡Registro completado!</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {completed.clientName} está listo para continuar su proceso
+                    </p>
+                    <p className="text-xs text-muted-foreground/60 mt-0.5">
+                      Registrado el {new Date(completed.createdAt).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" })} a las {new Date(completed.createdAt).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
                   </div>
 
-                  <div className="border border-border rounded-xl p-4 space-y-2">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Resumen</p>
+                  {/* Summary */}
+                  <div className="border border-border rounded-xl p-4 space-y-2.5">
                     {[
-                      { icon: "📱", label: "Canal", value: CHANNEL_LABELS[completed.channel] || completed.channel },
-                      { icon: "📞", label: "Teléfono", value: completed.phone },
-                      ...(completed.email ? [{ icon: "📧", label: "Email", value: completed.email }] : []),
+                      { icon: "📱", label: "Teléfono", value: completed.phone, highlight: true },
+                      { icon: "📍", label: "Canal", value: CHANNEL_LABELS[completed.channel] || completed.channel },
                       { icon: "⚡", label: "Urgencia", value: URGENCY_LABELS[completed.urgency] || completed.urgency },
-                      { icon: "📋", label: "Tema", value: TOPIC_LABELS[completed.topic] || completed.topic },
-                      { icon: "📤", label: "Pre-intake", value: DELIVERY_LABELS[completed.deliveryChannel] || completed.deliveryChannel },
+                      { icon: "📂", label: "Tema", value: TOPIC_LABELS[completed.topic] || completed.topic },
+                      { icon: "📩", label: "Envío", value: DELIVERY_LABELS[completed.deliveryChannel] || completed.deliveryChannel },
                     ].map((row, idx) => (
-                      <div key={idx} className="flex justify-between text-sm">
+                      <div key={idx} className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">{row.icon} {row.label}</span>
-                        <span className="text-foreground font-medium text-right max-w-[60%]">{row.value}</span>
+                        <span className={`font-medium text-right max-w-[60%] ${row.highlight ? "text-foreground text-base" : "text-foreground"}`}>{row.value}</span>
                       </div>
                     ))}
                   </div>
 
-                  {/* Delivery status */}
+                  {/* Status badge */}
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5">
+                    <span className="text-amber-400 text-sm">🟡</span>
+                    <span className="text-sm font-medium text-amber-400">Pendiente de completar formulario</span>
+                  </div>
+
+                  {/* Link section */}
+                  {completed.preIntakeUrl && (
+                    <div className="border border-border rounded-xl px-4 py-3 space-y-3">
+                      <p className="text-sm font-semibold text-foreground">🔗 Link del formulario</p>
+                      <div className="flex gap-2">
+                        <div className="flex-1 text-xs border border-input bg-background rounded-lg px-3 py-2 text-muted-foreground font-mono truncate">
+                          ...intake/{completed.preIntakeToken.slice(-8)}
+                        </div>
+                        <button onClick={copyLink}
+                          className="flex items-center gap-1.5 text-xs font-semibold bg-accent text-accent-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-all shrink-0">
+                          <Copy className="w-3.5 h-3.5" /> Copiar enlace
+                        </button>
+                      </div>
+
+                      {/* WhatsApp - primary CTA */}
+                      <button
+                        onClick={() => {
+                          const topicLabel = TOPIC_LABELS[completed.topic] || completed.topic;
+                          const msg = encodeURIComponent(
+                            `Hola ${completed.firstName}, soy del equipo de Mr Visa Immigration.\n\n` +
+                            `Para continuar con tu proceso de ${topicLabel}, necesitamos que completes este breve formulario:\n\n` +
+                            `${completed.preIntakeUrl}\n\n` +
+                            `Si tienes alguna pregunta, responde a este mensaje. 🙏`
+                          );
+                          const phone = completed.phone.replace(/[^+\d]/g, "");
+                          window.open(`https://wa.me/${phone.replace("+", "")}?text=${msg}`, "_blank");
+                        }}
+                        className="w-full flex items-center justify-center gap-2 text-sm font-bold bg-emerald-600 text-white py-3 rounded-xl hover:bg-emerald-700 transition-all">
+                        <MessageCircle className="w-4 h-4" />
+                        Compartir por WhatsApp
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Delivery status feedback */}
                   {completed.deliveryChannel === "email" && completed.email && (
                     <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
-                      <p className="text-sm text-emerald-400 font-semibold">📧 Pre-intake enviado a {completed.email}</p>
-                    </div>
-                  )}
-                  {completed.deliveryChannel === "whatsapp" && (
-                    <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
-                      <p className="text-sm text-emerald-400 font-semibold">💬 Pre-intake listo para enviar por WhatsApp</p>
-                    </div>
-                  )}
-                  {completed.deliveryChannel === "sms" && (
-                    <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
-                      <p className="text-sm text-emerald-400 font-semibold">📱 Pre-intake enviado por SMS a {completed.phone}</p>
+                      <p className="text-sm text-emerald-400 font-semibold">📧 Formulario enviado a {completed.email}</p>
                     </div>
                   )}
                   {completed.deliveryChannel === "presencial" && (
@@ -448,40 +483,21 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
                     </div>
                   )}
 
-                  {/* Link + share */}
-                  {completed.preIntakeUrl && (
-                    <div className="border border-border rounded-xl px-4 py-3 space-y-2.5">
-                      <p className="text-sm font-semibold text-foreground">🔗 Link del formulario</p>
-                      <div className="flex gap-2">
-                        <input type="text" readOnly value={completed.preIntakeUrl}
-                          className="flex-1 text-xs border border-input bg-background rounded-lg px-3 py-2 text-muted-foreground font-mono" />
-                        <button onClick={copyLink}
-                          className="flex items-center gap-1.5 text-xs font-semibold bg-accent text-accent-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-all">
-                          <Copy className="w-3.5 h-3.5" /> Copiar
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => {
-                          const firstName = completed.clientName.split(" ")[0];
-                          const msg = encodeURIComponent(`Hola ${firstName}, antes de su consulta necesitamos que complete este formulario: ${completed.preIntakeUrl}`);
-                          const phone = completed.phone.replace(/\D/g, "");
-                          window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
-                        }}
-                        className="w-full flex items-center justify-center gap-2 text-sm font-semibold bg-emerald-600 text-white py-2.5 rounded-xl hover:bg-emerald-700 transition-all">
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        📱 Compartir por WhatsApp
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <button onClick={() => handleDone("new")}
-                      className="flex items-center justify-center gap-1.5 text-sm font-semibold bg-accent text-accent-foreground py-2.5 rounded-xl hover:opacity-90 transition-all">
-                      + Registrar otro
-                    </button>
-                    <button onClick={() => { onOpenChange(false); navigate("/dashboard/workspace-demo"); }}
-                      className="flex items-center justify-center gap-1.5 text-sm font-semibold border border-border text-foreground py-2.5 rounded-xl hover:bg-secondary/50 transition-all">
+                  {/* Action buttons - hierarchy: profile (medium), register another (ghost) */}
+                  <div className="space-y-2 pt-1">
+                    <button
+                      onClick={() => {
+                        onOpenChange(false);
+                        if (completed.clientProfileId) {
+                          navigate(`/hub/clients/${completed.clientProfileId}`);
+                        }
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold bg-accent text-accent-foreground py-2.5 rounded-xl hover:opacity-90 transition-all">
                       → Ver perfil del cliente
+                    </button>
+                    <button onClick={() => handleDone("new")}
+                      className="w-full flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground py-2 rounded-xl hover:bg-secondary/50 transition-all">
+                      + Registrar otro
                     </button>
                   </div>
                 </div>
