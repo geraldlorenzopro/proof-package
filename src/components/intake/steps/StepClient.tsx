@@ -55,19 +55,105 @@ function formatPhoneDisplay(digits: string): string {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
 }
 
-function parseExistingPhone(phone: string) {
-  if (!phone) return { countryIdx: 0, local: "" };
-  const clean = phone.replace(/[\s\-()]/g, "");
-  for (let i = 0; i < COUNTRY_CODES.length; i++) {
-    const c = COUNTRY_CODES[i];
-    if (clean.startsWith(c.code)) {
-      return { countryIdx: i, local: clean.slice(c.code.length) };
+interface NormalizedPhone {
+  countryCode: string;
+  flag: string;
+  localNumber: string;
+  fullPhone: string;
+  countryIdx: number;
+}
+
+function normalizePhone(input: string): NormalizedPhone {
+  const digits = input.replace(/\D/g, "");
+  if (!digits) return { countryCode: "+1", flag: "🇺🇸", localNumber: "", fullPhone: "", countryIdx: 0 };
+
+  // Rep. Dom. — 809/829/849
+  if (/^1?(809|829|849)/.test(digits)) {
+    const local = digits.replace(/^1/, "");
+    return { countryCode: "+1", flag: "🇩🇴", localNumber: local, fullPhone: "+1" + local, countryIdx: 1 };
+  }
+  // México
+  if (/^52/.test(digits)) {
+    const local = digits.slice(2);
+    return { countryCode: "+52", flag: "🇲🇽", localNumber: local, fullPhone: "+52" + local, countryIdx: 2 };
+  }
+  // Guatemala
+  if (/^502/.test(digits)) {
+    const local = digits.slice(3);
+    return { countryCode: "+502", flag: "🇬🇹", localNumber: local, fullPhone: "+502" + local, countryIdx: 3 };
+  }
+  // Honduras
+  if (/^504/.test(digits)) {
+    const local = digits.slice(3);
+    return { countryCode: "+504", flag: "🇭🇳", localNumber: local, fullPhone: "+504" + local, countryIdx: 4 };
+  }
+  // El Salvador
+  if (/^503/.test(digits)) {
+    const local = digits.slice(3);
+    return { countryCode: "+503", flag: "🇸🇻", localNumber: local, fullPhone: "+503" + local, countryIdx: 5 };
+  }
+  // Nicaragua
+  if (/^505/.test(digits)) {
+    const local = digits.slice(3);
+    return { countryCode: "+505", flag: "🇳🇮", localNumber: local, fullPhone: "+505" + local, countryIdx: 6 };
+  }
+  // Costa Rica
+  if (/^506/.test(digits)) {
+    const local = digits.slice(3);
+    return { countryCode: "+506", flag: "🇨🇷", localNumber: local, fullPhone: "+506" + local, countryIdx: 7 };
+  }
+  // Panamá
+  if (/^507/.test(digits)) {
+    const local = digits.slice(3);
+    return { countryCode: "+507", flag: "🇵🇦", localNumber: local, fullPhone: "+507" + local, countryIdx: 8 };
+  }
+  // Colombia
+  if (/^57/.test(digits)) {
+    const local = digits.slice(2);
+    return { countryCode: "+57", flag: "🇨🇴", localNumber: local, fullPhone: "+57" + local, countryIdx: 9 };
+  }
+  // Venezuela
+  if (/^58/.test(digits)) {
+    const local = digits.slice(2);
+    return { countryCode: "+58", flag: "🇻🇪", localNumber: local, fullPhone: "+58" + local, countryIdx: 10 };
+  }
+  // Perú
+  if (/^51/.test(digits) && !/^(510|511|512|513|514|515|516|517|518|519)/.test(digits.slice(0,3) + "0")) {
+    // Only match if starts with 51 and next digit isn't ambiguous with US area codes
+    if (digits.length <= 11) {
+      const local = digits.slice(2);
+      return { countryCode: "+51", flag: "🇵🇪", localNumber: local, fullPhone: "+51" + local, countryIdx: 11 };
     }
   }
-  if (clean.startsWith("+")) {
-    return { countryIdx: 0, local: stripNonDigits(clean.slice(1)) };
+  // Ecuador
+  if (/^593/.test(digits)) {
+    const local = digits.slice(3);
+    return { countryCode: "+593", flag: "🇪🇨", localNumber: local, fullPhone: "+593" + local, countryIdx: 12 };
   }
-  return { countryIdx: 0, local: stripNonDigits(phone) };
+  // Cuba
+  if (/^53/.test(digits) && digits.length <= 10) {
+    const local = digits.slice(2);
+    return { countryCode: "+53", flag: "🇨🇺", localNumber: local, fullPhone: "+53" + local, countryIdx: 13 };
+  }
+  // Haití
+  if (/^509/.test(digits)) {
+    const local = digits.slice(3);
+    return { countryCode: "+509", flag: "🇭🇹", localNumber: local, fullPhone: "+509" + local, countryIdx: 14 };
+  }
+  // Puerto Rico — 787/939
+  if (/^1?(787|939)/.test(digits)) {
+    const local = digits.replace(/^1/, "");
+    return { countryCode: "+1", flag: "🇵🇷", localNumber: local, fullPhone: "+1" + local, countryIdx: 15 };
+  }
+  // USA default
+  const local = digits.startsWith("1") && digits.length === 11 ? digits.slice(1) : digits;
+  return { countryCode: "+1", flag: "🇺🇸", localNumber: local, fullPhone: "+1" + local, countryIdx: 0 };
+}
+
+function parseExistingPhone(phone: string) {
+  if (!phone) return { countryIdx: 0, local: "" };
+  const result = normalizePhone(phone);
+  return { countryIdx: result.countryIdx, local: result.localNumber };
 }
 
 export default function StepClient({ data, update, accountId }: Props) {
