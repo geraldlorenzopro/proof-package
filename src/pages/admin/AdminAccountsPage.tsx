@@ -88,6 +88,8 @@ export default function AdminAccountsPage() {
         account_name: acc.account_name,
         expires_at: data.expires_at,
       }));
+      // Store impersonated account as the active account for Hub
+      sessionStorage.setItem("ner_active_account_id", acc.id);
       toast.success(`Modo soporte: ${acc.account_name}`);
       navigate("/hub");
     } else {
