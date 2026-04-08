@@ -221,14 +221,29 @@ export default function HubPage() {
 
   async function establishSession(authToken: { access_token: string; refresh_token: string }) {
     try {
+      console.log("[Hub] Setting Supabase session...");
       const { error: sessionErr } = await supabase.auth.setSession({
         access_token: authToken.access_token,
         refresh_token: authToken.refresh_token,
       });
-      if (sessionErr) console.error("Auto-login session error:", sessionErr.message);
-      else console.log("Auto-login session established successfully");
+      if (sessionErr) {
+        console.error("[Hub] setSession error:", sessionErr.message);
+        // Try once more after a brief delay
+        await new Promise(r => setTimeout(r, 300));
+        const { error: retryErr } = await supabase.auth.setSession({
+          access_token: authToken.access_token,
+          refresh_token: authToken.refresh_token,
+        });
+        if (retryErr) {
+          console.error("[Hub] setSession retry also failed:", retryErr.message);
+        } else {
+          console.log("[Hub] Session established on retry");
+        }
+      } else {
+        console.log("[Hub] Session established successfully");
+      }
     } catch (err) {
-      console.error("Auto-login failed:", err);
+      console.error("[Hub] establishSession exception:", err);
     } finally {
       setAuthReady(true);
     }
