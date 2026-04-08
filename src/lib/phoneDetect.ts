@@ -45,7 +45,35 @@ export function detectPhone(input: string): PhoneDetectResult {
     return { countryCode: "+1", flag: "🇺🇸", country: "US", localNumber: digits, fullPhone: "+1" + digits, isValid: true };
   }
 
-  // For anything else, try parsing as international with + prefix
+  // For international numbers, try all possible country code splits
+  // e.g. for "34612345678", try +3, +34, +346, etc. and pick the valid one
+  const candidates: PhoneDetectResult[] = [];
+  for (let ccLen = 1; ccLen <= Math.min(4, digits.length - 4); ccLen++) {
+    const cc = digits.slice(0, ccLen);
+    const national = digits.slice(ccLen);
+    try {
+      const parsed = parsePhoneNumber("+" + cc + national);
+      if (parsed && parsed.countryCallingCode === cc && parsed.isValid()) {
+        candidates.push({
+          countryCode: "+" + parsed.countryCallingCode,
+          flag: getFlag(parsed.country || "US"),
+          country: parsed.country || "US",
+          localNumber: parsed.nationalNumber as string,
+          fullPhone: parsed.format("E.164"),
+          isValid: true,
+        });
+      }
+    } catch { /* continue */ }
+  }
+
+  // If we found valid candidates, prefer the one with shortest country code
+  // (e.g. +34 Spain over +234 Nigeria)
+  if (candidates.length > 0) {
+    candidates.sort((a, b) => a.countryCode.length - b.countryCode.length);
+    return candidates[0];
+  }
+
+  // Fallback: try direct parse (library's own prefix matching)
   try {
     const parsed = parsePhoneNumber("+" + digits);
     if (parsed) {
@@ -60,7 +88,7 @@ export function detectPhone(input: string): PhoneDetectResult {
     }
   } catch { /* fall through */ }
 
-  // Fallback — default US
+  // Ultimate fallback
   return { countryCode: "+1", flag: "🇺🇸", country: "US", localNumber: digits, fullPhone: "+1" + digits, isValid: false };
 }
 
