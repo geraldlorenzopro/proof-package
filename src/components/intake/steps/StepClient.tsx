@@ -4,7 +4,7 @@ import { Search, RefreshCw, ChevronDown, Check, AlertTriangle } from "lucide-rea
 
 import { Badge } from "@/components/ui/badge";
 import { COUNTRY_CODES, FREQUENT_COUNT } from "@/lib/countryCodes";
-import { detectInternational, validateForCountry, detectLocal10, parseExisting, getFlag } from "@/lib/phoneDetect";
+import { detectInternational, validateForCountry, parseExisting, getFlag, formatNational } from "@/lib/phoneDetect";
 import type { IntakeData } from "../IntakeWizard";
 
 interface Props {
@@ -30,15 +30,6 @@ interface DuplicateMatch {
 }
 
 function stripNonDigits(val: string) { return val.replace(/\D/g, ""); }
-function stripPhoneInput(val: string) {
-  if (val.startsWith("+")) return "+" + val.slice(1).replace(/\D/g, "");
-  return val.replace(/\D/g, "");
-}
-function formatPhoneDisplay(digits: string): string {
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
-}
 
 const RELATIONSHIPS = [
   { key: "solicitante", emoji: "👤", label: "Es el solicitante", desc: "La persona que necesita el beneficio migratorio" },
@@ -53,15 +44,15 @@ export default function StepClient({ data, update, accountId }: Props) {
   const [searching, setSearching] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
 
+  // Phone state — dropdown country is source of truth
   const parsed = parseExisting(data.client_phone);
-  const [detectedFlag, setDetectedFlag] = useState(parsed.flag);
-  const [detectedCode, setDetectedCode] = useState(parsed.code);
-  const [detectedCountry, setDetectedCountry] = useState(parsed.country);
-  const [localNumber, setLocalNumber] = useState(parsed.local);
-  const [rawInput, setRawInput] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState(parsed.country);
+  const [selectedCode, setSelectedCode] = useState(parsed.code);
+  const [selectedFlag, setSelectedFlag] = useState(parsed.flag);
+  const [localDigits, setLocalDigits] = useState(parsed.local);
+  const [isInternationalMode, setIsInternationalMode] = useState(false); // true when user types "+"
+  const [rawInput, setRawInput] = useState(""); // only used during "+" typing
   const [showDropdown, setShowDropdown] = useState(false);
-  const [manualCode, setManualCode] = useState("");
-  const [showManual, setShowManual] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [phoneValid, setPhoneValid] = useState<boolean | null>(null);
 
@@ -69,13 +60,14 @@ export default function StepClient({ data, update, accountId }: Props) {
   const [phoneDupeDismissed, setPhoneDupeDismissed] = useState(false);
   const [emailDupe, setEmailDupe] = useState<DuplicateMatch | null>(null);
 
+  // Sync E.164 to parent whenever localDigits or country changes
   useEffect(() => {
-    const digits = stripNonDigits(localNumber);
-    if (digits.length === 0) { update({ client_phone: "" }); return; }
-    const prefix = showManual && manualCode ? `+${stripNonDigits(manualCode)}` : detectedCode;
-    update({ client_phone: `${prefix}${digits}` });
-  }, [localNumber, detectedCode, showManual, manualCode]);
+    if (!localDigits) { update({ client_phone: "" }); return; }
+    const result = validateForCountry(localDigits, selectedCountry, selectedCode);
+    update({ client_phone: result.fullPhone });
+  }, [localDigits, selectedCountry, selectedCode]);
 
+  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowDropdown(false);
@@ -84,14 +76,16 @@ export default function StepClient({ data, update, accountId }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // When existing client is selected, sync phone state
   useEffect(() => {
     const p = parseExisting(data.client_phone);
-    const currentDigits = stripNonDigits(localNumber);
-    if (p.local !== currentDigits) {
-      setDetectedFlag(p.flag); setDetectedCode(p.code); setDetectedCountry(p.country); setLocalNumber(p.local); setShowManual(false);
+    if (p.local !== localDigits || p.country !== selectedCountry) {
+      setSelectedFlag(p.flag); setSelectedCode(p.code); setSelectedCountry(p.country);
+      setLocalDigits(p.local); setIsInternationalMode(false); setRawInput("");
     }
   }, [data.is_existing_client]);
 
+  // Client search
   useEffect(() => {
     if (query.length < 2 || !accountId) { setResults([]); return; }
     const timer = setTimeout(() => searchClients(query), 300);
@@ -121,44 +115,86 @@ export default function StepClient({ data, update, accountId }: Props) {
 
   function clearClient() {
     update({ client_profile_id: null, is_existing_client: false, client_first_name: "", client_last_name: "", client_phone: "", client_email: "" });
-    setLocalNumber(""); setRawInput(""); setDetectedFlag("🇺🇸"); setDetectedCode("+1"); setDetectedCountry("US");
-    setShowManual(false); setPhoneValid(null); setPhoneDupe(null); setPhoneDupeDismissed(false); setEmailDupe(null);
+    setLocalDigits(""); setRawInput(""); setSelectedFlag("🇺🇸"); setSelectedCode("+1"); setSelectedCountry("US");
+    setIsInternationalMode(false); setPhoneValid(null); setPhoneDupe(null); setPhoneDupeDismissed(false); setEmailDupe(null);
   }
 
-  function handleLocalChange(val: string) {
-    const cleaned = stripPhoneInput(val);
-    if (cleaned.replace(/\D/g, "").length > 15) return;
-    setRawInput(cleaned);
-    if (cleaned.length === 0 || cleaned === "+") {
-      setLocalNumber(""); setPhoneValid(null);
-      if (cleaned.length === 0) { setDetectedFlag("🇺🇸"); setDetectedCode("+1"); setDetectedCountry("US"); }
+  function handleCountrySelect(iso: string, code: string, flag: string) {
+    setSelectedCountry(iso);
+    setSelectedCode(code);
+    setSelectedFlag(flag);
+    setIsInternationalMode(false);
+    setRawInput("");
+    setShowDropdown(false);
+    setCountrySearch("");
+    // Re-validate current digits with new country
+    if (localDigits) {
+      const result = validateForCountry(localDigits, iso, code);
+      setPhoneValid(result.isValid);
+      setLocalDigits(result.localNumber || localDigits);
+      update({ client_phone: result.fullPhone });
+    }
+  }
+
+  function handlePhoneChange(val: string) {
+    // If user starts typing "+", switch to international mode
+    if (val.startsWith("+")) {
+      setIsInternationalMode(true);
+      // Keep only digits and the leading +
+      const cleaned = "+" + val.slice(1).replace(/\D/g, "");
+      if (cleaned.length > 16) return; // E.164 max
+      setRawInput(cleaned);
+      setLocalDigits(""); // will be set on blur
+      setPhoneValid(null);
       return;
     }
-    setLocalNumber(cleaned.replace(/\D/g, ""));
+
+    // Local mode — dropdown country is source of truth
+    setIsInternationalMode(false);
+    setRawInput("");
+    const digits = val.replace(/\D/g, "");
+    if (digits.length > 15) return;
+    setLocalDigits(digits);
+    setPhoneValid(null);
   }
 
   function handlePhoneBlur() {
-    const digits = stripNonDigits(localNumber);
-    if (digits.length < 7 || showManual) { checkPhoneDuplicate(); return; }
-    if (rawInput.startsWith("+")) {
-      const result = detectInternational("+" + digits);
+    if (isInternationalMode && rawInput.startsWith("+") && rawInput.length >= 4) {
+      // Auto-detect country from "+" prefix
+      const result = detectInternational(rawInput);
       if (result) {
-        setDetectedFlag(result.flag); setDetectedCode(result.countryCode); setDetectedCountry(result.country);
-        setLocalNumber(result.localNumber); setPhoneValid(result.isValid); update({ client_phone: result.fullPhone });
-        setRawInput(""); checkPhoneDuplicate(); return;
+        setSelectedFlag(result.flag);
+        setSelectedCode(result.countryCode);
+        setSelectedCountry(result.country);
+        setLocalDigits(result.localNumber);
+        setPhoneValid(result.isValid);
+        update({ client_phone: result.fullPhone });
+        setIsInternationalMode(false);
+        setRawInput("");
+        checkPhoneDuplicate(result.fullPhone);
+        return;
       }
+      // Failed to parse — keep raw but mark invalid
+      setPhoneValid(false);
+      checkPhoneDuplicate(rawInput);
+      return;
     }
-    if (digits.length === 10) {
-      const local10 = detectLocal10(digits);
-      setDetectedFlag(local10.flag); setDetectedCode(local10.code); setDetectedCountry(local10.country);
+
+    // Local mode — validate with selected country (NO guessing)
+    if (localDigits.length >= 7) {
+      const result = validateForCountry(localDigits, selectedCountry, selectedCode);
+      setPhoneValid(result.isValid);
+      setLocalDigits(result.localNumber || localDigits);
+      update({ client_phone: result.fullPhone });
+      checkPhoneDuplicate(result.fullPhone);
+    } else if (localDigits.length > 0) {
+      setPhoneValid(false);
+      checkPhoneDuplicate(data.client_phone);
     }
-    const result = validateForCountry(digits, detectedCountry, detectedCode);
-    setPhoneValid(result.isValid); setLocalNumber(result.localNumber || digits); update({ client_phone: result.fullPhone });
-    checkPhoneDuplicate();
   }
 
-  async function checkPhoneDuplicate() {
-    const fullPhone = data.client_phone;
+  async function checkPhoneDuplicate(phone?: string) {
+    const fullPhone = phone || data.client_phone;
     if (!fullPhone || fullPhone.length < 8 || !accountId || data.is_existing_client) { setPhoneDupe(null); return; }
     const { data: matches } = await supabase.from("client_profiles").select("id, first_name, last_name, email, phone").eq("account_id", accountId).eq("phone", fullPhone).limit(1);
     if (matches && matches.length > 0) {
@@ -176,8 +212,12 @@ export default function StepClient({ data, update, accountId }: Props) {
     if (matches && matches.length > 0) setEmailDupe(matches[0]); else setEmailDupe(null);
   }
 
-  const digits = stripNonDigits(localNumber);
-  const phoneInvalid = digits.length > 0 && digits.length < 7;
+  // Display value for phone input
+  const phoneDisplayValue = isInternationalMode
+    ? rawInput
+    : formatNational(localDigits, selectedCountry);
+
+  const phoneInvalid = localDigits.length > 0 && localDigits.length < 7 && !isInternationalMode;
 
   return (
     <div className="space-y-4">
@@ -238,10 +278,11 @@ export default function StepClient({ data, update, accountId }: Props) {
       <div>
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Teléfono *</label>
         <div className="flex gap-0">
+          {/* Country dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button type="button" onClick={() => setShowDropdown(!showDropdown)}
               className="flex items-center gap-1.5 border border-input border-r-0 bg-background rounded-l-xl px-3 py-2.5 text-sm hover:bg-secondary/50 transition-colors min-w-[90px]">
-              {showManual ? <span className="text-muted-foreground">🌐 +{stripNonDigits(manualCode) || "?"}</span> : <span>{detectedFlag} {detectedCode}</span>}
+              <span>{selectedFlag} {selectedCode}</span>
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
             {showDropdown && (
@@ -259,39 +300,30 @@ export default function StepClient({ data, update, accountId }: Props) {
                     return filtered.map(({ c, idx }) => (
                       <div key={`${c.iso}-${idx}`}>
                         {!q && idx === FREQUENT_COUNT && <div className="border-t border-border my-1 mx-2" />}
-                        <button type="button" onClick={() => { setDetectedFlag(c.flag); setDetectedCode(c.code); setDetectedCountry(c.iso); setShowManual(false); setShowDropdown(false); setCountrySearch(""); }}
-                          className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/50 transition-colors text-left ${!showManual && detectedCountry === c.iso ? "bg-secondary/30" : ""}`}>
+                        <button type="button" onClick={() => handleCountrySelect(c.iso, c.code, c.flag)}
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/50 transition-colors text-left ${selectedCountry === c.iso ? "bg-secondary/30" : ""}`}>
                           <span>{c.flag}</span><span className="font-medium">{c.code}</span><span className="text-muted-foreground text-xs truncate">{c.name}</span>
                         </button>
                       </div>
                     ));
                   })()}
                 </div>
-                <div className="border-t border-border">
-                  <button type="button" onClick={() => { setShowManual(true); setShowDropdown(false); setCountrySearch(""); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left text-muted-foreground">
-                    🌐 Otro...
-                  </button>
-                </div>
               </div>
             )}
           </div>
-          {showManual && (
-            <input type="text" value={manualCode} onChange={e => setManualCode(e.target.value.replace(/[^\d]/g, "").slice(0, 4))}
-              placeholder="Código" className="w-16 border border-input border-r-0 bg-background px-2 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-ring" />
-          )}
+          {/* Phone input */}
           <div className="relative flex-1">
-            <input type="tel" value={rawInput.startsWith("+") ? rawInput : formatPhoneDisplay(localNumber)}
-              onChange={e => handleLocalChange(e.target.value)} onBlur={handlePhoneBlur}
-              placeholder="+57 o (809) 676-5653"
+            <input type="tel" value={phoneDisplayValue}
+              onChange={e => handlePhoneChange(e.target.value)} onBlur={handlePhoneBlur}
+              placeholder={isInternationalMode ? "+57 312 456 7890" : "(305) 555-0000"}
               className="w-full border border-input bg-background rounded-r-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-8" />
-            {phoneValid === true && digits.length >= 7 && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />}
-            {phoneValid === false && digits.length >= 7 && <AlertTriangle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-400" />}
+            {phoneValid === true && localDigits.length >= 7 && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />}
+            {phoneValid === false && (localDigits.length >= 7 || (isInternationalMode && rawInput.length >= 4)) && <AlertTriangle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-400" />}
           </div>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-1">Escribe + para detectar país automáticamente (ej: +57, +34)</p>
+        <p className="text-[10px] text-muted-foreground mt-1">Escribe + para detectar país automáticamente · Sin + usa el selector de país</p>
         {phoneInvalid && <p className="text-[10px] text-destructive mt-1">Mínimo 7 dígitos</p>}
-        {phoneValid === false && digits.length >= 7 && <p className="text-[10px] text-yellow-400 mt-1">⚠️ Número incompleto</p>}
+        {phoneValid === false && localDigits.length >= 7 && <p className="text-[10px] text-yellow-400 mt-1">⚠️ Número no válido para {selectedCountry}</p>}
 
         {phoneDupe && !phoneDupeDismissed && (
           <div className="mt-2 border border-yellow-500/30 bg-yellow-500/10 rounded-xl px-4 py-3">
