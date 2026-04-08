@@ -138,7 +138,7 @@ export default function PhoneInput({
           )}
         </div>
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1">Usa la bandera para cambiar país o escribe + para internacional</p>
+      <p className="text-[10px] text-muted-foreground mt-1">Escribe el número completo — el país se detecta automáticamente</p>
       {phoneInvalid && <p className="text-[10px] text-destructive mt-1">Mínimo 7 dígitos</p>}
       {phoneValid === false && localDigits.length >= 7 && <p className="text-[10px] text-yellow-400 mt-1">⚠️ Número no válido para {selectedCountry}</p>}
     </div>
