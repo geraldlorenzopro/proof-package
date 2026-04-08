@@ -155,19 +155,14 @@ export default function StepClient({ data, update, accountId }: Props) {
     if (digits.length === 0) {
       setLocalNumber("");
       setPhoneValid(null);
+      setDetectedFlag("🇺🇸");
+      setDetectedCode("+1");
+      setDetectedCountry("US");
       return;
     }
 
-    // Real-time detection using libphonenumber-js
-    if (!showManual && digits.length >= 7) {
-      const result = detectPhone(digits);
-      setDetectedFlag(result.flag);
-      setDetectedCode(result.countryCode);
-      setDetectedCountry(result.country);
-      setPhoneValid(result.isValid);
-      setLocalNumber(result.localNumber);
-      return;
-    }
+    // Only store digits — detection happens on blur to avoid
+    // ambiguous prefix conflicts (e.g. +34 Spain vs +234 Nigeria)
     setLocalNumber(digits);
   }
 
