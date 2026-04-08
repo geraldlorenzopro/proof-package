@@ -109,7 +109,7 @@ export const COUNTRY_CODES: CountryCode[] = [
   { flag: "🇯🇲", code: "+1", name: "Jamaica", iso: "JM", areaCodes: ["876","658"] },
   { flag: "🇯🇵", code: "+81", name: "Japón", iso: "JP" },
   { flag: "🇯🇴", code: "+962", name: "Jordania", iso: "JO" },
-  { flag: "🇰🇿", code: "+7", name: "Kazajistán", iso: "KZ" },
+  { flag: "🇰🇿", code: "+7", name: "Kazajistán", iso: "KZ", areaCodes: ["70","71","72","73","74","75","76","77"] },
   { flag: "🇰🇪", code: "+254", name: "Kenia", iso: "KE" },
   { flag: "🇰🇮", code: "+686", name: "Kiribati", iso: "KI" },
   { flag: "🇰🇼", code: "+965", name: "Kuwait", iso: "KW" },
