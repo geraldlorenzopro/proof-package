@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink, MessageCircle } from "lucide-react";
+import ChannelLogo from "./ChannelLogo";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -68,14 +69,14 @@ const STEPS = [
 ];
 
 const CHANNEL_LABELS: Record<string, string> = {
-  whatsapp: "💬 WhatsApp", instagram: "📸 Instagram", facebook: "👍 Facebook",
-  tiktok: "🎵 TikTok", referido: "🤝 Referido", anuncio: "📢 Anuncio / Ads",
-  website: "🌐 Website", llamada: "📞 Llamada", "walk-in": "🚶 Walk-in",
-  youtube: "▶️ YouTube", otro: "••• Otro",
+  whatsapp: "WhatsApp", instagram: "Instagram", facebook: "Facebook",
+  tiktok: "TikTok", referido: "Referido", anuncio: "Anuncio / Ads",
+  website: "Website", llamada: "Llamada", "walk-in": "Walk-in",
+  youtube: "YouTube", otro: "Otro",
 };
 
 const URGENCY_LABELS: Record<string, string> = {
-  urgente: "🔴 Urgente", prioritario: "🟡 Prioritario", informativo: "🟢 Informativo",
+  urgente: "Urgente", prioritario: "Prioritario", informativo: "Informativo",
 };
 
 const TOPIC_LABELS: Record<string, string> = {
@@ -94,7 +95,7 @@ const TOPIC_LABELS: Record<string, string> = {
 };
 
 const DELIVERY_LABELS: Record<string, string> = {
-  whatsapp: "💬 WhatsApp", sms: "📱 SMS", email: "📧 Email", presencial: "📋 Completar ahora",
+  whatsapp: "WhatsApp", sms: "SMS", email: "Email", presencial: "Completar ahora",
 };
 
 interface Props {
@@ -326,10 +327,19 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
     }
   }
 
-  function copyLink() {
-    if (completed?.preIntakeUrl) {
-      navigator.clipboard.writeText(completed.preIntakeUrl);
-      toast.success("Link copiado ✓");
+  async function copyLink() {
+    if (!completed?.preIntakeUrl) return;
+    try {
+      await navigator.clipboard.writeText(completed.preIntakeUrl);
+      toast.success("Enlace copiado al portapapeles");
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = completed.preIntakeUrl;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      toast.success("Enlace copiado");
     }
   }
 
@@ -420,18 +430,28 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
 
                   {/* Summary */}
                   <div className="border border-border rounded-xl p-4 space-y-2.5">
-                    {[
-                      { icon: "📱", label: "Teléfono", value: completed.phone, highlight: true },
-                      { icon: "📍", label: "Canal", value: CHANNEL_LABELS[completed.channel] || completed.channel },
-                      { icon: "⚡", label: "Urgencia", value: URGENCY_LABELS[completed.urgency] || completed.urgency },
-                      { icon: "📂", label: "Tema", value: TOPIC_LABELS[completed.topic] || completed.topic },
-                      { icon: "📩", label: "Envío", value: DELIVERY_LABELS[completed.deliveryChannel] || completed.deliveryChannel },
-                    ].map((row, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">{row.icon} {row.label}</span>
-                        <span className={`font-medium text-right max-w-[60%] ${row.highlight ? "text-foreground text-base" : "text-foreground"}`}>{row.value}</span>
-                      </div>
-                    ))}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Teléfono</span>
+                      <span className="font-medium text-foreground text-base">{completed.phone}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Canal</span>
+                      <span className="font-medium text-foreground"><ChannelLogo channel={completed.channel} size={16} /></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Urgencia</span>
+                      <span className={`font-medium ${completed.urgency === "urgente" ? "text-red-400" : completed.urgency === "prioritario" ? "text-amber-400" : "text-emerald-400"}`}>
+                        {completed.urgency === "urgente" ? "🔴" : completed.urgency === "prioritario" ? "🟡" : "🟢"} {URGENCY_LABELS[completed.urgency] || completed.urgency}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Tema</span>
+                      <span className="font-medium text-foreground text-right max-w-[60%]">{TOPIC_LABELS[completed.topic] || completed.topic}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Envío</span>
+                      <span className="font-medium text-foreground">{DELIVERY_LABELS[completed.deliveryChannel] || completed.deliveryChannel}</span>
+                    </div>
                   </div>
 
                   {/* Status badge */}
