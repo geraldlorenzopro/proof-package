@@ -4,7 +4,7 @@ import { Search, RefreshCw, ChevronDown, Check, AlertTriangle, Plus, X } from "l
 
 import { Badge } from "@/components/ui/badge";
 import { COUNTRY_CODES, FREQUENT_COUNT } from "@/lib/countryCodes";
-import { detectInternational, validateForCountry, parseExisting, getFlag, formatNational, PHONE_LABELS } from "@/lib/phoneDetect";
+import { detectInternational, validateForCountry, parseExisting, getFlag, formatNational, PHONE_LABELS, detectFromDigits } from "@/lib/phoneDetect";
 import PhoneInput from "@/components/shared/PhoneInput";
 import type { IntakeData } from "../IntakeWizard";
 
@@ -159,6 +159,19 @@ export default function StepClient({ data, update, accountId }: Props) {
     const digits = val.replace(/\D/g, "");
     if (digits.length > 15) return;
     setLocalDigits(digits); setPhoneValid(null);
+    // Live auto-detect: if digits are long enough and look international, switch flag
+    if (digits.length >= 10) {
+      const detected = detectFromDigits(digits, selectedCountry);
+      if (detected) {
+        setSelectedFlag(detected.flag);
+        setSelectedCountry(detected.country);
+        setSelectedCode(detected.countryCode);
+        setLocalDigits(detected.localNumber);
+        setPhoneValid(detected.isValid);
+        update({ client_phone: detected.fullPhone });
+        return;
+      }
+    }
   }
 
   function handlePhoneBlur() {
