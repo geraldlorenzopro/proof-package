@@ -48,7 +48,7 @@ const INITIAL_DATA: IntakeData = {
   client_mobile_phone: "",
   client_mobile_phone_label: "mobile",
   client_email: "",
-  client_language: "es",
+  client_language: "",
   client_relationship: "",
   client_relationship_detail: "",
   urgency_level: "",
@@ -150,7 +150,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
     switch (step) {
       case 0: return !!data.entry_channel;
       case 1: return data.client_first_name.length >= 2 && data.client_last_name.length >= 2 && data.client_phone.length >= 5;
-      case 2: return !!data.consultation_reason && !!data.consultation_topic && !!data.intake_delivery_channel;
+      case 2: return !!data.urgency_level && !!data.consultation_reason && !!data.consultation_topic && !!data.intake_delivery_channel;
       default: return false;
     }
   }
