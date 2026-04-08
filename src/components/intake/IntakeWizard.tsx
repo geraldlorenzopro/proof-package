@@ -121,6 +121,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
     deliveryChannel: string;
     preIntakeUrl: string;
     appointmentId: string | null;
+    clientProfileId: string | null;
   } | null>(null);
   const navigate = useNavigate();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -210,7 +211,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         .insert({
           account_id: accountId,
           created_by: user.id,
-          entry_channel: data.entry_channel,
+          entry_channel: data.entry_channel || null,
           referral_source: data.referral_source || null,
           client_profile_id: profileId,
           is_existing_client: data.is_existing_client,
@@ -218,14 +219,14 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
           client_last_name: data.client_last_name,
           client_phone: data.client_phone,
           client_email: data.client_email || null,
-          client_language: data.client_language,
-          client_relationship: data.client_relationship,
+          client_language: data.client_language || null,
+          client_relationship: data.client_relationship || null,
           client_relationship_detail: data.client_relationship_detail || null,
           consultation_reason: data.consultation_reason || null,
           consultation_topic: data.consultation_topic || null,
           consultation_topic_tag: data.consultation_topic_tag || null,
-          intake_delivery_channel: data.intake_delivery_channel,
-          urgency_level: data.urgency_level,
+          intake_delivery_channel: data.intake_delivery_channel || null,
+          urgency_level: data.urgency_level || null,
           notes: data.notes || null,
           status: "pending",
         } as any)
@@ -287,7 +288,9 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         deliveryChannel: data.intake_delivery_channel,
         preIntakeUrl,
         appointmentId: appointment?.id || null,
+        clientProfileId: profileId || null,
       });
+      toast.success("Cliente registrado correctamente");
     } catch (err) {
       console.error("Intake submit error:", err);
       toast.error("Error al registrar el cliente");
@@ -463,9 +466,9 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
                       className="flex items-center justify-center gap-1.5 text-sm font-semibold bg-accent text-accent-foreground py-2.5 rounded-xl hover:opacity-90 transition-all">
                       + Registrar otro
                     </button>
-                    <button onClick={() => { onOpenChange(false); navigate("/cases"); }}
+                    <button onClick={() => { onOpenChange(false); navigate("/dashboard/workspace-demo"); }}
                       className="flex items-center justify-center gap-1.5 text-sm font-semibold border border-border text-foreground py-2.5 rounded-xl hover:bg-secondary/50 transition-all">
-                      → Ir al expediente
+                      → Ver perfil del cliente
                     </button>
                   </div>
                 </div>

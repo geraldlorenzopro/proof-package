@@ -20,6 +20,7 @@ import TodayAppointments from "./TodayAppointments";
 import HubAlerts from "./HubAlerts";
 import HubRecentActivity from "./HubRecentActivity";
 import IntakeWizard from "../intake/IntakeWizard";
+import HubRecentConsultations from "./HubRecentConsultations";
 import NewContactModal from "../workspace/NewContactModal";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
@@ -449,6 +450,13 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
                 ))}
               </>
             )}
+          </motion.div>
+        )}
+
+        {/* ═══ CONSULTAS RECIENTES ═══ */}
+        {canSeeConsultas && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14, duration: 0.4 }}>
+            <HubRecentConsultations accountId={accountId} />
           </motion.div>
         )}
 
