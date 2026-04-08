@@ -136,6 +136,7 @@ export default function StepClient({ data, update, accountId }: Props) {
     setLocalNumber("");
     setCountryIdx(0);
     setShowManual(false);
+    setAutoDetected(false);
     setPhoneDupe(null);
     setPhoneDupeDismissed(false);
     setEmailDupe(null);
