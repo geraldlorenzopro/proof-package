@@ -54,6 +54,7 @@ export default function StepClient({ data, update, accountId }: Props) {
   const [detectedCode, setDetectedCode] = useState(parsed.code);
   const [detectedCountry, setDetectedCountry] = useState(parsed.country);
   const [localNumber, setLocalNumber] = useState(parsed.local);
+  const [rawInput, setRawInput] = useState(""); // tracks if user typed "+"
   const [showDropdown, setShowDropdown] = useState(false);
   const [manualCode, setManualCode] = useState("");
   const [showManual, setShowManual] = useState(false);
@@ -144,6 +145,7 @@ export default function StepClient({ data, update, accountId }: Props) {
       client_email: "",
     });
     setLocalNumber("");
+    setRawInput("");
     setDetectedFlag("🇺🇸");
     setDetectedCode("+1");
     setDetectedCountry("US");
@@ -155,35 +157,64 @@ export default function StepClient({ data, update, accountId }: Props) {
   }
 
   function handleLocalChange(val: string) {
-    const digits = stripNonDigits(val);
-    if (digits.length > 15) return;
+    const cleaned = stripPhoneInput(val);
+    if (cleaned.replace(/\D/g, "").length > 15) return;
 
-    if (digits.length === 0) {
+    setRawInput(cleaned);
+
+    if (cleaned.length === 0 || cleaned === "+") {
       setLocalNumber("");
       setPhoneValid(null);
-      setDetectedFlag("🇺🇸");
-      setDetectedCode("+1");
-      setDetectedCountry("US");
+      if (cleaned.length === 0) {
+        setDetectedFlag("🇺🇸");
+        setDetectedCode("+1");
+        setDetectedCountry("US");
+      }
       return;
     }
 
-    // Only store digits — detection happens on blur to avoid
-    // ambiguous prefix conflicts (e.g. +34 Spain vs +234 Nigeria)
+    // Store only digits for display
+    const digits = cleaned.replace(/\D/g, "");
     setLocalNumber(digits);
   }
 
   // Normalize and check duplicates on blur
   function handlePhoneBlur() {
     const digits = stripNonDigits(localNumber);
-    if (digits.length >= 7 && !showManual) {
-      const result = detectPhone(digits);
-      setDetectedFlag(result.flag);
-      setDetectedCode(result.countryCode);
-      setDetectedCountry(result.country);
-      setLocalNumber(result.localNumber);
-      setPhoneValid(result.isValid);
-      update({ client_phone: result.fullPhone });
+    if (digits.length < 7 || showManual) {
+      checkPhoneDuplicate();
+      return;
     }
+
+    // If user typed "+" → international auto-detect
+    if (rawInput.startsWith("+")) {
+      const result = detectInternational("+" + digits);
+      if (result) {
+        setDetectedFlag(result.flag);
+        setDetectedCode(result.countryCode);
+        setDetectedCountry(result.country);
+        setLocalNumber(result.localNumber);
+        setPhoneValid(result.isValid);
+        update({ client_phone: result.fullPhone });
+        setRawInput(""); // clear the "+" mode after detection
+        checkPhoneDuplicate();
+        return;
+      }
+    }
+
+    // No "+" → use the country from the dropdown
+    // Special case: 10-digit with DR area codes
+    if (digits.length === 10) {
+      const local10 = detectLocal10(digits);
+      setDetectedFlag(local10.flag);
+      setDetectedCode(local10.code);
+      setDetectedCountry(local10.country);
+    }
+
+    const result = validateForCountry(digits, detectedCountry, detectedCode);
+    setPhoneValid(result.isValid);
+    setLocalNumber(result.localNumber || digits);
+    update({ client_phone: result.fullPhone });
     checkPhoneDuplicate();
   }
 
