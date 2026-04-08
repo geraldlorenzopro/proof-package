@@ -18,6 +18,9 @@ export interface IntakeData {
   client_first_name: string;
   client_last_name: string;
   client_phone: string;
+  client_phone_label: string;
+  client_mobile_phone: string;
+  client_mobile_phone_label: string;
   client_email: string;
   client_language: string;
   client_relationship: string;
