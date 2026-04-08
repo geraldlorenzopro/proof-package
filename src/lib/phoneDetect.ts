@@ -166,3 +166,21 @@ export const PHONE_LABELS = [
 ] as const;
 
 export type PhoneLabel = typeof PHONE_LABELS[number]["key"];
+
+/**
+ * Try to detect a country from raw digits (no "+" prefix).
+ * Attempts "+{digits}" parse and checks if it produces a valid number
+ * for a country different from the currently selected one.
+ * Only returns a match if the parsed number is valid (high confidence).
+ */
+export function detectFromDigits(
+  digits: string,
+  currentCountry: string
+): PhoneDetectResult | null {
+  if (!digits || digits.length < 8) return null;
+  const attempt = detectInternational("+" + digits);
+  if (attempt && attempt.isValid && attempt.country !== currentCountry) {
+    return attempt;
+  }
+  return null;
+}
