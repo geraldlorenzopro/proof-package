@@ -76,6 +76,12 @@ const App = () => (
           <Route path="/portal/:cid" element={<ClientPortalRouter />} />
           <Route path="/intake/:token" element={<PreIntakePage />} />
 
+          {/* ═══ PUBLIC TOOL ROUTES (GHL Custom Menu Links) ═══ */}
+          <Route path="/tools/affidavit" element={<AffidavitTool />} />
+          <Route path="/tools/evidence" element={<EvidenceTool />} />
+          <Route path="/tools/cspa" element={<CspaTool />} />
+          <Route path="/tools/uscis-analyzer" element={<UscisAnalyzer />} />
+
           {/* ═══ PROTECTED ROUTES ═══ */}
           <Route path="/hub" element={<HubPage />} />
           <Route path="/hub/intelligence" element={<ProtectedRoute><IntelligenceCenterPage /></ProtectedRoute>} />
