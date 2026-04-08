@@ -169,18 +169,44 @@ export type PhoneLabel = typeof PHONE_LABELS[number]["key"];
 
 /**
  * Try to detect a country from raw digits (no "+" prefix).
- * Attempts "+{digits}" parse and checks if it produces a valid number
- * for a country different from the currently selected one.
- * Only returns a match if the parsed number is valid (high confidence).
+ * Strategy:
+ * 1. For 10-digit numbers, try +1{digits} (NANP) and check if the area code
+ *    maps to a non-US Caribbean/territory country.
+ * 2. For any length, try +{digits} and see if libphonenumber finds a valid match.
+ * Only returns if the detected country differs from the currently selected one.
  */
 export function detectFromDigits(
   digits: string,
   currentCountry: string
 ): PhoneDetectResult | null {
   if (!digits || digits.length < 8) return null;
-  const attempt = detectInternational("+" + digits);
-  if (attempt && attempt.isValid && attempt.country !== currentCountry) {
-    return attempt;
+
+  // Strategy 1: 10-digit NANP — try +1{digits} for Caribbean area codes
+  if (digits.length === 10) {
+    const areaCode = digits.slice(0, 3);
+    const nanpCountries = COUNTRY_CODES.filter(c => c.code === "+1" && c.areaCodes?.length);
+    for (const cc of nanpCountries) {
+      if (cc.areaCodes!.includes(areaCode)) {
+        // This area code belongs to a non-US NANP country
+        const attempt = detectInternational("+1" + digits);
+        if (attempt && attempt.isValid) {
+          // Override country to the correct one
+          attempt.country = cc.iso;
+          attempt.flag = getFlag(cc.iso);
+          if (attempt.country !== currentCountry) return attempt;
+        }
+        break;
+      }
+    }
   }
+
+  // Strategy 2: Try +{digits} directly for non-NANP international
+  if (digits.length >= 10) {
+    const attempt = detectInternational("+" + digits);
+    if (attempt && attempt.isValid && attempt.country !== currentCountry) {
+      return attempt;
+    }
+  }
+
   return null;
 }
