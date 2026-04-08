@@ -121,12 +121,14 @@ const App = () => (
           {/* ═══ ADMIN ROUTES (auth + platform_admin check inside AdminLayout) ═══ */}
           <Route path="/admin" element={<ProtectedRoute><AdminLayout><AdminDashboardPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/dashboard" element={<ProtectedRoute><AdminLayout><AdminDashboardPage /></AdminLayout></ProtectedRoute>} />
-          <Route path="/admin/accounts" element={<ProtectedRoute><AdminLayout><AdminAccountsPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin/firms" element={<ProtectedRoute><AdminLayout><AdminAccountsPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin/accounts" element={<Navigate to="/admin/firms" replace />} />
           <Route path="/admin/accounts/:accountId" element={<ProtectedRoute><AdminLayout><AdminAccountDetailPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute><AdminLayout><AdminUsersPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/billing" element={<ProtectedRoute><AdminLayout><AdminBillingPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/analytics" element={<ProtectedRoute><AdminLayout><AdminAnalyticsPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/logs" element={<ProtectedRoute><AdminLayout><AdminLogsPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute><AdminLayout><div className="text-white">Configuración — Coming soon</div></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/test-suite" element={<ProtectedRoute><AdminTestSuite /></ProtectedRoute>} />
 
           {/* ═══ REDIRECT ROUTES ═══ */}
