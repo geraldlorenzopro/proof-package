@@ -52,6 +52,7 @@ import OfficeSettingsPage from "./pages/OfficeSettingsPage";
 import Register from "./pages/Register";
 import PreIntakePage from "./pages/PreIntakePage";
 import AdminTestSuite from "./pages/AdminTestSuite";
+import ConsultationsPage from "./pages/ConsultationsPage";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => (
           {/* ═══ PROTECTED ROUTES ═══ */}
           <Route path="/hub" element={<HubPage />} />
           <Route path="/hub/intelligence" element={<ProtectedRoute><IntelligenceCenterPage /></ProtectedRoute>} />
+          <Route path="/hub/consultations" element={<ProtectedRoute><ConsultationsPage /></ProtectedRoute>} />
           <Route path="/hub/settings/office" element={<ProtectedRoute><OfficeSettingsPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/dashboard/cases" element={<ProtectedRoute><CasesPage /></ProtectedRoute>} />
