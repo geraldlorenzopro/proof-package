@@ -1,19 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink, QrCode } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import StepChannel from "./steps/StepChannel";
 import StepClient from "./steps/StepClient";
 import StepConsulta from "./steps/StepConsulta";
 
 export interface IntakeData {
-  // Step 1 — Canal
   entry_channel: string;
   referral_source: string;
   entry_channel_detail: string;
-  // Step 2 — Cliente
   client_profile_id: string | null;
   is_existing_client: boolean;
   client_first_name: string;
@@ -23,7 +22,6 @@ export interface IntakeData {
   client_language: string;
   client_relationship: string;
   client_relationship_detail: string;
-  // Step 3 — Consulta
   urgency_level: string;
   consultation_reason: string;
   consultation_topic: string;
@@ -102,6 +100,9 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
   const [data, setData] = useState<IntakeData>({ ...INITIAL_DATA });
   const [accountId, setAccountId] = useState<string>("");
   const [creating, setCreating] = useState(false);
+  const [slideDir, setSlideDir] = useState<"left" | "right">("left");
+  const [animating, setAnimating] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [completed, setCompleted] = useState<{
     clientName: string;
     phone: string;
@@ -114,12 +115,14 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
     appointmentId: string | null;
   } | null>(null);
   const navigate = useNavigate();
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
       setStep(0);
       setData({ ...INITIAL_DATA });
       setCompleted(null);
+      setAnimating(false);
       loadAccountId();
     }
   }, [open]);
@@ -144,6 +147,25 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
     }
   }
 
+  const goToStep = useCallback((newStep: number) => {
+    if (animating) return;
+    setSlideDir(newStep > step ? "left" : "right");
+    setAnimating(true);
+    setTimeout(() => {
+      setStep(newStep);
+      setTimeout(() => setAnimating(false), 50);
+    }, 150);
+  }, [step, animating]);
+
+  function handleClose() {
+    const hasData = data.client_first_name || data.client_last_name || data.client_phone || data.entry_channel;
+    if (hasData && !completed) {
+      setShowExitConfirm(true);
+    } else {
+      onOpenChange(false);
+    }
+  }
+
   async function handleSubmit() {
     setCreating(true);
     try {
@@ -152,7 +174,6 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
 
       const clientName = `${data.client_first_name} ${data.client_last_name}`.trim();
 
-      // 1. Create or link client profile
       let profileId = data.client_profile_id;
       if (!profileId) {
         const { data: profile, error: profErr } = await supabase
@@ -164,6 +185,8 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
             last_name: data.client_last_name,
             phone: data.client_phone,
             email: data.client_email || null,
+            source_channel: data.entry_channel,
+            source_detail: data.referral_source || data.entry_channel_detail || null,
           })
           .select("id")
           .single();
@@ -171,7 +194,6 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         profileId = profile.id;
       }
 
-      // 2. Save intake session
       const { data: intakeSession, error: intakeErr } = await supabase
         .from("intake_sessions")
         .insert({
@@ -200,7 +222,6 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         .single();
       if (intakeErr) throw intakeErr;
 
-      // 3. Create appointment
       const { data: appointment, error: apptErr } = await supabase
         .from("appointments")
         .insert({
@@ -223,7 +244,6 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         ? `${window.location.origin}/intake/${appointment.pre_intake_token}`
         : "";
 
-      // 4. Send pre-intake based on delivery channel
       if (appointment?.pre_intake_token && data.intake_delivery_channel !== "presencial") {
         if (data.intake_delivery_channel === "email" && data.client_email) {
           try {
@@ -240,10 +260,8 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
             console.warn("Pre-intake email failed:", emailErr);
           }
         }
-        // WhatsApp and SMS: mark as pending in DB (no edge function yet)
       }
 
-      // 5. If "completar ahora", open pre-intake in new tab
       if (data.intake_delivery_channel === "presencial" && preIntakeUrl) {
         window.open(preIntakeUrl, "_blank");
       }
@@ -254,7 +272,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         email: data.client_email,
         urgency: data.urgency_level,
         channel: data.entry_channel,
-        topic: data.consultation_topic_tag,
+        topic: data.consultation_topic_tag || data.consultation_topic,
         deliveryChannel: data.intake_delivery_channel,
         preIntakeUrl,
         appointmentId: appointment?.id || null,
@@ -272,6 +290,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
       setStep(0);
       setData({ ...INITIAL_DATA });
       setCompleted(null);
+      setAnimating(false);
     } else {
       onOpenChange(false);
     }
@@ -280,190 +299,229 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
   function copyLink() {
     if (completed?.preIntakeUrl) {
       navigator.clipboard.writeText(completed.preIntakeUrl);
-      toast.success("Link copiado al portapapeles");
+      toast.success("Link copiado ✓");
     }
   }
 
+  // Step completion checks for progress bar
+  const step0Done = !!data.entry_channel;
+  const step1Done = data.client_first_name.length >= 2 && data.client_last_name.length >= 2 && data.client_phone.length >= 5;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0 gap-0 bg-card border-border overflow-hidden flex flex-col [&>button.absolute]:hidden">
-        {/* Header + Progress */}
-        <div className="border-b border-border p-4 sm:p-5 shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-foreground">
-              {completed ? "✅ ¡Registro completado!" : "Nueva consulta"}
-            </h2>
-            <button onClick={() => onOpenChange(false)} className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-all">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          {!completed && (
-            <>
-              <div className="flex items-center gap-1">
-                {STEPS.map((s, i) => (
-                  <div key={s.key} className="flex items-center flex-1">
-                    <div className={`flex-1 h-1.5 rounded-full transition-all ${i <= step ? "bg-jarvis" : "bg-border"}`} />
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between mt-1.5">
-                {STEPS.map((s, i) => (
-                  <span key={s.key} className={`text-[9px] font-medium tracking-wide uppercase ${
-                    i === step ? "text-jarvis" : i < step ? "text-muted-foreground" : "text-muted-foreground/40"
-                  }`}>
-                    {s.label}
-                  </span>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 p-4 sm:p-5">
-          {completed ? (
-            <div className="space-y-4">
-              <div className="text-center mb-2">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-2">
-                  <Check className="w-6 h-6 text-emerald-400" />
-                </div>
-                <p className="text-base font-semibold text-foreground">
-                  {completed.clientName}
-                </p>
-                <p className="text-sm text-muted-foreground">fue registrado correctamente.</p>
-              </div>
-
-              <div className="border border-border rounded-xl p-4 space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Resumen</p>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">📱 Canal</span>
-                  <span className="text-foreground font-medium">{CHANNEL_LABELS[completed.channel] || completed.channel}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">📞 Teléfono</span>
-                  <span className="text-foreground font-medium">{completed.phone}</span>
-                </div>
-                {completed.email && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">📧 Email</span>
-                    <span className="text-foreground font-medium">{completed.email}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">⚡ Urgencia</span>
-                  <span className="text-foreground font-medium">{URGENCY_LABELS[completed.urgency] || completed.urgency}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">📋 Tema</span>
-                  <span className="text-foreground font-medium text-right max-w-[60%]">{TOPIC_LABELS[completed.topic] || completed.topic}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">📤 Pre-intake</span>
-                  <span className="text-foreground font-medium">{DELIVERY_LABELS[completed.deliveryChannel] || completed.deliveryChannel}</span>
-                </div>
-              </div>
-
-              {/* Delivery status */}
-              {completed.deliveryChannel === "email" && completed.email && (
-                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
-                  <p className="text-sm text-emerald-400 font-semibold">📧 Pre-intake enviado a {completed.email}</p>
-                </div>
-              )}
-              {completed.deliveryChannel === "whatsapp" && (
-                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
-                  <p className="text-sm text-emerald-400 font-semibold">💬 Pre-intake enviado por WhatsApp a {completed.phone}</p>
-                </div>
-              )}
-              {completed.deliveryChannel === "sms" && (
-                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
-                  <p className="text-sm text-emerald-400 font-semibold">📱 Pre-intake enviado por SMS a {completed.phone}</p>
-                </div>
-              )}
-              {completed.deliveryChannel === "presencial" && completed.preIntakeUrl && (
-                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
-                  <p className="text-sm text-emerald-400 font-semibold">🔗 Formulario abierto en nueva pestaña</p>
-                </div>
-              )}
-
-              {/* Always show link + actions */}
-              {completed.preIntakeUrl && (
-                <div className="border border-border rounded-xl px-4 py-3 space-y-2.5">
-                  <p className="text-sm font-semibold text-foreground">🔗 Link del formulario</p>
-                  <div className="flex gap-2">
-                    <input type="text" readOnly value={completed.preIntakeUrl}
-                      className="flex-1 text-xs border border-input bg-background rounded-lg px-3 py-2 text-muted-foreground" />
-                    <button onClick={copyLink}
-                      className="flex items-center gap-1.5 text-xs font-semibold bg-jarvis text-jarvis-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-all">
-                      <Copy className="w-3.5 h-3.5" /> Copiar
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const msg = encodeURIComponent(`Hola ${completed.clientName.split(" ")[0]}, antes de su consulta necesitamos que complete este formulario: ${completed.preIntakeUrl}`);
-                      const phone = completed.phone.replace(/\D/g, "");
-                      window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
-                    }}
-                    className="w-full flex items-center justify-center gap-2 text-sm font-semibold bg-emerald-600 text-white py-2.5 rounded-xl hover:bg-emerald-700 transition-all">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    📱 Compartir por WhatsApp
-                  </button>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <button onClick={() => handleDone("new")}
-                  className="flex items-center justify-center gap-1.5 text-sm font-semibold bg-jarvis text-jarvis-foreground py-2.5 rounded-xl hover:opacity-90 transition-all">
-                  + Registrar otro
-                </button>
-                <button onClick={() => { onOpenChange(false); navigate("/cases"); }}
-                  className="flex items-center justify-center gap-1.5 text-sm font-semibold border border-border text-foreground py-2.5 rounded-xl hover:bg-secondary/50 transition-all">
-                  → Ir al expediente
-                </button>
-              </div>
+    <>
+      <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); else onOpenChange(o); }}>
+        <DialogContent className="max-w-4xl p-0 gap-0 bg-card border-border overflow-hidden flex flex-col [&>button.absolute]:hidden"
+          onEscapeKeyDown={(e) => { e.preventDefault(); handleClose(); }}>
+          {/* Header + Progress */}
+          <div className="border-b border-border p-4 sm:p-5 shrink-0">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-foreground">
+                {completed ? "✅ ¡Registro completado!" : "Nueva consulta"}
+              </h2>
+              <button onClick={handleClose} className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-all">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          ) : (
-            <>
-              {step === 0 && <StepChannel data={data} update={update} />}
-              {step === 1 && <StepClient data={data} update={update} accountId={accountId} />}
-              {step === 2 && <StepConsulta data={data} update={update} />}
-            </>
-          )}
-        </div>
+            {!completed && (
+              <div className="flex items-center gap-2">
+                {STEPS.map((s, i) => {
+                  const isDone = i < step || (i === 0 && step0Done && step > 0) || (i === 1 && step1Done && step > 1);
+                  const isActive = i === step;
+                  const isPending = i > step;
+                  return (
+                    <div key={s.key} className="flex items-center flex-1 gap-2">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-200 ${
+                        isDone ? "bg-emerald-500/20 text-emerald-400" :
+                        isActive ? "bg-accent/20 text-accent ring-2 ring-accent/30" :
+                        "bg-muted text-muted-foreground/50"
+                      }`}>
+                        {isDone ? <Check className="w-3.5 h-3.5" /> : i + 1}
+                      </div>
+                      <span className={`text-xs font-medium hidden sm:inline transition-colors ${
+                        isActive ? "text-accent" : isDone ? "text-emerald-400" : "text-muted-foreground/50"
+                      }`}>{s.label}</span>
+                      {i < STEPS.length - 1 && (
+                        <div className={`flex-1 h-0.5 rounded-full transition-all duration-300 ${isDone ? "bg-emerald-500/40" : "bg-border"}`} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-        {/* Footer — navigation */}
-        {!completed && (
-          <div className="border-t border-border p-4 sm:p-5 flex items-center justify-between shrink-0">
-            <button
-              onClick={() => setStep(Math.max(0, step - 1))}
-              disabled={step === 0}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Anterior
-            </button>
-
-            {step < 2 ? (
-              <button
-                onClick={() => setStep(step + 1)}
-                disabled={!canNext()}
-                className="flex items-center gap-1.5 text-sm font-semibold bg-jarvis text-jarvis-foreground px-5 py-2 rounded-xl hover:opacity-90 disabled:opacity-40 transition-all"
-              >
-                Siguiente
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={creating || !canNext()}
-                className="flex items-center gap-1.5 text-sm font-semibold bg-emerald-600 text-white px-5 py-2 rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-all"
-              >
-                {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                {creating ? "Registrando..." : "Registrar Cliente"}
-              </button>
+            {/* Client summary bar on step 3 */}
+            {!completed && step === 2 && data.client_first_name && (
+              <div className="mt-3 flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary/30 border border-border">
+                <div className="w-7 h-7 rounded-full bg-accent/10 flex items-center justify-center text-accent text-xs font-bold">
+                  {data.client_first_name[0]?.toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{data.client_first_name} {data.client_last_name}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    {data.client_phone}{data.client_email ? ` · ${data.client_email}` : ""} · {CHANNEL_LABELS[data.entry_channel] || data.entry_channel}
+                  </p>
+                </div>
+              </div>
             )}
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+
+          {/* Content with slide transition */}
+          <div className="flex-1 p-4 sm:p-5 overflow-hidden" ref={contentRef}>
+            <div className={`transition-all duration-200 ease-out ${
+              animating
+                ? slideDir === "left" ? "opacity-0 translate-x-4" : "opacity-0 -translate-x-4"
+                : "opacity-100 translate-x-0"
+            }`}>
+              {completed ? (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="text-center mb-2">
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-2">
+                      <Check className="w-6 h-6 text-emerald-400" />
+                    </div>
+                    <p className="text-base font-semibold text-foreground">{completed.clientName}</p>
+                    <p className="text-sm text-muted-foreground">fue registrado correctamente.</p>
+                  </div>
+
+                  <div className="border border-border rounded-xl p-4 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Resumen</p>
+                    {[
+                      { icon: "📱", label: "Canal", value: CHANNEL_LABELS[completed.channel] || completed.channel },
+                      { icon: "📞", label: "Teléfono", value: completed.phone },
+                      ...(completed.email ? [{ icon: "📧", label: "Email", value: completed.email }] : []),
+                      { icon: "⚡", label: "Urgencia", value: URGENCY_LABELS[completed.urgency] || completed.urgency },
+                      { icon: "📋", label: "Tema", value: TOPIC_LABELS[completed.topic] || completed.topic },
+                      { icon: "📤", label: "Pre-intake", value: DELIVERY_LABELS[completed.deliveryChannel] || completed.deliveryChannel },
+                    ].map((row, idx) => (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{row.icon} {row.label}</span>
+                        <span className="text-foreground font-medium text-right max-w-[60%]">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Delivery status */}
+                  {completed.deliveryChannel === "email" && completed.email && (
+                    <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
+                      <p className="text-sm text-emerald-400 font-semibold">📧 Pre-intake enviado a {completed.email}</p>
+                    </div>
+                  )}
+                  {completed.deliveryChannel === "whatsapp" && (
+                    <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
+                      <p className="text-sm text-emerald-400 font-semibold">💬 Pre-intake listo para enviar por WhatsApp</p>
+                    </div>
+                  )}
+                  {completed.deliveryChannel === "sms" && (
+                    <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
+                      <p className="text-sm text-emerald-400 font-semibold">📱 Pre-intake enviado por SMS a {completed.phone}</p>
+                    </div>
+                  )}
+                  {completed.deliveryChannel === "presencial" && (
+                    <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
+                      <p className="text-sm text-emerald-400 font-semibold">🔗 Formulario abierto en nueva pestaña</p>
+                    </div>
+                  )}
+
+                  {/* Link + share */}
+                  {completed.preIntakeUrl && (
+                    <div className="border border-border rounded-xl px-4 py-3 space-y-2.5">
+                      <p className="text-sm font-semibold text-foreground">🔗 Link del formulario</p>
+                      <div className="flex gap-2">
+                        <input type="text" readOnly value={completed.preIntakeUrl}
+                          className="flex-1 text-xs border border-input bg-background rounded-lg px-3 py-2 text-muted-foreground font-mono" />
+                        <button onClick={copyLink}
+                          className="flex items-center gap-1.5 text-xs font-semibold bg-accent text-accent-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-all">
+                          <Copy className="w-3.5 h-3.5" /> Copiar
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const firstName = completed.clientName.split(" ")[0];
+                          const msg = encodeURIComponent(`Hola ${firstName}, antes de su consulta necesitamos que complete este formulario: ${completed.preIntakeUrl}`);
+                          const phone = completed.phone.replace(/\D/g, "");
+                          window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+                        }}
+                        className="w-full flex items-center justify-center gap-2 text-sm font-semibold bg-emerald-600 text-white py-2.5 rounded-xl hover:bg-emerald-700 transition-all">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        📱 Compartir por WhatsApp
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <button onClick={() => handleDone("new")}
+                      className="flex items-center justify-center gap-1.5 text-sm font-semibold bg-accent text-accent-foreground py-2.5 rounded-xl hover:opacity-90 transition-all">
+                      + Registrar otro
+                    </button>
+                    <button onClick={() => { onOpenChange(false); navigate("/cases"); }}
+                      className="flex items-center justify-center gap-1.5 text-sm font-semibold border border-border text-foreground py-2.5 rounded-xl hover:bg-secondary/50 transition-all">
+                      → Ir al expediente
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {step === 0 && <StepChannel data={data} update={update} />}
+                  {step === 1 && <StepClient data={data} update={update} accountId={accountId} />}
+                  {step === 2 && <StepConsulta data={data} update={update} />}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          {!completed && (
+            <div className="border-t border-border p-4 sm:p-5 flex items-center justify-between shrink-0">
+              <button
+                onClick={() => goToStep(Math.max(0, step - 1))}
+                disabled={step === 0}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Anterior
+              </button>
+
+              {step < 2 ? (
+                <button
+                  onClick={() => goToStep(step + 1)}
+                  disabled={!canNext()}
+                  className="flex items-center gap-1.5 text-sm font-semibold bg-accent text-accent-foreground px-5 py-2 rounded-xl hover:opacity-90 disabled:opacity-40 disabled:pointer-events-none transition-all"
+                >
+                  Siguiente
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={creating || !canNext()}
+                  className="flex items-center gap-1.5 text-sm font-semibold bg-emerald-600 text-white px-5 py-2 rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:pointer-events-none transition-all"
+                >
+                  {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  {creating ? "Registrando..." : "Registrar"}
+                </button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Exit confirmation */}
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">¿Cancelar registro?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Los datos ingresados no se guardarán.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-border text-foreground hover:bg-secondary">Volver</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setShowExitConfirm(false); onOpenChange(false); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Sí, salir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

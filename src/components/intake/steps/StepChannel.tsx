@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+import { Check } from "lucide-react";
 import type { IntakeData } from "../IntakeWizard";
 import { MessageCircle, Instagram, Facebook, Music2, Users, Megaphone, Globe, Phone, DoorOpen, Youtube, MoreHorizontal } from "lucide-react";
 
@@ -21,6 +23,15 @@ interface Props {
 }
 
 export default function StepChannel({ data, update }: Props) {
+  const referidoRef = useRef<HTMLInputElement>(null);
+  const otroRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus conditional fields
+  useEffect(() => {
+    if (data.entry_channel === "referido") setTimeout(() => referidoRef.current?.focus(), 100);
+    if (data.entry_channel === "otro") setTimeout(() => otroRef.current?.focus(), 100);
+  }, [data.entry_channel]);
+
   return (
     <div className="space-y-4">
       <div>
@@ -36,16 +47,21 @@ export default function StepChannel({ data, update }: Props) {
             <div key={ch.key} className="w-[calc(33.333%-0.5rem)]">
               <button
                 onClick={() => update({ entry_channel: ch.key, referral_source: "", entry_channel_detail: "" })}
-                className={`w-full flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                className={`w-full flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200 relative ${
                   selected
-                    ? "border-jarvis bg-jarvis/10 ring-1 ring-jarvis/30"
+                    ? "border-accent bg-accent/10 ring-1 ring-accent/30 shadow-sm shadow-accent/10"
                     : "border-border hover:border-foreground/20 bg-card"
                 }`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${ch.color}`}>
+                {selected && (
+                  <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-accent flex items-center justify-center">
+                    <Check className="w-2.5 h-2.5 text-accent-foreground" />
+                  </div>
+                )}
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${ch.color}`}>
                   <Icon className="w-5 h-5" />
                 </div>
-                <span className={`text-sm font-semibold ${selected ? "text-jarvis" : "text-foreground"}`}>
+                <span className={`text-sm font-semibold transition-colors ${selected ? "text-accent" : "text-foreground"}`}>
                   {ch.label}
                 </span>
               </button>
@@ -55,26 +71,28 @@ export default function StepChannel({ data, update }: Props) {
       </div>
 
       {data.entry_channel === "referido" && (
-        <div>
+        <div className="animate-fade-in">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
             ¿Quién lo refirió?
           </label>
           <input
+            ref={referidoRef}
             type="text"
             value={data.referral_source}
             onChange={e => update({ referral_source: e.target.value })}
-            placeholder="Nombre del referido"
+            placeholder="Nombre de quien refirió..."
             className="w-full border border-input bg-background rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
       )}
 
       {data.entry_channel === "otro" && (
-        <div>
+        <div className="animate-fade-in">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
-            ¿Cuál canal? (escribe aquí)
+            ¿Por qué canal llegó?
           </label>
           <input
+            ref={otroRef}
             type="text"
             value={data.entry_channel_detail}
             onChange={e => update({ entry_channel_detail: e.target.value })}
