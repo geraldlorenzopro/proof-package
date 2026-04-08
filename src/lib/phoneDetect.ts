@@ -159,10 +159,10 @@ export function parseExisting(phone: string): { country: string; flag: string; c
 /** Phone label/type options */
 export const PHONE_LABELS = [
   { key: "whatsapp", label: "WhatsApp", emoji: "💬" },
-  { key: "mobile", label: "Mobile", emoji: "📱" },
-  { key: "home", label: "Home", emoji: "🏠" },
-  { key: "work", label: "Work", emoji: "💼" },
-  { key: "landline", label: "Landline", emoji: "☎️" },
+  { key: "mobile", label: "Móvil", emoji: "📱" },
+  { key: "home", label: "Casa", emoji: "🏠" },
+  { key: "work", label: "Trabajo", emoji: "💼" },
+  { key: "landline", label: "Tel. fijo", emoji: "☎️" },
 ] as const;
 
 export type PhoneLabel = typeof PHONE_LABELS[number]["key"];
