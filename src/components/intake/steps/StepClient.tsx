@@ -41,6 +41,7 @@ export default function StepClient({ data, update, accountId }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ClientResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
 
   const parsed = parseExistingPhone(data.client_phone);
   const [countryIdx, setCountryIdx] = useState(parsed.countryIdx);
