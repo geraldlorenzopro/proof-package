@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink, MessageCircle } from "lucide-react";
+import ChannelLogo from "./ChannelLogo";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -68,14 +69,14 @@ const STEPS = [
 ];
 
 const CHANNEL_LABELS: Record<string, string> = {
-  whatsapp: "💬 WhatsApp", instagram: "📸 Instagram", facebook: "👍 Facebook",
-  tiktok: "🎵 TikTok", referido: "🤝 Referido", anuncio: "📢 Anuncio / Ads",
-  website: "🌐 Website", llamada: "📞 Llamada", "walk-in": "🚶 Walk-in",
-  youtube: "▶️ YouTube", otro: "••• Otro",
+  whatsapp: "WhatsApp", instagram: "Instagram", facebook: "Facebook",
+  tiktok: "TikTok", referido: "Referido", anuncio: "Anuncio / Ads",
+  website: "Website", llamada: "Llamada", "walk-in": "Walk-in",
+  youtube: "YouTube", otro: "Otro",
 };
 
 const URGENCY_LABELS: Record<string, string> = {
-  urgente: "🔴 Urgente", prioritario: "🟡 Prioritario", informativo: "🟢 Informativo",
+  urgente: "Urgente", prioritario: "Prioritario", informativo: "Informativo",
 };
 
 const TOPIC_LABELS: Record<string, string> = {
@@ -94,7 +95,7 @@ const TOPIC_LABELS: Record<string, string> = {
 };
 
 const DELIVERY_LABELS: Record<string, string> = {
-  whatsapp: "💬 WhatsApp", sms: "📱 SMS", email: "📧 Email", presencial: "📋 Completar ahora",
+  whatsapp: "WhatsApp", sms: "SMS", email: "Email", presencial: "Completar ahora",
 };
 
 interface Props {
