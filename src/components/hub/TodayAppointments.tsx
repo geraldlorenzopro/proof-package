@@ -262,11 +262,18 @@ export default function TodayAppointments({ accountId, maxItems }: Props) {
             </div>
           ))}
         </div>
+        {maxItems && appointments.length > maxItems && (
+          <button
+            onClick={() => navigate("/hub/consultations")}
+            className="text-[10px] font-semibold text-jarvis hover:text-jarvis/80 mt-1"
+          >
+            Ver {appointments.length - maxItems} más →
+          </button>
+        )}
       ) : (
-        <div className="rounded-xl border border-border/30 bg-card/30 p-6 text-center">
-          <Calendar className="w-8 h-8 text-muted-foreground/20 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground/60">Sin consultas para hoy.</p>
-          <p className="text-xs text-muted-foreground/40 mt-1">Las citas agendadas en GHL aparecerán aquí automáticamente.</p>
+        <div className="rounded-xl border border-border/30 bg-card/30 p-4 text-center">
+          <Calendar className="w-6 h-6 text-muted-foreground/20 mx-auto mb-1" />
+          <p className="text-xs text-muted-foreground/60">Sin consultas para hoy</p>
         </div>
       )}
 
