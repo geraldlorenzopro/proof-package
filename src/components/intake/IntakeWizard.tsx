@@ -1,21 +1,19 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { X, ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import StepChannel from "./steps/StepChannel";
 import StepClient from "./steps/StepClient";
-import StepSituation from "./steps/StepSituation";
-import StepGoal from "./steps/StepGoal";
-import StepAiDetection from "./steps/StepAiDetection";
-import StepCreate from "./steps/StepCreate";
+import StepConsulta from "./steps/StepConsulta";
 
 export interface IntakeData {
-  // Step 1
+  // Step 1 — Canal
   entry_channel: string;
   referral_source: string;
   entry_channel_detail: string;
-  // Step 2
+  // Step 2 — Cliente
   client_profile_id: string | null;
   is_existing_client: boolean;
   client_first_name: string;
@@ -23,28 +21,12 @@ export interface IntakeData {
   client_phone: string;
   client_email: string;
   client_language: string;
-  // Step 3
-  current_status: string;
-  entry_date: string;
-  entry_method: string;
-  has_prior_deportation: boolean;
-  has_criminal_record: boolean;
-  current_documents: string[];
-  // Step 4
-  client_goal: string;
-  client_goal_text: string;
+  client_type: string;
+  // Step 3 — Consulta
   urgency_level: string;
-  has_pending_deadline: boolean;
-  deadline_date: string;
-  // Step 5
-  ai_suggested_case_type: string;
-  ai_confidence_score: number;
-  ai_reasoning: string;
-  ai_flags: string[];
-  ai_secondary_type: string;
-  final_case_type: string;
-  // Step 6
+  consultation_type: string;
   notes: string;
+  send_pre_intake: boolean;
 }
 
 const INITIAL_DATA: IntakeData = {
@@ -58,34 +40,53 @@ const INITIAL_DATA: IntakeData = {
   client_phone: "",
   client_email: "",
   client_language: "es",
-  current_status: "",
-  entry_date: "",
-  entry_method: "",
-  has_prior_deportation: false,
-  has_criminal_record: false,
-  current_documents: [],
-  client_goal: "",
-  client_goal_text: "",
+  client_type: "principal",
   urgency_level: "normal",
-  has_pending_deadline: false,
-  deadline_date: "",
-  ai_suggested_case_type: "",
-  ai_confidence_score: 0,
-  ai_reasoning: "",
-  ai_flags: [],
-  ai_secondary_type: "",
-  final_case_type: "",
+  consultation_type: "inicial",
   notes: "",
+  send_pre_intake: true,
 };
 
 const STEPS = [
   { label: "Canal", key: "channel" },
   { label: "Cliente", key: "client" },
-  { label: "Situación", key: "situation" },
-  { label: "Objetivo", key: "goal" },
-  { label: "Detección AI", key: "ai" },
-  { label: "Expediente", key: "create" },
+  { label: "Consulta", key: "consulta" },
 ];
+
+const CLIENT_TYPE_LABELS: Record<string, string> = {
+  principal: "👤 Cliente principal",
+  familiar: "👨‍👩‍👧 Familiar/Derivado",
+  peticionario: "🧑‍💼 Peticionario",
+  referido: "⚖️ Referido por abogado",
+};
+
+const URGENCY_LABELS: Record<string, string> = {
+  urgent: "🔴 Urgente",
+  normal: "🟡 Normal",
+  exploring: "🟢 Explorando",
+};
+
+const CONSULTATION_LABELS: Record<string, string> = {
+  inicial: "Consulta inicial de inmigración",
+  seguimiento: "Seguimiento de caso existente",
+  emergencia: "Emergencia migratoria",
+  naturalizacion: "Consulta de naturalización",
+  otra: "Otra consulta",
+};
+
+const CHANNEL_LABELS: Record<string, string> = {
+  whatsapp: "WhatsApp",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  tiktok: "TikTok",
+  referido: "Referido",
+  anuncio: "Anuncio / Ads",
+  website: "Website",
+  llamada: "Llamada",
+  "walk-in": "Walk-in",
+  youtube: "YouTube",
+  otro: "Otro",
+};
 
 interface Props {
   open: boolean;
@@ -98,14 +99,24 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
   const [data, setData] = useState<IntakeData>({ ...INITIAL_DATA });
   const [accountId, setAccountId] = useState<string>("");
   const [creating, setCreating] = useState(false);
-  const [created, setCreated] = useState<any>(null);
+  const [completed, setCompleted] = useState<{
+    clientName: string;
+    phone: string;
+    email: string;
+    urgency: string;
+    channel: string;
+    consultationType: string;
+    preIntakeSent: boolean;
+    preIntakeUrl: string;
+    appointmentId: string | null;
+  } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (open) {
       setStep(0);
       setData({ ...INITIAL_DATA });
-      setCreated(null);
+      setCompleted(null);
       loadAccountId();
     }
   }, [open]);
@@ -125,19 +136,18 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
     switch (step) {
       case 0: return !!data.entry_channel;
       case 1: return data.client_first_name.length >= 2 && data.client_last_name.length >= 2 && data.client_phone.length >= 5;
-      case 2: return true;
-      case 3: return !!(data.client_goal || data.client_goal_text);
-      case 4: return !!data.final_case_type;
-      case 5: return true;
+      case 2: return !!data.consultation_type;
       default: return false;
     }
   }
 
-  async function handleCreate() {
+  async function handleSubmit() {
     setCreating(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      const clientName = `${data.client_first_name} ${data.client_last_name}`.trim();
 
       // 1. Create or link client profile
       let profileId = data.client_profile_id;
@@ -158,76 +168,107 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         profileId = profile.id;
       }
 
-      // 2. Create the case
-      const { data: newCase, error: caseErr } = await supabase
-        .from("client_cases")
+      // 2. Save intake session
+      const { data: intakeSession, error: intakeErr } = await supabase
+        .from("intake_sessions")
         .insert({
-          professional_id: user.id,
           account_id: accountId,
-          assigned_to: user.id,
-          client_name: `${data.client_first_name} ${data.client_last_name}`.trim(),
-          client_email: data.client_email || `${data.client_phone}@intake.ner`,
-          case_type: data.final_case_type,
+          created_by: user.id,
+          entry_channel: data.entry_channel,
+          referral_source: data.referral_source || null,
           client_profile_id: profileId,
-          status: "pending",
+          is_existing_client: data.is_existing_client,
+          client_first_name: data.client_first_name,
+          client_last_name: data.client_last_name,
+          client_phone: data.client_phone,
+          client_email: data.client_email || null,
+          client_language: data.client_language,
+          client_type: data.client_type,
+          consultation_type: data.consultation_type,
+          urgency_level: data.urgency_level,
           notes: data.notes || null,
-        })
-        .select()
+          status: "pending",
+        } as any)
+        .select("id")
         .single();
-      if (caseErr) throw caseErr;
+      if (intakeErr) throw intakeErr;
 
-      // 3. Save intake session
-      await supabase.from("intake_sessions").insert({
-        account_id: accountId,
-        created_by: user.id,
-        entry_channel: data.entry_channel,
-        referral_source: data.referral_source || null,
-        client_profile_id: profileId,
-        is_existing_client: data.is_existing_client,
-        client_first_name: data.client_first_name,
-        client_last_name: data.client_last_name,
-        client_phone: data.client_phone,
-        client_email: data.client_email || null,
-        client_language: data.client_language,
-        current_status: data.current_status || null,
-        entry_date: data.entry_date || null,
-        entry_method: data.entry_method || null,
-        has_prior_deportation: data.has_prior_deportation,
-        has_criminal_record: data.has_criminal_record,
-        current_documents: data.current_documents,
-        client_goal: data.client_goal || data.client_goal_text || null,
-        urgency_level: data.urgency_level,
-        has_pending_deadline: data.has_pending_deadline,
-        deadline_date: data.deadline_date || null,
-        ai_suggested_case_type: data.ai_suggested_case_type || null,
-        ai_confidence_score: data.ai_confidence_score || null,
-        ai_reasoning: data.ai_reasoning || null,
-        ai_flags: data.ai_flags,
-        status: "converted",
-        final_case_type: data.final_case_type,
-        case_id: newCase.id,
-        notes: data.notes || null,
+      // 3. Create appointment
+      const { data: appointment, error: apptErr } = await supabase
+        .from("appointments")
+        .insert({
+          account_id: accountId,
+          client_name: clientName,
+          client_phone: data.client_phone,
+          client_email: data.client_email || null,
+          client_profile_id: profileId,
+          appointment_date: new Date().toISOString().split("T")[0],
+          appointment_type: data.consultation_type,
+          status: "scheduled",
+          intake_session_id: intakeSession?.id || null,
+          pre_intake_sent: data.send_pre_intake && !!data.client_email,
+        })
+        .select("id, pre_intake_token")
+        .single();
+      if (apptErr) throw apptErr;
+
+      const preIntakeUrl = appointment?.pre_intake_token
+        ? `${window.location.origin}/intake/${appointment.pre_intake_token}`
+        : "";
+
+      // 4. Send pre-intake email if toggle ON and email exists
+      if (data.send_pre_intake && data.client_email && appointment?.pre_intake_token) {
+        try {
+          await supabase.functions.invoke("send-email", {
+            body: {
+              template_type: "questionnaire",
+              recipient_email: data.client_email,
+              recipient_name: clientName,
+              account_id: accountId,
+              data: {
+                pre_intake_url: preIntakeUrl,
+                client_name: data.client_first_name,
+              },
+            },
+          });
+        } catch (emailErr) {
+          console.warn("Pre-intake email failed:", emailErr);
+        }
+      }
+
+      setCompleted({
+        clientName,
+        phone: data.client_phone,
+        email: data.client_email,
+        urgency: data.urgency_level,
+        channel: data.entry_channel,
+        consultationType: data.consultation_type,
+        preIntakeSent: data.send_pre_intake && !!data.client_email,
+        preIntakeUrl,
+        appointmentId: appointment?.id || null,
       });
-
-      setCreated(newCase);
     } catch (err) {
-      console.error("Intake create error:", err);
+      console.error("Intake submit error:", err);
+      toast.error("Error al registrar el cliente");
     } finally {
       setCreating(false);
     }
   }
 
-  function handleDone(action: "view" | "new" | "close") {
-    if (action === "view" && created) {
-      onOpenChange(false);
-      navigate(`/case-engine/${created.id}`);
-    } else if (action === "new") {
+  function handleDone(action: "new" | "close") {
+    if (action === "new") {
       setStep(0);
       setData({ ...INITIAL_DATA });
-      setCreated(null);
+      setCompleted(null);
     } else {
       onOpenChange(false);
-      if (created) onCreated?.(created);
+    }
+  }
+
+  function copyLink() {
+    if (completed?.preIntakeUrl) {
+      navigator.clipboard.writeText(completed.preIntakeUrl);
+      toast.success("Link copiado al portapapeles");
     }
   }
 
@@ -238,70 +279,131 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         <div className="border-b border-border p-4 sm:p-5 shrink-0">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-foreground">
-              {created ? "✅ Expediente creado" : "Nuevo Intake"}
+              {completed ? "✅ ¡Listo!" : "Nuevo Intake"}
             </h2>
             <button onClick={() => onOpenChange(false)} className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-all">
               <X className="w-4 h-4" />
             </button>
           </div>
-          {!created && (
-            <div className="flex items-center gap-1">
-              {STEPS.map((s, i) => (
-                <div key={s.key} className="flex items-center flex-1">
-                  <div className={`flex-1 h-1.5 rounded-full transition-all ${
-                    i <= step ? "bg-jarvis" : "bg-border"
-                  }`} />
-                </div>
-              ))}
-            </div>
-          )}
-          {!created && (
-            <div className="flex justify-between mt-1.5">
-              {STEPS.map((s, i) => (
-                <span key={s.key} className={`text-[9px] font-medium tracking-wide uppercase ${
-                  i === step ? "text-jarvis" : i < step ? "text-muted-foreground" : "text-muted-foreground/40"
-                }`}>
-                  {s.label}
-                </span>
-              ))}
-            </div>
+          {!completed && (
+            <>
+              <div className="flex items-center gap-1">
+                {STEPS.map((s, i) => (
+                  <div key={s.key} className="flex items-center flex-1">
+                    <div className={`flex-1 h-1.5 rounded-full transition-all ${
+                      i <= step ? "bg-jarvis" : "bg-border"
+                    }`} />
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between mt-1.5">
+                {STEPS.map((s, i) => (
+                  <span key={s.key} className={`text-[9px] font-medium tracking-wide uppercase ${
+                    i === step ? "text-jarvis" : i < step ? "text-muted-foreground" : "text-muted-foreground/40"
+                  }`}>
+                    {s.label}
+                  </span>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
-          {created ? (
-            <StepCreate
-              data={data}
-              created={created}
-              creating={creating}
-              onDone={handleDone}
-              onCreate={handleCreate}
-              accountId={accountId}
-            />
+          {completed ? (
+            <div className="space-y-4">
+              <div className="text-center mb-2">
+                <p className="text-base font-semibold text-foreground">
+                  {completed.clientName} fue registrada
+                </p>
+              </div>
+
+              <div className="border border-border rounded-xl p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Canal</span>
+                  <span className="text-foreground font-medium">{CHANNEL_LABELS[completed.channel] || completed.channel}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Teléfono</span>
+                  <span className="text-foreground font-medium">{completed.phone}</span>
+                </div>
+                {completed.email && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Email</span>
+                    <span className="text-foreground font-medium">{completed.email}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Urgencia</span>
+                  <span className="text-foreground font-medium">{URGENCY_LABELS[completed.urgency] || completed.urgency}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Consulta</span>
+                  <span className="text-foreground font-medium">{CONSULTATION_LABELS[completed.consultationType] || completed.consultationType}</span>
+                </div>
+              </div>
+
+              {completed.preIntakeSent && (
+                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-3">
+                  <p className="text-sm text-emerald-400 font-semibold">
+                    📧 Pre-intake enviado a su email
+                  </p>
+                </div>
+              )}
+
+              {!completed.preIntakeSent && completed.preIntakeUrl && (
+                <div className="border border-border rounded-xl px-4 py-3 space-y-2">
+                  <p className="text-sm font-semibold text-foreground">
+                    🔗 Link del pre-intake
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={completed.preIntakeUrl}
+                      className="flex-1 text-xs border border-input bg-background rounded-lg px-3 py-2 text-muted-foreground"
+                    />
+                    <button
+                      onClick={copyLink}
+                      className="flex items-center gap-1.5 text-xs font-semibold bg-jarvis text-jarvis-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      Copiar
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Comparte este link con el cliente por WhatsApp
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => handleDone("new")}
+                  className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold bg-jarvis text-jarvis-foreground py-2.5 rounded-xl hover:opacity-90 transition-all"
+                >
+                  Registrar otro cliente
+                </button>
+                <button
+                  onClick={() => handleDone("close")}
+                  className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold border border-border text-foreground py-2.5 rounded-xl hover:bg-secondary/50 transition-all"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
           ) : (
             <>
               {step === 0 && <StepChannel data={data} update={update} />}
               {step === 1 && <StepClient data={data} update={update} accountId={accountId} />}
-              {step === 2 && <StepSituation data={data} update={update} />}
-              {step === 3 && <StepGoal data={data} update={update} accountId={accountId} />}
-              {step === 4 && <StepAiDetection data={data} update={update} accountId={accountId} />}
-              {step === 5 && (
-                <StepCreate
-                  data={data}
-                  created={null}
-                  creating={creating}
-                  onDone={handleDone}
-                  onCreate={handleCreate}
-                  accountId={accountId}
-                />
-              )}
+              {step === 2 && <StepConsulta data={data} update={update} />}
             </>
           )}
         </div>
 
         {/* Footer — navigation */}
-        {!created && (
+        {!completed && (
           <div className="border-t border-border p-4 sm:p-5 flex items-center justify-between shrink-0">
             <button
               onClick={() => setStep(Math.max(0, step - 1))}
@@ -312,7 +414,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
               Anterior
             </button>
 
-            {step < 5 ? (
+            {step < 2 ? (
               <button
                 onClick={() => setStep(step + 1)}
                 disabled={!canNext()}
@@ -323,12 +425,12 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
               </button>
             ) : (
               <button
-                onClick={handleCreate}
-                disabled={creating}
+                onClick={handleSubmit}
+                disabled={creating || !canNext()}
                 className="flex items-center gap-1.5 text-sm font-semibold bg-emerald-600 text-white px-5 py-2 rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-all"
               >
                 {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                {creating ? "Creando..." : "Crear Expediente"}
+                {creating ? "Registrando..." : "Registrar Cliente"}
               </button>
             )}
           </div>
