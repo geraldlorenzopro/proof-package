@@ -26,11 +26,9 @@ export interface PhoneDetectResult {
   isValid: boolean;
 }
 
-const DR_AREA = /^(809|829|849)/;
-
 /**
  * Parse an international number that starts with "+".
- * Only called when user explicitly types "+".
+ * ONLY called when user explicitly types "+".
  */
 export function detectInternational(input: string): PhoneDetectResult | null {
   const raw = input.replace(/[^\d+]/g, "");
@@ -53,8 +51,9 @@ export function detectInternational(input: string): PhoneDetectResult | null {
 }
 
 /**
- * Validate a local number for a given country ISO code.
- * Returns the E.164 formatted phone if valid.
+ * Validate a local number for the country selected in the dropdown.
+ * The dropdown country is the SOURCE OF TRUTH when no "+" is present.
+ * Returns E.164 formatted phone.
  */
 export function validateForCountry(
   localDigits: string,
@@ -68,7 +67,6 @@ export function validateForCountry(
     return { countryCode: dialCode, flag, country: countryIso, localNumber: "", fullPhone: "", isValid: false };
   }
 
-  // Try parsing with country hint
   try {
     const parsed = parsePhoneNumber(digits, countryIso as CountryCode);
     if (parsed) {
@@ -83,7 +81,7 @@ export function validateForCountry(
     }
   } catch { /* fall through */ }
 
-  // Fallback — just concat
+  // Fallback — concat without truncation
   return {
     countryCode: dialCode,
     flag,
@@ -95,11 +93,18 @@ export function validateForCountry(
 }
 
 /**
- * Smart default for 10-digit numbers without "+" (DR priority).
+ * Format a national number for display using libphonenumber-js.
+ * Falls back to raw digits if parsing fails.
  */
-export function detectLocal10(digits: string): { country: string; flag: string; code: string } {
-  if (DR_AREA.test(digits)) return { country: "DO", flag: "🇩🇴", code: "+1" };
-  return { country: "US", flag: "🇺🇸", code: "+1" };
+export function formatNational(digits: string, countryIso: string): string {
+  if (!digits) return "";
+  try {
+    const parsed = parsePhoneNumber(digits, countryIso as CountryCode);
+    if (parsed) {
+      return parsed.formatNational();
+    }
+  } catch { /* fall through */ }
+  return digits;
 }
 
 /**
