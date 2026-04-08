@@ -430,18 +430,28 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
 
                   {/* Summary */}
                   <div className="border border-border rounded-xl p-4 space-y-2.5">
-                    {[
-                      { icon: "📱", label: "Teléfono", value: completed.phone, highlight: true },
-                      { icon: "📍", label: "Canal", value: CHANNEL_LABELS[completed.channel] || completed.channel },
-                      { icon: "⚡", label: "Urgencia", value: URGENCY_LABELS[completed.urgency] || completed.urgency },
-                      { icon: "📂", label: "Tema", value: TOPIC_LABELS[completed.topic] || completed.topic },
-                      { icon: "📩", label: "Envío", value: DELIVERY_LABELS[completed.deliveryChannel] || completed.deliveryChannel },
-                    ].map((row, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">{row.icon} {row.label}</span>
-                        <span className={`font-medium text-right max-w-[60%] ${row.highlight ? "text-foreground text-base" : "text-foreground"}`}>{row.value}</span>
-                      </div>
-                    ))}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Teléfono</span>
+                      <span className="font-medium text-foreground text-base">{completed.phone}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Canal</span>
+                      <span className="font-medium text-foreground"><ChannelLogo channel={completed.channel} size={16} /></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Urgencia</span>
+                      <span className={`font-medium ${completed.urgency === "urgente" ? "text-red-400" : completed.urgency === "prioritario" ? "text-amber-400" : "text-emerald-400"}`}>
+                        {completed.urgency === "urgente" ? "🔴" : completed.urgency === "prioritario" ? "🟡" : "🟢"} {URGENCY_LABELS[completed.urgency] || completed.urgency}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Tema</span>
+                      <span className="font-medium text-foreground text-right max-w-[60%]">{TOPIC_LABELS[completed.topic] || completed.topic}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Envío</span>
+                      <span className="font-medium text-foreground">{DELIVERY_LABELS[completed.deliveryChannel] || completed.deliveryChannel}</span>
+                    </div>
                   </div>
 
                   {/* Status badge */}
