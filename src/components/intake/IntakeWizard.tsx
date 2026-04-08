@@ -327,10 +327,19 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
     }
   }
 
-  function copyLink() {
-    if (completed?.preIntakeUrl) {
-      navigator.clipboard.writeText(completed.preIntakeUrl);
-      toast.success("Link copiado ✓");
+  async function copyLink() {
+    if (!completed?.preIntakeUrl) return;
+    try {
+      await navigator.clipboard.writeText(completed.preIntakeUrl);
+      toast.success("Enlace copiado al portapapeles");
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = completed.preIntakeUrl;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      toast.success("Enlace copiado");
     }
   }
 
