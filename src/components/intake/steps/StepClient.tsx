@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, RefreshCw, ChevronDown } from "lucide-react";
+import { Search, RefreshCw, ChevronDown, Check, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { COUNTRY_CODES, FREQUENT_COUNT, normalizePhone, parseExistingPhone } from "@/lib/countryCodes";
+import { COUNTRY_CODES, FREQUENT_COUNT } from "@/lib/countryCodes";
+import { detectPhone, parseExisting, getFlag } from "@/lib/phoneDetect";
 import type { IntakeData } from "../IntakeWizard";
-
 interface Props {
   data: IntakeData;
   update: (partial: Partial<IntakeData>) => void;
@@ -43,14 +43,16 @@ export default function StepClient({ data, update, accountId }: Props) {
   const [searching, setSearching] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
 
-  const parsed = parseExistingPhone(data.client_phone);
-  const [countryIdx, setCountryIdx] = useState(parsed.countryIdx);
+  const parsed = parseExisting(data.client_phone);
+  const [detectedFlag, setDetectedFlag] = useState(parsed.flag);
+  const [detectedCode, setDetectedCode] = useState(parsed.code);
+  const [detectedCountry, setDetectedCountry] = useState(parsed.country);
   const [localNumber, setLocalNumber] = useState(parsed.local);
   const [showDropdown, setShowDropdown] = useState(false);
   const [manualCode, setManualCode] = useState("");
   const [showManual, setShowManual] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [autoDetected, setAutoDetected] = useState(false);
+  const [phoneValid, setPhoneValid] = useState<boolean | null>(null);
 
   // Duplicate detection state
   const [phoneDupe, setPhoneDupe] = useState<DuplicateMatch | null>(null);
@@ -64,9 +66,9 @@ export default function StepClient({ data, update, accountId }: Props) {
       update({ client_phone: "" });
       return;
     }
-    const prefix = showManual && manualCode ? `+${stripNonDigits(manualCode)}` : COUNTRY_CODES[countryIdx].code;
+    const prefix = showManual && manualCode ? `+${stripNonDigits(manualCode)}` : detectedCode;
     update({ client_phone: `${prefix}${digits}` });
-  }, [localNumber, countryIdx, showManual, manualCode]);
+  }, [localNumber, detectedCode, showManual, manualCode]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -81,10 +83,12 @@ export default function StepClient({ data, update, accountId }: Props) {
 
   // When existing client selected, parse phone
   useEffect(() => {
-    const p = parseExistingPhone(data.client_phone);
+    const p = parseExisting(data.client_phone);
     const currentDigits = stripNonDigits(localNumber);
     if (p.local !== currentDigits) {
-      setCountryIdx(p.countryIdx);
+      setDetectedFlag(p.flag);
+      setDetectedCode(p.code);
+      setDetectedCountry(p.country);
       setLocalNumber(p.local);
       setShowManual(false);
     }
@@ -134,9 +138,11 @@ export default function StepClient({ data, update, accountId }: Props) {
       client_email: "",
     });
     setLocalNumber("");
-    setCountryIdx(0);
+    setDetectedFlag("🇺🇸");
+    setDetectedCode("+1");
+    setDetectedCountry("US");
     setShowManual(false);
-    setAutoDetected(false);
+    setPhoneValid(null);
     setPhoneDupe(null);
     setPhoneDupeDismissed(false);
     setEmailDupe(null);
@@ -146,25 +152,21 @@ export default function StepClient({ data, update, accountId }: Props) {
     const digits = stripNonDigits(val);
     if (digits.length > 15) return;
 
-    // Reset auto-detection when field is cleared
     if (digits.length === 0) {
-      setAutoDetected(false);
       setLocalNumber("");
+      setPhoneValid(null);
       return;
     }
 
-    // Auto-detect country only once — prevents cascading re-detection
-    // after the prefix has already been stripped
-    if (!showManual && !autoDetected && digits.length >= 3) {
-      const result = normalizePhone(digits);
-      if (result.countryIdx !== countryIdx) {
-        setCountryIdx(result.countryIdx);
-        setAutoDetected(true);
-        if (result.localNumber !== digits) {
-          setLocalNumber(result.localNumber);
-          return;
-        }
-      }
+    // Real-time detection using libphonenumber-js
+    if (!showManual && digits.length >= 7) {
+      const result = detectPhone(digits);
+      setDetectedFlag(result.flag);
+      setDetectedCode(result.countryCode);
+      setDetectedCountry(result.country);
+      setPhoneValid(result.isValid);
+      setLocalNumber(result.localNumber);
+      return;
     }
     setLocalNumber(digits);
   }
@@ -173,12 +175,13 @@ export default function StepClient({ data, update, accountId }: Props) {
   function handlePhoneBlur() {
     const digits = stripNonDigits(localNumber);
     if (digits.length >= 7 && !showManual) {
-      const result = normalizePhone(digits);
-      if (result.localNumber && result.localNumber !== digits) {
-        setCountryIdx(result.countryIdx);
-        setLocalNumber(result.localNumber);
-        update({ client_phone: result.fullPhone });
-      }
+      const result = detectPhone(digits);
+      setDetectedFlag(result.flag);
+      setDetectedCode(result.countryCode);
+      setDetectedCountry(result.country);
+      setLocalNumber(result.localNumber);
+      setPhoneValid(result.isValid);
+      update({ client_phone: result.fullPhone });
     }
     checkPhoneDuplicate();
   }
@@ -231,7 +234,6 @@ export default function StepClient({ data, update, accountId }: Props) {
     }
   }
 
-  const selectedCountry = COUNTRY_CODES[countryIdx];
   const digits = stripNonDigits(localNumber);
   const phoneInvalid = digits.length > 0 && digits.length < 7;
 
@@ -330,7 +332,7 @@ export default function StepClient({ data, update, accountId }: Props) {
               {showManual ? (
                 <span className="text-muted-foreground">🌐 +{stripNonDigits(manualCode) || "?"}</span>
               ) : (
-                <span>{selectedCountry.flag} {selectedCountry.code}</span>
+                <span>{detectedFlag} {detectedCode}</span>
               )}
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
@@ -369,14 +371,15 @@ export default function StepClient({ data, update, accountId }: Props) {
                         <button
                           type="button"
                           onClick={() => {
-                            setCountryIdx(idx);
+                            setDetectedFlag(c.flag);
+                            setDetectedCode(c.code);
+                            setDetectedCountry(c.iso);
                             setShowManual(false);
                             setShowDropdown(false);
                             setCountrySearch("");
-                            setAutoDetected(true); // manual selection — don't re-detect
                           }}
                           className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/50 transition-colors text-left ${
-                            !showManual && countryIdx === idx ? "bg-secondary/30" : ""
+                            !showManual && detectedCountry === c.iso ? "bg-secondary/30" : ""
                           }`}
                         >
                           <span>{c.flag}</span>
@@ -416,17 +419,28 @@ export default function StepClient({ data, update, accountId }: Props) {
           )}
 
           {/* Number input */}
-          <input
-            type="tel"
-            value={formatPhoneDisplay(localNumber)}
-            onChange={e => handleLocalChange(e.target.value)}
-            onBlur={handlePhoneBlur}
-            placeholder="(809) 676-5653"
-            className="flex-1 border border-input bg-background rounded-r-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+          <div className="relative flex-1">
+            <input
+              type="tel"
+              value={formatPhoneDisplay(localNumber)}
+              onChange={e => handleLocalChange(e.target.value)}
+              onBlur={handlePhoneBlur}
+              placeholder="(809) 676-5653"
+              className="w-full border border-input bg-background rounded-r-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-8"
+            />
+            {phoneValid === true && digits.length >= 7 && (
+              <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />
+            )}
+            {phoneValid === false && digits.length >= 7 && (
+              <AlertTriangle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-400" />
+            )}
+          </div>
         </div>
         {phoneInvalid && (
-          <p className="text-[10px] text-rose-400 mt-1">Mínimo 7 dígitos</p>
+          <p className="text-[10px] text-destructive mt-1">Mínimo 7 dígitos</p>
+        )}
+        {phoneValid === false && digits.length >= 7 && (
+          <p className="text-[10px] text-yellow-400 mt-1">⚠️ Número incompleto</p>
         )}
 
         {/* Phone duplicate warning */}
