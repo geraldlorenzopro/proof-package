@@ -71,6 +71,19 @@ export default function HubRecentConsultations({ accountId, maxItems }: Props) {
         return;
       }
 
+      // Filter out test profiles
+      const profileIds = sessions.map(s => (s as any).client_profile_id).filter(Boolean);
+      let testProfileIds = new Set<string>();
+      if (profileIds.length > 0) {
+        const { data: testProfiles } = await supabase
+          .from("client_profiles")
+          .select("id")
+          .in("id", profileIds)
+          .eq("is_test", true);
+        testProfileIds = new Set((testProfiles || []).map(p => p.id));
+      }
+      const filteredSessions = sessions.filter((s: any) => !s.client_profile_id || !testProfileIds.has(s.client_profile_id));
+
       const sessionIds = sessions.map(s => s.id);
       const { data: appointments } = await supabase
         .from("appointments")
