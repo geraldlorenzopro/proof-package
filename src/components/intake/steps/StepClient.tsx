@@ -326,31 +326,63 @@ export default function StepClient({ data, update, accountId }: Props) {
             </button>
 
             {showDropdown && (
-              <div className="absolute top-full left-0 mt-1 z-50 w-64 max-h-64 overflow-y-auto border border-border bg-background rounded-xl shadow-lg">
-                {COUNTRY_CODES.map((c, idx) => (
-                  <button
-                    key={`${c.code}-${c.alt || c.name}`}
-                    type="button"
-                    onClick={() => {
-                      setCountryIdx(idx);
-                      setShowManual(false);
-                      setShowDropdown(false);
-                    }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left ${
-                      !showManual && countryIdx === idx ? "bg-secondary/30" : ""
-                    }`}
-                  >
-                    <span>{c.flag}</span>
-                    <span className="font-medium">{c.code}</span>
-                    <span className="text-muted-foreground text-xs truncate">{c.name}</span>
-                  </button>
-                ))}
+              <div className="absolute top-full left-0 mt-1 z-50 w-72 max-h-72 border border-border bg-background rounded-xl shadow-lg flex flex-col">
+                {/* Search input */}
+                <div className="p-2 border-b border-border">
+                  <input
+                    type="text"
+                    value={countrySearch}
+                    onChange={e => setCountrySearch(e.target.value)}
+                    placeholder="Buscar país..."
+                    className="w-full border border-input bg-background rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    autoFocus
+                  />
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  {(() => {
+                    const q = countrySearch.toLowerCase().trim();
+                    const filtered = q
+                      ? COUNTRY_CODES.map((c, idx) => ({ c, idx })).filter(
+                          ({ c }) =>
+                            c.name.toLowerCase().includes(q) ||
+                            c.code.includes(q) ||
+                            c.iso.toLowerCase().includes(q)
+                        )
+                      : COUNTRY_CODES.map((c, idx) => ({ c, idx }));
+
+                    // Show separator between frequent and rest when not searching
+                    return filtered.map(({ c, idx }, i) => (
+                      <div key={`${c.iso}-${idx}`}>
+                        {!q && idx === FREQUENT_COUNT && (
+                          <div className="border-t border-border my-1 mx-2" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCountryIdx(idx);
+                            setShowManual(false);
+                            setShowDropdown(false);
+                            setCountrySearch("");
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/50 transition-colors text-left ${
+                            !showManual && countryIdx === idx ? "bg-secondary/30" : ""
+                          }`}
+                        >
+                          <span>{c.flag}</span>
+                          <span className="font-medium">{c.code}</span>
+                          <span className="text-muted-foreground text-xs truncate">{c.name}</span>
+                        </button>
+                      </div>
+                    ));
+                  })()}
+                </div>
                 <div className="border-t border-border">
                   <button
                     type="button"
                     onClick={() => {
                       setShowManual(true);
                       setShowDropdown(false);
+                      setCountrySearch("");
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left text-muted-foreground"
                   >
