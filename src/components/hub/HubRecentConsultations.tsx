@@ -42,9 +42,10 @@ function getIntakeStatus(c: RecentConsultation) {
 
 interface Props {
   accountId: string;
+  maxItems?: number;
 }
 
-export default function HubRecentConsultations({ accountId }: Props) {
+export default function HubRecentConsultations({ accountId, maxItems }: Props) {
   const navigate = useNavigate();
   const [items, setItems] = useState<RecentConsultation[]>([]);
   const [loading, setLoading] = useState(true);

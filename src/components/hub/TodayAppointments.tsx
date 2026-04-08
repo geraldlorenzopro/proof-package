@@ -31,6 +31,7 @@ interface Appointment {
 
 interface Props {
   accountId: string;
+  maxItems?: number;
 }
 
 function formatTime12h(time24: string): string {
@@ -41,7 +42,7 @@ function formatTime12h(time24: string): string {
   return `${hour12}:${m} ${ampm}`;
 }
 
-export default function TodayAppointments({ accountId }: Props) {
+export default function TodayAppointments({ accountId, maxItems }: Props) {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [weekCount, setWeekCount] = useState(0);
