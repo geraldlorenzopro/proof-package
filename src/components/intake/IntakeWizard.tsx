@@ -324,14 +324,17 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
           {completed ? (
             <div className="space-y-4">
               <div className="text-center mb-2">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-2">
+                  <Check className="w-6 h-6 text-emerald-400" />
+                </div>
                 <p className="text-base font-semibold text-foreground">
                   {completed.clientName}
                 </p>
                 <p className="text-sm text-muted-foreground">fue registrado correctamente.</p>
               </div>
 
-              <div className="border border-border rounded-xl p-4 space-y-2.5">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Resumen del registro</p>
+              <div className="border border-border rounded-xl p-4 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Resumen</p>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">📱 Canal</span>
                   <span className="text-foreground font-medium">{CHANNEL_LABELS[completed.channel] || completed.channel}</span>
@@ -354,83 +357,66 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
                   <span className="text-muted-foreground">📋 Tema</span>
                   <span className="text-foreground font-medium text-right max-w-[60%]">{TOPIC_LABELS[completed.topic] || completed.topic}</span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">📤 Pre-intake</span>
+                  <span className="text-foreground font-medium">{DELIVERY_LABELS[completed.deliveryChannel] || completed.deliveryChannel}</span>
+                </div>
               </div>
 
               {/* Delivery status */}
               {completed.deliveryChannel === "email" && completed.email && (
-                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-3">
+                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
                   <p className="text-sm text-emerald-400 font-semibold">📧 Pre-intake enviado a {completed.email}</p>
                 </div>
               )}
               {completed.deliveryChannel === "whatsapp" && (
-                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-3">
+                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
                   <p className="text-sm text-emerald-400 font-semibold">💬 Pre-intake enviado por WhatsApp a {completed.phone}</p>
                 </div>
               )}
               {completed.deliveryChannel === "sms" && (
-                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-3">
+                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
                   <p className="text-sm text-emerald-400 font-semibold">📱 Pre-intake enviado por SMS a {completed.phone}</p>
                 </div>
               )}
-
-              {/* Link section for presencial or fallback */}
-              {(completed.deliveryChannel === "presencial" || !completed.email && completed.deliveryChannel === "email") && completed.preIntakeUrl && (
-                <div className="border border-border rounded-xl px-4 py-3 space-y-2">
-                  <p className="text-sm font-semibold text-foreground">📋 Link del formulario</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={completed.preIntakeUrl}
-                      className="flex-1 text-xs border border-input bg-background rounded-lg px-3 py-2 text-muted-foreground"
-                    />
-                    <button
-                      onClick={copyLink}
-                      className="flex items-center gap-1.5 text-xs font-semibold bg-jarvis text-jarvis-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-all"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      Copiar
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    Comparte este link con el cliente por WhatsApp o muéstrale el QR
-                  </p>
+              {completed.deliveryChannel === "presencial" && completed.preIntakeUrl && (
+                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-2.5">
+                  <p className="text-sm text-emerald-400 font-semibold">🔗 Formulario abierto en nueva pestaña</p>
                 </div>
               )}
 
-              {/* Always show the link if not email-delivered */}
-              {completed.deliveryChannel !== "email" && completed.deliveryChannel !== "presencial" && completed.preIntakeUrl && (
-                <div className="border border-border rounded-xl px-4 py-3 space-y-2">
-                  <p className="text-sm font-semibold text-foreground">🔗 Link del pre-intake</p>
+              {/* Always show link + actions */}
+              {completed.preIntakeUrl && (
+                <div className="border border-border rounded-xl px-4 py-3 space-y-2.5">
+                  <p className="text-sm font-semibold text-foreground">🔗 Link del formulario</p>
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={completed.preIntakeUrl}
-                      className="flex-1 text-xs border border-input bg-background rounded-lg px-3 py-2 text-muted-foreground"
-                    />
-                    <button
-                      onClick={copyLink}
-                      className="flex items-center gap-1.5 text-xs font-semibold bg-jarvis text-jarvis-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-all"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      Copiar
+                    <input type="text" readOnly value={completed.preIntakeUrl}
+                      className="flex-1 text-xs border border-input bg-background rounded-lg px-3 py-2 text-muted-foreground" />
+                    <button onClick={copyLink}
+                      className="flex items-center gap-1.5 text-xs font-semibold bg-jarvis text-jarvis-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-all">
+                      <Copy className="w-3.5 h-3.5" /> Copiar
                     </button>
                   </div>
+                  <button
+                    onClick={() => {
+                      const msg = encodeURIComponent(`Hola ${completed.clientName.split(" ")[0]}, antes de su consulta necesitamos que complete este formulario: ${completed.preIntakeUrl}`);
+                      const phone = completed.phone.replace(/\D/g, "");
+                      window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+                    }}
+                    className="w-full flex items-center justify-center gap-2 text-sm font-semibold bg-emerald-600 text-white py-2.5 rounded-xl hover:bg-emerald-700 transition-all">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    📱 Compartir por WhatsApp
+                  </button>
                 </div>
               )}
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => handleDone("new")}
-                  className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold bg-jarvis text-jarvis-foreground py-2.5 rounded-xl hover:opacity-90 transition-all"
-                >
-                  + Registrar otro cliente
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <button onClick={() => handleDone("new")}
+                  className="flex items-center justify-center gap-1.5 text-sm font-semibold bg-jarvis text-jarvis-foreground py-2.5 rounded-xl hover:opacity-90 transition-all">
+                  + Registrar otro
                 </button>
-                <button
-                  onClick={() => handleDone("close")}
-                  className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold border border-border text-foreground py-2.5 rounded-xl hover:bg-secondary/50 transition-all"
-                >
+                <button onClick={() => { onOpenChange(false); navigate("/cases"); }}
+                  className="flex items-center justify-center gap-1.5 text-sm font-semibold border border-border text-foreground py-2.5 rounded-xl hover:bg-secondary/50 transition-all">
                   → Ir al expediente
                 </button>
               </div>
