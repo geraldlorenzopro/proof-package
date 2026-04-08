@@ -466,9 +466,9 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
                       className="flex items-center justify-center gap-1.5 text-sm font-semibold bg-accent text-accent-foreground py-2.5 rounded-xl hover:opacity-90 transition-all">
                       + Registrar otro
                     </button>
-                    <button onClick={() => { onOpenChange(false); navigate("/cases"); }}
+                    <button onClick={() => { onOpenChange(false); navigate("/dashboard/workspace-demo"); }}
                       className="flex items-center justify-center gap-1.5 text-sm font-semibold border border-border text-foreground py-2.5 rounded-xl hover:bg-secondary/50 transition-all">
-                      → Ir al expediente
+                      → Ver perfil del cliente
                     </button>
                   </div>
                 </div>
