@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, RefreshCw, ChevronDown } from "lucide-react";
+import { Search, RefreshCw, ChevronDown, Check, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { COUNTRY_CODES, FREQUENT_COUNT, normalizePhone, parseExistingPhone } from "@/lib/countryCodes";
+import { COUNTRY_CODES, FREQUENT_COUNT } from "@/lib/countryCodes";
+import { detectPhone, parseExisting, getFlag } from "@/lib/phoneDetect";
 import type { IntakeData } from "../IntakeWizard";
-
 interface Props {
   data: IntakeData;
   update: (partial: Partial<IntakeData>) => void;
@@ -43,14 +43,16 @@ export default function StepClient({ data, update, accountId }: Props) {
   const [searching, setSearching] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
 
-  const parsed = parseExistingPhone(data.client_phone);
-  const [countryIdx, setCountryIdx] = useState(parsed.countryIdx);
+  const parsed = parseExisting(data.client_phone);
+  const [detectedFlag, setDetectedFlag] = useState(parsed.flag);
+  const [detectedCode, setDetectedCode] = useState(parsed.code);
+  const [detectedCountry, setDetectedCountry] = useState(parsed.country);
   const [localNumber, setLocalNumber] = useState(parsed.local);
   const [showDropdown, setShowDropdown] = useState(false);
   const [manualCode, setManualCode] = useState("");
   const [showManual, setShowManual] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [autoDetected, setAutoDetected] = useState(false);
+  const [phoneValid, setPhoneValid] = useState<boolean | null>(null);
 
   // Duplicate detection state
   const [phoneDupe, setPhoneDupe] = useState<DuplicateMatch | null>(null);
