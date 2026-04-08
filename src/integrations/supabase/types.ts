@@ -2150,6 +2150,8 @@ export type Database = {
           client_last_name: string | null
           client_phone: string | null
           client_profile_id: string | null
+          client_type: string | null
+          consultation_type: string | null
           created_at: string | null
           created_by: string
           current_documents: string[] | null
@@ -2185,6 +2187,8 @@ export type Database = {
           client_last_name?: string | null
           client_phone?: string | null
           client_profile_id?: string | null
+          client_type?: string | null
+          consultation_type?: string | null
           created_at?: string | null
           created_by: string
           current_documents?: string[] | null
@@ -2220,6 +2224,8 @@ export type Database = {
           client_last_name?: string | null
           client_phone?: string | null
           client_profile_id?: string | null
+          client_type?: string | null
+          consultation_type?: string | null
           created_at?: string | null
           created_by?: string
           current_documents?: string[] | null
