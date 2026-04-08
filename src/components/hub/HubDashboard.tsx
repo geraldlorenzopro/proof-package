@@ -20,6 +20,7 @@ import TodayAppointments from "./TodayAppointments";
 import HubAlerts from "./HubAlerts";
 import HubRecentActivity from "./HubRecentActivity";
 import IntakeWizard from "../intake/IntakeWizard";
+import NewContactModal from "../workspace/NewContactModal";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
@@ -171,6 +172,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
   const [commandBarOpen, setCommandBarOpen] = useState(false);
   const [commandBarFilter, setCommandBarFilter] = useState<"all" | "client" | "case" | "tool">("all");
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const [resolvedName, setResolvedName] = useState<string | null>(null);
 
   // Fetch user's actual name from profile or auth metadata
@@ -378,7 +380,8 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
           >
             {[
               { label: "Buscar", icon: Search, action: "search", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
-              { label: "Nuevo Caso", icon: PlusCircle, action: "intake", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+              { label: "Nueva Consulta", icon: PlusCircle, action: "intake", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+              { label: "Nuevo Contacto", icon: UserPlus, action: "contact", color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20" },
               { label: "Analizar Doc", icon: FileSearch, action: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
             ].map((action, i) => (
               <motion.button
@@ -388,6 +391,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
                 onClick={() => {
                   if (action.action === "search") { setCommandBarFilter("all"); setCommandBarOpen(true); }
                   else if (action.action === "intake") setIntakeOpen(true);
+                  else if (action.action === "contact") setContactOpen(true);
                   else goTo(action.action);
                 }}
                 className={`flex items-center justify-center gap-2.5 rounded-xl border ${action.border} ${action.bg} px-4 py-3.5 transition-all duration-200 hover:shadow-md hover:scale-[1.02] group`}
