@@ -52,12 +52,12 @@ export function detectInternational(input: string): PhoneDetectResult | null {
   try {
     const parsed = parsePhoneNumber(raw);
     if (parsed) {
-      let country = parsed.country || "US";
+      const baseCountry = (parsed.country || "US") as string;
       // NANP fix: libphonenumber may return "US" for all +1 numbers
       // We use area code disambiguation to get the correct country
-      if (parsed.countryCallingCode === "1") {
-        country = resolveNanpCountry(parsed.nationalNumber as string);
-      }
+      const country = parsed.countryCallingCode === "1"
+        ? resolveNanpCountry(parsed.nationalNumber as string)
+        : baseCountry;
       return {
         countryCode: "+" + parsed.countryCallingCode,
         flag: getFlag(country),
@@ -139,11 +139,11 @@ export function parseExisting(phone: string): { country: string; flag: string; c
   try {
     const parsed = parsePhoneNumber(clean);
     if (parsed) {
-      let country = parsed.country || "US";
+      const baseCountry2 = (parsed.country || "US") as string;
       // NANP disambiguation
-      if (parsed.countryCallingCode === "1") {
-        country = resolveNanpCountry(parsed.nationalNumber as string);
-      }
+      const country = parsed.countryCallingCode === "1"
+        ? resolveNanpCountry(parsed.nationalNumber as string)
+        : baseCountry2;
       return {
         country,
         flag: getFlag(country),
