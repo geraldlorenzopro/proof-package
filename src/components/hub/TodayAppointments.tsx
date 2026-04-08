@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, CheckCircle2, AlertTriangle, Send, Plus, Clock, User, X, Loader2 } from "lucide-react";
+import { Calendar, CheckCircle2, AlertTriangle, Send, Plus, Clock, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,12 +10,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
+import StartConsultationModal from "./StartConsultationModal";
+import ResendModal from "./ResendModal";
 
 interface Appointment {
   id: string;
   client_name: string;
   client_email: string | null;
   client_phone: string | null;
+  client_profile_id: string | null;
   appointment_time: string | null;
   appointment_type: string;
   status: string;
@@ -30,16 +33,24 @@ interface Props {
   accountId: string;
 }
 
+function formatTime12h(time24: string): string {
+  const [h, m] = time24.split(":");
+  const hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${m} ${ampm}`;
+}
+
 export default function TodayAppointments({ accountId }: Props) {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [weekCount, setWeekCount] = useState(0);
   const [monthCount, setMonthCount] = useState(0);
-  const [monthCompleted, setMonthCompleted] = useState(0);
   const [monthConverted, setMonthConverted] = useState(0);
   const [loading, setLoading] = useState(true);
   const [newApptOpen, setNewApptOpen] = useState(false);
-  const [sending, setSending] = useState<string | null>(null);
+  const [consultationAppt, setConsultationAppt] = useState<Appointment | null>(null);
+  const [resendAppt, setResendAppt] = useState<Appointment | null>(null);
 
   // New appointment form
   const [newName, setNewName] = useState("");
@@ -63,9 +74,9 @@ export default function TodayAppointments({ accountId }: Props) {
       const monthStart = format(startOfMonth(now), "yyyy-MM-dd");
       const monthEnd = format(endOfMonth(now), "yyyy-MM-dd");
 
-      const [todayRes, weekRes, monthRes, completedRes, convertedRes] = await Promise.all([
+      const [todayRes, weekRes, monthRes, convertedRes] = await Promise.all([
         supabase.from("appointments")
-          .select("id, client_name, client_email, client_phone, appointment_time, appointment_type, status, pre_intake_sent, pre_intake_completed, pre_intake_token, case_id, converted_to_case")
+          .select("id, client_name, client_email, client_phone, client_profile_id, appointment_time, appointment_type, status, pre_intake_sent, pre_intake_completed, pre_intake_token, case_id, converted_to_case")
           .eq("account_id", accountId)
           .eq("appointment_date", today)
           .not("status", "eq", "cancelled")
@@ -78,16 +89,12 @@ export default function TodayAppointments({ accountId }: Props) {
           .not("status", "eq", "cancelled"),
         supabase.from("appointments").select("id", { count: "exact", head: true })
           .eq("account_id", accountId).gte("appointment_date", monthStart).lte("appointment_date", monthEnd)
-          .eq("status", "completed"),
-        supabase.from("appointments").select("id", { count: "exact", head: true })
-          .eq("account_id", accountId).gte("appointment_date", monthStart).lte("appointment_date", monthEnd)
           .eq("converted_to_case", true),
       ]);
 
       setAppointments((todayRes.data || []) as Appointment[]);
       setWeekCount(weekRes.count || 0);
       setMonthCount(monthRes.count || 0);
-      setMonthCompleted(completedRes.count || 0);
       setMonthConverted(convertedRes.count || 0);
     } catch (e) {
       console.error("Error loading appointments:", e);
@@ -96,33 +103,11 @@ export default function TodayAppointments({ accountId }: Props) {
     }
   }
 
-  async function resendPreIntake(appt: Appointment) {
-    if (!appt.client_email) {
-      toast.error("No hay email para enviar");
-      return;
-    }
-    setSending(appt.id);
-    try {
-      const appUrl = import.meta.env.VITE_SUPABASE_URL?.replace("supabase.co", "lovable.app") || "https://proof-package.lovable.app";
-      await supabase.functions.invoke("send-email", {
-        body: {
-          template_type: "questionnaire",
-          to_email: appt.client_email,
-          to_name: appt.client_name,
-          account_id: accountId,
-          variables: {
-            client_name: appt.client_name,
-            questionnaire_link: `${window.location.origin}/intake/${appt.pre_intake_token}`,
-          },
-        },
-      });
-      toast.success("Link de pre-intake reenviado");
-      await supabase.from("appointments").update({ pre_intake_sent: true }).eq("id", appt.id);
-      loadData();
-    } catch (e) {
-      toast.error("Error al reenviar");
-    } finally {
-      setSending(null);
+  function handleStartConsultation(appt: Appointment) {
+    if (appt.case_id) {
+      navigate(`/case-engine/${appt.case_id}`);
+    } else {
+      setConsultationAppt(appt);
     }
   }
 
@@ -146,7 +131,6 @@ export default function TodayAppointments({ accountId }: Props) {
 
       if (error) throw error;
 
-      // Send pre-intake if email provided
       if (newEmail.trim() && appt) {
         await supabase.functions.invoke("send-email", {
           body: {
@@ -174,16 +158,8 @@ export default function TodayAppointments({ accountId }: Props) {
     }
   }
 
-  function handleStartConsultation(appt: Appointment) {
-    if (appt.case_id) {
-      navigate(`/case-engine/${appt.case_id}`);
-    } else {
-      // Navigate to intake wizard or case engine
-      navigate(`/case-engine/new?name=${encodeURIComponent(appt.client_name)}&email=${encodeURIComponent(appt.client_email || "")}&phone=${encodeURIComponent(appt.client_phone || "")}&appointmentId=${appt.id}`);
-    }
-  }
-
-  const conversionRate = monthCompleted > 0 ? Math.round((monthConverted / monthCompleted) * 100) : 0;
+  // FIX 3: Conversion uses total month appointments, not completed
+  const conversionRate = monthCount > 0 ? Math.round((monthConverted / monthCount) * 100) : null;
 
   return (
     <section className="space-y-3">
@@ -221,11 +197,19 @@ export default function TodayAppointments({ accountId }: Props) {
               key={appt.id}
               className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/60 px-4 py-3 hover:bg-card hover:border-border transition-all"
             >
-              {/* Time */}
+              {/* FIX 6: Time column — show time in 12h or client initial */}
               <div className="w-14 shrink-0 text-center">
-                <span className="text-sm font-semibold text-foreground font-mono">
-                  {appt.appointment_time ? appt.appointment_time.slice(0, 5) : "—"}
-                </span>
+                {appt.appointment_time ? (
+                  <span className="text-sm font-semibold text-foreground font-mono">
+                    {formatTime12h(appt.appointment_time.slice(0, 5))}
+                  </span>
+                ) : (
+                  <div className="w-9 h-9 mx-auto rounded-full bg-accent/10 flex items-center justify-center">
+                    <span className="text-sm font-bold text-accent">
+                      {appt.client_name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Client info */}
@@ -252,18 +236,19 @@ export default function TodayAppointments({ accountId }: Props) {
 
               {/* Actions */}
               <div className="flex items-center gap-1.5 shrink-0">
-                {!appt.pre_intake_completed && appt.client_email && (
+                {/* FIX 5: Resend opens modal with WhatsApp + Email options */}
+                {!appt.pre_intake_completed && (appt.client_phone || appt.client_email) && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => resendPreIntake(appt)}
-                    disabled={sending === appt.id}
+                    onClick={() => setResendAppt(appt)}
                     className="h-7 px-2 text-[10px]"
                   >
-                    {sending === appt.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                    <Send className="w-3 h-3" />
                     <span className="ml-1 hidden sm:inline">Reenviar</span>
                   </Button>
                 )}
+                {/* FIX 1: Iniciar consulta opens modal instead of navigating */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -284,19 +269,47 @@ export default function TodayAppointments({ accountId }: Props) {
         </div>
       )}
 
-      {/* Weekly/Monthly stats */}
+      {/* Weekly/Monthly stats — FIX 3: Conversion calc */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: "Esta semana", value: weekCount },
-          { label: "Este mes", value: monthCount },
-          { label: "Conversión", value: `${conversionRate}%` },
+          { label: "Esta semana", value: String(weekCount) },
+          { label: "Este mes", value: String(monthCount) },
+          { label: "Conversión", value: conversionRate === null ? "—" : `${conversionRate}%` },
         ].map(s => (
           <div key={s.label} className="rounded-lg border border-border/30 bg-card/30 px-3 py-2 text-center">
-            <p className="text-lg font-bold text-foreground">{s.value}</p>
-            <p className="text-[10px] text-muted-foreground/50">{s.label}</p>
+            <p className={`text-lg font-bold leading-none ${
+              s.label === "Conversión" && conversionRate !== null && conversionRate > 0
+                ? "text-emerald-400"
+                : "text-foreground"
+            }`}>{s.value}</p>
+            <p className="text-[10px] text-muted-foreground/50 mt-1">{s.label}</p>
           </div>
         ))}
       </div>
+
+      {/* FIX 1: Start consultation modal */}
+      <StartConsultationModal
+        open={!!consultationAppt}
+        onOpenChange={(open) => { if (!open) setConsultationAppt(null); }}
+        appointment={consultationAppt}
+        accountId={accountId}
+        onCreated={() => loadData()}
+      />
+
+      {/* FIX 5: Resend modal with WhatsApp + Email */}
+      {resendAppt && (
+        <ResendModal
+          open={!!resendAppt}
+          onOpenChange={(open) => { if (!open) setResendAppt(null); }}
+          appointmentId={resendAppt.id}
+          clientName={resendAppt.client_name}
+          clientPhone={resendAppt.client_phone}
+          clientEmail={resendAppt.client_email}
+          preIntakeToken={resendAppt.pre_intake_token}
+          accountId={accountId}
+          onSent={() => loadData()}
+        />
+      )}
 
       {/* New Appointment Modal */}
       <Dialog open={newApptOpen} onOpenChange={setNewApptOpen}>

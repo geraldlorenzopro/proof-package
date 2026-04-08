@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, BarChart3, Home, LogOut, Crown, Building2, FlaskConical } from "lucide-react";
+import { ArrowLeft, Shield, BarChart3, Home, LogOut, Crown, Building2, FlaskConical, Users, ClipboardList, Briefcase } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import HubCreditsWidget from "./HubCreditsWidget";
@@ -27,7 +27,6 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   const location = useLocation();
   const { isPlatformAdmin } = usePlatformAdmin();
 
-  // Get account ID for credits widget
   const accountId = (() => {
     try {
       const raw = sessionStorage.getItem("ner_hub_data");
@@ -35,7 +34,6 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
     } catch { return null; }
   })();
 
-  // Impersonation banner
   const impersonateData = (() => {
     try {
       const raw = sessionStorage.getItem("ner_impersonate");
@@ -56,82 +54,56 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
     navigate("/auth", { replace: true });
   }
 
-  const isOnDashboard = location.pathname === "/hub";
-  const isOnIntelligence = location.pathname === "/hub/intelligence";
-  const isOnOfficeSettings = location.pathname === "/hub/settings/office";
+  const currentPath = location.pathname;
+  const isHubSection = currentPath === "/hub" || currentPath.startsWith("/hub/");
+
+  // FIX 7: Sidebar nav items with labels and new routes
+  const navItems = [
+    { icon: Home, label: "Inicio", path: "/hub", match: (p: string) => p === "/hub" },
+    { icon: Users, label: "Clientes", path: "/dashboard/workspace-demo", match: (p: string) => p === "/dashboard/workspace-demo" },
+    { icon: ClipboardList, label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations" },
+    { icon: BarChart3, label: "Reportes", path: "/hub/intelligence", match: (p: string) => p === "/hub/intelligence" },
+    { icon: Building2, label: "Firma", path: "/hub/settings/office", match: (p: string) => p === "/hub/settings/office" },
+  ];
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* ═══ SIDEBAR — Minimal icon rail ═══ */}
-      {(isOnDashboard || isOnOfficeSettings || isOnIntelligence) && (
+      {/* ═══ SIDEBAR — Icon rail with labels ═══ */}
+      {isHubSection && (
         <motion.aside
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3 }}
-          className="hidden lg:flex flex-col items-center w-14 border-r border-border/20 bg-card/30 py-5 gap-3 shrink-0"
+          className="hidden lg:flex flex-col items-center w-[72px] border-r border-border/20 bg-card/30 py-5 gap-1 shrink-0"
         >
           <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
+            {navItems.map((item) => {
+              const isActive = item.match(currentPath);
+              return (
                 <button
-                  onClick={() => navigate("/hub")}
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                    isOnDashboard && !isOnIntelligence
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`w-14 flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all ${
+                    isActive
                       ? "bg-jarvis/15 text-jarvis border border-jarvis/20"
-                      : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
+                      : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5 border border-transparent"
                   }`}
                 >
-                  <Home className="w-4 h-4" />
+                  <item.icon className="w-4 h-4" />
+                  <span className="text-[9px] font-medium leading-none">{item.label}</span>
                 </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Inicio</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => navigate("/hub/intelligence")}
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                    isOnIntelligence
-                      ? "bg-accent/15 text-accent border border-accent/20"
-                      : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
-                  }`}
-                >
-                  <BarChart3 className="w-4 h-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Reportes</TooltipContent>
-            </Tooltip>
+              );
+            })}
 
             {isPlatformAdmin && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => navigate("/admin")}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-red-400/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                  >
-                    <Crown className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Panel Admin</TooltipContent>
-              </Tooltip>
+              <button
+                onClick={() => navigate("/admin")}
+                className="w-14 flex flex-col items-center gap-0.5 py-2 rounded-xl text-red-400/40 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent"
+              >
+                <Crown className="w-4 h-4" />
+                <span className="text-[9px] font-medium leading-none">Admin</span>
+              </button>
             )}
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => navigate("/hub/settings/office")}
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                    isOnOfficeSettings
-                      ? "bg-jarvis/15 text-jarvis border border-jarvis/20"
-                      : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-foreground/5"
-                  }`}
-                >
-                  <Building2 className="w-4 h-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Mi Firma</TooltipContent>
-            </Tooltip>
 
             <div className="flex-1" />
 
@@ -141,17 +113,13 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
               </div>
             )}
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleLogout}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Cerrar sesión</TooltipContent>
-            </Tooltip>
+            <button
+              onClick={handleLogout}
+              className="w-14 flex flex-col items-center gap-0.5 py-2 rounded-xl text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all border border-transparent"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-[9px] font-medium leading-none">Salir</span>
+            </button>
           </TooltipProvider>
         </motion.aside>
       )}
@@ -180,8 +148,8 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             <span className="text-amber-400/60">— Click para abrir checklist</span>
           </button>
         )}
-        {/* Compact top bar — only visible when inside a tool (not on dashboard) */}
-        {!isOnDashboard && !isOnIntelligence && !isOnOfficeSettings && (
+        {/* Compact top bar — only visible when inside a tool (not on hub routes) */}
+        {!isHubSection && (
           <motion.header
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}

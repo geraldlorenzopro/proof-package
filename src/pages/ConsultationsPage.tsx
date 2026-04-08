@@ -2,20 +2,25 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search, Send, ExternalLink, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Search, Send, ExternalLink, Clock, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import ChannelLogo from "@/components/intake/ChannelLogo";
+import IntakeWizard from "@/components/intake/IntakeWizard";
 
 interface ConsultationRow {
   id: string;
   client_first_name: string | null;
   client_last_name: string | null;
   client_phone: string | null;
+  client_profile_id: string | null;
   entry_channel: string | null;
   urgency_level: string | null;
   consultation_topic: string | null;
+  consultation_topic_tag: string | null;
   status: string | null;
   created_at: string | null;
   appointment_id: string | null;
@@ -26,12 +31,6 @@ interface ConsultationRow {
   case_id: string | null;
 }
 
-const CHANNEL_ICONS: Record<string, string> = {
-  whatsapp: "💬", instagram: "📸", facebook: "👍", tiktok: "🎵",
-  referido: "🤝", anuncio: "📢", website: "🌐", llamada: "📞",
-  "walk-in": "🚶", youtube: "▶️", otro: "•••",
-};
-
 const URGENCY_CONFIG: Record<string, { label: string; color: string }> = {
   urgente: { label: "Urgente", color: "bg-red-500/15 text-red-400 border-red-500/20" },
   prioritario: { label: "Prioritario", color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/20" },
@@ -39,10 +38,10 @@ const URGENCY_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 function getIntakeStatus(c: ConsultationRow) {
-  if (c.converted_to_case) return { label: "Caso creado", color: "bg-blue-500/15 text-blue-400 border-blue-500/20", icon: "🔄" };
-  if (c.pre_intake_completed) return { label: "Intake completo", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20", icon: "✅" };
-  if (c.pre_intake_sent) return { label: "Enviado", color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/20", icon: "⏳" };
-  return { label: "Pendiente", color: "bg-muted/50 text-muted-foreground border-border/30", icon: "📤" };
+  if (c.converted_to_case) return { label: "Caso creado", color: "bg-blue-500/15 text-blue-400 border-blue-500/20" };
+  if (c.pre_intake_completed) return { label: "Intake completo", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" };
+  if (c.pre_intake_sent) return { label: "Enviado", color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/20" };
+  return { label: "Pendiente", color: "bg-muted/50 text-muted-foreground border-border/30" };
 }
 
 const PERIOD_OPTIONS = [
@@ -65,6 +64,7 @@ export default function ConsultationsPage() {
   const [periodFilter, setPeriodFilter] = useState("month");
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
+  const [intakeOpen, setIntakeOpen] = useState(false);
 
   useEffect(() => {
     loadAccount();
@@ -96,7 +96,7 @@ export default function ConsultationsPage() {
     try {
       let query = supabase
         .from("intake_sessions")
-        .select("id, client_first_name, client_last_name, client_phone, entry_channel, urgency_level, consultation_topic, status, created_at", { count: "exact" })
+        .select("id, client_first_name, client_last_name, client_phone, client_profile_id, entry_channel, urgency_level, consultation_topic, consultation_topic_tag, status, created_at", { count: "exact" })
         .eq("account_id", accountId)
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
@@ -135,7 +135,6 @@ export default function ConsultationsPage() {
         };
       });
 
-      // Apply intake filter client-side
       if (intakeFilter === "completed") merged = merged.filter(m => m.pre_intake_completed);
       else if (intakeFilter === "sent") merged = merged.filter(m => m.pre_intake_sent && !m.pre_intake_completed);
       else if (intakeFilter === "pending") merged = merged.filter(m => !m.pre_intake_sent && !m.converted_to_case);
@@ -148,14 +147,21 @@ export default function ConsultationsPage() {
     }
   }
 
-  async function sendPreIntake(item: ConsultationRow) {
+  function handleRowClick(item: ConsultationRow) {
+    if (item.client_profile_id) {
+      navigate(`/hub/clients/${item.client_profile_id}`);
+    }
+  }
+
+  async function sendWhatsApp(e: React.MouseEvent, item: ConsultationRow) {
+    e.stopPropagation();
     if (!item.pre_intake_token || !item.appointment_id) return;
     const preIntakeUrl = `${window.location.origin}/intake/${item.pre_intake_token}`;
     const phone = (item.client_phone || "").replace(/\D/g, "");
     const msg = encodeURIComponent(`Hola ${item.client_first_name || ""}, antes de su consulta necesitamos que complete este formulario: ${preIntakeUrl}`);
     window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
     await supabase.from("appointments").update({ pre_intake_sent: true } as any).eq("id", item.appointment_id);
-    toast.success("Pre-intake enviado");
+    toast.success("Pre-intake enviado por WhatsApp");
     loadData();
   }
 
@@ -173,14 +179,19 @@ export default function ConsultationsPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-5 py-4 sm:py-5 space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/hub")} className="p-2 rounded-lg hover:bg-secondary transition-colors">
-          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Consultas</h1>
-          <p className="text-sm text-muted-foreground">Historial de registros y seguimiento de pre-intakes</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate("/hub")} className="p-2 rounded-lg hover:bg-secondary transition-colors">
+            <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Consultas</h1>
+            <p className="text-sm text-muted-foreground">{total} registros</p>
+          </div>
         </div>
+        <Button onClick={() => setIntakeOpen(true)} size="sm" className="gap-1.5">
+          <PlusCircle className="w-4 h-4" /> Nueva Consulta
+        </Button>
       </div>
 
       {/* Filters */}
@@ -195,7 +206,6 @@ export default function ConsultationsPage() {
           />
         </div>
 
-        {/* Urgency filter */}
         <div className="flex gap-1">
           {[{ label: "Todas", value: "all" }, ...Object.entries(URGENCY_CONFIG).map(([k, v]) => ({ label: v.label, value: k }))].map(opt => (
             <button key={opt.value} onClick={() => { setUrgencyFilter(opt.value); setPage(0); }}
@@ -205,7 +215,6 @@ export default function ConsultationsPage() {
           ))}
         </div>
 
-        {/* Intake filter */}
         <div className="flex gap-1">
           {[
             { label: "Todos", value: "all" },
@@ -220,7 +229,6 @@ export default function ConsultationsPage() {
           ))}
         </div>
 
-        {/* Period filter */}
         <div className="flex gap-1">
           {PERIOD_OPTIONS.map(opt => (
             <button key={opt.value} onClick={() => { setPeriodFilter(opt.value); setPage(0); }}
@@ -242,19 +250,24 @@ export default function ConsultationsPage() {
         <div className="space-y-1.5">
           {filtered.map((item) => {
             const name = `${item.client_first_name || ""} ${item.client_last_name || ""}`.trim();
+            const initial = (item.client_first_name || "?").charAt(0).toUpperCase();
             const urgency = URGENCY_CONFIG[item.urgency_level || ""];
             const intakeStatus = getIntakeStatus(item);
-            const channelIcon = CHANNEL_ICONS[item.entry_channel || ""] || "•••";
             const timeAgo = item.created_at
               ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: es })
               : "";
 
             return (
-              <div key={item.id}
-                className="w-full flex items-center gap-3 rounded-xl border border-border/50 bg-card/60 px-4 py-3 hover:bg-card hover:border-border transition-all text-left">
-                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 text-sm">
-                  {channelIcon}
+              <div
+                key={item.id}
+                onClick={() => handleRowClick(item)}
+                className="w-full flex items-center gap-3 rounded-xl border border-border/50 bg-card/60 px-4 py-3 hover:bg-card hover:border-border transition-all text-left cursor-pointer group"
+              >
+                {/* Avatar with initial */}
+                <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-bold text-accent">{initial}</span>
                 </div>
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground truncate">{name || "Sin nombre"}</span>
@@ -262,25 +275,26 @@ export default function ConsultationsPage() {
                     <span className="text-[10px] text-muted-foreground/40">{timeAgo}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    {item.consultation_topic && (
-                      <span className="text-[11px] text-muted-foreground/60 truncate">{item.consultation_topic}</span>
+                    <ChannelLogo channel={item.entry_channel || "otro"} size={14} />
+                    {(item.consultation_topic_tag || item.consultation_topic) && (
+                      <span className="text-[11px] text-muted-foreground/60 truncate">{item.consultation_topic_tag || item.consultation_topic}</span>
                     )}
                   </div>
                 </div>
 
                 {urgency && <Badge variant="outline" className={`${urgency.color} text-[8px] shrink-0`}>{urgency.label}</Badge>}
                 <Badge variant="outline" className={`${intakeStatus.color} text-[8px] shrink-0`}>
-                  {intakeStatus.icon} {intakeStatus.label}
+                  {intakeStatus.label}
                 </Badge>
 
-                {!item.pre_intake_sent && !item.converted_to_case && item.pre_intake_token && (
-                  <button onClick={() => sendPreIntake(item)}
+                {!item.pre_intake_sent && !item.converted_to_case && item.pre_intake_token && item.client_phone && (
+                  <button onClick={(e) => sendWhatsApp(e, item)}
                     className="text-[10px] font-semibold text-accent hover:text-accent/80 flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg border border-accent/20 hover:bg-accent/10 transition-all">
-                    <Send className="w-3 h-3" /> Enviar
+                    <Send className="w-3 h-3" /> WhatsApp
                   </button>
                 )}
                 {item.converted_to_case && item.case_id && (
-                  <button onClick={() => navigate(`/case-engine/${item.case_id}`)}
+                  <button onClick={(e) => { e.stopPropagation(); navigate(`/case-engine/${item.case_id}`); }}
                     className="text-[10px] font-semibold text-accent hover:text-accent/80 flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg border border-accent/20 hover:bg-accent/10 transition-all">
                     <ExternalLink className="w-3 h-3" /> Ver caso
                   </button>
@@ -305,6 +319,8 @@ export default function ConsultationsPage() {
           </button>
         </div>
       )}
+
+      <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
     </div>
   );
 }
