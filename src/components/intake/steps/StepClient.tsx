@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, RefreshCw, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { COUNTRY_CODES, FREQUENT_COUNT, normalizePhone, parseExistingPhone } from "@/lib/countryCodes";
 import type { IntakeData } from "../IntakeWizard";
 
 interface Props {
@@ -26,25 +27,6 @@ interface DuplicateMatch {
   phone: string | null;
 }
 
-const COUNTRY_CODES = [
-  { flag: "🇺🇸", code: "+1", name: "Estados Unidos" },
-  { flag: "🇩🇴", code: "+1", name: "República Dominicana", alt: "DO" },
-  { flag: "🇲🇽", code: "+52", name: "México" },
-  { flag: "🇬🇹", code: "+502", name: "Guatemala" },
-  { flag: "🇭🇳", code: "+504", name: "Honduras" },
-  { flag: "🇸🇻", code: "+503", name: "El Salvador" },
-  { flag: "🇳🇮", code: "+505", name: "Nicaragua" },
-  { flag: "🇨🇷", code: "+506", name: "Costa Rica" },
-  { flag: "🇵🇦", code: "+507", name: "Panamá" },
-  { flag: "🇨🇴", code: "+57", name: "Colombia" },
-  { flag: "🇻🇪", code: "+58", name: "Venezuela" },
-  { flag: "🇵🇪", code: "+51", name: "Perú" },
-  { flag: "🇪🇨", code: "+593", name: "Ecuador" },
-  { flag: "🇨🇺", code: "+53", name: "Cuba" },
-  { flag: "🇭🇹", code: "+509", name: "Haití" },
-  { flag: "🇵🇷", code: "+1", name: "Puerto Rico", alt: "PR" },
-];
-
 function stripNonDigits(val: string) {
   return val.replace(/\D/g, "");
 }
@@ -55,111 +37,11 @@ function formatPhoneDisplay(digits: string): string {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
 }
 
-interface NormalizedPhone {
-  countryCode: string;
-  flag: string;
-  localNumber: string;
-  fullPhone: string;
-  countryIdx: number;
-}
-
-function normalizePhone(input: string): NormalizedPhone {
-  const digits = input.replace(/\D/g, "");
-  if (!digits) return { countryCode: "+1", flag: "🇺🇸", localNumber: "", fullPhone: "", countryIdx: 0 };
-
-  // Rep. Dom. — 809/829/849
-  if (/^1?(809|829|849)/.test(digits)) {
-    const local = digits.replace(/^1/, "");
-    return { countryCode: "+1", flag: "🇩🇴", localNumber: local, fullPhone: "+1" + local, countryIdx: 1 };
-  }
-  // México
-  if (/^52/.test(digits)) {
-    const local = digits.slice(2);
-    return { countryCode: "+52", flag: "🇲🇽", localNumber: local, fullPhone: "+52" + local, countryIdx: 2 };
-  }
-  // Guatemala
-  if (/^502/.test(digits)) {
-    const local = digits.slice(3);
-    return { countryCode: "+502", flag: "🇬🇹", localNumber: local, fullPhone: "+502" + local, countryIdx: 3 };
-  }
-  // Honduras
-  if (/^504/.test(digits)) {
-    const local = digits.slice(3);
-    return { countryCode: "+504", flag: "🇭🇳", localNumber: local, fullPhone: "+504" + local, countryIdx: 4 };
-  }
-  // El Salvador
-  if (/^503/.test(digits)) {
-    const local = digits.slice(3);
-    return { countryCode: "+503", flag: "🇸🇻", localNumber: local, fullPhone: "+503" + local, countryIdx: 5 };
-  }
-  // Nicaragua
-  if (/^505/.test(digits)) {
-    const local = digits.slice(3);
-    return { countryCode: "+505", flag: "🇳🇮", localNumber: local, fullPhone: "+505" + local, countryIdx: 6 };
-  }
-  // Costa Rica
-  if (/^506/.test(digits)) {
-    const local = digits.slice(3);
-    return { countryCode: "+506", flag: "🇨🇷", localNumber: local, fullPhone: "+506" + local, countryIdx: 7 };
-  }
-  // Panamá
-  if (/^507/.test(digits)) {
-    const local = digits.slice(3);
-    return { countryCode: "+507", flag: "🇵🇦", localNumber: local, fullPhone: "+507" + local, countryIdx: 8 };
-  }
-  // Colombia
-  if (/^57/.test(digits)) {
-    const local = digits.slice(2);
-    return { countryCode: "+57", flag: "🇨🇴", localNumber: local, fullPhone: "+57" + local, countryIdx: 9 };
-  }
-  // Venezuela
-  if (/^58/.test(digits)) {
-    const local = digits.slice(2);
-    return { countryCode: "+58", flag: "🇻🇪", localNumber: local, fullPhone: "+58" + local, countryIdx: 10 };
-  }
-  // Perú
-  if (/^51/.test(digits) && !/^(510|511|512|513|514|515|516|517|518|519)/.test(digits.slice(0,3) + "0")) {
-    // Only match if starts with 51 and next digit isn't ambiguous with US area codes
-    if (digits.length <= 11) {
-      const local = digits.slice(2);
-      return { countryCode: "+51", flag: "🇵🇪", localNumber: local, fullPhone: "+51" + local, countryIdx: 11 };
-    }
-  }
-  // Ecuador
-  if (/^593/.test(digits)) {
-    const local = digits.slice(3);
-    return { countryCode: "+593", flag: "🇪🇨", localNumber: local, fullPhone: "+593" + local, countryIdx: 12 };
-  }
-  // Cuba
-  if (/^53/.test(digits) && digits.length <= 10) {
-    const local = digits.slice(2);
-    return { countryCode: "+53", flag: "🇨🇺", localNumber: local, fullPhone: "+53" + local, countryIdx: 13 };
-  }
-  // Haití
-  if (/^509/.test(digits)) {
-    const local = digits.slice(3);
-    return { countryCode: "+509", flag: "🇭🇹", localNumber: local, fullPhone: "+509" + local, countryIdx: 14 };
-  }
-  // Puerto Rico — 787/939
-  if (/^1?(787|939)/.test(digits)) {
-    const local = digits.replace(/^1/, "");
-    return { countryCode: "+1", flag: "🇵🇷", localNumber: local, fullPhone: "+1" + local, countryIdx: 15 };
-  }
-  // USA default
-  const local = digits.startsWith("1") && digits.length === 11 ? digits.slice(1) : digits;
-  return { countryCode: "+1", flag: "🇺🇸", localNumber: local, fullPhone: "+1" + local, countryIdx: 0 };
-}
-
-function parseExistingPhone(phone: string) {
-  if (!phone) return { countryIdx: 0, local: "" };
-  const result = normalizePhone(phone);
-  return { countryIdx: result.countryIdx, local: result.localNumber };
-}
-
 export default function StepClient({ data, update, accountId }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ClientResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
 
   const parsed = parseExistingPhone(data.client_phone);
   const [countryIdx, setCountryIdx] = useState(parsed.countryIdx);
@@ -444,31 +326,63 @@ export default function StepClient({ data, update, accountId }: Props) {
             </button>
 
             {showDropdown && (
-              <div className="absolute top-full left-0 mt-1 z-50 w-64 max-h-64 overflow-y-auto border border-border bg-background rounded-xl shadow-lg">
-                {COUNTRY_CODES.map((c, idx) => (
-                  <button
-                    key={`${c.code}-${c.alt || c.name}`}
-                    type="button"
-                    onClick={() => {
-                      setCountryIdx(idx);
-                      setShowManual(false);
-                      setShowDropdown(false);
-                    }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left ${
-                      !showManual && countryIdx === idx ? "bg-secondary/30" : ""
-                    }`}
-                  >
-                    <span>{c.flag}</span>
-                    <span className="font-medium">{c.code}</span>
-                    <span className="text-muted-foreground text-xs truncate">{c.name}</span>
-                  </button>
-                ))}
+              <div className="absolute top-full left-0 mt-1 z-50 w-72 max-h-72 border border-border bg-background rounded-xl shadow-lg flex flex-col">
+                {/* Search input */}
+                <div className="p-2 border-b border-border">
+                  <input
+                    type="text"
+                    value={countrySearch}
+                    onChange={e => setCountrySearch(e.target.value)}
+                    placeholder="Buscar país..."
+                    className="w-full border border-input bg-background rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    autoFocus
+                  />
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  {(() => {
+                    const q = countrySearch.toLowerCase().trim();
+                    const filtered = q
+                      ? COUNTRY_CODES.map((c, idx) => ({ c, idx })).filter(
+                          ({ c }) =>
+                            c.name.toLowerCase().includes(q) ||
+                            c.code.includes(q) ||
+                            c.iso.toLowerCase().includes(q)
+                        )
+                      : COUNTRY_CODES.map((c, idx) => ({ c, idx }));
+
+                    // Show separator between frequent and rest when not searching
+                    return filtered.map(({ c, idx }, i) => (
+                      <div key={`${c.iso}-${idx}`}>
+                        {!q && idx === FREQUENT_COUNT && (
+                          <div className="border-t border-border my-1 mx-2" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCountryIdx(idx);
+                            setShowManual(false);
+                            setShowDropdown(false);
+                            setCountrySearch("");
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/50 transition-colors text-left ${
+                            !showManual && countryIdx === idx ? "bg-secondary/30" : ""
+                          }`}
+                        >
+                          <span>{c.flag}</span>
+                          <span className="font-medium">{c.code}</span>
+                          <span className="text-muted-foreground text-xs truncate">{c.name}</span>
+                        </button>
+                      </div>
+                    ));
+                  })()}
+                </div>
                 <div className="border-t border-border">
                   <button
                     type="button"
                     onClick={() => {
                       setShowManual(true);
                       setShowDropdown(false);
+                      setCountrySearch("");
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left text-muted-foreground"
                   >
