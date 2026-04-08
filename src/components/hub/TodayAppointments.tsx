@@ -192,84 +192,66 @@ export default function TodayAppointments({ accountId, maxItems }: Props) {
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground/40" />
         </div>
       ) : appointments.length > 0 ? (
-        <div className="space-y-1.5">
-          {appointments.slice(0, maxItems ?? appointments.length).map(appt => (
-            <div
-              key={appt.id}
-              className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/60 px-4 py-3 hover:bg-card hover:border-border transition-all"
-            >
-              {/* FIX 6: Time column — show time in 12h or client initial */}
-              <div className="w-14 shrink-0 text-center">
-                {appt.appointment_time ? (
-                  <span className="text-sm font-semibold text-foreground font-mono">
-                    {formatTime12h(appt.appointment_time.slice(0, 5))}
-                  </span>
-                ) : (
-                  <div className="w-9 h-9 mx-auto rounded-full bg-accent/10 flex items-center justify-center">
-                    <span className="text-sm font-bold text-accent">
-                      {appt.client_name.charAt(0).toUpperCase()}
+        <>
+          <div className="space-y-1.5">
+            {appointments.slice(0, maxItems ?? appointments.length).map(appt => (
+              <div
+                key={appt.id}
+                className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/60 px-4 py-2.5 hover:bg-card hover:border-border transition-all"
+              >
+                <div className="w-14 shrink-0 text-center">
+                  {appt.appointment_time ? (
+                    <span className="text-sm font-semibold text-foreground font-mono">
+                      {formatTime12h(appt.appointment_time.slice(0, 5))}
                     </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Client info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-foreground truncate">{appt.client_name}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  {appt.pre_intake_completed ? (
-                    <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-[9px]">
-                      <CheckCircle2 className="w-3 h-3 mr-1" /> Intake completo
-                    </Badge>
-                  ) : appt.pre_intake_sent ? (
-                    <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[9px]">
-                      <AlertTriangle className="w-3 h-3 mr-1" /> Sin intake
-                    </Badge>
                   ) : (
-                    <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/20 text-[9px]">
-                      <Clock className="w-3 h-3 mr-1" /> Nuevo
-                    </Badge>
+                    <div className="w-8 h-8 mx-auto rounded-full bg-accent/10 flex items-center justify-center">
+                      <span className="text-sm font-bold text-accent">
+                        {appt.client_name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
                   )}
                 </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                {/* FIX 5: Resend opens modal with WhatsApp + Email options */}
-                {!appt.pre_intake_completed && (appt.client_phone || appt.client_email) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setResendAppt(appt)}
-                    className="h-7 px-2 text-[10px]"
-                  >
-                    <Send className="w-3 h-3" />
-                    <span className="ml-1 hidden sm:inline">Reenviar</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-semibold text-foreground truncate block">{appt.client_name}</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {appt.pre_intake_completed ? (
+                      <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-[9px]">
+                        <CheckCircle2 className="w-3 h-3 mr-1" /> Intake completo
+                      </Badge>
+                    ) : appt.pre_intake_sent ? (
+                      <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[9px]">
+                        <Send className="w-3 h-3 mr-1" /> Enviar
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/20 text-[9px]">
+                        <Clock className="w-3 h-3 mr-1" /> Nuevo
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {!appt.pre_intake_completed && (appt.client_phone || appt.client_email) && (
+                    <Button variant="ghost" size="sm" onClick={() => setResendAppt(appt)} className="h-7 px-2 text-[10px]">
+                      <Send className="w-3 h-3" />
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={() => handleStartConsultation(appt)} className="h-7 px-2.5 text-[10px] font-semibold">
+                    {appt.case_id ? "Ver caso" : "Iniciar consulta"}
                   </Button>
-                )}
-                {/* FIX 1: Iniciar consulta opens modal instead of navigating */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleStartConsultation(appt)}
-                  className="h-7 px-2.5 text-[10px] font-semibold"
-                >
-                  {appt.case_id ? "Ver caso" : "Iniciar consulta"}
-                </Button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-        {maxItems && appointments.length > maxItems && (
-          <button
-            onClick={() => navigate("/hub/consultations")}
-            className="text-[10px] font-semibold text-jarvis hover:text-jarvis/80 mt-1"
-          >
-            Ver {appointments.length - maxItems} más →
-          </button>
-        )}
+            ))}
+          </div>
+          {maxItems != null && appointments.length > maxItems && (
+            <button
+              onClick={() => navigate("/hub/consultations")}
+              className="text-[10px] font-semibold text-jarvis hover:text-jarvis/80 mt-1"
+            >
+              Ver {appointments.length - maxItems} más →
+            </button>
+          )}
+        </>
       ) : (
         <div className="rounded-xl border border-border/30 bg-card/30 p-4 text-center">
           <Calendar className="w-6 h-6 text-muted-foreground/20 mx-auto mb-1" />
