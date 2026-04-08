@@ -1,4 +1,4 @@
-import { parsePhoneNumber, CountryCode } from "libphonenumber-js";
+import { parsePhoneNumber, type CountryCode } from "libphonenumber-js";
 
 const FLAG_MAP: Record<string, string> = {
   US:"🇺🇸",DO:"🇩🇴",MX:"🇲🇽",GT:"🇬🇹",HN:"🇭🇳",SV:"🇸🇻",NI:"🇳🇮",CR:"🇨🇷",
@@ -18,64 +18,26 @@ export function getFlag(iso: string): string {
 }
 
 export interface PhoneDetectResult {
-  countryCode: string;   // e.g. "+34"
-  flag: string;          // e.g. "🇪🇸"
-  country: string;       // ISO e.g. "ES"
-  localNumber: string;   // national digits
-  fullPhone: string;     // E.164
+  countryCode: string;
+  flag: string;
+  country: string;
+  localNumber: string;
+  fullPhone: string;
   isValid: boolean;
 }
 
 const DR_AREA = /^(809|829|849)/;
 
 /**
- * Detect and normalize a phone number from raw digits.
- * Tries to parse with '+' prefix first; for 10-digit numbers
- * prioritizes Dominican Republic area codes, then defaults to US.
+ * Parse an international number that starts with "+".
+ * Only called when user explicitly types "+".
  */
-export function detectPhone(input: string): PhoneDetectResult {
-  const digits = input.replace(/\D/g, "");
-  if (!digits) return { countryCode: "+1", flag: "🇺🇸", country: "US", localNumber: "", fullPhone: "", isValid: false };
+export function detectInternational(input: string): PhoneDetectResult | null {
+  const raw = input.replace(/[^\d+]/g, "");
+  if (!raw.startsWith("+") || raw.length < 4) return null;
 
-  // 10 digits — check DR area codes first (primary market), then US
-  if (digits.length === 10 && DR_AREA.test(digits)) {
-    return { countryCode: "+1", flag: "🇩🇴", country: "DO", localNumber: digits, fullPhone: "+1" + digits, isValid: true };
-  }
-  if (digits.length === 10) {
-    return { countryCode: "+1", flag: "🇺🇸", country: "US", localNumber: digits, fullPhone: "+1" + digits, isValid: true };
-  }
-
-  // For international numbers, try all possible country code splits
-  // e.g. for "34612345678", try +3, +34, +346, etc. and pick the valid one
-  const candidates: PhoneDetectResult[] = [];
-  for (let ccLen = 1; ccLen <= Math.min(4, digits.length - 4); ccLen++) {
-    const cc = digits.slice(0, ccLen);
-    const national = digits.slice(ccLen);
-    try {
-      const parsed = parsePhoneNumber("+" + cc + national);
-      if (parsed && parsed.countryCallingCode === cc && parsed.isValid()) {
-        candidates.push({
-          countryCode: "+" + parsed.countryCallingCode,
-          flag: getFlag(parsed.country || "US"),
-          country: parsed.country || "US",
-          localNumber: parsed.nationalNumber as string,
-          fullPhone: parsed.format("E.164"),
-          isValid: true,
-        });
-      }
-    } catch { /* continue */ }
-  }
-
-  // If we found valid candidates, prefer the one with shortest country code
-  // (e.g. +34 Spain over +234 Nigeria)
-  if (candidates.length > 0) {
-    candidates.sort((a, b) => a.countryCode.length - b.countryCode.length);
-    return candidates[0];
-  }
-
-  // Fallback: try direct parse (library's own prefix matching)
   try {
-    const parsed = parsePhoneNumber("+" + digits);
+    const parsed = parsePhoneNumber(raw);
     if (parsed) {
       return {
         countryCode: "+" + parsed.countryCallingCode,
@@ -87,9 +49,57 @@ export function detectPhone(input: string): PhoneDetectResult {
       };
     }
   } catch { /* fall through */ }
+  return null;
+}
 
-  // Ultimate fallback
-  return { countryCode: "+1", flag: "🇺🇸", country: "US", localNumber: digits, fullPhone: "+1" + digits, isValid: false };
+/**
+ * Validate a local number for a given country ISO code.
+ * Returns the E.164 formatted phone if valid.
+ */
+export function validateForCountry(
+  localDigits: string,
+  countryIso: string,
+  dialCode: string
+): PhoneDetectResult {
+  const digits = localDigits.replace(/\D/g, "");
+  const flag = getFlag(countryIso);
+
+  if (!digits) {
+    return { countryCode: dialCode, flag, country: countryIso, localNumber: "", fullPhone: "", isValid: false };
+  }
+
+  // Try parsing with country hint
+  try {
+    const parsed = parsePhoneNumber(digits, countryIso as CountryCode);
+    if (parsed) {
+      return {
+        countryCode: "+" + parsed.countryCallingCode,
+        flag: getFlag(parsed.country || countryIso),
+        country: parsed.country || countryIso,
+        localNumber: parsed.nationalNumber as string,
+        fullPhone: parsed.format("E.164"),
+        isValid: parsed.isValid(),
+      };
+    }
+  } catch { /* fall through */ }
+
+  // Fallback — just concat
+  return {
+    countryCode: dialCode,
+    flag,
+    country: countryIso,
+    localNumber: digits,
+    fullPhone: dialCode + digits,
+    isValid: false,
+  };
+}
+
+/**
+ * Smart default for 10-digit numbers without "+" (DR priority).
+ */
+export function detectLocal10(digits: string): { country: string; flag: string; code: string } {
+  if (DR_AREA.test(digits)) return { country: "DO", flag: "🇩🇴", code: "+1" };
+  return { country: "US", flag: "🇺🇸", code: "+1" };
 }
 
 /**
@@ -109,7 +119,6 @@ export function parseExisting(phone: string): { country: string; flag: string; c
       };
     }
   } catch { /* fall through */ }
-  // Fallback
   const digits = phone.replace(/\D/g, "");
   return { country: "US", flag: "🇺🇸", code: "+1", local: digits };
 }
