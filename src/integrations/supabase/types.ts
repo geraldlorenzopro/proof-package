@@ -1443,11 +1443,13 @@ export type Database = {
           marital_status: string | null
           middle_name: string | null
           mobile_phone: string | null
+          mobile_phone_label: string | null
           notes: string | null
           passport_country: string | null
           passport_expiration: string | null
           passport_number: string | null
           phone: string | null
+          phone_label: string | null
           place_of_last_entry: string | null
           province_of_birth: string | null
           source_channel: string | null
@@ -1489,11 +1491,13 @@ export type Database = {
           marital_status?: string | null
           middle_name?: string | null
           mobile_phone?: string | null
+          mobile_phone_label?: string | null
           notes?: string | null
           passport_country?: string | null
           passport_expiration?: string | null
           passport_number?: string | null
           phone?: string | null
+          phone_label?: string | null
           place_of_last_entry?: string | null
           province_of_birth?: string | null
           source_channel?: string | null
@@ -1535,11 +1539,13 @@ export type Database = {
           marital_status?: string | null
           middle_name?: string | null
           mobile_phone?: string | null
+          mobile_phone_label?: string | null
           notes?: string | null
           passport_country?: string | null
           passport_expiration?: string | null
           passport_number?: string | null
           phone?: string | null
+          phone_label?: string | null
           place_of_last_entry?: string | null
           province_of_birth?: string | null
           source_channel?: string | null

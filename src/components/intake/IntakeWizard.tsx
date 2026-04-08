@@ -18,6 +18,9 @@ export interface IntakeData {
   client_first_name: string;
   client_last_name: string;
   client_phone: string;
+  client_phone_label: string;
+  client_mobile_phone: string;
+  client_mobile_phone_label: string;
   client_email: string;
   client_language: string;
   client_relationship: string;
@@ -40,6 +43,9 @@ const INITIAL_DATA: IntakeData = {
   client_first_name: "",
   client_last_name: "",
   client_phone: "",
+  client_phone_label: "mobile",
+  client_mobile_phone: "",
+  client_mobile_phone_label: "mobile",
   client_email: "",
   client_language: "es",
   client_relationship: "solicitante",
@@ -184,10 +190,13 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
             first_name: data.client_first_name,
             last_name: data.client_last_name,
             phone: data.client_phone,
+            phone_label: data.client_phone_label || "mobile",
+            mobile_phone: data.client_mobile_phone || null,
+            mobile_phone_label: data.client_mobile_phone_label || "mobile",
             email: data.client_email || null,
             source_channel: data.entry_channel,
             source_detail: data.referral_source || data.entry_channel_detail || null,
-          })
+          } as any)
           .select("id")
           .single();
         if (profErr) throw profErr;

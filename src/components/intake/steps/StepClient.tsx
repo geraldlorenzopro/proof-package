@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, RefreshCw, ChevronDown, Check, AlertTriangle } from "lucide-react";
+import { Search, RefreshCw, ChevronDown, Check, AlertTriangle, Plus, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { COUNTRY_CODES, FREQUENT_COUNT } from "@/lib/countryCodes";
-import { detectInternational, validateForCountry, parseExisting, getFlag, formatNational } from "@/lib/phoneDetect";
+import { detectInternational, validateForCountry, parseExisting, getFlag, formatNational, PHONE_LABELS } from "@/lib/phoneDetect";
 import type { IntakeData } from "../IntakeWizard";
 
 interface Props {
@@ -29,8 +29,6 @@ interface DuplicateMatch {
   phone: string | null;
 }
 
-function stripNonDigits(val: string) { return val.replace(/\D/g, ""); }
-
 const RELATIONSHIPS = [
   { key: "solicitante", emoji: "👤", label: "Es el solicitante", desc: "La persona que necesita el beneficio migratorio" },
   { key: "familiar", emoji: "👨‍👩‍👧", label: "Es familiar del solicitante", desc: "Cónyuge, hijo, padre u otro familiar incluido" },
@@ -38,43 +36,179 @@ const RELATIONSHIPS = [
   { key: "otro", emoji: "📋", label: "Otro rol", desc: "" },
 ];
 
+/* ─── Phone row sub-component ─── */
+interface PhoneRowProps {
+  label: string;
+  phoneLabel: string;
+  onPhoneLabelChange: (v: string) => void;
+  selectedCountry: string;
+  selectedCode: string;
+  selectedFlag: string;
+  localDigits: string;
+  isInternationalMode: boolean;
+  rawInput: string;
+  phoneValid: boolean | null;
+  onCountrySelect: (iso: string, code: string, flag: string) => void;
+  onPhoneChange: (val: string) => void;
+  onPhoneBlur: () => void;
+  onRemove?: () => void;
+}
+
+function PhoneRow({
+  label, phoneLabel, onPhoneLabelChange,
+  selectedCountry, selectedCode, selectedFlag,
+  localDigits, isInternationalMode, rawInput,
+  phoneValid, onCountrySelect, onPhoneChange, onPhoneBlur,
+  onRemove,
+}: PhoneRowProps) {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [showLabelPicker, setShowLabelPicker] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowDropdown(false);
+      if (labelRef.current && !labelRef.current.contains(e.target as Node)) setShowLabelPicker(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const displayValue = isInternationalMode ? rawInput : formatNational(localDigits, selectedCountry);
+  const phoneInvalid = localDigits.length > 0 && localDigits.length < 7 && !isInternationalMode;
+  const currentLabel = PHONE_LABELS.find(l => l.key === phoneLabel) || PHONE_LABELS[1];
+
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</label>
+        {onRemove && (
+          <button type="button" onClick={onRemove} className="ml-auto text-muted-foreground hover:text-destructive transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+      <div className="flex gap-0">
+        {/* Country dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button type="button" onClick={() => setShowDropdown(!showDropdown)}
+            className="flex items-center gap-1.5 border border-input border-r-0 bg-background rounded-l-xl px-3 py-2.5 text-sm hover:bg-secondary/50 transition-colors min-w-[90px]">
+            <span>{selectedFlag} {selectedCode}</span>
+            <ChevronDown className="w-3 h-3 text-muted-foreground" />
+          </button>
+          {showDropdown && (
+            <div className="absolute top-full left-0 mt-1 z-50 w-72 max-h-72 border border-border bg-background rounded-xl shadow-lg flex flex-col">
+              <div className="p-2 border-b border-border">
+                <input type="text" value={countrySearch} onChange={e => setCountrySearch(e.target.value)}
+                  placeholder="Buscar país..." className="w-full border border-input bg-background rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring" autoFocus />
+              </div>
+              <div className="overflow-y-auto flex-1">
+                {(() => {
+                  const q = countrySearch.toLowerCase().trim();
+                  const filtered = q
+                    ? COUNTRY_CODES.map((c, idx) => ({ c, idx })).filter(({ c }) => c.name.toLowerCase().includes(q) || c.code.includes(q) || c.iso.toLowerCase().includes(q))
+                    : COUNTRY_CODES.map((c, idx) => ({ c, idx }));
+                  return filtered.map(({ c, idx }) => (
+                    <div key={`${c.iso}-${idx}`}>
+                      {!q && idx === FREQUENT_COUNT && <div className="border-t border-border my-1 mx-2" />}
+                      <button type="button" onClick={() => { onCountrySelect(c.iso, c.code, c.flag); setShowDropdown(false); setCountrySearch(""); }}
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/50 transition-colors text-left ${selectedCountry === c.iso ? "bg-secondary/30" : ""}`}>
+                        <span>{c.flag}</span><span className="font-medium">{c.code}</span><span className="text-muted-foreground text-xs truncate">{c.name}</span>
+                      </button>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Phone input */}
+        <div className="relative flex-1">
+          <input type="tel" value={displayValue}
+            onChange={e => onPhoneChange(e.target.value)} onBlur={onPhoneBlur}
+            placeholder={isInternationalMode ? "+57 312 456 7890" : "(305) 555-0000"}
+            className="w-full border border-input border-r-0 bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-8" />
+          {phoneValid === true && localDigits.length >= 7 && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />}
+          {phoneValid === false && (localDigits.length >= 7 || (isInternationalMode && rawInput.length >= 4)) && <AlertTriangle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-400" />}
+        </div>
+
+        {/* Phone type selector (like GHL) */}
+        <div className="relative" ref={labelRef}>
+          <button type="button" onClick={() => setShowLabelPicker(!showLabelPicker)}
+            className="flex items-center gap-1.5 border border-input border-l-0 bg-background rounded-r-xl px-3 py-2.5 text-sm hover:bg-secondary/50 transition-colors min-w-[100px]">
+            <span className="text-xs">{currentLabel.emoji}</span>
+            <span className="text-xs text-muted-foreground">{currentLabel.label}</span>
+            <ChevronDown className="w-3 h-3 text-muted-foreground ml-auto" />
+          </button>
+          {showLabelPicker && (
+            <div className="absolute top-full right-0 mt-1 z-50 w-44 border border-border bg-background rounded-xl shadow-lg overflow-hidden">
+              {PHONE_LABELS.map(pl => (
+                <button key={pl.key} type="button"
+                  onClick={() => { onPhoneLabelChange(pl.key); setShowLabelPicker(false); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left ${phoneLabel === pl.key ? "bg-secondary/30" : ""}`}>
+                  <span>{pl.emoji}</span>
+                  <span className={phoneLabel === pl.key ? "text-accent font-semibold" : "text-foreground"}>{pl.label}</span>
+                  {phoneLabel === pl.key && <Check className="w-3 h-3 text-accent ml-auto" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-1">Escribe + para detectar país · Sin + usa el selector</p>
+      {phoneInvalid && <p className="text-[10px] text-destructive mt-1">Mínimo 7 dígitos</p>}
+      {phoneValid === false && localDigits.length >= 7 && <p className="text-[10px] text-yellow-400 mt-1">⚠️ Número no válido para {selectedCountry}</p>}
+    </div>
+  );
+}
+
+/* ─── Main StepClient ─── */
 export default function StepClient({ data, update, accountId }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ClientResult[]>([]);
   const [searching, setSearching] = useState(false);
-  const [countrySearch, setCountrySearch] = useState("");
 
-  // Phone state — dropdown country is source of truth
+  // Primary phone state
   const parsed = parseExisting(data.client_phone);
   const [selectedCountry, setSelectedCountry] = useState(parsed.country);
   const [selectedCode, setSelectedCode] = useState(parsed.code);
   const [selectedFlag, setSelectedFlag] = useState(parsed.flag);
   const [localDigits, setLocalDigits] = useState(parsed.local);
-  const [isInternationalMode, setIsInternationalMode] = useState(false); // true when user types "+"
-  const [rawInput, setRawInput] = useState(""); // only used during "+" typing
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isInternationalMode, setIsInternationalMode] = useState(false);
+  const [rawInput, setRawInput] = useState("");
   const [phoneValid, setPhoneValid] = useState<boolean | null>(null);
+
+  // Secondary phone state
+  const [showSecondPhone, setShowSecondPhone] = useState(!!data.client_mobile_phone);
+  const parsed2 = parseExisting(data.client_mobile_phone);
+  const [country2, setCountry2] = useState(parsed2.country);
+  const [code2, setCode2] = useState(parsed2.code);
+  const [flag2, setFlag2] = useState(parsed2.flag);
+  const [digits2, setDigits2] = useState(parsed2.local);
+  const [intlMode2, setIntlMode2] = useState(false);
+  const [raw2, setRaw2] = useState("");
+  const [valid2, setValid2] = useState<boolean | null>(null);
 
   const [phoneDupe, setPhoneDupe] = useState<DuplicateMatch | null>(null);
   const [phoneDupeDismissed, setPhoneDupeDismissed] = useState(false);
   const [emailDupe, setEmailDupe] = useState<DuplicateMatch | null>(null);
 
-  // Sync E.164 to parent whenever localDigits or country changes
+  // Sync primary E.164
   useEffect(() => {
     if (!localDigits) { update({ client_phone: "" }); return; }
     const result = validateForCountry(localDigits, selectedCountry, selectedCode);
     update({ client_phone: result.fullPhone });
   }, [localDigits, selectedCountry, selectedCode]);
 
-  // Close dropdown on outside click
+  // Sync secondary E.164
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowDropdown(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
+    if (!digits2) { update({ client_mobile_phone: "" }); return; }
+    const result = validateForCountry(digits2, country2, code2);
+    update({ client_mobile_phone: result.fullPhone });
+  }, [digits2, country2, code2]);
 
   // When existing client is selected, sync phone state
   useEffect(() => {
@@ -114,83 +248,101 @@ export default function StepClient({ data, update, accountId }: Props) {
   }
 
   function clearClient() {
-    update({ client_profile_id: null, is_existing_client: false, client_first_name: "", client_last_name: "", client_phone: "", client_email: "" });
+    update({ client_profile_id: null, is_existing_client: false, client_first_name: "", client_last_name: "", client_phone: "", client_email: "", client_mobile_phone: "" });
     setLocalDigits(""); setRawInput(""); setSelectedFlag("🇺🇸"); setSelectedCode("+1"); setSelectedCountry("US");
     setIsInternationalMode(false); setPhoneValid(null); setPhoneDupe(null); setPhoneDupeDismissed(false); setEmailDupe(null);
+    setShowSecondPhone(false); setDigits2(""); setRaw2(""); setCountry2("US"); setCode2("+1"); setFlag2("🇺🇸");
   }
 
+  // Primary phone handlers
   function handleCountrySelect(iso: string, code: string, flag: string) {
-    setSelectedCountry(iso);
-    setSelectedCode(code);
-    setSelectedFlag(flag);
-    setIsInternationalMode(false);
-    setRawInput("");
-    setShowDropdown(false);
-    setCountrySearch("");
-    // Re-validate current digits with new country
+    setSelectedCountry(iso); setSelectedCode(code); setSelectedFlag(flag);
+    setIsInternationalMode(false); setRawInput("");
     if (localDigits) {
       const result = validateForCountry(localDigits, iso, code);
-      setPhoneValid(result.isValid);
-      setLocalDigits(result.localNumber || localDigits);
+      setPhoneValid(result.isValid); setLocalDigits(result.localNumber || localDigits);
       update({ client_phone: result.fullPhone });
     }
   }
 
   function handlePhoneChange(val: string) {
-    // If user starts typing "+", switch to international mode
     if (val.startsWith("+")) {
       setIsInternationalMode(true);
-      // Keep only digits and the leading +
       const cleaned = "+" + val.slice(1).replace(/\D/g, "");
-      if (cleaned.length > 16) return; // E.164 max
-      setRawInput(cleaned);
-      setLocalDigits(""); // will be set on blur
-      setPhoneValid(null);
+      if (cleaned.length > 16) return;
+      setRawInput(cleaned); setLocalDigits(""); setPhoneValid(null);
       return;
     }
-
-    // Local mode — dropdown country is source of truth
-    setIsInternationalMode(false);
-    setRawInput("");
+    setIsInternationalMode(false); setRawInput("");
     const digits = val.replace(/\D/g, "");
     if (digits.length > 15) return;
-    setLocalDigits(digits);
-    setPhoneValid(null);
+    setLocalDigits(digits); setPhoneValid(null);
   }
 
   function handlePhoneBlur() {
     if (isInternationalMode && rawInput.startsWith("+") && rawInput.length >= 4) {
-      // Auto-detect country from "+" prefix
       const result = detectInternational(rawInput);
       if (result) {
-        setSelectedFlag(result.flag);
-        setSelectedCode(result.countryCode);
-        setSelectedCountry(result.country);
-        setLocalDigits(result.localNumber);
-        setPhoneValid(result.isValid);
+        setSelectedFlag(result.flag); setSelectedCode(result.countryCode); setSelectedCountry(result.country);
+        setLocalDigits(result.localNumber); setPhoneValid(result.isValid);
         update({ client_phone: result.fullPhone });
-        setIsInternationalMode(false);
-        setRawInput("");
+        setIsInternationalMode(false); setRawInput("");
         checkPhoneDuplicate(result.fullPhone);
         return;
       }
-      // Failed to parse — keep raw but mark invalid
-      setPhoneValid(false);
-      checkPhoneDuplicate(rawInput);
+      setPhoneValid(false); checkPhoneDuplicate(rawInput);
       return;
     }
-
-    // Local mode — validate with selected country (NO guessing)
     if (localDigits.length >= 7) {
       const result = validateForCountry(localDigits, selectedCountry, selectedCode);
-      setPhoneValid(result.isValid);
-      setLocalDigits(result.localNumber || localDigits);
-      update({ client_phone: result.fullPhone });
-      checkPhoneDuplicate(result.fullPhone);
+      setPhoneValid(result.isValid); setLocalDigits(result.localNumber || localDigits);
+      update({ client_phone: result.fullPhone }); checkPhoneDuplicate(result.fullPhone);
     } else if (localDigits.length > 0) {
-      setPhoneValid(false);
-      checkPhoneDuplicate(data.client_phone);
+      setPhoneValid(false); checkPhoneDuplicate(data.client_phone);
     }
+  }
+
+  // Secondary phone handlers
+  function handleCountry2(iso: string, code: string, flag: string) {
+    setCountry2(iso); setCode2(code); setFlag2(flag); setIntlMode2(false); setRaw2("");
+    if (digits2) {
+      const result = validateForCountry(digits2, iso, code);
+      setValid2(result.isValid); setDigits2(result.localNumber || digits2);
+      update({ client_mobile_phone: result.fullPhone });
+    }
+  }
+
+  function handlePhone2Change(val: string) {
+    if (val.startsWith("+")) {
+      setIntlMode2(true);
+      const cleaned = "+" + val.slice(1).replace(/\D/g, "");
+      if (cleaned.length > 16) return;
+      setRaw2(cleaned); setDigits2(""); setValid2(null);
+      return;
+    }
+    setIntlMode2(false); setRaw2("");
+    const d = val.replace(/\D/g, "");
+    if (d.length > 15) return;
+    setDigits2(d); setValid2(null);
+  }
+
+  function handlePhone2Blur() {
+    if (intlMode2 && raw2.startsWith("+") && raw2.length >= 4) {
+      const result = detectInternational(raw2);
+      if (result) {
+        setFlag2(result.flag); setCode2(result.countryCode); setCountry2(result.country);
+        setDigits2(result.localNumber); setValid2(result.isValid);
+        update({ client_mobile_phone: result.fullPhone });
+        setIntlMode2(false); setRaw2("");
+        return;
+      }
+      setValid2(false); return;
+    }
+    if (digits2.length >= 7) {
+      const result = validateForCountry(digits2, country2, code2);
+      setValid2(result.isValid); setDigits2(result.localNumber || digits2);
+      update({ client_mobile_phone: result.fullPhone });
+    } else if (digits2.length > 0) { setValid2(false); }
   }
 
   async function checkPhoneDuplicate(phone?: string) {
@@ -211,13 +363,6 @@ export default function StepClient({ data, update, accountId }: Props) {
     const { data: matches } = await q.limit(1);
     if (matches && matches.length > 0) setEmailDupe(matches[0]); else setEmailDupe(null);
   }
-
-  // Display value for phone input
-  const phoneDisplayValue = isInternationalMode
-    ? rawInput
-    : formatNational(localDigits, selectedCountry);
-
-  const phoneInvalid = localDigits.length > 0 && localDigits.length < 7 && !isInternationalMode;
 
   return (
     <div className="space-y-4">
@@ -240,7 +385,7 @@ export default function StepClient({ data, update, accountId }: Props) {
           {results.map(c => (
             <button key={c.id} onClick={() => selectClient(c)}
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors text-left">
-              <div className="w-8 h-8 rounded-full bg-jarvis/10 flex items-center justify-center text-jarvis text-xs font-bold">
+              <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent text-xs font-bold">
                 {(c.first_name?.[0] || "?").toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
@@ -254,7 +399,7 @@ export default function StepClient({ data, update, accountId }: Props) {
 
       {data.is_existing_client && (
         <div className="flex items-center gap-2">
-          <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">♻️ Cliente existente</Badge>
+          <Badge className="bg-accent/10 text-accent border-accent/20">♻️ Cliente existente</Badge>
           <button onClick={clearClient} className="text-xs text-muted-foreground hover:text-foreground">Cambiar</button>
         </div>
       )}
@@ -274,68 +419,63 @@ export default function StepClient({ data, update, accountId }: Props) {
         </div>
       </div>
 
-      {/* Phone */}
-      <div>
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Teléfono *</label>
-        <div className="flex gap-0">
-          {/* Country dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button type="button" onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-1.5 border border-input border-r-0 bg-background rounded-l-xl px-3 py-2.5 text-sm hover:bg-secondary/50 transition-colors min-w-[90px]">
-              <span>{selectedFlag} {selectedCode}</span>
-              <ChevronDown className="w-3 h-3 text-muted-foreground" />
-            </button>
-            {showDropdown && (
-              <div className="absolute top-full left-0 mt-1 z-50 w-72 max-h-72 border border-border bg-background rounded-xl shadow-lg flex flex-col">
-                <div className="p-2 border-b border-border">
-                  <input type="text" value={countrySearch} onChange={e => setCountrySearch(e.target.value)}
-                    placeholder="Buscar país..." className="w-full border border-input bg-background rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring" autoFocus />
-                </div>
-                <div className="overflow-y-auto flex-1">
-                  {(() => {
-                    const q = countrySearch.toLowerCase().trim();
-                    const filtered = q
-                      ? COUNTRY_CODES.map((c, idx) => ({ c, idx })).filter(({ c }) => c.name.toLowerCase().includes(q) || c.code.includes(q) || c.iso.toLowerCase().includes(q))
-                      : COUNTRY_CODES.map((c, idx) => ({ c, idx }));
-                    return filtered.map(({ c, idx }) => (
-                      <div key={`${c.iso}-${idx}`}>
-                        {!q && idx === FREQUENT_COUNT && <div className="border-t border-border my-1 mx-2" />}
-                        <button type="button" onClick={() => handleCountrySelect(c.iso, c.code, c.flag)}
-                          className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/50 transition-colors text-left ${selectedCountry === c.iso ? "bg-secondary/30" : ""}`}>
-                          <span>{c.flag}</span><span className="font-medium">{c.code}</span><span className="text-muted-foreground text-xs truncate">{c.name}</span>
-                        </button>
-                      </div>
-                    ));
-                  })()}
-                </div>
-              </div>
-            )}
-          </div>
-          {/* Phone input */}
-          <div className="relative flex-1">
-            <input type="tel" value={phoneDisplayValue}
-              onChange={e => handlePhoneChange(e.target.value)} onBlur={handlePhoneBlur}
-              placeholder={isInternationalMode ? "+57 312 456 7890" : "(305) 555-0000"}
-              className="w-full border border-input bg-background rounded-r-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-8" />
-            {phoneValid === true && localDigits.length >= 7 && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />}
-            {phoneValid === false && (localDigits.length >= 7 || (isInternationalMode && rawInput.length >= 4)) && <AlertTriangle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-400" />}
+      {/* Primary phone */}
+      <PhoneRow
+        label="Teléfono *"
+        phoneLabel={data.client_phone_label}
+        onPhoneLabelChange={v => update({ client_phone_label: v })}
+        selectedCountry={selectedCountry}
+        selectedCode={selectedCode}
+        selectedFlag={selectedFlag}
+        localDigits={localDigits}
+        isInternationalMode={isInternationalMode}
+        rawInput={rawInput}
+        phoneValid={phoneValid}
+        onCountrySelect={handleCountrySelect}
+        onPhoneChange={handlePhoneChange}
+        onPhoneBlur={handlePhoneBlur}
+      />
+
+      {/* Duplicate warning */}
+      {phoneDupe && !phoneDupeDismissed && (
+        <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-xl px-4 py-3">
+          <p className="text-sm text-yellow-300 font-semibold">⚠️ Este teléfono ya está registrado</p>
+          <p className="text-xs text-yellow-300/80 mt-0.5">{phoneDupe.first_name} {phoneDupe.last_name}{phoneDupe.email ? ` · ${phoneDupe.email}` : ""}</p>
+          <div className="flex gap-2 mt-2">
+            <button type="button" onClick={() => selectClient(phoneDupe)} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-colors">Usar cliente existente</button>
+            <button type="button" onClick={() => setPhoneDupeDismissed(true)} className="text-xs px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors">Ignorar y continuar</button>
           </div>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-1">Escribe + para detectar país automáticamente · Sin + usa el selector de país</p>
-        {phoneInvalid && <p className="text-[10px] text-destructive mt-1">Mínimo 7 dígitos</p>}
-        {phoneValid === false && localDigits.length >= 7 && <p className="text-[10px] text-yellow-400 mt-1">⚠️ Número no válido para {selectedCountry}</p>}
+      )}
 
-        {phoneDupe && !phoneDupeDismissed && (
-          <div className="mt-2 border border-yellow-500/30 bg-yellow-500/10 rounded-xl px-4 py-3">
-            <p className="text-sm text-yellow-300 font-semibold">⚠️ Este teléfono ya está registrado</p>
-            <p className="text-xs text-yellow-300/80 mt-0.5">{phoneDupe.first_name} {phoneDupe.last_name}{phoneDupe.email ? ` · ${phoneDupe.email}` : ""}</p>
-            <div className="flex gap-2 mt-2">
-              <button type="button" onClick={() => selectClient(phoneDupe)} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-colors">Usar cliente existente</button>
-              <button type="button" onClick={() => setPhoneDupeDismissed(true)} className="text-xs px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors">Ignorar y continuar</button>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Secondary phone */}
+      {showSecondPhone ? (
+        <PhoneRow
+          label="Teléfono secundario"
+          phoneLabel={data.client_mobile_phone_label}
+          onPhoneLabelChange={v => update({ client_mobile_phone_label: v })}
+          selectedCountry={country2}
+          selectedCode={code2}
+          selectedFlag={flag2}
+          localDigits={digits2}
+          isInternationalMode={intlMode2}
+          rawInput={raw2}
+          phoneValid={valid2}
+          onCountrySelect={handleCountry2}
+          onPhoneChange={handlePhone2Change}
+          onPhoneBlur={handlePhone2Blur}
+          onRemove={() => {
+            setShowSecondPhone(false); setDigits2(""); setRaw2("");
+            setCountry2("US"); setCode2("+1"); setFlag2("🇺🇸");
+            update({ client_mobile_phone: "", client_mobile_phone_label: "mobile" });
+          }}
+        />
+      ) : (
+        <button type="button" onClick={() => setShowSecondPhone(true)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-accent transition-colors">
+          <Plus className="w-3.5 h-3.5" /> Agregar otro teléfono
+        </button>
+      )}
 
       {/* Email */}
       <div>
@@ -354,7 +494,7 @@ export default function StepClient({ data, update, accountId }: Props) {
         <div className="flex gap-3">
           {[{ key: "es", label: "🇪🇸 Español" }, { key: "en", label: "🇺🇸 English" }].map(lang => (
             <button key={lang.key} onClick={() => update({ client_language: lang.key })}
-              className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-all ${data.client_language === lang.key ? "border-jarvis bg-jarvis/10 text-jarvis" : "border-border text-muted-foreground hover:border-foreground/20"}`}>
+              className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-all ${data.client_language === lang.key ? "border-accent bg-accent/10 text-accent" : "border-border text-muted-foreground hover:border-foreground/20"}`}>
               {lang.label}
             </button>
           ))}
