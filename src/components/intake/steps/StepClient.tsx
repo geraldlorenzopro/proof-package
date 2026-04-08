@@ -18,6 +18,14 @@ interface ClientResult {
   email: string | null;
 }
 
+interface DuplicateMatch {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
 const COUNTRY_CODES = [
   { flag: "🇺🇸", code: "+1", name: "Estados Unidos" },
   { flag: "🇩🇴", code: "+1", name: "República Dominicana", alt: "DO" },
@@ -50,14 +58,12 @@ function formatPhoneDisplay(digits: string): string {
 function parseExistingPhone(phone: string) {
   if (!phone) return { countryIdx: 0, local: "" };
   const clean = phone.replace(/[\s\-()]/g, "");
-  // Try matching longer codes first
   for (let i = 0; i < COUNTRY_CODES.length; i++) {
     const c = COUNTRY_CODES[i];
     if (clean.startsWith(c.code)) {
       return { countryIdx: i, local: clean.slice(c.code.length) };
     }
   }
-  // fallback: strip leading + and digits that look like a code
   if (clean.startsWith("+")) {
     return { countryIdx: 0, local: stripNonDigits(clean.slice(1)) };
   }
@@ -76,6 +82,11 @@ export default function StepClient({ data, update, accountId }: Props) {
   const [manualCode, setManualCode] = useState("");
   const [showManual, setShowManual] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Duplicate detection state
+  const [phoneDupe, setPhoneDupe] = useState<DuplicateMatch | null>(null);
+  const [phoneDupeDismissed, setPhoneDupeDismissed] = useState(false);
+  const [emailDupe, setEmailDupe] = useState<DuplicateMatch | null>(null);
 
   // Sync full phone to parent
   useEffect(() => {
@@ -102,7 +113,6 @@ export default function StepClient({ data, update, accountId }: Props) {
   // When existing client selected, parse phone
   useEffect(() => {
     const p = parseExistingPhone(data.client_phone);
-    // Only update if the phone changed externally (e.g. client selected)
     const currentDigits = stripNonDigits(localNumber);
     if (p.local !== currentDigits) {
       setCountryIdx(p.countryIdx);
@@ -129,7 +139,7 @@ export default function StepClient({ data, update, accountId }: Props) {
     setSearching(false);
   }
 
-  function selectClient(client: ClientResult) {
+  function selectClient(client: ClientResult | DuplicateMatch) {
     update({
       client_profile_id: client.id,
       is_existing_client: true,
@@ -140,6 +150,9 @@ export default function StepClient({ data, update, accountId }: Props) {
     });
     setQuery("");
     setResults([]);
+    setPhoneDupe(null);
+    setPhoneDupeDismissed(false);
+    setEmailDupe(null);
   }
 
   function clearClient() {
@@ -154,12 +167,63 @@ export default function StepClient({ data, update, accountId }: Props) {
     setLocalNumber("");
     setCountryIdx(0);
     setShowManual(false);
+    setPhoneDupe(null);
+    setPhoneDupeDismissed(false);
+    setEmailDupe(null);
   }
 
   function handleLocalChange(val: string) {
     const digits = stripNonDigits(val);
     if (digits.length <= 15) {
       setLocalNumber(digits);
+    }
+  }
+
+  // Phone duplicate check on blur
+  async function checkPhoneDuplicate() {
+    const fullPhone = data.client_phone;
+    if (!fullPhone || fullPhone.length < 8 || !accountId || data.is_existing_client) {
+      setPhoneDupe(null);
+      return;
+    }
+    const { data: matches } = await supabase
+      .from("client_profiles")
+      .select("id, first_name, last_name, email, phone")
+      .eq("account_id", accountId)
+      .eq("phone", fullPhone)
+      .limit(1);
+    if (matches && matches.length > 0) {
+      // Don't show if it's the already-selected client
+      if (data.client_profile_id && matches[0].id === data.client_profile_id) return;
+      setPhoneDupe(matches[0]);
+      setPhoneDupeDismissed(false);
+    } else {
+      setPhoneDupe(null);
+    }
+  }
+
+  // Email duplicate check on blur
+  async function checkEmailDuplicate() {
+    const email = data.client_email?.trim();
+    if (!email || !email.includes("@") || !accountId) {
+      setEmailDupe(null);
+      return;
+    }
+    let query = supabase
+      .from("client_profiles")
+      .select("id, first_name, last_name, email, phone")
+      .eq("account_id", accountId)
+      .eq("email", email);
+
+    if (data.client_profile_id) {
+      query = query.neq("id", data.client_profile_id);
+    }
+
+    const { data: matches } = await query.limit(1);
+    if (matches && matches.length > 0) {
+      setEmailDupe(matches[0]);
+    } else {
+      setEmailDupe(null);
     }
   }
 
@@ -319,12 +383,42 @@ export default function StepClient({ data, update, accountId }: Props) {
             type="tel"
             value={formatPhoneDisplay(localNumber)}
             onChange={e => handleLocalChange(e.target.value)}
+            onBlur={checkPhoneDuplicate}
             placeholder="(809) 676-5653"
-            className={`flex-1 border border-input bg-background ${showManual ? "rounded-r-xl" : "rounded-r-xl"} px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring`}
+            className="flex-1 border border-input bg-background rounded-r-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         {phoneInvalid && (
           <p className="text-[10px] text-rose-400 mt-1">Mínimo 7 dígitos</p>
+        )}
+
+        {/* Phone duplicate warning */}
+        {phoneDupe && !phoneDupeDismissed && (
+          <div className="mt-2 border border-yellow-500/30 bg-yellow-500/10 rounded-xl px-4 py-3">
+            <p className="text-sm text-yellow-300 font-semibold">
+              ⚠️ Este teléfono ya está registrado
+            </p>
+            <p className="text-xs text-yellow-300/80 mt-0.5">
+              {phoneDupe.first_name} {phoneDupe.last_name}
+              {phoneDupe.email ? ` · ${phoneDupe.email}` : ""}
+            </p>
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => selectClient(phoneDupe)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-colors"
+              >
+                Usar cliente existente
+              </button>
+              <button
+                type="button"
+                onClick={() => setPhoneDupeDismissed(true)}
+                className="text-xs px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Ignorar y continuar
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -334,9 +428,18 @@ export default function StepClient({ data, update, accountId }: Props) {
           type="email"
           value={data.client_email}
           onChange={e => update({ client_email: e.target.value })}
+          onBlur={checkEmailDuplicate}
           placeholder="cliente@email.com"
           className="w-full border border-input bg-background rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
+
+        {/* Email duplicate info (non-blocking) */}
+        {emailDupe && (
+          <p className="text-xs text-blue-400 mt-1.5">
+            ℹ️ Este email ya está en uso por {emailDupe.first_name} {emailDupe.last_name}
+            <span className="text-blue-400/60"> — puede continuar, familias comparten email</span>
+          </p>
+        )}
       </div>
 
       {/* Language */}
