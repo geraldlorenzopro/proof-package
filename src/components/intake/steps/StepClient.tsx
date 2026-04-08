@@ -66,9 +66,9 @@ export default function StepClient({ data, update, accountId }: Props) {
       update({ client_phone: "" });
       return;
     }
-    const prefix = showManual && manualCode ? `+${stripNonDigits(manualCode)}` : COUNTRY_CODES[countryIdx].code;
+    const prefix = showManual && manualCode ? `+${stripNonDigits(manualCode)}` : detectedCode;
     update({ client_phone: `${prefix}${digits}` });
-  }, [localNumber, countryIdx, showManual, manualCode]);
+  }, [localNumber, detectedCode, showManual, manualCode]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -83,10 +83,12 @@ export default function StepClient({ data, update, accountId }: Props) {
 
   // When existing client selected, parse phone
   useEffect(() => {
-    const p = parseExistingPhone(data.client_phone);
+    const p = parseExisting(data.client_phone);
     const currentDigits = stripNonDigits(localNumber);
     if (p.local !== currentDigits) {
-      setCountryIdx(p.countryIdx);
+      setDetectedFlag(p.flag);
+      setDetectedCode(p.code);
+      setDetectedCountry(p.country);
       setLocalNumber(p.local);
       setShowManual(false);
     }
