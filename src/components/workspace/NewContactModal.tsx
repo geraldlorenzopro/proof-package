@@ -108,10 +108,9 @@ export default function NewContactModal({ open, onOpenChange, accountId, onCreat
       }
     }
     const digits = cleaned.replace(/\D/g, "");
-    if (countryIso === "US" && digits.length === 10) {
-      const local = detectLocal10(digits);
-      setCountryIso(local.country);
-      const result = validateForCountry(digits, local.country, local.code);
+    if (digits.length >= 7) {
+      const cc = COUNTRY_CODES.find(c => c.iso === countryIso);
+      const result = validateForCountry(digits, countryIso, cc?.code || "+1");
       setPhoneValid(result.isValid);
       setPhoneE164(result.fullPhone);
     }
