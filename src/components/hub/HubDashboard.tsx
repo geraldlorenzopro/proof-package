@@ -189,9 +189,9 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
 
   return (
     <>
-      <div className="h-full flex flex-col overflow-hidden">
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
         {/* ═══ TOPBAR — 52px ═══ */}
-        <div className="h-[52px] shrink-0 border-b border-border/30 px-4 flex items-center justify-between">
+        <div className="border-b border-border/30 px-4 flex items-center justify-between" style={{ height: 52, flexShrink: 0 }}>
           <h2 className="text-base font-semibold text-foreground truncate">
             {greeting}, <span className="text-jarvis">{resolvedName || staffName || "Usuario"}</span>
           </h2>
@@ -201,56 +201,92 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
           </div>
         </div>
 
-        {/* ═══ CONTENT GRID ═══ */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3 p-3 overflow-hidden">
+        {/* ═══ CONTENT GRID — exact CSS, no interpretation ═══ */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 360px',
+          gridTemplateRows: '1fr',
+          gap: 12,
+          padding: 12,
+          height: 'calc(100vh - 52px)',
+          overflow: 'hidden',
+          minHeight: 0,
+        }}>
 
           {/* ═══ LEFT COLUMN ═══ */}
-          <div className="flex flex-col gap-2.5 min-h-0 overflow-hidden">
+          <div style={{
+            display: 'grid',
+            gridTemplateRows: 'auto 44px 1fr',
+            gap: 10,
+            overflow: 'hidden',
+            minHeight: 0,
+          }}>
 
-            {/* ZONE A — Today's Appointments */}
-            <div className="shrink-0 overflow-hidden" style={{ maxHeight: 200 }}>
+            {/* ZONE A — Consultas de Hoy */}
+            <div className="bg-card border border-border rounded-xl" style={{ padding: 12, overflow: 'hidden' }}>
               <TodayAppointments accountId={accountId} maxItems={2} />
             </div>
 
-            {/* ZONE B — Quick Actions (44px) */}
-            {can("crear_casos") && (
-              <div className="grid grid-cols-4 gap-1.5 shrink-0 h-[44px]">
-                {[
-                  { label: "Buscar", icon: Search, action: "search", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
-                  { label: "Consulta", icon: PlusCircle, action: "intake", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-                  { label: "Contacto", icon: UserPlus, action: "contact", color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20" },
-                  { label: "Analizar", icon: FileSearch, action: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-                ].map((a) => (
-                  <button
-                    key={a.label}
-                    onClick={() => {
-                      if (a.action === "search") { setCommandBarFilter("all"); setCommandBarOpen(true); }
-                      else if (a.action === "intake") setIntakeOpen(true);
-                      else if (a.action === "contact") setContactOpen(true);
-                      else goTo(a.action);
-                    }}
-                    className={`flex items-center justify-center gap-1.5 rounded-lg border ${a.border} ${a.bg} px-2 h-full transition-all hover:scale-[1.02] text-xs`}
-                  >
-                    <a.icon className={`w-3.5 h-3.5 ${a.color}`} />
-                    <span className="font-semibold text-foreground text-[11px]">{a.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* ZONE B — Quick Actions (44px fixed) */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr 1fr',
+              gap: 8,
+              height: 44,
+            }}>
+              {[
+                { label: "Buscar", icon: Search, action: "search", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
+                { label: "Consulta", icon: PlusCircle, action: "intake", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+                { label: "Contacto", icon: UserPlus, action: "contact", color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20" },
+                { label: "Analizar", icon: FileSearch, action: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
+              ].map((a) => (
+                <button
+                  key={a.label}
+                  onClick={() => {
+                    if (a.action === "search") { setCommandBarFilter("all"); setCommandBarOpen(true); }
+                    else if (a.action === "intake") setIntakeOpen(true);
+                    else if (a.action === "contact") setContactOpen(true);
+                    else goTo(a.action);
+                  }}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg border ${a.border} ${a.bg} px-2 h-full transition-all hover:scale-[1.02] text-xs`}
+                >
+                  <a.icon className={`w-3.5 h-3.5 ${a.color}`} />
+                  <span className="font-semibold text-foreground text-[11px]">{a.label}</span>
+                </button>
+              ))}
+            </div>
 
-            {/* ZONE C — Recent Consultations (fills remaining) */}
-            <div className="flex-1 min-h-0 overflow-hidden">
+            {/* ZONE C — Consultas Recientes (fills remaining 1fr) */}
+            <div className="bg-card border border-border rounded-xl" style={{
+              padding: 12,
+              overflow: 'hidden',
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
               {canSeeConsultas && (
                 <HubRecentConsultations accountId={accountId} maxItems={4} />
               )}
             </div>
           </div>
 
-          {/* ═══ RIGHT COLUMN (380px) ═══ */}
-          <div className="flex flex-col gap-2.5 min-h-0 overflow-hidden">
+          {/* ═══ RIGHT COLUMN (360px) ═══ */}
+          <div style={{
+            display: 'grid',
+            gridTemplateRows: '1fr 168px',
+            gap: 10,
+            overflow: 'hidden',
+            minHeight: 0,
+          }}>
 
-            {/* ZONE D — Active Cases (fills remaining) */}
-            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            {/* ZONE D — Casos Activos (fills 1fr) */}
+            <div className="bg-card border border-border rounded-xl" style={{
+              padding: 12,
+              overflow: 'hidden',
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
               <div className="flex items-center justify-between mb-2 shrink-0">
                 <div className="flex items-center gap-2">
                   <Briefcase className="w-3.5 h-3.5 text-muted-foreground/40" />
@@ -265,7 +301,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
                 )}
               </div>
 
-              <div className="flex-1 min-h-0 overflow-hidden space-y-1">
+              <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} className="space-y-1">
                 {recentCases.slice(0, 4).map((c) => {
                   const stageInfo = STAGE_CONFIG[c.pipeline_stage || ""] || { label: c.pipeline_stage || "—", color: "bg-muted/50 text-muted-foreground border-border/30" };
                   const alertBadges = getAlertBadges(c.case_tags_array);
@@ -302,21 +338,28 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
               </div>
             </div>
 
-            {/* ZONE E — Metrics 2x2 (160px fixed) */}
-            <div className="shrink-0 grid grid-cols-2 gap-2" style={{ height: 160 }}>
+            {/* ZONE E — Métricas 2x2 (168px fixed) */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gridTemplateRows: '1fr 1fr',
+              gap: 8,
+              height: 168,
+            }}>
               {[
-                { label: "Casos Activos", value: activeCases, icon: Briefcase, color: "text-accent", bg: "bg-accent/10", border: "border-accent/20", path: "/hub/cases" },
-                { label: "Clientes", value: totalClients, icon: Users, color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20", path: "/hub/clients" },
-                { label: "Consultas", value: weekConsultations || "—", icon: CheckCircle2, color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20", path: "/hub/consultations" },
-                { label: "Conversión", value: "—", icon: Bot, color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20", path: "/hub/ai" },
-              ].map((card) => (
+                { label: "CASOS ACTIVOS", value: activeCases, color: "var(--foreground)", path: "/hub/cases" },
+                { label: "CLIENTES", value: totalClients, color: "#a78bfa", path: "/hub/clients" },
+                { label: "CONSULTAS", value: weekConsultations || "—", color: "#34d399", path: "/hub/consultations" },
+                { label: "CONVERSIÓN", value: "—", color: "var(--muted-foreground)", path: "/hub/reports" },
+              ].map((m) => (
                 <button
-                  key={card.label}
-                  onClick={() => goTo(card.path)}
-                  className={`rounded-xl border ${card.border} bg-card/60 p-3 text-left hover:bg-card transition-all flex flex-col justify-center`}
+                  key={m.label}
+                  onClick={() => goTo(m.path)}
+                  className="bg-card border border-border rounded-[10px] text-left hover:bg-accent/5 transition-all"
+                  style={{ padding: 12, cursor: 'pointer' }}
                 >
-                  <p className={`font-display text-2xl font-extrabold ${card.color} leading-none tracking-tighter`}>{card.value}</p>
-                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-bold mt-1">{card.label}</span>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: m.color, lineHeight: 1 }}>{m.value}</div>
+                  <div className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>{m.label}</div>
                 </button>
               ))}
             </div>
