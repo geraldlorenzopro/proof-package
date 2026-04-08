@@ -143,7 +143,7 @@ export default function HubRecentConsultations({ accountId, maxItems }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        {items.map((item) => {
+        {items.slice(0, maxItems ?? items.length).map((item) => {
           const name = `${item.client_first_name || ""} ${item.client_last_name || ""}`.trim();
           const urgency = URGENCY_CONFIG[item.urgency_level || ""];
           const intakeStatus = getIntakeStatus(item);
