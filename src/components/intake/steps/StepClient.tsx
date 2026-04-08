@@ -138,9 +138,11 @@ export default function StepClient({ data, update, accountId }: Props) {
       client_email: "",
     });
     setLocalNumber("");
-    setCountryIdx(0);
+    setDetectedFlag("🇺🇸");
+    setDetectedCode("+1");
+    setDetectedCountry("US");
     setShowManual(false);
-    setAutoDetected(false);
+    setPhoneValid(null);
     setPhoneDupe(null);
     setPhoneDupeDismissed(false);
     setEmailDupe(null);
@@ -150,25 +152,21 @@ export default function StepClient({ data, update, accountId }: Props) {
     const digits = stripNonDigits(val);
     if (digits.length > 15) return;
 
-    // Reset auto-detection when field is cleared
     if (digits.length === 0) {
-      setAutoDetected(false);
       setLocalNumber("");
+      setPhoneValid(null);
       return;
     }
 
-    // Auto-detect country only once — prevents cascading re-detection
-    // after the prefix has already been stripped
-    if (!showManual && !autoDetected && digits.length >= 3) {
-      const result = normalizePhone(digits);
-      if (result.countryIdx !== countryIdx) {
-        setCountryIdx(result.countryIdx);
-        setAutoDetected(true);
-        if (result.localNumber !== digits) {
-          setLocalNumber(result.localNumber);
-          return;
-        }
-      }
+    // Real-time detection using libphonenumber-js
+    if (!showManual && digits.length >= 7) {
+      const result = detectPhone(digits);
+      setDetectedFlag(result.flag);
+      setDetectedCode(result.countryCode);
+      setDetectedCountry(result.country);
+      setPhoneValid(result.isValid);
+      setLocalNumber(result.localNumber);
+      return;
     }
     setLocalNumber(digits);
   }
@@ -177,12 +175,13 @@ export default function StepClient({ data, update, accountId }: Props) {
   function handlePhoneBlur() {
     const digits = stripNonDigits(localNumber);
     if (digits.length >= 7 && !showManual) {
-      const result = normalizePhone(digits);
-      if (result.localNumber && result.localNumber !== digits) {
-        setCountryIdx(result.countryIdx);
-        setLocalNumber(result.localNumber);
-        update({ client_phone: result.fullPhone });
-      }
+      const result = detectPhone(digits);
+      setDetectedFlag(result.flag);
+      setDetectedCode(result.countryCode);
+      setDetectedCountry(result.country);
+      setLocalNumber(result.localNumber);
+      setPhoneValid(result.isValid);
+      update({ client_phone: result.fullPhone });
     }
     checkPhoneDuplicate();
   }
@@ -235,7 +234,6 @@ export default function StepClient({ data, update, accountId }: Props) {
     }
   }
 
-  const selectedCountry = COUNTRY_CODES[countryIdx];
   const digits = stripNonDigits(localNumber);
   const phoneInvalid = digits.length > 0 && digits.length < 7;
 
@@ -373,14 +371,15 @@ export default function StepClient({ data, update, accountId }: Props) {
                         <button
                           type="button"
                           onClick={() => {
-                            setCountryIdx(idx);
+                            setDetectedFlag(c.flag);
+                            setDetectedCode(c.code);
+                            setDetectedCountry(c.iso);
                             setShowManual(false);
                             setShowDropdown(false);
                             setCountrySearch("");
-                            setAutoDetected(true); // manual selection — don't re-detect
                           }}
                           className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/50 transition-colors text-left ${
-                            !showManual && countryIdx === idx ? "bg-secondary/30" : ""
+                            !showManual && detectedCountry === c.iso ? "bg-secondary/30" : ""
                           }`}
                         >
                           <span>{c.flag}</span>
