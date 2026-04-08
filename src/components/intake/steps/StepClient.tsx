@@ -484,7 +484,14 @@ export default function StepClient({ data, update, accountId }: Props) {
             type="tel"
             value={formatPhoneDisplay(localNumber)}
             onChange={e => handleLocalChange(e.target.value)}
-            onBlur={checkPhoneDuplicate}
+          <input
+            type="tel"
+            value={formatPhoneDisplay(localNumber)}
+            onChange={e => handleLocalChange(e.target.value)}
+            onBlur={handlePhoneBlur}
+            placeholder="(809) 676-5653"
+            className="flex-1 border border-input bg-background rounded-r-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
             placeholder="(809) 676-5653"
             className="flex-1 border border-input bg-background rounded-r-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
