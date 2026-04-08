@@ -228,7 +228,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
           intake_delivery_channel: data.intake_delivery_channel || null,
           urgency_level: data.urgency_level || null,
           notes: data.notes || null,
-          status: "pending",
+          status: "in_progress",
         } as any)
         .select("id")
         .single();
