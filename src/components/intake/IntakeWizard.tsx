@@ -113,15 +113,19 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [completed, setCompleted] = useState<{
     clientName: string;
+    firstName: string;
     phone: string;
     email: string;
     urgency: string;
     channel: string;
     topic: string;
+    topicTag: string;
     deliveryChannel: string;
     preIntakeUrl: string;
+    preIntakeToken: string;
     appointmentId: string | null;
     clientProfileId: string | null;
+    createdAt: string;
   } | null>(null);
   const navigate = useNavigate();
   const contentRef = useRef<HTMLDivElement>(null);
