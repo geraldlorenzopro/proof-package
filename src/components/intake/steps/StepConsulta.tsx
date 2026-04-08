@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { IntakeData } from "../IntakeWizard";
 import { ChevronDown, Check } from "lucide-react";
 
@@ -39,6 +39,14 @@ const DELIVERY_OPTIONS = [
   { key: "presencial", emoji: "📋", label: "Completar ahora", desc: "El cliente está presente", needsPhone: false, needsEmail: false },
 ];
 
+const NOTE_PLACEHOLDERS = [
+  "Ej: Cliente tiene corte el próximo mes...",
+  "Ej: Viene referido por Carmen López...",
+  "Ej: Habla solo español, llamar en la tarde...",
+  "Ej: Trae documentos para revisar...",
+  "Ej: Ya tiene un caso previo con otra oficina...",
+];
+
 type Section = "urgency" | "reason" | "delivery" | "notes";
 
 interface Props {
@@ -48,12 +56,25 @@ interface Props {
 
 function SectionHeader({ title, number, done, open, onClick }: { title: string; number: number; done: boolean; open: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${open ? "border-jarvis/30 bg-jarvis/5" : done ? "border-emerald-500/20 bg-emerald-500/5" : "border-border bg-card hover:border-foreground/20"}`}>
-      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${done && !open ? "bg-emerald-500/20 text-emerald-400" : open ? "bg-jarvis/20 text-jarvis" : "bg-muted text-muted-foreground"}`}>
+    <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200 ${
+      open ? "border-accent/30 bg-accent/5" :
+      done ? "border-emerald-500/20 bg-emerald-500/5" :
+      "border-border bg-card hover:border-foreground/20"
+    }`}>
+      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all ${
+        done && !open ? "bg-emerald-500/20 text-emerald-400" :
+        open ? "bg-accent/20 text-accent" :
+        "bg-muted text-muted-foreground"
+      }`}>
         {done && !open ? <Check className="w-3.5 h-3.5" /> : number}
       </div>
-      <span className={`text-sm font-semibold flex-1 text-left ${open ? "text-jarvis" : "text-foreground"}`}>{title}</span>
-      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      <span className={`text-sm font-semibold flex-1 text-left transition-colors ${
+        open ? "text-accent" : done ? "text-emerald-400" : "text-foreground"
+      }`}>{title}</span>
+      {done && !open && (
+        <span className="text-xs text-muted-foreground">✓</span>
+      )}
+      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
     </button>
   );
 }
@@ -62,12 +83,10 @@ export default function StepConsulta({ data, update }: Props) {
   const hasPhone = !!data.client_phone?.trim();
   const hasEmail = !!data.client_email?.trim();
 
-  // Determine which sections are complete
   const urgencyDone = !!data.urgency_level;
   const reasonDone = !!data.consultation_reason && !!data.consultation_topic;
   const deliveryDone = !!data.intake_delivery_channel;
 
-  // Auto-open first incomplete section
   const [activeSection, setActiveSection] = useState<Section>(() => {
     if (!urgencyDone) return "urgency";
     if (!reasonDone) return "reason";
@@ -75,16 +94,17 @@ export default function StepConsulta({ data, update }: Props) {
     return "notes";
   });
 
+  // Rotating placeholder for notes
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIdx(prev => (prev + 1) % NOTE_PLACEHOLDERS.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   function toggle(section: Section) {
     setActiveSection(prev => prev === section ? prev : section);
-  }
-
-  function RadioButton({ selected }: { selected: boolean }) {
-    return (
-      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? "border-jarvis" : "border-muted-foreground/40"}`}>
-        {selected && <div className="w-2 h-2 rounded-full bg-jarvis" />}
-      </div>
-    );
   }
 
   return (
@@ -97,15 +117,22 @@ export default function StepConsulta({ data, update }: Props) {
       {/* A — Urgency */}
       <SectionHeader title="Urgencia" number={1} done={urgencyDone} open={activeSection === "urgency"} onClick={() => toggle("urgency")} />
       {activeSection === "urgency" && (
-        <div className="px-1 pb-1">
+        <div className="px-1 pb-1 animate-fade-in">
           <div className="grid grid-cols-3 gap-2">
             {URGENCY_OPTIONS.map(u => {
               const selected = data.urgency_level === u.key;
               return (
                 <button key={u.key} onClick={() => { update({ urgency_level: u.key }); if (!reasonDone) setActiveSection("reason"); }}
-                  className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all ${selected ? "border-jarvis bg-jarvis/10 ring-1 ring-jarvis/30" : "border-border hover:border-foreground/20 bg-card"}`}>
+                  className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all duration-200 relative ${
+                    selected ? "border-accent bg-accent/10 ring-1 ring-accent/30" : "border-border hover:border-foreground/20 bg-card"
+                  }`}>
+                  {selected && (
+                    <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-accent flex items-center justify-center">
+                      <Check className="w-2 h-2 text-accent-foreground" />
+                    </div>
+                  )}
                   <span className="text-lg">{u.emoji}</span>
-                  <span className={`text-xs font-semibold ${selected ? "text-jarvis" : "text-foreground"}`}>{u.label}</span>
+                  <span className={`text-xs font-semibold ${selected ? "text-accent" : "text-foreground"}`}>{u.label}</span>
                   <span className="text-[9px] text-muted-foreground leading-tight">{u.desc}</span>
                 </button>
               );
@@ -117,7 +144,7 @@ export default function StepConsulta({ data, update }: Props) {
       {/* B — Reason + Topic */}
       <SectionHeader title="Motivo y tema" number={2} done={reasonDone} open={activeSection === "reason"} onClick={() => toggle("reason")} />
       {activeSection === "reason" && (
-        <div className="px-1 pb-1 space-y-3">
+        <div className="px-1 pb-1 space-y-3 animate-fade-in">
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">¿Por qué viene hoy?</label>
             <div className="space-y-1">
@@ -125,9 +152,15 @@ export default function StepConsulta({ data, update }: Props) {
                 const selected = data.consultation_reason === r.key;
                 return (
                   <button key={r.key} onClick={() => update({ consultation_reason: r.key })}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-all ${selected ? "border-jarvis bg-jarvis/5" : "border-border hover:border-foreground/20"}`}>
-                    <RadioButton selected={selected} />
-                    <span className={`text-sm ${selected ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{r.label}</span>
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-all duration-200 ${
+                      selected ? "border-accent bg-accent/5" : "border-border hover:border-foreground/20"
+                    }`}>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                      selected ? "border-accent" : "border-muted-foreground/40"
+                    }`}>
+                      {selected && <div className="w-2 h-2 rounded-full bg-accent" />}
+                    </div>
+                    <span className={`text-sm transition-colors ${selected ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{r.label}</span>
                   </button>
                 );
               })}
@@ -139,11 +172,20 @@ export default function StepConsulta({ data, update }: Props) {
               {TOPICS.map(t => {
                 const selected = data.consultation_topic === t.key;
                 return (
-                  <button key={t.key} onClick={() => { update({ consultation_topic: t.key, consultation_topic_tag: t.tag, consultation_topic_detail: "" }); if (data.consultation_reason && !deliveryDone) setActiveSection("delivery"); }}
-                    className={`w-full flex items-start gap-3 px-3 py-2 rounded-lg border text-left transition-all ${selected ? "border-jarvis bg-jarvis/5" : "border-border hover:border-foreground/20"}`}>
-                    <RadioButton selected={selected} />
+                  <button key={t.key} onClick={() => {
+                    update({ consultation_topic: t.key, consultation_topic_tag: t.tag, consultation_topic_detail: "" });
+                    if (data.consultation_reason && !deliveryDone) setActiveSection("delivery");
+                  }}
+                    className={`w-full flex items-start gap-3 px-3 py-2 rounded-lg border text-left transition-all duration-200 ${
+                      selected ? "border-accent bg-accent/5" : "border-border hover:border-foreground/20"
+                    }`}>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                      selected ? "border-accent" : "border-muted-foreground/40"
+                    }`}>
+                      {selected && <div className="w-2 h-2 rounded-full bg-accent" />}
+                    </div>
                     <div className="min-w-0">
-                      <span className={`text-sm ${selected ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{t.label}</span>
+                      <span className={`text-sm transition-colors ${selected ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{t.label}</span>
                       {t.sub && <span className="text-[9px] text-muted-foreground/70 block leading-tight">{t.sub}</span>}
                     </div>
                   </button>
@@ -161,7 +203,7 @@ export default function StepConsulta({ data, update }: Props) {
       {/* C — Delivery */}
       <SectionHeader title="Envío del pre-intake" number={3} done={deliveryDone} open={activeSection === "delivery"} onClick={() => toggle("delivery")} />
       {activeSection === "delivery" && (
-        <div className="px-1 pb-1">
+        <div className="px-1 pb-1 animate-fade-in">
           <p className="text-[10px] text-muted-foreground mb-2">El cliente llenará un cuestionario antes de su cita con el equipo</p>
           <div className="grid grid-cols-2 gap-2">
             {DELIVERY_OPTIONS.map(d => {
@@ -169,13 +211,18 @@ export default function StepConsulta({ data, update }: Props) {
               const selected = data.intake_delivery_channel === d.key;
               return (
                 <button key={d.key} onClick={() => { if (!disabled) { update({ intake_delivery_channel: d.key }); setActiveSection("notes"); } }} disabled={disabled}
-                  className={`flex flex-col items-start gap-1 px-3 py-2.5 rounded-xl border text-left transition-all ${
+                  className={`flex flex-col items-start gap-1 px-3 py-2.5 rounded-xl border text-left transition-all duration-200 relative ${
                     disabled ? "opacity-40 cursor-not-allowed border-border bg-card" :
-                    selected ? "border-jarvis bg-jarvis/10 ring-1 ring-jarvis/30" : "border-border hover:border-foreground/20 bg-card"
+                    selected ? "border-accent bg-accent/10 ring-1 ring-accent/30" : "border-border hover:border-foreground/20 bg-card"
                   }`}>
+                  {selected && !disabled && (
+                    <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-accent flex items-center justify-center">
+                      <Check className="w-2 h-2 text-accent-foreground" />
+                    </div>
+                  )}
                   <span className="text-sm font-semibold">
                     <span className="mr-1">{d.emoji}</span>
-                    <span className={selected && !disabled ? "text-jarvis" : "text-foreground"}>{d.label}</span>
+                    <span className={selected && !disabled ? "text-accent" : "text-foreground"}>{d.label}</span>
                   </span>
                   <span className="text-[9px] text-muted-foreground leading-tight">{d.desc}</span>
                   {disabled && d.needsPhone && <span className="text-[9px] text-destructive/70">Sin teléfono</span>}
@@ -190,11 +237,11 @@ export default function StepConsulta({ data, update }: Props) {
       {/* D — Notes */}
       <SectionHeader title="Notas (opcional)" number={4} done={data.notes.length > 0} open={activeSection === "notes"} onClick={() => toggle("notes")} />
       {activeSection === "notes" && (
-        <div className="px-1 pb-1">
+        <div className="px-1 pb-1 animate-fade-in">
           <textarea value={data.notes} onChange={e => { if (e.target.value.length <= 300) update({ notes: e.target.value }); }}
-            placeholder="Información adicional que el equipo debe saber..."
+            placeholder={NOTE_PLACEHOLDERS[placeholderIdx]}
             rows={3} maxLength={300}
-            className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
+            className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none transition-all" />
           <p className="text-[10px] text-muted-foreground text-right mt-0.5">{data.notes.length} / 300</p>
         </div>
       )}

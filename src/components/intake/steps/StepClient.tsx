@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, RefreshCw, ChevronDown, Check, AlertTriangle } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { COUNTRY_CODES, FREQUENT_COUNT } from "@/lib/countryCodes";
 import { detectInternational, validateForCountry, detectLocal10, parseExisting, getFlag } from "@/lib/phoneDetect";
@@ -337,10 +338,15 @@ export default function StepClient({ data, update, accountId }: Props) {
             const selected = data.client_relationship === r.key;
             return (
               <button key={r.key} onClick={() => update({ client_relationship: r.key, client_relationship_detail: "" })}
-                className={`flex flex-col items-start gap-1 px-3 py-3 rounded-xl border text-left transition-all ${selected ? "border-jarvis bg-jarvis/10" : "border-border hover:border-foreground/20 bg-card"}`}>
+                className={`flex flex-col items-start gap-1 px-3 py-3 rounded-xl border text-left transition-all duration-200 relative ${selected ? "border-accent bg-accent/10 ring-1 ring-accent/30" : "border-border hover:border-foreground/20 bg-card"}`}>
+                {selected && (
+                  <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-accent flex items-center justify-center">
+                    <Check className="w-2 h-2 text-accent-foreground" />
+                  </div>
+                )}
                 <span className="text-sm font-semibold">
                   <span className="mr-1.5">{r.emoji}</span>
-                  <span className={selected ? "text-jarvis" : "text-foreground"}>{r.label}</span>
+                  <span className={selected ? "text-accent" : "text-foreground"}>{r.label}</span>
                 </span>
                 {r.desc && <span className="text-[10px] text-muted-foreground leading-tight">{r.desc}</span>}
               </button>
