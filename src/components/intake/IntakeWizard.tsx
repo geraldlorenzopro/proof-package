@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink, QrCode } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import StepChannel from "./steps/StepChannel";
@@ -21,12 +21,16 @@ export interface IntakeData {
   client_phone: string;
   client_email: string;
   client_language: string;
-  client_type: string;
+  client_relationship: string;
+  client_relationship_detail: string;
   // Step 3 — Consulta
   urgency_level: string;
-  consultation_type: string;
+  consultation_reason: string;
+  consultation_topic: string;
+  consultation_topic_tag: string;
+  consultation_topic_detail: string;
+  intake_delivery_channel: string;
   notes: string;
-  send_pre_intake: boolean;
 }
 
 const INITIAL_DATA: IntakeData = {
@@ -40,11 +44,15 @@ const INITIAL_DATA: IntakeData = {
   client_phone: "",
   client_email: "",
   client_language: "es",
-  client_type: "principal",
-  urgency_level: "normal",
-  consultation_type: "inicial",
+  client_relationship: "solicitante",
+  client_relationship_detail: "",
+  urgency_level: "prioritario",
+  consultation_reason: "",
+  consultation_topic: "",
+  consultation_topic_tag: "",
+  consultation_topic_detail: "",
+  intake_delivery_channel: "whatsapp",
   notes: "",
-  send_pre_intake: true,
 };
 
 const STEPS = [
@@ -53,39 +61,34 @@ const STEPS = [
   { label: "Consulta", key: "consulta" },
 ];
 
-const CLIENT_TYPE_LABELS: Record<string, string> = {
-  principal: "👤 Cliente principal",
-  familiar: "👨‍👩‍👧 Familiar/Derivado",
-  peticionario: "🧑‍💼 Peticionario",
-  referido: "⚖️ Referido por abogado",
+const CHANNEL_LABELS: Record<string, string> = {
+  whatsapp: "💬 WhatsApp", instagram: "📸 Instagram", facebook: "👍 Facebook",
+  tiktok: "🎵 TikTok", referido: "🤝 Referido", anuncio: "📢 Anuncio / Ads",
+  website: "🌐 Website", llamada: "📞 Llamada", "walk-in": "🚶 Walk-in",
+  youtube: "▶️ YouTube", otro: "••• Otro",
 };
 
 const URGENCY_LABELS: Record<string, string> = {
-  urgent: "🔴 Urgente",
-  normal: "🟡 Normal",
-  exploring: "🟢 Explorando",
+  urgente: "🔴 Urgente", prioritario: "🟡 Prioritario", informativo: "🟢 Informativo",
 };
 
-const CONSULTATION_LABELS: Record<string, string> = {
-  inicial: "Consulta inicial de inmigración",
-  seguimiento: "Seguimiento de caso existente",
-  emergencia: "Emergencia migratoria",
-  naturalizacion: "Consulta de naturalización",
-  otra: "Otra consulta",
+const TOPIC_LABELS: Record<string, string> = {
+  "familia": "Residencia / Green Card por familia",
+  "ajuste-estatus": "Ajuste de estatus dentro de EE.UU.",
+  "consular": "Proceso consular / Embajada / NVC",
+  "naturalizacion": "Ciudadanía / Naturalización",
+  "ead-documentos": "Permiso de trabajo o documentos",
+  "visa-temporal": "Visa temporal",
+  "empleo-inversion": "Green Card por trabajo o inversión",
+  "asilo-humanitario": "Asilo o protección humanitaria",
+  "proteccion-especial": "Protección especial",
+  "waiver": "Perdones migratorios",
+  "corte-ice-cbp": "Corte, ICE o situación en frontera",
+  "otro": "Otro tema",
 };
 
-const CHANNEL_LABELS: Record<string, string> = {
-  whatsapp: "WhatsApp",
-  instagram: "Instagram",
-  facebook: "Facebook",
-  tiktok: "TikTok",
-  referido: "Referido",
-  anuncio: "Anuncio / Ads",
-  website: "Website",
-  llamada: "Llamada",
-  "walk-in": "Walk-in",
-  youtube: "YouTube",
-  otro: "Otro",
+const DELIVERY_LABELS: Record<string, string> = {
+  whatsapp: "💬 WhatsApp", sms: "📱 SMS", email: "📧 Email", presencial: "📋 Completar ahora",
 };
 
 interface Props {
@@ -105,8 +108,8 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
     email: string;
     urgency: string;
     channel: string;
-    consultationType: string;
-    preIntakeSent: boolean;
+    topic: string;
+    deliveryChannel: string;
     preIntakeUrl: string;
     appointmentId: string | null;
   } | null>(null);
@@ -136,7 +139,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
     switch (step) {
       case 0: return !!data.entry_channel;
       case 1: return data.client_first_name.length >= 2 && data.client_last_name.length >= 2 && data.client_phone.length >= 5;
-      case 2: return !!data.consultation_type;
+      case 2: return !!data.consultation_reason && !!data.consultation_topic && !!data.intake_delivery_channel;
       default: return false;
     }
   }
@@ -183,8 +186,12 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
           client_phone: data.client_phone,
           client_email: data.client_email || null,
           client_language: data.client_language,
-          client_type: data.client_type,
-          consultation_type: data.consultation_type,
+          client_relationship: data.client_relationship,
+          client_relationship_detail: data.client_relationship_detail || null,
+          consultation_reason: data.consultation_reason || null,
+          consultation_topic: data.consultation_topic || null,
+          consultation_topic_tag: data.consultation_topic_tag || null,
+          intake_delivery_channel: data.intake_delivery_channel,
           urgency_level: data.urgency_level,
           notes: data.notes || null,
           status: "pending",
@@ -203,10 +210,10 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
           client_email: data.client_email || null,
           client_profile_id: profileId,
           appointment_date: new Date().toISOString().split("T")[0],
-          appointment_type: data.consultation_type,
+          appointment_type: "consultation",
           status: "scheduled",
           intake_session_id: intakeSession?.id || null,
-          pre_intake_sent: data.send_pre_intake && !!data.client_email,
+          pre_intake_sent: data.intake_delivery_channel !== "presencial",
         })
         .select("id, pre_intake_token")
         .single();
@@ -216,24 +223,29 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         ? `${window.location.origin}/intake/${appointment.pre_intake_token}`
         : "";
 
-      // 4. Send pre-intake email if toggle ON and email exists
-      if (data.send_pre_intake && data.client_email && appointment?.pre_intake_token) {
-        try {
-          await supabase.functions.invoke("send-email", {
-            body: {
-              template_type: "questionnaire",
-              recipient_email: data.client_email,
-              recipient_name: clientName,
-              account_id: accountId,
-              data: {
-                pre_intake_url: preIntakeUrl,
-                client_name: data.client_first_name,
+      // 4. Send pre-intake based on delivery channel
+      if (appointment?.pre_intake_token && data.intake_delivery_channel !== "presencial") {
+        if (data.intake_delivery_channel === "email" && data.client_email) {
+          try {
+            await supabase.functions.invoke("send-email", {
+              body: {
+                template_type: "questionnaire",
+                recipient_email: data.client_email,
+                recipient_name: clientName,
+                account_id: accountId,
+                data: { pre_intake_url: preIntakeUrl, client_name: data.client_first_name },
               },
-            },
-          });
-        } catch (emailErr) {
-          console.warn("Pre-intake email failed:", emailErr);
+            });
+          } catch (emailErr) {
+            console.warn("Pre-intake email failed:", emailErr);
+          }
         }
+        // WhatsApp and SMS: mark as pending in DB (no edge function yet)
+      }
+
+      // 5. If "completar ahora", open pre-intake in new tab
+      if (data.intake_delivery_channel === "presencial" && preIntakeUrl) {
+        window.open(preIntakeUrl, "_blank");
       }
 
       setCompleted({
@@ -242,8 +254,8 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         email: data.client_email,
         urgency: data.urgency_level,
         channel: data.entry_channel,
-        consultationType: data.consultation_type,
-        preIntakeSent: data.send_pre_intake && !!data.client_email,
+        topic: data.consultation_topic_tag,
+        deliveryChannel: data.intake_delivery_channel,
         preIntakeUrl,
         appointmentId: appointment?.id || null,
       });
@@ -279,7 +291,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         <div className="border-b border-border p-4 sm:p-5 shrink-0">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-foreground">
-              {completed ? "✅ ¡Listo!" : "Nuevo Intake"}
+              {completed ? "✅ ¡Registro completado!" : "Nuevo Intake"}
             </h2>
             <button onClick={() => onOpenChange(false)} className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-all">
               <X className="w-4 h-4" />
@@ -290,9 +302,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
               <div className="flex items-center gap-1">
                 {STEPS.map((s, i) => (
                   <div key={s.key} className="flex items-center flex-1">
-                    <div className={`flex-1 h-1.5 rounded-full transition-all ${
-                      i <= step ? "bg-jarvis" : "bg-border"
-                    }`} />
+                    <div className={`flex-1 h-1.5 rounded-full transition-all ${i <= step ? "bg-jarvis" : "bg-border"}`} />
                   </div>
                 ))}
               </div>
@@ -315,48 +325,58 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
             <div className="space-y-4">
               <div className="text-center mb-2">
                 <p className="text-base font-semibold text-foreground">
-                  {completed.clientName} fue registrada
+                  {completed.clientName}
                 </p>
+                <p className="text-sm text-muted-foreground">fue registrado correctamente.</p>
               </div>
 
-              <div className="border border-border rounded-xl p-4 space-y-2">
+              <div className="border border-border rounded-xl p-4 space-y-2.5">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Resumen del registro</p>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Canal</span>
+                  <span className="text-muted-foreground">📱 Canal</span>
                   <span className="text-foreground font-medium">{CHANNEL_LABELS[completed.channel] || completed.channel}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Teléfono</span>
+                  <span className="text-muted-foreground">📞 Teléfono</span>
                   <span className="text-foreground font-medium">{completed.phone}</span>
                 </div>
                 {completed.email && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Email</span>
+                    <span className="text-muted-foreground">📧 Email</span>
                     <span className="text-foreground font-medium">{completed.email}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Urgencia</span>
+                  <span className="text-muted-foreground">⚡ Urgencia</span>
                   <span className="text-foreground font-medium">{URGENCY_LABELS[completed.urgency] || completed.urgency}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Consulta</span>
-                  <span className="text-foreground font-medium">{CONSULTATION_LABELS[completed.consultationType] || completed.consultationType}</span>
+                  <span className="text-muted-foreground">📋 Tema</span>
+                  <span className="text-foreground font-medium text-right max-w-[60%]">{TOPIC_LABELS[completed.topic] || completed.topic}</span>
                 </div>
               </div>
 
-              {completed.preIntakeSent && (
+              {/* Delivery status */}
+              {completed.deliveryChannel === "email" && completed.email && (
                 <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-3">
-                  <p className="text-sm text-emerald-400 font-semibold">
-                    📧 Pre-intake enviado a su email
-                  </p>
+                  <p className="text-sm text-emerald-400 font-semibold">📧 Pre-intake enviado a {completed.email}</p>
+                </div>
+              )}
+              {completed.deliveryChannel === "whatsapp" && (
+                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-3">
+                  <p className="text-sm text-emerald-400 font-semibold">💬 Pre-intake enviado por WhatsApp a {completed.phone}</p>
+                </div>
+              )}
+              {completed.deliveryChannel === "sms" && (
+                <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-4 py-3">
+                  <p className="text-sm text-emerald-400 font-semibold">📱 Pre-intake enviado por SMS a {completed.phone}</p>
                 </div>
               )}
 
-              {!completed.preIntakeSent && completed.preIntakeUrl && (
+              {/* Link section for presencial or fallback */}
+              {(completed.deliveryChannel === "presencial" || !completed.email && completed.deliveryChannel === "email") && completed.preIntakeUrl && (
                 <div className="border border-border rounded-xl px-4 py-3 space-y-2">
-                  <p className="text-sm font-semibold text-foreground">
-                    🔗 Link del pre-intake
-                  </p>
+                  <p className="text-sm font-semibold text-foreground">📋 Link del formulario</p>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -373,8 +393,30 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
                     </button>
                   </div>
                   <p className="text-[10px] text-muted-foreground">
-                    Comparte este link con el cliente por WhatsApp
+                    Comparte este link con el cliente por WhatsApp o muéstrale el QR
                   </p>
+                </div>
+              )}
+
+              {/* Always show the link if not email-delivered */}
+              {completed.deliveryChannel !== "email" && completed.deliveryChannel !== "presencial" && completed.preIntakeUrl && (
+                <div className="border border-border rounded-xl px-4 py-3 space-y-2">
+                  <p className="text-sm font-semibold text-foreground">🔗 Link del pre-intake</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={completed.preIntakeUrl}
+                      className="flex-1 text-xs border border-input bg-background rounded-lg px-3 py-2 text-muted-foreground"
+                    />
+                    <button
+                      onClick={copyLink}
+                      className="flex items-center gap-1.5 text-xs font-semibold bg-jarvis text-jarvis-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      Copiar
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -383,13 +425,13 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
                   onClick={() => handleDone("new")}
                   className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold bg-jarvis text-jarvis-foreground py-2.5 rounded-xl hover:opacity-90 transition-all"
                 >
-                  Registrar otro cliente
+                  + Registrar otro cliente
                 </button>
                 <button
                   onClick={() => handleDone("close")}
                   className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold border border-border text-foreground py-2.5 rounded-xl hover:bg-secondary/50 transition-all"
                 >
-                  Cerrar
+                  → Ir al expediente
                 </button>
               </div>
             </div>
