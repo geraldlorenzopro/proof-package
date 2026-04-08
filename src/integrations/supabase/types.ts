@@ -1450,6 +1450,8 @@ export type Database = {
           phone: string | null
           place_of_last_entry: string | null
           province_of_birth: string | null
+          source_channel: string | null
+          source_detail: string | null
           ssn_last4: string | null
           updated_at: string
         }
@@ -1494,6 +1496,8 @@ export type Database = {
           phone?: string | null
           place_of_last_entry?: string | null
           province_of_birth?: string | null
+          source_channel?: string | null
+          source_detail?: string | null
           ssn_last4?: string | null
           updated_at?: string
         }
@@ -1538,6 +1542,8 @@ export type Database = {
           phone?: string | null
           place_of_last_entry?: string | null
           province_of_birth?: string | null
+          source_channel?: string | null
+          source_detail?: string | null
           ssn_last4?: string | null
           updated_at?: string
         }
