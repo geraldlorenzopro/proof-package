@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink, MessageCircle } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
