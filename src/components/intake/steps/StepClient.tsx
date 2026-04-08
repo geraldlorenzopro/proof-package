@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, RefreshCw } from "lucide-react";
+import { Search, RefreshCw, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { IntakeData } from "../IntakeWizard";
 
@@ -18,10 +18,98 @@ interface ClientResult {
   email: string | null;
 }
 
+const COUNTRY_CODES = [
+  { flag: "🇺🇸", code: "+1", name: "Estados Unidos" },
+  { flag: "🇩🇴", code: "+1", name: "República Dominicana", alt: "DO" },
+  { flag: "🇲🇽", code: "+52", name: "México" },
+  { flag: "🇬🇹", code: "+502", name: "Guatemala" },
+  { flag: "🇭🇳", code: "+504", name: "Honduras" },
+  { flag: "🇸🇻", code: "+503", name: "El Salvador" },
+  { flag: "🇳🇮", code: "+505", name: "Nicaragua" },
+  { flag: "🇨🇷", code: "+506", name: "Costa Rica" },
+  { flag: "🇵🇦", code: "+507", name: "Panamá" },
+  { flag: "🇨🇴", code: "+57", name: "Colombia" },
+  { flag: "🇻🇪", code: "+58", name: "Venezuela" },
+  { flag: "🇵🇪", code: "+51", name: "Perú" },
+  { flag: "🇪🇨", code: "+593", name: "Ecuador" },
+  { flag: "🇨🇺", code: "+53", name: "Cuba" },
+  { flag: "🇭🇹", code: "+509", name: "Haití" },
+  { flag: "🇵🇷", code: "+1", name: "Puerto Rico", alt: "PR" },
+];
+
+function stripNonDigits(val: string) {
+  return val.replace(/\D/g, "");
+}
+
+function formatPhoneDisplay(digits: string): string {
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+}
+
+function parseExistingPhone(phone: string) {
+  if (!phone) return { countryIdx: 0, local: "" };
+  const clean = phone.replace(/[\s\-()]/g, "");
+  // Try matching longer codes first
+  for (let i = 0; i < COUNTRY_CODES.length; i++) {
+    const c = COUNTRY_CODES[i];
+    if (clean.startsWith(c.code)) {
+      return { countryIdx: i, local: clean.slice(c.code.length) };
+    }
+  }
+  // fallback: strip leading + and digits that look like a code
+  if (clean.startsWith("+")) {
+    return { countryIdx: 0, local: stripNonDigits(clean.slice(1)) };
+  }
+  return { countryIdx: 0, local: stripNonDigits(phone) };
+}
+
 export default function StepClient({ data, update, accountId }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ClientResult[]>([]);
   const [searching, setSearching] = useState(false);
+
+  const parsed = parseExistingPhone(data.client_phone);
+  const [countryIdx, setCountryIdx] = useState(parsed.countryIdx);
+  const [localNumber, setLocalNumber] = useState(parsed.local);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [manualCode, setManualCode] = useState("");
+  const [showManual, setShowManual] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Sync full phone to parent
+  useEffect(() => {
+    const digits = stripNonDigits(localNumber);
+    if (digits.length === 0) {
+      update({ client_phone: "" });
+      return;
+    }
+    const prefix = showManual && manualCode ? `+${stripNonDigits(manualCode)}` : COUNTRY_CODES[countryIdx].code;
+    update({ client_phone: `${prefix}${digits}` });
+  }, [localNumber, countryIdx, showManual, manualCode]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // When existing client selected, parse phone
+  useEffect(() => {
+    const p = parseExistingPhone(data.client_phone);
+    // Only update if the phone changed externally (e.g. client selected)
+    const currentDigits = stripNonDigits(localNumber);
+    if (p.local !== currentDigits) {
+      setCountryIdx(p.countryIdx);
+      setLocalNumber(p.local);
+      setShowManual(false);
+    }
+  }, [data.is_existing_client]);
 
   useEffect(() => {
     if (query.length < 2 || !accountId) { setResults([]); return; }
@@ -63,7 +151,21 @@ export default function StepClient({ data, update, accountId }: Props) {
       client_phone: "",
       client_email: "",
     });
+    setLocalNumber("");
+    setCountryIdx(0);
+    setShowManual(false);
   }
+
+  function handleLocalChange(val: string) {
+    const digits = stripNonDigits(val);
+    if (digits.length <= 15) {
+      setLocalNumber(digits);
+    }
+  }
+
+  const selectedCountry = COUNTRY_CODES[countryIdx];
+  const digits = stripNonDigits(localNumber);
+  const phoneInvalid = digits.length > 0 && digits.length < 7;
 
   return (
     <div className="space-y-4">
@@ -146,15 +248,84 @@ export default function StepClient({ data, update, accountId }: Props) {
         </div>
       </div>
 
+      {/* Phone with country code */}
       <div>
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Teléfono *</label>
-        <input
-          type="tel"
-          value={data.client_phone}
-          onChange={e => update({ client_phone: e.target.value })}
-          placeholder="+1 (555) 123-4567"
-          className="w-full border border-input bg-background rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+        <div className="flex gap-0">
+          {/* Country selector */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="flex items-center gap-1.5 border border-input border-r-0 bg-background rounded-l-xl px-3 py-2.5 text-sm hover:bg-secondary/50 transition-colors min-w-[90px]"
+            >
+              {showManual ? (
+                <span className="text-muted-foreground">🌐 +{stripNonDigits(manualCode) || "?"}</span>
+              ) : (
+                <span>{selectedCountry.flag} {selectedCountry.code}</span>
+              )}
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
+            </button>
+
+            {showDropdown && (
+              <div className="absolute top-full left-0 mt-1 z-50 w-64 max-h-64 overflow-y-auto border border-border bg-background rounded-xl shadow-lg">
+                {COUNTRY_CODES.map((c, idx) => (
+                  <button
+                    key={`${c.code}-${c.alt || c.name}`}
+                    type="button"
+                    onClick={() => {
+                      setCountryIdx(idx);
+                      setShowManual(false);
+                      setShowDropdown(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left ${
+                      !showManual && countryIdx === idx ? "bg-secondary/30" : ""
+                    }`}
+                  >
+                    <span>{c.flag}</span>
+                    <span className="font-medium">{c.code}</span>
+                    <span className="text-muted-foreground text-xs truncate">{c.name}</span>
+                  </button>
+                ))}
+                <div className="border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowManual(true);
+                      setShowDropdown(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left text-muted-foreground"
+                  >
+                    🌐 Otro...
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Manual code input */}
+          {showManual && (
+            <input
+              type="text"
+              value={manualCode}
+              onChange={e => setManualCode(e.target.value.replace(/[^\d]/g, "").slice(0, 4))}
+              placeholder="Código"
+              className="w-16 border border-input border-r-0 bg-background px-2 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          )}
+
+          {/* Number input */}
+          <input
+            type="tel"
+            value={formatPhoneDisplay(localNumber)}
+            onChange={e => handleLocalChange(e.target.value)}
+            placeholder="(809) 676-5653"
+            className={`flex-1 border border-input bg-background ${showManual ? "rounded-r-xl" : "rounded-r-xl"} px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring`}
+          />
+        </div>
+        {phoneInvalid && (
+          <p className="text-[10px] text-rose-400 mt-1">Mínimo 7 dígitos</p>
+        )}
       </div>
 
       <div>
