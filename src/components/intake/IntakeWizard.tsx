@@ -27,6 +27,7 @@ export interface IntakeData {
   client_relationship_detail: string;
   urgency_level: string;
   consultation_reason: string;
+  consultation_reason_detail: string;
   consultation_topic: string;
   consultation_topic_tag: string;
   consultation_topic_detail: string;
@@ -52,6 +53,7 @@ const INITIAL_DATA: IntakeData = {
   client_relationship_detail: "",
   urgency_level: "prioritario",
   consultation_reason: "",
+  consultation_reason_detail: "",
   consultation_topic: "",
   consultation_topic_tag: "",
   consultation_topic_detail: "",
