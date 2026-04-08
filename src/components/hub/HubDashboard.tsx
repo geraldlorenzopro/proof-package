@@ -131,11 +131,11 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
         canSeeAllCases
           ? supabase.from("client_cases").select("id, client_name, case_type, pipeline_stage, file_number, updated_at, case_tags_array")
               .eq("account_id", accountId).not("status", "eq", "completed")
-              .order("updated_at", { ascending: false }).limit(4)
+              .order("updated_at", { ascending: false }).limit(6)
           : supabase.from("client_cases").select("id, client_name, case_type, pipeline_stage, file_number, updated_at, case_tags_array")
               .eq("account_id", accountId).not("status", "eq", "completed")
               .eq("assigned_to", userId || "")
-              .order("updated_at", { ascending: false }).limit(4),
+              .order("updated_at", { ascending: false }).limit(6),
       ]);
 
       setActiveCases(activeRes.count || 0);
