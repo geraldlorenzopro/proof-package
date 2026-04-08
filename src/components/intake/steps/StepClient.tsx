@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Search, RefreshCw, ChevronDown, Check, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { COUNTRY_CODES, FREQUENT_COUNT } from "@/lib/countryCodes";
-import { detectPhone, parseExisting, getFlag } from "@/lib/phoneDetect";
+import { detectInternational, validateForCountry, detectLocal10, parseExisting, getFlag } from "@/lib/phoneDetect";
 import type { IntakeData } from "../IntakeWizard";
 interface Props {
   data: IntakeData;
@@ -31,6 +31,12 @@ function stripNonDigits(val: string) {
   return val.replace(/\D/g, "");
 }
 
+/** Allow + as first char, then only digits */
+function stripPhoneInput(val: string) {
+  if (val.startsWith("+")) return "+" + val.slice(1).replace(/\D/g, "");
+  return val.replace(/\D/g, "");
+}
+
 function formatPhoneDisplay(digits: string): string {
   if (digits.length <= 3) return digits;
   if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
@@ -48,6 +54,7 @@ export default function StepClient({ data, update, accountId }: Props) {
   const [detectedCode, setDetectedCode] = useState(parsed.code);
   const [detectedCountry, setDetectedCountry] = useState(parsed.country);
   const [localNumber, setLocalNumber] = useState(parsed.local);
+  const [rawInput, setRawInput] = useState(""); // tracks if user typed "+"
   const [showDropdown, setShowDropdown] = useState(false);
   const [manualCode, setManualCode] = useState("");
   const [showManual, setShowManual] = useState(false);
@@ -138,6 +145,7 @@ export default function StepClient({ data, update, accountId }: Props) {
       client_email: "",
     });
     setLocalNumber("");
+    setRawInput("");
     setDetectedFlag("🇺🇸");
     setDetectedCode("+1");
     setDetectedCountry("US");
@@ -149,35 +157,64 @@ export default function StepClient({ data, update, accountId }: Props) {
   }
 
   function handleLocalChange(val: string) {
-    const digits = stripNonDigits(val);
-    if (digits.length > 15) return;
+    const cleaned = stripPhoneInput(val);
+    if (cleaned.replace(/\D/g, "").length > 15) return;
 
-    if (digits.length === 0) {
+    setRawInput(cleaned);
+
+    if (cleaned.length === 0 || cleaned === "+") {
       setLocalNumber("");
       setPhoneValid(null);
-      setDetectedFlag("🇺🇸");
-      setDetectedCode("+1");
-      setDetectedCountry("US");
+      if (cleaned.length === 0) {
+        setDetectedFlag("🇺🇸");
+        setDetectedCode("+1");
+        setDetectedCountry("US");
+      }
       return;
     }
 
-    // Only store digits — detection happens on blur to avoid
-    // ambiguous prefix conflicts (e.g. +34 Spain vs +234 Nigeria)
+    // Store only digits for display
+    const digits = cleaned.replace(/\D/g, "");
     setLocalNumber(digits);
   }
 
   // Normalize and check duplicates on blur
   function handlePhoneBlur() {
     const digits = stripNonDigits(localNumber);
-    if (digits.length >= 7 && !showManual) {
-      const result = detectPhone(digits);
-      setDetectedFlag(result.flag);
-      setDetectedCode(result.countryCode);
-      setDetectedCountry(result.country);
-      setLocalNumber(result.localNumber);
-      setPhoneValid(result.isValid);
-      update({ client_phone: result.fullPhone });
+    if (digits.length < 7 || showManual) {
+      checkPhoneDuplicate();
+      return;
     }
+
+    // If user typed "+" → international auto-detect
+    if (rawInput.startsWith("+")) {
+      const result = detectInternational("+" + digits);
+      if (result) {
+        setDetectedFlag(result.flag);
+        setDetectedCode(result.countryCode);
+        setDetectedCountry(result.country);
+        setLocalNumber(result.localNumber);
+        setPhoneValid(result.isValid);
+        update({ client_phone: result.fullPhone });
+        setRawInput(""); // clear the "+" mode after detection
+        checkPhoneDuplicate();
+        return;
+      }
+    }
+
+    // No "+" → use the country from the dropdown
+    // Special case: 10-digit with DR area codes
+    if (digits.length === 10) {
+      const local10 = detectLocal10(digits);
+      setDetectedFlag(local10.flag);
+      setDetectedCode(local10.code);
+      setDetectedCountry(local10.country);
+    }
+
+    const result = validateForCountry(digits, detectedCountry, detectedCode);
+    setPhoneValid(result.isValid);
+    setLocalNumber(result.localNumber || digits);
+    update({ client_phone: result.fullPhone });
     checkPhoneDuplicate();
   }
 
@@ -417,10 +454,10 @@ export default function StepClient({ data, update, accountId }: Props) {
           <div className="relative flex-1">
             <input
               type="tel"
-              value={formatPhoneDisplay(localNumber)}
+              value={rawInput.startsWith("+") ? rawInput : formatPhoneDisplay(localNumber)}
               onChange={e => handleLocalChange(e.target.value)}
               onBlur={handlePhoneBlur}
-              placeholder="(809) 676-5653"
+              placeholder="+57 o (809) 676-5653"
               className="w-full border border-input bg-background rounded-r-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-8"
             />
             {phoneValid === true && digits.length >= 7 && (
@@ -431,6 +468,9 @@ export default function StepClient({ data, update, accountId }: Props) {
             )}
           </div>
         </div>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Escribe + para detectar país automáticamente (ej: +57, +34)
+        </p>
         {phoneInvalid && (
           <p className="text-[10px] text-destructive mt-1">Mínimo 7 dígitos</p>
         )}
