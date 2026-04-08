@@ -196,19 +196,57 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
             {greeting}, <span className="text-jarvis">{resolvedName || staffName || "Usuario"}</span>
           </h2>
           <div className="flex items-center gap-2 shrink-0">
+            {can("crear_casos") && (
+              <>
+                <button
+                  onClick={() => setIntakeOpen(true)}
+                  className="flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 h-8 transition-all hover:bg-emerald-500/20 text-xs"
+                >
+                  <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="font-semibold text-foreground text-[11px]">Consulta</span>
+                </button>
+                <button
+                  onClick={() => setContactOpen(true)}
+                  className="flex items-center gap-1.5 rounded-lg border border-violet-500/20 bg-violet-500/10 px-3 h-8 transition-all hover:bg-violet-500/20 text-xs"
+                >
+                  <UserPlus className="w-3.5 h-3.5 text-violet-400" />
+                  <span className="font-semibold text-foreground text-[11px]">Contacto</span>
+                </button>
+              </>
+            )}
             <HubCommandBar externalOpen={commandBarOpen} onExternalOpenChange={setCommandBarOpen} defaultFilter={commandBarFilter} />
             <HubNotifications />
           </div>
         </div>
 
-        {/* ═══ CONTENT GRID — exact CSS, no interpretation ═══ */}
+        {/* ═══ KPI STRIP — 40px ═══ */}
+        <div className="border-b border-border/20 px-4 flex items-center gap-1" style={{ height: 40, flexShrink: 0 }}>
+          {[
+            { label: "Casos Activos", value: activeCases, color: "text-foreground", path: "/hub/cases" },
+            { label: "Clientes", value: totalClients, color: "text-violet-400", path: "/hub/clients" },
+            { label: "Consultas", value: weekConsultations || "—", color: "text-emerald-400", path: "/hub/consultations" },
+            { label: "Conversión", value: "—", color: "text-muted-foreground", path: "/hub/reports" },
+          ].map((kpi, i) => (
+            <button
+              key={kpi.label}
+              onClick={() => goTo(kpi.path)}
+              className="flex items-center gap-2 px-3 py-1 rounded-md hover:bg-muted/30 transition-all group"
+            >
+              <span className={`text-sm font-bold ${kpi.color}`}>{kpi.value}</span>
+              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">{kpi.label}</span>
+              {i < 3 && <span className="text-border/40 ml-1">·</span>}
+            </button>
+          ))}
+        </div>
+
+        {/* ═══ CONTENT — 2 columns, no Zone B ═══ */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 360px',
+          gridTemplateColumns: '1fr 380px',
           gridTemplateRows: '1fr',
           gap: 12,
           padding: 12,
-          height: 'calc(100vh - 52px)',
+          flex: 1,
           overflow: 'hidden',
           minHeight: 0,
         }}>
@@ -216,7 +254,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
           {/* ═══ LEFT COLUMN ═══ */}
           <div style={{
             display: 'grid',
-            gridTemplateRows: 'auto 44px 1fr',
+            gridTemplateRows: 'auto 1fr',
             gap: 10,
             overflow: 'hidden',
             minHeight: 0,
@@ -224,39 +262,10 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
 
             {/* ZONE A — Consultas de Hoy */}
             <div className="bg-card border border-border rounded-xl" style={{ padding: 12, overflow: 'hidden' }}>
-              <TodayAppointments accountId={accountId} maxItems={2} />
+              <TodayAppointments accountId={accountId} maxItems={2} hideStats />
             </div>
 
-            {/* ZONE B — Quick Actions (44px fixed) */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr 1fr',
-              gap: 8,
-              height: 44,
-            }}>
-              {[
-                { label: "Buscar", icon: Search, action: "search", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
-                { label: "Consulta", icon: PlusCircle, action: "intake", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-                { label: "Contacto", icon: UserPlus, action: "contact", color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20" },
-                { label: "Analizar", icon: FileSearch, action: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-              ].map((a) => (
-                <button
-                  key={a.label}
-                  onClick={() => {
-                    if (a.action === "search") { setCommandBarFilter("all"); setCommandBarOpen(true); }
-                    else if (a.action === "intake") setIntakeOpen(true);
-                    else if (a.action === "contact") setContactOpen(true);
-                    else goTo(a.action);
-                  }}
-                  className={`flex items-center justify-center gap-1.5 rounded-lg border ${a.border} ${a.bg} px-2 h-full transition-all hover:scale-[1.02] text-xs`}
-                >
-                  <a.icon className={`w-3.5 h-3.5 ${a.color}`} />
-                  <span className="font-semibold text-foreground text-[11px]">{a.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* ZONE C — Consultas Recientes (fills remaining 1fr) */}
+            {/* ZONE B — Consultas Recientes (fills remaining) */}
             <div className="bg-card border border-border rounded-xl" style={{
               padding: 12,
               overflow: 'hidden',
@@ -265,103 +274,67 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
               flexDirection: 'column',
             }}>
               {canSeeConsultas && (
-                <HubRecentConsultations accountId={accountId} maxItems={4} />
+                <HubRecentConsultations accountId={accountId} maxItems={5} />
               )}
             </div>
           </div>
 
-          {/* ═══ RIGHT COLUMN (360px) ═══ */}
-          <div style={{
-            display: 'grid',
-            gridTemplateRows: '1fr 168px',
-            gap: 10,
+          {/* ═══ RIGHT COLUMN (380px) — Cases full height ═══ */}
+          <div className="bg-card border border-border rounded-xl" style={{
+            padding: 12,
             overflow: 'hidden',
             minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
           }}>
-
-            {/* ZONE D — Casos Activos (fills 1fr) */}
-            <div className="bg-card border border-border rounded-xl" style={{
-              padding: 12,
-              overflow: 'hidden',
-              minHeight: 0,
-              display: 'flex',
-              flexDirection: 'column',
-            }}>
-              <div className="flex items-center justify-between mb-2 shrink-0">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="w-3.5 h-3.5 text-muted-foreground/40" />
-                  <h3 className="text-[11px] font-display font-bold tracking-[0.2em] uppercase text-muted-foreground/60">
-                    Casos Activos
-                  </h3>
-                </div>
-                {activeCases > 4 && (
-                  <button onClick={() => goTo("/hub/cases")} className="text-[10px] font-semibold text-jarvis hover:text-jarvis/80 flex items-center gap-0.5">
-                    Ver {activeCases} <ChevronRight className="w-3 h-3" />
-                  </button>
-                )}
+            <div className="flex items-center justify-between mb-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-3.5 h-3.5 text-muted-foreground/40" />
+                <h3 className="text-[11px] font-display font-bold tracking-[0.2em] uppercase text-muted-foreground/60">
+                  Casos Activos
+                </h3>
               </div>
-
-              <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} className="space-y-1">
-                {recentCases.slice(0, 4).map((c) => {
-                  const stageInfo = STAGE_CONFIG[c.pipeline_stage || ""] || { label: c.pipeline_stage || "—", color: "bg-muted/50 text-muted-foreground border-border/30" };
-                  const alertBadges = getAlertBadges(c.case_tags_array);
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => goTo(`/case-engine/${c.id}`)}
-                      className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-card/50 px-3 py-2 hover:bg-card hover:border-border transition-all text-left group"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-jarvis/10 flex items-center justify-center shrink-0">
-                        <Briefcase className="w-3.5 h-3.5 text-jarvis/60" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[12px] font-semibold text-foreground truncate">{c.client_name}</span>
-                          {c.file_number && <span className="text-[9px] font-mono text-muted-foreground/50">{c.file_number}</span>}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[10px] text-muted-foreground/60">{getCaseTypeLabel(c.case_type)}</span>
-                          <Badge variant="outline" className={`${stageInfo.color} text-[8px] py-0 px-1 h-3.5`}>{stageInfo.label}</Badge>
-                        </div>
-                      </div>
-                      {alertBadges.length > 0
-                        ? alertBadges.map((ab, i) => <Badge key={i} variant="outline" className={`${ab.color} text-[8px] shrink-0`}>{ab.label}</Badge>)
-                        : c.actionBadge && <Badge className={`${c.actionBadge.color} text-[8px] shrink-0`}>{c.actionBadge.label}</Badge>
-                      }
-                      <ChevronRight className="w-3 h-3 text-muted-foreground/20 group-hover:text-muted-foreground shrink-0" />
-                    </button>
-                  );
-                })}
-                {recentCases.length === 0 && !loading && (
-                  <div className="flex items-center justify-center h-full text-muted-foreground/40 text-xs">Sin casos activos</div>
-                )}
-              </div>
+              {activeCases > 4 && (
+                <button onClick={() => goTo("/hub/cases")} className="text-[10px] font-semibold text-jarvis hover:text-jarvis/80 flex items-center gap-0.5">
+                  Ver todos ({activeCases}) <ChevronRight className="w-3 h-3" />
+                </button>
+              )}
             </div>
 
-            {/* ZONE E — Métricas 2x2 (168px fixed) */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gridTemplateRows: '1fr 1fr',
-              gap: 8,
-              height: 168,
-            }}>
-              {[
-                { label: "CASOS ACTIVOS", value: activeCases, color: "var(--foreground)", path: "/hub/cases" },
-                { label: "CLIENTES", value: totalClients, color: "#a78bfa", path: "/hub/clients" },
-                { label: "CONSULTAS", value: weekConsultations || "—", color: "#34d399", path: "/hub/consultations" },
-                { label: "CONVERSIÓN", value: "—", color: "var(--muted-foreground)", path: "/hub/reports" },
-              ].map((m) => (
-                <button
-                  key={m.label}
-                  onClick={() => goTo(m.path)}
-                  className="bg-card border border-border rounded-[10px] text-left hover:bg-accent/5 transition-all"
-                  style={{ padding: 12, cursor: 'pointer' }}
-                >
-                  <div style={{ fontSize: 28, fontWeight: 700, color: m.color, lineHeight: 1 }}>{m.value}</div>
-                  <div className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>{m.label}</div>
-                </button>
-              ))}
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} className="space-y-1.5">
+              {recentCases.slice(0, 6).map((c) => {
+                const stageInfo = STAGE_CONFIG[c.pipeline_stage || ""] || { label: c.pipeline_stage || "—", color: "bg-muted/50 text-muted-foreground border-border/30" };
+                const alertBadges = getAlertBadges(c.case_tags_array);
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => goTo(`/case-engine/${c.id}`)}
+                    className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-card/50 px-3 py-2.5 hover:bg-accent/5 hover:border-border transition-all text-left group"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-jarvis/10 flex items-center justify-center shrink-0">
+                      <Briefcase className="w-3.5 h-3.5 text-jarvis/60" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[12px] font-semibold text-foreground truncate">{c.client_name}</span>
+                        {c.file_number && <span className="text-[9px] font-mono text-muted-foreground/50">{c.file_number}</span>}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[10px] text-muted-foreground/60">{getCaseTypeLabel(c.case_type)}</span>
+                        <Badge variant="outline" className={`${stageInfo.color} text-[8px] py-0 px-1 h-3.5`}>{stageInfo.label}</Badge>
+                      </div>
+                    </div>
+                    {alertBadges.length > 0
+                      ? alertBadges.map((ab, i) => <Badge key={i} variant="outline" className={`${ab.color} text-[8px] shrink-0`}>{ab.label}</Badge>)
+                      : c.actionBadge && <Badge className={`${c.actionBadge.color} text-[8px] shrink-0`}>{c.actionBadge.label}</Badge>
+                    }
+                    <ChevronRight className="w-3 h-3 text-muted-foreground/20 group-hover:text-muted-foreground shrink-0" />
+                  </button>
+                );
+              })}
+              {recentCases.length === 0 && !loading && (
+                <div className="flex items-center justify-center h-full text-muted-foreground/40 text-xs">Sin casos activos</div>
+              )}
             </div>
           </div>
         </div>
