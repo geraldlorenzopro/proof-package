@@ -1,0 +1,2 @@
+ALTER TABLE public.intake_sessions DROP CONSTRAINT intake_sessions_entry_method_check;
+ALTER TABLE public.intake_sessions ADD CONSTRAINT intake_sessions_entry_method_check CHECK (entry_method = ANY (ARRAY['visa','parole','ewi','cbp-one','asylee','refugee','other','unknown','wizard']::text[]));
