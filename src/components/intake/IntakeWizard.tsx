@@ -216,6 +216,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
           account_id: accountId,
           created_by: user.id,
           entry_channel: data.entry_channel || null,
+          entry_channel_detail: data.entry_channel_detail || null,
           referral_source: data.referral_source || null,
           client_profile_id: profileId,
           is_existing_client: data.is_existing_client,
@@ -233,6 +234,8 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
           urgency_level: data.urgency_level || null,
           notes: data.notes || null,
           status: "in_progress",
+          entry_date: new Date().toISOString().split("T")[0],
+          entry_method: "wizard",
         } as any)
         .select("id")
         .single();
