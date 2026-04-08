@@ -310,7 +310,7 @@ export default function StepClient({ data, update, accountId }: Props) {
       </div>
 
       {/* Primary phone */}
-      <PhoneRow
+      <PhoneInput
         label="Teléfono *"
         phoneLabel={data.client_phone_label}
         onPhoneLabelChange={v => update({ client_phone_label: v })}
@@ -340,7 +340,7 @@ export default function StepClient({ data, update, accountId }: Props) {
 
       {/* Secondary phone */}
       {showSecondPhone ? (
-        <PhoneRow
+        <PhoneInput
           label="Teléfono secundario"
           phoneLabel={data.client_mobile_phone_label}
           onPhoneLabelChange={v => update({ client_mobile_phone_label: v })}
