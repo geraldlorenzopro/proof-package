@@ -265,6 +265,21 @@ export default function StepClient({ data, update, accountId }: Props) {
     }
   }
 
+  // Auto-detect country on blur from raw input
+  function handlePhoneBlur() {
+    const digits = stripNonDigits(localNumber);
+    if (digits.length >= 7 && !showManual) {
+      const result = normalizePhone(digits);
+      if (result.localNumber) {
+        setCountryIdx(result.countryIdx);
+        setLocalNumber(result.localNumber);
+        // Update parent with normalized full phone
+        update({ client_phone: result.fullPhone });
+      }
+    }
+    checkPhoneDuplicate();
+  }
+
   // Phone duplicate check on blur
   async function checkPhoneDuplicate() {
     const fullPhone = data.client_phone;
