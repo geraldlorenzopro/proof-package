@@ -1,20 +1,20 @@
 import { useEffect, useRef } from "react";
 import { Check } from "lucide-react";
 import type { IntakeData } from "../IntakeWizard";
-import { MessageCircle, Instagram, Facebook, Music2, Users, Megaphone, Globe, Phone, DoorOpen, Youtube, MoreHorizontal } from "lucide-react";
+import { CHANNEL_LOGOS } from "../ChannelLogo";
 
 const CHANNELS = [
-  { key: "whatsapp", label: "WhatsApp", icon: MessageCircle, color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
-  { key: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-400 bg-pink-500/10 border-pink-500/20" },
-  { key: "facebook", label: "Facebook", icon: Facebook, color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
-  { key: "tiktok", label: "TikTok", icon: Music2, color: "text-foreground bg-foreground/10 border-foreground/20" },
-  { key: "referido", label: "Referido", icon: Users, color: "text-purple-400 bg-purple-500/10 border-purple-500/20" },
-  { key: "anuncio", label: "Anuncio / Ads", icon: Megaphone, color: "text-orange-400 bg-orange-500/10 border-orange-500/20" },
-  { key: "website", label: "Website", icon: Globe, color: "text-teal-400 bg-teal-500/10 border-teal-500/20" },
-  { key: "llamada", label: "Llamada", icon: Phone, color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
-  { key: "walk-in", label: "Walk-in", icon: DoorOpen, color: "text-muted-foreground bg-muted/50 border-border" },
-  { key: "youtube", label: "YouTube", icon: Youtube, color: "text-red-400 bg-red-500/10 border-red-500/20" },
-  { key: "otro", label: "Otro", icon: MoreHorizontal, color: "text-muted-foreground bg-muted/50 border-border" },
+  { key: "whatsapp", label: "WhatsApp" },
+  { key: "instagram", label: "Instagram" },
+  { key: "facebook", label: "Facebook" },
+  { key: "tiktok", label: "TikTok" },
+  { key: "referido", label: "Referido" },
+  { key: "anuncio", label: "Anuncio / Ads" },
+  { key: "website", label: "Website" },
+  { key: "llamada", label: "Llamada" },
+  { key: "walk-in", label: "Walk-in" },
+  { key: "youtube", label: "YouTube" },
+  { key: "otro", label: "Otro" },
 ];
 
 interface Props {
@@ -26,7 +26,6 @@ export default function StepChannel({ data, update }: Props) {
   const referidoRef = useRef<HTMLInputElement>(null);
   const otroRef = useRef<HTMLInputElement>(null);
 
-  // Auto-focus conditional fields
   useEffect(() => {
     if (data.entry_channel === "referido") setTimeout(() => referidoRef.current?.focus(), 100);
     if (data.entry_channel === "otro") setTimeout(() => otroRef.current?.focus(), 100);
@@ -41,8 +40,8 @@ export default function StepChannel({ data, update }: Props) {
 
       <div className="flex flex-wrap justify-center gap-3">
         {CHANNELS.map(ch => {
-          const Icon = ch.icon;
           const selected = data.entry_channel === ch.key;
+          const logo = CHANNEL_LOGOS[ch.key] || CHANNEL_LOGOS.otro;
           return (
             <div key={ch.key} className="w-[calc(33.333%-0.5rem)]">
               <button
@@ -58,8 +57,14 @@ export default function StepChannel({ data, update }: Props) {
                     <Check className="w-2.5 h-2.5 text-accent-foreground" />
                   </div>
                 )}
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${ch.color}`}>
-                  <Icon className="w-5 h-5" />
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: `${logo.color}15` }}
+                >
+                  <span
+                    style={{ width: 22, height: 22, display: "inline-flex" }}
+                    dangerouslySetInnerHTML={{ __html: logo.svg }}
+                  />
                 </div>
                 <span className={`text-sm font-semibold transition-colors ${selected ? "text-accent" : "text-foreground"}`}>
                   {ch.label}
