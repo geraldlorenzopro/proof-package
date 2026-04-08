@@ -94,8 +94,8 @@ function PhoneRow({
         {/* Country dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button type="button" onClick={() => setShowDropdown(!showDropdown)}
-            className="flex items-center gap-1.5 border border-input border-r-0 bg-background rounded-l-xl px-3 py-2.5 text-sm hover:bg-secondary/50 transition-colors min-w-[90px]">
-            <span>{selectedFlag} {selectedCode}</span>
+            className="flex items-center gap-1 border border-input border-r-0 bg-background rounded-l-xl px-2.5 py-2.5 hover:bg-secondary/50 transition-colors">
+            <span className="text-xl leading-none">{selectedFlag}</span>
             <ChevronDown className="w-3 h-3 text-muted-foreground" />
           </button>
           {showDropdown && (
@@ -125,12 +125,19 @@ function PhoneRow({
           )}
         </div>
 
+        {/* Country code prefix */}
+        {!isInternationalMode && (
+          <div className="flex items-center border-y border-input bg-background px-2 py-2.5">
+            <span className="text-sm text-muted-foreground font-medium whitespace-nowrap">{selectedCode}</span>
+          </div>
+        )}
+
         {/* Phone input */}
         <div className="relative flex-1">
           <input type="tel" value={displayValue}
             onChange={e => onPhoneChange(e.target.value)} onBlur={onPhoneBlur}
-            placeholder={isInternationalMode ? "+57 312 456 7890" : "(305) 555-0000"}
-            className="w-full border border-input border-r-0 bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-8" />
+            placeholder={isInternationalMode ? "+57 312 456 7890" : "Número de teléfono"}
+            className="w-full border border-input border-l-0 border-r-0 bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring pr-8" />
           {phoneValid === true && localDigits.length >= 7 && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />}
           {phoneValid === false && (localDigits.length >= 7 || (isInternationalMode && rawInput.length >= 4)) && <AlertTriangle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-400" />}
         </div>
@@ -158,7 +165,7 @@ function PhoneRow({
           )}
         </div>
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1">Escribe + para detectar país · Sin + usa el selector</p>
+      <p className="text-[10px] text-muted-foreground mt-1">Escribe + para detectar país automáticamente</p>
       {phoneInvalid && <p className="text-[10px] text-destructive mt-1">Mínimo 7 dígitos</p>}
       {phoneValid === false && localDigits.length >= 7 && <p className="text-[10px] text-yellow-400 mt-1">⚠️ Número no válido para {selectedCountry}</p>}
     </div>
@@ -271,6 +278,14 @@ export default function StepClient({ data, update, accountId }: Props) {
       const cleaned = "+" + val.slice(1).replace(/\D/g, "");
       if (cleaned.length > 16) return;
       setRawInput(cleaned); setLocalDigits(""); setPhoneValid(null);
+      if (cleaned.length >= 3) {
+        const detected = detectInternational(cleaned);
+        if (detected) {
+          setSelectedFlag(detected.flag);
+          setSelectedCountry(detected.country);
+          setSelectedCode(detected.countryCode);
+        }
+      }
       return;
     }
     setIsInternationalMode(false); setRawInput("");
@@ -318,6 +333,14 @@ export default function StepClient({ data, update, accountId }: Props) {
       const cleaned = "+" + val.slice(1).replace(/\D/g, "");
       if (cleaned.length > 16) return;
       setRaw2(cleaned); setDigits2(""); setValid2(null);
+      if (cleaned.length >= 3) {
+        const detected = detectInternational(cleaned);
+        if (detected) {
+          setFlag2(detected.flag);
+          setCountry2(detected.country);
+          setCode2(detected.countryCode);
+        }
+      }
       return;
     }
     setIntlMode2(false); setRaw2("");
