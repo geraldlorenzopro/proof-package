@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { X, Loader2, UserPlus, MessageCircle, Instagram, Facebook, Music2, Users, Megaphone, Globe, Phone, DoorOpen, Youtube, MoreHorizontal, Magnet, ChevronDown, Check, AlertTriangle, Plus } from "lucide-react";
+import { X, Loader2, UserPlus, MessageCircle, Instagram, Facebook, Music2, Users, Megaphone, Globe, Phone, DoorOpen, Youtube, MoreHorizontal, Magnet, Plus } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { COUNTRY_CODES } from "@/lib/countryCodes";
-import { detectInternational, validateForCountry, getFlag, formatNational, PHONE_LABELS, parseExisting } from "@/lib/phoneDetect";
+import { detectInternational, validateForCountry, parseExisting, PHONE_LABELS } from "@/lib/phoneDetect";
 import { FREQUENT_COUNT } from "@/lib/countryCodes";
+import PhoneInput from "@/components/shared/PhoneInput";
 
 const CHANNELS = [
   { key: "whatsapp", label: "WhatsApp", icon: MessageCircle, color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
