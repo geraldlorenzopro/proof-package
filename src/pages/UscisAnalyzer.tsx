@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useBackDestination } from '@/hooks/useBackDestination';
 import { ArrowLeft, FileSearch, ChevronRight, Loader2, RotateCcw, Upload, X, FileText, Image, Download, Copy, Check, Shield, Clock, AlertTriangle, History, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -115,6 +116,7 @@ function fileToBase64(file: File): Promise<string> {
 
 export default function UscisAnalyzer() {
   const navigate = useNavigate();
+  const { destination: backDest, isHub } = useBackDestination();
   const [step, setStep] = useState<Step>("splash");
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [lang, setLang] = useState<'es' | 'en'>('es');
@@ -753,9 +755,9 @@ export default function UscisAnalyzer() {
           {/* Sticky header */}
           <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="max-w-3xl mx-auto flex items-center justify-between h-14 px-4">
-              <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => navigate(backDest)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ArrowLeft className="w-4 h-4" />
-                <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />
+                {isHub ? <Shield className="w-4 h-4 text-jarvis" /> : <img src={nerLogo} alt="NER" className="h-5 brightness-0 invert" />}
               </button>
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <FileSearch className="w-4 h-4 text-accent" />
