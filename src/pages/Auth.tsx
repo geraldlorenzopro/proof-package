@@ -60,6 +60,10 @@ export default function Auth() {
 
   async function resolvePostLoginDestination(userId: string): Promise<string> {
     try {
+      // Check if platform admin first
+      const { data: isAdmin } = await supabase.rpc("is_platform_admin" as any);
+      if (isAdmin) return "/admin";
+
       const { data: membership } = await supabase
         .from("account_members")
         .select("account_id, role")

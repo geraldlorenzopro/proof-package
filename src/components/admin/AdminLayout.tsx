@@ -3,18 +3,19 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Building2, Users, CreditCard, BarChart3,
-  ScrollText, ArrowLeft, Shield,
+  ScrollText, ArrowLeft, Shield, Settings,
 } from "lucide-react";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
-  { label: "Firmas", path: "/admin/accounts", icon: Building2 },
+  { label: "Firmas", path: "/admin/firms", icon: Building2 },
   { label: "Usuarios", path: "/admin/users", icon: Users },
   { label: "Billing", path: "/admin/billing", icon: CreditCard },
   { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
   { label: "Logs", path: "/admin/logs", icon: ScrollText },
+  { label: "Configuración", path: "/admin/settings", icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -50,10 +51,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <div className="p-4 border-b border-white/5">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-red-500" />
-            <span className="font-bold text-white text-sm tracking-wide">NER</span>
-            <span className="text-[9px] font-bold bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full tracking-wider">
-              ADMIN
-            </span>
+            <span className="font-bold text-white text-sm tracking-wide">NER Platform</span>
           </div>
         </div>
 
@@ -80,14 +78,18 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        {/* Back to Hub */}
+        {/* Logout / no link back to Hub */}
         <div className="p-3 border-t border-white/5">
           <button
-            onClick={() => navigate("/hub")}
+            onClick={async () => {
+              const { supabase } = await import("@/integrations/supabase/client");
+              await supabase.auth.signOut();
+              navigate("/auth", { replace: true });
+            }}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-white/40 hover:text-white/70 hover:bg-white/5 transition-all"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Volver al Hub
+            Cerrar sesión
           </button>
         </div>
       </motion.aside>
