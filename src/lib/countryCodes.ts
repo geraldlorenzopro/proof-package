@@ -161,7 +161,7 @@ export const COUNTRY_CODES: CountryCode[] = [
   { flag: "🇵🇹", code: "+351", name: "Portugal", iso: "PT" },
   { flag: "🇶🇦", code: "+974", name: "Catar", iso: "QA" },
   { flag: "🇷🇴", code: "+40", name: "Rumanía", iso: "RO" },
-  { flag: "🇷🇺", code: "+7", name: "Rusia", iso: "RU" },
+  { flag: "🇷🇺", code: "+7", name: "Rusia", iso: "RU", areaCodes: ["9","3","4","8","5","6"] },
   { flag: "🇷🇼", code: "+250", name: "Ruanda", iso: "RW" },
   { flag: "🇰🇳", code: "+1", name: "San Cristóbal y Nieves", iso: "KN", areaCodes: ["869"] },
   { flag: "🇱🇨", code: "+1", name: "Santa Lucía", iso: "LC", areaCodes: ["758"] },
