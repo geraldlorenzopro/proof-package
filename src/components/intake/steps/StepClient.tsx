@@ -265,11 +265,13 @@ export default function StepClient({ data, update, accountId }: Props) {
     // Auto-detect country in real-time as user types
     if (!showManual && digits.length >= 3) {
       const result = normalizePhone(digits);
-      // Only split prefix from local when we have enough digits to be confident
-      if (result.countryIdx !== countryIdx && result.localNumber !== digits) {
+      if (result.countryIdx !== countryIdx) {
         setCountryIdx(result.countryIdx);
-        setLocalNumber(result.localNumber);
-        return;
+        // If prefix was stripped, update local number too
+        if (result.localNumber !== digits) {
+          setLocalNumber(result.localNumber);
+          return;
+        }
       }
     }
     setLocalNumber(digits);
