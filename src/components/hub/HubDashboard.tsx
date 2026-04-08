@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
-import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   Users, FolderOpen, Briefcase, ChevronRight,
@@ -33,11 +32,7 @@ interface Props {
   apps: HubApp[];
   userRole?: string | null;
   canAccessApp?: (slug: string) => boolean;
-  stats?: {
-    totalClients: number;
-    activeForms: number;
-    recentActivity: number;
-  };
+  stats?: { totalClients: number; activeForms: number; recentActivity: number };
 }
 
 const STAGE_CONFIG: Record<string, { label: string; color: string }> = {
@@ -62,7 +57,7 @@ const ALERT_TAG_CONFIG: Record<string, { label: string; color: string }> = {
   "cli-pend:pago": { label: "Pago pend.", color: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
 };
 
-function getAlertBadges(tags: string[] | null): { label: string; color: string }[] {
+function getAlertBadges(tags: string[] | null) {
   if (!tags?.length) return [];
   return tags.filter(t => ALERT_TAG_CONFIG[t]).map(t => ALERT_TAG_CONFIG[t]).slice(0, 2);
 }
@@ -87,25 +82,22 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
   const [contactOpen, setContactOpen] = useState(false);
   const [resolvedName, setResolvedName] = useState<string | null>(null);
 
-  // Data
   const [activeCases, setActiveCases] = useState(0);
   const [totalClients, setTotalClients] = useState(0);
   const [completedMonth, setCompletedMonth] = useState(0);
   const [weekConsultations, setWeekConsultations] = useState(0);
   const [recentCases, setRecentCases] = useState<RecentCase[]>([]);
   const [loading, setLoading] = useState(true);
-  const [credits, setCredits] = useState<{ balance: number; monthly_allowance: number } | null>(null);
 
   useEffect(() => {
-    async function fetchName() {
+    (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
         setResolvedName(profile?.full_name || user.user_metadata?.full_name as string || user.email?.split("@")[0] || null);
       } catch {}
-    }
-    fetchName();
+    })();
   }, []);
 
   const canSeeAllCases = can("ver_todos_casos");
@@ -121,13 +113,11 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay());
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
 
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id;
 
-      const [activeRes, clientsRes, completedRes, weekRes, casesRes, creditsRes] = await Promise.all([
+      const [activeRes, clientsRes, completedRes, weekRes, casesRes] = await Promise.all([
         supabase.from("client_cases").select("id", { count: "exact", head: true })
           .eq("account_id", accountId).not("status", "eq", "completed"),
         supabase.from("client_profiles").select("id", { count: "exact", head: true })
@@ -146,16 +136,13 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
               .eq("account_id", accountId).not("status", "eq", "completed")
               .eq("assigned_to", userId || "")
               .order("updated_at", { ascending: false }).limit(4),
-        supabase.from("ai_credits").select("balance, monthly_allowance").eq("account_id", accountId).single(),
       ]);
 
       setActiveCases(activeRes.count || 0);
       setTotalClients(clientsRes.count || 0);
       setCompletedMonth(completedRes.count || 0);
       setWeekConsultations(weekRes.count || 0);
-      if (creditsRes.data) setCredits(creditsRes.data as any);
 
-      // Enrich cases
       const rawCases = (casesRes.data || []) as RecentCase[];
       if (rawCases.length > 0) {
         const caseIds = rawCases.map(c => c.id);
@@ -197,80 +184,73 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
     navigate(route);
   }
 
-  const creditsPct = credits ? (credits.monthly_allowance > 0 ? Math.round((credits.balance / credits.monthly_allowance) * 100) : 0) : 0;
-  const creditsColor = creditsPct > 50 ? "bg-emerald-500" : creditsPct > 20 ? "bg-amber-500" : "bg-red-500";
+  // Conversion rate
+  const conversionRate = activeCases > 0 && totalClients > 0 ? null : null; // placeholder — no data yet
 
   return (
     <>
       <div className="h-full flex flex-col overflow-hidden">
-        {/* ═══ TOPBAR — 56px ═══ */}
-        <div className="h-14 shrink-0 border-b border-border/30 px-5 flex items-center justify-between">
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold text-foreground truncate">
-              {greeting}, <span className="text-jarvis">{resolvedName || staffName || "Usuario"}</span>
-            </h2>
-            {accountName && (
-              <p className="text-[10px] text-muted-foreground/50 -mt-0.5 truncate">{accountName}</p>
-            )}
-          </div>
+        {/* ═══ TOPBAR — 52px ═══ */}
+        <div className="h-[52px] shrink-0 border-b border-border/30 px-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-foreground truncate">
+            {greeting}, <span className="text-jarvis">{resolvedName || staffName || "Usuario"}</span>
+          </h2>
           <div className="flex items-center gap-2 shrink-0">
             <HubCommandBar externalOpen={commandBarOpen} onExternalOpenChange={setCommandBarOpen} defaultFilter={commandBarFilter} />
             <HubNotifications />
           </div>
         </div>
 
-        {/* ═══ CONTENT — fills remaining height ═══ */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[55%_45%] gap-0 overflow-hidden">
+        {/* ═══ CONTENT GRID ═══ */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3 p-3 overflow-hidden">
 
           {/* ═══ LEFT COLUMN ═══ */}
-          <div className="flex flex-col min-h-0 border-r border-border/20 overflow-hidden">
+          <div className="flex flex-col gap-2.5 min-h-0 overflow-hidden">
 
-            {/* ZONE A — Today + Quick Actions (40%) */}
-            <div className="h-[40%] shrink-0 overflow-hidden border-b border-border/20 p-4 flex flex-col gap-3">
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <TodayAppointments accountId={accountId} maxItems={3} />
-              </div>
-
-              {/* Quick actions */}
-              {can("crear_casos") && (
-                <div className="grid grid-cols-4 gap-1.5 shrink-0">
-                  {[
-                    { label: "Buscar", icon: Search, action: "search", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
-                    { label: "Consulta", icon: PlusCircle, action: "intake", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-                    { label: "Contacto", icon: UserPlus, action: "contact", color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20" },
-                    { label: "Analizar", icon: FileSearch, action: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-                  ].map((a) => (
-                    <button
-                      key={a.label}
-                      onClick={() => {
-                        if (a.action === "search") { setCommandBarFilter("all"); setCommandBarOpen(true); }
-                        else if (a.action === "intake") setIntakeOpen(true);
-                        else if (a.action === "contact") setContactOpen(true);
-                        else goTo(a.action);
-                      }}
-                      className={`flex items-center justify-center gap-1.5 rounded-lg border ${a.border} ${a.bg} px-2 py-2 transition-all hover:scale-[1.02] text-xs`}
-                    >
-                      <a.icon className={`w-3.5 h-3.5 ${a.color}`} />
-                      <span className="font-semibold text-foreground text-[11px]">{a.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+            {/* ZONE A — Today's Appointments */}
+            <div className="shrink-0 overflow-hidden" style={{ maxHeight: 200 }}>
+              <TodayAppointments accountId={accountId} maxItems={2} />
             </div>
 
-            {/* ZONE B — Recent Consultations (60%) */}
-            <div className="flex-1 min-h-0 overflow-hidden p-4">
+            {/* ZONE B — Quick Actions (44px) */}
+            {can("crear_casos") && (
+              <div className="grid grid-cols-4 gap-1.5 shrink-0 h-[44px]">
+                {[
+                  { label: "Buscar", icon: Search, action: "search", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
+                  { label: "Consulta", icon: PlusCircle, action: "intake", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+                  { label: "Contacto", icon: UserPlus, action: "contact", color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20" },
+                  { label: "Analizar", icon: FileSearch, action: "/dashboard/uscis-analyzer", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
+                ].map((a) => (
+                  <button
+                    key={a.label}
+                    onClick={() => {
+                      if (a.action === "search") { setCommandBarFilter("all"); setCommandBarOpen(true); }
+                      else if (a.action === "intake") setIntakeOpen(true);
+                      else if (a.action === "contact") setContactOpen(true);
+                      else goTo(a.action);
+                    }}
+                    className={`flex items-center justify-center gap-1.5 rounded-lg border ${a.border} ${a.bg} px-2 h-full transition-all hover:scale-[1.02] text-xs`}
+                  >
+                    <a.icon className={`w-3.5 h-3.5 ${a.color}`} />
+                    <span className="font-semibold text-foreground text-[11px]">{a.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ZONE C — Recent Consultations (fills remaining) */}
+            <div className="flex-1 min-h-0 overflow-hidden">
               {canSeeConsultas && (
                 <HubRecentConsultations accountId={accountId} maxItems={4} />
               )}
             </div>
           </div>
 
-          {/* ═══ RIGHT COLUMN ═══ */}
-          <div className="flex flex-col min-h-0 overflow-hidden">
+          {/* ═══ RIGHT COLUMN (380px) ═══ */}
+          <div className="flex flex-col gap-2.5 min-h-0 overflow-hidden">
 
-            {/* ZONE C — Active Cases (50%) */}
-            <div className="h-[50%] shrink-0 overflow-hidden border-b border-border/20 p-4 flex flex-col">
+            {/* ZONE D — Active Cases (fills remaining) */}
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
               <div className="flex items-center justify-between mb-2 shrink-0">
                 <div className="flex items-center gap-2">
                   <Briefcase className="w-3.5 h-3.5 text-muted-foreground/40" />
@@ -293,7 +273,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
                     <button
                       key={c.id}
                       onClick={() => goTo(`/case-engine/${c.id}`)}
-                      className="w-full flex items-center gap-2.5 rounded-lg border border-border/40 bg-card/50 px-3 py-2 hover:bg-card hover:border-border transition-all text-left group"
+                      className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-card/50 px-3 py-2 hover:bg-card hover:border-border transition-all text-left group"
                     >
                       <div className="w-7 h-7 rounded-lg bg-jarvis/10 flex items-center justify-center shrink-0">
                         <Briefcase className="w-3.5 h-3.5 text-jarvis/60" />
@@ -322,39 +302,23 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
               </div>
             </div>
 
-            {/* ZONE D — Metrics (50%) */}
-            <div className="flex-1 min-h-0 overflow-hidden p-4">
-              <div className="grid grid-cols-2 gap-2.5 h-full">
-                {[
-                  { label: "Casos Activos", value: activeCases, icon: Briefcase, color: "text-accent", bg: "bg-accent/10", border: "border-accent/20", path: "/hub/cases" },
-                  { label: "Clientes", value: totalClients, icon: Users, color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20", path: "/hub/clients" },
-                  { label: "Consultas", value: weekConsultations || "—", icon: CheckCircle2, color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20", path: "/hub/consultations" },
-                  { label: "Créditos AI", value: credits ? `${credits.balance}/${credits.monthly_allowance}` : "—", icon: Bot, color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20", path: "/hub/ai" },
-                ].map((card) => (
-                  <button
-                    key={card.label}
-                    onClick={() => goTo(card.path)}
-                    className={`rounded-xl border ${card.border} bg-card/60 px-4 py-3 text-left hover:bg-card transition-all flex flex-col justify-center`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`w-7 h-7 rounded-lg ${card.bg} flex items-center justify-center shrink-0`}>
-                        <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
-                      </div>
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-bold">{card.label}</span>
-                    </div>
-                    {card.label === "Créditos AI" && credits ? (
-                      <div className="space-y-1">
-                        <p className={`font-display text-xl font-extrabold ${card.color} leading-none`}>{credits.balance}</p>
-                        <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
-                          <div className={`h-full rounded-full ${creditsColor} transition-all`} style={{ width: `${Math.min(creditsPct, 100)}%` }} />
-                        </div>
-                      </div>
-                    ) : (
-                      <p className={`font-display text-2xl font-extrabold ${card.color} leading-none tracking-tighter`}>{card.value}</p>
-                    )}
-                  </button>
-                ))}
-              </div>
+            {/* ZONE E — Metrics 2x2 (160px fixed) */}
+            <div className="shrink-0 grid grid-cols-2 gap-2" style={{ height: 160 }}>
+              {[
+                { label: "Casos Activos", value: activeCases, icon: Briefcase, color: "text-accent", bg: "bg-accent/10", border: "border-accent/20", path: "/hub/cases" },
+                { label: "Clientes", value: totalClients, icon: Users, color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20", path: "/hub/clients" },
+                { label: "Consultas", value: weekConsultations || "—", icon: CheckCircle2, color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20", path: "/hub/consultations" },
+                { label: "Conversión", value: "—", icon: Bot, color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20", path: "/hub/ai" },
+              ].map((card) => (
+                <button
+                  key={card.label}
+                  onClick={() => goTo(card.path)}
+                  className={`rounded-xl border ${card.border} bg-card/60 p-3 text-left hover:bg-card transition-all flex flex-col justify-center`}
+                >
+                  <p className={`font-display text-2xl font-extrabold ${card.color} leading-none tracking-tighter`}>{card.value}</p>
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-bold mt-1">{card.label}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
