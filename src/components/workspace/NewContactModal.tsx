@@ -4,7 +4,7 @@ import { X, Loader2, UserPlus, MessageCircle, Instagram, Facebook, Music2, Users
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { COUNTRY_CODES } from "@/lib/countryCodes";
-import { detectInternational, validateForCountry, detectLocal10, getFlag } from "@/lib/phoneDetect";
+import { detectInternational, validateForCountry, getFlag } from "@/lib/phoneDetect";
 
 const CHANNELS = [
   { key: "whatsapp", label: "WhatsApp", icon: MessageCircle, color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
