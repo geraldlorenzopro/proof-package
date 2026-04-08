@@ -192,8 +192,8 @@ export default function StepConsulta({ data, update }: Props) {
                   {r.key === "otra" && selected && (
                     <input
                       type="text"
-                      value={(data as any).consultation_reason_detail || ""}
-                      onChange={e => update({ consultation_reason_detail: e.target.value } as any)}
+                      value={data.consultation_reason_detail || ""}
+                      onChange={e => update({ consultation_reason_detail: e.target.value })}
                       placeholder="Especifique el motivo..."
                       autoFocus
                       className="w-full mt-1.5 ml-7 border border-input bg-background rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
