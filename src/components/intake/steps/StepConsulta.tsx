@@ -109,14 +109,14 @@ export default function StepConsulta({ data, update }: Props) {
   function openNext(current: Section) {
     const order: Section[] = ["urgency", "reason", "topic", "delivery", "notes"];
     const idx = order.indexOf(current);
-    if (idx < order.length - 1) {
-      const next = order[idx + 1];
-      setOpenSections(prev => {
-        const s = new Set(prev);
-        s.add(next);
-        return s;
-      });
-    }
+    setOpenSections(prev => {
+      const s = new Set(prev);
+      s.delete(current);
+      if (idx < order.length - 1) {
+        s.add(order[idx + 1]);
+      }
+      return s;
+    });
   }
 
   // Rotating placeholder for notes
