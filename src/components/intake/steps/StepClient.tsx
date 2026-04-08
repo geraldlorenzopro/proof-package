@@ -50,6 +50,7 @@ export default function StepClient({ data, update, accountId }: Props) {
   const [manualCode, setManualCode] = useState("");
   const [showManual, setShowManual] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [autoDetected, setAutoDetected] = useState(false);
 
   // Duplicate detection state
   const [phoneDupe, setPhoneDupe] = useState<DuplicateMatch | null>(null);
