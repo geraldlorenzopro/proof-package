@@ -8,7 +8,7 @@ const liveTools = [
     name: 'Affidavit Calculator',
     description: 'Calcula requisitos financieros del I-864 basándose en las Poverty Guidelines más recientes.',
     icon: Calculator,
-    href: '/dashboard/affidavit',
+    href: '/tools/affidavit',
     features: [
       { icon: DollarSign, text: 'Poverty Guidelines actualizadas automáticamente' },
       { icon: Users, text: 'Calcula según tamaño del household y co-sponsors' },
@@ -19,7 +19,7 @@ const liveTools = [
     name: 'Photo Evidence Organizer',
     description: 'Organiza las fotos de tu caso en un paquete profesional listo para USCIS con descripciones y fechas.',
     icon: FileText,
-    href: '/dashboard/evidence',
+    href: '/tools/evidence',
     features: [
       { icon: Camera, text: 'Sube fotos y agrégales fecha, ubicación y descripción' },
       { icon: Users, text: 'Portal para que el cliente suba sus propias fotos' },
@@ -30,7 +30,7 @@ const liveTools = [
     name: 'CSPA Calculator',
     description: 'Calcula la edad CSPA del beneficiario con datos del Visa Bulletin en tiempo real, genera reportes PDF y analiza Sought to Acquire.',
     icon: BarChart3,
-    href: '/dashboard/cspa',
+    href: '/tools/cspa',
     features: [
       { icon: Calculator, text: 'Cálculo automático con Visa Bulletin actualizado (F1–F4, F2A/F2B)' },
       { icon: FileCheck, text: 'Reportes PDF profesionales con desglose paso a paso' },
@@ -44,7 +44,7 @@ const betaTools = [
     name: 'USCIS Document Analyzer',
     description: 'Analiza documentos de USCIS (RFE, NOID, I-797, etc.) con IA y recibe un desglose estratégico punto por punto.',
     icon: FileSearch,
-    href: '/dashboard/uscis-analyzer',
+    href: '/tools/uscis-analyzer',
     features: [
       { icon: FileSearch, text: 'Análisis detallado de RFE, NOID, NOIR, NOTT y más' },
       { icon: FileCheck, text: 'Desglose punto por punto con recomendaciones de evidencia' },
