@@ -158,7 +158,7 @@ export default function HubRecentConsultations({ accountId }: Props) {
             >
               {/* Channel logo instead of emoji */}
               <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                <ChannelLogo channel={item.entry_channel || "otro"} size={18} />
+                <ChannelLogo channel={item.entry_channel || "otro"} size={18} showLabel={false} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">

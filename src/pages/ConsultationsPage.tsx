@@ -275,7 +275,7 @@ export default function ConsultationsPage() {
                     <span className="text-[10px] text-muted-foreground/40">{timeAgo}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <ChannelLogo channel={item.entry_channel || "otro"} size={14} />
+                    <ChannelLogo channel={item.entry_channel || "otro"} size={14} showLabel={false} />
                     {(item.consultation_topic_tag || item.consultation_topic) && (
                       <span className="text-[11px] text-muted-foreground/60 truncate">{item.consultation_topic_tag || item.consultation_topic}</span>
                     )}
