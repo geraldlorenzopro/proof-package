@@ -280,20 +280,29 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
 
       setCompleted({
         clientName,
+        firstName: data.client_first_name,
         phone: data.client_phone,
         email: data.client_email,
         urgency: data.urgency_level,
         channel: data.entry_channel,
-        topic: data.consultation_topic_tag || data.consultation_topic,
+        topic: data.consultation_topic,
+        topicTag: data.consultation_topic_tag || "",
         deliveryChannel: data.intake_delivery_channel,
         preIntakeUrl,
+        preIntakeToken: appointment?.pre_intake_token || "",
         appointmentId: appointment?.id || null,
         clientProfileId: profileId || null,
+        createdAt: new Date().toISOString(),
       });
-      toast.success("Cliente registrado correctamente");
-    } catch (err) {
+      toast.success(`${clientName} registrado correctamente`);
+    } catch (err: any) {
       console.error("Intake submit error:", err);
-      toast.error("Error al registrar el cliente");
+      const msg = err?.message || err?.details || "Error al registrar el cliente";
+      if (msg.includes("duplicate") || msg.includes("unique")) {
+        toast.error("Este cliente ya existe. Verifica el teléfono o email.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setCreating(false);
     }
