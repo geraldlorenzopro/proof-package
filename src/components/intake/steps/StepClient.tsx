@@ -189,6 +189,14 @@ export default function StepClient({ data, update, accountId }: Props) {
       return;
     }
     if (localDigits.length >= 7) {
+      // Try auto-detect from raw digits before validating against selected country
+      const autoDetected = detectFromDigits(localDigits, selectedCountry);
+      if (autoDetected) {
+        setSelectedFlag(autoDetected.flag); setSelectedCode(autoDetected.countryCode); setSelectedCountry(autoDetected.country);
+        setLocalDigits(autoDetected.localNumber); setPhoneValid(autoDetected.isValid);
+        update({ client_phone: autoDetected.fullPhone }); checkPhoneDuplicate(autoDetected.fullPhone);
+        return;
+      }
       const result = validateForCountry(localDigits, selectedCountry, selectedCode);
       setPhoneValid(result.isValid); setLocalDigits(result.localNumber || localDigits);
       update({ client_phone: result.fullPhone }); checkPhoneDuplicate(result.fullPhone);
@@ -227,6 +235,15 @@ export default function StepClient({ data, update, accountId }: Props) {
     const d = val.replace(/\D/g, "");
     if (d.length > 15) return;
     setDigits2(d); setValid2(null);
+    if (d.length >= 10) {
+      const detected = detectFromDigits(d, country2);
+      if (detected) {
+        setFlag2(detected.flag); setCode2(detected.countryCode); setCountry2(detected.country);
+        setDigits2(detected.localNumber); setValid2(detected.isValid);
+        update({ client_mobile_phone: detected.fullPhone });
+        return;
+      }
+    }
   }
 
   function handlePhone2Blur() {
