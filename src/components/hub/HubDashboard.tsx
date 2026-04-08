@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Users, FolderOpen, Briefcase, ChevronRight,
   Search, PlusCircle, FileSearch, UserPlus,
-  Bot, CheckCircle2
+  Bot, CheckCircle2, Sparkles, TrendingUp
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import HubCommandBar from "./HubCommandBar";
 import HubNotifications from "./HubNotifications";
 import TodayAppointments from "./TodayAppointments";
 import HubRecentConsultations from "./HubRecentConsultations";
+import HubActivityDrawer from "./HubActivityDrawer";
 import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -179,73 +180,116 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
     return "Buenas noches";
   })();
 
+  const motivational = (() => {
+    const phrases = [
+      "Tu oficina virtual está lista.",
+      "Todo bajo control hoy.",
+      "Un gran día para avanzar casos.",
+    ];
+    return phrases[new Date().getDay() % phrases.length];
+  })();
+
   function goTo(route: string) {
     sessionStorage.setItem("ner_hub_return", "/hub");
     navigate(route);
   }
 
-  // Conversion rate
-  const conversionRate = activeCases > 0 && totalClients > 0 ? null : null; // placeholder — no data yet
+  const kpis = [
+    { label: "Casos Activos", value: activeCases, icon: Briefcase, accent: "text-jarvis", bg: "bg-jarvis/10", path: "/hub/cases" },
+    { label: "Clientes", value: totalClients, icon: Users, accent: "text-violet-400", bg: "bg-violet-500/10", path: "/hub/clients" },
+    { label: "Consultas", value: weekConsultations || "—", icon: FileSearch, accent: "text-emerald-400", bg: "bg-emerald-500/10", path: "/hub/consultations" },
+    { label: "Conversión", value: "—", icon: TrendingUp, accent: "text-muted-foreground", bg: "bg-muted/20", path: "/hub/reports" },
+  ];
 
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-        {/* ═══ TOPBAR — 52px ═══ */}
-        <div className="border-b border-border/30 px-4 flex items-center justify-between" style={{ height: 52, flexShrink: 0 }}>
-          <h2 className="text-base font-semibold text-foreground truncate">
-            {greeting}, <span className="text-jarvis">{resolvedName || staffName || "Usuario"}</span>
-          </h2>
+
+        {/* ═══ HERO TOPBAR — 80px ═══ */}
+        <div className="border-b border-border/20 px-6 flex items-center justify-between" style={{ height: 80, flexShrink: 0 }}>
+          {/* Left — Greeting */}
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-foreground leading-tight tracking-tight">
+              {greeting}, <span className="text-jarvis">{resolvedName || staffName || "Usuario"}</span>
+            </h1>
+            <p className="text-sm text-muted-foreground/60 mt-0.5">
+              <span className="font-semibold text-foreground/70">{accountName}</span>
+              <span className="mx-2 text-border">·</span>
+              <span className="italic">{motivational}</span>
+            </p>
+          </div>
+
+          {/* Right — Actions */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Aria AI Button */}
+            <button
+              onClick={() => goTo("/hub/ai")}
+              className="flex items-center gap-2 rounded-xl border border-jarvis/25 bg-jarvis/8 px-4 h-10 transition-all hover:bg-jarvis/15 hover:border-jarvis/40 hover:shadow-[0_0_20px_hsl(195_100%_50%/0.12)] group"
+            >
+              <div className="w-6 h-6 rounded-lg bg-jarvis/20 flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5 text-jarvis group-hover:scale-110 transition-transform" />
+              </div>
+              <span className="text-[13px] font-bold text-jarvis tracking-wide">Aria</span>
+            </button>
+
             {can("crear_casos") && (
               <>
                 <button
                   onClick={() => setIntakeOpen(true)}
-                  className="flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 h-8 transition-all hover:bg-emerald-500/20 text-xs"
+                  className="flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3.5 h-10 transition-all hover:bg-emerald-500/20 text-sm"
                 >
-                  <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="font-semibold text-foreground text-[11px]">Consulta</span>
+                  <PlusCircle className="w-4 h-4 text-emerald-400" />
+                  <span className="font-semibold text-foreground text-[12px]">Consulta</span>
                 </button>
                 <button
                   onClick={() => setContactOpen(true)}
-                  className="flex items-center gap-1.5 rounded-lg border border-violet-500/20 bg-violet-500/10 px-3 h-8 transition-all hover:bg-violet-500/20 text-xs"
+                  className="flex items-center gap-1.5 rounded-xl border border-violet-500/20 bg-violet-500/10 px-3.5 h-10 transition-all hover:bg-violet-500/20 text-sm"
                 >
-                  <UserPlus className="w-3.5 h-3.5 text-violet-400" />
-                  <span className="font-semibold text-foreground text-[11px]">Contacto</span>
+                  <UserPlus className="w-4 h-4 text-violet-400" />
+                  <span className="font-semibold text-foreground text-[12px]">Contacto</span>
                 </button>
               </>
             )}
+
+            <div className="w-px h-6 bg-border/30 mx-1" />
+
             <HubCommandBar externalOpen={commandBarOpen} onExternalOpenChange={setCommandBarOpen} defaultFilter={commandBarFilter} />
+            <HubActivityDrawer />
             <HubNotifications />
           </div>
         </div>
 
-        {/* ═══ KPI STRIP — 40px ═══ */}
-        <div className="border-b border-border/20 px-4 flex items-center gap-1" style={{ height: 40, flexShrink: 0 }}>
-          {[
-            { label: "Casos Activos", value: activeCases, color: "text-foreground", path: "/hub/cases" },
-            { label: "Clientes", value: totalClients, color: "text-violet-400", path: "/hub/clients" },
-            { label: "Consultas", value: weekConsultations || "—", color: "text-emerald-400", path: "/hub/consultations" },
-            { label: "Conversión", value: "—", color: "text-muted-foreground", path: "/hub/reports" },
-          ].map((kpi, i) => (
+        {/* ═══ KPI CARDS — 72px ═══ */}
+        <div className="px-6 flex items-stretch gap-3" style={{ height: 72, flexShrink: 0, paddingTop: 12, paddingBottom: 0 }}>
+          {kpis.map((kpi) => (
             <button
               key={kpi.label}
               onClick={() => goTo(kpi.path)}
-              className="flex items-center gap-2 px-3 py-1 rounded-md hover:bg-muted/30 transition-all group"
+              className="flex-1 flex items-center gap-3 px-4 rounded-xl border border-border/30 bg-card/60 hover:bg-card hover:border-border/50 transition-all group"
             >
-              <span className={`text-sm font-bold ${kpi.color}`}>{kpi.value}</span>
-              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">{kpi.label}</span>
-              {i < 3 && <span className="text-border/40 ml-1">·</span>}
+              <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center shrink-0`}>
+                <kpi.icon className={`w-5 h-5 ${kpi.accent}`} />
+              </div>
+              <div className="text-left min-w-0">
+                <div className={`text-2xl font-extrabold ${kpi.accent} leading-none tracking-tight`}>
+                  {kpi.value}
+                </div>
+                <div className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.15em] font-semibold mt-0.5">
+                  {kpi.label}
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground/20 group-hover:text-muted-foreground/50 ml-auto shrink-0 transition-colors" />
             </button>
           ))}
         </div>
 
-        {/* ═══ CONTENT — 2 columns, no Zone B ═══ */}
+        {/* ═══ CONTENT — 2 columns ═══ */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 380px',
+          gridTemplateColumns: '1fr 400px',
           gridTemplateRows: '1fr',
           gap: 12,
-          padding: 12,
+          padding: '12px 24px 16px',
           flex: 1,
           overflow: 'hidden',
           minHeight: 0,
@@ -261,13 +305,13 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
           }}>
 
             {/* ZONE A — Consultas de Hoy */}
-            <div className="bg-card border border-border rounded-xl" style={{ padding: 12, overflow: 'hidden' }}>
+            <div className="bg-card border border-border/40 rounded-xl" style={{ padding: 14, overflow: 'hidden' }}>
               <TodayAppointments accountId={accountId} maxItems={2} hideStats />
             </div>
 
-            {/* ZONE B — Consultas Recientes (fills remaining) */}
-            <div className="bg-card border border-border rounded-xl" style={{
-              padding: 12,
+            {/* ZONE B — Consultas Recientes */}
+            <div className="bg-card border border-border/40 rounded-xl" style={{
+              padding: 14,
               overflow: 'hidden',
               minHeight: 0,
               display: 'flex',
@@ -279,24 +323,29 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
             </div>
           </div>
 
-          {/* ═══ RIGHT COLUMN (380px) — Cases full height ═══ */}
-          <div className="bg-card border border-border rounded-xl" style={{
-            padding: 12,
+          {/* ═══ RIGHT COLUMN (400px) — Cases ═══ */}
+          <div className="bg-card border border-border/40 rounded-xl" style={{
+            padding: 14,
             overflow: 'hidden',
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
           }}>
-            <div className="flex items-center justify-between mb-2 shrink-0">
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-3.5 h-3.5 text-muted-foreground/40" />
-                <h3 className="text-[11px] font-display font-bold tracking-[0.2em] uppercase text-muted-foreground/60">
-                  Casos Activos
-                </h3>
+            <div className="flex items-center justify-between mb-3 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-jarvis/10 flex items-center justify-center">
+                  <Briefcase className="w-4 h-4 text-jarvis/60" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground tracking-tight">
+                    Casos Activos
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground/40 font-medium">Expedientes en progreso</p>
+                </div>
               </div>
               {activeCases > 4 && (
-                <button onClick={() => goTo("/hub/cases")} className="text-[10px] font-semibold text-jarvis hover:text-jarvis/80 flex items-center gap-0.5">
-                  Ver todos ({activeCases}) <ChevronRight className="w-3 h-3" />
+                <button onClick={() => goTo("/hub/cases")} className="text-[11px] font-semibold text-jarvis hover:text-jarvis/80 flex items-center gap-0.5 transition-colors">
+                  Ver todos ({activeCases}) <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
@@ -309,31 +358,31 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
                   <button
                     key={c.id}
                     onClick={() => goTo(`/case-engine/${c.id}`)}
-                    className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-card/50 px-3 py-2.5 hover:bg-accent/5 hover:border-border transition-all text-left group"
+                    className="w-full flex items-center gap-2.5 rounded-xl border border-border/30 bg-card/50 px-3 py-3 hover:bg-accent/5 hover:border-border/60 transition-all text-left group"
                   >
-                    <div className="w-7 h-7 rounded-lg bg-jarvis/10 flex items-center justify-center shrink-0">
-                      <Briefcase className="w-3.5 h-3.5 text-jarvis/60" />
+                    <div className="w-8 h-8 rounded-lg bg-jarvis/10 flex items-center justify-center shrink-0">
+                      <Briefcase className="w-4 h-4 text-jarvis/60" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[12px] font-semibold text-foreground truncate">{c.client_name}</span>
-                        {c.file_number && <span className="text-[9px] font-mono text-muted-foreground/50">{c.file_number}</span>}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-foreground truncate">{c.client_name}</span>
+                        {c.file_number && <span className="text-[10px] font-mono text-muted-foreground/40">{c.file_number}</span>}
                       </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[10px] text-muted-foreground/60">{getCaseTypeLabel(c.case_type)}</span>
-                        <Badge variant="outline" className={`${stageInfo.color} text-[8px] py-0 px-1 h-3.5`}>{stageInfo.label}</Badge>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[11px] text-muted-foreground/50">{getCaseTypeLabel(c.case_type)}</span>
+                        <Badge variant="outline" className={`${stageInfo.color} text-[9px] py-0 px-1.5 h-4`}>{stageInfo.label}</Badge>
                       </div>
                     </div>
                     {alertBadges.length > 0
-                      ? alertBadges.map((ab, i) => <Badge key={i} variant="outline" className={`${ab.color} text-[8px] shrink-0`}>{ab.label}</Badge>)
-                      : c.actionBadge && <Badge className={`${c.actionBadge.color} text-[8px] shrink-0`}>{c.actionBadge.label}</Badge>
+                      ? alertBadges.map((ab, i) => <Badge key={i} variant="outline" className={`${ab.color} text-[9px] shrink-0`}>{ab.label}</Badge>)
+                      : c.actionBadge && <Badge className={`${c.actionBadge.color} text-[9px] shrink-0`}>{c.actionBadge.label}</Badge>
                     }
-                    <ChevronRight className="w-3 h-3 text-muted-foreground/20 group-hover:text-muted-foreground shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/15 group-hover:text-muted-foreground/40 shrink-0 transition-colors" />
                   </button>
                 );
               })}
               {recentCases.length === 0 && !loading && (
-                <div className="flex items-center justify-center h-full text-muted-foreground/40 text-xs">Sin casos activos</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground/30 text-sm">Sin casos activos</div>
               )}
             </div>
           </div>
