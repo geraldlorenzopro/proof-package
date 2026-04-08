@@ -50,6 +50,7 @@ export default function StepClient({ data, update, accountId }: Props) {
   const [manualCode, setManualCode] = useState("");
   const [showManual, setShowManual] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [autoDetected, setAutoDetected] = useState(false);
 
   // Duplicate detection state
   const [phoneDupe, setPhoneDupe] = useState<DuplicateMatch | null>(null);
@@ -135,6 +136,7 @@ export default function StepClient({ data, update, accountId }: Props) {
     setLocalNumber("");
     setCountryIdx(0);
     setShowManual(false);
+    setAutoDetected(false);
     setPhoneDupe(null);
     setPhoneDupeDismissed(false);
     setEmailDupe(null);
@@ -144,12 +146,20 @@ export default function StepClient({ data, update, accountId }: Props) {
     const digits = stripNonDigits(val);
     if (digits.length > 15) return;
 
-    // Auto-detect country in real-time as user types
-    if (!showManual && digits.length >= 3) {
+    // Reset auto-detection when field is cleared
+    if (digits.length === 0) {
+      setAutoDetected(false);
+      setLocalNumber("");
+      return;
+    }
+
+    // Auto-detect country only once — prevents cascading re-detection
+    // after the prefix has already been stripped
+    if (!showManual && !autoDetected && digits.length >= 3) {
       const result = normalizePhone(digits);
       if (result.countryIdx !== countryIdx) {
         setCountryIdx(result.countryIdx);
-        // If prefix was stripped, update local number too
+        setAutoDetected(true);
         if (result.localNumber !== digits) {
           setLocalNumber(result.localNumber);
           return;
@@ -363,6 +373,7 @@ export default function StepClient({ data, update, accountId }: Props) {
                             setShowManual(false);
                             setShowDropdown(false);
                             setCountrySearch("");
+                            setAutoDetected(true); // manual selection — don't re-detect
                           }}
                           className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/50 transition-colors text-left ${
                             !showManual && countryIdx === idx ? "bg-secondary/30" : ""
