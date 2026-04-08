@@ -550,6 +550,34 @@ export default function StepClient({ data, update, accountId }: Props) {
           ))}
         </div>
       </div>
+
+      {/* Client type */}
+      <div>
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">Tipo de cliente</label>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { key: "principal", label: "👤 Cliente principal" },
+            { key: "familiar", label: "👨‍👩‍👧 Familiar/Derivado" },
+            { key: "peticionario", label: "🧑‍💼 Peticionario" },
+            { key: "referido", label: "⚖️ Referido por abogado" },
+          ].map(ct => {
+            const selected = data.client_type === ct.key;
+            return (
+              <button
+                key={ct.key}
+                onClick={() => update({ client_type: ct.key })}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm text-left transition-all ${
+                  selected
+                    ? "border-jarvis bg-jarvis/10 font-semibold text-jarvis"
+                    : "border-border text-muted-foreground hover:border-foreground/20"
+                }`}
+              >
+                {ct.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
