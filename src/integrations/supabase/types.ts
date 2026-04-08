@@ -1432,6 +1432,7 @@ export type Database = {
           i94_number: string | null
           id: string
           immigration_status: string | null
+          is_test: boolean
           last_name: string | null
           mailing_apt: string | null
           mailing_city: string | null
@@ -1480,6 +1481,7 @@ export type Database = {
           i94_number?: string | null
           id?: string
           immigration_status?: string | null
+          is_test?: boolean
           last_name?: string | null
           mailing_apt?: string | null
           mailing_city?: string | null
@@ -1528,6 +1530,7 @@ export type Database = {
           i94_number?: string | null
           id?: string
           immigration_status?: string | null
+          is_test?: boolean
           last_name?: string | null
           mailing_apt?: string | null
           mailing_city?: string | null
