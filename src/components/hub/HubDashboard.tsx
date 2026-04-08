@@ -376,7 +376,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
           <motion.div
             initial="hidden" animate="visible"
             variants={{ visible: { transition: { staggerChildren: 0.04, delayChildren: 0.12 } } }}
-            className="grid grid-cols-2 sm:grid-cols-3 gap-2.5"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
           >
             {[
               { label: "Buscar", icon: Search, action: "search", color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/20" },
