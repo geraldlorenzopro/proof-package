@@ -373,6 +373,7 @@ export default function StepClient({ data, update, accountId }: Props) {
                             setShowManual(false);
                             setShowDropdown(false);
                             setCountrySearch("");
+                            setAutoDetected(true); // manual selection — don't re-detect
                           }}
                           className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/50 transition-colors text-left ${
                             !showManual && countryIdx === idx ? "bg-secondary/30" : ""
