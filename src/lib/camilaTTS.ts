@@ -170,9 +170,9 @@ export function speakAsCamila(text: string): void {
   function speakChunks(voice: SpeechSynthesisVoice | null) {
     chunks.forEach((chunk, i) => {
       const utterance = new SpeechSynthesisUtterance(chunk);
-      utterance.lang = 'es-US';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.05;
+      utterance.lang = 'es-419';
+      utterance.rate = 0.97;
+      utterance.pitch = 1.1;
       utterance.volume = 1.0;
 
       if (voice) utterance.voice = voice;
