@@ -125,8 +125,34 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     }
   }, [messages.length, open]);
 
+  // ── TTS: speak when assistant finishes ──
+  useEffect(() => {
+    if (!voiceEnabled || isLoading) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.role === "assistant" && messages.length - 1 > lastSpokenRef.current) {
+      lastSpokenRef.current = messages.length - 1;
+      setSpeakingNow(true);
+      speakAsCamila(lastMsg.content);
+      // Poll for end of speech
+      const interval = setInterval(() => {
+        if (!isSpeaking()) {
+          setSpeakingNow(false);
+          clearInterval(interval);
+        }
+      }, 300);
+      return () => clearInterval(interval);
+    }
+  }, [messages, isLoading, voiceEnabled]);
+
+  // Stop speaking when panel closes
+  useEffect(() => {
+    if (!open) { stopSpeaking(); setSpeakingNow(false); }
+  }, [open]);
+
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
+    stopSpeaking(); // Stop any current speech
+    setSpeakingNow(false);
     const userMsg: Msg = { role: "user", content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
