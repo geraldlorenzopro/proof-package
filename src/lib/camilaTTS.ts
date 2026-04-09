@@ -32,25 +32,39 @@ function cleanForSpeech(text: string): string {
     .trim();
 }
 
-/** Get best Spanish voice available */
+/** Get best Latin American Spanish voice available */
 function getSpanishVoice(): SpeechSynthesisVoice | null {
   const voices = speechSynthesis.getVoices();
-  // Prefer female Spanish voices
-  const preferred = [
-    "Paulina",    // macOS/iOS Spanish
-    "Monica",     // Windows Spanish
-    "Google español", // Chrome
-    "Microsoft Sabina", // Edge
+  
+  // Priority 1: Latin American Spanish voices (es-MX, es-419, es-CO, es-AR, etc.)
+  const latamPriority = [
+    "Paulina",              // macOS es-MX — natural Mexican Spanish
+    "Jimena",               // macOS es-MX alternate
+    "Angelica",             // macOS es-MX
+    "Juan",                 // macOS es-MX male fallback
+    "Microsoft Sabina",     // Edge es-MX
+    "Microsoft Dalia",      // Edge es-MX Neural
+    "Google español de Estados Unidos", // Chrome es-US (Latin accent)
   ];
 
-  for (const name of preferred) {
+  for (const name of latamPriority) {
     const v = voices.find(v => v.name.includes(name));
     if (v) return v;
   }
 
-  // Fallback: any es-* voice, prefer female
-  const esVoices = voices.filter(v => v.lang.startsWith("es"));
-  return esVoices[0] || null;
+  // Priority 2: Any es-MX or es-419 or es-US voice
+  const latamVoice = voices.find(v => 
+    v.lang === "es-MX" || v.lang === "es-419" || v.lang === "es-US" || v.lang === "es-CO" || v.lang === "es-AR"
+  );
+  if (latamVoice) return latamVoice;
+
+  // Priority 3: Any es-* voice that is NOT es-ES (Spain sounds very different)
+  const nonSpainVoice = voices.find(v => v.lang.startsWith("es") && v.lang !== "es-ES");
+  if (nonSpainVoice) return nonSpainVoice;
+
+  // Last resort: any Spanish voice
+  const anyEs = voices.find(v => v.lang.startsWith("es"));
+  return anyEs || null;
 }
 
 /** Speak text aloud as Camila */
