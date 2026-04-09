@@ -13,8 +13,6 @@ function cleanForSpeech(text: string): string {
     .replace(/- /g, ". ")
     .replace(/\[(.+?)\]\(.+?\)/g, "$1")
     .replace(/[|─═┌┐└┘┬┴├┤]/g, "")
-    .replace(/\bboss\b/gi, "jefe")
-    .replace(/\bcrack\b/gi, "jefe")
     .replace(/\bok\b/gi, "está bien")
     .replace(/\bhey\b/gi, "hola")
     .replace(/\bhi\b/gi, "hola")
