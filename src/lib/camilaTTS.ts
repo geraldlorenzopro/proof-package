@@ -13,19 +13,43 @@ function cleanForSpeech(text: string): string {
     .replace(/- /g, ". ")             // list items → pause
     .replace(/\[(.+?)\]\(.+?\)/g, "$1") // links
     .replace(/[|─═┌┐└┘┬┴├┤]/g, "")   // table chars
-    // Remove ALL emojis universally
-    .replace(/[\u{1F600}-\u{1F64F}]/gu, "")  // emoticons
-    .replace(/[\u{1F300}-\u{1F5FF}]/gu, "")  // misc symbols
-    .replace(/[\u{1F680}-\u{1F6FF}]/gu, "")  // transport
-    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, "")  // flags
-    .replace(/[\u{2600}-\u{26FF}]/gu, "")    // misc symbols
-    .replace(/[\u{2700}-\u{27BF}]/gu, "")    // dingbats
-    .replace(/[\u{FE00}-\u{FE0F}]/gu, "")    // variation selectors
-    .replace(/[\u{1F900}-\u{1F9FF}]/gu, "")  // supplemental
-    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, "")  // chess symbols
-    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, "")  // symbols extended
-    .replace(/[\u{200D}]/gu, "")             // zero-width joiner
-    .replace(/[\u{20E3}]/gu, "")             // combining enclosing keycap
+    .replace(/\bboss\b/gi, "jefa")
+    .replace(/\bcrack\b/gi, "campeona")
+    .replace(/\bok\b/gi, "está bien")
+    .replace(/\bhey\b/gi, "ey")
+    .replace(/\bhi\b/gi, "hola")
+    .replace(/\bhello\b/gi, "hola")
+    .replace(/\bemail\b/gi, "correo")
+    .replace(/\blink\b/gi, "enlace")
+    .replace(/\bmeeting\b/gi, "reunión")
+    .replace(/\bdeadline\b/gi, "fecha límite")
+    .replace(/\bintake\b/gi, "formulario inicial")
+    .replace(/\bsummary\b/gi, "resumen")
+    .replace(/\bstatus\b/gi, "estado")
+    .replace(/\btask\b/gi, "tarea")
+    .replace(/\bpending\b/gi, "pendiente")
+    .replace(/\bcompleted\b/gi, "completado")
+    .replace(/\bin progress\b/gi, "en proceso")
+    .replace(/\bscheduled\b/gi, "programada")
+    .replace(/\bconfirmed\b/gi, "confirmada")
+    .replace(/\bcancelled\b/gi, "cancelada")
+    .replace(/\bno show\b/gi, "no asistió")
+    .replace(/\brescheduled\b/gi, "reprogramada")
+    .replace(/\bconsultation\b/gi, "consulta")
+    .replace(/\bvirtual office\b/gi, "oficina virtual")
+    .replace(/\bAI\b/g, "inteligencia artificial")
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, "")
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, "")
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, "")
+    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, "")
+    .replace(/[\u{2600}-\u{26FF}]/gu, "")
+    .replace(/[\u{2700}-\u{27BF}]/gu, "")
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, "")
+    .replace(/[\u{1F900}-\u{1F9FF}]/gu, "")
+    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, "")
+    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, "")
+    .replace(/[\u{200D}]/gu, "")
+    .replace(/[\u{20E3}]/gu, "")
     .replace(/\n{2,}/g, ". ")
     .replace(/\n/g, ". ")
     .replace(/\s{2,}/g, " ")
@@ -35,16 +59,14 @@ function cleanForSpeech(text: string): string {
 /** Get best Latin American Spanish voice available */
 function getSpanishVoice(): SpeechSynthesisVoice | null {
   const voices = speechSynthesis.getVoices();
-  
-  // Priority 1: Latin American Spanish voices (es-MX, es-419, es-CO, es-AR, etc.)
+
   const latamPriority = [
-    "Paulina",              // macOS es-MX — natural Mexican Spanish
-    "Jimena",               // macOS es-MX alternate
-    "Angelica",             // macOS es-MX
-    "Juan",                 // macOS es-MX male fallback
-    "Microsoft Sabina",     // Edge es-MX
-    "Microsoft Dalia",      // Edge es-MX Neural
-    "Google español de Estados Unidos", // Chrome es-US (Latin accent)
+    "Paulina",
+    "Jimena",
+    "Angelica",
+    "Microsoft Sabina",
+    "Microsoft Dalia",
+    "Google español de Estados Unidos",
   ];
 
   for (const name of latamPriority) {
@@ -52,17 +74,14 @@ function getSpanishVoice(): SpeechSynthesisVoice | null {
     if (v) return v;
   }
 
-  // Priority 2: Any es-MX or es-419 or es-US voice
-  const latamVoice = voices.find(v => 
-    v.lang === "es-MX" || v.lang === "es-419" || v.lang === "es-US" || v.lang === "es-CO" || v.lang === "es-AR"
+  const latamVoice = voices.find(v =>
+    ["es-MX", "es-419", "es-DO", "es-PR", "es-CO", "es-VE", "es-AR"].includes(v.lang)
   );
   if (latamVoice) return latamVoice;
 
-  // Priority 3: Any es-* voice that is NOT es-ES (Spain sounds very different)
   const nonSpainVoice = voices.find(v => v.lang.startsWith("es") && v.lang !== "es-ES");
   if (nonSpainVoice) return nonSpainVoice;
 
-  // Last resort: any Spanish voice
   const anyEs = voices.find(v => v.lang.startsWith("es"));
   return anyEs || null;
 }
@@ -71,20 +90,18 @@ function getSpanishVoice(): SpeechSynthesisVoice | null {
 export function speakAsCamila(text: string): void {
   if (!("speechSynthesis" in window)) return;
 
-  // Cancel any ongoing speech
   stopSpeaking();
 
   const clean = cleanForSpeech(text);
   if (!clean) return;
 
-  // Split into chunks if too long (browsers have limits ~200-300 chars)
   const chunks = splitIntoChunks(clean, 250);
 
   chunks.forEach((chunk, i) => {
     const utterance = new SpeechSynthesisUtterance(chunk);
-    utterance.lang = "es-MX";
-    utterance.rate = 1.05;   // Slightly faster for natural feel
-    utterance.pitch = 1.1;   // Slightly higher for feminine voice
+    utterance.lang = "es-DO";
+    utterance.rate = 0.96;
+    utterance.pitch = 0.98;
     utterance.volume = 1.0;
 
     const voice = getSpanishVoice();
