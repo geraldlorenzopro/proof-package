@@ -303,16 +303,33 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                     <div>
                       <h3 className="text-sm font-bold text-foreground tracking-tight">Camila</h3>
                       <p className="text-[10px] text-jarvis/60 font-mono uppercase tracking-[0.2em]">
-                        {isLoading ? "Procesando..." : "Oficina Virtual AI"}
+                        {speakingNow ? "🔊 Hablando..." : isLoading ? "Procesando..." : "Oficina Virtual AI"}
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setOpen(false)}
-                    className="w-8 h-8 rounded-xl border border-border/30 bg-background/50 hover:bg-background flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {/* Voice output toggle */}
+                    <button
+                      onClick={() => {
+                        if (speakingNow) { stopSpeaking(); setSpeakingNow(false); }
+                        setVoiceEnabled(v => !v);
+                      }}
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                        voiceEnabled
+                          ? "text-jarvis bg-jarvis/10 border border-jarvis/20"
+                          : "text-muted-foreground/40 hover:text-muted-foreground border border-transparent"
+                      }`}
+                      title={voiceEnabled ? "Desactivar voz" : "Activar voz"}
+                    >
+                      {voiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      onClick={() => setOpen(false)}
+                      className="w-8 h-8 rounded-xl border border-border/30 bg-background/50 hover:bg-background flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
