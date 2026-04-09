@@ -204,7 +204,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     if (!SpeechRecognition) return;
 
     const recognition = new SpeechRecognition();
-    recognition.lang = "es-US";
+    recognition.lang = "es-419";
     recognition.interimResults = true;
     recognition.continuous = false;
     recognitionRef.current = recognition;
