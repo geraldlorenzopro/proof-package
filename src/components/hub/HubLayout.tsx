@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import HubCreditsWidget from "./HubCreditsWidget";
+import CamilaFloatingPanel from "./CamilaFloatingPanel";
 
 interface Props {
   children: ReactNode;
@@ -165,6 +166,11 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
           </main>
         </div>
       </div>
+
+      {/* Camila Floating Panel — accessible from any Hub page */}
+      {isHubSection && accountId && (
+        <CamilaFloatingPanel accountId={accountId} />
+      )}
     </div>
   );
 }
