@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Send, Mic, MicOff, Bot } from "lucide-react";
+import { Sparkles, Send, Mic, MicOff, Bot, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { speakAsCamila, stopSpeaking, isSpeaking } from "@/lib/camilaTTS";
 import HubAgentTeam from "@/components/hub/HubAgentTeam";
 import {
   FileText, Clipboard, Globe, Shield, CheckSquare,
@@ -75,9 +76,12 @@ export default function HubAiPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [speakingNow, setSpeakingNow] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
+  const lastSpokenRef = useRef<number>(-1);
 
   const accountId = (() => {
     try {
