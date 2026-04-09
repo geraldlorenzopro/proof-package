@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Send, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { speakAsCamila, stopSpeaking, isSpeaking } from "@/lib/camilaTTS";
+import { speakAsCamila, stopSpeaking, isSpeaking, logVocesDiagnostico } from "@/lib/camilaTTS";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -102,6 +102,11 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
   const recognitionRef = useRef<any>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastSpokenRef = useRef<number>(-1);
+
+  // Diagnostics: log available Spanish voices
+  useEffect(() => {
+    logVocesDiagnostico();
+  }, []);
 
   // Auto-scroll
   useEffect(() => {

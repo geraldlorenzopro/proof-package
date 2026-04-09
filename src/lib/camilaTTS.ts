@@ -2,7 +2,6 @@
 
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 
-/** Strip markdown formatting for cleaner speech */
 const anglicisms: Record<string, string> = {
   'deadline': 'fecha límite',
   'deadlines': 'fechas límite',
@@ -41,7 +40,6 @@ const anglicisms: Record<string, string> = {
 
 function cleanForSpeech(text: string): string {
   let result = text
-    // Strip markdown
     .replace(/#{1,6}\s*/g, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")
@@ -49,7 +47,8 @@ function cleanForSpeech(text: string): string {
     .replace(/```[\s\S]*?```/g, "")
     .replace(/- /g, ". ")
     .replace(/\[(.+?)\]\(.+?\)/g, "$1")
-    .replace(/[|─═┌┐└┘┬┴├┤]/g, "");
+    .replace(/[|─═┌┐└┘┬┴├┤]/g, "")
+    .replace(/[•·]\s/g, "");
 
   // Apply anglicism replacements case-insensitively
   for (const [eng, esp] of Object.entries(anglicisms)) {
@@ -79,36 +78,64 @@ function cleanForSpeech(text: string): string {
   return result;
 }
 
-const LATAM_SPANISH_LANGS = ["es-DO", "es-PR", "es-419", "es-MX", "es-CO", "es-VE", "es-AR", "es-CL", "es-PE", "es-EC"];
+/** Select the best available Spanish voice with priority-based search */
+function seleccionarVoz(): SpeechSynthesisVoice | null {
+  const voces = speechSynthesis.getVoices();
+  if (voces.length === 0) return null;
 
-/** Get best Latin American Spanish voice available */
-function getSpanishVoice(): SpeechSynthesisVoice | null {
-  const voices = speechSynthesis.getVoices();
-  const preferredNames = [
-    "Paulina",
-    "Jimena",
-    "Angelica",
-    "Microsoft Dalia",
-    "Microsoft Sabina",
-    "Google español",
+  // Priority order: es-419 → es-MX → es-US → es-DO → es-PR → es-CO → any es-XX → any es
+  const prioridades: ((v: SpeechSynthesisVoice) => boolean)[] = [
+    (v) => v.lang === 'es-419',
+    (v) => v.lang === 'es-MX',
+    (v) => v.lang === 'es-US',
+    (v) => v.lang === 'es-DO',
+    (v) => v.lang === 'es-PR',
+    (v) => v.lang === 'es-CO',
+    (v) => v.lang === 'es-VE',
+    (v) => v.lang === 'es-AR',
+    (v) => v.lang.startsWith('es-') && v.lang !== 'es-ES',
+    (v) => v.lang.startsWith('es'),
   ];
 
-  for (const lang of LATAM_SPANISH_LANGS) {
-    const exactLangVoice = voices.find((v) => v.lang === lang && preferredNames.some((name) => v.name.includes(name)));
-    if (exactLangVoice) return exactLangVoice;
+  for (const prioridad of prioridades) {
+    const voz = voces.find(prioridad);
+    if (voz) {
+      console.log('Camila TTS usando voz:', voz.name, voz.lang);
+      return voz;
+    }
   }
 
-  for (const lang of LATAM_SPANISH_LANGS) {
-    const exactLangVoice = voices.find((v) => v.lang === lang);
-    if (exactLangVoice) return exactLangVoice;
+  // Last resort: search by name
+  const porNombre = voces.find(v => {
+    const name = v.name.toLowerCase();
+    return name.includes('spanish') ||
+      name.includes('español') ||
+      name.includes('paulina') ||
+      name.includes('monica') ||
+      name.includes('mónica') ||
+      name.includes('jorge') ||
+      name.includes('diego') ||
+      name.includes('juan') ||
+      name.includes('lucia') ||
+      name.includes('lucía') ||
+      name.includes('rosa') ||
+      name.includes('carlos') ||
+      name.includes('jimena') ||
+      name.includes('angelica') ||
+      name.includes('sabina') ||
+      name.includes('dalia');
+  });
+
+  if (porNombre) {
+    console.log('Camila TTS por nombre:', porNombre.name, porNombre.lang);
+    return porNombre;
   }
 
-  const genericLatam = voices.find((v) =>
-    v.lang.startsWith("es") && v.lang !== "es-ES" && !v.name.toLowerCase().includes("spain")
+  console.warn(
+    'No se encontró voz en español. Voces disponibles:',
+    voces.map(v => `${v.name} (${v.lang})`)
   );
-  if (genericLatam) return genericLatam;
-
-  return voices.find((v) => v.lang.startsWith("es")) || null;
+  return null;
 }
 
 /** Speak text aloud as Camila */
@@ -121,21 +148,46 @@ export function speakAsCamila(text: string): void {
   if (!clean) return;
 
   const chunks = splitIntoChunks(clean, 250);
-  const voice = getSpanishVoice();
 
-  chunks.forEach((chunk, i) => {
-    const utterance = new SpeechSynthesisUtterance(chunk);
-    utterance.lang = voice?.lang || "es-419";
-    utterance.rate = 0.92;
-    utterance.pitch = 0.95;
-    utterance.volume = 1.0;
+  function speakChunks(voice: SpeechSynthesisVoice | null) {
+    chunks.forEach((chunk, i) => {
+      const utterance = new SpeechSynthesisUtterance(chunk);
+      utterance.lang = 'es-US';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.05;
+      utterance.volume = 1.0;
 
-    if (voice) utterance.voice = voice;
+      if (voice) utterance.voice = voice;
 
-    if (i === 0) currentUtterance = utterance;
+      if (i === 0) currentUtterance = utterance;
 
-    speechSynthesis.speak(utterance);
-  });
+      speechSynthesis.speak(utterance);
+    });
+  }
+
+  // Try to get voice immediately
+  const vozInmediata = seleccionarVoz();
+  if (vozInmediata) {
+    speakChunks(vozInmediata);
+  } else {
+    // Voices may load async — wait for them
+    const onVoicesChanged = () => {
+      const voz = seleccionarVoz();
+      speakChunks(voz);
+      speechSynthesis.onvoiceschanged = cachedOnVoicesChanged;
+    };
+    const cachedOnVoicesChanged = speechSynthesis.onvoiceschanged;
+    speechSynthesis.onvoiceschanged = onVoicesChanged;
+
+    // Safety timeout — speak even without Spanish voice after 1s
+    setTimeout(() => {
+      if (!speechSynthesis.speaking) {
+        const voz = seleccionarVoz();
+        speakChunks(voz);
+        speechSynthesis.onvoiceschanged = cachedOnVoicesChanged;
+      }
+    }, 1000);
+  }
 }
 
 /** Stop current speech */
@@ -154,7 +206,6 @@ function splitIntoChunks(text: string, maxLen: number): string[] {
   let remaining = text;
 
   while (remaining.length > maxLen) {
-    // Find last sentence break before maxLen
     let splitAt = remaining.lastIndexOf(". ", maxLen);
     if (splitAt === -1 || splitAt < maxLen / 2) {
       splitAt = remaining.lastIndexOf(", ", maxLen);
@@ -172,8 +223,34 @@ function splitIntoChunks(text: string, maxLen: number): string[] {
   return chunks;
 }
 
-// Preload voices (some browsers load async)
-if ("speechSynthesis" in window) {
+/** Log available Spanish voices for diagnostics */
+export function logVocesDiagnostico(): void {
+  if (!("speechSynthesis" in window)) {
+    console.warn('SpeechSynthesis no disponible en este navegador');
+    return;
+  }
+
+  function logVoces() {
+    const voces = speechSynthesis.getVoices();
+    const espanol = voces.filter(v => v.lang.startsWith('es'));
+    console.log(
+      'Camila TTS — Voces en español disponibles:',
+      espanol.map(v => `${v.name} (${v.lang})`)
+    );
+    console.log('Total de voces en el sistema:', voces.length);
+  }
+
+  if (speechSynthesis.getVoices().length > 0) {
+    logVoces();
+  } else {
+    speechSynthesis.onvoiceschanged = () => {
+      logVoces();
+    };
+  }
+}
+
+// Preload voices
+if (typeof window !== 'undefined' && "speechSynthesis" in window) {
   speechSynthesis.getVoices();
   speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
 }
