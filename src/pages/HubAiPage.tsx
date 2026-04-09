@@ -159,7 +159,7 @@ export default function HubAiPage() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
     const r = new SR();
-    r.lang = "es-US";
+    r.lang = "es-419";
     r.interimResults = true;
     r.continuous = false;
     recognitionRef.current = r;

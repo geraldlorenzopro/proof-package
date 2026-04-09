@@ -5,18 +5,16 @@ let currentUtterance: SpeechSynthesisUtterance | null = null;
 /** Strip markdown formatting for cleaner speech */
 function cleanForSpeech(text: string): string {
   return text
-    .replace(/#{1,6}\s*/g, "")        // headers
-    .replace(/\*\*(.+?)\*\*/g, "$1")  // bold
-    .replace(/\*(.+?)\*/g, "$1")      // italic
-    .replace(/`(.+?)`/g, "$1")        // inline code
-    .replace(/```[\s\S]*?```/g, "")   // code blocks
-    .replace(/- /g, ". ")             // list items → pause
-    .replace(/\[(.+?)\]\(.+?\)/g, "$1") // links
-    .replace(/[|─═┌┐└┘┬┴├┤]/g, "")   // table chars
-    .replace(/\bboss\b/gi, "jefa")
-    .replace(/\bcrack\b/gi, "campeona")
+    .replace(/#{1,6}\s*/g, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/`(.+?)`/g, "$1")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/- /g, ". ")
+    .replace(/\[(.+?)\]\(.+?\)/g, "$1")
+    .replace(/[|─═┌┐└┘┬┴├┤]/g, "")
     .replace(/\bok\b/gi, "está bien")
-    .replace(/\bhey\b/gi, "ey")
+    .replace(/\bhey\b/gi, "hola")
     .replace(/\bhi\b/gi, "hola")
     .replace(/\bhello\b/gi, "hola")
     .replace(/\bemail\b/gi, "correo")
@@ -37,7 +35,7 @@ function cleanForSpeech(text: string): string {
     .replace(/\brescheduled\b/gi, "reprogramada")
     .replace(/\bconsultation\b/gi, "consulta")
     .replace(/\bvirtual office\b/gi, "oficina virtual")
-    .replace(/\bAI\b/g, "inteligencia artificial")
+    .replace(/\bAI\b/g, "asistente")
     .replace(/[\u{1F600}-\u{1F64F}]/gu, "")
     .replace(/[\u{1F300}-\u{1F5FF}]/gu, "")
     .replace(/[\u{1F680}-\u{1F6FF}]/gu, "")
@@ -56,34 +54,36 @@ function cleanForSpeech(text: string): string {
     .trim();
 }
 
+const LATAM_SPANISH_LANGS = ["es-DO", "es-PR", "es-419", "es-MX", "es-CO", "es-VE", "es-AR", "es-CL", "es-PE", "es-EC"];
+
 /** Get best Latin American Spanish voice available */
 function getSpanishVoice(): SpeechSynthesisVoice | null {
   const voices = speechSynthesis.getVoices();
-
-  const latamPriority = [
+  const preferredNames = [
     "Paulina",
     "Jimena",
     "Angelica",
-    "Microsoft Sabina",
     "Microsoft Dalia",
-    "Google español de Estados Unidos",
+    "Microsoft Sabina",
+    "Google español",
   ];
 
-  for (const name of latamPriority) {
-    const v = voices.find(v => v.name.includes(name));
-    if (v) return v;
+  for (const lang of LATAM_SPANISH_LANGS) {
+    const exactLangVoice = voices.find((v) => v.lang === lang && preferredNames.some((name) => v.name.includes(name)));
+    if (exactLangVoice) return exactLangVoice;
   }
 
-  const latamVoice = voices.find(v =>
-    ["es-MX", "es-419", "es-DO", "es-PR", "es-CO", "es-VE", "es-AR"].includes(v.lang)
+  for (const lang of LATAM_SPANISH_LANGS) {
+    const exactLangVoice = voices.find((v) => v.lang === lang);
+    if (exactLangVoice) return exactLangVoice;
+  }
+
+  const genericLatam = voices.find((v) =>
+    v.lang.startsWith("es") && v.lang !== "es-ES" && !v.name.toLowerCase().includes("spain")
   );
-  if (latamVoice) return latamVoice;
+  if (genericLatam) return genericLatam;
 
-  const nonSpainVoice = voices.find(v => v.lang.startsWith("es") && v.lang !== "es-ES");
-  if (nonSpainVoice) return nonSpainVoice;
-
-  const anyEs = voices.find(v => v.lang.startsWith("es"));
-  return anyEs || null;
+  return voices.find((v) => v.lang.startsWith("es")) || null;
 }
 
 /** Speak text aloud as Camila */
@@ -96,15 +96,15 @@ export function speakAsCamila(text: string): void {
   if (!clean) return;
 
   const chunks = splitIntoChunks(clean, 250);
+  const voice = getSpanishVoice();
 
   chunks.forEach((chunk, i) => {
     const utterance = new SpeechSynthesisUtterance(chunk);
-    utterance.lang = "es-DO";
-    utterance.rate = 0.96;
-    utterance.pitch = 0.98;
+    utterance.lang = voice?.lang || "es-419";
+    utterance.rate = 0.92;
+    utterance.pitch = 0.95;
     utterance.volume = 1.0;
 
-    const voice = getSpanishVoice();
     if (voice) utterance.voice = voice;
 
     if (i === 0) currentUtterance = utterance;
