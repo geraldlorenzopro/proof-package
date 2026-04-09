@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Send, Mic, MicOff, Volume2 } from "lucide-react";
+import { Sparkles, X, Send, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { speakAsCamila, stopSpeaking, isSpeaking } from "@/lib/camilaTTS";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -93,10 +94,13 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [pulseRing, setPulseRing] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [speakingNow, setSpeakingNow] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const lastSpokenRef = useRef<number>(-1);
 
   // Auto-scroll
   useEffect(() => {
