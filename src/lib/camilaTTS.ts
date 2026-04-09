@@ -3,8 +3,45 @@
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 
 /** Strip markdown formatting for cleaner speech */
+const anglicisms: Record<string, string> = {
+  'deadline': 'fecha límite',
+  'deadlines': 'fechas límite',
+  'meeting': 'reunión',
+  'meetings': 'reuniones',
+  'follow-up': 'seguimiento',
+  'follow up': 'seguimiento',
+  'update': 'actualización',
+  'updates': 'actualizaciones',
+  'email': 'correo',
+  'emails': 'correos',
+  'schedule': 'agenda',
+  'task': 'tarea',
+  'tasks': 'tareas',
+  'client': 'cliente',
+  'clients': 'clientes',
+  'status': 'estado',
+  'pending': 'pendiente',
+  'billing': 'facturación',
+  'overdue': 'vencido',
+  'dashboard': 'panel',
+  'link': 'enlace',
+  'links': 'enlaces',
+  'ticket': 'expediente',
+  'tickets': 'expedientes',
+  'issue': 'problema',
+  'issues': 'problemas',
+  'ok': 'bien',
+  'okay': 'entendido',
+  'check': 'verificar',
+  'chat': 'conversación',
+  'login': 'acceso',
+  'case': 'caso',
+  'cases': 'casos',
+};
+
 function cleanForSpeech(text: string): string {
-  return text
+  let result = text
+    // Strip markdown
     .replace(/#{1,6}\s*/g, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")
@@ -12,30 +49,16 @@ function cleanForSpeech(text: string): string {
     .replace(/```[\s\S]*?```/g, "")
     .replace(/- /g, ". ")
     .replace(/\[(.+?)\]\(.+?\)/g, "$1")
-    .replace(/[|─═┌┐└┘┬┴├┤]/g, "")
-    .replace(/\bok\b/gi, "está bien")
-    .replace(/\bhey\b/gi, "hola")
-    .replace(/\bhi\b/gi, "hola")
-    .replace(/\bhello\b/gi, "hola")
-    .replace(/\bemail\b/gi, "correo")
-    .replace(/\blink\b/gi, "enlace")
-    .replace(/\bmeeting\b/gi, "reunión")
-    .replace(/\bdeadline\b/gi, "fecha límite")
-    .replace(/\bintake\b/gi, "formulario inicial")
-    .replace(/\bsummary\b/gi, "resumen")
-    .replace(/\bstatus\b/gi, "estado")
-    .replace(/\btask\b/gi, "tarea")
-    .replace(/\bpending\b/gi, "pendiente")
-    .replace(/\bcompleted\b/gi, "completado")
-    .replace(/\bin progress\b/gi, "en proceso")
-    .replace(/\bscheduled\b/gi, "programada")
-    .replace(/\bconfirmed\b/gi, "confirmada")
-    .replace(/\bcancelled\b/gi, "cancelada")
-    .replace(/\bno show\b/gi, "no asistió")
-    .replace(/\brescheduled\b/gi, "reprogramada")
-    .replace(/\bconsultation\b/gi, "consulta")
-    .replace(/\bvirtual office\b/gi, "oficina virtual")
-    .replace(/\bAI\b/g, "asistente")
+    .replace(/[|─═┌┐└┘┬┴├┤]/g, "");
+
+  // Apply anglicism replacements case-insensitively
+  for (const [eng, esp] of Object.entries(anglicisms)) {
+    const escaped = eng.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    result = result.replace(new RegExp(`\\b${escaped}\\b`, 'gi'), esp);
+  }
+
+  // Strip emojis
+  result = result
     .replace(/[\u{1F600}-\u{1F64F}]/gu, "")
     .replace(/[\u{1F300}-\u{1F5FF}]/gu, "")
     .replace(/[\u{1F680}-\u{1F6FF}]/gu, "")
@@ -52,6 +75,8 @@ function cleanForSpeech(text: string): string {
     .replace(/\n/g, ". ")
     .replace(/\s{2,}/g, " ")
     .trim();
+
+  return result;
 }
 
 const LATAM_SPANISH_LANGS = ["es-DO", "es-PR", "es-419", "es-MX", "es-CO", "es-VE", "es-AR", "es-CL", "es-PE", "es-EC"];
