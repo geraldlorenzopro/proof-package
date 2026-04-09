@@ -154,39 +154,12 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
   if (!open) { stopSpeaking(); setSpeakingNow(false); setConversationMode(false); }
   }, [open]);
 
-  // ── Start listening (reusable) ──
-  const startListening = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "es-US";
-    recognition.interimResults = true;
-    recognition.continuous = false;
-    recognitionRef.current = recognition;
-
-    recognition.onresult = (event: any) => {
-      let transcript = "";
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      setInput(transcript);
-      if (event.results[0].isFinal) {
-        setIsListening(false);
-        send(transcript);
-      }
-    };
-
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-
-    recognition.start();
-    setIsListening(true);
-  }, [send]);
+  // Use ref to hold send function for startListening
+  const sendRef = useRef<(text: string) => void>(() => {});
 
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
-    stopSpeaking(); // Stop any current speech
+    stopSpeaking();
     setSpeakingNow(false);
     const userMsg: Msg = { role: "user", content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
@@ -222,19 +195,13 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     }
   }, [messages, isLoading, accountId]);
 
-  // Voice input
-  const toggleVoice = useCallback(() => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
+  // Keep ref in sync
+  useEffect(() => { sendRef.current = send; }, [send]);
 
+  // ── Start listening (reusable) ──
+  const startListening = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Tu navegador no soporta reconocimiento de voz");
-      return;
-    }
+    if (!SpeechRecognition) return;
 
     const recognition = new SpeechRecognition();
     recognition.lang = "es-US";
@@ -250,8 +217,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
       setInput(transcript);
       if (event.results[0].isFinal) {
         setIsListening(false);
-        // Auto-send on final
-        send(transcript);
+        sendRef.current(transcript);
       }
     };
 
@@ -260,7 +226,28 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
 
     recognition.start();
     setIsListening(true);
-  }, [isListening, send]);
+  }, []);
+
+  // Voice toggle — activates conversation mode
+  const toggleVoice = useCallback(() => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      setConversationMode(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Tu navegador no soporta reconocimiento de voz");
+      return;
+    }
+
+    // Enable conversation mode + voice output
+    setConversationMode(true);
+    setVoiceEnabled(true);
+    startListening();
+  }, [isListening, startListening]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
