@@ -194,19 +194,36 @@ export default function HubAiPage() {
           }}
         >
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-jarvis/40 to-transparent" />
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-jarvis/25 to-jarvis/5 border border-jarvis/30 flex items-center justify-center shadow-[0_0_20px_hsl(195_100%_50%/0.15)]">
-                <Sparkles className="w-5 h-5 text-jarvis" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br from-jarvis/25 to-jarvis/5 border border-jarvis/30 flex items-center justify-center shadow-[0_0_20px_hsl(195_100%_50%/0.15)] ${speakingNow ? "animate-pulse" : ""}`}>
+                  <Sparkles className="w-5 h-5 text-jarvis" />
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-background" />
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-background" />
+              <div>
+                <h2 className="text-base font-bold text-foreground tracking-tight">Camila</h2>
+                <p className="text-[10px] text-jarvis/60 font-mono uppercase tracking-[0.2em]">
+                  {speakingNow ? "🔊 Hablando..." : isLoading ? "● Procesando consulta..." : "● Online · Oficina Virtual AI"}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-base font-bold text-foreground tracking-tight">Camila</h2>
-              <p className="text-[10px] text-jarvis/60 font-mono uppercase tracking-[0.2em]">
-                {isLoading ? "● Procesando consulta..." : "● Online · Oficina Virtual AI"}
-              </p>
-            </div>
+            {/* Voice toggle */}
+            <button
+              onClick={() => {
+                if (speakingNow) { stopSpeaking(); setSpeakingNow(false); }
+                setVoiceEnabled(v => !v);
+              }}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                voiceEnabled
+                  ? "text-jarvis bg-jarvis/10 border border-jarvis/20 hover:bg-jarvis/15"
+                  : "text-muted-foreground/40 hover:text-muted-foreground border border-border/30"
+              }`}
+              title={voiceEnabled ? "Desactivar respuesta por voz" : "Activar respuesta por voz"}
+            >
+              {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 
