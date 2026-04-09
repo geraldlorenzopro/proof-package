@@ -13,12 +13,22 @@ function cleanForSpeech(text: string): string {
     .replace(/- /g, ". ")             // list items → pause
     .replace(/\[(.+?)\]\(.+?\)/g, "$1") // links
     .replace(/[|─═┌┐└┘┬┴├┤]/g, "")   // table chars
-    .replace(/\n{2,}/g, ". ")         // double newlines
-    .replace(/\n/g, ". ")             // single newlines
-    .replace(/\s{2,}/g, " ")          // extra spaces
-    .replace(/⚠️/g, "Atención: ")
-    .replace(/✅/g, "")
-    .replace(/📋|📊|📅|👋|🔴|🟢|🟡/g, "")
+    // Remove ALL emojis universally
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, "")  // emoticons
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, "")  // misc symbols
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, "")  // transport
+    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, "")  // flags
+    .replace(/[\u{2600}-\u{26FF}]/gu, "")    // misc symbols
+    .replace(/[\u{2700}-\u{27BF}]/gu, "")    // dingbats
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, "")    // variation selectors
+    .replace(/[\u{1F900}-\u{1F9FF}]/gu, "")  // supplemental
+    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, "")  // chess symbols
+    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, "")  // symbols extended
+    .replace(/[\u{200D}]/gu, "")             // zero-width joiner
+    .replace(/[\u{20E3}]/gu, "")             // combining enclosing keycap
+    .replace(/\n{2,}/g, ". ")
+    .replace(/\n/g, ". ")
+    .replace(/\s{2,}/g, " ")
     .trim();
 }
 
