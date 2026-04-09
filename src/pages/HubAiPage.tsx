@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Send, Mic, MicOff, Bot } from "lucide-react";
+import { Sparkles, Send, Mic, MicOff, Bot, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { speakAsCamila, stopSpeaking, isSpeaking } from "@/lib/camilaTTS";
 import HubAgentTeam from "@/components/hub/HubAgentTeam";
 import {
   FileText, Clipboard, Globe, Shield, CheckSquare,
@@ -75,9 +76,12 @@ export default function HubAiPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [speakingNow, setSpeakingNow] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
+  const lastSpokenRef = useRef<number>(-1);
 
   const accountId = (() => {
     try {
@@ -97,8 +101,25 @@ export default function HubAiPage() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
+  // ── TTS: speak when assistant finishes ──
+  useEffect(() => {
+    if (!voiceEnabled || isLoading) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.role === "assistant" && messages.length - 1 > lastSpokenRef.current) {
+      lastSpokenRef.current = messages.length - 1;
+      setSpeakingNow(true);
+      speakAsCamila(lastMsg.content);
+      const interval = setInterval(() => {
+        if (!isSpeaking()) { setSpeakingNow(false); clearInterval(interval); }
+      }, 300);
+      return () => clearInterval(interval);
+    }
+  }, [messages, isLoading, voiceEnabled]);
+
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading || !accountId) return;
+    stopSpeaking();
+    setSpeakingNow(false);
     const userMsg: Msg = { role: "user", content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
@@ -173,19 +194,36 @@ export default function HubAiPage() {
           }}
         >
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-jarvis/40 to-transparent" />
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-jarvis/25 to-jarvis/5 border border-jarvis/30 flex items-center justify-center shadow-[0_0_20px_hsl(195_100%_50%/0.15)]">
-                <Sparkles className="w-5 h-5 text-jarvis" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br from-jarvis/25 to-jarvis/5 border border-jarvis/30 flex items-center justify-center shadow-[0_0_20px_hsl(195_100%_50%/0.15)] ${speakingNow ? "animate-pulse" : ""}`}>
+                  <Sparkles className="w-5 h-5 text-jarvis" />
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-background" />
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-background" />
+              <div>
+                <h2 className="text-base font-bold text-foreground tracking-tight">Camila</h2>
+                <p className="text-[10px] text-jarvis/60 font-mono uppercase tracking-[0.2em]">
+                  {speakingNow ? "🔊 Hablando..." : isLoading ? "● Procesando consulta..." : "● Online · Oficina Virtual AI"}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-base font-bold text-foreground tracking-tight">Camila</h2>
-              <p className="text-[10px] text-jarvis/60 font-mono uppercase tracking-[0.2em]">
-                {isLoading ? "● Procesando consulta..." : "● Online · Oficina Virtual AI"}
-              </p>
-            </div>
+            {/* Voice toggle */}
+            <button
+              onClick={() => {
+                if (speakingNow) { stopSpeaking(); setSpeakingNow(false); }
+                setVoiceEnabled(v => !v);
+              }}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                voiceEnabled
+                  ? "text-jarvis bg-jarvis/10 border border-jarvis/20 hover:bg-jarvis/15"
+                  : "text-muted-foreground/40 hover:text-muted-foreground border border-border/30"
+              }`}
+              title={voiceEnabled ? "Desactivar respuesta por voz" : "Activar respuesta por voz"}
+            >
+              {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 

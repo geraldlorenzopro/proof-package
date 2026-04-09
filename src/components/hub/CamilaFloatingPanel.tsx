@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Send, Mic, MicOff, Volume2 } from "lucide-react";
+import { Sparkles, X, Send, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { speakAsCamila, stopSpeaking, isSpeaking } from "@/lib/camilaTTS";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -93,10 +94,13 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [pulseRing, setPulseRing] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [speakingNow, setSpeakingNow] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const lastSpokenRef = useRef<number>(-1);
 
   // Auto-scroll
   useEffect(() => {
@@ -121,8 +125,34 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     }
   }, [messages.length, open]);
 
+  // ── TTS: speak when assistant finishes ──
+  useEffect(() => {
+    if (!voiceEnabled || isLoading) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.role === "assistant" && messages.length - 1 > lastSpokenRef.current) {
+      lastSpokenRef.current = messages.length - 1;
+      setSpeakingNow(true);
+      speakAsCamila(lastMsg.content);
+      // Poll for end of speech
+      const interval = setInterval(() => {
+        if (!isSpeaking()) {
+          setSpeakingNow(false);
+          clearInterval(interval);
+        }
+      }, 300);
+      return () => clearInterval(interval);
+    }
+  }, [messages, isLoading, voiceEnabled]);
+
+  // Stop speaking when panel closes
+  useEffect(() => {
+    if (!open) { stopSpeaking(); setSpeakingNow(false); }
+  }, [open]);
+
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
+    stopSpeaking(); // Stop any current speech
+    setSpeakingNow(false);
     const userMsg: Msg = { role: "user", content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
@@ -273,16 +303,33 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                     <div>
                       <h3 className="text-sm font-bold text-foreground tracking-tight">Camila</h3>
                       <p className="text-[10px] text-jarvis/60 font-mono uppercase tracking-[0.2em]">
-                        {isLoading ? "Procesando..." : "Oficina Virtual AI"}
+                        {speakingNow ? "🔊 Hablando..." : isLoading ? "Procesando..." : "Oficina Virtual AI"}
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setOpen(false)}
-                    className="w-8 h-8 rounded-xl border border-border/30 bg-background/50 hover:bg-background flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {/* Voice output toggle */}
+                    <button
+                      onClick={() => {
+                        if (speakingNow) { stopSpeaking(); setSpeakingNow(false); }
+                        setVoiceEnabled(v => !v);
+                      }}
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                        voiceEnabled
+                          ? "text-jarvis bg-jarvis/10 border border-jarvis/20"
+                          : "text-muted-foreground/40 hover:text-muted-foreground border border-transparent"
+                      }`}
+                      title={voiceEnabled ? "Desactivar voz" : "Activar voz"}
+                    >
+                      {voiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      onClick={() => setOpen(false)}
+                      className="w-8 h-8 rounded-xl border border-border/30 bg-background/50 hover:bg-background flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
