@@ -101,6 +101,21 @@ export default function HubAiPage() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
+  // ── TTS: speak when assistant finishes ──
+  useEffect(() => {
+    if (!voiceEnabled || isLoading) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.role === "assistant" && messages.length - 1 > lastSpokenRef.current) {
+      lastSpokenRef.current = messages.length - 1;
+      setSpeakingNow(true);
+      speakAsCamila(lastMsg.content);
+      const interval = setInterval(() => {
+        if (!isSpeaking()) { setSpeakingNow(false); clearInterval(interval); }
+      }, 300);
+      return () => clearInterval(interval);
+    }
+  }, [messages, isLoading, voiceEnabled]);
+
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading || !accountId) return;
     const userMsg: Msg = { role: "user", content: text.trim() };
