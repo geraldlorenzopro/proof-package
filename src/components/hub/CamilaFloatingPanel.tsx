@@ -103,6 +103,11 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
   const abortRef = useRef<AbortController | null>(null);
   const lastSpokenRef = useRef<number>(-1);
 
+  // Diagnostics: log available Spanish voices
+  useEffect(() => {
+    logVocesDiagnostico();
+  }, []);
+
   // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) {
