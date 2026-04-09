@@ -151,8 +151,38 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
 
   // Stop speaking when panel closes
   useEffect(() => {
-    if (!open) { stopSpeaking(); setSpeakingNow(false); }
+  if (!open) { stopSpeaking(); setSpeakingNow(false); setConversationMode(false); }
   }, [open]);
+
+  // ── Start listening (reusable) ──
+  const startListening = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "es-US";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognitionRef.current = recognition;
+
+    recognition.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+      if (event.results[0].isFinal) {
+        setIsListening(false);
+        send(transcript);
+      }
+    };
+
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognition.start();
+    setIsListening(true);
+  }, [send]);
 
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
