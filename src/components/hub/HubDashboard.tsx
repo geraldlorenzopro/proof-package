@@ -229,7 +229,7 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
               <div className="w-6 h-6 rounded-lg bg-jarvis/20 flex items-center justify-center">
                 <Sparkles className="w-3.5 h-3.5 text-jarvis group-hover:scale-110 transition-transform" />
               </div>
-              <span className="text-[13px] font-bold text-jarvis tracking-wide">Camila</span>
+              <span className="text-[13px] font-bold text-jarvis tracking-wide">Pregúntale a Camila</span>
             </button>
 
             {can("crear_casos") && (
