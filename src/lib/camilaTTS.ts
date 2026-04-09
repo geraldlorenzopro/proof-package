@@ -78,63 +78,81 @@ function cleanForSpeech(text: string): string {
   return result;
 }
 
-/** Select the best available Spanish voice with priority-based search */
+// Known female voice names across platforms
+const FEMALE_NAMES = [
+  'paulina', 'mónica', 'monica', 'jimena', 'angelica', 'angélica',
+  'sabina', 'dalia', 'lucia', 'lucía', 'rosa', 'elena', 'francisca',
+  'marisol', 'lourdes', 'grandma', 'flo', 'sandy', 'shelley', 'reed',
+  'majesty', 'rocko', // some Apple names
+];
+
+const MALE_NAMES = [
+  'eddy', 'jorge', 'diego', 'juan', 'carlos', 'ralph', 'aaron',
+  'albert', 'fred', 'junior', 'grandpa',
+];
+
+function esFemenina(v: SpeechSynthesisVoice): boolean {
+  const n = v.name.toLowerCase();
+  if (FEMALE_NAMES.some(f => n.includes(f))) return true;
+  if (MALE_NAMES.some(m => n.includes(m))) return false;
+  // If name contains "female" or similar hints
+  if (n.includes('female') || n.includes('mujer')) return true;
+  // Unknown gender — treat as neutral (acceptable fallback)
+  return true;
+}
+
+/** Select the best available Spanish FEMALE voice */
 function seleccionarVoz(): SpeechSynthesisVoice | null {
   const voces = speechSynthesis.getVoices();
   if (voces.length === 0) return null;
 
-  // Priority order: es-419 → es-MX → es-US → es-DO → es-PR → es-CO → any es-XX → any es
-  const prioridades: ((v: SpeechSynthesisVoice) => boolean)[] = [
-    (v) => v.lang === 'es-419',
-    (v) => v.lang === 'es-MX',
-    (v) => v.lang === 'es-US',
-    (v) => v.lang === 'es-DO',
-    (v) => v.lang === 'es-PR',
-    (v) => v.lang === 'es-CO',
-    (v) => v.lang === 'es-VE',
-    (v) => v.lang === 'es-AR',
-    (v) => v.lang.startsWith('es-') && v.lang !== 'es-ES',
-    (v) => v.lang.startsWith('es'),
-  ];
+  const esVoces = voces.filter(v => v.lang.startsWith('es'));
 
-  for (const prioridad of prioridades) {
-    const voz = voces.find(prioridad);
+  // Log all Spanish voices for debugging
+  console.log('Camila TTS — voces español:', esVoces.map(v => `${v.name} (${v.lang})`));
+
+  // Priority locales
+  const locales = ['es-419', 'es-MX', 'es-US', 'es-DO', 'es-PR', 'es-CO', 'es-VE', 'es-AR'];
+
+  // Pass 1: Female voice in priority locale
+  for (const loc of locales) {
+    const voz = esVoces.find(v => v.lang === loc && esFemenina(v));
     if (voz) {
-      console.log('Camila TTS usando voz:', voz.name, voz.lang);
+      console.log('Camila TTS ✓ voz femenina:', voz.name, voz.lang);
       return voz;
     }
   }
 
-  // Last resort: search by name
-  const porNombre = voces.find(v => {
-    const name = v.name.toLowerCase();
-    return name.includes('spanish') ||
-      name.includes('español') ||
-      name.includes('paulina') ||
-      name.includes('monica') ||
-      name.includes('mónica') ||
-      name.includes('jorge') ||
-      name.includes('diego') ||
-      name.includes('juan') ||
-      name.includes('lucia') ||
-      name.includes('lucía') ||
-      name.includes('rosa') ||
-      name.includes('carlos') ||
-      name.includes('jimena') ||
-      name.includes('angelica') ||
-      name.includes('sabina') ||
-      name.includes('dalia');
-  });
+  // Pass 2: Any female Spanish voice (non es-ES first)
+  const femNoEspana = esVoces.find(v => v.lang !== 'es-ES' && esFemenina(v));
+  if (femNoEspana) {
+    console.log('Camila TTS ✓ voz femenina:', femNoEspana.name, femNoEspana.lang);
+    return femNoEspana;
+  }
+  const femAny = esVoces.find(v => esFemenina(v));
+  if (femAny) {
+    console.log('Camila TTS ✓ voz femenina:', femAny.name, femAny.lang);
+    return femAny;
+  }
 
+  // Pass 3: Known female by name across all voices
+  const porNombre = voces.find(v => {
+    const n = v.name.toLowerCase();
+    return FEMALE_NAMES.some(f => n.includes(f)) && n.includes('spanish');
+  });
   if (porNombre) {
-    console.log('Camila TTS por nombre:', porNombre.name, porNombre.lang);
+    console.log('Camila TTS ✓ por nombre:', porNombre.name, porNombre.lang);
     return porNombre;
   }
 
-  console.warn(
-    'No se encontró voz en español. Voces disponibles:',
-    voces.map(v => `${v.name} (${v.lang})`)
-  );
+  // Pass 4: Any Spanish voice (last resort, even male)
+  const cualquiera = esVoces.find(v => v.lang !== 'es-ES') || esVoces[0];
+  if (cualquiera) {
+    console.warn('Camila TTS ⚠ sin voz femenina, usando:', cualquiera.name, cualquiera.lang);
+    return cualquiera;
+  }
+
+  console.warn('Camila TTS ✗ sin voces en español');
   return null;
 }
 
@@ -152,9 +170,9 @@ export function speakAsCamila(text: string): void {
   function speakChunks(voice: SpeechSynthesisVoice | null) {
     chunks.forEach((chunk, i) => {
       const utterance = new SpeechSynthesisUtterance(chunk);
-      utterance.lang = 'es-US';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.05;
+      utterance.lang = 'es-419';
+      utterance.rate = 0.97;
+      utterance.pitch = 1.1;
       utterance.volume = 1.0;
 
       if (voice) utterance.voice = voice;
