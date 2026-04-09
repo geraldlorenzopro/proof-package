@@ -118,6 +118,8 @@ export default function HubAiPage() {
 
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading || !accountId) return;
+    stopSpeaking();
+    setSpeakingNow(false);
     const userMsg: Msg = { role: "user", content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
