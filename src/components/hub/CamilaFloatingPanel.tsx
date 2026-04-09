@@ -126,7 +126,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     }
   }, [messages.length, open]);
 
-  // ── TTS: speak when assistant finishes ──
+  // ── TTS: speak when assistant finishes, then auto-listen in conversation mode ──
   useEffect(() => {
     if (!voiceEnabled || isLoading) return;
     const lastMsg = messages[messages.length - 1];
@@ -139,11 +139,15 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
         if (!isSpeaking()) {
           setSpeakingNow(false);
           clearInterval(interval);
+          // Auto-listen again if in conversation mode
+          if (conversationMode) {
+            setTimeout(() => startListening(), 400);
+          }
         }
       }, 300);
       return () => clearInterval(interval);
     }
-  }, [messages, isLoading, voiceEnabled]);
+  }, [messages, isLoading, voiceEnabled, conversationMode]);
 
   // Stop speaking when panel closes
   useEffect(() => {
