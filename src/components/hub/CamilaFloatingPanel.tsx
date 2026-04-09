@@ -453,17 +453,22 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                     style={{ scrollbarWidth: "none" }}
                   />
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {/* Voice button */}
+                    {/* Voice button — tap to enter conversation mode */}
                     <button
                       onClick={toggleVoice}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all relative ${
                         isListening
-                          ? "bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse"
+                          ? "bg-jarvis/20 text-jarvis border border-jarvis/40 animate-pulse"
+                          : conversationMode
+                          ? "bg-jarvis/15 text-jarvis border border-jarvis/30"
                           : "text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10"
                       }`}
-                      title={isListening ? "Detener" : "Hablar"}
+                      title={isListening ? "Detener conversación" : conversationMode ? "Modo conversación activo" : "Iniciar conversación por voz"}
                     >
-                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      {isListening ? <Mic className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      {conversationMode && !isListening && (
+                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-jarvis" />
+                      )}
                     </button>
 
                     {/* Send button */}
