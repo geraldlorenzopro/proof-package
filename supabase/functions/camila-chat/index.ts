@@ -67,6 +67,26 @@ serve(async (req) => {
     // Get account name
     const { data: acctData } = await sb.from("ner_accounts").select("account_name, plan").eq("id", account_id).single();
 
+    const translateStatus = (s: string) => ({
+      'pending': 'pendiente', 'active': 'activo', 'completed': 'completado',
+      'cancelled': 'cancelado', 'in-progress': 'en progreso', 'in-review': 'en revisión',
+      'scheduled': 'programado', 'confirmed': 'confirmado', 'done': 'hecho',
+      'open': 'abierto', 'closed': 'cerrado', 'approved': 'aprobado',
+      'denied': 'denegado', 'on-hold': 'en espera', 'draft': 'borrador'
+    } as Record<string, string>)[s?.toLowerCase()] ?? s;
+
+    const translatePriority = (p: string) => ({
+      'high': 'alta', 'medium': 'media', 'low': 'baja', 'urgent': 'urgente'
+    } as Record<string, string>)[p?.toLowerCase()] ?? p;
+
+    const translateStage = (s: string) => ({
+      'in-progress': 'en progreso', 'in-review': 'en revisión',
+      'pending': 'pendiente', 'completed': 'completado',
+      'intake': 'recepción', 'filing': 'radicación',
+      'waiting': 'en espera', 'approved': 'aprobado', 'denied': 'denegado',
+      'sin-etapa': 'sin etapa'
+    } as Record<string, string>)[s?.toLowerCase()] ?? s;
+
     const officeContext = `
 ## Estado actual de la oficina: ${acctData?.account_name || "Firma"}
 Fecha: ${todayStr} | Plan: ${acctData?.plan || "essential"}
@@ -79,26 +99,28 @@ Fecha: ${todayStr} | Plan: ${acctData?.plan || "essential"}
 
 ### Citas de Hoy (${todayStr})
 ${(todayAppts.data || []).length === 0 ? "Sin citas programadas hoy." :
-  (todayAppts.data || []).map((a: any) => `- ${a.appointment_time || "Sin hora"} — ${a.client_name} (${a.appointment_type || "General"}) [${a.status}]`).join("\n")}
+  (todayAppts.data || []).map((a: any) => `- ${a.appointment_time || "Sin hora"} — ${a.client_name} (${a.appointment_type || "General"}) [${translateStatus(a.status)}]`).join("\n")}
 
 ### Casos Activos Recientes
 ${(recentCases.data || []).map((c: any) => 
-  `- ${c.file_number || "S/N"} | ${c.client_name} | ${c.case_type} | Etapa: ${c.pipeline_stage || "sin-etapa"} | Tags: ${(c.case_tags_array || []).join(", ") || "ninguno"}`
+  `- ${c.file_number || "S/N"} | ${c.client_name} | ${c.case_type} | Etapa: ${translateStage(c.pipeline_stage || "sin-etapa")} | Tags: ${(c.case_tags_array || []).join(", ") || "ninguno"}`
 ).join("\n")}
 
 ### Tareas Vencidas
 ${(overdueTasks.data || []).length === 0 ? "Sin tareas vencidas ✅" :
-  (overdueTasks.data || []).map((t: any) => `- [${t.priority}] ${t.title} (vencida: ${t.due_date})`).join("\n")}
+  (overdueTasks.data || []).map((t: any) => `- [${translatePriority(t.priority)}] ${t.title} (vencida: ${t.due_date})`).join("\n")}
 
-### Deadlines Próximos (14 días)
-${(upcomingDeadlines.data || []).length === 0 ? "Sin deadlines próximos." :
+### Plazos Próximos (14 días)
+${(upcomingDeadlines.data || []).length === 0 ? "Sin plazos próximos." :
   (upcomingDeadlines.data || []).map((d: any) => `- ${d.deadline_date} | ${d.client_name} | ${d.deadline_type} (${d.case_type})`).join("\n")}
 `;
 
     const hour = now.getHours();
     const greeting = hour < 12 ? "Buenos días ☀️" : hour < 18 ? "Buenas tardes 🌤️" : "Buenas noches 🌙";
 
-    const systemPrompt = `Eres Camila, la asistente virtual inteligente de la oficina de inmigración "${acctData?.account_name || ""}".
+    const systemPrompt = `INSTRUCCIÓN ABSOLUTA: Responde ÚNICAMENTE en español latino. Está terminantemente prohibido usar cualquier palabra en inglés. Si los datos internos contienen palabras en inglés, tradúcelas antes de decirlas.
+
+Eres Camila, la asistente virtual inteligente de la oficina de inmigración "${acctData?.account_name || ""}".
 
 Tu personalidad:
 - Eres cercana, cálida, segura y muy natural
