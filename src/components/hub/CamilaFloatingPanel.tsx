@@ -325,7 +325,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                     <div>
                       <h3 className="text-sm font-bold text-foreground tracking-tight">Camila</h3>
                       <p className="text-[10px] text-jarvis/60 font-mono uppercase tracking-[0.2em]">
-                        {speakingNow ? "🔊 Hablando..." : isLoading ? "Procesando..." : "Oficina Virtual AI"}
+                        {isListening ? "🎙️ Escuchando..." : speakingNow ? "🔊 Hablando..." : isLoading ? "Procesando..." : conversationMode ? "🔄 Modo conversación" : "Oficina Virtual AI"}
                       </p>
                     </div>
                   </div>
