@@ -96,6 +96,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
   const [pulseRing, setPulseRing] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [speakingNow, setSpeakingNow] = useState(false);
+  const [conversationMode, setConversationMode] = useState(false); // continuous voice loop
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
