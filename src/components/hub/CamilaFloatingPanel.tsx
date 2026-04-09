@@ -96,6 +96,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
   const [pulseRing, setPulseRing] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [speakingNow, setSpeakingNow] = useState(false);
+  const [conversationMode, setConversationMode] = useState(false); // continuous voice loop
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -125,7 +126,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     }
   }, [messages.length, open]);
 
-  // ── TTS: speak when assistant finishes ──
+  // ── TTS: speak when assistant finishes, then auto-listen in conversation mode ──
   useEffect(() => {
     if (!voiceEnabled || isLoading) return;
     const lastMsg = messages[messages.length - 1];
@@ -138,20 +139,27 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
         if (!isSpeaking()) {
           setSpeakingNow(false);
           clearInterval(interval);
+          // Auto-listen again if in conversation mode
+          if (conversationMode) {
+            setTimeout(() => startListening(), 400);
+          }
         }
       }, 300);
       return () => clearInterval(interval);
     }
-  }, [messages, isLoading, voiceEnabled]);
+  }, [messages, isLoading, voiceEnabled, conversationMode]);
 
   // Stop speaking when panel closes
   useEffect(() => {
-    if (!open) { stopSpeaking(); setSpeakingNow(false); }
+  if (!open) { stopSpeaking(); setSpeakingNow(false); setConversationMode(false); }
   }, [open]);
+
+  // Use ref to hold send function for startListening
+  const sendRef = useRef<(text: string) => void>(() => {});
 
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
-    stopSpeaking(); // Stop any current speech
+    stopSpeaking();
     setSpeakingNow(false);
     const userMsg: Msg = { role: "user", content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
@@ -187,19 +195,13 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     }
   }, [messages, isLoading, accountId]);
 
-  // Voice input
-  const toggleVoice = useCallback(() => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
+  // Keep ref in sync
+  useEffect(() => { sendRef.current = send; }, [send]);
 
+  // ── Start listening (reusable) ──
+  const startListening = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Tu navegador no soporta reconocimiento de voz");
-      return;
-    }
+    if (!SpeechRecognition) return;
 
     const recognition = new SpeechRecognition();
     recognition.lang = "es-US";
@@ -215,8 +217,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
       setInput(transcript);
       if (event.results[0].isFinal) {
         setIsListening(false);
-        // Auto-send on final
-        send(transcript);
+        sendRef.current(transcript);
       }
     };
 
@@ -225,7 +226,28 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
 
     recognition.start();
     setIsListening(true);
-  }, [isListening, send]);
+  }, []);
+
+  // Voice toggle — activates conversation mode
+  const toggleVoice = useCallback(() => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      setConversationMode(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Tu navegador no soporta reconocimiento de voz");
+      return;
+    }
+
+    // Enable conversation mode + voice output
+    setConversationMode(true);
+    setVoiceEnabled(true);
+    startListening();
+  }, [isListening, startListening]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -303,7 +325,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                     <div>
                       <h3 className="text-sm font-bold text-foreground tracking-tight">Camila</h3>
                       <p className="text-[10px] text-jarvis/60 font-mono uppercase tracking-[0.2em]">
-                        {speakingNow ? "🔊 Hablando..." : isLoading ? "Procesando..." : "Oficina Virtual AI"}
+                        {isListening ? "🎙️ Escuchando..." : speakingNow ? "🔊 Hablando..." : isLoading ? "Procesando..." : conversationMode ? "🔄 Modo conversación" : "Oficina Virtual AI"}
                       </p>
                     </div>
                   </div>
@@ -431,17 +453,22 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                     style={{ scrollbarWidth: "none" }}
                   />
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {/* Voice button */}
+                    {/* Voice button — tap to enter conversation mode */}
                     <button
                       onClick={toggleVoice}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all relative ${
                         isListening
-                          ? "bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse"
+                          ? "bg-jarvis/20 text-jarvis border border-jarvis/40 animate-pulse"
+                          : conversationMode
+                          ? "bg-jarvis/15 text-jarvis border border-jarvis/30"
                           : "text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10"
                       }`}
-                      title={isListening ? "Detener" : "Hablar"}
+                      title={isListening ? "Detener conversación" : conversationMode ? "Modo conversación activo" : "Iniciar conversación por voz"}
                     >
-                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      {isListening ? <Mic className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      {conversationMode && !isListening && (
+                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-jarvis" />
+                      )}
                     </button>
 
                     {/* Send button */}
