@@ -109,8 +109,13 @@ function fallbackBrowserTTS(text: string) {
   });
 }
 
-/** Stop current speech */
+/** Stop current speech and cancel in-flight requests */
 export function stopSpeaking(): void {
+  if (currentAbort) {
+    currentAbort.abort();
+    currentAbort = null;
+  }
+  isFetching = false;
   if (currentAudio) {
     currentAudio.pause();
     currentAudio.currentTime = 0;
