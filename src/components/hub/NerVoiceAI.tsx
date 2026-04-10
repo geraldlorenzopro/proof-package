@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { MicOff, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NerVoiceOrb from "./NerVoiceOrb";
@@ -21,7 +20,7 @@ function NerVoiceAIInner({ accountId }: Props) {
 
   const conversation = useConversation({
     onConnect: () => {
-      console.log("NER Voice AI: Connected");
+      console.log("NER Voice AI: Connected DIRECTLY");
       setError(null);
     },
     onDisconnect: () => {
@@ -30,9 +29,7 @@ function NerVoiceAIInner({ accountId }: Props) {
       setAgentResponse("");
     },
     onMessage: (message: any) => {
-      console.log("NER Voice AI onMessage:", message);
-      // Para ElevenLabs React v1.0.0+, el formato de mensajes a veces var√≠a.
-      // Dependiendo de si es webSocket o webrtc.
+      console.log("NER Voice AI Message:", message);
       if (message.type === "user_transcript") {
         setTranscript(message.user_transcription_event?.user_transcript || "");
       } else if (message.source === "user" && typeof message.message === "string") {
@@ -47,12 +44,11 @@ function NerVoiceAIInner({ accountId }: Props) {
     },
     onError: (err: any) => {
       console.error("NER Voice AI error:", err);
-      // A√±adimos m√°s detalle para ver por qu√© falla si es que falla el audio
-      setError(typeof err === "string" ? err : err.message || "Error de conexi√≥n. Intenta de nuevo.");
+      setError(typeof err === "string" ? err : err.message || "Error al conectar.");
     },
   });
 
-  // Poll input volume for visualization
+  // Efecto visual del micrófono
   useEffect(() => {
     if (conversation.status !== "connected") return;
     const interval = setInterval(() => {
@@ -61,33 +57,11 @@ function NerVoiceAIInner({ accountId }: Props) {
     return () => clearInterval(interval);
   }, [conversation.status]);
 
-  const fetchTokenWithRetry = useCallback(async (retries = 3): Promise<string> => {
-    for (let attempt = 0; attempt < retries; attempt++) {
-      const { data, error: fnError } = await supabase.functions.invoke("elevenlabs-conversation-token", {
-        body: { agent_id: AGENT_ID },
-      });
-      if (data?.token) return data.token;
-      const errMsg = typeof data?.details === "string" ? data.details : "";
-      const is429 =
-        fnError?.message?.includes("429") ||
-        data?.error?.includes("429") ||
-        errMsg.includes("concurrent_limit_exceeded");
-      if (is429 && attempt < retries - 1) {
-        const delay = Math.pow(2, attempt + 1) * 1000;
-        console.warn(`NER Voice AI: Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`);
-        await new Promise((r) => setTimeout(r, delay));
-        continue;
-      }
-      throw new Error(is429 ? "Servicio ocupado. Intenta en unos segundos." : "No se pudo obtener token de voz.");
-    }
-    throw new Error("No se pudo obtener token de voz.");
-  }, []);
-
   const startConversation = useCallback(async () => {
     setIsConnecting(true);
     setError(null);
 
-    // Desbloqueo inmediato del contexto de audio por pol√≠tica de navegadores
+    // Forzamos el audio para evitar el bloqueo del navegador
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx) {
@@ -95,49 +69,25 @@ function NerVoiceAIInner({ accountId }: Props) {
         await tempCtx.resume();
       }
     } catch (e) {
-      console.warn("AudioContext unlock failed", e);
+      console.warn("Audio context bypass warning:", e);
     }
 
     try {
-      // Try up to 2 attempts with retry
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          console.log(`NER Voice AI: Attempt ${attempt + 1} ‚Äî fetching token...`);
-          const token = await fetchTokenWithRetry();
-
-          console.log(`NER Voice AI: Starting session (attempt ${attempt + 1})...`);
-          // intentando forzar websocket si webrtc falla silenciosamente
-          await conversation.startSession({ conversationToken: token });
-          console.log("NER Voice AI: Session started successfully");
-          return; // success
-        } catch (sessionErr: any) {
-          const msg = String(sessionErr?.message || sessionErr || "");
-          console.warn(`NER Voice AI: Intento ${attempt + 1} fall√≥:`, msg);
-
-          if (attempt === 0) {
-            // Wait before retry
-            await new Promise((r) => setTimeout(r, 2000));
-            continue;
-          }
-          throw sessionErr;
-        }
-      }
+      console.log("NER Voice AI: Iniciando sin Edge Function...");
+      // AQUÍ ESTÁ LA MAGIA: Nos saltamos el token y usamos el Agent ID directo
+      await conversation.startSession({ agentId: AGENT_ID });
     } catch (err: any) {
-      console.error("Failed to start NER Voice AI:", err);
+      console.error("Failed start:", err);
       const msg = String(err?.message || err || "");
       setError(
-        err.name === "NotFoundError"
-          ? "No se encontr√≥ micr√≥fono."
-          : err.name === "NotAllowedError"
-            ? "Permiso de micr√≥fono denegado."
-            : msg.includes("pc connection")
-              ? "Error de conexi√≥n WebRTC. Verifica tu red e intenta de nuevo."
-              : msg || "No se pudo iniciar. Verifica el micr√≥fono.",
+        msg.includes("401") || msg.toLowerCase().includes("unauthorized")
+          ? "Tu agente en ElevenLabs requiere Token obligatorio. Pide a Lovable que revise su endpoint."
+          : "Fallo de micrófono: " + msg,
       );
     } finally {
       setIsConnecting(false);
     }
-  }, [conversation, fetchTokenWithRetry]);
+  }, [conversation]);
 
   const stopConversation = useCallback(async () => {
     await conversation.endSession();
@@ -154,7 +104,6 @@ function NerVoiceAIInner({ accountId }: Props) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
       >
-        {/* Transcript / Response bubble */}
         <AnimatePresence>
           {isActive && (transcript || agentResponse) && (
             <motion.div
@@ -174,15 +123,10 @@ function NerVoiceAIInner({ accountId }: Props) {
           )}
         </AnimatePresence>
 
-        {/* Error with retry */}
         {error && !isActive && (
           <div
             className="flex flex-col items-center gap-3 p-4 text-center max-w-[280px] rounded-2xl backdrop-blur-md"
-            style={{
-              background: "hsl(220 25% 8% / 0.85)",
-              border: "1px solid hsl(0 70% 50% / 0.2)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-            }}
+            style={{ background: "hsl(220 25% 8% / 0.85)", border: "1px solid hsl(0 70% 50% / 0.2)" }}
           >
             <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
               <MicOff className="w-5 h-5 text-rose-400" />
@@ -192,13 +136,11 @@ function NerVoiceAIInner({ accountId }: Props) {
               <p className="text-xs text-muted-foreground mt-1">{error}</p>
             </div>
             <Button size="sm" variant="outline" onClick={startConversation} className="gap-2">
-              <RefreshCw className="w-3 h-3" />
-              Intentar de nuevo
+              <RefreshCw className="w-3 h-3" /> Reintentar
             </Button>
           </div>
         )}
 
-        {/* Siri-style Orb */}
         <NerVoiceOrb
           isActive={isActive}
           isSpeaking={isSpeaking}
@@ -206,15 +148,6 @@ function NerVoiceAIInner({ accountId }: Props) {
           inputLevel={inputLevel}
           onClick={isActive ? stopConversation : startConversation}
         />
-
-        {/* Status label */}
-        <span
-          className={`text-[10px] font-mono uppercase tracking-[0.15em] ${
-            isActive ? (isSpeaking ? "text-jarvis" : "text-jarvis/60") : "text-muted-foreground/40"
-          }`}
-        >
-          {isConnecting ? "Conectando..." : isActive ? (isSpeaking ? "Camila habla" : "Escuchando...") : "NER Voice"}
-        </span>
       </motion.div>
     </AnimatePresence>
   );
