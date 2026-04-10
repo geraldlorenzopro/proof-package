@@ -58,6 +58,9 @@ export default function HubDashboard({
 
   // TTS greeting
   const greetedRef = useRef(false);
+  const [briefingNews, setBriefingNews] = useState<string | null>(null);
+
+  const BRIEFING_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-briefing`;
 
   useEffect(() => {
     (async () => {
@@ -74,29 +77,59 @@ export default function HubDashboard({
     if (accountId) loadKpis();
   }, [accountId]);
 
-  // Auto-greet TTS — only once per browser session (survives navigation)
+  // Auto-greet TTS with briefing — only once per browser session
   useEffect(() => {
-    if (!resolvedName) return;
+    if (!resolvedName || !accountId) return;
 
     const todayKey = `camila_greeted_${accountId}_${new Date().toISOString().split("T")[0]}`;
     const alreadyGreeted = sessionStorage.getItem(todayKey);
-
-    // If already greeted this session, don't speak again
     if (alreadyGreeted) return;
+
+    sessionStorage.setItem(todayKey, "1");
 
     const fn = resolvedName.split(" ")[0];
     const h = new Date().getHours();
     const saludo = h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches";
 
-    let greetText = `${saludo}, ${fn}. Bienvenido a tu oficina virtual. ¿Qué hacemos hoy?`;
-    const extras: string[] = [];
-    if (overdueDeadlines > 0) extras.push(`${overdueDeadlines} plazos vencidos`);
-    if (todayAppointments > 0) extras.push(`${todayAppointments} cita${todayAppointments > 1 ? "s" : ""} hoy`);
-    if (extras.length > 0) greetText += ` Tienes ${extras.join(" y ")}.`;
+    // Fetch briefing (weather + news + KPIs) then speak
+    (async () => {
+      let weatherPart = "";
+      let newsPart = "";
+      let kpiPart = "";
 
-    sessionStorage.setItem(todayKey, "1");
-    const timer = setTimeout(() => speakAsCamila(greetText), 800);
-    return () => clearTimeout(timer);
+      try {
+        const resp = await fetch(BRIEFING_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ account_id: accountId }),
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.weather) weatherPart = ` ${data.weather}`;
+          if (data.news) {
+            newsPart = ` En noticias de inmigración: ${data.news}`;
+            setBriefingNews(data.news);
+          }
+          if (data.kpis) {
+            const parts: string[] = [];
+            if (data.kpis.todayAppointments > 0) parts.push(`${data.kpis.todayAppointments} cita${data.kpis.todayAppointments > 1 ? "s" : ""} hoy`);
+            if (data.kpis.overdueDeadlines > 0) parts.push(`${data.kpis.overdueDeadlines} plazos vencidos`);
+            if (data.kpis.activeCases > 0) parts.push(`${data.kpis.activeCases} casos activos`);
+            if (parts.length > 0) kpiPart = ` Tienes ${parts.join(", ")}.`;
+          }
+        }
+      } catch (e) {
+        console.warn("Briefing fetch failed:", e);
+      }
+
+      const greetText = `${saludo}, ${fn}.${weatherPart}${kpiPart}${newsPart} ¿Qué hacemos hoy?`;
+      setTimeout(() => speakAsCamila(greetText), 800);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedName]);
 
@@ -294,6 +327,11 @@ export default function HubDashboard({
               <p className="text-muted-foreground/50 mt-2 text-base">
                 Bienvenido a tu oficina virtual. ¿Qué haremos hoy?
               </p>
+              {briefingNews && (
+                <p className="text-muted-foreground/40 mt-3 text-xs max-w-md mx-auto leading-relaxed italic">
+                  📰 {briefingNews}
+                </p>
+              )}
             </div>
           )}
 
