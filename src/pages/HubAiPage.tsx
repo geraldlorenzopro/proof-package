@@ -69,9 +69,9 @@ export default function HubAiPage() {
         </TabsContent>
 
         {/* Agents */}
-        <TabsContent value="agents" className="flex-1 min-h-0 mt-0 overflow-auto p-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-6">
+        <TabsContent value="agents" className="flex-1 min-h-0 mt-0 overflow-hidden p-6 flex items-center justify-center">
+          <div className="max-w-4xl w-full">
+            <div className="mb-4">
               <h2 className="text-lg font-bold text-foreground">Equipo de Agentes AI</h2>
               <p className="text-sm text-muted-foreground/60 mt-1">Especialistas digitales que trabajan en tus casos de inmigración.</p>
             </div>
@@ -80,9 +80,9 @@ export default function HubAiPage() {
         </TabsContent>
 
         {/* Tools */}
-        <TabsContent value="tools" className="flex-1 min-h-0 mt-0 overflow-auto p-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-6">
+        <TabsContent value="tools" className="flex-1 min-h-0 mt-0 overflow-hidden p-6 flex items-center justify-center">
+          <div className="max-w-4xl w-full">
+            <div className="mb-4">
               <h2 className="text-lg font-bold text-foreground">Herramientas de Inmigración</h2>
               <p className="text-sm text-muted-foreground/60 mt-1">Calculadoras, generadores y herramientas especializadas.</p>
             </div>
@@ -94,10 +94,10 @@ export default function HubAiPage() {
                     sessionStorage.setItem("ner_hub_return", "/hub/ai");
                     navigate(tool.path);
                   }}
-                  className={`flex items-center gap-3 rounded-xl border ${tool.border} ${tool.bg} p-4 text-left hover:scale-[1.02] transition-all group`}
+                  className={`flex items-center gap-3 rounded-xl border ${tool.border} ${tool.bg} p-3 text-left hover:scale-[1.02] transition-all group`}
                 >
-                  <tool.icon className={`w-5 h-5 ${tool.color} shrink-0 group-hover:scale-110 transition-transform`} />
-                  <span className="text-xs font-semibold text-foreground">{tool.label}</span>
+                  <tool.icon className={`w-4 h-4 ${tool.color} shrink-0 group-hover:scale-110 transition-transform`} />
+                  <span className="text-[11px] font-semibold text-foreground">{tool.label}</span>
                 </button>
               ))}
             </div>

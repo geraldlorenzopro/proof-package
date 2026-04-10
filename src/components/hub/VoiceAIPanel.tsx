@@ -181,7 +181,7 @@ function VoiceAIPanelInner({ accountId }: Props) {
   return (
     <div className="h-full flex overflow-hidden">
       {/* ═══ LEFT — Voice Experience ═══ */}
-      <div className="flex-1 flex flex-col items-center justify-center relative"
+      <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden"
         style={{
           background: `
             radial-gradient(ellipse at 50% 45%, hsl(195 100% 50% / 0.05) 0%, transparent 50%),
@@ -309,7 +309,7 @@ function VoiceAIPanelInner({ accountId }: Props) {
       </div>
 
       {/* ═══ RIGHT — Live Transcript ═══ */}
-      <div className="w-[380px] shrink-0 flex flex-col border-l border-border/20 bg-card/20">
+      <div className="w-[340px] shrink-0 flex flex-col border-l border-border/20 bg-card/20 overflow-hidden">
         {/* Transcript header */}
         <div className="px-5 py-3 shrink-0 border-b border-border/15">
           <div className="flex items-center gap-2">
