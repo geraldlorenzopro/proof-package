@@ -160,11 +160,14 @@ export default function HubChatPage() {
     }
   }, []);
 
-  // TTS — also handles voice-mode loop (re-listen after speaking)
+  // TTS — ONLY plays in voice-orb mode or when user explicitly enabled voice toggle
   useEffect(() => {
-    if (!voiceEnabled || isLoading) return;
+    if (isLoading) return;
     const lastMsg = messages[messages.length - 1];
     if (lastMsg?.role === "assistant" && messages.length - 1 > lastSpokenRef.current) {
+      // Only auto-play TTS if in voice orb mode OR user manually toggled voice on (not from orb)
+      const shouldSpeak = voiceModeRef.current || voiceEnabled;
+      if (!shouldSpeak) return;
       lastSpokenRef.current = messages.length - 1;
       setSpeakingNow(true);
       if (voiceModeRef.current) setVoicePhase("speaking");
@@ -337,6 +340,7 @@ export default function HubChatPage() {
     setVoiceMode(false);
     setVoicePhase("idle");
     setVoiceTranscript("");
+    setVoiceEnabled(false); // reset so TTS doesn't play in regular chat
   }, []);
 
   const suggestedQuestions = [
