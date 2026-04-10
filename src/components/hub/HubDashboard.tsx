@@ -68,9 +68,7 @@ export default function HubDashboard({
   const [overdueDeadlines, setOverdueDeadlines] = useState(0);
 
   // Chat
-  const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // STT
@@ -267,9 +265,6 @@ export default function HubDashboard({
     { label: "Consultas", value: weekConsultations, route: "/hub/consultations", icon: MessageSquare, accent: "text-emerald-400", bgAccent: "bg-emerald-500/10 border-emerald-500/20" },
     { label: "Citas hoy", value: todayAppointments, route: "/hub/agenda", icon: CalendarCheck, accent: "text-sky-400", bgAccent: "bg-sky-500/10 border-sky-500/20", urgent: overdueDeadlines > 0 },
   ];
-
-  const hasChatResponse = messages.some(m => m.role === "assistant");
-  const lastAssistant = [...messages].reverse().find(m => m.role === "assistant");
 
   return (
     <>
