@@ -168,7 +168,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
       </div>
 
       {/* Camila Floating Panel — accessible from any Hub page (hidden on /hub/chat where full chat exists) */}
-      {isHubSection && accountId && pathname !== "/hub/chat" && (
+      {isHubSection && accountId && currentPath !== "/hub/chat" && (
         <CamilaFloatingPanel accountId={accountId} />
       )}
 
