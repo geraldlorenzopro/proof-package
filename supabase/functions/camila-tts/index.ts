@@ -72,7 +72,7 @@ serve(async (req) => {
           input: { text: truncated },
           voice: {
             languageCode: "es-US",
-            name: "es-US-Neural2-F",
+            name: "es-US-Wavenet-A",
             ssmlGender: "FEMALE",
           },
           audioConfig: {
