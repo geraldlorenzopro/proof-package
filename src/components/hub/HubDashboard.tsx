@@ -368,7 +368,7 @@ export default function HubDashboard({
                   key={chip.label}
                   onClick={() => sendMessage(chip.label)}
                   disabled={isStreaming}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border/30 bg-card/50 hover:bg-card hover:border-jarvis/20 text-sm text-muted-foreground hover:text-foreground transition-all disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-border/30 bg-card/50 hover:bg-card hover:border-jarvis/20 text-sm text-muted-foreground hover:text-foreground transition-all disabled:opacity-50"
                 >
                   <chip.icon className="w-4 h-4 text-jarvis/50 shrink-0" />
                   <span className="text-xs font-medium truncate">{chip.label}</span>
@@ -390,21 +390,19 @@ export default function HubDashboard({
                   <button
                     key={kpi.label}
                     onClick={() => navigate(kpi.route)}
-                    className="group flex items-center gap-3 px-3.5 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-left"
+                    className="group flex flex-col items-center justify-center gap-1 px-3.5 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-center"
                   >
                     <div className={`w-9 h-9 rounded-lg ${kpi.bgAccent} border flex items-center justify-center shrink-0`}>
                       <kpi.icon className={`w-4 h-4 ${kpi.accent}`} />
                     </div>
-                    <div className="min-w-0">
-                      <div className={`text-xl font-bold tabular-nums leading-none ${kpi.value === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
-                        {kpi.value}
-                        {kpi.urgent && kpi.value > 0 && (
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse ml-1 align-top" />
-                        )}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground/40 font-medium mt-0.5 truncate group-hover:text-muted-foreground/60 transition-colors">
-                        {kpi.label}
-                      </div>
+                    <div className={`text-xl font-bold tabular-nums leading-none ${kpi.value === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
+                      {kpi.value}
+                      {kpi.urgent && kpi.value > 0 && (
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse ml-1 align-top" />
+                      )}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground/40 font-medium truncate group-hover:text-muted-foreground/60 transition-colors">
+                      {kpi.label}
                     </div>
                   </button>
                 ))}
