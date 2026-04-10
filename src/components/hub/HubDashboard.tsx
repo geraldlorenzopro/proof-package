@@ -333,50 +333,8 @@ export default function HubDashboard({
               <p className="text-muted-foreground/50 mt-2 text-base">
                 Bienvenido a tu oficina virtual. ¿Qué haremos hoy?
               </p>
-              {briefingNews && (
-                <div className="mt-4 max-w-lg mx-auto text-left">
-                  <div className="bg-card/60 border border-border/30 rounded-xl p-4 space-y-3">
-                    {/* Weather */}
-                    {briefingWeather && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <CloudSun className="w-4 h-4 text-jarvis/70 shrink-0" />
-                        <span>{briefingWeather}</span>
-                      </div>
-                    )}
-                    {/* News */}
-                    <div className="flex items-start gap-2">
-                      <Newspaper className="w-4 h-4 text-jarvis/70 shrink-0 mt-0.5" />
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {briefingNews.replace(/\[\d+\]/g, '')}
-                      </p>
-                    </div>
-                    {/* Citations */}
-                    {briefingCitations.length > 0 && (
-                      <div className="border-t border-border/20 pt-2">
-                        <p className="text-[10px] text-muted-foreground/40 uppercase tracking-wider mb-1.5 font-medium">Fuentes</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {briefingCitations.slice(0, 4).map((url, i) => {
-                            let domain = "";
-                            try { domain = new URL(url).hostname.replace("www.", ""); } catch { domain = url; }
-                            return (
-                              <a
-                                key={i}
-                                href={url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-[11px] text-jarvis/60 hover:text-jarvis bg-jarvis/5 hover:bg-jarvis/10 border border-jarvis/10 rounded-md px-2 py-0.5 transition-colors"
-                              >
-                                <ExternalLink className="w-2.5 h-2.5" />
-                                {domain.length > 25 ? domain.slice(0, 25) + "…" : domain}
-                              </a>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+
+
             </div>
           )}
 
@@ -499,6 +457,54 @@ export default function HubDashboard({
           )}
         </div>
       </div>
+
+      {/* ─── News ticker at the bottom ─── */}
+      {briefingNews && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/90 backdrop-blur-md border-t border-border/30">
+          <div className="flex items-center h-9 overflow-hidden">
+            <div className="shrink-0 flex items-center gap-1.5 px-3 bg-jarvis/10 h-full border-r border-border/20">
+              <Newspaper className="w-3.5 h-3.5 text-jarvis" />
+              <span className="text-[11px] font-semibold text-jarvis uppercase tracking-wider">Noticias</span>
+            </div>
+            <div className="flex-1 overflow-hidden relative">
+              <div className="animate-marquee whitespace-nowrap flex items-center h-9">
+                <span className="text-xs text-muted-foreground px-4">
+                  {briefingNews.replace(/\[\d+\]/g, '').trim()}
+                </span>
+                {briefingCitations.length > 0 && (
+                  <span className="text-xs text-muted-foreground/40 px-2">—</span>
+                )}
+                {briefingCitations.slice(0, 3).map((url, i) => {
+                  let domain = "";
+                  try { domain = new URL(url).hostname.replace("www.", ""); } catch { domain = url; }
+                  return (
+                    <a
+                      key={i}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] text-jarvis/60 hover:text-jarvis mr-3 shrink-0"
+                    >
+                      <ExternalLink className="w-2.5 h-2.5" />
+                      {domain.length > 20 ? domain.slice(0, 20) + "…" : domain}
+                    </a>
+                  );
+                })}
+                {/* Duplicate for seamless loop */}
+                <span className="text-xs text-muted-foreground px-12">
+                  {briefingNews.replace(/\[\d+\]/g, '').trim()}
+                </span>
+              </div>
+            </div>
+            {briefingWeather && (
+              <div className="shrink-0 flex items-center gap-1.5 px-3 h-full border-l border-border/20">
+                <CloudSun className="w-3.5 h-3.5 text-muted-foreground/50" />
+                <span className="text-[11px] text-muted-foreground/60">{briefingWeather}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
       <NewContactModal open={contactOpen} onOpenChange={setContactOpen} accountId={accountId} />
