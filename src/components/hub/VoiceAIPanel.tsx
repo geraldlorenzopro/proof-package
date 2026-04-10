@@ -264,15 +264,6 @@ function VoiceAIPanelInner({ accountId }: Props) {
           info_oficina: officeData.context,
           nombre_usuario: officeData.ownerFirstName,
         },
-        overrides: {
-          tts: {
-            voiceId: "TsKSGPuG26FpNj0JzQBq",
-            stability: 0.72,
-            similarityBoost: 0.80,
-            style: 0.35,
-            speed: 0.95,
-          },
-        },
       } as any);
     } catch (err: any) {
       const msg = String(err?.message || err || "");
