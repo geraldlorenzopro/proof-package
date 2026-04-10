@@ -435,7 +435,7 @@ export default function HubChatPage() {
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
                 placeholder="Pregúntale a Camila..."
                 rows={1}
                 className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none max-h-32"
@@ -451,11 +451,11 @@ export default function HubChatPage() {
                 >
                   {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                 </button>
-                {/* Voice Orb – conversational mode */}
+                {/* Voice Orb – inline conversational mode */}
                 <button
-                  onClick={() => navigate("/hub/ai")}
+                  onClick={startVoiceMode}
                   className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10 transition-all group relative"
-                  title="Modo conversación por voz"
+                  title="Conversar por voz"
                 >
                   <div className="w-5 h-5 rounded-full bg-gradient-to-br from-jarvis/60 to-cyan-400/40 group-hover:from-jarvis group-hover:to-cyan-400/70 transition-all shadow-[0_0_6px_hsl(195_100%_50%/0.3)] group-hover:shadow-[0_0_12px_hsl(195_100%_50%/0.5)]" />
                 </button>
