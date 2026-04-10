@@ -505,44 +505,80 @@ export default function HubDashboard({
             </span>
             <div className="h-px flex-1 bg-border/20" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            {newsLoading || newsCards.length === 0
-              ? Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40">
-                    <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-3 w-full" />
-                      <Skeleton className="h-3 w-3/4" />
-                      <Skeleton className="h-2 w-1/2" />
+
+          {/* Carousel container */}
+          <div className="relative">
+            {/* Left arrow */}
+            {newsPage > 0 && newsCards.length > 3 && (
+              <button
+                onClick={() => setNewsPage(p => p - 1)}
+                className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-card border border-border/30 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-border/50 transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+            {/* Right arrow */}
+            {newsPage < Math.ceil(newsCards.length / 3) - 1 && newsCards.length > 3 && (
+              <button
+                onClick={() => setNewsPage(p => p + 1)}
+                className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-card border border-border/30 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-border/50 transition-all"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {newsLoading || newsCards.length === 0
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40">
+                      <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-3 w-full" />
+                        <Skeleton className="h-3 w-3/4" />
+                        <Skeleton className="h-2 w-1/2" />
+                      </div>
                     </div>
-                  </div>
-                ))
-              : newsCards.map((card, i) => {
-                  const catStyle = getCategoryStyle(card.category);
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedNews(card)}
-                      className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-left group"
-                    >
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: catStyle.bg }}
+                  ))
+                : newsCards.slice(newsPage * 3, newsPage * 3 + 3).map((card, i) => {
+                    const catStyle = getCategoryStyle(card.category);
+                    return (
+                      <button
+                        key={`${newsPage}-${i}`}
+                        onClick={() => setSelectedNews(card)}
+                        className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-left group"
                       >
-                        <catStyle.icon className="w-4 h-4" style={{ color: catStyle.stroke }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-foreground/90 line-clamp-2 leading-snug group-hover:text-foreground transition-colors">
-                          {card.title}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground/40 mt-1">
-                          {card.time} · <span className="uppercase tracking-wider font-semibold" style={{ color: catStyle.stroke }}>{card.category}</span>
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: catStyle.bg }}
+                        >
+                          <catStyle.icon className="w-4 h-4" style={{ color: catStyle.stroke }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground/90 line-clamp-2 leading-snug group-hover:text-foreground transition-colors">
+                            {card.title}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground/40 mt-1">
+                            {card.time} · <span className="uppercase tracking-wider font-semibold" style={{ color: catStyle.stroke }}>{card.category}</span>
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+            </div>
           </div>
+
+          {/* Dot indicators */}
+          {newsCards.length > 3 && (
+            <div className="flex items-center justify-center gap-1.5 mt-3">
+              {Array.from({ length: Math.ceil(newsCards.length / 3) }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setNewsPage(i)}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === newsPage ? "bg-jarvis w-3" : "bg-muted-foreground/20 hover:bg-muted-foreground/40"}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
        )}
         </div>
