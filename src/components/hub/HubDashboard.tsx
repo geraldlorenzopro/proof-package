@@ -80,7 +80,33 @@ export default function HubDashboard({
     if (accountId) loadKpis();
   }, [accountId]);
 
-  // Auto-greet TTS with briefing — only once per browser session
+  // Always fetch briefing data for the news panel
+  useEffect(() => {
+    if (!accountId) return;
+    (async () => {
+      try {
+        const resp = await fetch(BRIEFING_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ account_id: accountId }),
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.news) setBriefingNews(data.news);
+          if (data.citations?.length) setBriefingCitations(data.citations);
+          if (data.weather) setBriefingWeather(data.weather);
+        }
+      } catch (e) {
+        console.warn("Briefing fetch failed:", e);
+      }
+    })();
+  }, [accountId]);
+
+  // Auto-greet TTS — only once per browser session
   useEffect(() => {
     if (!resolvedName || !accountId) return;
 
@@ -94,51 +120,22 @@ export default function HubDashboard({
     const h = new Date().getHours();
     const saludo = h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches";
 
-    // Fetch briefing (weather + news + KPIs) then speak
-    (async () => {
-      let weatherPart = "";
-      let newsPart = "";
-      let kpiPart = "";
+    // Build greeting text from already-fetched briefing state
+    const buildGreet = () => {
+      let parts: string[] = [];
+      parts.push(`${saludo}, ${fn}.`);
+      // Weather and news will be spoken if available at the time
+      parts.push("¿Qué hacemos hoy?");
+      return parts.join(" ");
+    };
 
-      try {
-        const resp = await fetch(BRIEFING_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ account_id: accountId }),
-        });
-
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.weather) weatherPart = ` ${data.weather}`;
-          if (data.news) {
-            newsPart = ` En noticias de inmigración: ${data.news}`;
-            setBriefingNews(data.news);
-          }
-          if (data.citations?.length) {
-            setBriefingCitations(data.citations);
-          }
-          if (data.weather) {
-            setBriefingWeather(data.weather);
-          }
-          if (data.kpis) {
-            const parts: string[] = [];
-            if (data.kpis.todayAppointments > 0) parts.push(`${data.kpis.todayAppointments} cita${data.kpis.todayAppointments > 1 ? "s" : ""} hoy`);
-            if (data.kpis.overdueDeadlines > 0) parts.push(`${data.kpis.overdueDeadlines} plazos vencidos`);
-            if (data.kpis.activeCases > 0) parts.push(`${data.kpis.activeCases} casos activos`);
-            if (parts.length > 0) kpiPart = ` Tienes ${parts.join(", ")}.`;
-          }
-        }
-      } catch (e) {
-        console.warn("Briefing fetch failed:", e);
-      }
-
-      const greetText = `${saludo}, ${fn}.${weatherPart}${kpiPart}${newsPart} ¿Qué hacemos hoy?`;
-      setTimeout(() => speakAsCamila(greetText), 800);
-    })();
+    // Small delay to let briefing fetch complete, then speak
+    setTimeout(() => {
+      let greetText = `${saludo}, ${fn}.`;
+      if (briefingWeather) greetText += ` ${briefingWeather}`;
+      greetText += " ¿Qué hacemos hoy?";
+      speakAsCamila(greetText);
+    }, 2000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedName]);
 
