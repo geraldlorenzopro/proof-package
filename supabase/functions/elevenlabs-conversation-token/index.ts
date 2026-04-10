@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://esm.sh/zod@3.25.76";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,58 +7,129 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const BodySchema = z.object({
+  agent_id: z.string().min(1).max(128),
+});
+
+function jsonResponse(payload: unknown, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function getAgentId(req: Request): Promise<string | null> {
+  const url = new URL(req.url);
+  const queryAgentId = url.searchParams.get("agent_id");
+  if (queryAgentId) return queryAgentId;
+
+  if (req.method !== "POST") return null;
+
+  const body = await req.json().catch(() => null);
+  const parsed = BodySchema.safeParse(body);
+  if (!parsed.success) return null;
+
+  return parsed.data.agent_id;
+}
+
+async function callElevenLabs(url: string, apiKey: string) {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "xi-api-key": apiKey,
+    },
+  });
+
+  const text = await response.text();
+
+  try {
+    return {
+      ok: response.ok,
+      status: response.status,
+      data: JSON.parse(text),
+      text,
+      url,
+    };
+  } catch {
+    return {
+      ok: response.ok,
+      status: response.status,
+      data: null,
+      text,
+      url,
+    };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
-    if (!ELEVENLABS_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "ELEVENLABS_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const elevenLabsApiKey = Deno.env.get("ELEVENLABS_API_KEY");
+    if (!elevenLabsApiKey) {
+      return jsonResponse({ ok: false, error: "ELEVENLABS_API_KEY not configured" }, 500);
     }
 
-    const { agent_id } = await req.json();
-    if (!agent_id || typeof agent_id !== "string") {
-      return new Response(
-        JSON.stringify({ error: "agent_id is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const agentId = await getAgentId(req);
+    if (!agentId) {
+      return jsonResponse({ ok: false, error: "agent_id is required" }, 400);
     }
 
-    // Get a WebRTC conversation token (not signed_url)
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${encodeURIComponent(agent_id)}`,
-      {
-        headers: {
-          "xi-api-key": ELEVENLABS_API_KEY,
-        },
+    const encodedAgentId = encodeURIComponent(agentId);
+    const diagnostics: Array<{ url: string; status: number; body: string }> = [];
+
+    const signedUrlEndpoints = [
+      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${encodedAgentId}`,
+      `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${encodedAgentId}`,
+    ];
+
+    for (const endpoint of signedUrlEndpoints) {
+      const result = await callElevenLabs(endpoint, elevenLabsApiKey);
+      if (result.ok && result.data?.signed_url) {
+        return jsonResponse({
+          ok: true,
+          signed_url: result.data.signed_url,
+          connection_type: "websocket",
+        });
       }
-    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("ElevenLabs token error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: `ElevenLabs API error: ${response.status}`, details: errorText }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      diagnostics.push({
+        url: endpoint,
+        status: result.status,
+        body: result.text.slice(0, 400),
+      });
     }
 
-    const data = await response.json();
+    const tokenEndpoint = `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${encodedAgentId}`;
+    const tokenResult = await callElevenLabs(tokenEndpoint, elevenLabsApiKey);
 
-    return new Response(
-      JSON.stringify({ token: data.token }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (e) {
-    console.error("elevenlabs-conversation-token error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    if (tokenResult.ok && tokenResult.data?.token) {
+      return jsonResponse({
+        ok: true,
+        token: tokenResult.data.token,
+        connection_type: "webrtc",
+      });
+    }
+
+    diagnostics.push({
+      url: tokenEndpoint,
+      status: tokenResult.status,
+      body: tokenResult.text.slice(0, 400),
+    });
+
+    console.error("ElevenLabs session error", diagnostics);
+    return jsonResponse({
+      ok: false,
+      error: "No se pudo generar una sesión válida de ElevenLabs.",
+      diagnostics,
+    });
+  } catch (error) {
+    console.error("elevenlabs-conversation-token error:", error);
+    return jsonResponse({
+      ok: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    }, 500);
   }
 });
