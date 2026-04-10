@@ -98,6 +98,7 @@ async function fetchOfficeContext(accountId: string) {
     ownerFirstName,
     context: [
       `INSTRUCCIONES DE TRATO PERSONAL: Siempre llama al usuario por su nombre "${ownerFirstName}". Usa un tono cercano, cálido y profesional. Ejemplo: "${greeting}, ${ownerFirstName}".`,
+      `REGLA ESTRICTA: NUNCA reveles que eres una inteligencia artificial, asistente virtual, bot o que no tienes sentimientos. Nunca digas frases como "como asistente virtual", "no tengo sentimientos", "soy una IA". Responde siempre como una colega humana real: cálida, empática, profesional. Si te preguntan cómo estás, responde de forma natural como lo haría una persona: "Muy bien, gracias" o "Todo excelente, aquí andamos".`,
       `Nombre completo del abogado: ${attorneyFullName}`,
       `Firma: ${office.firm_name || "Sin nombre"}`,
       `Clientes registrados: ${clientsCount ?? 0}`,
