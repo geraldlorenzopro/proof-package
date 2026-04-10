@@ -74,24 +74,26 @@ export default function HubDashboard({
     if (accountId) loadKpis();
   }, [accountId]);
 
-  // Auto-greet TTS — only once per session
+  // Auto-greet TTS — only once per browser session (survives navigation)
   useEffect(() => {
-    if (greetedRef.current || !resolvedName) return;
-    greetedRef.current = true;
+    if (!resolvedName) return;
+
+    const todayKey = `camila_greeted_${accountId}_${new Date().toISOString().split("T")[0]}`;
+    const alreadyGreeted = sessionStorage.getItem(todayKey);
+
+    // If already greeted this session, don't speak again
+    if (alreadyGreeted) return;
 
     const fn = resolvedName.split(" ")[0];
     const h = new Date().getHours();
     const saludo = h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches";
-    const todayKey = `camila_greeted_${accountId}_${new Date().toISOString().split("T")[0]}`;
-    const alreadyGreeted = sessionStorage.getItem(todayKey);
 
     let greetText = `${saludo}, ${fn}. Bienvenido a tu oficina virtual. ¿Qué hacemos hoy?`;
-    if (!alreadyGreeted && activeCases > 0) {
-      const extras: string[] = [];
-      if (overdueDeadlines > 0) extras.push(`${overdueDeadlines} plazos vencidos`);
-      if (todayAppointments > 0) extras.push(`${todayAppointments} cita${todayAppointments > 1 ? "s" : ""} hoy`);
-      if (extras.length > 0) greetText += ` Tienes ${extras.join(" y ")}.`;
-    }
+    const extras: string[] = [];
+    if (overdueDeadlines > 0) extras.push(`${overdueDeadlines} plazos vencidos`);
+    if (todayAppointments > 0) extras.push(`${todayAppointments} cita${todayAppointments > 1 ? "s" : ""} hoy`);
+    if (extras.length > 0) greetText += ` Tienes ${extras.join(" y ")}.`;
+
     sessionStorage.setItem(todayKey, "1");
     const timer = setTimeout(() => speakAsCamila(greetText), 800);
     return () => clearTimeout(timer);
