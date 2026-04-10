@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import {
   Send, Mic, MicOff, Briefcase, Calendar, Users,
   MessageSquare, FileSearch, Clock, ChevronRight,
-  X, AlertCircle, Sparkles, FolderOpen, CalendarCheck
+  X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
+  Newspaper, CloudSun, ExternalLink
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
@@ -59,6 +60,8 @@ export default function HubDashboard({
   // TTS greeting
   const greetedRef = useRef(false);
   const [briefingNews, setBriefingNews] = useState<string | null>(null);
+  const [briefingCitations, setBriefingCitations] = useState<string[]>([]);
+  const [briefingWeather, setBriefingWeather] = useState<string | null>(null);
 
   const BRIEFING_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-briefing`;
 
@@ -114,6 +117,12 @@ export default function HubDashboard({
           if (data.news) {
             newsPart = ` En noticias de inmigración: ${data.news}`;
             setBriefingNews(data.news);
+          }
+          if (data.citations?.length) {
+            setBriefingCitations(data.citations);
+          }
+          if (data.weather) {
+            setBriefingWeather(data.weather);
           }
           if (data.kpis) {
             const parts: string[] = [];
@@ -328,9 +337,48 @@ export default function HubDashboard({
                 Bienvenido a tu oficina virtual. ¿Qué haremos hoy?
               </p>
               {briefingNews && (
-                <p className="text-muted-foreground/40 mt-3 text-xs max-w-md mx-auto leading-relaxed italic">
-                  📰 {briefingNews}
-                </p>
+                <div className="mt-4 max-w-lg mx-auto text-left">
+                  <div className="bg-card/60 border border-border/30 rounded-xl p-4 space-y-3">
+                    {/* Weather */}
+                    {briefingWeather && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CloudSun className="w-4 h-4 text-jarvis/70 shrink-0" />
+                        <span>{briefingWeather}</span>
+                      </div>
+                    )}
+                    {/* News */}
+                    <div className="flex items-start gap-2">
+                      <Newspaper className="w-4 h-4 text-jarvis/70 shrink-0 mt-0.5" />
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {briefingNews.replace(/\[\d+\]/g, '')}
+                      </p>
+                    </div>
+                    {/* Citations */}
+                    {briefingCitations.length > 0 && (
+                      <div className="border-t border-border/20 pt-2">
+                        <p className="text-[10px] text-muted-foreground/40 uppercase tracking-wider mb-1.5 font-medium">Fuentes</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {briefingCitations.slice(0, 4).map((url, i) => {
+                            let domain = "";
+                            try { domain = new URL(url).hostname.replace("www.", ""); } catch { domain = url; }
+                            return (
+                              <a
+                                key={i}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] text-jarvis/60 hover:text-jarvis bg-jarvis/5 hover:bg-jarvis/10 border border-jarvis/10 rounded-md px-2 py-0.5 transition-colors"
+                              >
+                                <ExternalLink className="w-2.5 h-2.5" />
+                                {domain.length > 25 ? domain.slice(0, 25) + "…" : domain}
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )}
