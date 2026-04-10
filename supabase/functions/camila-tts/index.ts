@@ -60,44 +60,58 @@ serve(async (req) => {
       );
     }
 
-    // Google TTS has a 5000 byte limit per request; truncate if needed
     const truncated = cleanText.length > 4500 ? cleanText.slice(0, 4500) + "..." : cleanText;
 
-    const ttsResponse = await fetch(
-      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleTtsKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input: { text: truncated },
-          voice: {
-            languageCode: "es-US",
-            name: "es-US-Wavenet-A",
-            ssmlGender: "FEMALE",
-          },
-          audioConfig: {
-            audioEncoding: "MP3",
-            speakingRate: 1.05,
-            pitch: 1.0,
-          },
-        }),
-      }
-    );
+    const VOICES = [
+      { languageCode: "es-US", name: "es-US-Neural2-F", ssmlGender: "FEMALE" },
+      { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE" },
+      { languageCode: "es-MX", name: "es-MX-Neural2-A", ssmlGender: "FEMALE" },
+      { languageCode: "es-US", name: "es-US-Wavenet-F", ssmlGender: "FEMALE" },
+    ];
 
-    if (!ttsResponse.ok) {
-      const errText = await ttsResponse.text();
-      console.error("Google TTS error:", ttsResponse.status, errText);
-      return new Response(
-        JSON.stringify({ audio: null, error: "TTS generation failed" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const ssmlText = `<speak><prosody rate="medium" pitch="0st">${truncated.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</prosody></speak>`;
+
+    let audioBase64: string | null = null;
+    let usedVoice = "";
+
+    for (const voice of VOICES) {
+      try {
+        const ttsResponse = await fetch(
+          `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleTtsKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              input: { ssml: ssmlText },
+              voice,
+              audioConfig: {
+                audioEncoding: "MP3",
+                speakingRate: 1.0,
+                pitch: 0.0,
+                effectsProfileId: ["headphone-class-device"],
+              },
+            }),
+          }
+        );
+
+        if (ttsResponse.ok) {
+          const ttsData = await ttsResponse.json();
+          if (ttsData.audioContent) {
+            audioBase64 = ttsData.audioContent;
+            usedVoice = voice.name;
+            console.log("Voz usada:", voice.name);
+            break;
+          }
+        } else {
+          console.log("Voz no disponible:", voice.name);
+        }
+      } catch (e) {
+        console.log("Error con voz:", voice.name, e);
+      }
     }
 
-    const ttsData = await ttsResponse.json();
-    const audioBase64 = ttsData.audioContent || null;
-
     return new Response(
-      JSON.stringify({ audio: audioBase64, audioType: "audio/mpeg" }),
+      JSON.stringify({ audio: audioBase64, audioType: "audio/mpeg", voice: usedVoice }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
