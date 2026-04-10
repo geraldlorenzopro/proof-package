@@ -128,10 +128,11 @@ export default function HubChatPage() {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [speakingNow, setSpeakingNow] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
-  const [voiceListening, setVoiceListening] = useState(false);
+  const [voicePhase, setVoicePhase] = useState<"listening" | "processing" | "speaking" | "idle">("idle");
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const voiceRecRef = useRef<any>(null);
   const voiceSilenceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const voiceModeRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
