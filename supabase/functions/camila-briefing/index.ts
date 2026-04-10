@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       console.warn("Weather fetch failed:", e);
     }
 
-    // ─── Immigration news via Perplexity — structured 3 cards ───
+    // ─── Immigration news via Perplexity — structured 9 cards ───
     let newsText = "";
     let newsCitations: string[] = [];
     let newsCards: any[] = [];
@@ -86,18 +86,18 @@ Deno.serve(async (req) => {
             messages: [
               {
                 role: "system",
-                content: `Eres un asistente que busca noticias recientes de inmigración en Estados Unidos. Responde SOLO con un JSON array de exactamente 3 objetos. Cada objeto tiene: title (máx 80 caracteres en español), summary (2 oraciones en español, máx 150 caracteres), category (una de: USCIS, DACA, Visas, Deportación, Naturalización, Legislación), time (ej: 'hace 2h', 'hace 5h', 'ayer'). No incluyas ningún texto fuera del JSON.`,
+                content: `Eres un asistente que busca noticias recientes de inmigración en Estados Unidos. Responde SOLO con un JSON array de exactamente 9 objetos. Cada objeto tiene: title (titular en español, máx 80 caracteres), summary (resumen en español, máx 120 caracteres), category (una de: USCIS, DACA, Visas, Deportación, Naturalización, Legislación), time (tiempo aproximado como 'hace 2h', 'hace 5h', 'ayer'). No incluyas ningún texto fuera del JSON.`,
               },
               {
                 role: "user",
-                content: `Dame las 3 noticias más recientes e importantes sobre inmigración en Estados Unidos hoy ${todayStr}.`,
+                content: `Dame las 9 noticias más recientes e importantes sobre inmigración en Estados Unidos hoy ${todayStr}.`,
               },
             ],
-            max_tokens: 500,
+            max_tokens: 1200,
             temperature: 0.2,
             search_recency_filter: "day",
           }),
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(15000),
         });
 
         if (pxResp.ok) {
@@ -106,14 +106,12 @@ Deno.serve(async (req) => {
           newsCitations = pxData.citations || [];
           newsText = raw;
 
-          // Try to parse structured JSON
           try {
-            // Extract JSON array from response (may have markdown fences)
             const jsonMatch = raw.match(/\[[\s\S]*\]/);
             if (jsonMatch) {
               const parsed = JSON.parse(jsonMatch[0]);
               if (Array.isArray(parsed) && parsed.length >= 1) {
-                newsCards = parsed.slice(0, 3).map((item: any) => ({
+                newsCards = parsed.slice(0, 9).map((item: any) => ({
                   title: String(item.title || "").slice(0, 100),
                   summary: String(item.summary || "").slice(0, 200),
                   category: String(item.category || "USCIS"),
@@ -142,14 +140,14 @@ Deno.serve(async (req) => {
               messages: [
                 {
                   role: "system",
-                  content: `Responde SOLO con un JSON array de exactamente 3 objetos. Cada objeto tiene: title (máx 80 caracteres en español sobre inmigración en EE.UU.), summary (2 oraciones, máx 150 chars), category (USCIS, DACA, Visas, Deportación, Naturalización, o Legislación), time (ej: 'hoy'). Sin texto extra.`,
+                  content: `Responde SOLO con un JSON array de exactamente 9 objetos. Cada objeto tiene: title (titular en español, máx 80 caracteres sobre inmigración en EE.UU.), summary (resumen en español, máx 120 chars), category (USCIS, DACA, Visas, Deportación, Naturalización, o Legislación), time (ej: 'hoy'). Sin texto extra.`,
                 },
                 {
                   role: "user",
-                  content: `Dame 3 noticias recientes importantes sobre inmigración en Estados Unidos.`,
+                  content: `Dame 9 noticias recientes importantes sobre inmigración en Estados Unidos.`,
                 },
               ],
-              max_tokens: 400,
+              max_tokens: 1200,
               temperature: 0.3,
             }),
             signal: AbortSignal.timeout(8000),
@@ -163,7 +161,7 @@ Deno.serve(async (req) => {
               if (jsonMatch2) {
                 const parsed2 = JSON.parse(jsonMatch2[0]);
                 if (Array.isArray(parsed2)) {
-                  newsCards = parsed2.slice(0, 3).map((item: any) => ({
+                  newsCards = parsed2.slice(0, 9).map((item: any) => ({
                     title: String(item.title || "").slice(0, 100),
                     summary: String(item.summary || "").slice(0, 200),
                     category: String(item.category || "USCIS"),
