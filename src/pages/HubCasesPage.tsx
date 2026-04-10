@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import { Briefcase, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import HubLayout from "@/components/hub/HubLayout";
 
 const STAGE_CONFIG: Record<string, { label: string; color: string }> = {
   "caso-no-iniciado": { label: "Intake", color: "bg-sky-500/15 text-sky-400 border-sky-500/20" },

@@ -4,6 +4,7 @@ import { Mic, Bot, Wrench } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import HubAgentTeam from "@/components/hub/HubAgentTeam";
 import VoiceAIPanel from "@/components/hub/VoiceAIPanel";
+import HubLayout from "@/components/hub/HubLayout";
 import {
   FileText, Clipboard, Globe, Shield, CheckSquare,
   Calculator, FileSearch, Camera, Zap

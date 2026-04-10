@@ -4,12 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search, Send, ExternalLink, Clock, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
+import { Search, Send, ExternalLink, Clock, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import ChannelLogo from "@/components/intake/ChannelLogo";
 import IntakeWizard from "@/components/intake/IntakeWizard";
+import HubLayout from "@/components/hub/HubLayout";
 
 interface ConsultationRow {
   id: string;

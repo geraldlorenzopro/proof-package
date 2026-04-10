@@ -4,6 +4,7 @@ import { Calendar, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import HubLayout from "@/components/hub/HubLayout";
 
 export default function HubAgendaPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
