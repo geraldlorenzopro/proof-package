@@ -273,8 +273,8 @@ export default function HubDashboard({
           </div>
         )}
 
-        {/* ─── Main centered area ─── */}
-        <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-6">
+      {/* ─── Main centered area ─── */}
+        <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-6 text-center">
 
           {/* ─── Camila avatar + greeting ─── */}
           {!hasChatResponse && (
@@ -330,7 +330,7 @@ export default function HubDashboard({
           )}
 
           {/* ─── Input bar ─── */}
-          <div className="w-full max-w-[640px] mb-5">
+          <div className="w-full max-w-[640px] mx-auto mb-5">
             <div className="flex items-center gap-2 bg-card border border-border/40 rounded-2xl px-4 py-3.5 shadow-sm focus-within:border-jarvis/40 focus-within:ring-1 focus-within:ring-jarvis/20 transition-all">
               <input
                 ref={inputRef}
@@ -362,7 +362,7 @@ export default function HubDashboard({
 
           {/* ─── Quick action chips (2 rows x 3) ─── */}
           {!hasChatResponse && (
-            <div className="w-full max-w-[640px] grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
+            <div className="w-full max-w-[640px] mx-auto grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
               {quickChips.map(chip => (
                 <button
                   key={chip.label}
@@ -379,7 +379,7 @@ export default function HubDashboard({
 
           {/* ─── Office stats — elegant mini-cards ─── */}
           {!hasChatResponse && (
-            <div className="w-full max-w-[640px]">
+            <div className="w-full max-w-[640px] mx-auto">
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-px flex-1 bg-border/20" />
                 <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold">Tu oficina hoy</span>
