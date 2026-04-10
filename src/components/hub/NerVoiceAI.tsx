@@ -57,9 +57,12 @@ function NerVoiceAIInner({ accountId }: Props) {
 
     try {
       // Request mic FIRST (must be in user gesture context)
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("NER Voice AI: Requesting microphone...");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("NER Voice AI: Microphone granted, tracks:", stream.getAudioTracks().length);
 
       // Get a server-side token for authenticated WebRTC connection
+      console.log("NER Voice AI: Fetching token...");
       const { data, error: fnError } = await supabase.functions.invoke(
         "elevenlabs-conversation-token",
         { body: { agent_id: AGENT_ID } }
@@ -69,11 +72,12 @@ function NerVoiceAIInner({ accountId }: Props) {
         console.error("Token error:", fnError, data);
         throw new Error("No se pudo obtener token de voz.");
       }
+      console.log("NER Voice AI: Token received, starting session...");
 
-      await conversation.startSession({
-        conversationToken: data.token,
-        connectionType: "webrtc",
+      const session = await conversation.startSession({
+        agentId: AGENT_ID,
       });
+      console.log("NER Voice AI: Session started:", session);
     } catch (err: any) {
       console.error("Failed to start NER Voice AI:", err);
       const msg = err.name === "NotFoundError" || err.message?.includes("device not found")
