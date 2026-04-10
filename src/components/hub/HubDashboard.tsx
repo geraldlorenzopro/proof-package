@@ -492,10 +492,8 @@ export default function HubDashboard({
               </div>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* ─── News Cards Section ─── */}
+          {/* ─── News Cards Section ─── */}
       {!hasChatResponse && (
         <div className="w-full max-w-[640px] mx-auto px-6 pb-4">
           <div className="flex items-center gap-2 mb-3">
