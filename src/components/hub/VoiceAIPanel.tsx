@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MicOff, RefreshCw, Phone, PhoneOff, Sparkles } from "lucide-react";
+import { MicOff, RefreshCw, Phone, PhoneOff, Sparkles, Trash2, User, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import NerVoiceOrb from "./NerVoiceOrb";
