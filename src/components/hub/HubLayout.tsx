@@ -60,9 +60,10 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
 
   const currentPath = location.pathname;
   const isHubSection = currentPath === "/hub" || currentPath.startsWith("/hub/");
+  const isHubAiPage = currentPath === "/hub/ai";
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-[100dvh] max-h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Impersonation banner */}
       {impersonateData && (
         <div className="bg-amber-500 text-black px-4 py-2 flex items-center justify-between text-sm font-medium shrink-0 z-[9999]">
@@ -160,7 +161,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             </header>
           )}
 
-          <main className="flex-1 min-h-0 overflow-auto">
+          <main className={`flex-1 min-h-0 ${isHubAiPage ? "overflow-hidden" : "overflow-auto"}`}>
             {children}
           </main>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mic, Bot, Wrench } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -26,6 +26,43 @@ const TOOLS = [
 export default function HubAiPage() {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const root = document.getElementById("root");
+
+    const previous = {
+      htmlHeight: html.style.height,
+      htmlOverflow: html.style.overflow,
+      bodyHeight: body.style.height,
+      bodyOverflow: body.style.overflow,
+      rootHeight: root?.style.height ?? "",
+      rootOverflow: root?.style.overflow ?? "",
+    };
+
+    html.style.height = "100%";
+    html.style.overflow = "hidden";
+    body.style.height = "100%";
+    body.style.overflow = "hidden";
+
+    if (root) {
+      root.style.height = "100%";
+      root.style.overflow = "hidden";
+    }
+
+    return () => {
+      html.style.height = previous.htmlHeight;
+      html.style.overflow = previous.htmlOverflow;
+      body.style.height = previous.bodyHeight;
+      body.style.overflow = previous.bodyOverflow;
+
+      if (root) {
+        root.style.height = previous.rootHeight;
+        root.style.overflow = previous.rootOverflow;
+      }
+    };
+  }, []);
+
   const accountId = (() => {
     try {
       const raw = sessionStorage.getItem("ner_hub_data");
@@ -43,8 +80,8 @@ export default function HubAiPage() {
   if (!accountId) return null;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <Tabs defaultValue="voice" className="flex-1 flex flex-col min-h-0">
+    <div className="h-full min-h-0 flex flex-col overflow-hidden">
+      <Tabs defaultValue="voice" className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {/* Tab bar */}
         <div className="px-5 pt-4 pb-0 shrink-0">
           <TabsList className="bg-card/50 border border-border/20 h-11 p-1 gap-1">
@@ -64,7 +101,7 @@ export default function HubAiPage() {
         </div>
 
         {/* Voice AI — split screen */}
-        <TabsContent value="voice" forceMount className="flex-1 min-h-0 mt-0 relative data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col">
+        <TabsContent value="voice" forceMount className="relative mt-0 flex-1 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col">
           <VoiceAIPanel accountId={accountId} />
         </TabsContent>
 
