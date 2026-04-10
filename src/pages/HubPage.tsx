@@ -367,6 +367,8 @@ export default function HubPage() {
         userRole={userRole}
         canAccessApp={canAccess}
         stats={stats}
+        showOnboardingBanner={showOnboarding === true}
+        onTriggerOnboarding={() => setShowOnboarding(true)}
       />
     </HubLayout>
   );
