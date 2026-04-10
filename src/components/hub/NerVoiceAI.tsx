@@ -55,35 +55,19 @@ export default function NerVoiceAI({ accountId }: Props) {
   }, [conversation.status]);
 
   const startConversation = useCallback(async () => {
-    if (!AGENT_ID) {
-      setError("Agent ID no configurado. Configura VITE_ELEVENLABS_AGENT_ID.");
-      return;
-    }
-
     setIsConnecting(true);
     setError(null);
 
     try {
-      // Request microphone permission
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Get signed URL from edge function
-      const { data, error: fnError } = await supabase.functions.invoke(
-        "elevenlabs-conversation-token",
-        { body: { agent_id: AGENT_ID } }
-      );
-
-      if (fnError || !data?.signed_url) {
-        throw new Error(fnError?.message || "No se pudo obtener token de conversación");
-      }
-
-      // Start the conversation
       await conversation.startSession({
-        signedUrl: data.signed_url,
+        agentId: AGENT_ID,
+        connectionType: "webrtc",
       });
     } catch (err: any) {
       console.error("Failed to start NER Voice AI:", err);
-      setError(err.message || "No se pudo iniciar la conversación");
+      setError(err.message || "No se pudo iniciar la conversación. Verifica el micrófono.");
     } finally {
       setIsConnecting(false);
     }
