@@ -4,13 +4,15 @@ import {
   Send, Mic, MicOff, Briefcase, Calendar, Users,
   MessageSquare, FileSearch, Clock, ChevronRight,
   X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
-  Newspaper, CloudSun, ExternalLink
+  Newspaper, Shield, Globe, Scale, Gavel, BookOpen, FileText
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
 import ReactMarkdown from "react-markdown";
 import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   accountId: string;
