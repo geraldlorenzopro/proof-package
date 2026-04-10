@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Mic, MicOff, Volume2, VolumeX, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Mic, MicOff, Volume2, VolumeX, Sparkles, X, Phone } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { speakAsCamila, stopSpeaking, isSpeaking, logVocesDiagnostico } from "@/lib/camilaTTS";
 import HubLayout from "@/components/hub/HubLayout";
