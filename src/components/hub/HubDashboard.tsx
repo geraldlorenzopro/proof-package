@@ -106,11 +106,12 @@ export default function HubDashboard({
     if (cached) {
       try {
         const { ts, data } = JSON.parse(cached);
-        if (Date.now() - ts < 30 * 60 * 1000) {
+        // Only use cache if fresh AND has newsCards
+        if (Date.now() - ts < 30 * 60 * 1000 && data.newsCards?.length) {
           if (data.news) setBriefingNews(data.news);
           if (data.citations?.length) setBriefingCitations(data.citations);
           if (data.weather) setBriefingWeather(data.weather);
-          if (data.newsCards?.length) setNewsCards(data.newsCards);
+          setNewsCards(data.newsCards);
           setNewsLoading(false);
           return;
         }
