@@ -102,6 +102,9 @@ function VoiceAIPanelInner({ accountId }: Props) {
   const [sessionDuration, setSessionDuration] = useState(0);
   const [sessionStart, setSessionStart] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const FAREWELL_PATTERNS = /\b(adiós|adios|nos vemos|hasta luego|chao|bye|que tengas|buen día|buenas noches|un placer|hasta pronto|cuídate)\b/i;
 
   const conversation = useConversation({
     onConnect: () => {
@@ -112,23 +115,35 @@ function VoiceAIPanelInner({ accountId }: Props) {
     onDisconnect: () => {
       setSessionStart(null);
       setSessionDuration(0);
+      if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
     },
     onMessage: (message: any) => {
+      let newEntry: TranscriptEntry | null = null;
+
       if (message.type === "user_transcript") {
         const text = message.user_transcription_event?.user_transcript;
-        if (text) {
-          setTranscripts(prev => [...prev, { id: crypto.randomUUID(), role: "user", text, timestamp: new Date() }]);
-        }
+        if (text) newEntry = { id: crypto.randomUUID(), role: "user", text, timestamp: new Date() };
       } else if (message.source === "user" && typeof message.message === "string") {
-        setTranscripts(prev => [...prev, { id: crypto.randomUUID(), role: "user", text: message.message, timestamp: new Date() }]);
+        newEntry = { id: crypto.randomUUID(), role: "user", text: message.message, timestamp: new Date() };
       }
+
       if (message.type === "agent_response") {
         const text = message.agent_response_event?.agent_response;
-        if (text) {
-          setTranscripts(prev => [...prev, { id: crypto.randomUUID(), role: "agent", text, timestamp: new Date() }]);
-        }
+        if (text) newEntry = { id: crypto.randomUUID(), role: "agent", text, timestamp: new Date() };
       } else if (message.source === "ai" && typeof message.message === "string") {
-        setTranscripts(prev => [...prev, { id: crypto.randomUUID(), role: "agent", text: message.message, timestamp: new Date() }]);
+        newEntry = { id: crypto.randomUUID(), role: "agent", text: message.message, timestamp: new Date() };
+      }
+
+      if (newEntry) {
+        setTranscripts(prev => [...prev, newEntry!]);
+
+        // Auto-end: detect farewell from agent after user farewell
+        if (newEntry.role === "agent" && FAREWELL_PATTERNS.test(newEntry.text)) {
+          if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+          autoEndTimerRef.current = setTimeout(() => {
+            conversation.endSession();
+          }, 3000);
+        }
       }
     },
     onError: (err: any) => {
@@ -179,7 +194,7 @@ function VoiceAIPanelInner({ accountId }: Props) {
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
-    <div className="h-full flex overflow-hidden">
+    <div className="absolute inset-0 flex overflow-hidden">
       {/* ═══ LEFT — Voice Experience ═══ */}
       <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden"
         style={{

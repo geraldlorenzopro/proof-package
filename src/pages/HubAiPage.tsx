@@ -64,7 +64,7 @@ export default function HubAiPage() {
         </div>
 
         {/* Voice AI — split screen */}
-        <TabsContent value="voice" className="flex-1 min-h-0 mt-0">
+        <TabsContent value="voice" className="flex-1 min-h-0 mt-0 relative">
           <VoiceAIPanel accountId={accountId} />
         </TabsContent>
 
