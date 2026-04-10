@@ -394,16 +394,16 @@ export default function HubChatPage() {
             </div>
           </div>
           <button
-            onClick={toggleVoice}
+            onClick={toggleHeaderVoice}
             className={`flex items-center gap-2 px-3 h-9 rounded-xl text-xs font-medium transition-all ${
-              voiceEnabled
+              headerVoice
                 ? "text-jarvis bg-jarvis/10 border border-jarvis/20"
                 : "text-muted-foreground/50 hover:text-muted-foreground border border-border/30 hover:border-border/50"
             }`}
-            title={voiceEnabled ? "Desactivar respuestas de voz" : "Activar respuestas de voz"}
+            title={headerVoice ? "Desactivar respuestas de voz" : "Activar respuestas de voz"}
           >
-            {voiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-            <span>{voiceEnabled ? "Voz activa" : "Activar voz"}</span>
+            {headerVoice ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            <span>{headerVoice ? "Voz activa" : "Activar voz"}</span>
           </button>
         </div>
 
