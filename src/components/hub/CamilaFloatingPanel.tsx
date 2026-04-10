@@ -262,30 +262,66 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
   useEffect(() => { sendRef.current = send; }, [send]);
 
   // ── BOTÓN 1: Micrófono (STT) — startListening ──
-  const startListening = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const recognition = new SpeechRecognition();
+  const startListening = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      toast.error("Tu navegador no soporta reconocimiento de voz. Usa Chrome.");
+      return;
+    }
+
+    const recognition = new SR();
     recognition.lang = "es-419";
+    recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.continuous = false;
     recognitionRef.current = recognition;
 
-    recognition.onresult = (event: any) => {
-      let transcript = "";
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+    let finalTranscript = "";
+
+    recognition.onresult = (e: any) => {
+      let interim = "";
+      finalTranscript = "";
+
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          finalTranscript += e.results[i][0].transcript;
+        } else {
+          interim += e.results[i][0].transcript;
+        }
       }
-      setInput(transcript);
-      if (event.results[0].isFinal) {
-        setIsListening(false);
-        sendRef.current(transcript);
+
+      // Show text in real-time while user speaks
+      setInput(finalTranscript || interim);
+
+      // Cancel previous timer
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
       }
+
+      // Wait 1.5s of silence before sending
+      silenceTimerRef.current = setTimeout(() => {
+        const textoFinal = (finalTranscript || interim).trim();
+        if (textoFinal) {
+          recognition.stop();
+          setIsListening(false);
+          setInput("");
+          sendRef.current(textoFinal);
+        }
+      }, 1500);
     };
 
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (e: any) => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      if (e.error !== "no-speech") {
+        console.error("Speech recognition error:", e.error);
+      }
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    };
 
     recognition.start();
     setIsListening(true);
