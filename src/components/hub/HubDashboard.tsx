@@ -505,7 +505,7 @@ export default function HubDashboard({
             <div className="h-px flex-1 bg-border/20" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            {newsLoading
+            {newsLoading || newsCards.length === 0
               ? Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40">
                     <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
