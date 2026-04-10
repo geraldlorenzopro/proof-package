@@ -4,6 +4,51 @@ import { Sparkles, X, Send, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { speakAsCamila, stopSpeaking, isSpeaking, logVocesDiagnostico } from "@/lib/camilaTTS";
 
+const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-tts`;
+
+let currentAudio: HTMLAudioElement | null = null;
+
+function stopGoogleAudio() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.src = "";
+    currentAudio = null;
+  }
+}
+
+async function playGoogleTTS(text: string): Promise<boolean> {
+  try {
+    const resp = await fetch(TTS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ text }),
+    });
+    if (!resp.ok) return false;
+    const data = await resp.json();
+    if (!data.audio) return false;
+
+    return new Promise((resolve) => {
+      const byteChars = atob(data.audio);
+      const byteArray = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteArray[i] = byteChars.charCodeAt(i);
+      }
+      const blob = new Blob([byteArray], { type: "audio/mpeg" });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      currentAudio = audio;
+      audio.onended = () => { URL.revokeObjectURL(url); currentAudio = null; resolve(true); };
+      audio.onerror = () => { URL.revokeObjectURL(url); currentAudio = null; resolve(false); };
+      audio.play().catch(() => { currentAudio = null; resolve(false); });
+    });
+  } catch {
+    return false;
+  }
+}
+
 type Msg = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-chat`;
