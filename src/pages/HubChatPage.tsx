@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Mic, MicOff, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Mic, MicOff, Sparkles, Phone, PhoneOff } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { useConversation, ConversationProvider } from "@elevenlabs/react";
+import { supabase } from "@/integrations/supabase/client";
 import HubLayout from "@/components/hub/HubLayout";
+
+const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
 
 /* ── Types ── */
 type Msg = { role: "user" | "assistant"; content: string };
@@ -65,7 +69,108 @@ async function streamChat({ messages, accountId, onDelta, onDone, signal }: {
   onDone();
 }
 
-export default function HubChatPage() {
+function unlockAudioContext() {
+  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtx) return;
+  const ctx = new AudioCtx();
+  if (ctx.state === "suspended") void ctx.resume();
+  const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start(0);
+}
+
+async function fetchSignedUrl() {
+  const { data, error } = await supabase.functions.invoke(
+    "elevenlabs-conversation-token",
+    { body: { agent_id: AGENT_ID } },
+  );
+  if (error) throw new Error(error.message || "No se pudo iniciar la sesión de voz.");
+  if (!data?.signed_url) throw new Error(data?.error || "No se recibió signed_url.");
+  return data.signed_url;
+}
+
+async function fetchOfficeContext(accountId: string) {
+  const today = new Date().toISOString().split("T")[0];
+  const [
+    { data: officeConfig },
+    { count: activeCasesCount },
+    { count: totalCasesCount },
+    { count: completedCasesCount },
+    { count: pendingTasksCount },
+    { count: completedTasksCount },
+    { count: clientsCount },
+    { data: todayAppointments },
+    { data: recentIntakes },
+    { data: members },
+    { count: consultationsCount },
+    { data: recentCases },
+    { count: documentsCount },
+    { data: creditData },
+  ] = await Promise.all([
+    supabase.from("office_config" as any).select("firm_name, attorney_name, timezone").eq("account_id", accountId).maybeSingle(),
+    supabase.from("client_cases").select("*", { count: "exact", head: true }).eq("account_id", accountId).in("status", ["active", "pending", "in_progress"]),
+    supabase.from("client_cases").select("*", { count: "exact", head: true }).eq("account_id", accountId),
+    supabase.from("client_cases").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("status", "completed"),
+    supabase.from("case_tasks").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("status", "pending"),
+    supabase.from("case_tasks").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("status", "completed"),
+    supabase.from("client_profiles").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("is_test", false),
+    supabase.from("appointments").select("client_name, appointment_time, appointment_type, status").eq("account_id", accountId).eq("appointment_date", today).order("appointment_time", { ascending: true }).limit(10),
+    supabase.from("intake_sessions").select("client_first_name, client_last_name, status, consultation_topic").eq("account_id", accountId).order("created_at", { ascending: false }).limit(5),
+    supabase.from("account_members").select("role").eq("account_id", accountId),
+    supabase.from("consultations").select("*", { count: "exact", head: true }).eq("account_id", accountId),
+    supabase.from("client_cases").select("client_name, case_type, status, pipeline_stage").eq("account_id", accountId).order("created_at", { ascending: false }).limit(5),
+    supabase.from("case_documents").select("*", { count: "exact", head: true }).eq("account_id", accountId),
+    supabase.from("ai_credits").select("balance, monthly_allowance, used_this_month").eq("account_id", accountId).maybeSingle(),
+  ]);
+
+  const office = (officeConfig as any) || {};
+  const attorneyFullName = office.attorney_name || "Jefe";
+  const ownerFirstName = attorneyFullName.split(" ")[0];
+  const appointmentsList = (todayAppointments || []).map((a: any) => `${a.client_name} a las ${a.appointment_time || "sin hora"} (${a.status})`).join("; ");
+  const intakesList = (recentIntakes || []).map((i: any) => `${i.client_first_name || ""} ${i.client_last_name || ""} - ${i.consultation_topic || "sin tema"}`).join("; ");
+  const recentCasesList = (recentCases || []).map((c: any) => `${c.client_name} - ${c.case_type} (${c.status}, etapa: ${c.pipeline_stage || "sin etapa"})`).join("; ");
+  const credits = (creditData as any) || {};
+  const memberRoles = (members || []).reduce((acc: Record<string, number>, m: any) => {
+    acc[m.role] = (acc[m.role] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const teamBreakdown = Object.entries(memberRoles).map(([role, count]) => `${count} ${role}`).join(", ");
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Buenos días" : hour < 18 ? "Buenas tardes" : "Buenas noches";
+  const dayName = new Date().toLocaleDateString("es-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+  return {
+    ownerFirstName,
+    context: [
+      `INSTRUCCIONES DE TRATO: El usuario se llama "${ownerFirstName}". Úsalo de forma natural y esporádica.`,
+      `REGLA DE CADENCIA: Habla con un ritmo constante, pausado y natural.`,
+      `REGLA ESTRICTA: NUNCA reveles que eres una inteligencia artificial.`,
+      `Nombre completo del abogado: ${attorneyFullName}`,
+      `Firma: ${office.firm_name || "Sin nombre"}`,
+      `Clientes registrados: ${clientsCount ?? 0}`,
+      `Casos activos: ${activeCasesCount ?? 0}`,
+      `Casos completados: ${completedCasesCount ?? 0}`,
+      `Total de casos: ${totalCasesCount ?? 0}`,
+      `Últimos casos: ${recentCasesList || "Ninguno"}`,
+      `Tareas pendientes: ${pendingTasksCount ?? 0}`,
+      `Tareas completadas: ${completedTasksCount ?? 0}`,
+      `Equipo: ${members?.length ?? 0} (${teamBreakdown || "sin desglose"})`,
+      `Consultas: ${consultationsCount ?? 0}`,
+      `Últimas consultas: ${intakesList || "Ninguna"}`,
+      `Citas de hoy: ${appointmentsList || "Ninguna"}`,
+      `Documentos: ${documentsCount ?? 0}`,
+      `Créditos AI: ${credits.balance ?? 0}/${credits.monthly_allowance ?? 0}`,
+      `Fecha: ${dayName}`,
+    ].join("\n"),
+  };
+}
+
+const FAREWELL_PATTERNS = /\b(adiós|adios|nos vemos|hasta luego|chao|bye|que tengas|buen día|buenas noches|un placer|hasta pronto|cuídate)\b/i;
+
+function HubChatPageInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as { initialMessage?: string; accountId?: string; accountName?: string; plan?: string; staffName?: string } | null;
@@ -91,6 +196,53 @@ export default function HubChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
+  // Voice call (ElevenLabs WebSocket)
+  const [isConnecting, setIsConnecting] = useState(false);
+  const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const conversation = useConversation({
+    onConnect: () => {
+      setIsConnecting(false);
+    },
+    onDisconnect: () => {
+      if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+    },
+    onMessage: (message: any) => {
+      // Capture voice transcripts as chat messages
+      if (message.type === "user_transcript") {
+        const text = message.user_transcription_event?.user_transcript;
+        if (text) {
+          setMessages(prev => [...prev, { role: "user", content: text }]);
+        }
+      } else if (message.source === "user" && typeof message.message === "string") {
+        setMessages(prev => [...prev, { role: "user", content: message.message }]);
+      }
+
+      if (message.type === "agent_response") {
+        const text = message.agent_response_event?.agent_response;
+        if (text) {
+          setMessages(prev => [...prev, { role: "assistant", content: text }]);
+          if (FAREWELL_PATTERNS.test(text)) {
+            if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+            autoEndTimerRef.current = setTimeout(() => {
+              conversation.endSession();
+            }, 5000);
+          }
+        }
+      } else if (message.source === "ai" && typeof message.message === "string") {
+        setMessages(prev => [...prev, { role: "assistant", content: message.message }]);
+      }
+    },
+    onError: (err: any) => {
+      const msg = typeof err === "string" ? err : err?.message || "Error de conexión.";
+      toast.error(msg);
+      setIsConnecting(false);
+    },
+  });
+
+  const isVoiceActive = conversation.status === "connected";
+  const isCamilaSpeaking = conversation.isSpeaking;
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -103,14 +255,21 @@ export default function HubChatPage() {
   }, [messages]);
 
   useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 300);
-  }, []);
+    if (!isVoiceActive) setTimeout(() => inputRef.current?.focus(), 300);
+  }, [isVoiceActive]);
 
   useEffect(() => {
     if (state?.initialMessage && !sentInitial.current) {
       sentInitial.current = true;
       setTimeout(() => sendRef.current(state.initialMessage!), 200);
     }
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (conversation.status === "connected") conversation.endSession();
+    };
   }, []);
 
   const send = useCallback(async (text: string) => {
@@ -153,8 +312,42 @@ export default function HubChatPage() {
   const sendRef = useRef(send);
   useEffect(() => { sendRef.current = send; }, [send]);
 
-  // Dictation mic — types into input, auto-sends after silence
+  // Voice call
+  const startVoiceCall = useCallback(async () => {
+    if (isVoiceActive) {
+      await conversation.endSession();
+      return;
+    }
+    setIsConnecting(true);
+    unlockAudioContext();
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const [signedUrl, officeData] = await Promise.all([
+        fetchSignedUrl(),
+        fetchOfficeContext(accountId),
+      ]);
+      await conversation.startSession({
+        signedUrl,
+        connectionType: "websocket",
+        dynamicVariables: {
+          info_oficina: officeData.context,
+          nombre_usuario: officeData.ownerFirstName,
+        },
+      } as any);
+    } catch (err: any) {
+      const msg = String(err?.message || err || "");
+      toast.error(
+        msg.includes("Permission") || msg.includes("NotAllowed")
+          ? "Se necesita permiso de micrófono."
+          : `No se pudo conectar: ${msg}`
+      );
+      setIsConnecting(false);
+    }
+  }, [conversation, accountId, isVoiceActive]);
+
+  // Dictation mic
   const startListening = useCallback(() => {
+    if (isVoiceActive) return;
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { toast.error("Tu navegador no soporta reconocimiento de voz."); return; }
     const recognition = new SR();
@@ -180,12 +373,13 @@ export default function HubChatPage() {
     recognition.onend = () => { if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current); };
     recognition.start();
     setIsListening(true);
-  }, []);
+  }, [isVoiceActive]);
 
   const toggleMic = useCallback(() => {
+    if (isVoiceActive) return;
     if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
     startListening();
-  }, [isListening, startListening]);
+  }, [isListening, startListening, isVoiceActive]);
 
   const suggestedQuestions = [
     "¿Qué tenemos hoy?",
@@ -215,18 +409,51 @@ export default function HubChatPage() {
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-jarvis/20 to-jarvis/5 border border-jarvis/30 flex items-center justify-center">
                   <Sparkles className="w-4.5 h-4.5 text-jarvis" />
                 </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-background" />
+                <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background ${isVoiceActive ? "bg-emerald-400 animate-pulse" : "bg-emerald-400"}`} />
               </div>
               <div>
                 <h2 className="text-sm font-bold text-foreground tracking-tight">Camila</h2>
                 <p className="text-[10px] text-muted-foreground/50 font-mono uppercase tracking-[0.15em]">
-                  {isListening ? "🎙️ Dictando..." : isLoading ? "Procesando..." : "Chat · Oficina Virtual AI"}
+                  {isVoiceActive
+                    ? isCamilaSpeaking ? "🔊 Respondiendo..." : "🎙️ En llamada..."
+                    : isConnecting ? "Conectando..."
+                    : isListening ? "🎙️ Dictando..."
+                    : isLoading ? "Procesando..."
+                    : "Chat · Oficina Virtual AI"
+                  }
                 </p>
               </div>
             </div>
           </div>
-          <div />
+
+          {/* Voice call button */}
+          <button
+            onClick={startVoiceCall}
+            disabled={isConnecting}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+              isVoiceActive
+                ? "bg-red-500/15 text-red-400 border border-red-400/30 hover:bg-red-500/25"
+                : isConnecting
+                ? "bg-jarvis/10 text-jarvis border border-jarvis/20 animate-pulse"
+                : "text-muted-foreground/50 hover:text-jarvis hover:bg-jarvis/10 border border-transparent hover:border-jarvis/20"
+            }`}
+            title={isVoiceActive ? "Finalizar llamada" : "Llamar a Camila"}
+          >
+            {isVoiceActive ? <PhoneOff className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+          </button>
         </div>
+
+        {/* Voice active banner */}
+        {isVoiceActive && (
+          <div className="shrink-0 px-5 py-2 flex items-center justify-center gap-2 border-b border-emerald-400/15"
+            style={{ background: "linear-gradient(135deg, hsl(150 60% 50% / 0.05) 0%, transparent 60%)" }}
+          >
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_hsl(150_60%_50%/0.5)]" />
+            <span className="text-[10px] font-mono text-emerald-400/70 uppercase tracking-[0.2em]">
+              Conversación de voz activa — habla con naturalidad
+            </span>
+          </div>
+        )}
 
         {/* ── Messages ── */}
         <div
@@ -247,7 +474,7 @@ export default function HubChatPage() {
                 <div>
                   <p className="text-lg font-semibold text-foreground/80">Hola, soy Camila 👋</p>
                   <p className="text-sm text-muted-foreground/50 mt-2 max-w-sm mx-auto">
-                    Pregúntame sobre tu oficina: citas del día, estado de casos, tareas pendientes, métricas y más.
+                    Pregúntame sobre tu oficina o inicia una llamada de voz con el botón <Phone className="w-3.5 h-3.5 inline" />.
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 w-full max-w-md">
@@ -307,28 +534,33 @@ export default function HubChatPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-                placeholder="Pregúntale a Camila..."
+                placeholder={isVoiceActive ? "Llamada activa — habla por voz" : "Pregúntale a Camila..."}
                 rows={1}
-                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none max-h-32"
+                disabled={isVoiceActive}
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none max-h-32 disabled:opacity-50"
                 style={{ scrollbarWidth: "none" }}
               />
               <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={toggleMic}
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                    isListening ? "bg-red-500/20 text-red-400 border border-red-400/40 animate-pulse" : "text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10"
-                  }`}
-                  title={isListening ? "Detener" : "Dictar"}
-                >
-                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </button>
-                <button
-                  onClick={() => send(input)}
-                  disabled={!input.trim() || isLoading}
-                  className="w-9 h-9 rounded-xl bg-jarvis/20 text-jarvis flex items-center justify-center hover:bg-jarvis/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+                {!isVoiceActive && (
+                  <>
+                    <button
+                      onClick={toggleMic}
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                        isListening ? "bg-red-500/20 text-red-400 border border-red-400/40 animate-pulse" : "text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10"
+                      }`}
+                      title={isListening ? "Detener" : "Dictar"}
+                    >
+                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => send(input)}
+                      disabled={!input.trim() || isLoading}
+                      className="w-9 h-9 rounded-xl bg-jarvis/20 text-jarvis flex items-center justify-center hover:bg-jarvis/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
             <p className="text-[9px] text-muted-foreground/25 text-center mt-2 font-mono tracking-wider">
@@ -338,5 +570,13 @@ export default function HubChatPage() {
         </div>
       </div>
     </HubLayout>
+  );
+}
+
+export default function HubChatPage() {
+  return (
+    <ConversationProvider>
+      <HubChatPageInner />
+    </ConversationProvider>
   );
 }
