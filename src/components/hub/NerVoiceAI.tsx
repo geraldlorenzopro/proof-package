@@ -24,7 +24,7 @@ function unlockAudioContext() {
   src.start(0);
 }
 
-export default function NerVoiceAI({ accountId }: Props) {
+function NerVoiceAIInner({ accountId }: Props) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState("");
