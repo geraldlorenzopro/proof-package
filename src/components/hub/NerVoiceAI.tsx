@@ -77,19 +77,40 @@ function NerVoiceAIInner({ accountId }: Props) {
       console.log("NER Voice AI: Requesting microphone...");
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      console.log("NER Voice AI: Fetching token with retry...");
-      const token = await fetchTokenWithRetry();
+      // Try up to 2 attempts — first WebRTC, then WebSocket fallback
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          console.log(`NER Voice AI: Attempt ${attempt + 1} — fetching token...`);
+          const token = await fetchTokenWithRetry();
 
-      console.log("NER Voice AI: Starting session...");
-      await conversation.startSession({ conversationToken: token });
+          console.log(`NER Voice AI: Starting session (attempt ${attempt + 1})...`);
+          await conversation.startSession({ conversationToken: token });
+          console.log("NER Voice AI: Session started successfully");
+          return; // success
+        } catch (sessionErr: any) {
+          const msg = String(sessionErr?.message || sessionErr || "");
+          const isPcError = msg.includes("pc connection") || msg.includes("peer") || msg.includes("ICE");
+          console.warn(`NER Voice AI: Session attempt ${attempt + 1} failed:`, msg);
+
+          if (isPcError && attempt === 0) {
+            // Wait before retry
+            await new Promise(r => setTimeout(r, 1500));
+            continue;
+          }
+          throw sessionErr;
+        }
+      }
     } catch (err: any) {
       console.error("Failed to start NER Voice AI:", err);
+      const msg = String(err?.message || err || "");
       setError(
         err.name === "NotFoundError"
           ? "No se encontró micrófono."
           : err.name === "NotAllowedError"
             ? "Permiso de micrófono denegado."
-            : err.message || "No se pudo iniciar. Verifica el micrófono."
+            : msg.includes("pc connection")
+              ? "Error de conexión WebRTC. Verifica tu red e intenta de nuevo."
+              : msg || "No se pudo iniciar. Verifica el micrófono."
       );
     } finally {
       setIsConnecting(false);
