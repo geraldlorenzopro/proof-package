@@ -56,18 +56,27 @@ async function fetchSignedUrl() {
 }
 
 async function fetchOfficeContext(accountId: string) {
-  // Fetch office config, active cases count, pending tasks, today appointments in parallel
+  const today = new Date().toISOString().split("T")[0];
+
   const [
     { data: officeConfig },
     { count: activeCasesCount },
+    { count: totalCasesCount },
+    { count: completedCasesCount },
     { count: pendingTasksCount },
+    { count: completedTasksCount },
+    { count: clientsCount },
     { data: todayAppointments },
     { data: recentIntakes },
     { data: members },
+    { count: consultationsCount },
+    { data: recentCases },
+    { count: documentsCount },
+    { data: creditData },
   ] = await Promise.all([
     supabase
       .from("office_config" as any)
-      .select("firm_name, attorney_name, timezone, language")
+      .select("firm_name, attorney_name, timezone")
       .eq("account_id", accountId)
       .maybeSingle(),
     supabase
@@ -76,15 +85,34 @@ async function fetchOfficeContext(accountId: string) {
       .eq("account_id", accountId)
       .in("status", ["active", "pending", "in_progress"]),
     supabase
+      .from("client_cases")
+      .select("*", { count: "exact", head: true })
+      .eq("account_id", accountId),
+    supabase
+      .from("client_cases")
+      .select("*", { count: "exact", head: true })
+      .eq("account_id", accountId)
+      .eq("status", "completed"),
+    supabase
       .from("case_tasks")
       .select("*", { count: "exact", head: true })
       .eq("account_id", accountId)
       .eq("status", "pending"),
     supabase
+      .from("case_tasks")
+      .select("*", { count: "exact", head: true })
+      .eq("account_id", accountId)
+      .eq("status", "completed"),
+    supabase
+      .from("client_profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("account_id", accountId)
+      .eq("is_test", false),
+    supabase
       .from("appointments")
       .select("client_name, appointment_time, appointment_type, status")
       .eq("account_id", accountId)
-      .eq("appointment_date", new Date().toISOString().split("T")[0])
+      .eq("appointment_date", today)
       .order("appointment_time", { ascending: true })
       .limit(10),
     supabase
@@ -97,6 +125,25 @@ async function fetchOfficeContext(accountId: string) {
       .from("account_members")
       .select("role")
       .eq("account_id", accountId),
+    supabase
+      .from("consultations")
+      .select("*", { count: "exact", head: true })
+      .eq("account_id", accountId),
+    supabase
+      .from("client_cases")
+      .select("client_name, case_type, status, pipeline_stage")
+      .eq("account_id", accountId)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("case_documents")
+      .select("*", { count: "exact", head: true })
+      .eq("account_id", accountId),
+    supabase
+      .from("ai_credits")
+      .select("balance, monthly_allowance, used_this_month")
+      .eq("account_id", accountId)
+      .maybeSingle(),
   ]);
 
   const office = (officeConfig as any) || {};
@@ -106,15 +153,55 @@ async function fetchOfficeContext(accountId: string) {
   const intakesList = (recentIntakes || [])
     .map((i: any) => `${i.client_first_name || ""} ${i.client_last_name || ""} - ${i.consultation_topic || "sin tema"}`)
     .join("; ");
+  const recentCasesList = (recentCases || [])
+    .map((c: any) => `${c.client_name} - ${c.case_type} (${c.status}, etapa: ${c.pipeline_stage || "sin etapa"})`)
+    .join("; ");
+  const credits = (creditData as any) || {};
+
+  const memberRoles = (members || []).reduce((acc: Record<string, number>, m: any) => {
+    acc[m.role] = (acc[m.role] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const teamBreakdown = Object.entries(memberRoles)
+    .map(([role, count]) => `${count} ${role}`)
+    .join(", ");
 
   return [
     `Firma: ${office.firm_name || "Sin nombre"}`,
     `Abogado principal: ${office.attorney_name || "No configurado"}`,
+    `Zona horaria: ${office.timezone || "No configurada"}`,
+    ``,
+    `--- CLIENTES ---`,
+    `Clientes registrados: ${clientsCount ?? 0}`,
+    ``,
+    `--- CASOS ---`,
     `Casos activos: ${activeCasesCount ?? 0}`,
+    `Casos completados: ${completedCasesCount ?? 0}`,
+    `Total de casos: ${totalCasesCount ?? 0}`,
+    `Últimos casos: ${recentCasesList || "Ninguno"}`,
+    ``,
+    `--- TAREAS ---`,
     `Tareas pendientes: ${pendingTasksCount ?? 0}`,
-    `Miembros del equipo: ${members?.length ?? 0}`,
-    `Citas de hoy: ${appointmentsList || "Ninguna"}`,
+    `Tareas completadas: ${completedTasksCount ?? 0}`,
+    ``,
+    `--- EQUIPO ---`,
+    `Miembros del equipo: ${members?.length ?? 0} (${teamBreakdown || "sin desglose"})`,
+    ``,
+    `--- CONSULTAS ---`,
+    `Total consultas realizadas: ${consultationsCount ?? 0}`,
     `Últimas consultas: ${intakesList || "Ninguna"}`,
+    ``,
+    `--- CITAS DE HOY ---`,
+    `Citas: ${appointmentsList || "Ninguna"}`,
+    ``,
+    `--- DOCUMENTOS ---`,
+    `Documentos almacenados: ${documentsCount ?? 0}`,
+    ``,
+    `--- CRÉDITOS AI ---`,
+    `Balance: ${credits.balance ?? 0}`,
+    `Asignación mensual: ${credits.monthly_allowance ?? 0}`,
+    `Usados este mes: ${credits.used_this_month ?? 0}`,
+    ``,
     `Fecha actual: ${new Date().toLocaleDateString("es-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,
   ].join("\n");
 }
