@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
-import ReactMarkdown from "react-markdown";
 import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -27,8 +26,6 @@ interface Props {
   onTriggerOnboarding?: () => void;
 }
 
-type Msg = { role: "user" | "assistant"; content: string };
-
 const categoryStyles: Record<string, { bg: string; stroke: string; icon: any }> = {
   USCIS: { bg: "#E6F1FB", stroke: "#185FA5", icon: Shield },
   DACA: { bg: "#FCEBEB", stroke: "#A32D2D", icon: BookOpen },
@@ -40,17 +37,6 @@ const categoryStyles: Record<string, { bg: string; stroke: string; icon: any }> 
 
 function getCategoryStyle(cat: string) {
   return categoryStyles[cat] || categoryStyles.USCIS;
-}
-
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-chat`;
-
-/** Strip HTML tags, NSFW warnings, and other AI model artifacts from responses */
-function sanitizeCamilaResponse(text: string): string {
-  return text
-    .replace(/Image may be NSFW\.?\s*Clik?k? here to view\.?/gi, "")
-    .replace(/<\/?[a-z][a-z0-9]*\b[^>]*>/gi, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
 }
 
 export default function HubDashboard({
@@ -67,7 +53,7 @@ export default function HubDashboard({
   const [todayAppointments, setTodayAppointments] = useState(0);
   const [overdueDeadlines, setOverdueDeadlines] = useState(0);
 
-  // Chat
+  // Chat input
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -114,7 +100,6 @@ export default function HubDashboard({
     if (cached) {
       try {
         const { ts, data } = JSON.parse(cached);
-        // Only use cache if fresh AND has newsCards
         if (Date.now() - ts < 30 * 60 * 1000 && data.newsCards?.length) {
           if (data.news) setBriefingNews(data.news);
           if (data.citations?.length) setBriefingCitations(data.citations);
@@ -155,34 +140,19 @@ export default function HubDashboard({
   // Auto-greet TTS — only once per browser session
   useEffect(() => {
     if (!resolvedName || !accountId) return;
-
     const todayKey = `camila_greeted_${accountId}_${new Date().toISOString().split("T")[0]}`;
     const alreadyGreeted = sessionStorage.getItem(todayKey);
     if (alreadyGreeted) return;
-
     sessionStorage.setItem(todayKey, "1");
-
     const fn = resolvedName.split(" ")[0];
     const h = new Date().getHours();
     const saludo = h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches";
-
-    // Build greeting text from already-fetched briefing state
-    const buildGreet = () => {
-      let parts: string[] = [];
-      parts.push(`${saludo}, ${fn}.`);
-      // Weather and news will be spoken if available at the time
-      parts.push("¿Qué hacemos hoy?");
-      return parts.join(" ");
-    };
-
-    // Small delay to let briefing fetch complete, then speak
     setTimeout(() => {
       let greetText = `${saludo}, ${fn}.`;
       if (briefingWeather) greetText += ` ${briefingWeather}`;
       greetText += " ¿Qué hacemos hoy?";
       speakAsCamila(greetText);
     }, 2000);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedName]);
 
   async function loadKpis() {
@@ -224,7 +194,7 @@ export default function HubDashboard({
 
   const firstName = (resolvedName || staffName || "").split(" ")[0] || "Usuario";
 
-  // ─── Chat ───
+  // ─── Chat — navigate to full-screen chat ───
   function sendMessage(text?: string) {
     const msg = (text || input).trim();
     if (!msg) return;
@@ -293,59 +263,18 @@ export default function HubDashboard({
         <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-6 text-center">
 
           {/* ─── Camila avatar + greeting ─── */}
-          {!hasChatResponse && (
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center mx-auto mb-5 relative">
-                <Sparkles className="w-7 h-7 text-jarvis" />
-                <div className="absolute inset-0 rounded-2xl animate-pulse bg-jarvis/5" />
-              </div>
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                {greeting}, <span className="text-jarvis">{firstName}</span>
-              </h1>
-              <p className="text-muted-foreground/50 mt-2 text-base">
-                Bienvenido a tu oficina virtual. ¿Qué haremos hoy?
-              </p>
-
-
+          <div className="text-center mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center mx-auto mb-5 relative">
+              <Sparkles className="w-7 h-7 text-jarvis" />
+              <div className="absolute inset-0 rounded-2xl animate-pulse bg-jarvis/5" />
             </div>
-          )}
-
-          {/* ─── Compact greeting when chat is active ─── */}
-          {hasChatResponse && (
-            <h1 className="text-lg font-bold text-foreground tracking-tight text-center mb-4">
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">
               {greeting}, <span className="text-jarvis">{firstName}</span>
             </h1>
-          )}
-
-          {/* ─── Camila response area ─── */}
-          {hasChatResponse && lastAssistant && (
-            <div className="w-full max-w-[640px] bg-card/60 border border-border/30 rounded-2xl px-5 py-4 mb-4 max-h-[140px] overflow-hidden relative">
-              <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-lg bg-jarvis/10 border border-jarvis/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Sparkles className="w-3.5 h-3.5 text-jarvis" />
-                </div>
-                <div className="flex-1 min-w-0 prose prose-sm prose-invert max-w-none text-sm text-foreground/90">
-                  <ReactMarkdown>{lastAssistant.content}</ReactMarkdown>
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-card to-transparent flex items-end justify-center pb-2">
-                <button onClick={() => navigate("/hub/ai")} className="text-xs text-jarvis/70 hover:text-jarvis transition-colors flex items-center gap-1">
-                  Ver conversación completa <ChevronRight className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Streaming indicator */}
-          {isStreaming && !hasChatResponse && (
-            <div className="w-full max-w-[640px] flex justify-center mb-4">
-              <div className="bg-card border border-border/30 rounded-2xl px-4 py-3 flex gap-1.5">
-                <span className="w-2 h-2 bg-jarvis/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-2 h-2 bg-jarvis/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-2 h-2 bg-jarvis/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-            </div>
-          )}
+            <p className="text-muted-foreground/50 mt-2 text-base">
+              Bienvenido a tu oficina virtual. ¿Qué haremos hoy?
+            </p>
+          </div>
 
           {/* ─── Input bar ─── */}
           <div className="w-full max-w-[640px] mx-auto mb-5">
@@ -369,7 +298,7 @@ export default function HubDashboard({
               </button>
               <button
                 onClick={() => sendMessage()}
-                disabled={!input.trim() || isStreaming}
+                disabled={!input.trim()}
                 className="w-8 h-8 rounded-xl bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Send className="w-4 h-4 text-jarvis" />
@@ -378,141 +307,131 @@ export default function HubDashboard({
           </div>
 
           {/* ─── Quick action chips (2 rows x 3) ─── */}
-          {!hasChatResponse && (
-            <div className="w-full max-w-[640px] mx-auto grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
-              {quickChips.map(chip => (
+          <div className="w-full max-w-[640px] mx-auto grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
+            {quickChips.map(chip => (
+              <button
+                key={chip.label}
+                onClick={() => sendMessage(chip.label)}
+                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-border/30 bg-card/50 hover:bg-card hover:border-jarvis/20 text-sm text-muted-foreground hover:text-foreground transition-all"
+              >
+                <chip.icon className="w-4 h-4 text-jarvis/50 shrink-0" />
+                <span className="text-xs font-medium truncate">{chip.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* ─── Office stats — elegant mini-cards ─── */}
+          <div className="w-full max-w-[640px] mx-auto">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-px flex-1 bg-border/20" />
+              <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold">Tu oficina hoy</span>
+              <div className="h-px flex-1 bg-border/20" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {kpis.map(kpi => (
                 <button
-                  key={chip.label}
-                  onClick={() => sendMessage(chip.label)}
-                  disabled={isStreaming}
-                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-border/30 bg-card/50 hover:bg-card hover:border-jarvis/20 text-sm text-muted-foreground hover:text-foreground transition-all disabled:opacity-50"
+                  key={kpi.label}
+                  onClick={() => navigate(kpi.route)}
+                  className="group flex flex-col items-center justify-center gap-1 px-3.5 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-center"
                 >
-                  <chip.icon className="w-4 h-4 text-jarvis/50 shrink-0" />
-                  <span className="text-xs font-medium truncate">{chip.label}</span>
+                  <div className={`w-9 h-9 rounded-lg ${kpi.bgAccent} border flex items-center justify-center shrink-0`}>
+                    <kpi.icon className={`w-4 h-4 ${kpi.accent}`} />
+                  </div>
+                  <div className={`text-xl font-bold tabular-nums leading-none ${kpi.value === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
+                    {kpi.value}
+                    {kpi.urgent && kpi.value > 0 && (
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse ml-1 align-top" />
+                    )}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground/40 font-medium truncate group-hover:text-muted-foreground/60 transition-colors">
+                    {kpi.label}
+                  </div>
                 </button>
               ))}
             </div>
-          )}
-
-          {/* ─── Office stats — elegant mini-cards ─── */}
-          {!hasChatResponse && (
-            <div className="w-full max-w-[640px] mx-auto">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-px flex-1 bg-border/20" />
-                <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold">Tu oficina hoy</span>
-                <div className="h-px flex-1 bg-border/20" />
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {kpis.map(kpi => (
-                  <button
-                    key={kpi.label}
-                    onClick={() => navigate(kpi.route)}
-                    className="group flex flex-col items-center justify-center gap-1 px-3.5 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-center"
-                  >
-                    <div className={`w-9 h-9 rounded-lg ${kpi.bgAccent} border flex items-center justify-center shrink-0`}>
-                      <kpi.icon className={`w-4 h-4 ${kpi.accent}`} />
-                    </div>
-                    <div className={`text-xl font-bold tabular-nums leading-none ${kpi.value === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
-                      {kpi.value}
-                      {kpi.urgent && kpi.value > 0 && (
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse ml-1 align-top" />
-                      )}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground/40 font-medium truncate group-hover:text-muted-foreground/60 transition-colors">
-                      {kpi.label}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* ─── News Cards Section ─── */}
-      {!hasChatResponse && (
-        <div className="w-full max-w-[640px] mx-auto px-6 pb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="h-px flex-1 bg-border/20" />
-            <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold flex items-center gap-1.5">
-              <Newspaper className="w-3 h-3" /> Noticias de inmigración
-            </span>
-            <div className="h-px flex-1 bg-border/20" />
-          </div>
-
-          {/* Carousel container */}
-          <div className="relative px-10">
-            {/* Left arrow */}
-            {newsPage > 0 && newsCards.length > 3 && (
-              <button
-                onClick={() => setNewsPage(p => p - 1)}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis hover:border-jarvis/30 transition-all shadow-md"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
-            {/* Right arrow */}
-            {newsPage < Math.ceil(newsCards.length / 3) - 1 && newsCards.length > 3 && (
-              <button
-                onClick={() => setNewsPage(p => p + 1)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis hover:border-jarvis/30 transition-all shadow-md"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {newsLoading || newsCards.length === 0
-                ? Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40">
-                      <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-3 w-full" />
-                        <Skeleton className="h-3 w-3/4" />
-                        <Skeleton className="h-2 w-1/2" />
-                      </div>
-                    </div>
-                  ))
-                : newsCards.slice(newsPage * 3, newsPage * 3 + 3).map((card, i) => {
-                    const catStyle = getCategoryStyle(card.category);
-                    return (
-                      <button
-                        key={`${newsPage}-${i}`}
-                        onClick={() => setSelectedNews(card)}
-                        className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-left group"
-                      >
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: catStyle.bg }}
-                        >
-                          <catStyle.icon className="w-4 h-4" style={{ color: catStyle.stroke }} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-foreground/90 line-clamp-2 leading-snug group-hover:text-foreground transition-colors">
-                            {card.title}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground/40 mt-1">
-                            {card.time} · <span className="uppercase tracking-wider font-semibold" style={{ color: catStyle.stroke }}>{card.category}</span>
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
+          <div className="w-full max-w-[640px] mx-auto px-6 pb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-px flex-1 bg-border/20" />
+              <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold flex items-center gap-1.5">
+                <Newspaper className="w-3 h-3" /> Noticias de inmigración
+              </span>
+              <div className="h-px flex-1 bg-border/20" />
             </div>
-          </div>
 
-          {/* Dot indicators */}
-          {newsCards.length > 3 && (
-            <div className="flex items-center justify-center gap-1.5 mt-3">
-              {Array.from({ length: Math.ceil(newsCards.length / 3) }).map((_, i) => (
+            {/* Carousel container */}
+            <div className="relative px-10">
+              {newsPage > 0 && newsCards.length > 3 && (
                 <button
-                  key={i}
-                  onClick={() => setNewsPage(i)}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === newsPage ? "bg-jarvis w-3" : "bg-muted-foreground/20 hover:bg-muted-foreground/40"}`}
-                />
-              ))}
+                  onClick={() => setNewsPage(p => p - 1)}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis hover:border-jarvis/30 transition-all shadow-md"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
+              {newsPage < Math.ceil(newsCards.length / 3) - 1 && newsCards.length > 3 && (
+                <button
+                  onClick={() => setNewsPage(p => p + 1)}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis hover:border-jarvis/30 transition-all shadow-md"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {newsLoading || newsCards.length === 0
+                  ? Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40">
+                        <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-3 w-full" />
+                          <Skeleton className="h-3 w-3/4" />
+                          <Skeleton className="h-2 w-1/2" />
+                        </div>
+                      </div>
+                    ))
+                  : newsCards.slice(newsPage * 3, newsPage * 3 + 3).map((card, i) => {
+                      const catStyle = getCategoryStyle(card.category);
+                      return (
+                        <button
+                          key={`${newsPage}-${i}`}
+                          onClick={() => setSelectedNews(card)}
+                          className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-left group"
+                        >
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: catStyle.bg }}
+                          >
+                            <catStyle.icon className="w-4 h-4" style={{ color: catStyle.stroke }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-foreground/90 line-clamp-2 leading-snug group-hover:text-foreground transition-colors">
+                              {card.title}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground/40 mt-1">
+                              {card.time} · <span className="uppercase tracking-wider font-semibold" style={{ color: catStyle.stroke }}>{card.category}</span>
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+              </div>
             </div>
-          )}
-        </div>
-       )}
+
+            {newsCards.length > 3 && (
+              <div className="flex items-center justify-center gap-1.5 mt-3">
+                {Array.from({ length: Math.ceil(newsCards.length / 3) }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setNewsPage(i)}
+                    className={`w-1.5 h-1.5 rounded-full transition-all ${i === newsPage ? "bg-jarvis w-3" : "bg-muted-foreground/20 hover:bg-muted-foreground/40"}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
