@@ -80,6 +80,7 @@ export default function HubDashboard({
   const [newsCards, setNewsCards] = useState<{title:string;summary:string;category:string;time:string}[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [selectedNews, setSelectedNews] = useState<{title:string;summary:string;category:string;time:string}|null>(null);
+  const [newsPage, setNewsPage] = useState(0);
 
   const BRIEFING_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-briefing`;
 
