@@ -2,6 +2,8 @@
 
 let currentAudio: HTMLAudioElement | null = null;
 let ttsEnabled = true;
+let currentAbort: AbortController | null = null;
+let isFetching = false;
 
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-tts`;
 
@@ -42,6 +44,13 @@ export async function speakAsCamila(text: string): Promise<void> {
   const clean = cleanForSpeech(text);
   if (!clean) return;
 
+  // Prevent overlapping requests
+  if (isFetching) return;
+  isFetching = true;
+
+  const abort = new AbortController();
+  currentAbort = abort;
+
   try {
     const resp = await fetch(TTS_URL, {
       method: "POST",
@@ -51,11 +60,15 @@ export async function speakAsCamila(text: string): Promise<void> {
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
       body: JSON.stringify({ text: clean }),
+      signal: abort.signal,
     });
 
+    if (abort.signal.aborted) return;
     if (!resp.ok) throw new Error(`TTS ${resp.status}`);
 
     const data = await resp.json();
+
+    if (abort.signal.aborted) return;
 
     if (data.audio) {
       const audioType = data.audioType || "audio/mpeg";
@@ -66,12 +79,15 @@ export async function speakAsCamila(text: string): Promise<void> {
       console.log("Camila TTS ✓ source:", data.source || "elevenlabs");
       return;
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.name === "AbortError") return;
     console.warn("Camila TTS edge function failed, falling back to browser:", err);
+  } finally {
+    isFetching = false;
   }
 
   // Fallback: browser SpeechSynthesis
-  fallbackBrowserTTS(clean);
+  if (!abort.signal.aborted) fallbackBrowserTTS(clean);
 }
 
 function fallbackBrowserTTS(text: string) {
@@ -93,8 +109,13 @@ function fallbackBrowserTTS(text: string) {
   });
 }
 
-/** Stop current speech */
+/** Stop current speech and cancel in-flight requests */
 export function stopSpeaking(): void {
+  if (currentAbort) {
+    currentAbort.abort();
+    currentAbort = null;
+  }
+  isFetching = false;
   if (currentAudio) {
     currentAudio.pause();
     currentAudio.currentTime = 0;
