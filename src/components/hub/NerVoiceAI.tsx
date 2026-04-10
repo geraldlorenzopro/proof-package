@@ -55,6 +55,70 @@ async function fetchSignedUrl() {
   return data.signed_url;
 }
 
+async function fetchOfficeContext(accountId: string) {
+  // Fetch office config, active cases count, pending tasks, today appointments in parallel
+  const [
+    { data: officeConfig },
+    { count: activeCasesCount },
+    { count: pendingTasksCount },
+    { data: todayAppointments },
+    { data: recentIntakes },
+    { data: members },
+  ] = await Promise.all([
+    supabase
+      .from("office_config" as any)
+      .select("firm_name, attorney_name, timezone, language")
+      .eq("account_id", accountId)
+      .maybeSingle(),
+    supabase
+      .from("client_cases")
+      .select("*", { count: "exact", head: true })
+      .eq("account_id", accountId)
+      .in("status", ["active", "pending", "in_progress"]),
+    supabase
+      .from("case_tasks")
+      .select("*", { count: "exact", head: true })
+      .eq("account_id", accountId)
+      .eq("status", "pending"),
+    supabase
+      .from("appointments")
+      .select("client_name, appointment_time, appointment_type, status")
+      .eq("account_id", accountId)
+      .eq("appointment_date", new Date().toISOString().split("T")[0])
+      .order("appointment_time", { ascending: true })
+      .limit(10),
+    supabase
+      .from("intake_sessions")
+      .select("client_first_name, client_last_name, status, consultation_topic")
+      .eq("account_id", accountId)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("account_members")
+      .select("role")
+      .eq("account_id", accountId),
+  ]);
+
+  const office = (officeConfig as any) || {};
+  const appointmentsList = (todayAppointments || [])
+    .map((a: any) => `${a.client_name} a las ${a.appointment_time || "sin hora"} (${a.status})`)
+    .join("; ");
+  const intakesList = (recentIntakes || [])
+    .map((i: any) => `${i.client_first_name || ""} ${i.client_last_name || ""} - ${i.consultation_topic || "sin tema"}`)
+    .join("; ");
+
+  return [
+    `Firma: ${office.firm_name || "Sin nombre"}`,
+    `Abogado principal: ${office.attorney_name || "No configurado"}`,
+    `Casos activos: ${activeCasesCount ?? 0}`,
+    `Tareas pendientes: ${pendingTasksCount ?? 0}`,
+    `Miembros del equipo: ${members?.length ?? 0}`,
+    `Citas de hoy: ${appointmentsList || "Ninguna"}`,
+    `Últimas consultas: ${intakesList || "Ninguna"}`,
+    `Fecha actual: ${new Date().toLocaleDateString("es-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,
+  ].join("\n");
+}
+
 function NerVoiceAIInner({ accountId }: Props) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,12 +171,22 @@ function NerVoiceAIInner({ accountId }: Props) {
 
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
-      const signedUrl = await fetchSignedUrl();
+
+      // Fetch signed URL and office context in parallel
+      const [signedUrl, officeContext] = await Promise.all([
+        fetchSignedUrl(),
+        fetchOfficeContext(accountId),
+      ]);
+
+      console.log("NER Voice AI: Office context loaded, connecting...");
 
       await conversation.startSession({
         signedUrl,
         connectionType: "websocket",
-      });
+        dynamicVariables: {
+          info_oficina: officeContext,
+        },
+      } as any);
     } catch (err: any) {
       console.error("Failed to start NER Voice:", err);
       const msg = String(err?.message || err || "");
