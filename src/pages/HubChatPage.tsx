@@ -125,7 +125,7 @@ export default function HubChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [speakingNow, setSpeakingNow] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -305,12 +305,15 @@ export default function HubChatPage() {
           </div>
           <button
             onClick={toggleVoice}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-              voiceEnabled ? "text-jarvis bg-jarvis/10 border border-jarvis/20" : "text-muted-foreground/40 hover:text-muted-foreground border border-transparent"
+            className={`flex items-center gap-2 px-3 h-9 rounded-xl text-xs font-medium transition-all ${
+              voiceEnabled
+                ? "text-jarvis bg-jarvis/10 border border-jarvis/20"
+                : "text-muted-foreground/50 hover:text-muted-foreground border border-border/30 hover:border-border/50"
             }`}
-            title={voiceEnabled ? "Desactivar voz" : "Activar voz"}
+            title={voiceEnabled ? "Desactivar respuestas de voz" : "Activar respuestas de voz"}
           >
-            {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            {voiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            <span>{voiceEnabled ? "Voz activa" : "Activar voz"}</span>
           </button>
         </div>
 
@@ -407,6 +410,14 @@ export default function HubChatPage() {
                   title={isListening ? "Detener" : "Hablar"}
                 >
                   {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+                {/* Voice Orb – conversational mode */}
+                <button
+                  onClick={() => navigate("/hub/ai")}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10 transition-all group relative"
+                  title="Modo conversación por voz"
+                >
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-jarvis/60 to-cyan-400/40 group-hover:from-jarvis group-hover:to-cyan-400/70 transition-all shadow-[0_0_6px_hsl(195_100%_50%/0.3)] group-hover:shadow-[0_0_12px_hsl(195_100%_50%/0.5)]" />
                 </button>
                 <button
                   onClick={() => send(input)}
