@@ -12,7 +12,7 @@ interface Props {
   accountId: string;
 }
 
-export default function NerVoiceAI({ accountId }: Props) {
+function NerVoiceAIInner({ accountId }: Props) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string>("");
