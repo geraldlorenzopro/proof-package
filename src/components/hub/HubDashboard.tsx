@@ -117,6 +117,12 @@ export default function HubDashboard({
             newsPart = ` En noticias de inmigración: ${data.news}`;
             setBriefingNews(data.news);
           }
+          if (data.citations?.length) {
+            setBriefingCitations(data.citations);
+          }
+          if (data.weather) {
+            setBriefingWeather(data.weather);
+          }
           if (data.kpis) {
             const parts: string[] = [];
             if (data.kpis.todayAppointments > 0) parts.push(`${data.kpis.todayAppointments} cita${data.kpis.todayAppointments > 1 ? "s" : ""} hoy`);
