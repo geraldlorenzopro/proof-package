@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Send, Mic, MicOff, Phone, PhoneOff } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { useConversation } from "@elevenlabs/react";
+import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
 
 const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
@@ -191,7 +191,7 @@ interface Props {
 
 const FAREWELL_PATTERNS = /\b(adiós|adios|nos vemos|hasta luego|chao|bye|que tengas|buen día|buenas noches|un placer|hasta pronto|cuídate)\b/i;
 
-export default function CamilaFloatingPanel({ accountId }: Props) {
+function CamilaFloatingPanelInner({ accountId }: Props) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -708,5 +708,13 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+export default function CamilaFloatingPanel({ accountId }: Props) {
+  return (
+    <ConversationProvider>
+      <CamilaFloatingPanelInner accountId={accountId} />
+    </ConversationProvider>
   );
 }
