@@ -327,6 +327,11 @@ export default function HubDashboard({
               <p className="text-muted-foreground/50 mt-2 text-base">
                 Bienvenido a tu oficina virtual. ¿Qué haremos hoy?
               </p>
+              {briefingNews && (
+                <p className="text-muted-foreground/40 mt-3 text-xs max-w-md mx-auto leading-relaxed italic">
+                  📰 {briefingNews}
+                </p>
+              )}
             </div>
           )}
 
