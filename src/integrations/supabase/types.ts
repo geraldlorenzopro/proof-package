@@ -2312,6 +2312,7 @@ export type Database = {
           id: string
           is_active: boolean
           max_users: number
+          onboarding_completed: boolean
           phone: string | null
           plan: Database["public"]["Enums"]["ner_plan"]
           updated_at: string
@@ -2323,6 +2324,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_users?: number
+          onboarding_completed?: boolean
           phone?: string | null
           plan?: Database["public"]["Enums"]["ner_plan"]
           updated_at?: string
@@ -2334,6 +2336,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_users?: number
+          onboarding_completed?: boolean
           phone?: string | null
           plan?: Database["public"]["Enums"]["ner_plan"]
           updated_at?: string

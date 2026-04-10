@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, AlertTriangle } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
 import HubDashboard from "@/components/hub/HubDashboard";
+import OnboardingWizard from "@/components/hub/OnboardingWizard";
 import { useAppPermissions } from "@/hooks/useAppPermissions";
 
 interface HubApp {
@@ -42,6 +43,7 @@ export default function HubPage() {
   const [loading, setLoading] = useState(true);
   const [authReady, setAuthReady] = useState(false);
   const [stats, setStats] = useState<HubStats>({ totalClients: 0, activeForms: 0, recentActivity: 0 });
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const navigate = useNavigate();
   const { canAccess, userRole, loading: permLoading } = useAppPermissions(data?.account_id ?? null);
 
@@ -72,6 +74,25 @@ export default function HubPage() {
     }
     recoverFromSession();
   }, [cid, sig, ts]);
+
+  // Check onboarding status once we have an account
+  useEffect(() => {
+    if (!data?.account_id || !authReady) return;
+    checkOnboarding(data.account_id);
+  }, [data?.account_id, authReady]);
+
+  async function checkOnboarding(accountId: string) {
+    try {
+      const { data: account } = await supabase
+        .from("ner_accounts")
+        .select("onboarding_completed")
+        .eq("id", accountId)
+        .single();
+      setShowOnboarding(account?.onboarding_completed === false);
+    } catch {
+      setShowOnboarding(false);
+    }
+  }
 
   async function recoverFromSession() {
     try {
@@ -228,7 +249,6 @@ export default function HubPage() {
       });
       if (sessionErr) {
         console.error("[Hub] setSession error:", sessionErr.message);
-        // Try once more after a brief delay
         await new Promise(r => setTimeout(r, 300));
         const { error: retryErr } = await supabase.auth.setSession({
           access_token: authToken.access_token,
@@ -270,11 +290,9 @@ export default function HubPage() {
       } else {
         setData(json);
         sessionStorage.setItem("ner_hub_data", JSON.stringify(json));
-        // Pin the account for this session
         if (json.account_id) {
           sessionStorage.setItem("ner_active_account_id", json.account_id);
         }
-        // Clean GHL params from URL without reload
         if (window.location.search.includes('cid=')) {
           window.history.replaceState({}, '', window.location.pathname);
         }
@@ -283,7 +301,6 @@ export default function HubPage() {
           await establishSession(json.auth_token);
         } else {
           console.warn("[Hub] No auth_token in response — auto-login may have failed on server");
-          // Still show hub but warn — session won't work for protected routes
           setAuthReady(true);
         }
         setLoading(false);
@@ -332,6 +349,15 @@ export default function HubPage() {
       plan={data.plan}
       availableApps={availableAppSlugs}
     >
+      {/* Onboarding wizard overlay */}
+      {showOnboarding && (
+        <OnboardingWizard
+          accountId={data.account_id}
+          accountName={data.account_name}
+          onComplete={() => setShowOnboarding(false)}
+        />
+      )}
+
       <HubDashboard
         accountId={data.account_id}
         accountName={data.account_name}
