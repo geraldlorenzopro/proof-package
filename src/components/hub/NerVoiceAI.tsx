@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 // ── NER Voice AI Agent ID ──
 // Set via environment or hardcode after creating in ElevenLabs dashboard
-const AGENT_ID = import.meta.env.VITE_ELEVENLABS_AGENT_ID || "";
+const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
 
 interface Props {
   accountId: string;
