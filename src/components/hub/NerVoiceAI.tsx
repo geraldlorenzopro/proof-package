@@ -1,11 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, PhoneOff, Mic, MicOff } from "lucide-react";
+import { Phone, PhoneOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-
-// ── NER Voice AI Agent ID ──
-// Set via environment or hardcode after creating in ElevenLabs dashboard
 const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
 
 interface Props {
@@ -17,7 +15,6 @@ function NerVoiceAIInner({ accountId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string>("");
   const [agentResponse, setAgentResponse] = useState<string>("");
-  const pulseRef = useRef<number>(0);
   const [inputLevel, setInputLevel] = useState(0);
 
   const conversation = useConversation({
@@ -59,10 +56,22 @@ function NerVoiceAIInner({ accountId }: Props) {
     setError(null);
 
     try {
+      // Request mic FIRST (must be in user gesture context)
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
+      // Get a server-side token for authenticated WebRTC connection
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "elevenlabs-conversation-token",
+        { body: { agent_id: AGENT_ID } }
+      );
+
+      if (fnError || !data?.token) {
+        console.error("Token error:", fnError, data);
+        throw new Error("No se pudo obtener token de voz.");
+      }
+
       await conversation.startSession({
-        agentId: AGENT_ID,
+        conversationToken: data.token,
         connectionType: "webrtc",
       });
     } catch (err: any) {
@@ -71,7 +80,7 @@ function NerVoiceAIInner({ accountId }: Props) {
         ? "No se encontró micrófono. Conecta uno e intenta de nuevo."
         : err.name === "NotAllowedError"
           ? "Permiso de micrófono denegado. Habilítalo en tu navegador."
-          : "No se pudo iniciar la conversación. Verifica el micrófono.";
+          : err.message || "No se pudo iniciar la conversación. Verifica el micrófono.";
       setError(msg);
     } finally {
       setIsConnecting(false);
@@ -85,12 +94,10 @@ function NerVoiceAIInner({ accountId }: Props) {
   const isActive = conversation.status === "connected";
   const isSpeaking = conversation.isSpeaking;
 
-  // Orb scale based on input level when listening, or pulsing when agent speaks
   const orbScale = isSpeaking ? 1.15 : 1 + inputLevel * 0.3;
 
   return (
     <AnimatePresence>
-      {/* ═══ Floating Voice Button ═══ */}
       <motion.div
         className="fixed bottom-6 left-[112px] z-[100] flex flex-col items-center gap-3"
         initial={{ opacity: 0, y: 20 }}
@@ -128,7 +135,7 @@ function NerVoiceAIInner({ accountId }: Props) {
           </div>
         )}
 
-        {/* ═══ Voice Orb ═══ */}
+        {/* Voice Orb */}
         <motion.button
           onClick={isActive ? stopConversation : startConversation}
           disabled={isConnecting}
@@ -152,7 +159,6 @@ function NerVoiceAIInner({ accountId }: Props) {
           }}
           title={isActive ? "Terminar conversación" : "Iniciar NER Voice AI"}
         >
-          {/* Pulse rings when active */}
           {isActive && (
             <>
               <span className="absolute inset-0 rounded-full animate-ping bg-jarvis/10" style={{ animationDuration: "2s" }} />
@@ -160,7 +166,6 @@ function NerVoiceAIInner({ accountId }: Props) {
             </>
           )}
 
-          {/* Icon */}
           {isConnecting ? (
             <div className="w-6 h-6 border-2 border-jarvis/40 border-t-jarvis rounded-full animate-spin" />
           ) : isActive ? (
