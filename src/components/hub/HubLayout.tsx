@@ -173,10 +173,10 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
         <CamilaFloatingPanel accountId={accountId} />
       )}
 
-      {/* NER Voice AI — ElevenLabs conversational agent */}
-      {isHubSection && accountId && (
+      {/* NER Voice AI — disabled due to persistent WebRTC connection failures */}
+      {/* {isHubSection && accountId && (
         <NerVoiceAI accountId={accountId} />
-      )}
+      )} */}
     </div>
   );
 }
