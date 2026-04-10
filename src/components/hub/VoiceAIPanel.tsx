@@ -19,6 +19,15 @@ interface TranscriptEntry {
   timestamp: Date;
 }
 
+interface SavedSession {
+  id: string;
+  date: Date;
+  duration: number;
+  messageCount: number;
+  preview: string;
+  transcripts: TranscriptEntry[];
+}
+
 function unlockAudioContext() {
   const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
   if (!AudioCtx) return;
