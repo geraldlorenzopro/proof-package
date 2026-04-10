@@ -160,23 +160,29 @@ export default function HubChatPage() {
     }
   }, []);
 
-  // TTS
+  // TTS — also handles voice-mode loop (re-listen after speaking)
   useEffect(() => {
     if (!voiceEnabled || isLoading) return;
     const lastMsg = messages[messages.length - 1];
     if (lastMsg?.role === "assistant" && messages.length - 1 > lastSpokenRef.current) {
       lastSpokenRef.current = messages.length - 1;
       setSpeakingNow(true);
+      if (voiceModeRef.current) setVoicePhase("speaking");
       (async () => {
         const played = await playTTSAudio(lastMsg.content);
         if (!played) {
           speakAsCamila(lastMsg.content);
-          const interval = setInterval(() => {
-            if (!isSpeaking()) { clearInterval(interval); setSpeakingNow(false); }
-          }, 300);
-          return;
+          await new Promise<void>(resolve => {
+            const interval = setInterval(() => {
+              if (!isSpeaking()) { clearInterval(interval); resolve(); }
+            }, 300);
+          });
         }
         setSpeakingNow(false);
+        // If still in voice mode, restart listening
+        if (voiceModeRef.current) {
+          setTimeout(() => voiceListenCycle(), 400);
+        }
       })();
     }
   }, [messages, isLoading, voiceEnabled]);
