@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Mic, MicOff, Volume2, VolumeX, Sparkles, X, Phone } from "lucide-react";
+import { ArrowLeft, Send, Mic, MicOff, Sparkles, X, Phone } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { speakAsCamila, stopSpeaking, isSpeaking, logVocesDiagnostico } from "@/lib/camilaTTS";
 import HubLayout from "@/components/hub/HubLayout";
@@ -125,7 +125,7 @@ export default function HubChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false); // regular mic (dictation only)
-  const [headerVoice, setHeaderVoice] = useState(false); // manual TTS toggle in header
+  const headerVoice = false; // TTS only via orb mode
   const [speakingNow, setSpeakingNow] = useState(false);
 
   // Voice orb (completely separate system)
@@ -282,10 +282,7 @@ export default function HubChatPage() {
     startListening();
   }, [isListening, startListening]);
 
-  const toggleHeaderVoice = useCallback(() => {
-    if (speakingNow) { stopCurrentAudio(); setSpeakingNow(false); }
-    setHeaderVoice(v => !v);
-  }, [speakingNow]);
+  // headerVoice removed — no longer needed
 
   // ══════════════════════════════════════════════
   // VOICE ORB — fully separate conversation system
@@ -393,18 +390,8 @@ export default function HubChatPage() {
               </div>
             </div>
           </div>
-          <button
-            onClick={toggleHeaderVoice}
-            className={`flex items-center gap-2 px-3 h-9 rounded-xl text-xs font-medium transition-all ${
-              headerVoice
-                ? "text-jarvis bg-jarvis/10 border border-jarvis/20"
-                : "text-muted-foreground/50 hover:text-muted-foreground border border-border/30 hover:border-border/50"
-            }`}
-            title={headerVoice ? "Desactivar respuestas de voz" : "Activar respuestas de voz"}
-          >
-            {headerVoice ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-            <span>{headerVoice ? "Voz activa" : "Activar voz"}</span>
-          </button>
+          {/* Voice header button removed — TTS only via orb */}
+          <div />
         </div>
 
         {/* ── Messages ── */}
@@ -570,15 +557,15 @@ export default function HubChatPage() {
               </div>
             </div>
 
-            {/* Status */}
+            {/* Status — no "Conectando" state, goes straight to listening */}
             <p className="text-lg font-semibold text-foreground/80 mb-2 transition-all">
               {voicePhase === "listening" ? "Te escucho..." :
                voicePhase === "processing" ? "Procesando..." :
                voicePhase === "speaking" ? "Camila responde..." :
-               "Conectando..."}
+                "Te escucho..."}
             </p>
             <p className="text-xs text-muted-foreground/40 mb-4">
-              {voicePhase === "listening" ? "Habla con naturalidad, te entiendo" :
+              {voicePhase === "listening" || voicePhase === "idle" ? "Habla con naturalidad, te entiendo" :
                voicePhase === "processing" ? "Analizando tu mensaje" :
                voicePhase === "speaking" ? "Escucha la respuesta" :
                ""}
