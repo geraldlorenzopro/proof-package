@@ -79,12 +79,15 @@ export async function speakAsCamila(text: string): Promise<void> {
       console.log("Camila TTS ✓ source:", data.source || "elevenlabs");
       return;
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.name === "AbortError") return;
     console.warn("Camila TTS edge function failed, falling back to browser:", err);
+  } finally {
+    isFetching = false;
   }
 
   // Fallback: browser SpeechSynthesis
-  fallbackBrowserTTS(clean);
+  if (!abort.signal.aborted) fallbackBrowserTTS(clean);
 }
 
 function fallbackBrowserTTS(text: string) {
