@@ -2,11 +2,11 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useConversation } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, PhoneOff, Mic, MicOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 
 // ── NER Voice AI Agent ID ──
 // Set via environment or hardcode after creating in ElevenLabs dashboard
-const AGENT_ID = import.meta.env.VITE_ELEVENLABS_AGENT_ID || "";
+const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
 
 interface Props {
   accountId: string;
@@ -55,35 +55,19 @@ export default function NerVoiceAI({ accountId }: Props) {
   }, [conversation.status]);
 
   const startConversation = useCallback(async () => {
-    if (!AGENT_ID) {
-      setError("Agent ID no configurado. Configura VITE_ELEVENLABS_AGENT_ID.");
-      return;
-    }
-
     setIsConnecting(true);
     setError(null);
 
     try {
-      // Request microphone permission
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Get signed URL from edge function
-      const { data, error: fnError } = await supabase.functions.invoke(
-        "elevenlabs-conversation-token",
-        { body: { agent_id: AGENT_ID } }
-      );
-
-      if (fnError || !data?.signed_url) {
-        throw new Error(fnError?.message || "No se pudo obtener token de conversación");
-      }
-
-      // Start the conversation
       await conversation.startSession({
-        signedUrl: data.signed_url,
+        agentId: AGENT_ID,
+        connectionType: "webrtc",
       });
     } catch (err: any) {
       console.error("Failed to start NER Voice AI:", err);
-      setError(err.message || "No se pudo iniciar la conversación");
+      setError(err.message || "No se pudo iniciar la conversación. Verifica el micrófono.");
     } finally {
       setIsConnecting(false);
     }
