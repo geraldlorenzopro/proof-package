@@ -264,6 +264,7 @@ export default function HubChatPage() {
   }, []);
 
   const toggleMic = useCallback(() => {
+    if (voiceModeRef.current) return; // don't conflict with voice orb
     if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
     startListening();
   }, [isListening, startListening]);
