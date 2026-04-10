@@ -59,6 +59,8 @@ export default function HubDashboard({
   // TTS greeting
   const greetedRef = useRef(false);
   const [briefingNews, setBriefingNews] = useState<string | null>(null);
+  const [briefingCitations, setBriefingCitations] = useState<string[]>([]);
+  const [briefingWeather, setBriefingWeather] = useState<string | null>(null);
 
   const BRIEFING_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-briefing`;
 
