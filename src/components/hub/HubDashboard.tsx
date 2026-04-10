@@ -64,6 +64,9 @@ export default function HubDashboard({
   const [briefingNews, setBriefingNews] = useState<string | null>(null);
   const [briefingCitations, setBriefingCitations] = useState<string[]>([]);
   const [briefingWeather, setBriefingWeather] = useState<string | null>(null);
+  const [newsCards, setNewsCards] = useState<{title:string;summary:string;category:string;time:string}[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [selectedNews, setSelectedNews] = useState<{title:string;summary:string;category:string;time:string}|null>(null);
 
   const BRIEFING_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-briefing`;
 
