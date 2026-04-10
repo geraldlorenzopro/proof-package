@@ -151,9 +151,9 @@ function VoiceAIPanelInner({ accountId }: Props) {
     },
   });
 
-  // Auto-scroll transcript
+  // Auto-scroll transcript only inside the transcript panel
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "auto" });
   }, [transcripts]);
 
   // Session timer
@@ -194,150 +194,151 @@ function VoiceAIPanelInner({ accountId }: Props) {
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
-    <div className="flex-1 flex overflow-hidden min-h-0">
-      {/* ═══ LEFT — Voice Experience ═══ */}
-      <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden"
-        style={{
-          background: `
-            radial-gradient(ellipse at 50% 45%, hsl(195 100% 50% / 0.05) 0%, transparent 50%),
-            radial-gradient(ellipse at 50% 55%, hsl(220 80% 40% / 0.03) 0%, transparent 60%)
-          `,
-        }}
-      >
-        {/* Status indicator — top left */}
-        {isActive && (
-          <div className="absolute top-5 left-6 flex items-center gap-2.5">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_hsl(145_70%_50%/0.5)] animate-pulse" />
-            <span className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-[0.2em]">
-              Sesión activa
-            </span>
-            <span className="text-[10px] font-mono text-jarvis/40 tabular-nums ml-2">{formatTime(sessionDuration)}</span>
-          </div>
-        )}
+    <div className="h-full max-h-full w-full flex-1 min-h-0 overflow-hidden">
+      <div className="flex h-full max-h-full min-h-0 w-full overflow-hidden">
+        {/* ═══ LEFT — Voice Experience ═══ */}
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center overflow-hidden"
+          style={{
+            background: `
+              radial-gradient(ellipse at 50% 45%, hsl(195 100% 50% / 0.05) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 55%, hsl(220 80% 40% / 0.03) 0%, transparent 60%)
+            `,
+          }}
+        >
+          {/* Status indicator — top left */}
+          {isActive && (
+            <div className="absolute top-5 left-6 flex items-center gap-2.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_hsl(145_70%_50%/0.5)] animate-pulse" />
+              <span className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-[0.2em]">
+                Sesión activa
+              </span>
+              <span className="text-[10px] font-mono text-jarvis/40 tabular-nums ml-2">{formatTime(sessionDuration)}</span>
+            </div>
+          )}
 
-        {/* ═══ Center block ═══ */}
-        <div className="flex flex-col items-center">
-          {/* The Orb */}
-          <NerVoiceOrb
-            isActive={isActive}
-            isSpeaking={isSpeaking}
-            isConnecting={isConnecting}
-            inputLevel={inputLevel}
-            onClick={isActive ? stopConversation : startConversation}
-          />
+          {/* ═══ Center block ═══ */}
+          <div className="flex flex-col items-center">
+            {/* The Orb */}
+            <NerVoiceOrb
+              isActive={isActive}
+              isSpeaking={isSpeaking}
+              isConnecting={isConnecting}
+              inputLevel={inputLevel}
+              onClick={isActive ? stopConversation : startConversation}
+            />
 
-          {/* Title + subtitle */}
-          <div className="text-center mt-6">
-            {isActive ? (
-              <>
-                <p className="text-lg font-bold text-foreground tracking-tight">
-                  {isSpeaking ? "Camila está respondiendo..." : "Escuchando tu voz..."}
-                </p>
-                <p className="text-[12px] text-muted-foreground/50 mt-1">
-                  Tu asistente tiene acceso a todos los datos de tu oficina
-                </p>
-              </>
-            ) : (
-              <>
-                <h2 className="text-xl font-bold text-foreground tracking-tight">
-                  Asistente de Oficina
-                </h2>
-                <p className="text-sm text-muted-foreground/50 mt-1">
-                  Habla con Camila sobre tus casos, clientes y citas
-                </p>
-              </>
-            )}
-          </div>
+            {/* Title + subtitle */}
+            <div className="text-center mt-6">
+              {isActive ? (
+                <>
+                  <p className="text-lg font-bold text-foreground tracking-tight">
+                    {isSpeaking ? "Camila está respondiendo..." : "Escuchando tu voz..."}
+                  </p>
+                  <p className="text-[12px] text-muted-foreground/50 mt-1">
+                    Tu asistente tiene acceso a todos los datos de tu oficina
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-bold text-foreground tracking-tight">
+                    Asistente de Oficina
+                  </h2>
+                  <p className="text-sm text-muted-foreground/50 mt-1">
+                    Habla con Camila sobre tus casos, clientes y citas
+                  </p>
+                </>
+              )}
+            </div>
 
-          {/* CTA Button or End Button */}
-          <div className="mt-8">
-            {isActive ? (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={stopConversation}
-                  className="gap-2.5 border-rose-500/20 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 hover:border-rose-500/30 rounded-2xl px-8 h-12 text-sm font-semibold"
+            {/* CTA Button or End Button */}
+            <div className="mt-8">
+              {isActive ? (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={stopConversation}
+                    className="gap-2.5 border-rose-500/20 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 hover:border-rose-500/30 rounded-2xl px-8 h-12 text-sm font-semibold"
+                  >
+                    <PhoneOff className="w-4 h-4" />
+                    Finalizar conversación
+                  </Button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
                 >
-                  <PhoneOff className="w-4 h-4" />
-                  Finalizar conversación
-                </Button>
-              </motion.div>
-            ) : (
+                  <Button
+                    size="lg"
+                    onClick={startConversation}
+                    disabled={isConnecting}
+                    className="gap-2.5 bg-jarvis/20 text-jarvis hover:bg-jarvis/30 border border-jarvis/25 hover:border-jarvis/40 rounded-2xl px-8 h-12 text-sm font-semibold shadow-[0_0_25px_hsl(195_100%_50%/0.1)] hover:shadow-[0_0_35px_hsl(195_100%_50%/0.18)] transition-all"
+                  >
+                    <Phone className="w-4 h-4" />
+                    {isConnecting ? "Conectando..." : "Iniciar conversación con tu oficina"}
+                  </Button>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Error */}
+            {error && !isActive && (
               <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                className="mt-6 flex flex-col items-center gap-3 p-5 text-center max-w-[320px] rounded-2xl"
+                style={{ background: "hsl(0 50% 50% / 0.05)", border: "1px solid hsl(0 70% 50% / 0.12)" }}
               >
-                <Button
-                  size="lg"
-                  onClick={startConversation}
-                  disabled={isConnecting}
-                  className="gap-2.5 bg-jarvis/20 text-jarvis hover:bg-jarvis/30 border border-jarvis/25 hover:border-jarvis/40 rounded-2xl px-8 h-12 text-sm font-semibold shadow-[0_0_25px_hsl(195_100%_50%/0.1)] hover:shadow-[0_0_35px_hsl(195_100%_50%/0.18)] transition-all"
-                >
-                  <Phone className="w-4 h-4" />
-                  {isConnecting ? "Conectando..." : "Iniciar conversación con tu oficina"}
+                <MicOff className="w-5 h-5 text-rose-400/70" />
+                <p className="text-xs text-muted-foreground/70">{error}</p>
+                <Button size="sm" variant="outline" onClick={startConversation} className="gap-2 rounded-xl">
+                  <RefreshCw className="w-3 h-3" /> Reintentar
                 </Button>
               </motion.div>
             )}
-          </div>
 
-          {/* Error */}
-          {error && !isActive && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              className="mt-6 flex flex-col items-center gap-3 p-5 text-center max-w-[320px] rounded-2xl"
-              style={{ background: "hsl(0 50% 50% / 0.05)", border: "1px solid hsl(0 70% 50% / 0.12)" }}
-            >
-              <MicOff className="w-5 h-5 text-rose-400/70" />
-              <p className="text-xs text-muted-foreground/70">{error}</p>
-              <Button size="sm" variant="outline" onClick={startConversation} className="gap-2 rounded-xl">
-                <RefreshCw className="w-3 h-3" /> Reintentar
-              </Button>
-            </motion.div>
-          )}
-
-          {/* Feature pills — only when idle */}
-          {!isActive && !error && (
-            <motion.div
-              className="mt-10 flex items-center gap-3"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              {[
-                { icon: "🎙️", label: "Voz en tiempo real" },
-                { icon: "📊", label: "Datos de oficina" },
-                { icon: "🔒", label: "Conexión segura" },
-              ].map((f) => (
-                <div
-                  key={f.label}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/15 bg-card/30 text-[10px] text-muted-foreground/40"
-                >
-                  <span>{f.icon}</span>
-                  <span>{f.label}</span>
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </div>
-      </div>
-
-      {/* ═══ RIGHT — Live Transcript ═══ */}
-      <div className="w-[340px] shrink-0 flex flex-col border-l border-border/20 bg-card/20 h-full max-h-full overflow-hidden">
-        {/* Transcript header */}
-        <div className="px-5 py-3 shrink-0 border-b border-border/15">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-jarvis/60" />
-            <h3 className="text-xs font-bold text-foreground/80 uppercase tracking-wider">Transcript en vivo</h3>
-            {transcripts.length > 0 && (
-              <span className="text-[10px] text-muted-foreground/40 ml-auto">{transcripts.length} mensajes</span>
+            {/* Feature pills — only when idle */}
+            {!isActive && !error && (
+              <motion.div
+                className="mt-10 flex items-center gap-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                {[
+                  { icon: "🎙️", label: "Voz en tiempo real" },
+                  { icon: "📊", label: "Datos de oficina" },
+                  { icon: "🔒", label: "Conexión segura" },
+                ].map((f) => (
+                  <div
+                    key={f.label}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/15 bg-card/30 text-[10px] text-muted-foreground/40"
+                  >
+                    <span>{f.icon}</span>
+                    <span>{f.label}</span>
+                  </div>
+                ))}
+              </motion.div>
             )}
           </div>
         </div>
 
-        {/* Transcript messages — contained scroll */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-3" style={{ scrollbarWidth: "thin", scrollbarColor: "hsl(195 100% 50% / 0.15) transparent" }}>
+        {/* ═══ RIGHT — Live Transcript ═══ */}
+        <div className="flex h-full max-h-full min-h-0 w-[340px] shrink-0 flex-col border-l border-border/20 bg-card/20 overflow-hidden">
+          {/* Transcript header */}
+          <div className="px-5 py-3 shrink-0 border-b border-border/15">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-jarvis/60" />
+              <h3 className="text-xs font-bold text-foreground/80 uppercase tracking-wider">Transcript en vivo</h3>
+              {transcripts.length > 0 && (
+                <span className="text-[10px] text-muted-foreground/40 ml-auto">{transcripts.length} mensajes</span>
+              )}
+            </div>
+          </div>
+
+          {/* Transcript messages — contained scroll */}
+          <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3" style={{ scrollbarWidth: "thin", scrollbarColor: "hsl(195 100% 50% / 0.15) transparent" }}>
           {transcripts.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center gap-4 opacity-50">
               <div className="w-16 h-16 rounded-full bg-jarvis/5 border border-jarvis/10 flex items-center justify-center">
