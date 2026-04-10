@@ -172,6 +172,11 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
         <CamilaFloatingPanel accountId={accountId} />
       )}
 
+      {/* NER Voice AI — orb flotante para conversación por voz */}
+      {isHubSection && accountId && (
+        <NerVoiceAI accountId={accountId} />
+      )}
+
     </div>
   );
 }
