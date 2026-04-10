@@ -273,8 +273,8 @@ export default function HubDashboard({
           </div>
         )}
 
-        {/* ─── Main centered area ─── */}
-        <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-6">
+      {/* ─── Main centered area ─── */}
+        <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-6 text-center">
 
           {/* ─── Camila avatar + greeting ─── */}
           {!hasChatResponse && (
