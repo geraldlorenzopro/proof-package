@@ -124,75 +124,83 @@ export default function HubChatPage() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [isListening, setIsListening] = useState(false); // regular mic (dictation only)
+  const [headerVoice, setHeaderVoice] = useState(false); // manual TTS toggle in header
   const [speakingNow, setSpeakingNow] = useState(false);
+
+  // Voice orb (completely separate system)
   const [voiceMode, setVoiceMode] = useState(false);
   const [voicePhase, setVoicePhase] = useState<"listening" | "processing" | "speaking" | "idle">("idle");
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const voiceRecRef = useRef<any>(null);
   const voiceSilenceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const voiceModeRef = useRef(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastSpokenRef = useRef<number>(-1);
   const sentInitial = useRef(false);
-
-  useEffect(() => { logVocesDiagnostico(); }, []);
 
   // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Focus
+  // Focus input (only if not in voice mode)
   useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 300);
-  }, []);
+    if (!voiceMode) setTimeout(() => inputRef.current?.focus(), 300);
+  }, [voiceMode]);
 
   // Send initial message from dashboard
   useEffect(() => {
     if (state?.initialMessage && !sentInitial.current) {
       sentInitial.current = true;
-      setTimeout(() => send(state.initialMessage!), 200);
+      setTimeout(() => sendRef.current(state.initialMessage!), 200);
     }
   }, []);
 
-  // TTS — ONLY plays in voice-orb mode or when user explicitly enabled voice toggle
+  // ── TTS effect ──
+  // Plays audio ONLY when:
+  //   A) voiceModeRef is active (orb conversation) — handled internally
+  //   B) headerVoice is manually toggled on by user
   useEffect(() => {
     if (isLoading) return;
     const lastMsg = messages[messages.length - 1];
-    if (lastMsg?.role === "assistant" && messages.length - 1 > lastSpokenRef.current) {
-      // Only auto-play TTS if in voice orb mode OR user manually toggled voice on (not from orb)
-      const shouldSpeak = voiceModeRef.current || voiceEnabled;
-      if (!shouldSpeak) return;
-      lastSpokenRef.current = messages.length - 1;
-      setSpeakingNow(true);
-      if (voiceModeRef.current) setVoicePhase("speaking");
-      (async () => {
-        const played = await playTTSAudio(lastMsg.content);
-        if (!played) {
-          speakAsCamila(lastMsg.content);
-          await new Promise<void>(resolve => {
-            const interval = setInterval(() => {
-              if (!isSpeaking()) { clearInterval(interval); resolve(); }
-            }, 300);
-          });
-        }
-        setSpeakingNow(false);
-        // If still in voice mode, restart listening
-        if (voiceModeRef.current) {
-          setTimeout(() => voiceListenCycle(), 400);
-        }
-      })();
-    }
-  }, [messages, isLoading, voiceEnabled]);
+    if (!lastMsg || lastMsg.role !== "assistant") return;
+    if (messages.length - 1 <= lastSpokenRef.current) return;
+
+    const shouldSpeak = voiceModeRef.current || headerVoice;
+    if (!shouldSpeak) return;
+
+    lastSpokenRef.current = messages.length - 1;
+    setSpeakingNow(true);
+    if (voiceModeRef.current) setVoicePhase("speaking");
+
+    (async () => {
+      const played = await playTTSAudio(lastMsg.content);
+      if (!played) {
+        speakAsCamila(lastMsg.content);
+        await new Promise<void>(resolve => {
+          const interval = setInterval(() => {
+            if (!isSpeaking()) { clearInterval(interval); resolve(); }
+          }, 300);
+        });
+      }
+      setSpeakingNow(false);
+      // If voice orb is still active, restart listening cycle
+      if (voiceModeRef.current) {
+        setTimeout(() => voiceListenCycle(), 400);
+      }
+    })();
+  }, [messages, isLoading, headerVoice]);
 
   // Cleanup on unmount
-  useEffect(() => () => { stopCurrentAudio(); }, []);
+  useEffect(() => () => { stopCurrentAudio(); voiceModeRef.current = false; }, []);
 
+  // ── Send message ──
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
     stopCurrentAudio();
@@ -232,12 +240,15 @@ export default function HubChatPage() {
     }
   }, [messages, isLoading, accountId]);
 
-  // STT
-  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendRef = useRef(send);
   useEffect(() => { sendRef.current = send; }, [send]);
 
+  // ══════════════════════════════════════════════
+  // REGULAR MIC — dictation into input field only
+  // Never auto-sends, never triggers TTS
+  // ══════════════════════════════════════════════
   const startListening = useCallback(() => {
+    if (voiceModeRef.current) return; // blocked during orb
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { toast.error("Tu navegador no soporta reconocimiento de voz."); return; }
     const recognition = new SR();
@@ -247,8 +258,7 @@ export default function HubChatPage() {
     recognitionRef.current = recognition;
     let finalTranscript = "";
     recognition.onresult = (e: any) => {
-      let interim = "";
-      finalTranscript = "";
+      let interim = ""; finalTranscript = "";
       for (let i = 0; i < e.results.length; i++) {
         if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
         else interim += e.results[i][0].transcript;
@@ -267,17 +277,20 @@ export default function HubChatPage() {
   }, []);
 
   const toggleMic = useCallback(() => {
-    if (voiceModeRef.current) return; // don't conflict with voice orb
+    if (voiceModeRef.current) return;
     if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
     startListening();
   }, [isListening, startListening]);
 
-  const toggleVoice = useCallback(() => {
+  const toggleHeaderVoice = useCallback(() => {
     if (speakingNow) { stopCurrentAudio(); setSpeakingNow(false); }
-    setVoiceEnabled(v => !v);
+    setHeaderVoice(v => !v);
   }, [speakingNow]);
 
-  // ── Voice conversation mode (continuous loop) ──
+  // ══════════════════════════════════════════════
+  // VOICE ORB — fully separate conversation system
+  // Has its own recognition, TTS, and lifecycle
+  // ══════════════════════════════════════════════
   const voiceListenCycle = useCallback(() => {
     if (!voiceModeRef.current) return;
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -304,14 +317,12 @@ export default function HubChatPage() {
           recognition.stop();
           setVoicePhase("processing");
           setVoiceTranscript("");
-          setVoiceEnabled(true); // ensure TTS plays response
           sendRef.current(t);
-          // overlay stays open — TTS effect will call voiceListenCycle again
+          // TTS effect will detect voiceModeRef.current and play + re-listen
         }
       }, 2000);
     };
     recognition.onerror = () => {
-      // Restart on transient errors if still in voice mode
       if (voiceModeRef.current) setTimeout(() => voiceListenCycle(), 500);
     };
     recognition.onend = () => {
@@ -323,11 +334,12 @@ export default function HubChatPage() {
   const startVoiceMode = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { toast.error("Tu navegador no soporta reconocimiento de voz."); return; }
-    // Stop any active regular mic first
+    // Kill regular mic if active
     if (isListening) { recognitionRef.current?.stop(); setIsListening(false); }
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    // Enter orb mode
     voiceModeRef.current = true;
     setVoiceMode(true);
-    setVoiceEnabled(true);
     voiceListenCycle();
   }, [voiceListenCycle, isListening]);
 
@@ -340,7 +352,7 @@ export default function HubChatPage() {
     setVoiceMode(false);
     setVoicePhase("idle");
     setVoiceTranscript("");
-    setVoiceEnabled(false); // reset so TTS doesn't play in regular chat
+    // headerVoice stays whatever the user set — orb doesn't touch it
   }, []);
 
   const suggestedQuestions = [
@@ -382,16 +394,16 @@ export default function HubChatPage() {
             </div>
           </div>
           <button
-            onClick={toggleVoice}
+            onClick={toggleHeaderVoice}
             className={`flex items-center gap-2 px-3 h-9 rounded-xl text-xs font-medium transition-all ${
-              voiceEnabled
+              headerVoice
                 ? "text-jarvis bg-jarvis/10 border border-jarvis/20"
                 : "text-muted-foreground/50 hover:text-muted-foreground border border-border/30 hover:border-border/50"
             }`}
-            title={voiceEnabled ? "Desactivar respuestas de voz" : "Activar respuestas de voz"}
+            title={headerVoice ? "Desactivar respuestas de voz" : "Activar respuestas de voz"}
           >
-            {voiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-            <span>{voiceEnabled ? "Voz activa" : "Activar voz"}</span>
+            {headerVoice ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            <span>{headerVoice ? "Voz activa" : "Activar voz"}</span>
           </button>
         </div>
 
