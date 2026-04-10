@@ -266,9 +266,44 @@ export default function HubChatPage() {
     setVoiceEnabled(v => !v);
   }, [speakingNow]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); }
-  };
+  // Voice mode helpers
+  const startVoiceMode = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error("Tu navegador no soporta reconocimiento de voz."); return; }
+    setVoiceMode(true);
+    setVoiceTranscript("");
+    setVoiceListening(true);
+    const recognition = new SR();
+    recognition.lang = "es-419";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    voiceRecRef.current = recognition;
+    let finalT = "";
+    recognition.onresult = (e: any) => {
+      let interim = ""; finalT = "";
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalT += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      setVoiceTranscript(finalT || interim);
+      if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current);
+      voiceSilenceRef.current = setTimeout(() => {
+        const t = (finalT || interim).trim();
+        if (t) { recognition.stop(); setVoiceListening(false); setVoiceMode(false); setVoiceTranscript(""); setVoiceEnabled(true); sendRef.current(t); }
+      }, 2000);
+    };
+    recognition.onerror = () => { setVoiceListening(false); };
+    recognition.onend = () => { if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current); };
+    recognition.start();
+  }, []);
+
+  const stopVoiceMode = useCallback(() => {
+    voiceRecRef.current?.stop();
+    if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current);
+    setVoiceMode(false);
+    setVoiceListening(false);
+    setVoiceTranscript("");
+  }, []);
 
   const suggestedQuestions = [
     "¿Qué tenemos hoy?",
