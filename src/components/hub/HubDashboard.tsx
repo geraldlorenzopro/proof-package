@@ -548,6 +548,49 @@ export default function HubDashboard({
 
       <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
       <NewContactModal open={contactOpen} onOpenChange={setContactOpen} accountId={accountId} />
+
+      {/* News detail modal */}
+      <Dialog open={!!selectedNews} onOpenChange={() => setSelectedNews(null)}>
+        <DialogContent className="sm:max-w-md">
+          {selectedNews && (() => {
+            const cs = getCategoryStyle(selectedNews.category);
+            return (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: cs.bg }}>
+                      <cs.icon className="w-5 h-5" style={{ color: cs.stroke }} />
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: cs.stroke }}>{selectedNews.category}</span>
+                      <span className="text-[10px] text-muted-foreground/40 ml-2">{selectedNews.time}</span>
+                    </div>
+                  </div>
+                  <DialogTitle className="text-base">{selectedNews.title}</DialogTitle>
+                  <DialogDescription className="text-sm text-muted-foreground mt-2">
+                    {selectedNews.summary}
+                  </DialogDescription>
+                </DialogHeader>
+                <button
+                  onClick={() => {
+                    setSelectedNews(null);
+                    navigate("/hub/ai");
+                    // Send as message to Camila
+                    setTimeout(() => {
+                      const event = new CustomEvent("camila-ask", { detail: selectedNews.title });
+                      window.dispatchEvent(event);
+                    }, 500);
+                  }}
+                  className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-jarvis/10 border border-jarvis/20 text-sm font-medium text-jarvis hover:bg-jarvis/20 transition-all"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Preguntarle a Camila sobre esto →
+                </button>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
