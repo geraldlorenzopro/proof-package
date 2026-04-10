@@ -106,11 +106,12 @@ export default function HubDashboard({
     if (cached) {
       try {
         const { ts, data } = JSON.parse(cached);
-        if (Date.now() - ts < 30 * 60 * 1000) {
+        // Only use cache if fresh AND has newsCards
+        if (Date.now() - ts < 30 * 60 * 1000 && data.newsCards?.length) {
           if (data.news) setBriefingNews(data.news);
           if (data.citations?.length) setBriefingCitations(data.citations);
           if (data.weather) setBriefingWeather(data.weather);
-          if (data.newsCards?.length) setNewsCards(data.newsCards);
+          setNewsCards(data.newsCards);
           setNewsLoading(false);
           return;
         }
@@ -504,7 +505,7 @@ export default function HubDashboard({
             <div className="h-px flex-1 bg-border/20" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            {newsLoading
+            {newsLoading || newsCards.length === 0
               ? Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40">
                     <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
