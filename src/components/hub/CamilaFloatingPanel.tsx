@@ -183,19 +183,25 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     if (lastMsg?.role === "assistant" && messages.length - 1 > lastSpokenRef.current) {
       lastSpokenRef.current = messages.length - 1;
       setSpeakingNow(true);
-      speakAsCamila(lastMsg.content);
-      // Poll for end of speech
-      const interval = setInterval(() => {
-        if (!isSpeaking()) {
-          setSpeakingNow(false);
-          clearInterval(interval);
-          // Auto-listen again if in conversation mode
-          if (conversationMode) {
-            setTimeout(() => startListening(), 400);
-          }
+
+      // Try Google TTS first, fallback to Web Speech
+      (async () => {
+        const played = await playGoogleTTS(lastMsg.content);
+        if (!played) {
+          // Fallback to browser TTS
+          speakAsCamila(lastMsg.content);
+          const interval = setInterval(() => {
+            if (!isSpeaking()) {
+              clearInterval(interval);
+              setSpeakingNow(false);
+              if (conversationMode) setTimeout(() => startListening(), 400);
+            }
+          }, 300);
+          return;
         }
-      }, 300);
-      return () => clearInterval(interval);
+        setSpeakingNow(false);
+        if (conversationMode) setTimeout(() => startListening(), 400);
+      })();
     }
   }, [messages, isLoading, voiceEnabled, conversationMode]);
 
