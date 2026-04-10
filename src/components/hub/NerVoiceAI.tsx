@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useConversation, ConversationProvider } from "@elevenlabs/react";
+import { useConversation } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MicOff, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,20 @@ interface Props {
   accountId: string;
 }
 
-function NerVoiceAIInner({ accountId }: Props) {
+/** Unlock browser audio synchronously inside user gesture */
+function unlockAudioContext() {
+  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtx) return;
+  const ctx = new AudioCtx();
+  if (ctx.state === "suspended") ctx.resume();
+  const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start(0);
+}
+
+export default function NerVoiceAI({ accountId }: Props) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState("");
@@ -20,7 +33,7 @@ function NerVoiceAIInner({ accountId }: Props) {
 
   const conversation = useConversation({
     onConnect: () => {
-      console.log("NER Voice AI: Connected DIRECTLY");
+      console.log("NER Voice AI: Connected");
       setError(null);
     },
     onDisconnect: () => {
@@ -29,13 +42,11 @@ function NerVoiceAIInner({ accountId }: Props) {
       setAgentResponse("");
     },
     onMessage: (message: any) => {
-      console.log("NER Voice AI Message:", message);
       if (message.type === "user_transcript") {
         setTranscript(message.user_transcription_event?.user_transcript || "");
       } else if (message.source === "user" && typeof message.message === "string") {
         setTranscript(message.message);
       }
-
       if (message.type === "agent_response") {
         setAgentResponse(message.agent_response_event?.agent_response || "");
       } else if (message.source === "ai" && typeof message.message === "string") {
@@ -44,11 +55,11 @@ function NerVoiceAIInner({ accountId }: Props) {
     },
     onError: (err: any) => {
       console.error("NER Voice AI error:", err);
-      setError(typeof err === "string" ? err : err.message || "Error al conectar.");
+      setError(typeof err === "string" ? err : err?.message || "Error al conectar.");
     },
   });
 
-  // Efecto visual del micrófono
+  // Mic level visualizer
   useEffect(() => {
     if (conversation.status !== "connected") return;
     const interval = setInterval(() => {
@@ -61,29 +72,25 @@ function NerVoiceAIInner({ accountId }: Props) {
     setIsConnecting(true);
     setError(null);
 
-    // Forzamos el audio para evitar el bloqueo del navegador
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        const tempCtx = new AudioCtx();
-        await tempCtx.resume();
-      }
-    } catch (e) {
-      console.warn("Audio context bypass warning:", e);
-    }
+    // 1. Synchronous audio unlock inside user gesture
+    unlockAudioContext();
 
     try {
-      console.log("NER Voice AI: Iniciando sin Edge Function...");
-      // AQUÍ ESTÁ LA MAGIA: Nos saltamos el token y usamos el Agent ID directo
-      await conversation.startSession({ agentId: AGENT_ID });
+      // 2. Request mic permission
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // 3. Direct connection — public agent, no token needed
+      await conversation.startSession({
+        agentId: AGENT_ID,
+      });
     } catch (err: any) {
-      console.error("Failed start:", err);
+      console.error("Failed to start NER Voice:", err);
       const msg = String(err?.message || err || "");
-      setError(
-        msg.includes("401") || msg.toLowerCase().includes("unauthorized")
-          ? "Tu agente en ElevenLabs requiere Token obligatorio. Pide a Lovable que revise su endpoint."
-          : "Fallo de micrófono: " + msg,
-      );
+      if (msg.includes("Permission") || msg.includes("NotAllowed")) {
+        setError("Se necesita permiso de micrófono para usar voz.");
+      } else {
+        setError("No se pudo conectar: " + msg);
+      }
     } finally {
       setIsConnecting(false);
     }
@@ -118,7 +125,9 @@ function NerVoiceAIInner({ accountId }: Props) {
               }}
             >
               {agentResponse && <p className="text-foreground/80">{agentResponse}</p>}
-              {transcript && !isSpeaking && <p className="text-jarvis/50 italic mt-1 text-[11px]">"{transcript}"</p>}
+              {transcript && !isSpeaking && (
+                <p className="text-jarvis/50 italic mt-1 text-[11px]">"{transcript}"</p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -126,7 +135,10 @@ function NerVoiceAIInner({ accountId }: Props) {
         {error && !isActive && (
           <div
             className="flex flex-col items-center gap-3 p-4 text-center max-w-[280px] rounded-2xl backdrop-blur-md"
-            style={{ background: "hsl(220 25% 8% / 0.85)", border: "1px solid hsl(0 70% 50% / 0.2)" }}
+            style={{
+              background: "hsl(220 25% 8% / 0.85)",
+              border: "1px solid hsl(0 70% 50% / 0.2)",
+            }}
           >
             <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
               <MicOff className="w-5 h-5 text-rose-400" />
@@ -150,13 +162,5 @@ function NerVoiceAIInner({ accountId }: Props) {
         />
       </motion.div>
     </AnimatePresence>
-  );
-}
-
-export default function NerVoiceAI({ accountId }: Props) {
-  return (
-    <ConversationProvider>
-      <NerVoiceAIInner accountId={accountId} />
-    </ConversationProvider>
   );
 }
