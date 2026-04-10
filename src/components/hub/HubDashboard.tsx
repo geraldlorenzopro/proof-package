@@ -542,7 +542,9 @@ export default function HubDashboard({
                 })}
           </div>
         </div>
-      )}
+       )}
+        </div>
+      </div>
 
       <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
       <NewContactModal open={contactOpen} onOpenChange={setContactOpen} accountId={accountId} />
