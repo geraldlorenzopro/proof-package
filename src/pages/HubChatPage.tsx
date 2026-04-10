@@ -316,7 +316,7 @@ export default function HubChatPage() {
 
   return (
     <HubLayout accountName={accountName} staffName={staffName} plan={plan} availableApps={availableApps}>
-      <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex flex-col h-full overflow-hidden relative">
         {/* ── Header ── */}
         <div className="shrink-0 px-5 py-3 flex items-center justify-between border-b border-border/20"
           style={{ background: "linear-gradient(135deg, hsl(195 100% 50% / 0.04) 0%, transparent 60%)" }}
