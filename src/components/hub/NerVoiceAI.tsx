@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useConversation } from "@elevenlabs/react";
+import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MicOff, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ function unlockAudioContext() {
   src.start(0);
 }
 
-export default function NerVoiceAI({ accountId }: Props) {
+function NerVoiceAIInner({ accountId }: Props) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState("");
@@ -162,5 +162,13 @@ export default function NerVoiceAI({ accountId }: Props) {
         />
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+export default function NerVoiceAI({ accountId }: Props) {
+  return (
+    <ConversationProvider>
+      <NerVoiceAIInner accountId={accountId} />
+    </ConversationProvider>
   );
 }
