@@ -264,6 +264,7 @@ export default function HubChatPage() {
   }, []);
 
   const toggleMic = useCallback(() => {
+    if (voiceModeRef.current) return; // don't conflict with voice orb
     if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
     startListening();
   }, [isListening, startListening]);
@@ -319,11 +320,13 @@ export default function HubChatPage() {
   const startVoiceMode = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { toast.error("Tu navegador no soporta reconocimiento de voz."); return; }
+    // Stop any active regular mic first
+    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); }
     voiceModeRef.current = true;
     setVoiceMode(true);
     setVoiceEnabled(true);
     voiceListenCycle();
-  }, [voiceListenCycle]);
+  }, [voiceListenCycle, isListening]);
 
   const stopVoiceMode = useCallback(() => {
     voiceModeRef.current = false;
