@@ -81,63 +81,65 @@ export default function HubAiPage() {
   if (!accountId) return null;
 
   return (
-    <div className="flex h-[100dvh] max-h-[100dvh] min-h-[100dvh] w-full flex-col overflow-hidden bg-background">
-      <Tabs defaultValue="voice" className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="shrink-0 px-5 pb-0 pt-4">
-          <TabsList className="h-11 gap-1 border border-border/20 bg-card/50 p-1">
-            <TabsTrigger value="voice" className="gap-2 px-4 data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis data-[state=active]:shadow-none">
-              <Mic className="h-3.5 w-3.5" />
-              <span className="text-xs font-bold">Voice AI</span>
-            </TabsTrigger>
-            <TabsTrigger value="agents" className="gap-2 px-4 data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis data-[state=active]:shadow-none">
-              <Bot className="h-3.5 w-3.5" />
-              <span className="text-xs font-bold">Agentes</span>
-            </TabsTrigger>
-            <TabsTrigger value="tools" className="gap-2 px-4 data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis data-[state=active]:shadow-none">
-              <Wrench className="h-3.5 w-3.5" />
-              <span className="text-xs font-bold">Herramientas</span>
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="voice" forceMount className="relative mt-0 h-0 flex-1 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:h-full data-[state=active]:flex-col">
-          <VoiceAIPanel accountId={accountId} />
-        </TabsContent>
-
-        <TabsContent value="agents" className="mt-0 h-0 flex-1 min-h-0 overflow-hidden p-6 data-[state=active]:flex data-[state=active]:items-center data-[state=active]:justify-center">
-          <div className="w-full max-w-4xl min-h-0">
-            <div className="mb-4">
-              <h2 className="text-lg font-bold text-foreground">Equipo de Agentes AI</h2>
-              <p className="mt-1 text-sm text-muted-foreground/60">Especialistas digitales que trabajan en tus casos de inmigración.</p>
-            </div>
-            <HubAgentTeam accountId={accountId} plan={plan} />
+    <HubLayout>
+      <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+        <Tabs defaultValue="voice" className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="shrink-0 px-5 pb-0 pt-4">
+            <TabsList className="h-11 gap-1 border border-border/20 bg-card/50 p-1">
+              <TabsTrigger value="voice" className="gap-2 px-4 data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis data-[state=active]:shadow-none">
+                <Mic className="h-3.5 w-3.5" />
+                <span className="text-xs font-bold">Voice AI</span>
+              </TabsTrigger>
+              <TabsTrigger value="agents" className="gap-2 px-4 data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis data-[state=active]:shadow-none">
+                <Bot className="h-3.5 w-3.5" />
+                <span className="text-xs font-bold">Agentes</span>
+              </TabsTrigger>
+              <TabsTrigger value="tools" className="gap-2 px-4 data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis data-[state=active]:shadow-none">
+                <Wrench className="h-3.5 w-3.5" />
+                <span className="text-xs font-bold">Herramientas</span>
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </TabsContent>
 
-        <TabsContent value="tools" className="mt-0 h-0 flex-1 min-h-0 overflow-hidden p-6 data-[state=active]:flex data-[state=active]:items-center data-[state=active]:justify-center">
-          <div className="w-full max-w-4xl min-h-0">
-            <div className="mb-4">
-              <h2 className="text-lg font-bold text-foreground">Herramientas de Inmigración</h2>
-              <p className="mt-1 text-sm text-muted-foreground/60">Calculadoras, generadores y herramientas especializadas.</p>
+          <TabsContent value="voice" forceMount className="relative mt-0 h-0 flex-1 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:h-full data-[state=active]:flex-col">
+            <VoiceAIPanel accountId={accountId} />
+          </TabsContent>
+
+          <TabsContent value="agents" className="mt-0 h-0 flex-1 min-h-0 overflow-hidden p-6 data-[state=active]:flex data-[state=active]:items-center data-[state=active]:justify-center">
+            <div className="w-full max-w-4xl min-h-0">
+              <div className="mb-4">
+                <h2 className="text-lg font-bold text-foreground">Equipo de Agentes AI</h2>
+                <p className="mt-1 text-sm text-muted-foreground/60">Especialistas digitales que trabajan en tus casos de inmigración.</p>
+              </div>
+              <HubAgentTeam accountId={accountId} plan={plan} />
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {TOOLS.map((tool) => (
-                <button
-                  key={tool.label}
-                  onClick={() => {
-                    sessionStorage.setItem("ner_hub_return", "/hub/ai");
-                    navigate(tool.path);
-                  }}
-                  className={`group flex items-center gap-3 rounded-xl border ${tool.border} ${tool.bg} p-3 text-left transition-all hover:scale-[1.02]`}
-                >
-                  <tool.icon className={`h-4 w-4 shrink-0 ${tool.color} transition-transform group-hover:scale-110`} />
-                  <span className="text-[11px] font-semibold text-foreground">{tool.label}</span>
-                </button>
-              ))}
+          </TabsContent>
+
+          <TabsContent value="tools" className="mt-0 h-0 flex-1 min-h-0 overflow-hidden p-6 data-[state=active]:flex data-[state=active]:items-center data-[state=active]:justify-center">
+            <div className="w-full max-w-4xl min-h-0">
+              <div className="mb-4">
+                <h2 className="text-lg font-bold text-foreground">Herramientas de Inmigración</h2>
+                <p className="mt-1 text-sm text-muted-foreground/60">Calculadoras, generadores y herramientas especializadas.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {TOOLS.map((tool) => (
+                  <button
+                    key={tool.label}
+                    onClick={() => {
+                      sessionStorage.setItem("ner_hub_return", "/hub/ai");
+                      navigate(tool.path);
+                    }}
+                    className={`group flex items-center gap-3 rounded-xl border ${tool.border} ${tool.bg} p-3 text-left transition-all hover:scale-[1.02]`}
+                  >
+                    <tool.icon className={`h-4 w-4 shrink-0 ${tool.color} transition-transform group-hover:scale-110`} />
+                    <span className="text-[11px] font-semibold text-foreground">{tool.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </HubLayout>
   );
 }
