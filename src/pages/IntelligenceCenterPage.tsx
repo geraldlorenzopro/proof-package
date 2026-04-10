@@ -631,6 +631,7 @@ export default function IntelligenceCenterPage() {
         </SheetContent>
       </Sheet>
     </div>
+    </HubLayout>
   );
 }
 

@@ -91,6 +91,7 @@ const App = () => (
           {/* ═══ PROTECTED ROUTES ═══ */}
           <Route path="/hub" element={<HubPage />} />
           <Route path="/hub/intelligence" element={<ProtectedRoute><IntelligenceCenterPage /></ProtectedRoute>} />
+          <Route path="/hub/reports" element={<ProtectedRoute><IntelligenceCenterPage /></ProtectedRoute>} />
           <Route path="/hub/consultations" element={<ProtectedRoute><ConsultationsPage /></ProtectedRoute>} />
           <Route path="/hub/clients" element={<ProtectedRoute><HubClientsPage /></ProtectedRoute>} />
           <Route path="/hub/clients/:id" element={<ProtectedRoute><ClientProfilePage /></ProtectedRoute>} />
@@ -140,7 +141,7 @@ const App = () => (
           <Route path="/portfolio" element={<Navigate to="/dashboard/workspace-demo" replace />} />
           <Route path="/hub/cases" element={<ProtectedRoute><HubCasesPage /></ProtectedRoute>} />
           <Route path="/hub/agenda" element={<ProtectedRoute><HubAgendaPage /></ProtectedRoute>} />
-          <Route path="/hub/reports" element={<Navigate to="/hub/intelligence" replace />} />
+          {/* /hub/reports now handled above directly */}
           <Route path="/hub/ai" element={<ProtectedRoute><HubAiPage /></ProtectedRoute>} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
