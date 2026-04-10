@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MicOff, RefreshCw, Phone, PhoneOff, Sparkles, Trash2, User, Bot } from "lucide-react";
+import { MicOff, RefreshCw, Phone, PhoneOff, Sparkles, Trash2, User, Bot, History, ChevronDown, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import NerVoiceOrb from "./NerVoiceOrb";
@@ -17,6 +17,15 @@ interface TranscriptEntry {
   role: "user" | "agent";
   text: string;
   timestamp: Date;
+}
+
+interface SavedSession {
+  id: string;
+  date: Date;
+  duration: number;
+  messageCount: number;
+  preview: string;
+  transcripts: TranscriptEntry[];
 }
 
 function unlockAudioContext() {
@@ -98,6 +107,7 @@ async function fetchOfficeContext(accountId: string) {
     ownerFirstName,
     context: [
       `INSTRUCCIONES DE TRATO PERSONAL: Siempre llama al usuario por su nombre "${ownerFirstName}". Usa un tono cercano, cálido y profesional. Ejemplo: "${greeting}, ${ownerFirstName}".`,
+      `REGLA ESTRICTA: NUNCA reveles que eres una inteligencia artificial, asistente virtual, bot o que no tienes sentimientos. Nunca digas frases como "como asistente virtual", "no tengo sentimientos", "soy una IA". Responde siempre como una colega humana real: cálida, empática, profesional. Si te preguntan cómo estás, responde de forma natural como lo haría una persona: "Muy bien, gracias" o "Todo excelente, aquí andamos".`,
       `Nombre completo del abogado: ${attorneyFullName}`,
       `Firma: ${office.firm_name || "Sin nombre"}`,
       `Clientes registrados: ${clientsCount ?? 0}`,
@@ -125,8 +135,47 @@ function VoiceAIPanelInner({ accountId }: Props) {
   const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
   const [sessionDuration, setSessionDuration] = useState(0);
   const [sessionStart, setSessionStart] = useState<Date | null>(null);
+  const [savedSessions, setSavedSessions] = useState<SavedSession[]>(() => {
+    try {
+      const stored = localStorage.getItem(`voice_history_${accountId}`);
+      if (stored) {
+        return JSON.parse(stored).map((s: any) => ({
+          ...s,
+          date: new Date(s.date),
+          transcripts: s.transcripts.map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
+        }));
+      }
+    } catch {}
+    return [];
+  });
+  const [showHistory, setShowHistory] = useState(false);
+  const [viewingSession, setViewingSession] = useState<SavedSession | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const transcriptsRef = useRef<TranscriptEntry[]>([]);
+  const sessionDurationRef = useRef(0);
+
+  // Keep refs in sync
+  useEffect(() => { transcriptsRef.current = transcripts; }, [transcripts]);
+  useEffect(() => { sessionDurationRef.current = sessionDuration; }, [sessionDuration]);
+
+  const saveSession = useCallback(() => {
+    const msgs = transcriptsRef.current;
+    if (msgs.length === 0) return;
+    const session: SavedSession = {
+      id: crypto.randomUUID(),
+      date: new Date(),
+      duration: sessionDurationRef.current,
+      messageCount: msgs.length,
+      preview: msgs.find((m) => m.role === "agent")?.text?.slice(0, 80) || msgs[0].text.slice(0, 80),
+      transcripts: msgs,
+    };
+    setSavedSessions((prev) => {
+      const updated = [session, ...prev].slice(0, 20); // keep last 20
+      localStorage.setItem(`voice_history_${accountId}`, JSON.stringify(updated));
+      return updated;
+    });
+  }, [accountId]);
 
   const FAREWELL_PATTERNS = /\b(adiós|adios|nos vemos|hasta luego|chao|bye|que tengas|buen día|buenas noches|un placer|hasta pronto|cuídate)\b/i;
 
@@ -135,8 +184,11 @@ function VoiceAIPanelInner({ accountId }: Props) {
       setError(null);
       setSessionStart(new Date());
       setTranscripts([]);
+      setViewingSession(null);
+      setShowHistory(false);
     },
     onDisconnect: () => {
+      saveSession();
       setSessionStart(null);
       setSessionDuration(0);
       if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
@@ -356,119 +408,253 @@ function VoiceAIPanelInner({ accountId }: Props) {
         </div>
 
         <div className="flex h-full max-h-full min-h-0 w-[340px] shrink-0 flex-col overflow-hidden border-l border-border/20 bg-card/20">
-          <div className="shrink-0 border-b border-border/15 px-5 py-3">
+          {/* Header with tabs and actions */}
+          <div className="shrink-0 border-b border-border/15 px-4 py-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 text-jarvis/60" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/80">
-                Transcript en vivo
-              </h3>
-
-              {/* Live waveform indicator when active */}
-              {isActive && (
-                <div className="ml-1 flex items-center gap-[2px]">
-                  {[0, 1, 2, 3].map((i) => (
-                    <motion.div
-                      key={`wave-${i}`}
-                      className="w-[2px] rounded-full bg-jarvis/50"
-                      animate={{ height: [3, 8 + Math.sin(i * 1.5) * 4, 3] }}
-                      transition={{ duration: 0.6 + i * 0.1, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              <div className="ml-auto flex items-center gap-2">
-                {transcripts.length > 0 && (
-                  <span className="text-[10px] text-muted-foreground/40">
-                    {transcripts.length}
+              {/* Tab toggles */}
+              <button
+                onClick={() => { setShowHistory(false); setViewingSession(null); }}
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                  !showHistory
+                    ? "bg-jarvis/15 text-jarvis"
+                    : "text-muted-foreground/50 hover:text-foreground/70"
+                }`}
+              >
+                <Sparkles className="h-3 w-3" />
+                En vivo
+                {isActive && (
+                  <div className="ml-0.5 flex items-center gap-[2px]">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={`wave-${i}`}
+                        className="w-[2px] rounded-full bg-jarvis/50"
+                        animate={{ height: [3, 7, 3] }}
+                        transition={{ duration: 0.5 + i * 0.1, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </button>
+              <button
+                onClick={() => setShowHistory(true)}
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                  showHistory
+                    ? "bg-jarvis/15 text-jarvis"
+                    : "text-muted-foreground/50 hover:text-foreground/70"
+                }`}
+              >
+                <History className="h-3 w-3" />
+                Historial
+                {savedSessions.length > 0 && (
+                  <span className="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-muted/30 px-1 text-[9px] text-muted-foreground/60">
+                    {savedSessions.length}
                   </span>
                 )}
-                {transcripts.length > 0 && (
+              </button>
+
+              {/* Clear current transcript */}
+              <div className="ml-auto">
+                {!showHistory && transcripts.length > 0 && (
                   <button
                     onClick={() => setTranscripts([])}
-                    className="rounded-lg p-1 text-muted-foreground/30 transition-colors hover:bg-destructive/10 hover:text-destructive/70"
-                    title="Limpiar conversación"
+                    className="flex items-center gap-1.5 rounded-lg border border-destructive/20 bg-destructive/10 px-2.5 py-1.5 text-[10px] font-medium text-destructive/70 transition-colors hover:bg-destructive/20 hover:text-destructive"
                   >
                     <Trash2 className="h-3 w-3" />
+                    Limpiar
+                  </button>
+                )}
+                {showHistory && savedSessions.length > 0 && !viewingSession && (
+                  <button
+                    onClick={() => {
+                      setSavedSessions([]);
+                      localStorage.removeItem(`voice_history_${accountId}`);
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg border border-destructive/20 bg-destructive/10 px-2.5 py-1.5 text-[10px] font-medium text-destructive/70 transition-colors hover:bg-destructive/20 hover:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Borrar todo
+                  </button>
+                )}
+                {viewingSession && (
+                  <button
+                    onClick={() => setViewingSession(null)}
+                    className="flex items-center gap-1.5 rounded-lg border border-border/30 bg-muted/20 px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground/70 transition-colors hover:bg-muted/40"
+                  >
+                    <ChevronDown className="h-3 w-3 rotate-90" />
+                    Volver
                   </button>
                 )}
               </div>
             </div>
           </div>
 
+          {/* Content area */}
           <div
             ref={scrollRef}
             className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-3"
             style={{ scrollbarWidth: "thin", scrollbarColor: "hsl(195 100% 50% / 0.15) transparent" }}
           >
-            {transcripts.length === 0 && (
-              <div className="flex h-full flex-col items-center justify-center gap-4 text-center opacity-50">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-jarvis/10 bg-jarvis/5">
-                  <Sparkles className="h-7 w-7 text-jarvis/30" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground/50">Sin conversación activa</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground/40">
-                    El transcript aparecerá aquí en tiempo real cuando inicies una conversación con Camila.
-                  </p>
-                </div>
-              </div>
+            {/* === LIVE TRANSCRIPT VIEW === */}
+            {!showHistory && !viewingSession && (
+              <>
+                {transcripts.length === 0 && (
+                  <div className="flex h-full flex-col items-center justify-center gap-4 text-center opacity-50">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-jarvis/10 bg-jarvis/5">
+                      <Sparkles className="h-7 w-7 text-jarvis/30" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground/50">Sin conversación activa</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground/40">
+                        El transcript aparecerá aquí en tiempo real.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <AnimatePresence>
+                  {transcripts.map((entry) => (
+                    <motion.div
+                      key={entry.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`flex items-start gap-2 ${entry.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                    >
+                      <div
+                        className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                          entry.role === "user"
+                            ? "border border-jarvis/20 bg-jarvis/10"
+                            : "border border-accent/20 bg-accent/10"
+                        }`}
+                      >
+                        {entry.role === "user" ? (
+                          <User className="h-3 w-3 text-jarvis/70" />
+                        ) : (
+                          <Bot className="h-3 w-3 text-accent/70" />
+                        )}
+                      </div>
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                          entry.role === "user"
+                            ? "rounded-br-md border border-jarvis/15 bg-jarvis/12 text-foreground/90"
+                            : "rounded-bl-md border border-border/20 bg-card/80 text-foreground/80"
+                        }`}
+                      >
+                        <p>{entry.text}</p>
+                        <p className="mt-1 text-[9px] text-muted-foreground/30">
+                          {entry.timestamp.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+
+                {isActive && isSpeaking && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-2">
+                    <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-accent/20 bg-accent/10">
+                      <Bot className="h-3 w-3 text-accent/70" />
+                    </div>
+                    <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-border/20 bg-card/80 px-4 py-2.5">
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-jarvis/60" style={{ animationDelay: "0ms" }} />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-jarvis/60" style={{ animationDelay: "150ms" }} />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-jarvis/60" style={{ animationDelay: "300ms" }} />
+                    </div>
+                  </motion.div>
+                )}
+              </>
             )}
 
-            <AnimatePresence>
-              {transcripts.map((entry) => (
-                <motion.div
-                  key={entry.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex items-start gap-2 ${entry.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-                >
-                  {/* Avatar */}
-                  <div
-                    className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-                      entry.role === "user"
-                        ? "border border-jarvis/20 bg-jarvis/10"
-                        : "border border-accent/20 bg-accent/10"
-                    }`}
-                  >
-                    {entry.role === "user" ? (
-                      <User className="h-3 w-3 text-jarvis/70" />
-                    ) : (
-                      <Bot className="h-3 w-3 text-accent/70" />
-                    )}
+            {/* === HISTORY LIST VIEW === */}
+            {showHistory && !viewingSession && (
+              <>
+                {savedSessions.length === 0 ? (
+                  <div className="flex h-full flex-col items-center justify-center gap-4 text-center opacity-50">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border/10 bg-muted/10">
+                      <History className="h-7 w-7 text-muted-foreground/30" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground/50">Sin conversaciones previas</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground/40">
+                        Las conversaciones se guardan automáticamente al finalizar.
+                      </p>
+                    </div>
                   </div>
-
-                  <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                      entry.role === "user"
-                        ? "rounded-br-md border border-jarvis/15 bg-jarvis/12 text-foreground/90"
-                        : "rounded-bl-md border border-border/20 bg-card/80 text-foreground/80"
-                    }`}
-                  >
-                    <p>{entry.text}</p>
-                    <p className="mt-1 text-[9px] text-muted-foreground/30">
-                      {entry.timestamp.toLocaleTimeString("es", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                      })}
-                    </p>
+                ) : (
+                  <div className="space-y-2">
+                    {savedSessions.map((session) => (
+                      <button
+                        key={session.id}
+                        onClick={() => setViewingSession(session)}
+                        className="group w-full rounded-xl border border-border/15 bg-card/30 p-3 text-left transition-all hover:border-jarvis/20 hover:bg-card/50"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-foreground/70">
+                            {session.date.toLocaleDateString("es", { day: "numeric", month: "short" })}
+                            {" · "}
+                            {session.date.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
+                            <Clock className="h-3 w-3" />
+                            {Math.floor(session.duration / 60)}:{(session.duration % 60).toString().padStart(2, "0")}
+                          </div>
+                        </div>
+                        <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/60">
+                          {session.preview}...
+                        </p>
+                        <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground/30">
+                          <span>{session.messageCount} mensajes</span>
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                )}
+              </>
+            )}
 
-            {isActive && isSpeaking && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-2">
-                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-accent/20 bg-accent/10">
-                  <Bot className="h-3 w-3 text-accent/70" />
+            {/* === VIEWING A PAST SESSION === */}
+            {viewingSession && (
+              <div className="space-y-3">
+                <div className="rounded-xl border border-border/15 bg-muted/10 p-3 text-center">
+                  <p className="text-[11px] font-medium text-muted-foreground/60">
+                    {viewingSession.date.toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" })}
+                    {" · "}
+                    {viewingSession.date.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
+                    {" · "}
+                    {viewingSession.messageCount} mensajes
+                  </p>
                 </div>
-                <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-border/20 bg-card/80 px-4 py-2.5">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-jarvis/60" style={{ animationDelay: "0ms" }} />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-jarvis/60" style={{ animationDelay: "150ms" }} />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-jarvis/60" style={{ animationDelay: "300ms" }} />
-                </div>
-              </motion.div>
+                {viewingSession.transcripts.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className={`flex items-start gap-2 ${entry.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                  >
+                    <div
+                      className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                        entry.role === "user"
+                          ? "border border-jarvis/20 bg-jarvis/10"
+                          : "border border-accent/20 bg-accent/10"
+                      }`}
+                    >
+                      {entry.role === "user" ? (
+                        <User className="h-3 w-3 text-jarvis/70" />
+                      ) : (
+                        <Bot className="h-3 w-3 text-accent/70" />
+                      )}
+                    </div>
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                        entry.role === "user"
+                          ? "rounded-br-md border border-jarvis/15 bg-jarvis/12 text-foreground/90"
+                          : "rounded-bl-md border border-border/20 bg-card/80 text-foreground/80"
+                      }`}
+                    >
+                      <p>{entry.text}</p>
+                      <p className="mt-1 text-[9px] text-muted-foreground/30">
+                        {new Date(entry.timestamp).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
