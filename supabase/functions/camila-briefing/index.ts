@@ -50,9 +50,7 @@ Deno.serve(async (req) => {
     // ─── Weather via wttr.in (free, no API key) ───
     let weatherText = "";
     try {
-      // Extract city from address (last part before state/zip usually)
       const address = office?.firm_address || "";
-      // Try to extract city - common formats: "123 Main St, Miami, FL 33101"
       const parts = address.split(",").map((s: string) => s.trim());
       const city = parts.length >= 2 ? parts[parts.length - 2] : parts[0] || "Miami";
       
@@ -73,46 +71,86 @@ Deno.serve(async (req) => {
       console.warn("Weather fetch failed:", e);
     }
 
-    // ─── Immigration news via Lovable AI ───
+    // ─── Immigration news via Perplexity (real-time web search) ───
     let newsText = "";
+    let newsCitations: string[] = [];
     try {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (LOVABLE_API_KEY) {
-        const aiResp = await fetch("https://ai.lovable.dev/chat/completions", {
+      const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+      if (PERPLEXITY_API_KEY) {
+        const pxResp = await fetch("https://api.perplexity.ai/chat/completions", {
           method: "POST",
           headers: {
+            "Authorization": `Bearer ${PERPLEXITY_API_KEY}`,
             "Content-Type": "application/json",
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+            model: "sonar",
             messages: [
               {
                 role: "system",
-                content: `Eres un asistente de noticias de inmigración de EE.UU. Genera un resumen de 1-2 oraciones sobre lo más relevante que está pasando HOY ${todayStr} en inmigración de EE.UU. (USCIS, boletín de visas, cambios de política, tiempos de procesamiento, etc). Sé conciso, profesional y en español. NO inventes noticias, si no tienes información actual di algo general sobre el panorama migratorio actual. No uses emojis ni markdown.`,
+                content: `Eres un asistente de noticias de inmigración de EE.UU. para abogados. Genera un resumen de 2-3 oraciones sobre lo más relevante que está pasando HOY en inmigración de EE.UU. (USCIS, boletín de visas, cambios de política, tiempos de procesamiento, deportaciones, ICE, etc). Sé conciso, profesional y en español. No uses emojis ni markdown.`,
               },
               {
                 role: "user",
-                content: `Dame el resumen de noticias de inmigración más relevante para hoy ${todayStr}.`,
+                content: `¿Cuáles son las noticias de inmigración más importantes de hoy ${todayStr} en Estados Unidos?`,
               },
             ],
-            max_tokens: 200,
-            temperature: 0.3,
+            max_tokens: 300,
+            temperature: 0.2,
+            search_recency_filter: "day",
           }),
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(10000),
         });
 
-        if (aiResp.ok) {
-          const aiData = await aiResp.json();
-          newsText = aiData.choices?.[0]?.message?.content?.trim() || "";
+        if (pxResp.ok) {
+          const pxData = await pxResp.json();
+          newsText = pxData.choices?.[0]?.message?.content?.trim() || "";
+          newsCitations = pxData.citations || [];
+        } else {
+          console.warn("Perplexity API error:", pxResp.status, await pxResp.text());
+        }
+      }
+
+      // Fallback to Lovable AI if Perplexity is not available
+      if (!newsText) {
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        if (LOVABLE_API_KEY) {
+          const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                {
+                  role: "system",
+                  content: `Eres un asistente de noticias de inmigración de EE.UU. Genera un resumen de 1-2 oraciones sobre el panorama migratorio actual. Sé conciso, profesional y en español. No uses emojis ni markdown.`,
+                },
+                {
+                  role: "user",
+                  content: `Dame un resumen general del panorama migratorio actual en EE.UU.`,
+                },
+              ],
+              max_tokens: 200,
+              temperature: 0.3,
+            }),
+            signal: AbortSignal.timeout(8000),
+          });
+
+          if (aiResp.ok) {
+            const aiData = await aiResp.json();
+            newsText = aiData.choices?.[0]?.message?.content?.trim() || "";
+          }
         }
       }
     } catch (e) {
-      console.warn("News AI fetch failed:", e);
+      console.warn("News fetch failed:", e);
     }
 
     return new Response(
-      JSON.stringify({ weather: weatherText, news: newsText, kpis }),
+      JSON.stringify({ weather: weatherText, news: newsText, citations: newsCitations, kpis }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
