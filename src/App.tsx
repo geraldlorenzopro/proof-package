@@ -58,6 +58,7 @@ import HubClientsPage from "./pages/HubClientsPage";
 import HubCasesPage from "./pages/HubCasesPage";
 import HubAgendaPage from "./pages/HubAgendaPage";
 import HubAiPage from "./pages/HubAiPage";
+import HubChatPage from "./pages/HubChatPage";
 
 const queryClient = new QueryClient();
 
@@ -143,6 +144,7 @@ const App = () => (
           <Route path="/hub/agenda" element={<ProtectedRoute><HubAgendaPage /></ProtectedRoute>} />
           {/* /hub/reports now handled above directly */}
           <Route path="/hub/ai" element={<ProtectedRoute><HubAiPage /></ProtectedRoute>} />
+          <Route path="/hub/chat" element={<ProtectedRoute><HubChatPage /></ProtectedRoute>} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
