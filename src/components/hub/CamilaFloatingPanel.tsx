@@ -397,7 +397,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                     {/* Voice output toggle */}
                     <button
                       onClick={() => {
-                        if (speakingNow) { stopSpeaking(); setSpeakingNow(false); }
+                        if (speakingNow) { stopSpeaking(); stopGoogleAudio(); setSpeakingNow(false); }
                         setVoiceEnabled(v => !v);
                       }}
                       className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
