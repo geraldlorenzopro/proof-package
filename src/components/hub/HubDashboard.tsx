@@ -482,50 +482,53 @@ export default function HubDashboard({
         </div>
       </div>
 
-      {/* ─── News ticker at the bottom ─── */}
-      {briefingNews && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/90 backdrop-blur-md border-t border-border/30">
-          <div className="flex items-center h-9 overflow-hidden">
-            <div className="shrink-0 flex items-center gap-1.5 px-3 bg-jarvis/10 h-full border-r border-border/20">
-              <Newspaper className="w-3.5 h-3.5 text-jarvis" />
-              <span className="text-[11px] font-semibold text-jarvis uppercase tracking-wider">Noticias</span>
-            </div>
-            <div className="flex-1 overflow-hidden relative">
-              <div className="animate-marquee whitespace-nowrap flex items-center h-9">
-                <span className="text-xs text-muted-foreground px-4">
-                  {briefingNews.replace(/\[\d+\]/g, '').trim()}
-                </span>
-                {briefingCitations.length > 0 && (
-                  <span className="text-xs text-muted-foreground/40 px-2">—</span>
-                )}
-                {briefingCitations.slice(0, 3).map((url, i) => {
-                  let domain = "";
-                  try { domain = new URL(url).hostname.replace("www.", ""); } catch { domain = url; }
+      {/* ─── News Cards Section ─── */}
+      {!hasChatResponse && (
+        <div className="w-full max-w-[640px] mx-auto px-6 pb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-px flex-1 bg-border/20" />
+            <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold flex items-center gap-1.5">
+              <Newspaper className="w-3 h-3" /> Noticias de inmigración
+            </span>
+            <div className="h-px flex-1 bg-border/20" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {newsLoading || newsCards.length === 0
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40">
+                    <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="h-3 w-3/4" />
+                      <Skeleton className="h-2 w-1/2" />
+                    </div>
+                  </div>
+                ))
+              : newsCards.map((card, i) => {
+                  const catStyle = getCategoryStyle(card.category);
                   return (
-                    <a
+                    <button
                       key={i}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] text-jarvis/60 hover:text-jarvis mr-3 shrink-0"
+                      onClick={() => setSelectedNews(card)}
+                      className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-left group"
                     >
-                      <ExternalLink className="w-2.5 h-2.5" />
-                      {domain.length > 20 ? domain.slice(0, 20) + "…" : domain}
-                    </a>
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: catStyle.bg }}
+                      >
+                        <catStyle.icon className="w-4 h-4" style={{ color: catStyle.stroke }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-foreground/90 line-clamp-2 leading-snug group-hover:text-foreground transition-colors">
+                          {card.title}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/40 mt-1">
+                          {card.time} · <span className="uppercase tracking-wider font-semibold" style={{ color: catStyle.stroke }}>{card.category}</span>
+                        </p>
+                      </div>
+                    </button>
                   );
                 })}
-                {/* Duplicate for seamless loop */}
-                <span className="text-xs text-muted-foreground px-12">
-                  {briefingNews.replace(/\[\d+\]/g, '').trim()}
-                </span>
-              </div>
-            </div>
-            {briefingWeather && (
-              <div className="shrink-0 flex items-center gap-1.5 px-3 h-full border-l border-border/20">
-                <CloudSun className="w-3.5 h-3.5 text-muted-foreground/50" />
-                <span className="text-[11px] text-muted-foreground/60">{briefingWeather}</span>
-              </div>
-            )}
           </div>
         </div>
       )}
