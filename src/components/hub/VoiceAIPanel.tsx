@@ -199,7 +199,7 @@ function VoiceAIPanelInner({ accountId }: Props) {
 
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
-      const [signedUrl, officeContext] = await Promise.all([
+      const [signedUrl, officeData] = await Promise.all([
         fetchSignedUrl(),
         fetchOfficeContext(accountId),
       ]);
@@ -207,7 +207,10 @@ function VoiceAIPanelInner({ accountId }: Props) {
       await conversation.startSession({
         signedUrl,
         connectionType: "websocket",
-        dynamicVariables: { info_oficina: officeContext },
+        dynamicVariables: {
+          info_oficina: officeData.context,
+          nombre_usuario: officeData.ownerFirstName,
+        },
       } as any);
     } catch (err: any) {
       const msg = String(err?.message || err || "");
