@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { MicOff, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import NerVoiceOrb from "./NerVoiceOrb";
 
 const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
@@ -77,7 +79,7 @@ function NerVoiceAIInner({ accountId }: Props) {
       console.log("NER Voice AI: Requesting microphone...");
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Try up to 2 attempts — first WebRTC, then WebSocket fallback
+      // Try up to 2 attempts with retry
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
           console.log(`NER Voice AI: Attempt ${attempt + 1} — fetching token...`);
@@ -89,12 +91,11 @@ function NerVoiceAIInner({ accountId }: Props) {
           return; // success
         } catch (sessionErr: any) {
           const msg = String(sessionErr?.message || sessionErr || "");
-          const isPcError = msg.includes("pc connection") || msg.includes("peer") || msg.includes("ICE");
-          console.warn(`NER Voice AI: Session attempt ${attempt + 1} failed:`, msg);
+          console.warn(`NER Voice AI: Intento ${attempt + 1} falló:`, msg);
 
-          if (isPcError && attempt === 0) {
+          if (attempt === 0) {
             // Wait before retry
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(r => setTimeout(r, 2000));
             continue;
           }
           throw sessionErr;
@@ -158,10 +159,31 @@ function NerVoiceAIInner({ accountId }: Props) {
           )}
         </AnimatePresence>
 
-        {/* Error */}
-        {error && (
-          <div className="max-w-[240px] px-3 py-2 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-[11px] text-center">
-            {error}
+        {/* Error with retry */}
+        {error && !isActive && (
+          <div className="flex flex-col items-center gap-3 p-4 text-center max-w-[280px] rounded-2xl backdrop-blur-md"
+            style={{
+              background: "hsl(220 25% 8% / 0.85)",
+              border: "1px solid hsl(0 70% 50% / 0.2)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
+              <MicOff className="w-5 h-5 text-rose-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">No se pudo conectar</p>
+              <p className="text-xs text-muted-foreground mt-1">{error}</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={startConversation}
+              className="gap-2"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Intentar de nuevo
+            </Button>
           </div>
         )}
 
