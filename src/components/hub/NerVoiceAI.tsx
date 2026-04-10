@@ -3,6 +3,7 @@ import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MicOff, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import NerVoiceOrb from "./NerVoiceOrb";
 
 const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
@@ -11,17 +12,47 @@ interface Props {
   accountId: string;
 }
 
-/** Unlock browser audio synchronously inside user gesture */
+interface ConversationSessionResponse {
+  ok?: boolean;
+  signed_url?: string;
+  token?: string;
+  connection_type?: "websocket" | "webrtc";
+  error?: string;
+}
+
 function unlockAudioContext() {
   const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
   if (!AudioCtx) return;
+
   const ctx = new AudioCtx();
-  if (ctx.state === "suspended") ctx.resume();
+  if (ctx.state === "suspended") {
+    void ctx.resume();
+  }
+
   const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
   const src = ctx.createBufferSource();
   src.buffer = buf;
   src.connect(ctx.destination);
   src.start(0);
+}
+
+async function fetchSignedUrl() {
+  const { data, error } = await supabase.functions.invoke<ConversationSessionResponse>(
+    "elevenlabs-conversation-token",
+    {
+      body: { agent_id: AGENT_ID },
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message || "No se pudo iniciar la sesión de voz.");
+  }
+
+  if (!data?.signed_url) {
+    throw new Error(data?.error || "No se recibió signed_url para la conversación.");
+  }
+
+  return data.signed_url;
 }
 
 function NerVoiceAIInner({ accountId }: Props) {
@@ -33,7 +64,7 @@ function NerVoiceAIInner({ accountId }: Props) {
 
   const conversation = useConversation({
     onConnect: () => {
-      console.log("NER Voice AI: Connected");
+      console.log("NER Voice AI: Connected via WebSocket");
       setError(null);
     },
     onDisconnect: () => {
@@ -47,6 +78,7 @@ function NerVoiceAIInner({ accountId }: Props) {
       } else if (message.source === "user" && typeof message.message === "string") {
         setTranscript(message.message);
       }
+
       if (message.type === "agent_response") {
         setAgentResponse(message.agent_response_event?.agent_response || "");
       } else if (message.source === "ai" && typeof message.message === "string") {
@@ -59,29 +91,27 @@ function NerVoiceAIInner({ accountId }: Props) {
     },
   });
 
-  // Mic level visualizer
   useEffect(() => {
     if (conversation.status !== "connected") return;
     const interval = setInterval(() => {
       setInputLevel(conversation.getInputVolume());
     }, 80);
     return () => clearInterval(interval);
-  }, [conversation.status]);
+  }, [conversation.status, conversation]);
 
   const startConversation = useCallback(async () => {
     setIsConnecting(true);
     setError(null);
 
-    // 1. Synchronous audio unlock inside user gesture
     unlockAudioContext();
 
     try {
-      // 2. Request mic permission
       await navigator.mediaDevices.getUserMedia({ audio: true });
+      const signedUrl = await fetchSignedUrl();
 
-      // 3. Direct connection — public agent, no token needed
       await conversation.startSession({
-        agentId: AGENT_ID,
+        signedUrl,
+        connectionType: "websocket",
       });
     } catch (err: any) {
       console.error("Failed to start NER Voice:", err);
