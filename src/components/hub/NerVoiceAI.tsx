@@ -171,12 +171,22 @@ function NerVoiceAIInner({ accountId }: Props) {
 
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
-      const signedUrl = await fetchSignedUrl();
+
+      // Fetch signed URL and office context in parallel
+      const [signedUrl, officeContext] = await Promise.all([
+        fetchSignedUrl(),
+        fetchOfficeContext(accountId),
+      ]);
+
+      console.log("NER Voice AI: Office context loaded, connecting...");
 
       await conversation.startSession({
         signedUrl,
         connectionType: "websocket",
-      });
+        dynamicVariables: {
+          info_oficina: officeContext,
+        },
+      } as any);
     } catch (err: any) {
       console.error("Failed to start NER Voice:", err);
       const msg = String(err?.message || err || "");
