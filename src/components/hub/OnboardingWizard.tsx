@@ -175,7 +175,7 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
       if (existing) {
         await supabase.from("office_config").update(configPayload).eq("account_id", accountId);
       } else {
-        await supabase.from("office_config").insert(configPayload);
+        await supabase.from("office_config").insert([configPayload] as any);
       }
 
       goTo("cliente");
