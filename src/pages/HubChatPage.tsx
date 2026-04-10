@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Mic, MicOff, Volume2, VolumeX, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Mic, MicOff, Volume2, VolumeX, Sparkles, X, Phone } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { speakAsCamila, stopSpeaking, isSpeaking, logVocesDiagnostico } from "@/lib/camilaTTS";
 import HubLayout from "@/components/hub/HubLayout";
@@ -127,6 +127,11 @@ export default function HubChatPage() {
   const [isListening, setIsListening] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [speakingNow, setSpeakingNow] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState("");
+  const voiceRecRef = useRef<any>(null);
+  const voiceSilenceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -261,9 +266,44 @@ export default function HubChatPage() {
     setVoiceEnabled(v => !v);
   }, [speakingNow]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); }
-  };
+  // Voice mode helpers
+  const startVoiceMode = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error("Tu navegador no soporta reconocimiento de voz."); return; }
+    setVoiceMode(true);
+    setVoiceTranscript("");
+    setVoiceListening(true);
+    const recognition = new SR();
+    recognition.lang = "es-419";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    voiceRecRef.current = recognition;
+    let finalT = "";
+    recognition.onresult = (e: any) => {
+      let interim = ""; finalT = "";
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalT += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      setVoiceTranscript(finalT || interim);
+      if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current);
+      voiceSilenceRef.current = setTimeout(() => {
+        const t = (finalT || interim).trim();
+        if (t) { recognition.stop(); setVoiceListening(false); setVoiceMode(false); setVoiceTranscript(""); setVoiceEnabled(true); sendRef.current(t); }
+      }, 2000);
+    };
+    recognition.onerror = () => { setVoiceListening(false); };
+    recognition.onend = () => { if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current); };
+    recognition.start();
+  }, []);
+
+  const stopVoiceMode = useCallback(() => {
+    voiceRecRef.current?.stop();
+    if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current);
+    setVoiceMode(false);
+    setVoiceListening(false);
+    setVoiceTranscript("");
+  }, []);
 
   const suggestedQuestions = [
     "¿Qué tenemos hoy?",
@@ -276,7 +316,7 @@ export default function HubChatPage() {
 
   return (
     <HubLayout accountName={accountName} staffName={staffName} plan={plan} availableApps={availableApps}>
-      <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex flex-col h-full overflow-hidden relative">
         {/* ── Header ── */}
         <div className="shrink-0 px-5 py-3 flex items-center justify-between border-b border-border/20"
           style={{ background: "linear-gradient(135deg, hsl(195 100% 50% / 0.04) 0%, transparent 60%)" }}
@@ -395,7 +435,7 @@ export default function HubChatPage() {
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
                 placeholder="Pregúntale a Camila..."
                 rows={1}
                 className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none max-h-32"
@@ -411,11 +451,11 @@ export default function HubChatPage() {
                 >
                   {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                 </button>
-                {/* Voice Orb – conversational mode */}
+                {/* Voice Orb – inline conversational mode */}
                 <button
-                  onClick={() => navigate("/hub/ai")}
+                  onClick={startVoiceMode}
                   className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10 transition-all group relative"
-                  title="Modo conversación por voz"
+                  title="Conversar por voz"
                 >
                   <div className="w-5 h-5 rounded-full bg-gradient-to-br from-jarvis/60 to-cyan-400/40 group-hover:from-jarvis group-hover:to-cyan-400/70 transition-all shadow-[0_0_6px_hsl(195_100%_50%/0.3)] group-hover:shadow-[0_0_12px_hsl(195_100%_50%/0.5)]" />
                 </button>
@@ -433,6 +473,48 @@ export default function HubChatPage() {
             </p>
           </div>
         </div>
+
+        {/* ── Voice Overlay (inline, like ChatGPT) ── */}
+        {voiceMode && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-xl">
+            {/* Close */}
+            <button
+              onClick={stopVoiceMode}
+              className="absolute top-5 right-5 w-10 h-10 rounded-full border border-border/30 bg-card/50 hover:bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Orb */}
+            <div className="relative w-40 h-40 mb-8">
+              <div className={`absolute inset-0 rounded-full bg-gradient-to-br from-jarvis/25 to-cyan-400/10 border border-jarvis/30 ${voiceListening ? "animate-pulse" : ""}`} />
+              <div className={`absolute inset-3 rounded-full bg-gradient-to-br from-jarvis/15 to-transparent border border-jarvis/20 ${voiceListening ? "animate-ping" : ""}`} style={{ animationDuration: "2s" }} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className={`w-16 h-16 rounded-full bg-gradient-to-br from-jarvis to-cyan-400/70 shadow-[0_0_40px_hsl(195_100%_50%/0.4)] ${voiceListening ? "scale-110" : "scale-100"} transition-transform`} />
+              </div>
+            </div>
+
+            {/* Status */}
+            <p className="text-lg font-semibold text-foreground/80 mb-2">
+              {voiceListening ? "Te escucho..." : speakingNow ? "Respondiendo..." : "Procesando..."}
+            </p>
+
+            {/* Live transcript */}
+            {voiceTranscript && (
+              <p className="text-sm text-muted-foreground/60 max-w-md text-center px-4 italic">
+                "{voiceTranscript}"
+              </p>
+            )}
+
+            {/* End call button */}
+            <button
+              onClick={stopVoiceMode}
+              className="mt-10 w-14 h-14 rounded-full bg-red-500/20 border border-red-400/30 flex items-center justify-center hover:bg-red-500/30 transition-colors"
+            >
+              <Phone className="w-6 h-6 text-red-400 rotate-[135deg]" />
+            </button>
+          </div>
+        )}
       </div>
     </HubLayout>
   );
