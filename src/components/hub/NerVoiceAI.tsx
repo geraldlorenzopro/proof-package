@@ -161,3 +161,11 @@ function NerVoiceAIInner({ accountId }: Props) {
     </AnimatePresence>
   );
 }
+
+export default function NerVoiceAI({ accountId }: Props) {
+  return (
+    <ConversationProvider>
+      <NerVoiceAIInner accountId={accountId} />
+    </ConversationProvider>
+  );
+}
