@@ -230,13 +230,10 @@ export default function HubDashboard({
   function sendMessage(text?: string) {
     const msg = (text || input).trim();
     if (!msg) return;
-
     setInput("");
-    window.dispatchEvent(
-      new CustomEvent("camila:open", {
-        detail: { message: msg },
-      })
-    );
+    navigate("/hub/chat", {
+      state: { initialMessage: msg, accountId, accountName, staffName },
+    });
   }
 
   // ─── STT ───
