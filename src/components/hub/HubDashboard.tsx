@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import {
   Send, Mic, MicOff, Briefcase, Calendar, Users,
   MessageSquare, FileSearch, Clock, ChevronRight,
-  X, AlertCircle, Sparkles, FolderOpen, CalendarCheck
+  X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
+  Newspaper, CloudSun, ExternalLink
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
