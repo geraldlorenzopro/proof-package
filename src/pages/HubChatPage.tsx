@@ -473,6 +473,48 @@ export default function HubChatPage() {
             </p>
           </div>
         </div>
+
+        {/* ── Voice Overlay (inline, like ChatGPT) ── */}
+        {voiceMode && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-xl">
+            {/* Close */}
+            <button
+              onClick={stopVoiceMode}
+              className="absolute top-5 right-5 w-10 h-10 rounded-full border border-border/30 bg-card/50 hover:bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Orb */}
+            <div className="relative w-40 h-40 mb-8">
+              <div className={`absolute inset-0 rounded-full bg-gradient-to-br from-jarvis/25 to-cyan-400/10 border border-jarvis/30 ${voiceListening ? "animate-pulse" : ""}`} />
+              <div className={`absolute inset-3 rounded-full bg-gradient-to-br from-jarvis/15 to-transparent border border-jarvis/20 ${voiceListening ? "animate-ping" : ""}`} style={{ animationDuration: "2s" }} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className={`w-16 h-16 rounded-full bg-gradient-to-br from-jarvis to-cyan-400/70 shadow-[0_0_40px_hsl(195_100%_50%/0.4)] ${voiceListening ? "scale-110" : "scale-100"} transition-transform`} />
+              </div>
+            </div>
+
+            {/* Status */}
+            <p className="text-lg font-semibold text-foreground/80 mb-2">
+              {voiceListening ? "Te escucho..." : speakingNow ? "Respondiendo..." : "Procesando..."}
+            </p>
+
+            {/* Live transcript */}
+            {voiceTranscript && (
+              <p className="text-sm text-muted-foreground/60 max-w-md text-center px-4 italic">
+                "{voiceTranscript}"
+              </p>
+            )}
+
+            {/* End call button */}
+            <button
+              onClick={stopVoiceMode}
+              className="mt-10 w-14 h-14 rounded-full bg-red-500/20 border border-red-400/30 flex items-center justify-center hover:bg-red-500/30 transition-colors"
+            >
+              <Phone className="w-6 h-6 text-red-400 rotate-[135deg]" />
+            </button>
+          </div>
+        )}
       </div>
     </HubLayout>
   );
