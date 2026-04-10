@@ -9,8 +9,8 @@ interface Props {
 }
 
 /**
- * Siri-style animated voice orb with organic fluid motion.
- * Responds to voice input level and speaking state.
+ * JARVIS-inspired voice orb — imposing, modern, centered.
+ * Multi-layered rings with dynamic glow and pulse reactions.
  */
 export default function NerVoiceOrb({
   isActive,
@@ -19,201 +19,232 @@ export default function NerVoiceOrb({
   inputLevel,
   onClick,
 }: Props) {
-  // Dynamic scale based on state
-  const baseScale = isActive
-    ? isSpeaking
-      ? 1.15 + Math.sin(Date.now() / 200) * 0.05
-      : 1 + inputLevel * 0.4
-    : 1;
+  const orbSize = 160;
+  const coreSize = 80;
 
   return (
     <motion.button
       onClick={onClick}
       disabled={isConnecting}
-      className="relative flex items-center justify-center focus:outline-none"
-      style={{ width: 120, height: 120 }}
-      initial={{ opacity: 0, scale: 0.5 }}
+      className="relative flex items-center justify-center focus:outline-none cursor-pointer"
+      style={{ width: orbSize + 80, height: orbSize + 80 }}
+      initial={{ opacity: 0, scale: 0.3 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.5 }}
+      exit={{ opacity: 0, scale: 0.3 }}
+      transition={{ type: "spring", stiffness: 120, damping: 14 }}
+      whileHover={{ scale: isActive ? 1 : 1.05 }}
+      whileTap={{ scale: 0.95 }}
     >
-      {/* Outer glow ring */}
+      {/* ── Layer 1: Outermost ambient glow ── */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: orbSize + 80,
+          height: orbSize + 80,
+          background: isActive
+            ? "radial-gradient(circle, hsl(195 100% 50% / 0.08) 0%, hsl(195 100% 50% / 0.02) 50%, transparent 70%)"
+            : "radial-gradient(circle, hsl(195 100% 50% / 0.03) 0%, transparent 60%)",
+        }}
+        animate={isActive ? {
+          scale: [1, 1.15, 1],
+          opacity: [0.6, 0.3, 0.6],
+        } : {}}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* ── Layer 2: Outer ring — rotating dashed arc ── */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: orbSize + 40,
+          height: orbSize + 40,
+          border: isActive
+            ? "1.5px dashed hsl(195 100% 50% / 0.2)"
+            : "1px dashed hsl(195 100% 50% / 0.08)",
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+      />
+
+      {/* ── Layer 3: Second ring — counter-rotating thin line ── */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: orbSize + 20,
+          height: orbSize + 20,
+          border: isActive
+            ? "1px solid hsl(195 100% 60% / 0.15)"
+            : "1px solid hsl(195 100% 50% / 0.05)",
+        }}
+        animate={{ rotate: -360 }}
+        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+      />
+
+      {/* ── Layer 4: Active pulsing ring ── */}
       {isActive && (
-        <>
-          <motion.div
-            className="absolute rounded-full"
-            style={{
-              width: 140,
-              height: 140,
-              background: "radial-gradient(circle, hsl(195 100% 50% / 0.15) 0%, transparent 70%)",
-            }}
-            animate={{
-              scale: [1, 1.3, 1],
-              opacity: [0.4, 0.1, 0.4],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-          <motion.div
-            className="absolute rounded-full"
-            style={{
-              width: 160,
-              height: 160,
-              background: "radial-gradient(circle, hsl(260 80% 60% / 0.1) 0%, transparent 70%)",
-            }}
-            animate={{
-              scale: [1.1, 1.5, 1.1],
-              opacity: [0.3, 0.05, 0.3],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.5,
-            }}
-          />
-        </>
+        <motion.div
+          className="absolute rounded-full"
+          style={{
+            width: orbSize + 10,
+            height: orbSize + 10,
+            border: "1px solid hsl(195 100% 50% / 0.25)",
+          }}
+          animate={{
+            scale: isSpeaking ? [1, 1.12, 1] : [1, 1.06, 1],
+            opacity: [0.5, 0.15, 0.5],
+          }}
+          transition={{
+            duration: isSpeaking ? 1.2 : 2.5,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
       )}
 
-      {/* Main orb */}
+      {/* ── Layer 5: Main orb body ── */}
       <motion.div
         className="absolute rounded-full"
         animate={{
-          scale: baseScale,
+          scale: isActive
+            ? isSpeaking
+              ? 1.08 + Math.random() * 0.04
+              : 1 + inputLevel * 0.2
+            : 1,
         }}
-        transition={{
-          type: "spring",
-          stiffness: 200,
-          damping: 15,
-          mass: 0.8,
-        }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
         style={{
-          width: 90,
-          height: 90,
+          width: orbSize,
+          height: orbSize,
           background: isActive
             ? isSpeaking
-              ? "radial-gradient(circle at 35% 35%, hsl(195 100% 65%), hsl(220 90% 55%) 50%, hsl(260 80% 55%) 100%)"
-              : "radial-gradient(circle at 35% 35%, hsl(195 100% 55%), hsl(210 90% 45%) 60%, hsl(240 70% 40%) 100%)"
-            : "radial-gradient(circle at 35% 35%, hsl(220 20% 22%), hsl(220 20% 15%) 60%, hsl(220 20% 10%) 100%)",
+              ? `conic-gradient(from 0deg, hsl(195 100% 50% / 0.15), hsl(220 90% 55% / 0.2), hsl(260 80% 55% / 0.15), hsl(195 100% 50% / 0.15))`
+              : `conic-gradient(from 0deg, hsl(195 100% 50% / 0.1), hsl(210 90% 45% / 0.12), hsl(195 100% 50% / 0.1))`
+            : `conic-gradient(from 0deg, hsl(220 20% 12% / 0.8), hsl(220 20% 15% / 0.6), hsl(220 20% 12% / 0.8))`,
+          border: isActive
+            ? "1px solid hsl(195 100% 50% / 0.3)"
+            : "1px solid hsl(195 100% 50% / 0.08)",
           boxShadow: isActive
             ? isSpeaking
-              ? "0 0 60px hsl(195 100% 50% / 0.5), 0 0 120px hsl(260 80% 60% / 0.2), inset 0 0 30px hsl(195 100% 70% / 0.3)"
-              : "0 0 40px hsl(195 100% 50% / 0.3), 0 0 80px hsl(195 100% 50% / 0.1), inset 0 0 20px hsl(195 100% 60% / 0.2)"
-            : "0 0 20px hsl(195 100% 50% / 0.08), inset 0 0 15px hsl(220 20% 25% / 0.5)",
+              ? "0 0 60px hsl(195 100% 50% / 0.3), 0 0 120px hsl(195 100% 50% / 0.1), inset 0 0 40px hsl(195 100% 50% / 0.1)"
+              : "0 0 40px hsl(195 100% 50% / 0.15), 0 0 80px hsl(195 100% 50% / 0.05), inset 0 0 30px hsl(195 100% 50% / 0.08)"
+            : "0 0 20px hsl(195 100% 50% / 0.04), inset 0 0 20px hsl(220 20% 18% / 0.5)",
         }}
       >
-        {/* Inner light reflection */}
+        {/* Inner core — bright glowing center */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <motion.div
+            className="rounded-full"
+            animate={{
+              scale: isActive
+                ? isSpeaking ? [1, 1.15, 1] : [1, 1.05, 1]
+                : [1, 1.02, 1],
+            }}
+            transition={{
+              duration: isSpeaking ? 0.8 : 3,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            style={{
+              width: coreSize,
+              height: coreSize,
+              background: isActive
+                ? isSpeaking
+                  ? "radial-gradient(circle at 40% 35%, hsl(195 100% 70% / 0.6), hsl(210 90% 55% / 0.4) 40%, hsl(240 70% 50% / 0.2) 70%, transparent 100%)"
+                  : "radial-gradient(circle at 40% 35%, hsl(195 100% 60% / 0.4), hsl(210 90% 50% / 0.25) 50%, transparent 100%)"
+                : "radial-gradient(circle at 40% 35%, hsl(195 100% 50% / 0.1), hsl(220 20% 18% / 0.3) 60%, transparent 100%)",
+              boxShadow: isActive
+                ? "0 0 30px hsl(195 100% 50% / 0.2), inset 0 0 15px hsl(195 100% 60% / 0.15)"
+                : "none",
+            }}
+          />
+        </div>
+
+        {/* Top-left light reflection */}
         <div
           className="absolute rounded-full"
           style={{
-            top: "15%",
-            left: "20%",
-            width: "35%",
-            height: "30%",
+            top: "12%",
+            left: "18%",
+            width: "30%",
+            height: "25%",
             background: isActive
-              ? "radial-gradient(ellipse, hsl(0 0% 100% / 0.3) 0%, transparent 70%)"
-              : "radial-gradient(ellipse, hsl(0 0% 100% / 0.08) 0%, transparent 70%)",
-            filter: "blur(4px)",
+              ? "radial-gradient(ellipse, hsl(0 0% 100% / 0.15) 0%, transparent 70%)"
+              : "radial-gradient(ellipse, hsl(0 0% 100% / 0.04) 0%, transparent 70%)",
+            filter: "blur(6px)",
           }}
         />
       </motion.div>
 
-      {/* Animated orbiting particles when active */}
-      {isActive && (
-        <>
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                width: 6 + i * 2,
-                height: 6 + i * 2,
-                background: `hsl(${195 + i * 30} 100% ${60 + i * 10}%)`,
-                filter: "blur(1px)",
-              }}
-              animate={{
-                x: [
-                  Math.cos((i * 2 * Math.PI) / 3) * 50,
-                  Math.cos((i * 2 * Math.PI) / 3 + Math.PI) * 50,
-                  Math.cos((i * 2 * Math.PI) / 3) * 50,
-                ],
-                y: [
-                  Math.sin((i * 2 * Math.PI) / 3) * 50,
-                  Math.sin((i * 2 * Math.PI) / 3 + Math.PI) * 50,
-                  Math.sin((i * 2 * Math.PI) / 3) * 50,
-                ],
-                opacity: [0.6, 0.2, 0.6],
-                scale: isSpeaking ? [1, 1.5, 1] : [1, 0.8, 1],
-              }}
-              transition={{
-                duration: 3 + i,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
-        </>
-      )}
-
-      {/* Connecting spinner */}
-      {isConnecting && (
+      {/* ── Layer 6: Orbiting arc segments (active only) ── */}
+      {isActive && [0, 1, 2].map((i) => (
         <motion.div
-          className="absolute rounded-full border-2 border-transparent"
+          key={`arc-${i}`}
+          className="absolute rounded-full"
           style={{
-            width: 100,
-            height: 100,
-            borderTopColor: "hsl(195 100% 50% / 0.6)",
-            borderRightColor: "hsl(260 80% 60% / 0.3)",
+            width: orbSize + 4 + i * 16,
+            height: orbSize + 4 + i * 16,
+            borderTop: `2px solid hsl(${195 + i * 25} 100% ${55 + i * 5}% / ${0.4 - i * 0.1})`,
+            borderRight: "2px solid transparent",
+            borderBottom: "2px solid transparent",
+            borderLeft: "2px solid transparent",
           }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+          animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
+          transition={{
+            duration: 4 + i * 2,
+            repeat: Infinity,
+            ease: "linear",
+          }}
         />
-      )}
+      ))}
 
-      {/* Center icon area - minimal, just a subtle indicator */}
+      {/* ── Center content ── */}
       <div className="relative z-10 flex items-center justify-center">
         {isConnecting ? (
-          <div className="w-3 h-3 rounded-full bg-jarvis/60 animate-pulse" />
-        ) : isActive ? (
           <motion.div
-            className="flex gap-[3px] items-end"
-            style={{ height: 20 }}
-          >
-            {[0, 1, 2, 3, 4].map((i) => (
+            className="w-5 h-5 rounded-full border-2 border-transparent"
+            style={{
+              borderTopColor: "hsl(195 100% 50% / 0.8)",
+              borderRightColor: "hsl(195 100% 50% / 0.3)",
+            }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+          />
+        ) : isActive ? (
+          <motion.div className="flex gap-[3px] items-center" style={{ height: 28 }}>
+            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
               <motion.div
                 key={i}
-                className="w-[3px] rounded-full"
+                className="rounded-full"
                 style={{
-                  background: "hsl(0 0% 100% / 0.9)",
+                  width: i === 3 ? 3.5 : 2.5,
+                  background: `linear-gradient(180deg, hsl(195 100% 70% / 0.9), hsl(${195 + i * 10} 100% 50% / 0.6))`,
                 }}
                 animate={{
                   height: isSpeaking
-                    ? [4, 12 + i * 3, 4]
-                    : [3, 5 + inputLevel * 15, 3],
+                    ? [3, 16 + Math.sin(i * 0.8) * 8, 3]
+                    : [2, 4 + inputLevel * 20, 2],
                 }}
                 transition={{
-                  duration: isSpeaking ? 0.4 + i * 0.1 : 0.3,
+                  duration: isSpeaking ? 0.35 + i * 0.05 : 0.25,
                   repeat: Infinity,
                   ease: "easeInOut",
-                  delay: i * 0.08,
+                  delay: i * 0.06,
                 }}
               />
             ))}
           </motion.div>
         ) : (
-          <motion.div
-            className="w-5 h-5 rounded-full border-2"
-            style={{
-              borderColor: "hsl(195 100% 50% / 0.4)",
-              background: "hsl(195 100% 50% / 0.08)",
-            }}
-            whileHover={{
-              borderColor: "hsl(195 100% 50% / 0.7)",
-              background: "hsl(195 100% 50% / 0.15)",
-            }}
-          />
+          <div className="flex flex-col items-center gap-1">
+            <motion.div
+              className="w-3 h-3 rounded-full"
+              style={{
+                background: "radial-gradient(circle, hsl(195 100% 50% / 0.5), hsl(195 100% 50% / 0.15))",
+                boxShadow: "0 0 12px hsl(195 100% 50% / 0.2)",
+              }}
+              animate={{ opacity: [0.4, 0.8, 0.4] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </div>
         )}
       </div>
     </motion.button>
