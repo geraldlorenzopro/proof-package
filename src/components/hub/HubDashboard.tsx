@@ -609,17 +609,18 @@ export default function HubDashboard({
                     {selectedNews.summary}
                   </DialogDescription>
                 </DialogHeader>
+                <p className="text-[10px] text-muted-foreground/40 text-center mt-2">
+                  Esta información es de carácter informativo. Se recomienda un análisis exhaustivo antes de tomar cualquier acción.
+                </p>
                 <button
                   onClick={() => {
+                    const title = selectedNews.title;
+                    const summary = selectedNews.summary;
                     setSelectedNews(null);
-                    navigate("/hub/ai");
-                    // Send as message to Camila
-                    setTimeout(() => {
-                      const event = new CustomEvent("camila-ask", { detail: selectedNews.title });
-                      window.dispatchEvent(event);
-                    }, 500);
+                    const preBuiltMsg = `Camila, aquí hay una noticia reciente de inmigración: ${title} — ${summary}. Revisando los casos activos de la oficina, ¿hay algún cliente o caso que pudiera verse afectado por esto? Se recomienda un análisis exhaustivo antes de tomar cualquier acción.`;
+                    sendMessage(preBuiltMsg);
                   }}
-                  className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-jarvis/10 border border-jarvis/20 text-sm font-medium text-jarvis hover:bg-jarvis/20 transition-all"
+                  className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-jarvis/10 border border-jarvis/20 text-sm font-medium text-jarvis hover:bg-jarvis/20 transition-all"
                 >
                   <Sparkles className="w-4 h-4" />
                   Preguntarle a Camila sobre esto →
