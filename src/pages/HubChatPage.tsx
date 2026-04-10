@@ -273,13 +273,13 @@ export default function HubChatPage() {
     setVoiceEnabled(v => !v);
   }, [speakingNow]);
 
-  // Voice mode helpers
-  const startVoiceMode = useCallback(() => {
+  // ── Voice conversation mode (continuous loop) ──
+  const voiceListenCycle = useCallback(() => {
+    if (!voiceModeRef.current) return;
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { toast.error("Tu navegador no soporta reconocimiento de voz."); return; }
-    setVoiceMode(true);
+    if (!SR) return;
+    setVoicePhase("listening");
     setVoiceTranscript("");
-    setVoiceListening(true);
     const recognition = new SR();
     recognition.lang = "es-419";
     recognition.continuous = true;
@@ -296,19 +296,43 @@ export default function HubChatPage() {
       if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current);
       voiceSilenceRef.current = setTimeout(() => {
         const t = (finalT || interim).trim();
-        if (t) { recognition.stop(); setVoiceListening(false); setVoiceMode(false); setVoiceTranscript(""); setVoiceEnabled(true); sendRef.current(t); }
+        if (t && voiceModeRef.current) {
+          recognition.stop();
+          setVoicePhase("processing");
+          setVoiceTranscript("");
+          setVoiceEnabled(true); // ensure TTS plays response
+          sendRef.current(t);
+          // overlay stays open — TTS effect will call voiceListenCycle again
+        }
       }, 2000);
     };
-    recognition.onerror = () => { setVoiceListening(false); };
-    recognition.onend = () => { if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current); };
+    recognition.onerror = () => {
+      // Restart on transient errors if still in voice mode
+      if (voiceModeRef.current) setTimeout(() => voiceListenCycle(), 500);
+    };
+    recognition.onend = () => {
+      if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current);
+    };
     recognition.start();
   }, []);
 
+  const startVoiceMode = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error("Tu navegador no soporta reconocimiento de voz."); return; }
+    voiceModeRef.current = true;
+    setVoiceMode(true);
+    setVoiceEnabled(true);
+    voiceListenCycle();
+  }, [voiceListenCycle]);
+
   const stopVoiceMode = useCallback(() => {
+    voiceModeRef.current = false;
     voiceRecRef.current?.stop();
     if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current);
+    stopCurrentAudio();
+    setSpeakingNow(false);
     setVoiceMode(false);
-    setVoiceListening(false);
+    setVoicePhase("idle");
     setVoiceTranscript("");
   }, []);
 
