@@ -222,7 +222,7 @@ function VoiceAIPanelInner({ accountId }: Props) {
     <div className="h-full max-h-full w-full flex-1 min-h-0 overflow-hidden">
       <div className="flex h-full max-h-full min-h-0 w-full overflow-hidden">
         <div
-          className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center overflow-hidden"
+          className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center overflow-y-auto"
           style={{
             background: `
               radial-gradient(ellipse at 50% 45%, hsl(195 100% 50% / 0.05) 0%, transparent 50%),
@@ -242,7 +242,7 @@ function VoiceAIPanelInner({ accountId }: Props) {
             </div>
           )}
 
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center shrink-0 py-6">
             <NerVoiceOrb
               isActive={isActive}
               isSpeaking={isSpeaking}
