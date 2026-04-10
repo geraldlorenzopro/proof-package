@@ -207,8 +207,15 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
 
   // Stop speaking when panel closes
   useEffect(() => {
-  if (!open) { stopSpeaking(); setSpeakingNow(false); setConversationMode(false); }
+  if (!open) { stopSpeaking(); stopGoogleAudio(); setSpeakingNow(false); setConversationMode(false); }
   }, [open]);
+
+  // Also stop Google audio when stopping speaking manually
+  const handleStopSpeaking = useCallback(() => {
+    stopSpeaking();
+    stopGoogleAudio();
+    setSpeakingNow(false);
+  }, []);
 
   // Use ref to hold send function for startListening
   const sendRef = useRef<(text: string) => void>(() => {});
