@@ -227,85 +227,16 @@ export default function HubDashboard({
   const firstName = (resolvedName || staffName || "").split(" ")[0] || "Usuario";
 
   // ─── Chat ───
-  async function sendMessage(text?: string) {
+  function sendMessage(text?: string) {
     const msg = (text || input).trim();
-    if (!msg || isStreaming) return;
+    if (!msg) return;
 
-    const userMsg: Msg = { role: "user", content: msg };
-    const allMessages = [...messages, userMsg];
-    setMessages(allMessages);
     setInput("");
-    setIsStreaming(true);
-    let assistantSoFar = "";
-
-    try {
-      const resp = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
-          account_id: accountId,
-        }),
-      });
-
-      if (!resp.ok || !resp.body) {
-        setMessages(prev => [...prev, { role: "assistant", content: "Lo siento, hubo un error. Intenta de nuevo." }]);
-        setIsStreaming(false);
-        return;
-      }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              assistantSoFar += content;
-              const cleaned = sanitizeCamilaResponse(assistantSoFar);
-              setMessages(prev => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant") {
-                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: cleaned } : m);
-                }
-                return [...prev, { role: "assistant", content: cleaned }];
-              });
-            }
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
-          }
-        }
-      }
-      if (!assistantSoFar) {
-        try {
-          const fallback = await resp.text();
-          const parsed = JSON.parse(fallback);
-          if (parsed.reply) setMessages(prev => [...prev, { role: "assistant", content: parsed.reply }]);
-        } catch {}
-      }
-    } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "Hubo un problema de conexión." }]);
-    } finally {
-      setIsStreaming(false);
-    }
+    window.dispatchEvent(
+      new CustomEvent("camila:open", {
+        detail: { message: msg },
+      })
+    );
   }
 
   // ─── STT ───

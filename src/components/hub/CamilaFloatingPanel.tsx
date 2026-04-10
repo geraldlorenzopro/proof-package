@@ -170,6 +170,27 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     if (open && inputRef.current) setTimeout(() => inputRef.current?.focus(), 300);
   }, [open]);
 
+  // Allow other Hub surfaces to open/send messages into the real Camila window
+  useEffect(() => {
+    const handleOpen = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message?: string }>;
+      const message = customEvent.detail?.message?.trim();
+
+      setOpen(true);
+
+      if (message) {
+        setTimeout(() => {
+          sendRef.current(message);
+        }, 120);
+      }
+    };
+
+    window.addEventListener("camila:open", handleOpen as EventListener);
+    return () => {
+      window.removeEventListener("camila:open", handleOpen as EventListener);
+    };
+  }, []);
+
   // Pulse
   useEffect(() => {
     if (!open && messages.length > 0) {
