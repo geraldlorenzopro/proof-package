@@ -2,6 +2,8 @@
 
 let currentAudio: HTMLAudioElement | null = null;
 let ttsEnabled = true;
+let currentAbort: AbortController | null = null;
+let isFetching = false;
 
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-tts`;
 

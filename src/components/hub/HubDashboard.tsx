@@ -74,10 +74,11 @@ export default function HubDashboard({
     if (accountId) loadKpis();
   }, [accountId]);
 
-  // Auto-greet TTS
+  // Auto-greet TTS — only once per session
   useEffect(() => {
     if (greetedRef.current || !resolvedName) return;
     greetedRef.current = true;
+
     const fn = resolvedName.split(" ")[0];
     const h = new Date().getHours();
     const saludo = h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches";
@@ -92,8 +93,10 @@ export default function HubDashboard({
       if (extras.length > 0) greetText += ` Tienes ${extras.join(" y ")}.`;
     }
     sessionStorage.setItem(todayKey, "1");
-    setTimeout(() => speakAsCamila(greetText), 800);
-  }, [resolvedName, activeCases, overdueDeadlines, todayAppointments, accountId]);
+    const timer = setTimeout(() => speakAsCamila(greetText), 800);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedName]);
 
   async function loadKpis() {
     try {
