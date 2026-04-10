@@ -507,12 +507,12 @@ export default function HubDashboard({
           </div>
 
           {/* Carousel container */}
-          <div className="relative">
+          <div className="relative px-10">
             {/* Left arrow */}
             {newsPage > 0 && newsCards.length > 3 && (
               <button
                 onClick={() => setNewsPage(p => p - 1)}
-                className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-card border border-border/30 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-border/50 transition-all"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis hover:border-jarvis/30 transition-all shadow-md"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -521,7 +521,7 @@ export default function HubDashboard({
             {newsPage < Math.ceil(newsCards.length / 3) - 1 && newsCards.length > 3 && (
               <button
                 onClick={() => setNewsPage(p => p + 1)}
-                className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-card border border-border/30 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-border/50 transition-all"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis hover:border-jarvis/30 transition-all shadow-md"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
