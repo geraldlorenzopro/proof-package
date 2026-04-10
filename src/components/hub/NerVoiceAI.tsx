@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,8 +8,59 @@ import NerVoiceOrb from "./NerVoiceOrb";
 
 const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
 
+type SessionStartConfig =
+  | { signedUrl: string; connectionType: "websocket" }
+  | { conversationToken: string; connectionType: "webrtc" };
+
+type SessionResponse = {
+  ok?: boolean;
+  token?: string;
+  signed_url?: string;
+  signedUrl?: string;
+  error?: string;
+  details?: string;
+  diagnostics?: unknown;
+  connection_type?: "websocket" | "webrtc";
+};
+
 interface Props {
   accountId: string;
+}
+
+function formatVoiceError(err: unknown): string {
+  const raw = typeof err === "string" ? err : err instanceof Error ? err.message : "";
+  const message = raw.toLowerCase();
+
+  if (message.includes("notallowederror") || message.includes("permission") || message.includes("permiso")) {
+    return "Permiso de micrófono denegado.";
+  }
+
+  if (message.includes("notfounderror") || message.includes("microphone") || message.includes("micrófono")) {
+    return "No se encontró micrófono disponible.";
+  }
+
+  if (message.includes("pc connection") || message.includes("rtc path") || message.includes("webrtc")) {
+    return "La conexión de voz en tiempo real falló. Cambié el flujo para usar la ruta compatible, inténtalo de nuevo.";
+  }
+
+  return raw || "No se pudo iniciar la conversación por voz.";
+}
+
+async function primeBrowserAudio(): Promise<void> {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  stream.getTracks().forEach((track) => track.stop());
+
+  const AudioContextCtor = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextCtor) return;
+
+  const audioContext = new AudioContextCtor();
+  try {
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+  } finally {
+    await audioContext.close();
+  }
 }
 
 function NerVoiceAIInner({ accountId }: Props) {
@@ -18,21 +69,33 @@ function NerVoiceAIInner({ accountId }: Props) {
   const [transcript, setTranscript] = useState("");
   const [agentResponse, setAgentResponse] = useState("");
   const [inputLevel, setInputLevel] = useState(0);
+  const connectTimeoutRef = useRef<number | null>(null);
+
+  const clearConnectTimeout = useCallback(() => {
+    if (connectTimeoutRef.current !== null) {
+      window.clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
+    }
+  }, []);
 
   const conversation = useConversation({
     onConnect: () => {
       console.log("NER Voice AI: Connected");
+      clearConnectTimeout();
+      setIsConnecting(false);
       setError(null);
     },
     onDisconnect: () => {
       console.log("NER Voice AI: Disconnected");
+      clearConnectTimeout();
+      setIsConnecting(false);
       setTranscript("");
       setAgentResponse("");
+      setInputLevel(0);
     },
     onMessage: (message: any) => {
       console.log("NER Voice AI onMessage:", message);
-      // Para ElevenLabs React v1.0.0+, el formato de mensajes a veces var√≠a.
-      // Dependiendo de si es webSocket o webrtc.
+
       if (message.type === "user_transcript") {
         setTranscript(message.user_transcription_event?.user_transcript || "");
       } else if (message.source === "user" && typeof message.message === "string") {
@@ -47,93 +110,100 @@ function NerVoiceAIInner({ accountId }: Props) {
     },
     onError: (err: any) => {
       console.error("NER Voice AI error:", err);
-      // A√±adimos m√°s detalle para ver por qu√© falla si es que falla el audio
-      setError(typeof err === "string" ? err : err.message || "Error de conexi√≥n. Intenta de nuevo.");
+      clearConnectTimeout();
+      setIsConnecting(false);
+      setError(formatVoiceError(err));
+    },
+    onAudio: () => {
+      clearConnectTimeout();
+      setIsConnecting(false);
     },
   });
 
-  // Poll input volume for visualization
+  useEffect(() => {
+    return () => clearConnectTimeout();
+  }, [clearConnectTimeout]);
+
   useEffect(() => {
     if (conversation.status !== "connected") return;
-    const interval = setInterval(() => {
+
+    const interval = window.setInterval(() => {
       setInputLevel(conversation.getInputVolume());
     }, 80);
-    return () => clearInterval(interval);
-  }, [conversation.status]);
 
-  const fetchTokenWithRetry = useCallback(async (retries = 3): Promise<string> => {
+    return () => window.clearInterval(interval);
+  }, [conversation, conversation.status]);
+
+  const fetchSessionConfigWithRetry = useCallback(async (retries = 3): Promise<SessionStartConfig> => {
     for (let attempt = 0; attempt < retries; attempt++) {
       const { data, error: fnError } = await supabase.functions.invoke("elevenlabs-conversation-token", {
         body: { agent_id: AGENT_ID },
       });
-      if (data?.token) return data.token;
-      const errMsg = typeof data?.details === "string" ? data.details : "";
-      const is429 =
-        fnError?.message?.includes("429") ||
-        data?.error?.includes("429") ||
-        errMsg.includes("concurrent_limit_exceeded");
+
+      const payload = (data ?? {}) as SessionResponse;
+      const signedUrl = payload.signed_url ?? payload.signedUrl;
+
+      if (signedUrl) {
+        return { signedUrl, connectionType: "websocket" };
+      }
+
+      if (payload.token) {
+        return { conversationToken: payload.token, connectionType: "webrtc" };
+      }
+
+      const details = [fnError?.message, payload.error, payload.details]
+        .filter(Boolean)
+        .join(" | ");
+
+      const is429 = details.includes("429") || details.includes("concurrent_limit_exceeded");
       if (is429 && attempt < retries - 1) {
         const delay = Math.pow(2, attempt + 1) * 1000;
-        console.warn(`NER Voice AI: Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`);
-        await new Promise((r) => setTimeout(r, delay));
+        console.warn(`NER Voice AI: servicio ocupado, reintentando en ${delay}ms (${attempt + 1}/${retries})`);
+        await new Promise((resolve) => window.setTimeout(resolve, delay));
         continue;
       }
-      throw new Error(is429 ? "Servicio ocupado. Intenta en unos segundos." : "No se pudo obtener token de voz.");
+
+      throw new Error(details || "No se pudo obtener una sesión válida de voz.");
     }
-    throw new Error("No se pudo obtener token de voz.");
+
+    throw new Error("No se pudo obtener una sesión válida de voz.");
   }, []);
 
   const startConversation = useCallback(async () => {
+    if (conversation.status !== "disconnected") return;
+
     setIsConnecting(true);
     setError(null);
+    setTranscript("");
+    setAgentResponse("");
+
     try {
-      // Nota: Remover `await navigator.mediaDevices.getUserMedia` manual porque el SDK de ElevenLabs
-      // lo solicita internamente y pedirlo dos veces puede causar que el SO bloquee uno de los streams
-      // o que se dispare la pol√≠tica de Autoplay del navegador por la demora de red.
+      await primeBrowserAudio();
 
-      // Try up to 2 attempts with retry
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          console.log(`NER Voice AI: Attempt ${attempt + 1} ‚Äî fetching token...`);
-          const token = await fetchTokenWithRetry();
+      console.log("NER Voice AI: preparando sesión de voz...");
+      const sessionConfig = await fetchSessionConfigWithRetry();
+      console.log("NER Voice AI: iniciando con", sessionConfig.connectionType);
 
-          console.log(`NER Voice AI: Starting session (attempt ${attempt + 1})...`);
-          // intentando forzar websocket si webrtc falla silenciosamente
-          await conversation.startSession({ conversationToken: token });
-          console.log("NER Voice AI: Session started successfully");
-          return; // success
-        } catch (sessionErr: any) {
-          const msg = String(sessionErr?.message || sessionErr || "");
-          console.warn(`NER Voice AI: Intento ${attempt + 1} fall√≥:`, msg);
+      clearConnectTimeout();
+      connectTimeoutRef.current = window.setTimeout(() => {
+        setIsConnecting(false);
+        setError("La conexión de voz tardó demasiado. Intenta de nuevo.");
+      }, 15000);
 
-          if (attempt === 0) {
-            // Wait before retry
-            await new Promise((r) => setTimeout(r, 2000));
-            continue;
-          }
-          throw sessionErr;
-        }
-      }
-    } catch (err: any) {
-      console.error("Failed to start NER Voice AI:", err);
-      const msg = String(err?.message || err || "");
-      setError(
-        err.name === "NotFoundError"
-          ? "No se encontr√≥ micr√≥fono."
-          : err.name === "NotAllowedError"
-            ? "Permiso de micr√≥fono denegado."
-            : msg.includes("pc connection")
-              ? "Error de conexi√≥n WebRTC. Verifica tu red e intenta de nuevo."
-              : msg || "No se pudo iniciar. Verifica el micr√≥fono.",
-      );
-    } finally {
+      conversation.startSession(sessionConfig);
+    } catch (err) {
+      clearConnectTimeout();
       setIsConnecting(false);
+      setError(formatVoiceError(err));
+      console.error("Failed to start NER Voice AI:", err);
     }
-  }, [conversation, fetchTokenWithRetry]);
+  }, [clearConnectTimeout, conversation, fetchSessionConfigWithRetry]);
 
-  const stopConversation = useCallback(async () => {
-    await conversation.endSession();
-  }, [conversation]);
+  const stopConversation = useCallback(() => {
+    clearConnectTimeout();
+    setIsConnecting(false);
+    conversation.endSession();
+  }, [clearConnectTimeout, conversation]);
 
   const isActive = conversation.status === "connected";
   const isSpeaking = conversation.isSpeaking;
@@ -146,7 +216,6 @@ function NerVoiceAIInner({ accountId }: Props) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
       >
-        {/* Transcript / Response bubble */}
         <AnimatePresence>
           {isActive && (transcript || agentResponse) && (
             <motion.div
@@ -166,7 +235,6 @@ function NerVoiceAIInner({ accountId }: Props) {
           )}
         </AnimatePresence>
 
-        {/* Error with retry */}
         {error && !isActive && (
           <div
             className="flex flex-col items-center gap-3 p-4 text-center max-w-[280px] rounded-2xl backdrop-blur-md"
@@ -190,7 +258,6 @@ function NerVoiceAIInner({ accountId }: Props) {
           </div>
         )}
 
-        {/* Siri-style Orb */}
         <NerVoiceOrb
           isActive={isActive}
           isSpeaking={isSpeaking}
@@ -199,7 +266,6 @@ function NerVoiceAIInner({ accountId }: Props) {
           onClick={isActive ? stopConversation : startConversation}
         />
 
-        {/* Status label */}
         <span
           className={`text-[10px] font-mono uppercase tracking-[0.15em] ${
             isActive ? (isSpeaking ? "text-jarvis" : "text-jarvis/60") : "text-muted-foreground/40"
