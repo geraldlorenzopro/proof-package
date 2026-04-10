@@ -44,6 +44,13 @@ export async function speakAsCamila(text: string): Promise<void> {
   const clean = cleanForSpeech(text);
   if (!clean) return;
 
+  // Prevent overlapping requests
+  if (isFetching) return;
+  isFetching = true;
+
+  const abort = new AbortController();
+  currentAbort = abort;
+
   try {
     const resp = await fetch(TTS_URL, {
       method: "POST",
@@ -53,11 +60,15 @@ export async function speakAsCamila(text: string): Promise<void> {
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
       body: JSON.stringify({ text: clean }),
+      signal: abort.signal,
     });
 
+    if (abort.signal.aborted) return;
     if (!resp.ok) throw new Error(`TTS ${resp.status}`);
 
     const data = await resp.json();
+
+    if (abort.signal.aborted) return;
 
     if (data.audio) {
       const audioType = data.audioType || "audio/mpeg";
