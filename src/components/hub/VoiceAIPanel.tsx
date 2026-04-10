@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MicOff, RefreshCw, Phone, PhoneOff, Sparkles } from "lucide-react";
+import { MicOff, RefreshCw, Phone, PhoneOff, Sparkles, Trash2, User, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import NerVoiceOrb from "./NerVoiceOrb";
@@ -349,11 +349,37 @@ function VoiceAIPanelInner({ accountId }: Props) {
               <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/80">
                 Transcript en vivo
               </h3>
-              {transcripts.length > 0 && (
-                <span className="ml-auto text-[10px] text-muted-foreground/40">
-                  {transcripts.length} mensajes
-                </span>
+
+              {/* Live waveform indicator when active */}
+              {isActive && (
+                <div className="ml-1 flex items-center gap-[2px]">
+                  {[0, 1, 2, 3].map((i) => (
+                    <motion.div
+                      key={`wave-${i}`}
+                      className="w-[2px] rounded-full bg-jarvis/50"
+                      animate={{ height: [3, 8 + Math.sin(i * 1.5) * 4, 3] }}
+                      transition={{ duration: 0.6 + i * 0.1, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }}
+                    />
+                  ))}
+                </div>
               )}
+
+              <div className="ml-auto flex items-center gap-2">
+                {transcripts.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground/40">
+                    {transcripts.length}
+                  </span>
+                )}
+                {transcripts.length > 0 && (
+                  <button
+                    onClick={() => setTranscripts([])}
+                    className="rounded-lg p-1 text-muted-foreground/30 transition-colors hover:bg-destructive/10 hover:text-destructive/70"
+                    title="Limpiar conversación"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -382,10 +408,25 @@ function VoiceAIPanelInner({ accountId }: Props) {
                   key={entry.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex items-start gap-2 ${entry.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                 >
+                  {/* Avatar */}
                   <div
-                    className={`max-w-[90%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                    className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                      entry.role === "user"
+                        ? "border border-jarvis/20 bg-jarvis/10"
+                        : "border border-accent/20 bg-accent/10"
+                    }`}
+                  >
+                    {entry.role === "user" ? (
+                      <User className="h-3 w-3 text-jarvis/70" />
+                    ) : (
+                      <Bot className="h-3 w-3 text-accent/70" />
+                    )}
+                  </div>
+
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                       entry.role === "user"
                         ? "rounded-br-md border border-jarvis/15 bg-jarvis/12 text-foreground/90"
                         : "rounded-bl-md border border-border/20 bg-card/80 text-foreground/80"
@@ -405,7 +446,10 @@ function VoiceAIPanelInner({ accountId }: Props) {
             </AnimatePresence>
 
             {isActive && isSpeaking && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-2">
+                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-accent/20 bg-accent/10">
+                  <Bot className="h-3 w-3 text-accent/70" />
+                </div>
                 <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-border/20 bg-card/80 px-4 py-2.5">
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-jarvis/60" style={{ animationDelay: "0ms" }} />
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-jarvis/60" style={{ animationDelay: "150ms" }} />
