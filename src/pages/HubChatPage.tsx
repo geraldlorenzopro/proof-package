@@ -448,7 +448,7 @@ export default function HubChatPage() {
                 <div className={`max-w-[80%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${
                   m.role === "user"
                     ? "bg-jarvis/15 text-foreground border border-jarvis/20 rounded-br-md"
-                    : "bg-card/80 text-foreground/90 border border-border/30 rounded-bl-md"
+                    : "bg-card/80 text-foreground/90 border border-jarvis/30 shadow-[0_0_8px_hsl(var(--jarvis)/0.1)] rounded-bl-md"
                 }`}>
                   {m.role === "assistant" ? (
                     <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1.5 [&_li]:my-0.5 [&_ul]:my-1.5 [&_ol]:my-1.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm">
