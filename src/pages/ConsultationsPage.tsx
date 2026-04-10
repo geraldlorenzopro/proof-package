@@ -4,12 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search, Send, ExternalLink, Clock, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
+import { Search, Send, ExternalLink, Clock, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import ChannelLogo from "@/components/intake/ChannelLogo";
 import IntakeWizard from "@/components/intake/IntakeWizard";
+import HubLayout from "@/components/hub/HubLayout";
 
 interface ConsultationRow {
   id: string;
@@ -177,13 +178,11 @@ export default function ConsultationsPage() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
+    <HubLayout>
     <div className="max-w-5xl mx-auto px-4 sm:px-5 py-4 sm:py-5 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/hub")} className="p-2 rounded-lg hover:bg-secondary transition-colors">
-            <ArrowLeft className="w-4 h-4 text-muted-foreground" />
-          </button>
           <div>
             <h1 className="text-xl font-bold text-foreground">Consultas</h1>
             <p className="text-sm text-muted-foreground">{total} registros</p>
@@ -322,5 +321,6 @@ export default function ConsultationsPage() {
 
       <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
     </div>
+    </HubLayout>
   );
 }
