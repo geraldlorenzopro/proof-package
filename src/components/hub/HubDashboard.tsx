@@ -358,7 +358,6 @@ export default function HubDashboard({
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                disabled={isStreaming}
               />
               <button
                 onClick={toggleSTT}
