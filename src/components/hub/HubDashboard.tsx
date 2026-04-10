@@ -88,6 +88,21 @@ export default function HubDashboard({
   // Always fetch briefing data for the news panel
   useEffect(() => {
     if (!accountId) return;
+    const CACHE_KEY = `hub_news_${accountId}`;
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const { ts, data } = JSON.parse(cached);
+        if (Date.now() - ts < 30 * 60 * 1000) {
+          if (data.news) setBriefingNews(data.news);
+          if (data.citations?.length) setBriefingCitations(data.citations);
+          if (data.weather) setBriefingWeather(data.weather);
+          if (data.newsCards?.length) setNewsCards(data.newsCards);
+          setNewsLoading(false);
+          return;
+        }
+      } catch {}
+    }
     (async () => {
       try {
         const resp = await fetch(BRIEFING_URL, {
@@ -104,9 +119,13 @@ export default function HubDashboard({
           if (data.news) setBriefingNews(data.news);
           if (data.citations?.length) setBriefingCitations(data.citations);
           if (data.weather) setBriefingWeather(data.weather);
+          if (data.newsCards?.length) setNewsCards(data.newsCards);
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
         }
       } catch (e) {
         console.warn("Briefing fetch failed:", e);
+      } finally {
+        setNewsLoading(false);
       }
     })();
   }, [accountId]);
