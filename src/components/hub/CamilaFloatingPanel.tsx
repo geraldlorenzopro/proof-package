@@ -8,15 +8,16 @@ const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-tts`;
 
 let currentAudio: HTMLAudioElement | null = null;
 
-function stopGoogleAudio() {
+function stopCurrentAudio() {
   if (currentAudio) {
     currentAudio.pause();
     currentAudio.src = "";
     currentAudio = null;
   }
+  stopSpeaking();
 }
 
-async function playGoogleTTS(text: string): Promise<boolean> {
+async function playTTSAudio(text: string): Promise<boolean> {
   try {
     const resp = await fetch(TTS_URL, {
       method: "POST",
@@ -30,19 +31,26 @@ async function playGoogleTTS(text: string): Promise<boolean> {
     const data = await resp.json();
     if (!data.audio) return false;
 
+    console.log("Camila TTS source:", data.source);
+
+    // Use data URI — browser natively decodes base64 audio without corruption
+    const audioUrl = `data:audio/mpeg;base64,${data.audio}`;
+
     return new Promise((resolve) => {
-      const byteChars = atob(data.audio);
-      const byteArray = new Uint8Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) {
-        byteArray[i] = byteChars.charCodeAt(i);
-      }
-      const blob = new Blob([byteArray], { type: "audio/mpeg" });
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
+      const audio = new Audio(audioUrl);
       currentAudio = audio;
-      audio.onended = () => { URL.revokeObjectURL(url); currentAudio = null; resolve(true); };
-      audio.onerror = () => { URL.revokeObjectURL(url); currentAudio = null; resolve(false); };
-      audio.play().catch(() => { currentAudio = null; resolve(false); });
+      audio.onended = () => {
+        currentAudio = null;
+        resolve(true);
+      };
+      audio.onerror = () => {
+        currentAudio = null;
+        resolve(false);
+      };
+      audio.play().catch(() => {
+        currentAudio = null;
+        resolve(false);
+      });
     });
   } catch {
     return false;
@@ -141,33 +149,27 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
   const [pulseRing, setPulseRing] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [speakingNow, setSpeakingNow] = useState(false);
-  const [conversationMode, setConversationMode] = useState(false); // continuous voice loop
+  const [conversationMode, setConversationMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastSpokenRef = useRef<number>(-1);
 
-  // Diagnostics: log available Spanish voices
-  useEffect(() => {
-    logVocesDiagnostico();
-  }, []);
+  // Diagnostics
+  useEffect(() => { logVocesDiagnostico(); }, []);
 
   // Auto-scroll
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Focus input when opened
+  // Focus input
   useEffect(() => {
-    if (open && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 300);
-    }
+    if (open && inputRef.current) setTimeout(() => inputRef.current?.focus(), 300);
   }, [open]);
 
-  // Pulse animation on new messages
+  // Pulse
   useEffect(() => {
     if (!open && messages.length > 0) {
       setPulseRing(true);
@@ -176,7 +178,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     }
   }, [messages.length, open]);
 
-  // ── TTS: speak when assistant finishes, then auto-listen in conversation mode ──
+  // ── TTS: speak when assistant finishes ──
   useEffect(() => {
     if (!voiceEnabled || isLoading) return;
     const lastMsg = messages[messages.length - 1];
@@ -184,11 +186,11 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
       lastSpokenRef.current = messages.length - 1;
       setSpeakingNow(true);
 
-      // Try Google TTS first, fallback to Web Speech
       (async () => {
-        const played = await playGoogleTTS(lastMsg.content);
+        // Try edge function TTS (ElevenLabs → Google → none)
+        const played = await playTTSAudio(lastMsg.content);
         if (!played) {
-          // Fallback to browser TTS
+          // Fallback to browser Web Speech API
           speakAsCamila(lastMsg.content);
           const interval = setInterval(() => {
             if (!isSpeaking()) {
@@ -205,25 +207,23 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     }
   }, [messages, isLoading, voiceEnabled, conversationMode]);
 
-  // Stop speaking when panel closes
+  // Stop when panel closes
   useEffect(() => {
-  if (!open) { stopSpeaking(); stopGoogleAudio(); setSpeakingNow(false); setConversationMode(false); }
+    if (!open) {
+      stopCurrentAudio();
+      setSpeakingNow(false);
+      setConversationMode(false);
+      setIsListening(false);
+      recognitionRef.current?.stop();
+    }
   }, [open]);
 
-  // Also stop Google audio when stopping speaking manually
-  const handleStopSpeaking = useCallback(() => {
-    stopSpeaking();
-    stopGoogleAudio();
-    setSpeakingNow(false);
-  }, []);
-
-  // Use ref to hold send function for startListening
+  // Ref for send
   const sendRef = useRef<(text: string) => void>(() => {});
 
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
-    stopSpeaking();
-    stopGoogleAudio();
+    stopCurrentAudio();
     setSpeakingNow(false);
     const userMsg: Msg = { role: "user", content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
@@ -259,10 +259,9 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     }
   }, [messages, isLoading, accountId]);
 
-  // Keep ref in sync
   useEffect(() => { sendRef.current = send; }, [send]);
 
-  // ── Start listening (reusable) ──
+  // ── BOTÓN 1: Micrófono (STT) — startListening ──
   const startListening = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
@@ -292,26 +291,48 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     setIsListening(true);
   }, []);
 
-  // Voice toggle — activates conversation mode
-  const toggleVoice = useCallback(() => {
+  // ── BOTÓN 1 toggle ──
+  const toggleMic = useCallback(() => {
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
-      setConversationMode(false);
       return;
     }
-
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Tu navegador no soporta reconocimiento de voz");
       return;
     }
+    startListening();
+  }, [isListening, startListening]);
 
-    // Enable conversation mode + voice output
+  // ── BOTÓN 2: Volume toggle (TTS on/off) ──
+  const toggleVoiceOutput = useCallback(() => {
+    if (speakingNow) {
+      stopCurrentAudio();
+      setSpeakingNow(false);
+    }
+    setVoiceEnabled(v => !v);
+  }, [speakingNow]);
+
+  // ── BOTÓN 3: Conversation mode (continuous voice loop) ──
+  const toggleConversationMode = useCallback(() => {
+    if (conversationMode) {
+      // Deactivate
+      setConversationMode(false);
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Tu navegador no soporta reconocimiento de voz");
+      return;
+    }
     setConversationMode(true);
     setVoiceEnabled(true);
     startListening();
-  }, [isListening, startListening]);
+  }, [conversationMode, startListening]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -344,7 +365,6 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
       <AnimatePresence>
         {open && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -353,7 +373,6 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
               onClick={() => setOpen(false)}
             />
 
-            {/* Panel */}
             <motion.div
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -374,7 +393,6 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                   borderBottom: "1px solid hsl(195 100% 50% / 0.12)",
                 }}
               >
-                {/* Glow line */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-jarvis/60 to-transparent" />
 
                 <div className="flex items-center justify-between">
@@ -383,7 +401,6 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-jarvis/20 to-jarvis/5 border border-jarvis/30 flex items-center justify-center">
                         <Sparkles className="w-5 h-5 text-jarvis" />
                       </div>
-                      {/* Online dot */}
                       <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-background" />
                     </div>
                     <div>
@@ -394,12 +411,9 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {/* Voice output toggle */}
+                    {/* BOTÓN 2 — Volume toggle */}
                     <button
-                      onClick={() => {
-                        if (speakingNow) { stopSpeaking(); stopGoogleAudio(); setSpeakingNow(false); }
-                        setVoiceEnabled(v => !v);
-                      }}
+                      onClick={toggleVoiceOutput}
                       className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
                         voiceEnabled
                           ? "text-jarvis bg-jarvis/10 border border-jarvis/20"
@@ -430,7 +444,6 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
               >
                 {messages.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-4">
-                    {/* Holographic orb */}
                     <div className="relative w-20 h-20">
                       <div className="absolute inset-0 rounded-full bg-gradient-to-br from-jarvis/20 to-transparent border border-jarvis/20 animate-pulse" />
                       <div className="absolute inset-2 rounded-full bg-gradient-to-br from-jarvis/10 to-transparent border border-jarvis/10" />
@@ -444,7 +457,6 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                         Pregúntame sobre tu oficina: citas del día, estado de casos, tareas pendientes, métricas...
                       </p>
                     </div>
-                    {/* Quick prompts */}
                     <div className="flex flex-col gap-1.5 w-full max-w-[280px]">
                       {[
                         "¿Qué tenemos hoy?",
@@ -517,21 +529,39 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                     style={{ scrollbarWidth: "none" }}
                   />
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {/* Voice button — tap to enter conversation mode */}
+                    {/* BOTÓN 1 — Micrófono (STT) */}
                     <button
-                      onClick={toggleVoice}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all relative ${
+                      onClick={toggleMic}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
                         isListening
-                          ? "bg-jarvis/20 text-jarvis border border-jarvis/40 animate-pulse"
-                          : conversationMode
-                          ? "bg-jarvis/15 text-jarvis border border-jarvis/30"
+                          ? "bg-red-500/20 text-red-400 border border-red-400/40 animate-pulse"
                           : "text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10"
                       }`}
-                      title={isListening ? "Detener conversación" : conversationMode ? "Modo conversación activo" : "Iniciar conversación por voz"}
+                      title={isListening ? "Detener grabación" : "Hablar por micrófono"}
                     >
-                      {isListening ? <Mic className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                      {conversationMode && !isListening && (
-                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-jarvis" />
+                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </button>
+
+                    {/* BOTÓN 3 — Modo Conversación Continua */}
+                    <button
+                      onClick={toggleConversationMode}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all relative ${
+                        conversationMode
+                          ? "bg-jarvis/20 text-jarvis border border-jarvis/40"
+                          : "text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10"
+                      }`}
+                      title={conversationMode ? "Detener modo conversación" : "Modo conversación continua"}
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" x2="12" y1="19" y2="22" />
+                        <path d="M8 22h8" />
+                        {/* Loop indicator */}
+                        <circle cx="19" cy="5" r="3" fill={conversationMode ? "currentColor" : "none"} />
+                      </svg>
+                      {conversationMode && (
+                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-jarvis animate-pulse" />
                       )}
                     </button>
 
