@@ -458,6 +458,54 @@ export default function HubDashboard({
         </div>
       </div>
 
+      {/* ─── News ticker at the bottom ─── */}
+      {briefingNews && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/90 backdrop-blur-md border-t border-border/30">
+          <div className="flex items-center h-9 overflow-hidden">
+            <div className="shrink-0 flex items-center gap-1.5 px-3 bg-jarvis/10 h-full border-r border-border/20">
+              <Newspaper className="w-3.5 h-3.5 text-jarvis" />
+              <span className="text-[11px] font-semibold text-jarvis uppercase tracking-wider">Noticias</span>
+            </div>
+            <div className="flex-1 overflow-hidden relative">
+              <div className="animate-marquee whitespace-nowrap flex items-center h-9">
+                <span className="text-xs text-muted-foreground px-4">
+                  {briefingNews.replace(/\[\d+\]/g, '').trim()}
+                </span>
+                {briefingCitations.length > 0 && (
+                  <span className="text-xs text-muted-foreground/40 px-2">—</span>
+                )}
+                {briefingCitations.slice(0, 3).map((url, i) => {
+                  let domain = "";
+                  try { domain = new URL(url).hostname.replace("www.", ""); } catch { domain = url; }
+                  return (
+                    <a
+                      key={i}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] text-jarvis/60 hover:text-jarvis mr-3 shrink-0"
+                    >
+                      <ExternalLink className="w-2.5 h-2.5" />
+                      {domain.length > 20 ? domain.slice(0, 20) + "…" : domain}
+                    </a>
+                  );
+                })}
+                {/* Duplicate for seamless loop */}
+                <span className="text-xs text-muted-foreground px-12">
+                  {briefingNews.replace(/\[\d+\]/g, '').trim()}
+                </span>
+              </div>
+            </div>
+            {briefingWeather && (
+              <div className="shrink-0 flex items-center gap-1.5 px-3 h-full border-l border-border/20">
+                <CloudSun className="w-3.5 h-3.5 text-muted-foreground/50" />
+                <span className="text-[11px] text-muted-foreground/60">{briefingWeather}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
       <NewContactModal open={contactOpen} onOpenChange={setContactOpen} accountId={accountId} />
     </>
