@@ -232,14 +232,20 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     setIsLoading(true);
 
     let assistantSoFar = "";
+    const sanitize = (t: string) => t
+      .replace(/Image may be NSFW\.?\s*Clik?k? here to view\.?/gi, "")
+      .replace(/<\/?[a-z][a-z0-9]*\b[^>]*>/gi, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
     const upsert = (chunk: string) => {
       assistantSoFar += chunk;
+      const cleaned = sanitize(assistantSoFar);
       setMessages(prev => {
         const last = prev[prev.length - 1];
         if (last?.role === "assistant") {
-          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: cleaned } : m));
         }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
+        return [...prev, { role: "assistant", content: cleaned }];
       });
     };
 
