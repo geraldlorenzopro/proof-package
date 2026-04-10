@@ -44,6 +44,15 @@ function getCategoryStyle(cat: string) {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-chat`;
 
+/** Strip HTML tags, NSFW warnings, and other AI model artifacts from responses */
+function sanitizeCamilaResponse(text: string): string {
+  return text
+    .replace(/Image may be NSFW\.?\s*Clik?k? here to view\.?/gi, "")
+    .replace(/<\/?[a-z][a-z0-9]*\b[^>]*>/gi, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export default function HubDashboard({
   accountId, accountName, staffName, showOnboardingBanner, onTriggerOnboarding
 }: Props) {
@@ -270,12 +279,13 @@ export default function HubDashboard({
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantSoFar += content;
+              const cleaned = sanitizeCamilaResponse(assistantSoFar);
               setMessages(prev => {
                 const last = prev[prev.length - 1];
                 if (last?.role === "assistant") {
-                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
+                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: cleaned } : m);
                 }
-                return [...prev, { role: "assistant", content: assistantSoFar }];
+                return [...prev, { role: "assistant", content: cleaned }];
               });
             }
           } catch {
