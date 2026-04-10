@@ -135,8 +135,47 @@ function VoiceAIPanelInner({ accountId }: Props) {
   const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
   const [sessionDuration, setSessionDuration] = useState(0);
   const [sessionStart, setSessionStart] = useState<Date | null>(null);
+  const [savedSessions, setSavedSessions] = useState<SavedSession[]>(() => {
+    try {
+      const stored = localStorage.getItem(`voice_history_${accountId}`);
+      if (stored) {
+        return JSON.parse(stored).map((s: any) => ({
+          ...s,
+          date: new Date(s.date),
+          transcripts: s.transcripts.map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
+        }));
+      }
+    } catch {}
+    return [];
+  });
+  const [showHistory, setShowHistory] = useState(false);
+  const [viewingSession, setViewingSession] = useState<SavedSession | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const transcriptsRef = useRef<TranscriptEntry[]>([]);
+  const sessionDurationRef = useRef(0);
+
+  // Keep refs in sync
+  useEffect(() => { transcriptsRef.current = transcripts; }, [transcripts]);
+  useEffect(() => { sessionDurationRef.current = sessionDuration; }, [sessionDuration]);
+
+  const saveSession = useCallback(() => {
+    const msgs = transcriptsRef.current;
+    if (msgs.length === 0) return;
+    const session: SavedSession = {
+      id: crypto.randomUUID(),
+      date: new Date(),
+      duration: sessionDurationRef.current,
+      messageCount: msgs.length,
+      preview: msgs.find((m) => m.role === "agent")?.text?.slice(0, 80) || msgs[0].text.slice(0, 80),
+      transcripts: msgs,
+    };
+    setSavedSessions((prev) => {
+      const updated = [session, ...prev].slice(0, 20); // keep last 20
+      localStorage.setItem(`voice_history_${accountId}`, JSON.stringify(updated));
+      return updated;
+    });
+  }, [accountId]);
 
   const FAREWELL_PATTERNS = /\b(adiós|adios|nos vemos|hasta luego|chao|bye|que tengas|buen día|buenas noches|un placer|hasta pronto|cuídate)\b/i;
 
@@ -145,8 +184,11 @@ function VoiceAIPanelInner({ accountId }: Props) {
       setError(null);
       setSessionStart(new Date());
       setTranscripts([]);
+      setViewingSession(null);
+      setShowHistory(false);
     },
     onDisconnect: () => {
+      saveSession();
       setSessionStart(null);
       setSessionDuration(0);
       if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
