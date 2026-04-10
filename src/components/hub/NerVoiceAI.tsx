@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useConversation, ConversationProvider } from "@elevenlabs/react";
+import { useState, useCallback, useEffect } from "react";
+import { useConversation } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, PhoneOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import NerVoiceOrb from "./NerVoiceOrb";
 
 const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
 
@@ -10,11 +10,11 @@ interface Props {
   accountId: string;
 }
 
-function NerVoiceAIInner({ accountId }: Props) {
+export default function NerVoiceAI({ accountId }: Props) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [transcript, setTranscript] = useState<string>("");
-  const [agentResponse, setAgentResponse] = useState<string>("");
+  const [transcript, setTranscript] = useState("");
+  const [agentResponse, setAgentResponse] = useState("");
   const [inputLevel, setInputLevel] = useState(0);
 
   const conversation = useConversation({
@@ -45,47 +45,38 @@ function NerVoiceAIInner({ accountId }: Props) {
   useEffect(() => {
     if (conversation.status !== "connected") return;
     const interval = setInterval(() => {
-      const vol = conversation.getInputVolume();
-      setInputLevel(vol);
-    }, 100);
+      setInputLevel(conversation.getInputVolume());
+    }, 80);
     return () => clearInterval(interval);
   }, [conversation.status]);
 
   const startConversation = useCallback(async () => {
     setIsConnecting(true);
     setError(null);
-
     try {
-      // Request mic FIRST (must be in user gesture context)
       console.log("NER Voice AI: Requesting microphone...");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log("NER Voice AI: Microphone granted, tracks:", stream.getAudioTracks().length);
+      await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Get a server-side token for authenticated WebRTC connection
       console.log("NER Voice AI: Fetching token...");
       const { data, error: fnError } = await supabase.functions.invoke(
         "elevenlabs-conversation-token",
         { body: { agent_id: AGENT_ID } }
       );
-
       if (fnError || !data?.token) {
-        console.error("Token error:", fnError, data);
         throw new Error("No se pudo obtener token de voz.");
       }
-      console.log("NER Voice AI: Token received, starting session...");
 
-      const session = await conversation.startSession({
-        agentId: AGENT_ID,
-      });
-      console.log("NER Voice AI: Session started:", session);
+      console.log("NER Voice AI: Starting session...");
+      await conversation.startSession({ agentId: AGENT_ID });
     } catch (err: any) {
       console.error("Failed to start NER Voice AI:", err);
-      const msg = err.name === "NotFoundError" || err.message?.includes("device not found")
-        ? "No se encontró micrófono. Conecta uno e intenta de nuevo."
-        : err.name === "NotAllowedError"
-          ? "Permiso de micrófono denegado. Habilítalo en tu navegador."
-          : err.message || "No se pudo iniciar la conversación. Verifica el micrófono.";
-      setError(msg);
+      setError(
+        err.name === "NotFoundError"
+          ? "No se encontró micrófono."
+          : err.name === "NotAllowedError"
+            ? "Permiso de micrófono denegado."
+            : err.message || "No se pudo iniciar. Verifica el micrófono."
+      );
     } finally {
       setIsConnecting(false);
     }
@@ -98,12 +89,10 @@ function NerVoiceAIInner({ accountId }: Props) {
   const isActive = conversation.status === "connected";
   const isSpeaking = conversation.isSpeaking;
 
-  const orbScale = isSpeaking ? 1.15 : 1 + inputLevel * 0.3;
-
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed bottom-6 left-[112px] z-[100] flex flex-col items-center gap-3"
+        className="fixed bottom-6 left-[112px] z-[100] flex flex-col items-center gap-2"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
@@ -115,78 +104,51 @@ function NerVoiceAIInner({ accountId }: Props) {
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="max-w-[300px] px-4 py-3 rounded-2xl text-xs leading-relaxed"
+              className="max-w-[280px] px-4 py-3 rounded-2xl text-xs leading-relaxed backdrop-blur-md"
               style={{
-                background: "linear-gradient(135deg, hsl(220 25% 10%) 0%, hsl(220 25% 8%) 100%)",
-                border: "1px solid hsl(195 100% 50% / 0.2)",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                background: "hsl(220 25% 8% / 0.85)",
+                border: "1px solid hsl(195 100% 50% / 0.15)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
               }}
             >
               {agentResponse && (
                 <p className="text-foreground/80">{agentResponse}</p>
               )}
               {transcript && !isSpeaking && (
-                <p className="text-jarvis/60 italic mt-1">"{transcript}"</p>
+                <p className="text-jarvis/50 italic mt-1 text-[11px]">
+                  "{transcript}"
+                </p>
               )}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Error message */}
+        {/* Error */}
         {error && (
-          <div className="max-w-[260px] px-3 py-2 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-[11px]">
+          <div className="max-w-[240px] px-3 py-2 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-[11px] text-center">
             {error}
           </div>
         )}
 
-        {/* Voice Orb */}
-        <motion.button
+        {/* Siri-style Orb */}
+        <NerVoiceOrb
+          isActive={isActive}
+          isSpeaking={isSpeaking}
+          isConnecting={isConnecting}
+          inputLevel={inputLevel}
           onClick={isActive ? stopConversation : startConversation}
-          disabled={isConnecting}
-          animate={{ scale: isActive ? orbScale : 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-            isConnecting ? "opacity-60 cursor-wait" : "cursor-pointer"
-          }`}
-          style={{
-            background: isActive
+        />
+
+        {/* Status label */}
+        <span
+          className={`text-[10px] font-mono uppercase tracking-[0.15em] ${
+            isActive
               ? isSpeaking
-                ? "linear-gradient(135deg, hsl(195 100% 50%) 0%, hsl(260 80% 60%) 100%)"
-                : "linear-gradient(135deg, hsl(195 100% 50%) 0%, hsl(195 80% 35%) 100%)"
-              : "linear-gradient(135deg, hsl(220 20% 15%) 0%, hsl(220 20% 10%) 100%)",
-            border: isActive
-              ? "2px solid hsl(195 100% 50% / 0.6)"
-              : "2px solid hsl(195 100% 50% / 0.2)",
-            boxShadow: isActive
-              ? "0 0 40px hsl(195 100% 50% / 0.4), 0 0 80px hsl(195 100% 50% / 0.15)"
-              : "0 0 20px hsl(195 100% 50% / 0.1), 0 8px 32px rgba(0,0,0,0.3)",
-          }}
-          title={isActive ? "Terminar conversación" : "Iniciar NER Voice AI"}
+                ? "text-jarvis"
+                : "text-jarvis/60"
+              : "text-muted-foreground/40"
+          }`}
         >
-          {isActive && (
-            <>
-              <span className="absolute inset-0 rounded-full animate-ping bg-jarvis/10" style={{ animationDuration: "2s" }} />
-              <span className="absolute inset-[-4px] rounded-full animate-ping bg-jarvis/5" style={{ animationDuration: "3s" }} />
-            </>
-          )}
-
-          {isConnecting ? (
-            <div className="w-6 h-6 border-2 border-jarvis/40 border-t-jarvis rounded-full animate-spin" />
-          ) : isActive ? (
-            <PhoneOff className="w-6 h-6 text-white relative z-10" />
-          ) : (
-            <Phone className="w-6 h-6 text-jarvis/70 hover:text-jarvis relative z-10 transition-colors" />
-          )}
-        </motion.button>
-
-        {/* Label */}
-        <span className={`text-[10px] font-mono uppercase tracking-[0.15em] ${
-          isActive
-            ? isSpeaking
-              ? "text-jarvis"
-              : "text-jarvis/60"
-            : "text-muted-foreground/40"
-        }`}>
           {isConnecting
             ? "Conectando..."
             : isActive
@@ -197,13 +159,5 @@ function NerVoiceAIInner({ accountId }: Props) {
         </span>
       </motion.div>
     </AnimatePresence>
-  );
-}
-
-export default function NerVoiceAI({ accountId }: Props) {
-  return (
-    <ConversationProvider>
-      <NerVoiceAIInner accountId={accountId} />
-    </ConversationProvider>
   );
 }
