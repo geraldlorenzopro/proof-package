@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  ArrowLeft, BarChart3, Gauge, Users, Activity, TrendingUp,
+  BarChart3, Gauge, Users, Activity, TrendingUp,
   Target, Weight, AlertTriangle, CheckCircle2, Clock,
   Zap, CalendarClock, ShieldAlert, X, ExternalLink, ChevronRight
 } from "lucide-react";
+import HubLayout from "@/components/hub/HubLayout";
 import { Badge } from "@/components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip,
@@ -211,6 +212,7 @@ export default function IntelligenceCenterPage() {
   ];
 
   return (
+    <HubLayout>
     <div className="min-h-screen bg-background">
       {/* ═══ TOP BAR ═══ */}
       <motion.header
@@ -219,14 +221,6 @@ export default function IntelligenceCenterPage() {
         className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/30"
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between px-5 py-3">
-          <button
-            onClick={() => navigate("/hub")}
-            className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors group"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="font-medium">Hub</span>
-          </button>
-
           <div className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-accent" />
             <h1 className="text-sm font-bold text-foreground tracking-wide">Centro de Inteligencia</h1>
