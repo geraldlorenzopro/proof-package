@@ -194,7 +194,7 @@ function VoiceAIPanelInner({ accountId }: Props) {
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
-    <div className="absolute inset-0 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden min-h-0">
       {/* ═══ LEFT — Voice Experience ═══ */}
       <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden"
         style={{
