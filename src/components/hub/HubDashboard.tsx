@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Send, Mic, MicOff, Briefcase, Calendar, Users,
-  MessageSquare, FileSearch, Clock, ChevronRight,
+  MessageSquare, FileSearch, Clock, ChevronRight, ChevronLeft,
   X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
   Newspaper, Shield, Globe, Scale, Gavel, BookOpen, FileText
 } from "lucide-react";
