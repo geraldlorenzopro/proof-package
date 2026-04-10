@@ -505,7 +505,7 @@ export default function HubChatPage() {
           </div>
         </div>
 
-        {/* ── Voice Overlay (inline, like ChatGPT) ── */}
+        {/* ── Voice Overlay (continuous conversation loop) ── */}
         {voiceMode && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-xl">
             {/* Close */}
@@ -517,33 +517,80 @@ export default function HubChatPage() {
             </button>
 
             {/* Orb */}
-            <div className="relative w-40 h-40 mb-8">
-              <div className={`absolute inset-0 rounded-full bg-gradient-to-br from-jarvis/25 to-cyan-400/10 border border-jarvis/30 ${voiceListening ? "animate-pulse" : ""}`} />
-              <div className={`absolute inset-3 rounded-full bg-gradient-to-br from-jarvis/15 to-transparent border border-jarvis/20 ${voiceListening ? "animate-ping" : ""}`} style={{ animationDuration: "2s" }} />
+            <div className="relative w-44 h-44 mb-8">
+              {/* Outer glow ring */}
+              <div className={`absolute -inset-4 rounded-full transition-all duration-700 ${
+                voicePhase === "listening" ? "bg-jarvis/5 shadow-[0_0_60px_hsl(195_100%_50%/0.15)]" :
+                voicePhase === "speaking" ? "bg-emerald-400/5 shadow-[0_0_60px_hsl(150_60%_50%/0.15)]" :
+                "bg-transparent"
+              }`} />
+              {/* Pulsing ring */}
+              <div className={`absolute inset-0 rounded-full border transition-all duration-500 ${
+                voicePhase === "listening" ? "border-jarvis/40 animate-pulse" :
+                voicePhase === "speaking" ? "border-emerald-400/40 animate-pulse" :
+                voicePhase === "processing" ? "border-amber-400/40 animate-spin" :
+                "border-border/20"
+              }`} style={voicePhase === "processing" ? { animationDuration: "3s" } : {}} />
+              {/* Inner ring */}
+              <div className={`absolute inset-4 rounded-full border transition-all duration-500 ${
+                voicePhase === "listening" ? "border-jarvis/25" :
+                voicePhase === "speaking" ? "border-emerald-400/25" :
+                "border-border/10"
+              }`} />
+              {/* Core orb */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className={`w-16 h-16 rounded-full bg-gradient-to-br from-jarvis to-cyan-400/70 shadow-[0_0_40px_hsl(195_100%_50%/0.4)] ${voiceListening ? "scale-110" : "scale-100"} transition-transform`} />
+                <div className={`w-20 h-20 rounded-full transition-all duration-500 ${
+                  voicePhase === "listening"
+                    ? "bg-gradient-to-br from-jarvis to-cyan-400/70 shadow-[0_0_50px_hsl(195_100%_50%/0.5)] scale-110"
+                    : voicePhase === "speaking"
+                    ? "bg-gradient-to-br from-emerald-400 to-teal-400/70 shadow-[0_0_50px_hsl(150_60%_50%/0.4)] scale-105"
+                    : voicePhase === "processing"
+                    ? "bg-gradient-to-br from-amber-400 to-orange-400/70 shadow-[0_0_40px_hsl(40_90%_50%/0.3)] scale-95"
+                    : "bg-gradient-to-br from-jarvis/60 to-cyan-400/40 scale-100"
+                }`} />
               </div>
             </div>
 
             {/* Status */}
-            <p className="text-lg font-semibold text-foreground/80 mb-2">
-              {voiceListening ? "Te escucho..." : speakingNow ? "Respondiendo..." : "Procesando..."}
+            <p className="text-lg font-semibold text-foreground/80 mb-2 transition-all">
+              {voicePhase === "listening" ? "Te escucho..." :
+               voicePhase === "processing" ? "Procesando..." :
+               voicePhase === "speaking" ? "Camila responde..." :
+               "Conectando..."}
+            </p>
+            <p className="text-xs text-muted-foreground/40 mb-4">
+              {voicePhase === "listening" ? "Habla con naturalidad, te entiendo" :
+               voicePhase === "processing" ? "Analizando tu mensaje" :
+               voicePhase === "speaking" ? "Escucha la respuesta" :
+               ""}
             </p>
 
             {/* Live transcript */}
             {voiceTranscript && (
-              <p className="text-sm text-muted-foreground/60 max-w-md text-center px-4 italic">
-                "{voiceTranscript}"
-              </p>
+              <div className="max-w-md text-center px-6 py-3 rounded-2xl bg-card/50 border border-jarvis/10">
+                <p className="text-sm text-foreground/70 italic">
+                  "{voiceTranscript}"
+                </p>
+              </div>
+            )}
+
+            {/* Last assistant message in voice mode */}
+            {voicePhase === "speaking" && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && (
+              <div className="max-w-md text-center px-6 py-3 mt-3 rounded-2xl bg-card/50 border border-emerald-400/10">
+                <p className="text-xs text-foreground/50 line-clamp-3">
+                  {messages[messages.length - 1].content.slice(0, 200)}...
+                </p>
+              </div>
             )}
 
             {/* End call button */}
             <button
               onClick={stopVoiceMode}
-              className="mt-10 w-14 h-14 rounded-full bg-red-500/20 border border-red-400/30 flex items-center justify-center hover:bg-red-500/30 transition-colors"
+              className="mt-10 w-16 h-16 rounded-full bg-red-500/20 border border-red-400/30 flex items-center justify-center hover:bg-red-500/30 transition-all hover:scale-105"
             >
               <Phone className="w-6 h-6 text-red-400 rotate-[135deg]" />
             </button>
+            <p className="text-[10px] text-muted-foreground/30 mt-3 font-mono tracking-wider">TOCA PARA FINALIZAR</p>
           </div>
         )}
       </div>
