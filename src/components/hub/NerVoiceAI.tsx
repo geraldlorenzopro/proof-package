@@ -50,6 +50,26 @@ function NerVoiceAIInner({ accountId }: Props) {
     return () => clearInterval(interval);
   }, [conversation.status]);
 
+  const fetchTokenWithRetry = useCallback(async (retries = 3): Promise<string> => {
+    for (let attempt = 0; attempt < retries; attempt++) {
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "elevenlabs-conversation-token",
+        { body: { agent_id: AGENT_ID } }
+      );
+      if (data?.token) return data.token;
+      const errMsg = typeof data?.details === "string" ? data.details : "";
+      const is429 = fnError?.message?.includes("429") || data?.error?.includes("429") || errMsg.includes("concurrent_limit_exceeded");
+      if (is429 && attempt < retries - 1) {
+        const delay = Math.pow(2, attempt + 1) * 1000;
+        console.warn(`NER Voice AI: Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      throw new Error(is429 ? "Servicio ocupado. Intenta en unos segundos." : "No se pudo obtener token de voz.");
+    }
+    throw new Error("No se pudo obtener token de voz.");
+  }, []);
+
   const startConversation = useCallback(async () => {
     setIsConnecting(true);
     setError(null);
@@ -57,17 +77,11 @@ function NerVoiceAIInner({ accountId }: Props) {
       console.log("NER Voice AI: Requesting microphone...");
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      console.log("NER Voice AI: Fetching token...");
-      const { data, error: fnError } = await supabase.functions.invoke(
-        "elevenlabs-conversation-token",
-        { body: { agent_id: AGENT_ID } }
-      );
-      if (fnError || !data?.token) {
-        throw new Error("No se pudo obtener token de voz.");
-      }
+      console.log("NER Voice AI: Fetching token with retry...");
+      const token = await fetchTokenWithRetry();
 
       console.log("NER Voice AI: Starting session...");
-      await conversation.startSession({ agentId: AGENT_ID });
+      await conversation.startSession({ conversationToken: token });
     } catch (err: any) {
       console.error("Failed to start NER Voice AI:", err);
       setError(
@@ -80,7 +94,7 @@ function NerVoiceAIInner({ accountId }: Props) {
     } finally {
       setIsConnecting(false);
     }
-  }, [conversation]);
+  }, [conversation, fetchTokenWithRetry]);
 
   const stopConversation = useCallback(async () => {
     await conversation.endSession();
