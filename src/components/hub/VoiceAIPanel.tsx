@@ -180,25 +180,51 @@ function VoiceAIPanelInner({ accountId }: Props) {
 
   return (
     <div className="h-full flex overflow-hidden">
-      {/* ═══ LEFT — Voice Orb & Controls ═══ */}
-      <div className="flex-1 flex flex-col items-center justify-center relative min-w-[320px]"
-        style={{ background: "radial-gradient(ellipse at 50% 40%, hsl(195 100% 50% / 0.04) 0%, transparent 70%)" }}
+      {/* ═══ LEFT — Voice Orb & Controls (Cinematic JARVIS Layout) ═══ */}
+      <div className="flex-1 flex flex-col items-center justify-center relative min-w-[400px]"
+        style={{
+          background: `
+            radial-gradient(ellipse at 50% 45%, hsl(195 100% 50% / 0.06) 0%, transparent 50%),
+            radial-gradient(ellipse at 50% 55%, hsl(220 80% 40% / 0.04) 0%, transparent 60%),
+            radial-gradient(circle at 50% 50%, hsl(260 60% 40% / 0.02) 0%, transparent 70%)
+          `,
+        }}
       >
+        {/* Subtle grid overlay */}
+        <div className="absolute inset-0 opacity-[0.015]" style={{
+          backgroundImage: `
+            linear-gradient(hsl(195 100% 50%) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(195 100% 50%) 1px, transparent 1px)
+          `,
+          backgroundSize: "60px 60px",
+        }} />
+
         {/* Status bar */}
-        <div className="absolute top-0 left-0 right-0 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isActive ? "bg-emerald-400 animate-pulse" : "bg-muted-foreground/30"}`} />
-            <span className="text-[11px] font-mono text-muted-foreground/60 uppercase tracking-wider">
-              {isActive ? "En conversación" : isConnecting ? "Conectando..." : "Listo para iniciar"}
+        <div className="absolute top-0 left-0 right-0 px-8 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${isActive ? "bg-emerald-400 shadow-[0_0_8px_hsl(145_70%_50%/0.5)] animate-pulse" : "bg-muted-foreground/20"}`} />
+            <span className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-[0.2em]">
+              {isActive ? "Sesión activa" : isConnecting ? "Iniciando conexión..." : "Sistema listo"}
             </span>
           </div>
           {isActive && (
-            <span className="text-[11px] font-mono text-jarvis/60 tabular-nums">{formatTime(sessionDuration)}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-mono text-jarvis/40 tabular-nums tracking-wider">{formatTime(sessionDuration)}</span>
+              <div className="w-px h-3 bg-jarvis/15" />
+              <span className="text-[10px] font-mono text-jarvis/40 uppercase tracking-wider">
+                {isSpeaking ? "Hablando" : "Escuchando"}
+              </span>
+            </div>
           )}
         </div>
 
-        {/* Center — Orb */}
-        <div className="flex flex-col items-center gap-6">
+        {/* NER branding watermark */}
+        <div className="absolute top-16 left-0 right-0 flex justify-center">
+          <span className="text-[10px] font-mono text-jarvis/15 tracking-[0.5em] uppercase">NER Voice Intelligence</span>
+        </div>
+
+        {/* ═══ Center — The Orb ═══ */}
+        <div className="flex flex-col items-center gap-8">
           <NerVoiceOrb
             isActive={isActive}
             isSpeaking={isSpeaking}
@@ -208,26 +234,26 @@ function VoiceAIPanelInner({ accountId }: Props) {
           />
 
           {/* Label under orb */}
-          <div className="text-center">
-            <p className="text-sm font-semibold text-foreground/80">
-              {isActive ? (isSpeaking ? "Camila está hablando..." : "Escuchando...") : "Camila Voice AI"}
+          <div className="text-center mt-2">
+            <p className="text-base font-bold text-foreground/90 tracking-tight">
+              {isActive ? (isSpeaking ? "Camila está respondiendo" : "Escuchando...") : "Camila"}
             </p>
-            <p className="text-[11px] text-muted-foreground/50 mt-1">
-              {isActive ? "Toca el orb para finalizar" : "Toca el orb para iniciar conversación"}
+            <p className="text-[11px] text-muted-foreground/40 mt-1.5 font-mono tracking-wider">
+              {isActive ? "Toca para finalizar sesión" : "Toca para iniciar conversación de voz"}
             </p>
           </div>
 
-          {/* Action buttons */}
+          {/* Action button */}
           {isActive && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={stopConversation}
-                className="gap-2 border-rose-500/20 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+                className="gap-2 border-rose-500/15 text-rose-400/80 hover:bg-rose-500/10 hover:text-rose-300 hover:border-rose-500/25 rounded-xl px-5"
               >
                 <PhoneOff className="w-3.5 h-3.5" />
-                Finalizar
+                Finalizar sesión
               </Button>
             </motion.div>
           )}
@@ -235,26 +261,28 @@ function VoiceAIPanelInner({ accountId }: Props) {
           {/* Error state */}
           {error && !isActive && (
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="flex flex-col items-center gap-3 p-4 text-center max-w-[280px] rounded-2xl"
-              style={{ background: "hsl(0 50% 50% / 0.06)", border: "1px solid hsl(0 70% 50% / 0.15)" }}
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center gap-3 p-5 text-center max-w-[300px] rounded-2xl backdrop-blur-sm"
+              style={{ background: "hsl(0 50% 50% / 0.05)", border: "1px solid hsl(0 70% 50% / 0.12)" }}
             >
-              <MicOff className="w-5 h-5 text-rose-400" />
-              <p className="text-xs text-muted-foreground">{error}</p>
-              <Button size="sm" variant="outline" onClick={startConversation} className="gap-2">
+              <MicOff className="w-5 h-5 text-rose-400/70" />
+              <p className="text-xs text-muted-foreground/70">{error}</p>
+              <Button size="sm" variant="outline" onClick={startConversation} className="gap-2 rounded-xl">
                 <RefreshCw className="w-3 h-3" /> Reintentar
               </Button>
             </motion.div>
           )}
         </div>
 
-        {/* Bottom — hints */}
+        {/* Bottom — capability hints */}
         {!isActive && !error && (
-          <div className="absolute bottom-6 left-0 right-0 px-6">
-            <div className="flex items-center justify-center gap-6 text-[10px] text-muted-foreground/40">
-              <span>🎙️ Voz en tiempo real</span>
-              <span>📊 Acceso a datos de oficina</span>
-              <span>🔒 Conexión segura</span>
+          <div className="absolute bottom-8 left-0 right-0 px-8">
+            <div className="flex items-center justify-center gap-8 text-[9px] font-mono text-muted-foreground/25 uppercase tracking-[0.15em]">
+              <span>Voz en tiempo real</span>
+              <div className="w-1 h-1 rounded-full bg-jarvis/15" />
+              <span>Datos de oficina</span>
+              <div className="w-1 h-1 rounded-full bg-jarvis/15" />
+              <span>Conexión cifrada</span>
             </div>
           </div>
         )}
