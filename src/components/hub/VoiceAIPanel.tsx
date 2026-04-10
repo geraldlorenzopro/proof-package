@@ -78,6 +78,8 @@ async function fetchOfficeContext(accountId: string) {
   ]);
 
   const office = (officeConfig as any) || {};
+  const attorneyFullName = office.attorney_name || "Jefe";
+  const ownerFirstName = attorneyFullName.split(" ")[0];
   const appointmentsList = (todayAppointments || []).map((a: any) => `${a.client_name} a las ${a.appointment_time || "sin hora"} (${a.status})`).join("; ");
   const intakesList = (recentIntakes || []).map((i: any) => `${i.client_first_name || ""} ${i.client_last_name || ""} - ${i.consultation_topic || "sin tema"}`).join("; ");
   const recentCasesList = (recentCases || []).map((c: any) => `${c.client_name} - ${c.case_type} (${c.status}, etapa: ${c.pipeline_stage || "sin etapa"})`).join("; ");
@@ -88,24 +90,32 @@ async function fetchOfficeContext(accountId: string) {
   }, {} as Record<string, number>);
   const teamBreakdown = Object.entries(memberRoles).map(([role, count]) => `${count} ${role}`).join(", ");
 
-  return [
-    `Firma: ${office.firm_name || "Sin nombre"}`,
-    `Abogado principal: ${office.attorney_name || "No configurado"}`,
-    `Clientes registrados: ${clientsCount ?? 0}`,
-    `Casos activos: ${activeCasesCount ?? 0}`,
-    `Casos completados: ${completedCasesCount ?? 0}`,
-    `Total de casos: ${totalCasesCount ?? 0}`,
-    `Últimos casos: ${recentCasesList || "Ninguno"}`,
-    `Tareas pendientes: ${pendingTasksCount ?? 0}`,
-    `Tareas completadas: ${completedTasksCount ?? 0}`,
-    `Equipo: ${members?.length ?? 0} (${teamBreakdown || "sin desglose"})`,
-    `Consultas: ${consultationsCount ?? 0}`,
-    `Últimas consultas: ${intakesList || "Ninguna"}`,
-    `Citas de hoy: ${appointmentsList || "Ninguna"}`,
-    `Documentos: ${documentsCount ?? 0}`,
-    `Créditos AI: ${credits.balance ?? 0}/${credits.monthly_allowance ?? 0}`,
-    `Fecha: ${new Date().toLocaleDateString("es-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,
-  ].join("\n");
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Buenos días" : hour < 18 ? "Buenas tardes" : "Buenas noches";
+  const dayName = new Date().toLocaleDateString("es-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+  return {
+    ownerFirstName,
+    context: [
+      `INSTRUCCIONES DE TRATO PERSONAL: Siempre llama al usuario por su nombre "${ownerFirstName}". Usa un tono cercano, cálido y profesional. Ejemplo: "${greeting}, ${ownerFirstName}".`,
+      `Nombre completo del abogado: ${attorneyFullName}`,
+      `Firma: ${office.firm_name || "Sin nombre"}`,
+      `Clientes registrados: ${clientsCount ?? 0}`,
+      `Casos activos: ${activeCasesCount ?? 0}`,
+      `Casos completados: ${completedCasesCount ?? 0}`,
+      `Total de casos: ${totalCasesCount ?? 0}`,
+      `Últimos casos: ${recentCasesList || "Ninguno"}`,
+      `Tareas pendientes: ${pendingTasksCount ?? 0}`,
+      `Tareas completadas: ${completedTasksCount ?? 0}`,
+      `Equipo: ${members?.length ?? 0} (${teamBreakdown || "sin desglose"})`,
+      `Consultas: ${consultationsCount ?? 0}`,
+      `Últimas consultas: ${intakesList || "Ninguna"}`,
+      `Citas de hoy: ${appointmentsList || "Ninguna"}`,
+      `Documentos: ${documentsCount ?? 0}`,
+      `Créditos AI: ${credits.balance ?? 0}/${credits.monthly_allowance ?? 0}`,
+      `Fecha: ${dayName}`,
+    ].join("\n"),
+  };
 }
 
 function VoiceAIPanelInner({ accountId }: Props) {
