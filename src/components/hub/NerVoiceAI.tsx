@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useConversation } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, PhoneOff, Mic, MicOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 
 // ── NER Voice AI Agent ID ──
 // Set via environment or hardcode after creating in ElevenLabs dashboard
