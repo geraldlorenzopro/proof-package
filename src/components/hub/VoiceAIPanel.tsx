@@ -218,7 +218,7 @@ function VoiceAIPanelInner({ accountId }: Props) {
           if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
           autoEndTimerRef.current = setTimeout(() => {
             conversation.endSession();
-          }, 3000);
+          }, 5000);
         }
       }
     },
