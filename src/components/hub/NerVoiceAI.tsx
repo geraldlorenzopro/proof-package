@@ -87,7 +87,7 @@ function NerVoiceAIInner({ accountId }: Props) {
     <AnimatePresence>
       {/* ═══ Floating Voice Button ═══ */}
       <motion.div
-        className="fixed bottom-6 left-6 z-[100] flex flex-col items-center gap-3"
+        className="fixed bottom-6 left-[84px] z-[100] flex flex-col items-center gap-3"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
