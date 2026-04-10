@@ -29,6 +29,19 @@ interface Props {
 
 type Msg = { role: "user" | "assistant"; content: string };
 
+const categoryStyles: Record<string, { bg: string; stroke: string; icon: any }> = {
+  USCIS: { bg: "#E6F1FB", stroke: "#185FA5", icon: Shield },
+  DACA: { bg: "#FCEBEB", stroke: "#A32D2D", icon: BookOpen },
+  Visas: { bg: "#EAF3DE", stroke: "#3B6D11", icon: Globe },
+  Deportación: { bg: "#FAEEDA", stroke: "#854F0B", icon: Gavel },
+  Naturalización: { bg: "#EEEDFE", stroke: "#534AB7", icon: FileText },
+  Legislación: { bg: "#E1F5EE", stroke: "#0F6E56", icon: Scale },
+};
+
+function getCategoryStyle(cat: string) {
+  return categoryStyles[cat] || categoryStyles.USCIS;
+}
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-chat`;
 
 export default function HubDashboard({
