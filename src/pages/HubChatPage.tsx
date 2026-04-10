@@ -1,43 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Mic, MicOff, Sparkles, X, Phone } from "lucide-react";
+import { ArrowLeft, Send, Mic, MicOff, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { speakAsCamila, stopSpeaking, isSpeaking, logVocesDiagnostico } from "@/lib/camilaTTS";
 import HubLayout from "@/components/hub/HubLayout";
-
-/* ── TTS ── */
-const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-tts`;
-let currentAudio: HTMLAudioElement | null = null;
-
-function stopCurrentAudio() {
-  if (currentAudio) { currentAudio.pause(); currentAudio.src = ""; currentAudio = null; }
-  stopSpeaking();
-}
-
-async function playTTSAudio(text: string): Promise<boolean> {
-  try {
-    const resp = await fetch(TTS_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({ text }),
-    });
-    if (!resp.ok) return false;
-    const data = await resp.json();
-    if (!data.audio) return false;
-    const audioUrl = `data:audio/mpeg;base64,${data.audio}`;
-    return new Promise((resolve) => {
-      const audio = new Audio(audioUrl);
-      currentAudio = audio;
-      audio.onended = () => { currentAudio = null; resolve(true); };
-      audio.onerror = () => { currentAudio = null; resolve(false); };
-      audio.play().catch(() => { currentAudio = null; resolve(false); });
-    });
-  } catch { return false; }
-}
 
 /* ── Types ── */
 type Msg = { role: "user" | "assistant"; content: string };
@@ -109,7 +75,6 @@ export default function HubChatPage() {
   const plan = state?.plan || "essential";
   const staffName = state?.staffName || "";
 
-  // Get available apps for HubLayout from session
   const availableApps: string[] = (() => {
     try {
       const cached = sessionStorage.getItem("ner_hub_data");
@@ -124,37 +89,23 @@ export default function HubChatPage() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isListening, setIsListening] = useState(false); // regular mic (dictation only)
-  const headerVoice = false; // TTS only via orb mode
-  const [speakingNow, setSpeakingNow] = useState(false);
-
-  // Voice orb (completely separate system)
-  const [voiceMode, setVoiceMode] = useState(false);
-  const [voicePhase, setVoicePhase] = useState<"listening" | "processing" | "speaking" | "idle">("idle");
-  const [voiceTranscript, setVoiceTranscript] = useState("");
-  const voiceRecRef = useRef<any>(null);
-  const voiceSilenceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const voiceModeRef = useRef(false);
+  const [isListening, setIsListening] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const lastSpokenRef = useRef<number>(-1);
   const sentInitial = useRef(false);
 
-  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Focus input (only if not in voice mode)
   useEffect(() => {
-    if (!voiceMode) setTimeout(() => inputRef.current?.focus(), 300);
-  }, [voiceMode]);
+    setTimeout(() => inputRef.current?.focus(), 300);
+  }, []);
 
-  // Send initial message from dashboard
   useEffect(() => {
     if (state?.initialMessage && !sentInitial.current) {
       sentInitial.current = true;
@@ -162,49 +113,8 @@ export default function HubChatPage() {
     }
   }, []);
 
-  // ── TTS effect ──
-  // Plays audio ONLY when:
-  //   A) voiceModeRef is active (orb conversation) — handled internally
-  //   B) headerVoice is manually toggled on by user
-  useEffect(() => {
-    if (isLoading) return;
-    const lastMsg = messages[messages.length - 1];
-    if (!lastMsg || lastMsg.role !== "assistant") return;
-    if (messages.length - 1 <= lastSpokenRef.current) return;
-
-    const shouldSpeak = voiceModeRef.current || headerVoice;
-    if (!shouldSpeak) return;
-
-    lastSpokenRef.current = messages.length - 1;
-    setSpeakingNow(true);
-    if (voiceModeRef.current) setVoicePhase("speaking");
-
-    (async () => {
-      const played = await playTTSAudio(lastMsg.content);
-      if (!played) {
-        speakAsCamila(lastMsg.content);
-        await new Promise<void>(resolve => {
-          const interval = setInterval(() => {
-            if (!isSpeaking()) { clearInterval(interval); resolve(); }
-          }, 300);
-        });
-      }
-      setSpeakingNow(false);
-      // If voice orb is still active, restart listening cycle
-      if (voiceModeRef.current) {
-        setTimeout(() => voiceListenCycle(), 400);
-      }
-    })();
-  }, [messages, isLoading, headerVoice]);
-
-  // Cleanup on unmount
-  useEffect(() => () => { stopCurrentAudio(); voiceModeRef.current = false; }, []);
-
-  // ── Send message ──
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
-    stopCurrentAudio();
-    setSpeakingNow(false);
     const userMsg: Msg = { role: "user", content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
@@ -243,12 +153,8 @@ export default function HubChatPage() {
   const sendRef = useRef(send);
   useEffect(() => { sendRef.current = send; }, [send]);
 
-  // ══════════════════════════════════════════════
-  // REGULAR MIC — dictation into input field only
-  // Never auto-sends, never triggers TTS
-  // ══════════════════════════════════════════════
+  // Dictation mic — types into input, auto-sends after silence
   const startListening = useCallback(() => {
-    if (voiceModeRef.current) return; // blocked during orb
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { toast.error("Tu navegador no soporta reconocimiento de voz."); return; }
     const recognition = new SR();
@@ -277,80 +183,9 @@ export default function HubChatPage() {
   }, []);
 
   const toggleMic = useCallback(() => {
-    if (voiceModeRef.current) return;
     if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
     startListening();
   }, [isListening, startListening]);
-
-  // headerVoice removed — no longer needed
-
-  // ══════════════════════════════════════════════
-  // VOICE ORB — fully separate conversation system
-  // Has its own recognition, TTS, and lifecycle
-  // ══════════════════════════════════════════════
-  const voiceListenCycle = useCallback(() => {
-    if (!voiceModeRef.current) return;
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    setVoicePhase("listening");
-    setVoiceTranscript("");
-    const recognition = new SR();
-    recognition.lang = "es-419";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    voiceRecRef.current = recognition;
-    let finalT = "";
-    recognition.onresult = (e: any) => {
-      let interim = ""; finalT = "";
-      for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finalT += e.results[i][0].transcript;
-        else interim += e.results[i][0].transcript;
-      }
-      setVoiceTranscript(finalT || interim);
-      if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current);
-      voiceSilenceRef.current = setTimeout(() => {
-        const t = (finalT || interim).trim();
-        if (t && voiceModeRef.current) {
-          recognition.stop();
-          setVoicePhase("processing");
-          setVoiceTranscript("");
-          sendRef.current(t);
-          // TTS effect will detect voiceModeRef.current and play + re-listen
-        }
-      }, 2000);
-    };
-    recognition.onerror = () => {
-      if (voiceModeRef.current) setTimeout(() => voiceListenCycle(), 500);
-    };
-    recognition.onend = () => {
-      if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current);
-    };
-    recognition.start();
-  }, []);
-
-  const startVoiceMode = useCallback(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { toast.error("Tu navegador no soporta reconocimiento de voz."); return; }
-    // Kill regular mic if active
-    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); }
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    // Enter orb mode
-    voiceModeRef.current = true;
-    setVoiceMode(true);
-    voiceListenCycle();
-  }, [voiceListenCycle, isListening]);
-
-  const stopVoiceMode = useCallback(() => {
-    voiceModeRef.current = false;
-    voiceRecRef.current?.stop();
-    if (voiceSilenceRef.current) clearTimeout(voiceSilenceRef.current);
-    stopCurrentAudio();
-    setSpeakingNow(false);
-    setVoiceMode(false);
-    setVoicePhase("idle");
-    setVoiceTranscript("");
-    // headerVoice stays whatever the user set — orb doesn't touch it
-  }, []);
 
   const suggestedQuestions = [
     "¿Qué tenemos hoy?",
@@ -385,12 +220,11 @@ export default function HubChatPage() {
               <div>
                 <h2 className="text-sm font-bold text-foreground tracking-tight">Camila</h2>
                 <p className="text-[10px] text-muted-foreground/50 font-mono uppercase tracking-[0.15em]">
-                  {isListening ? "🎙️ Escuchando..." : speakingNow ? "🔊 Hablando..." : isLoading ? "Procesando..." : "Oficina Virtual AI"}
+                  {isListening ? "🎙️ Dictando..." : isLoading ? "Procesando..." : "Chat · Oficina Virtual AI"}
                 </p>
               </div>
             </div>
           </div>
-          {/* Voice header button removed — TTS only via orb */}
           <div />
         </div>
 
@@ -484,17 +318,9 @@ export default function HubChatPage() {
                   className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
                     isListening ? "bg-red-500/20 text-red-400 border border-red-400/40 animate-pulse" : "text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10"
                   }`}
-                  title={isListening ? "Detener" : "Hablar"}
+                  title={isListening ? "Detener" : "Dictar"}
                 >
                   {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </button>
-                {/* Voice Orb – inline conversational mode */}
-                <button
-                  onClick={startVoiceMode}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10 transition-all group relative"
-                  title="Conversar por voz"
-                >
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-jarvis/60 to-cyan-400/40 group-hover:from-jarvis group-hover:to-cyan-400/70 transition-all shadow-[0_0_6px_hsl(195_100%_50%/0.3)] group-hover:shadow-[0_0_12px_hsl(195_100%_50%/0.5)]" />
                 </button>
                 <button
                   onClick={() => send(input)}
@@ -510,95 +336,6 @@ export default function HubChatPage() {
             </p>
           </div>
         </div>
-
-        {/* ── Voice Overlay (continuous conversation loop) ── */}
-        {voiceMode && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-xl">
-            {/* Close */}
-            <button
-              onClick={stopVoiceMode}
-              className="absolute top-5 right-5 w-10 h-10 rounded-full border border-border/30 bg-card/50 hover:bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {/* Orb */}
-            <div className="relative w-44 h-44 mb-8">
-              {/* Outer glow ring */}
-              <div className={`absolute -inset-4 rounded-full transition-all duration-700 ${
-                voicePhase === "listening" ? "bg-jarvis/5 shadow-[0_0_60px_hsl(195_100%_50%/0.15)]" :
-                voicePhase === "speaking" ? "bg-emerald-400/5 shadow-[0_0_60px_hsl(150_60%_50%/0.15)]" :
-                "bg-transparent"
-              }`} />
-              {/* Pulsing ring */}
-              <div className={`absolute inset-0 rounded-full border transition-all duration-500 ${
-                voicePhase === "listening" ? "border-jarvis/40 animate-pulse" :
-                voicePhase === "speaking" ? "border-emerald-400/40 animate-pulse" :
-                voicePhase === "processing" ? "border-amber-400/40 animate-spin" :
-                "border-border/20"
-              }`} style={voicePhase === "processing" ? { animationDuration: "3s" } : {}} />
-              {/* Inner ring */}
-              <div className={`absolute inset-4 rounded-full border transition-all duration-500 ${
-                voicePhase === "listening" ? "border-jarvis/25" :
-                voicePhase === "speaking" ? "border-emerald-400/25" :
-                "border-border/10"
-              }`} />
-              {/* Core orb */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className={`w-20 h-20 rounded-full transition-all duration-500 ${
-                  voicePhase === "listening"
-                    ? "bg-gradient-to-br from-jarvis to-cyan-400/70 shadow-[0_0_50px_hsl(195_100%_50%/0.5)] scale-110"
-                    : voicePhase === "speaking"
-                    ? "bg-gradient-to-br from-emerald-400 to-teal-400/70 shadow-[0_0_50px_hsl(150_60%_50%/0.4)] scale-105"
-                    : voicePhase === "processing"
-                    ? "bg-gradient-to-br from-amber-400 to-orange-400/70 shadow-[0_0_40px_hsl(40_90%_50%/0.3)] scale-95"
-                    : "bg-gradient-to-br from-jarvis/60 to-cyan-400/40 scale-100"
-                }`} />
-              </div>
-            </div>
-
-            {/* Status — no "Conectando" state, goes straight to listening */}
-            <p className="text-lg font-semibold text-foreground/80 mb-2 transition-all">
-              {voicePhase === "listening" ? "Te escucho..." :
-               voicePhase === "processing" ? "Procesando..." :
-               voicePhase === "speaking" ? "Camila responde..." :
-                "Te escucho..."}
-            </p>
-            <p className="text-xs text-muted-foreground/40 mb-4">
-              {voicePhase === "listening" || voicePhase === "idle" ? "Habla con naturalidad, te entiendo" :
-               voicePhase === "processing" ? "Analizando tu mensaje" :
-               voicePhase === "speaking" ? "Escucha la respuesta" :
-               ""}
-            </p>
-
-            {/* Live transcript */}
-            {voiceTranscript && (
-              <div className="max-w-md text-center px-6 py-3 rounded-2xl bg-card/50 border border-jarvis/10">
-                <p className="text-sm text-foreground/70 italic">
-                  "{voiceTranscript}"
-                </p>
-              </div>
-            )}
-
-            {/* Last assistant message in voice mode */}
-            {voicePhase === "speaking" && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && (
-              <div className="max-w-md text-center px-6 py-3 mt-3 rounded-2xl bg-card/50 border border-emerald-400/10">
-                <p className="text-xs text-foreground/50 line-clamp-3">
-                  {messages[messages.length - 1].content.slice(0, 200)}...
-                </p>
-              </div>
-            )}
-
-            {/* End call button */}
-            <button
-              onClick={stopVoiceMode}
-              className="mt-10 w-16 h-16 rounded-full bg-red-500/20 border border-red-400/30 flex items-center justify-center hover:bg-red-500/30 transition-all hover:scale-105"
-            >
-              <Phone className="w-6 h-6 text-red-400 rotate-[135deg]" />
-            </button>
-            <p className="text-[10px] text-muted-foreground/30 mt-3 font-mono tracking-wider">TOCA PARA FINALIZAR</p>
-          </div>
-        )}
       </div>
     </HubLayout>
   );
