@@ -4,6 +4,51 @@ import { Sparkles, X, Send, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { speakAsCamila, stopSpeaking, isSpeaking, logVocesDiagnostico } from "@/lib/camilaTTS";
 
+const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-tts`;
+
+let currentAudio: HTMLAudioElement | null = null;
+
+function stopGoogleAudio() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.src = "";
+    currentAudio = null;
+  }
+}
+
+async function playGoogleTTS(text: string): Promise<boolean> {
+  try {
+    const resp = await fetch(TTS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ text }),
+    });
+    if (!resp.ok) return false;
+    const data = await resp.json();
+    if (!data.audio) return false;
+
+    return new Promise((resolve) => {
+      const byteChars = atob(data.audio);
+      const byteArray = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteArray[i] = byteChars.charCodeAt(i);
+      }
+      const blob = new Blob([byteArray], { type: "audio/mpeg" });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      currentAudio = audio;
+      audio.onended = () => { URL.revokeObjectURL(url); currentAudio = null; resolve(true); };
+      audio.onerror = () => { URL.revokeObjectURL(url); currentAudio = null; resolve(false); };
+      audio.play().catch(() => { currentAudio = null; resolve(false); });
+    });
+  } catch {
+    return false;
+  }
+}
+
 type Msg = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-chat`;
@@ -138,26 +183,39 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
     if (lastMsg?.role === "assistant" && messages.length - 1 > lastSpokenRef.current) {
       lastSpokenRef.current = messages.length - 1;
       setSpeakingNow(true);
-      speakAsCamila(lastMsg.content);
-      // Poll for end of speech
-      const interval = setInterval(() => {
-        if (!isSpeaking()) {
-          setSpeakingNow(false);
-          clearInterval(interval);
-          // Auto-listen again if in conversation mode
-          if (conversationMode) {
-            setTimeout(() => startListening(), 400);
-          }
+
+      // Try Google TTS first, fallback to Web Speech
+      (async () => {
+        const played = await playGoogleTTS(lastMsg.content);
+        if (!played) {
+          // Fallback to browser TTS
+          speakAsCamila(lastMsg.content);
+          const interval = setInterval(() => {
+            if (!isSpeaking()) {
+              clearInterval(interval);
+              setSpeakingNow(false);
+              if (conversationMode) setTimeout(() => startListening(), 400);
+            }
+          }, 300);
+          return;
         }
-      }, 300);
-      return () => clearInterval(interval);
+        setSpeakingNow(false);
+        if (conversationMode) setTimeout(() => startListening(), 400);
+      })();
     }
   }, [messages, isLoading, voiceEnabled, conversationMode]);
 
   // Stop speaking when panel closes
   useEffect(() => {
-  if (!open) { stopSpeaking(); setSpeakingNow(false); setConversationMode(false); }
+  if (!open) { stopSpeaking(); stopGoogleAudio(); setSpeakingNow(false); setConversationMode(false); }
   }, [open]);
+
+  // Also stop Google audio when stopping speaking manually
+  const handleStopSpeaking = useCallback(() => {
+    stopSpeaking();
+    stopGoogleAudio();
+    setSpeakingNow(false);
+  }, []);
 
   // Use ref to hold send function for startListening
   const sendRef = useRef<(text: string) => void>(() => {});
@@ -165,6 +223,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
     stopSpeaking();
+    stopGoogleAudio();
     setSpeakingNow(false);
     const userMsg: Msg = { role: "user", content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
@@ -338,7 +397,7 @@ export default function CamilaFloatingPanel({ accountId }: Props) {
                     {/* Voice output toggle */}
                     <button
                       onClick={() => {
-                        if (speakingNow) { stopSpeaking(); setSpeakingNow(false); }
+                        if (speakingNow) { stopSpeaking(); stopGoogleAudio(); setSpeakingNow(false); }
                         setVoiceEnabled(v => !v);
                       }}
                       className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
