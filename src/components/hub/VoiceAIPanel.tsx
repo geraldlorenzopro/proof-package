@@ -324,7 +324,7 @@ function VoiceAIPanelInner({ accountId }: Props) {
       </div>
 
       {/* ═══ RIGHT — Live Transcript ═══ */}
-      <div className="w-[340px] shrink-0 flex flex-col border-l border-border/20 bg-card/20 overflow-hidden">
+      <div className="w-[340px] shrink-0 flex flex-col border-l border-border/20 bg-card/20 h-full max-h-full overflow-hidden">
         {/* Transcript header */}
         <div className="px-5 py-3 shrink-0 border-b border-border/15">
           <div className="flex items-center gap-2">
@@ -336,8 +336,8 @@ function VoiceAIPanelInner({ accountId }: Props) {
           </div>
         </div>
 
-        {/* Transcript messages */}
-        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3" style={{ scrollbarWidth: "thin", scrollbarColor: "hsl(195 100% 50% / 0.15) transparent" }}>
+        {/* Transcript messages — contained scroll */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-3" style={{ scrollbarWidth: "thin", scrollbarColor: "hsl(195 100% 50% / 0.15) transparent" }}>
           {transcripts.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center gap-4 opacity-50">
               <div className="w-16 h-16 rounded-full bg-jarvis/5 border border-jarvis/10 flex items-center justify-center">
