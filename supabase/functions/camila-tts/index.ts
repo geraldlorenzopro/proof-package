@@ -62,8 +62,10 @@ serve(async (req) => {
 
     if (elevenKey) {
       try {
-        // Lily (pFZP5JQG7iQjIQuC4Bku) - voz femenina natural
-        const voiceId = Deno.env.get("ELEVENLABS_VOICE_ID") || "pFZP5JQG7iQjIQuC4Bku";
+        const configuredVoice = Deno.env.get("ELEVENLABS_VOICE_ID");
+        const voiceId = configuredVoice || "pFZP5JQG7iQjIQuC4Bku";
+        console.log("ELEVENLABS_VOICE_ID env:", configuredVoice ?? "(not set)");
+        console.log("Voice ID final:", voiceId);
 
         const elevenRes = await fetch(
           `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
