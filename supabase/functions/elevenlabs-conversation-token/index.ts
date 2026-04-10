@@ -28,8 +28,9 @@ serve(async (req) => {
       );
     }
 
+    // Get a WebRTC conversation token (not signed_url)
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(agent_id)}`,
+      `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${encodeURIComponent(agent_id)}`,
       {
         headers: {
           "xi-api-key": ELEVENLABS_API_KEY,
@@ -41,7 +42,7 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error("ElevenLabs token error:", response.status, errorText);
       return new Response(
-        JSON.stringify({ error: `ElevenLabs API error: ${response.status}` }),
+        JSON.stringify({ error: `ElevenLabs API error: ${response.status}`, details: errorText }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -49,7 +50,7 @@ serve(async (req) => {
     const data = await response.json();
 
     return new Response(
-      JSON.stringify({ signed_url: data.signed_url }),
+      JSON.stringify({ token: data.token }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
