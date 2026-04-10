@@ -221,17 +221,6 @@ export default function HubDashboard({ accountId, accountName, staffName, plan, 
 
           {/* Right — Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Camila AI Button */}
-            <button
-              onClick={() => goTo("/hub/ai")}
-              className="flex items-center gap-2 rounded-xl border border-jarvis/25 bg-jarvis/8 px-4 h-10 transition-all hover:bg-jarvis/15 hover:border-jarvis/40 hover:shadow-[0_0_20px_hsl(195_100%_50%/0.12)] group"
-            >
-              <div className="w-6 h-6 rounded-lg bg-jarvis/20 flex items-center justify-center">
-                <Sparkles className="w-3.5 h-3.5 text-jarvis group-hover:scale-110 transition-transform" />
-              </div>
-              <span className="text-[13px] font-bold text-jarvis tracking-wide">Pregúntale a Camila</span>
-            </button>
-
             {can("crear_casos") && (
               <>
                 <button

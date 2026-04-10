@@ -7,7 +7,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import HubCreditsWidget from "./HubCreditsWidget";
 import CamilaFloatingPanel from "./CamilaFloatingPanel";
-import NerVoiceAI from "./NerVoiceAI";
 interface Props {
   children: ReactNode;
   accountName?: string;
@@ -170,11 +169,6 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
       {/* Camila Floating Panel — accessible from any Hub page */}
       {isHubSection && accountId && (
         <CamilaFloatingPanel accountId={accountId} />
-      )}
-
-      {/* NER Voice AI — orb flotante para conversación por voz */}
-      {isHubSection && accountId && (
-        <NerVoiceAI accountId={accountId} />
       )}
 
     </div>
