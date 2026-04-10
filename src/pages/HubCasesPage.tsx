@@ -44,7 +44,7 @@ export default function HubCasesPage() {
   }, [accountId]);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <HubLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-foreground">Casos</h1>
@@ -81,5 +81,6 @@ export default function HubCasesPage() {
         )}
       </div>
     </div>
+    </HubLayout>
   );
 }

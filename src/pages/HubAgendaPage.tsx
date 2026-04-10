@@ -33,7 +33,7 @@ export default function HubAgendaPage() {
   }, [accountId]);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <HubLayout>
       <div className="mb-6">
         <h1 className="text-xl font-bold text-foreground">Agenda</h1>
         <p className="text-sm text-muted-foreground">Calendario de citas — próximamente vista calendario completa</p>
@@ -60,5 +60,6 @@ export default function HubAgendaPage() {
         )}
       </div>
     </div>
+    </HubLayout>
   );
 }
