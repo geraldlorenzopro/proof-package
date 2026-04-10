@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useConversation } from "@elevenlabs/react";
+import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, PhoneOff, Mic, MicOff } from "lucide-react";
 
