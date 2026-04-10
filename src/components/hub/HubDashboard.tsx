@@ -380,6 +380,8 @@ export default function HubDashboard({
                   </div>
                 </div>
               )}
+            </div>
+          )}
 
           {/* ─── Compact greeting when chat is active ─── */}
           {hasChatResponse && (
