@@ -20,14 +20,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Fetch office config for city/address
     const { data: office } = await supabase
       .from("office_config")
       .select("firm_address, firm_name, attorney_name")
       .eq("account_id", account_id)
       .single();
 
-    // Fetch KPIs in parallel
     const todayStr = new Date().toISOString().split("T")[0];
     const startOfWeek = new Date();
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
@@ -47,13 +45,12 @@ Deno.serve(async (req) => {
       overdueDeadlines: overdueRes.count || 0,
     };
 
-    // ─── Weather via wttr.in (free, no API key) ───
+    // ─── Weather ───
     let weatherText = "";
     try {
       const address = office?.firm_address || "";
       const parts = address.split(",").map((s: string) => s.trim());
       const city = parts.length >= 2 ? parts[parts.length - 2] : parts[0] || "Miami";
-      
       const weatherResp = await fetch(
         `https://wttr.in/${encodeURIComponent(city)}?format=j1`,
         { signal: AbortSignal.timeout(4000) }
@@ -71,9 +68,10 @@ Deno.serve(async (req) => {
       console.warn("Weather fetch failed:", e);
     }
 
-    // ─── Immigration news via Perplexity (real-time web search) ───
+    // ─── Immigration news via Perplexity — structured 3 cards ───
     let newsText = "";
     let newsCitations: string[] = [];
+    let newsCards: any[] = [];
     try {
       const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
       if (PERPLEXITY_API_KEY) {
@@ -88,14 +86,14 @@ Deno.serve(async (req) => {
             messages: [
               {
                 role: "system",
-                content: `Eres un asistente de noticias de inmigración de EE.UU. para abogados. Genera un resumen de 2-3 oraciones sobre lo más relevante que está pasando HOY en inmigración de EE.UU. (USCIS, boletín de visas, cambios de política, tiempos de procesamiento, deportaciones, ICE, etc). Sé conciso, profesional y en español. No uses emojis ni markdown.`,
+                content: `Eres un asistente que busca noticias recientes de inmigración en Estados Unidos. Responde SOLO con un JSON array de exactamente 3 objetos. Cada objeto tiene: title (máx 80 caracteres en español), summary (2 oraciones en español, máx 150 caracteres), category (una de: USCIS, DACA, Visas, Deportación, Naturalización, Legislación), time (ej: 'hace 2h', 'hace 5h', 'ayer'). No incluyas ningún texto fuera del JSON.`,
               },
               {
                 role: "user",
-                content: `¿Cuáles son las noticias de inmigración más importantes de hoy ${todayStr} en Estados Unidos?`,
+                content: `Dame las 3 noticias más recientes e importantes sobre inmigración en Estados Unidos hoy ${todayStr}.`,
               },
             ],
-            max_tokens: 300,
+            max_tokens: 500,
             temperature: 0.2,
             search_recency_filter: "day",
           }),
@@ -104,15 +102,33 @@ Deno.serve(async (req) => {
 
         if (pxResp.ok) {
           const pxData = await pxResp.json();
-          newsText = pxData.choices?.[0]?.message?.content?.trim() || "";
+          const raw = pxData.choices?.[0]?.message?.content?.trim() || "";
           newsCitations = pxData.citations || [];
-        } else {
-          console.warn("Perplexity API error:", pxResp.status, await pxResp.text());
+          newsText = raw;
+
+          // Try to parse structured JSON
+          try {
+            // Extract JSON array from response (may have markdown fences)
+            const jsonMatch = raw.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              if (Array.isArray(parsed) && parsed.length >= 1) {
+                newsCards = parsed.slice(0, 3).map((item: any) => ({
+                  title: String(item.title || "").slice(0, 100),
+                  summary: String(item.summary || "").slice(0, 200),
+                  category: String(item.category || "USCIS"),
+                  time: String(item.time || "hoy"),
+                }));
+              }
+            }
+          } catch (parseErr) {
+            console.warn("Failed to parse structured news:", parseErr);
+          }
         }
       }
 
-      // Fallback to Lovable AI if Perplexity is not available
-      if (!newsText) {
+      // Fallback
+      if (!newsText && !newsCards.length) {
         const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
         if (LOVABLE_API_KEY) {
           const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -126,14 +142,14 @@ Deno.serve(async (req) => {
               messages: [
                 {
                   role: "system",
-                  content: `Eres un asistente de noticias de inmigración de EE.UU. Genera un resumen de 1-2 oraciones sobre el panorama migratorio actual. Sé conciso, profesional y en español. No uses emojis ni markdown.`,
+                  content: `Responde SOLO con un JSON array de exactamente 3 objetos. Cada objeto tiene: title (máx 80 caracteres en español sobre inmigración en EE.UU.), summary (2 oraciones, máx 150 chars), category (USCIS, DACA, Visas, Deportación, Naturalización, o Legislación), time (ej: 'hoy'). Sin texto extra.`,
                 },
                 {
                   role: "user",
-                  content: `Dame un resumen general del panorama migratorio actual en EE.UU.`,
+                  content: `Dame 3 noticias recientes importantes sobre inmigración en Estados Unidos.`,
                 },
               ],
-              max_tokens: 200,
+              max_tokens: 400,
               temperature: 0.3,
             }),
             signal: AbortSignal.timeout(8000),
@@ -141,7 +157,21 @@ Deno.serve(async (req) => {
 
           if (aiResp.ok) {
             const aiData = await aiResp.json();
-            newsText = aiData.choices?.[0]?.message?.content?.trim() || "";
+            const raw2 = aiData.choices?.[0]?.message?.content?.trim() || "";
+            try {
+              const jsonMatch2 = raw2.match(/\[[\s\S]*\]/);
+              if (jsonMatch2) {
+                const parsed2 = JSON.parse(jsonMatch2[0]);
+                if (Array.isArray(parsed2)) {
+                  newsCards = parsed2.slice(0, 3).map((item: any) => ({
+                    title: String(item.title || "").slice(0, 100),
+                    summary: String(item.summary || "").slice(0, 200),
+                    category: String(item.category || "USCIS"),
+                    time: String(item.time || "hoy"),
+                  }));
+                }
+              }
+            } catch {}
           }
         }
       }
@@ -150,7 +180,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ weather: weatherText, news: newsText, citations: newsCitations, kpis }),
+      JSON.stringify({ weather: weatherText, news: newsText, citations: newsCitations, newsCards, kpis }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

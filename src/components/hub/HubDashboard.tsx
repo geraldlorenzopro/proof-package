@@ -4,13 +4,15 @@ import {
   Send, Mic, MicOff, Briefcase, Calendar, Users,
   MessageSquare, FileSearch, Clock, ChevronRight,
   X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
-  Newspaper, CloudSun, ExternalLink
+  Newspaper, Shield, Globe, Scale, Gavel, BookOpen, FileText
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
 import ReactMarkdown from "react-markdown";
 import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   accountId: string;
@@ -26,6 +28,19 @@ interface Props {
 }
 
 type Msg = { role: "user" | "assistant"; content: string };
+
+const categoryStyles: Record<string, { bg: string; stroke: string; icon: any }> = {
+  USCIS: { bg: "#E6F1FB", stroke: "#185FA5", icon: Shield },
+  DACA: { bg: "#FCEBEB", stroke: "#A32D2D", icon: BookOpen },
+  Visas: { bg: "#EAF3DE", stroke: "#3B6D11", icon: Globe },
+  Deportación: { bg: "#FAEEDA", stroke: "#854F0B", icon: Gavel },
+  Naturalización: { bg: "#EEEDFE", stroke: "#534AB7", icon: FileText },
+  Legislación: { bg: "#E1F5EE", stroke: "#0F6E56", icon: Scale },
+};
+
+function getCategoryStyle(cat: string) {
+  return categoryStyles[cat] || categoryStyles.USCIS;
+}
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-chat`;
 
@@ -62,6 +77,9 @@ export default function HubDashboard({
   const [briefingNews, setBriefingNews] = useState<string | null>(null);
   const [briefingCitations, setBriefingCitations] = useState<string[]>([]);
   const [briefingWeather, setBriefingWeather] = useState<string | null>(null);
+  const [newsCards, setNewsCards] = useState<{title:string;summary:string;category:string;time:string}[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [selectedNews, setSelectedNews] = useState<{title:string;summary:string;category:string;time:string}|null>(null);
 
   const BRIEFING_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-briefing`;
 
@@ -83,6 +101,21 @@ export default function HubDashboard({
   // Always fetch briefing data for the news panel
   useEffect(() => {
     if (!accountId) return;
+    const CACHE_KEY = `hub_news_${accountId}`;
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const { ts, data } = JSON.parse(cached);
+        if (Date.now() - ts < 30 * 60 * 1000) {
+          if (data.news) setBriefingNews(data.news);
+          if (data.citations?.length) setBriefingCitations(data.citations);
+          if (data.weather) setBriefingWeather(data.weather);
+          if (data.newsCards?.length) setNewsCards(data.newsCards);
+          setNewsLoading(false);
+          return;
+        }
+      } catch {}
+    }
     (async () => {
       try {
         const resp = await fetch(BRIEFING_URL, {
@@ -99,9 +132,13 @@ export default function HubDashboard({
           if (data.news) setBriefingNews(data.news);
           if (data.citations?.length) setBriefingCitations(data.citations);
           if (data.weather) setBriefingWeather(data.weather);
+          if (data.newsCards?.length) setNewsCards(data.newsCards);
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
         }
       } catch (e) {
         console.warn("Briefing fetch failed:", e);
+      } finally {
+        setNewsLoading(false);
       }
     })();
   }, [accountId]);
@@ -455,59 +492,105 @@ export default function HubDashboard({
               </div>
             </div>
           )}
+
+          {/* ─── News Cards Section ─── */}
+      {!hasChatResponse && (
+        <div className="w-full max-w-[640px] mx-auto px-6 pb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-px flex-1 bg-border/20" />
+            <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold flex items-center gap-1.5">
+              <Newspaper className="w-3 h-3" /> Noticias de inmigración
+            </span>
+            <div className="h-px flex-1 bg-border/20" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {newsLoading
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40">
+                    <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="h-3 w-3/4" />
+                      <Skeleton className="h-2 w-1/2" />
+                    </div>
+                  </div>
+                ))
+              : newsCards.map((card, i) => {
+                  const catStyle = getCategoryStyle(card.category);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedNews(card)}
+                      className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-left group"
+                    >
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: catStyle.bg }}
+                      >
+                        <catStyle.icon className="w-4 h-4" style={{ color: catStyle.stroke }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-foreground/90 line-clamp-2 leading-snug group-hover:text-foreground transition-colors">
+                          {card.title}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/40 mt-1">
+                          {card.time} · <span className="uppercase tracking-wider font-semibold" style={{ color: catStyle.stroke }}>{card.category}</span>
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+          </div>
+        </div>
+       )}
         </div>
       </div>
 
-      {/* ─── News ticker at the bottom ─── */}
-      {briefingNews && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/90 backdrop-blur-md border-t border-border/30">
-          <div className="flex items-center h-9 overflow-hidden">
-            <div className="shrink-0 flex items-center gap-1.5 px-3 bg-jarvis/10 h-full border-r border-border/20">
-              <Newspaper className="w-3.5 h-3.5 text-jarvis" />
-              <span className="text-[11px] font-semibold text-jarvis uppercase tracking-wider">Noticias</span>
-            </div>
-            <div className="flex-1 overflow-hidden relative">
-              <div className="animate-marquee whitespace-nowrap flex items-center h-9">
-                <span className="text-xs text-muted-foreground px-4">
-                  {briefingNews.replace(/\[\d+\]/g, '').trim()}
-                </span>
-                {briefingCitations.length > 0 && (
-                  <span className="text-xs text-muted-foreground/40 px-2">—</span>
-                )}
-                {briefingCitations.slice(0, 3).map((url, i) => {
-                  let domain = "";
-                  try { domain = new URL(url).hostname.replace("www.", ""); } catch { domain = url; }
-                  return (
-                    <a
-                      key={i}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] text-jarvis/60 hover:text-jarvis mr-3 shrink-0"
-                    >
-                      <ExternalLink className="w-2.5 h-2.5" />
-                      {domain.length > 20 ? domain.slice(0, 20) + "…" : domain}
-                    </a>
-                  );
-                })}
-                {/* Duplicate for seamless loop */}
-                <span className="text-xs text-muted-foreground px-12">
-                  {briefingNews.replace(/\[\d+\]/g, '').trim()}
-                </span>
-              </div>
-            </div>
-            {briefingWeather && (
-              <div className="shrink-0 flex items-center gap-1.5 px-3 h-full border-l border-border/20">
-                <CloudSun className="w-3.5 h-3.5 text-muted-foreground/50" />
-                <span className="text-[11px] text-muted-foreground/60">{briefingWeather}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
       <NewContactModal open={contactOpen} onOpenChange={setContactOpen} accountId={accountId} />
+
+      {/* News detail modal */}
+      <Dialog open={!!selectedNews} onOpenChange={() => setSelectedNews(null)}>
+        <DialogContent className="sm:max-w-md">
+          {selectedNews && (() => {
+            const cs = getCategoryStyle(selectedNews.category);
+            return (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: cs.bg }}>
+                      <cs.icon className="w-5 h-5" style={{ color: cs.stroke }} />
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: cs.stroke }}>{selectedNews.category}</span>
+                      <span className="text-[10px] text-muted-foreground/40 ml-2">{selectedNews.time}</span>
+                    </div>
+                  </div>
+                  <DialogTitle className="text-base">{selectedNews.title}</DialogTitle>
+                  <DialogDescription className="text-sm text-muted-foreground mt-2">
+                    {selectedNews.summary}
+                  </DialogDescription>
+                </DialogHeader>
+                <button
+                  onClick={() => {
+                    setSelectedNews(null);
+                    navigate("/hub/ai");
+                    // Send as message to Camila
+                    setTimeout(() => {
+                      const event = new CustomEvent("camila-ask", { detail: selectedNews.title });
+                      window.dispatchEvent(event);
+                    }, 500);
+                  }}
+                  className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-jarvis/10 border border-jarvis/20 text-sm font-medium text-jarvis hover:bg-jarvis/20 transition-all"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Preguntarle a Camila sobre esto →
+                </button>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
