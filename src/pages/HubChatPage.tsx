@@ -406,30 +406,49 @@ function HubChatPageInner() {
       }
     },
     onMessage: (message: any) => {
-      // Capture voice transcripts as chat bubbles in real time
-      if (message.type === "transcript" && message.text?.trim()) {
-        const newMsg: Msg = {
-          id: Date.now().toString(),
-          role: message.source === "user" ? "user" : "assistant",
-          content: (message.source === "user" ? "🎙️ " : "🔊 ") + message.text,
-          timestamp: new Date().toISOString(),
-        };
-        setMessages(prev => [...prev, newMsg]);
-      } else if (message.type === "user_transcript") {
-        const text = message.user_transcription_event?.user_transcript;
-        if (text) {
-          setMessages(prev => [...prev, { id: Date.now().toString(), role: "user", content: "🎙️ " + text, timestamp: new Date().toISOString() }]);
-        }
+      console.log("[HubChat] onMessage:", JSON.stringify(message, null, 2));
+
+      let text: string | undefined;
+      let source: "user" | "assistant" = "assistant";
+
+      if (message.type === "user_transcript") {
+        text = message.user_transcription_event?.user_transcript;
+        source = "user";
       } else if (message.type === "agent_response") {
-        const text = message.agent_response_event?.agent_response;
-        if (text) {
-          setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: "🔊 " + text, timestamp: new Date().toISOString() }]);
-          if (FAREWELL_PATTERNS.test(text)) {
-            if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
-            autoEndTimerRef.current = setTimeout(() => {
-              conversation.endSession();
-            }, 5000);
-          }
+        text = message.agent_response_event?.agent_response;
+        source = "assistant";
+      } else if (message.type === "agent_response_correction") {
+        text = message.agent_response_correction_event?.corrected_agent_response;
+        source = "assistant";
+      } else if (message.type === "transcript" && message.text?.trim()) {
+        text = message.text;
+        source = message.source === "user" ? "user" : "assistant";
+      } else if (message.transcript) {
+        text = message.transcript;
+        source = message.source === "user" ? "user" : "assistant";
+      } else if (message.text && message.source) {
+        text = message.text;
+        source = message.source === "user" ? "user" : "assistant";
+      }
+
+      if (text?.trim()) {
+        const prefix = source === "user" ? "🎙️ " : "🔊 ";
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: source,
+          content: prefix + text!.trim(),
+          timestamp: new Date().toISOString(),
+        }]);
+      }
+
+      // Farewell auto-end
+      if (message.type === "agent_response") {
+        const agentText = message.agent_response_event?.agent_response;
+        if (agentText && FAREWELL_PATTERNS.test(agentText)) {
+          if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+          autoEndTimerRef.current = setTimeout(() => {
+            conversation.endSession();
+          }, 5000);
         }
       }
     },
