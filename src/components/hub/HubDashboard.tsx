@@ -129,6 +129,8 @@ function HubDashboardInner({
   const voiceTranscriptRef = useRef<{role: string; text: string}[]>([]);
   const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const callScrollRef = useRef<HTMLDivElement>(null);
+  const isMountedRef = useRef(true);
+  const conversationStatusRef = useRef("disconnected");
 
   // Auto-scroll transcript
   useEffect(() => {
