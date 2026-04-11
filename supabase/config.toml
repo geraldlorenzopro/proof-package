@@ -81,5 +81,8 @@ verify_jwt = false
 [functions.appointment-booked]
 verify_jwt = false
 
+[functions.import-ghl-contacts]
+verify_jwt = false
+
 [functions.elevenlabs-conversation-token]
 verify_jwt = false
