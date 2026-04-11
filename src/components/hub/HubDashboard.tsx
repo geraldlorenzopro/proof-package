@@ -4,7 +4,8 @@ import {
   Send, Mic, MicOff, Briefcase, Calendar, Users,
   MessageSquare, FileSearch, Clock, ChevronRight, ChevronLeft,
   X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
-  Newspaper, Shield, Globe, Scale, Gavel, BookOpen, FileText
+  Newspaper, Shield, Globe, Scale, Gavel, BookOpen, FileText,
+  Phone
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
