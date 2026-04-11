@@ -68,7 +68,7 @@ function unlockAudioContext() {
   src.start(0);
 }
 
-const FAREWELL_PATTERNS = /\b(adiós|adios|nos vemos|hasta luego|chao|bye|que tengas|buen día|buenas noches|un placer|hasta pronto|cuídate)\b/i;
+const FAREWELL_PATTERNS = /\b(hasta luego|hasta pronto|nos vemos|que tengas buen día|que tengas buenas noches|fue un placer atenderte|cuídate mucho|chao|adiós)\b/i;
 
 interface Props {
   accountId: string;
@@ -129,6 +129,8 @@ function HubDashboardInner({
   const voiceTranscriptRef = useRef<{role: string; text: string}[]>([]);
   const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const callScrollRef = useRef<HTMLDivElement>(null);
+  const isEndingSessionRef = useRef(false);
+  const callStartTimeRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
   const conversationStatusRef = useRef("disconnected");
 
@@ -145,9 +147,14 @@ function HubDashboardInner({
   }, []);
 
   const conversation = useConversation({
-    onConnect: () => setVoiceConnecting(false),
+    onConnect: () => {
+      setVoiceConnecting(false);
+      callStartTimeRef.current = Date.now();
+      console.log('ELEVENLABS CONNECTED:', new Date().toISOString());
+    },
     onDisconnect: (reason: any) => {
-      console.log('DISCONNECT REASON:', JSON.stringify(reason));
+      console.log('ELEVENLABS DISCONNECTED:', JSON.stringify(reason), 'Call duration:', callStartTimeRef.current ? Date.now() - callStartTimeRef.current : 'unknown', 'ms');
+      callStartTimeRef.current = null;
       if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
       const msgs = voiceTranscriptRef.current;
       if (msgs.length > 0) {
@@ -193,10 +200,16 @@ function HubDashboardInner({
 
       // Farewell auto-end — ONLY after dedup check passes
       if (source === "assistant" && FAREWELL_PATTERNS.test(text)) {
-        if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
-        autoEndTimerRef.current = setTimeout(() => {
-          try { conversation.endSession(); } catch {}
-        }, 5000);
+        const callDuration = callStartTimeRef.current ? Date.now() - callStartTimeRef.current : 0;
+        if (callDuration > 10000) {
+          if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+          autoEndTimerRef.current = setTimeout(() => {
+            if (!isEndingSessionRef.current) {
+              isEndingSessionRef.current = true;
+              try { conversation.endSession(); } catch {}
+            }
+          }, 5000);
+        }
       }
     },
     onUserTranscript: ((text: string) => {
@@ -211,7 +224,7 @@ function HubDashboardInner({
       console.log("[HubDash Voice] onAgentResponseCorrection:", text);
     }) as any,
     onError: (err: any) => {
-      console.log('ERROR DETAIL:', JSON.stringify(err));
+      console.log('ELEVENLABS ERROR:', JSON.stringify(err), 'Call duration:', callStartTimeRef.current ? Date.now() - callStartTimeRef.current : 'unknown', 'ms');
       toast.error(typeof err === "string" ? err : err?.message || "Error de conexión.");
       setVoiceConnecting(false);
     },
@@ -249,20 +262,19 @@ function HubDashboardInner({
   }, [conversation, accountId]);
 
   const stopVoiceCall = useCallback(async () => {
-    await conversation.endSession();
+    if (isEndingSessionRef.current) return;
+    isEndingSessionRef.current = true;
+
+    try {
+      await conversation.endSession();
+    } catch {}
+
+    setTimeout(() => { isEndingSessionRef.current = false; }, 2000);
   }, [conversation]);
 
   useEffect(() => {
     conversationStatusRef.current = conversation.status;
   }, [conversation.status]);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      try { conversation.endSession(); } catch {}
-    };
-  }, []);
 
   // TTS greeting
   const greetedRef = useRef(false);
