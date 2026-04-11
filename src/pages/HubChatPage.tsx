@@ -1,16 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Mic, MicOff, Sparkles, Phone, PhoneOff } from "lucide-react";
+import { ArrowLeft, Send, Mic, MicOff, Sparkles, Phone, PhoneOff, Copy, Check, Pencil, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
 import HubLayout from "@/components/hub/HubLayout";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
 
 /* ── Types ── */
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; timestamp?: string };
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-chat`;
 
 function sanitize(t: string) {
@@ -170,6 +171,86 @@ async function fetchOfficeContext(accountId: string) {
 
 const FAREWELL_PATTERNS = /\b(adiós|adios|nos vemos|hasta luego|chao|bye|que tengas|buen día|buenas noches|un placer|hasta pronto|cuídate)\b/i;
 
+/* ── Message action bar ── */
+function MessageActions({
+  msg,
+  index,
+  onEdit,
+}: {
+  msg: Msg;
+  index: number;
+  onEdit: (index: number, newContent: string) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(msg.content);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const isUser = msg.role === "user";
+  const rawText = msg.content.replace(/^(🎙️|🔊)\s*/, "");
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(rawText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  if (editing) {
+    return (
+      <div className="mt-2 space-y-2">
+        <textarea
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className="w-full bg-secondary/80 border border-jarvis/30 rounded-lg px-3 py-2 text-sm text-foreground outline-none resize-none"
+          rows={3}
+        />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { onEdit(index, draft); setEditing(false); }}
+            className="text-xs px-3 py-1 rounded-lg bg-jarvis/20 text-jarvis hover:bg-jarvis/30 transition-colors font-medium"
+          >
+            Guardar
+          </button>
+          <button
+            onClick={() => { setDraft(msg.content); setEditing(false); }}
+            className="text-xs px-3 py-1 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
+      isUser ? "-left-16" : "-right-16"
+    }`}>
+      <button
+        onClick={handleCopy}
+        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:border hover:border-border/40 transition-all"
+        title="Copiar"
+      >
+        {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+      </button>
+      {isUser && (
+        <button
+          onClick={() => setEditing(true)}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:border hover:border-border/40 transition-all"
+          title="Editar"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function HubChatPageInner() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -198,30 +279,62 @@ function HubChatPageInner() {
 
   // Voice call (ElevenLabs WebSocket)
   const [isConnecting, setIsConnecting] = useState(false);
+  const [hasSeenVoiceModal, setHasSeenVoiceModal] = useState(() => {
+    return localStorage.getItem('camila_voice_modal_seen') === 'true';
+  });
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const voiceStartTimeRef = useRef<number | null>(null);
   const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const conversation = useConversation({
     onConnect: () => {
       setIsConnecting(false);
+      voiceStartTimeRef.current = Date.now();
     },
     onDisconnect: () => {
       if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+      // Track voice minutes
+      if (voiceStartTimeRef.current && accountId) {
+        const elapsed = (Date.now() - voiceStartTimeRef.current) / 60000;
+        const mins = Math.round(elapsed * 10) / 10; // 1 decimal
+        voiceStartTimeRef.current = null;
+        if (mins > 0) {
+          supabase.rpc("user_account_id", { _user_id: "" }).then(() => {
+            // Use raw SQL via edge function or direct update
+            supabase.from("ner_accounts" as any)
+              .select("voice_minutes_used")
+              .eq("id", accountId)
+              .maybeSingle()
+              .then(({ data }) => {
+                const current = Number((data as any)?.voice_minutes_used || 0);
+                supabase.from("ner_accounts" as any)
+                  .update({ voice_minutes_used: Math.round((current + mins) * 10) / 10 } as any)
+                  .eq("id", accountId)
+                  .then(() => {});
+              });
+          });
+        }
+      }
     },
     onMessage: (message: any) => {
-      // Capture voice transcripts as chat messages
-      if (message.type === "user_transcript") {
+      // Capture voice transcripts as chat bubbles in real time
+      if (message.type === "transcript" && message.text?.trim()) {
+        const newMsg: Msg = {
+          id: Date.now().toString(),
+          role: message.source === "user" ? "user" : "assistant",
+          content: (message.source === "user" ? "🎙️ " : "🔊 ") + message.text,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, newMsg]);
+      } else if (message.type === "user_transcript") {
         const text = message.user_transcription_event?.user_transcript;
         if (text) {
-          setMessages(prev => [...prev, { role: "user", content: text }]);
+          setMessages(prev => [...prev, { id: Date.now().toString(), role: "user", content: "🎙️ " + text, timestamp: new Date().toISOString() }]);
         }
-      } else if (message.source === "user" && typeof message.message === "string") {
-        setMessages(prev => [...prev, { role: "user", content: message.message }]);
-      }
-
-      if (message.type === "agent_response") {
+      } else if (message.type === "agent_response") {
         const text = message.agent_response_event?.agent_response;
         if (text) {
-          setMessages(prev => [...prev, { role: "assistant", content: text }]);
+          setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: "🔊 " + text, timestamp: new Date().toISOString() }]);
           if (FAREWELL_PATTERNS.test(text)) {
             if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
             autoEndTimerRef.current = setTimeout(() => {
@@ -229,8 +342,6 @@ function HubChatPageInner() {
             }, 5000);
           }
         }
-      } else if (message.source === "ai" && typeof message.message === "string") {
-        setMessages(prev => [...prev, { role: "assistant", content: message.message }]);
       }
     },
     onError: (err: any) => {
@@ -249,6 +360,30 @@ function HubChatPageInner() {
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const sentInitial = useRef(false);
+
+  // Reset voice minutes on new month
+  useEffect(() => {
+    if (!accountId) return;
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    supabase.from("ner_accounts" as any)
+      .select("voice_minutes_reset_month")
+      .eq("id", accountId)
+      .maybeSingle()
+      .then(({ data }) => {
+        const stored = (data as any)?.voice_minutes_reset_month;
+        if (stored && stored !== currentMonth) {
+          supabase.from("ner_accounts" as any)
+            .update({ voice_minutes_used: 0, voice_minutes_reset_month: currentMonth } as any)
+            .eq("id", accountId)
+            .then(() => {});
+        } else if (!stored) {
+          supabase.from("ner_accounts" as any)
+            .update({ voice_minutes_reset_month: currentMonth } as any)
+            .eq("id", accountId)
+            .then(() => {});
+        }
+      });
+  }, [accountId]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -274,7 +409,7 @@ function HubChatPageInner() {
 
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
-    const userMsg: Msg = { role: "user", content: text.trim() };
+    const userMsg: Msg = { id: Date.now().toString(), role: "user", content: text.trim(), timestamp: new Date().toISOString() };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
@@ -288,7 +423,7 @@ function HubChatPageInner() {
         if (last?.role === "assistant") {
           return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: cleaned } : m));
         }
-        return [...prev, { role: "assistant", content: cleaned }];
+        return [...prev, { id: Date.now().toString(), role: "assistant", content: cleaned, timestamp: new Date().toISOString() }];
       });
     };
 
@@ -303,7 +438,7 @@ function HubChatPageInner() {
       });
     } catch (e: any) {
       if (e.name !== "AbortError") {
-        setMessages(prev => [...prev, { role: "assistant", content: `⚠️ ${e.message || "Error de conexión"}` }]);
+        setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: `⚠️ ${e.message || "Error de conexión"}`, timestamp: new Date().toISOString() }]);
       }
       setIsLoading(false);
     }
@@ -312,12 +447,15 @@ function HubChatPageInner() {
   const sendRef = useRef(send);
   useEffect(() => { sendRef.current = send; }, [send]);
 
+  // Edit message handler
+  const handleEditMessage = useCallback((index: number, newContent: string) => {
+    setMessages(prev => prev.map((m, i) => i === index ? { ...m, content: newContent } : m));
+    // Send edited content as new message for Camila to respond
+    setTimeout(() => sendRef.current(newContent), 100);
+  }, []);
+
   // Voice call
-  const startVoiceCall = useCallback(async () => {
-    if (isVoiceActive) {
-      await conversation.endSession();
-      return;
-    }
+  const startConversation = useCallback(async () => {
     setIsConnecting(true);
     unlockAudioContext();
     try {
@@ -326,12 +464,20 @@ function HubChatPageInner() {
         fetchSignedUrl(),
         fetchOfficeContext(accountId),
       ]);
+
+      // Build conversation history from existing messages
+      const conversationHistory = messages
+        .map(msg => (msg.role === "user" ? "Usuario" : "Camila") + ": " + msg.content)
+        .join("\n")
+        .slice(-3000);
+
       await conversation.startSession({
         signedUrl,
         connectionType: "websocket",
         dynamicVariables: {
           info_oficina: officeData.context,
           nombre_usuario: officeData.ownerFirstName,
+          historial_conversacion: conversationHistory || "",
         },
       } as any);
     } catch (err: any) {
@@ -343,7 +489,26 @@ function HubChatPageInner() {
       );
       setIsConnecting(false);
     }
-  }, [conversation, accountId, isVoiceActive]);
+  }, [conversation, accountId, messages]);
+
+  const handleVoiceButtonClick = useCallback(async () => {
+    if (isVoiceActive) {
+      await conversation.endSession();
+      return;
+    }
+    if (!hasSeenVoiceModal) {
+      setShowVoiceModal(true);
+    } else {
+      startConversation();
+    }
+  }, [isVoiceActive, conversation, hasSeenVoiceModal, startConversation]);
+
+  const handleModalContinue = useCallback(() => {
+    localStorage.setItem('camila_voice_modal_seen', 'true');
+    setHasSeenVoiceModal(true);
+    setShowVoiceModal(false);
+    startConversation();
+  }, [startConversation]);
 
   // Dictation mic
   const startListening = useCallback(() => {
@@ -426,21 +591,33 @@ function HubChatPageInner() {
             </div>
           </div>
 
-          {/* Voice call button */}
-          <button
-            onClick={startVoiceCall}
-            disabled={isConnecting}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-              isVoiceActive
-                ? "bg-red-500/15 text-red-400 border border-red-400/30 hover:bg-red-500/25"
-                : isConnecting
-                ? "bg-jarvis/10 text-jarvis border border-jarvis/20 animate-pulse"
-                : "text-muted-foreground/50 hover:text-jarvis hover:bg-jarvis/10 border border-transparent hover:border-jarvis/20"
-            }`}
-            title={isVoiceActive ? "Finalizar llamada" : "Llamar a Camila"}
-          >
-            {isVoiceActive ? <PhoneOff className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
-          </button>
+          {/* Voice call button with premium badge */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleVoiceButtonClick}
+                  disabled={isConnecting}
+                  className={`relative w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                    isVoiceActive
+                      ? "bg-red-500/15 text-red-400 border border-red-400/30 hover:bg-red-500/25"
+                      : isConnecting
+                      ? "bg-jarvis/10 text-jarvis border border-jarvis/20 animate-pulse"
+                      : "text-muted-foreground/50 hover:text-jarvis hover:bg-jarvis/10 border border-transparent hover:border-jarvis/20"
+                  }`}
+                >
+                  {isVoiceActive ? <PhoneOff className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+                  {/* Premium amber star badge */}
+                  {!isVoiceActive && (
+                    <span className="absolute -top-1 -right-1 text-[8px] text-amber-400 leading-none">✦</span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                Llamada con Camila · Función premium
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* Voice active banner */}
@@ -492,7 +669,8 @@ function HubChatPageInner() {
             )}
 
             {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div key={m.id || i} className={`group relative flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                <MessageActions msg={m} index={i} onEdit={handleEditMessage} />
                 <div className={`max-w-[80%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${
                   m.role === "user"
                     ? "bg-jarvis/15 text-foreground border border-jarvis/20 rounded-br-md"
@@ -568,6 +746,62 @@ function HubChatPageInner() {
             </p>
           </div>
         </div>
+
+        {/* ── Premium Voice Modal ── */}
+        {showVoiceModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="relative w-full max-w-sm mx-4 bg-card border border-border/40 rounded-2xl p-6 shadow-2xl">
+              {/* Close X */}
+              <button
+                onClick={() => setShowVoiceModal(false)}
+                className="absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* Camila icon */}
+              <div className="flex justify-center mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-jarvis/25 to-jarvis/5 border border-jarvis/30 flex items-center justify-center">
+                  <Sparkles className="w-7 h-7 text-jarvis" />
+                </div>
+              </div>
+
+              {/* Title */}
+              <h3 className="text-center text-lg font-medium text-foreground">
+                Conversación por voz con Camila
+              </h3>
+              <p className="text-center text-sm text-muted-foreground mt-1.5">
+                Continúa esta conversación en tiempo real. Camila recuerda todo lo que hablaron.
+              </p>
+
+              {/* Feature list */}
+              <div className="mt-5 space-y-2.5">
+                {[
+                  "Respuesta instantánea por voz",
+                  "Camila recuerda el contexto de esta conversación",
+                  "Transcripción guardada automáticamente",
+                ].map((feat) => (
+                  <div key={feat} className="flex items-start gap-2.5 text-sm text-foreground/80">
+                    <span className="text-amber-400 text-xs mt-0.5 shrink-0">✦</span>
+                    <span>{feat}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA button */}
+              <button
+                onClick={handleModalContinue}
+                className="w-full mt-6 py-3 rounded-xl bg-jarvis text-background font-medium text-sm hover:bg-jarvis-glow transition-colors"
+              >
+                Continuar →
+              </button>
+
+              <p className="text-[11px] text-muted-foreground/50 text-center mt-3">
+                Esta función se factura por uso según tu plan activo.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </HubLayout>
   );
