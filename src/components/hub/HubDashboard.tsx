@@ -125,17 +125,36 @@ function HubDashboardInner({
   // Voice call (ElevenLabs WebSocket — inline on home page)
   const [voiceConnecting, setVoiceConnecting] = useState(false);
   const [callEnded, setCallEnded] = useState(false);
+  const [callMessages, setCallMessages] = useState<{id: string; role: "user" | "assistant"; content: string}[]>([]);
   const voiceTranscriptRef = useRef<{role: string; text: string}[]>([]);
   const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const callScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll transcript
+  useEffect(() => {
+    if (callScrollRef.current) {
+      callScrollRef.current.scrollTop = callScrollRef.current.scrollHeight;
+    }
+  }, [callMessages]);
+
+  const pushCallMessage = useCallback((role: "user" | "assistant", text: string) => {
+    const prefix = role === "user" ? "🎙️ " : "🔊 ";
+    setCallMessages(prev => [...prev, { id: Date.now().toString() + Math.random(), role, content: prefix + text }]);
+  }, []);
 
   const conversation = useConversation({
     onConnect: () => setVoiceConnecting(false),
     onDisconnect: () => {
       if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
-      if (voiceTranscriptRef.current.length > 0) {
-        setCallEnded(true);
-        setTimeout(() => setCallEnded(false), 8000);
-      }
+      // Save transcript to localStorage
+      setCallMessages(prev => {
+        if (prev.length > 0) {
+          localStorage.setItem("camila_last_call_transcript", JSON.stringify(prev));
+          setCallEnded(true);
+          setTimeout(() => setCallEnded(false), 8000);
+        }
+        return prev;
+      });
     },
     onMessage: (message: any) => {
       console.log("[HubDash Voice] onMessage:", JSON.stringify(message, null, 2));
@@ -156,6 +175,7 @@ function HubDashboardInner({
       }
       if (text?.trim()) {
         voiceTranscriptRef.current.push({ role: source, text: text.trim() });
+        pushCallMessage(source, text.trim());
       }
       if (message.type === "agent_response") {
         const agentText = message.agent_response_event?.agent_response;
@@ -165,17 +185,29 @@ function HubDashboardInner({
         }
       }
     },
+    onUserTranscript: ((text: string) => {
+      console.log("[HubDash Voice] onUserTranscript:", text);
+      if (text?.trim()) pushCallMessage("user", text.trim());
+    }) as any,
+    onAgentResponse: ((text: string) => {
+      console.log("[HubDash Voice] onAgentResponse:", text);
+      if (text?.trim()) pushCallMessage("assistant", text.trim());
+    }) as any,
+    onAgentResponseCorrection: ((text: string) => {
+      console.log("[HubDash Voice] onAgentResponseCorrection:", text);
+    }) as any,
     onError: (err: any) => {
       toast.error(typeof err === "string" ? err : err?.message || "Error de conexión.");
       setVoiceConnecting(false);
     },
-  });
+  } as any);
 
   const isVoiceActive = conversation.status === "connected";
 
   const startVoiceCall = useCallback(async () => {
     setVoiceConnecting(true);
     setCallEnded(false);
+    setCallMessages([]);
     voiceTranscriptRef.current = [];
     unlockAudioContext();
     try {
@@ -493,6 +525,28 @@ function HubDashboardInner({
               </div>
             )}
           </div>
+
+          {/* ─── Live transcript during call ─── */}
+          {isVoiceActive && callMessages.length > 0 && (
+            <div className="w-full max-w-[640px] mx-auto mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div
+                ref={callScrollRef}
+                className="max-h-48 overflow-y-auto rounded-xl border border-border/20 bg-card/60 backdrop-blur-sm p-3 space-y-2 scrollbar-thin"
+              >
+                {callMessages.map(msg => (
+                  <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[80%] px-3 py-2 rounded-xl text-xs leading-relaxed ${
+                      msg.role === "user"
+                        ? "bg-jarvis/15 text-foreground border border-jarvis/20"
+                        : "bg-muted/40 text-foreground border border-border/20"
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ─── Quick action chips (2 rows x 3) ─── */}
           <div className="w-full max-w-[640px] mx-auto grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
