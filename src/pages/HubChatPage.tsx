@@ -769,8 +769,7 @@ function HubChatPageInner() {
             )}
 
             {messages.map((m, i) => (
-              <div key={m.id || i} className={`group relative flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                <MessageActions msg={m} index={i} onEdit={handleEditMessage} />
+              <div key={m.id || i} className={`group flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
                 <div className={`max-w-[80%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${
                   m.role === "user"
                     ? "bg-jarvis/15 text-foreground border border-jarvis/20 rounded-br-md"
@@ -784,6 +783,7 @@ function HubChatPageInner() {
                     <span>{m.content}</span>
                   )}
                 </div>
+                <MessageActions msg={m} index={i} onEdit={handleEditMessage} onRetry={m.role === "assistant" ? handleRetry : undefined} />
               </div>
             ))}
 
