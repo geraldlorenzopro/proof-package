@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Mic, MicOff, Sparkles, Phone, PhoneOff, Copy, Check, Pencil, X } from "lucide-react";
+import { ArrowLeft, Send, Mic, MicOff, Sparkles, Phone, PhoneOff, Copy, Check, Pencil, X, RotateCcw, ThumbsUp, ThumbsDown, MoreHorizontal } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
