@@ -146,43 +146,60 @@ function HubDashboardInner({
     onConnect: () => setVoiceConnecting(false),
     onDisconnect: () => {
       if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
-      // Save transcript to localStorage
-      setCallMessages(prev => {
-        if (prev.length > 0) {
-          localStorage.setItem("camila_last_call_transcript", JSON.stringify(prev));
-          setCallEnded(true);
-          setTimeout(() => setCallEnded(false), 8000);
-        }
-        return prev;
-      });
+      // Save transcript to localStorage (read ref, not state, to avoid side-effects in setState)
+      const msgs = voiceTranscriptRef.current;
+      if (msgs.length > 0) {
+        try {
+          localStorage.setItem("camila_last_call_transcript", JSON.stringify(msgs));
+        } catch {}
+        setCallEnded(true);
+        setTimeout(() => setCallEnded(false), 8000);
+      }
     },
     onMessage: (message: any) => {
       console.log("[HubDash Voice] onMessage:", JSON.stringify(message, null, 2));
       let text: string | undefined;
       let source: "user" | "assistant" = "assistant";
-      if (message.type === "user_transcript") {
+
+      // ElevenLabs SDK shape: { source: "ai"|"user", role: "agent"|"user", message: "..." }
+      if (message.message && typeof message.message === "string") {
+        text = message.message;
+        source = (message.source === "user" || message.role === "user") ? "user" : "assistant";
+      }
+      // Alternate shapes
+      else if (message.type === "user_transcript") {
         text = message.user_transcription_event?.user_transcript; source = "user";
       } else if (message.type === "agent_response") {
         text = message.agent_response_event?.agent_response; source = "assistant";
       } else if (message.type === "agent_response_correction") {
         text = message.agent_response_correction_event?.corrected_agent_response; source = "assistant";
-      } else if (message.type === "transcript" && message.text?.trim()) {
-        text = message.text; source = message.source === "user" ? "user" : "assistant";
       } else if (message.transcript) {
         text = message.transcript; source = message.source === "user" ? "user" : "assistant";
-      } else if (message.text && message.source) {
+      } else if (message.text) {
         text = message.text; source = message.source === "user" ? "user" : "assistant";
       }
+
       if (text?.trim()) {
-        voiceTranscriptRef.current.push({ role: source, text: text.trim() });
+        // Deduplicate by event_id
+        const eventId = message.event_id;
+        if (eventId != null) {
+          const isDuplicate = voiceTranscriptRef.current.some(
+            (m: any) => m.eventId === eventId
+          );
+          if (isDuplicate) return;
+          voiceTranscriptRef.current.push({ role: source, text: text.trim(), eventId } as any);
+        } else {
+          voiceTranscriptRef.current.push({ role: source, text: text.trim() });
+        }
         pushCallMessage(source, text.trim());
       }
-      if (message.type === "agent_response") {
-        const agentText = message.agent_response_event?.agent_response;
-        if (agentText && FAREWELL_PATTERNS.test(agentText)) {
-          if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
-          autoEndTimerRef.current = setTimeout(() => conversation.endSession(), 5000);
-        }
+
+      // Farewell auto-end
+      if (source === "assistant" && text && FAREWELL_PATTERNS.test(text)) {
+        if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+        autoEndTimerRef.current = setTimeout(() => {
+          try { conversation.endSession(); } catch {}
+        }, 5000);
       }
     },
     onUserTranscript: ((text: string) => {
