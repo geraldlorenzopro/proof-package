@@ -221,9 +221,41 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
       if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
     },
     onMessage: (message: any) => {
+      console.log("[Camila Panel] onMessage:", JSON.stringify(message, null, 2));
+
+      // Extract transcript text from all known ElevenLabs SDK shapes
+      let text: string | undefined;
+      let source: "user" | "assistant" = "assistant";
+
+      if (message.type === "user_transcript") {
+        text = message.user_transcription_event?.user_transcript;
+        source = "user";
+      } else if (message.type === "agent_response") {
+        text = message.agent_response_event?.agent_response;
+        source = "assistant";
+      } else if (message.type === "agent_response_correction") {
+        text = message.agent_response_correction_event?.corrected_agent_response;
+        source = "assistant";
+      } else if (message.type === "transcript" && message.text?.trim()) {
+        text = message.text;
+        source = message.source === "user" ? "user" : "assistant";
+      } else if (message.transcript) {
+        text = message.transcript;
+        source = message.source === "user" ? "user" : "assistant";
+      } else if (message.text && message.source) {
+        text = message.text;
+        source = message.source === "user" ? "user" : "assistant";
+      }
+
+      if (text?.trim()) {
+        const prefix = source === "user" ? "🎙️ " : "🔊 ";
+        setMessages(prev => [...prev, { role: source, content: prefix + text!.trim() }]);
+      }
+
+      // Farewell auto-end
       if (message.type === "agent_response") {
-        const text = message.agent_response_event?.agent_response;
-        if (text && FAREWELL_PATTERNS.test(text)) {
+        const agentText = message.agent_response_event?.agent_response;
+        if (agentText && FAREWELL_PATTERNS.test(agentText)) {
           if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
           autoEndTimerRef.current = setTimeout(() => {
             conversation.endSession();
