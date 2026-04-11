@@ -509,9 +509,9 @@ function HubChatPageInner() {
     }
     if (state?.autoStartVoice && !autoVoiceTriggered.current) {
       autoVoiceTriggered.current = true;
-      setTimeout(() => {
-        handleVoiceButtonClick();
-      }, 400);
+      // Delay to let useCallback hooks initialize
+      setTimeout(() => startConversationRef.current?.(), 600);
+    }
     }
   }, []);
 
