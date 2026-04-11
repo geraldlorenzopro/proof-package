@@ -1,18 +1,74 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Send, Mic, MicOff, Briefcase, Calendar, Users,
   MessageSquare, FileSearch, Clock, ChevronRight, ChevronLeft,
   X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
   Newspaper, Shield, Globe, Scale, Gavel, BookOpen, FileText,
-  Phone
+  Phone, PhoneOff
 } from "lucide-react";
+import { toast } from "sonner";
+import { useConversation } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
 import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
+
+async function fetchSignedUrl() {
+  const { data, error } = await supabase.functions.invoke(
+    "elevenlabs-conversation-token",
+    { body: { agent_id: AGENT_ID } },
+  );
+  if (error) throw new Error(error.message || "No se pudo iniciar la sesión de voz.");
+  if (!data?.signed_url) throw new Error(data?.error || "No se recibió signed_url.");
+  return data.signed_url;
+}
+
+async function fetchOfficeContextLite(accountId: string) {
+  const [
+    { data: officeConfig },
+    { count: activeCasesCount },
+    { count: pendingTasksCount },
+    { count: clientsCount },
+  ] = await Promise.all([
+    supabase.from("office_config" as any).select("firm_name, attorney_name").eq("account_id", accountId).maybeSingle(),
+    supabase.from("client_cases").select("*", { count: "exact", head: true }).eq("account_id", accountId).in("status", ["active", "pending", "in_progress"]),
+    supabase.from("case_tasks").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("status", "pending"),
+    supabase.from("client_profiles").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("is_test", false),
+  ]);
+  const office = (officeConfig as any) || {};
+  const ownerFirstName = (office.attorney_name || "Jefe").split(" ")[0];
+  const dayName = new Date().toLocaleDateString("es-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  return {
+    ownerFirstName,
+    context: [
+      `El usuario se llama "${ownerFirstName}".`,
+      `Firma: ${office.firm_name || "Sin nombre"}`,
+      `Casos activos: ${activeCasesCount ?? 0}`,
+      `Tareas pendientes: ${pendingTasksCount ?? 0}`,
+      `Clientes: ${clientsCount ?? 0}`,
+      `Fecha: ${dayName}`,
+    ].join("\n"),
+  };
+}
+
+function unlockAudioContext() {
+  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtx) return;
+  const ctx = new AudioCtx();
+  if (ctx.state === "suspended") void ctx.resume();
+  const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start(0);
+}
+
+const FAREWELL_PATTERNS = /\b(adiós|adios|nos vemos|hasta luego|chao|bye|que tengas|buen día|buenas noches|un placer|hasta pronto|cuídate)\b/i;
 
 interface Props {
   accountId: string;
@@ -40,7 +96,7 @@ function getCategoryStyle(cat: string) {
   return categoryStyles[cat] || categoryStyles.USCIS;
 }
 
-export default function HubDashboard({
+function HubDashboardInner({
   accountId, accountName, staffName, showOnboardingBanner, onTriggerOnboarding
 }: Props) {
   const navigate = useNavigate();
@@ -65,6 +121,93 @@ export default function HubDashboard({
   // Modals
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+
+  // Voice call (ElevenLabs WebSocket — inline on home page)
+  const [voiceConnecting, setVoiceConnecting] = useState(false);
+  const [callEnded, setCallEnded] = useState(false);
+  const voiceTranscriptRef = useRef<{role: string; text: string}[]>([]);
+  const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const conversation = useConversation({
+    onConnect: () => setVoiceConnecting(false),
+    onDisconnect: () => {
+      if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+      if (voiceTranscriptRef.current.length > 0) {
+        setCallEnded(true);
+        setTimeout(() => setCallEnded(false), 8000);
+      }
+    },
+    onMessage: (message: any) => {
+      console.log("[HubDash Voice] onMessage:", JSON.stringify(message, null, 2));
+      let text: string | undefined;
+      let source: "user" | "assistant" = "assistant";
+      if (message.type === "user_transcript") {
+        text = message.user_transcription_event?.user_transcript; source = "user";
+      } else if (message.type === "agent_response") {
+        text = message.agent_response_event?.agent_response; source = "assistant";
+      } else if (message.type === "agent_response_correction") {
+        text = message.agent_response_correction_event?.corrected_agent_response; source = "assistant";
+      } else if (message.type === "transcript" && message.text?.trim()) {
+        text = message.text; source = message.source === "user" ? "user" : "assistant";
+      } else if (message.transcript) {
+        text = message.transcript; source = message.source === "user" ? "user" : "assistant";
+      } else if (message.text && message.source) {
+        text = message.text; source = message.source === "user" ? "user" : "assistant";
+      }
+      if (text?.trim()) {
+        voiceTranscriptRef.current.push({ role: source, text: text.trim() });
+      }
+      if (message.type === "agent_response") {
+        const agentText = message.agent_response_event?.agent_response;
+        if (agentText && FAREWELL_PATTERNS.test(agentText)) {
+          if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+          autoEndTimerRef.current = setTimeout(() => conversation.endSession(), 5000);
+        }
+      }
+    },
+    onError: (err: any) => {
+      toast.error(typeof err === "string" ? err : err?.message || "Error de conexión.");
+      setVoiceConnecting(false);
+    },
+  });
+
+  const isVoiceActive = conversation.status === "connected";
+
+  const startVoiceCall = useCallback(async () => {
+    setVoiceConnecting(true);
+    setCallEnded(false);
+    voiceTranscriptRef.current = [];
+    unlockAudioContext();
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const [signedUrl, officeData] = await Promise.all([
+        fetchSignedUrl(),
+        fetchOfficeContextLite(accountId),
+      ]);
+      await conversation.startSession({
+        signedUrl,
+        connectionType: "websocket",
+        dynamicVariables: {
+          info_oficina: officeData.context,
+          nombre_usuario: officeData.ownerFirstName,
+        },
+      } as any);
+    } catch (err: any) {
+      const msg = String(err?.message || err || "");
+      toast.error(msg.includes("Permission") || msg.includes("NotAllowed")
+        ? "Se necesita permiso de micrófono."
+        : `No se pudo conectar: ${msg}`);
+      setVoiceConnecting(false);
+    }
+  }, [conversation, accountId]);
+
+  const stopVoiceCall = useCallback(async () => {
+    await conversation.endSession();
+  }, [conversation]);
+
+  useEffect(() => {
+    return () => { if (conversation.status === "connected") conversation.endSession(); };
+  }, []);
 
   // TTS greeting
   const greetedRef = useRef(false);
@@ -279,39 +422,76 @@ export default function HubDashboard({
 
           {/* ─── Input bar ─── */}
           <div className="w-full max-w-[640px] mx-auto mb-5">
-            <div className="flex items-center gap-2 bg-card border border-border/40 rounded-2xl px-4 py-3.5 shadow-sm focus-within:border-jarvis/40 focus-within:ring-1 focus-within:ring-jarvis/20 transition-all">
+            <div className={`flex items-center gap-2 bg-card border rounded-2xl px-4 py-3.5 shadow-sm transition-all ${
+              isVoiceActive
+                ? "border-emerald-400/40 ring-1 ring-emerald-400/20"
+                : "border-border/40 focus-within:border-jarvis/40 focus-within:ring-1 focus-within:ring-jarvis/20"
+            }`}>
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Pregúntale algo a Camila o elige una acción..."
-                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/40"
+                placeholder={isVoiceActive ? "Llamada activa — habla con naturalidad..." : "Pregúntale algo a Camila o elige una acción..."}
+                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/40 disabled:opacity-50"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                disabled={isVoiceActive}
               />
+              {!isVoiceActive && (
+                <button
+                  onClick={toggleSTT}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                    isListening ? "bg-red-500/20 text-red-400" : "bg-muted/30 text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+              )}
               <button
-                onClick={toggleSTT}
+                onClick={isVoiceActive ? stopVoiceCall : startVoiceCall}
+                disabled={voiceConnecting}
                 className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-                  isListening ? "bg-red-500/20 text-red-400" : "bg-muted/30 text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50"
+                  isVoiceActive
+                    ? "bg-red-500/15 text-red-400 border border-red-400/30 hover:bg-red-500/25"
+                    : voiceConnecting
+                    ? "bg-jarvis/10 text-jarvis border border-jarvis/20 animate-pulse"
+                    : "bg-jarvis/10 hover:bg-jarvis/20 text-jarvis border border-jarvis/20 hover:border-jarvis/30"
                 }`}
+                title={isVoiceActive ? "Finalizar llamada" : "Llamar a Camila"}
               >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                {isVoiceActive ? <PhoneOff className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
               </button>
-              <button
-                onClick={() => navigate("/hub/chat", { state: { autoStartVoice: true, accountId, accountName, staffName } })}
-                className="w-8 h-8 rounded-xl bg-jarvis/10 hover:bg-jarvis/20 flex items-center justify-center transition-all text-jarvis border border-jarvis/20 hover:border-jarvis/30"
-                title="Llamar a Camila"
-              >
-                <Phone className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => sendMessage()}
-                disabled={!input.trim()}
-                className="w-8 h-8 rounded-xl bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <Send className="w-4 h-4 text-jarvis" />
-              </button>
+              {!isVoiceActive && (
+                <button
+                  onClick={() => sendMessage()}
+                  disabled={!input.trim()}
+                  className="w-8 h-8 rounded-xl bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4 text-jarvis" />
+                </button>
+              )}
             </div>
+
+            {/* Call active indicator */}
+            {isVoiceActive && (
+              <div className="flex items-center justify-center gap-2 mt-2 animate-in fade-in duration-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs text-emerald-400/80 font-medium">EN LLAMADA · Habla con naturalidad</span>
+              </div>
+            )}
+
+            {/* Call ended — link to transcript */}
+            {callEnded && !isVoiceActive && (
+              <div className="flex items-center justify-center gap-2 mt-2 animate-in fade-in duration-300">
+                <span className="text-xs text-muted-foreground/60">Conversación guardada ·</span>
+                <button
+                  onClick={() => navigate("/hub/chat", { state: { accountId, accountName, staffName } })}
+                  className="text-xs text-jarvis hover:text-jarvis/80 font-medium transition-colors"
+                >
+                  Ver historial →
+                </button>
+              </div>
+            )}
           </div>
 
           {/* ─── Quick action chips (2 rows x 3) ─── */}
@@ -490,5 +670,15 @@ export default function HubDashboard({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+import { ConversationProvider } from "@elevenlabs/react";
+
+export default function HubDashboard(props: Props) {
+  return (
+    <ConversationProvider>
+      <HubDashboardInner {...props} />
+    </ConversationProvider>
   );
 }
