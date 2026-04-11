@@ -146,9 +146,9 @@ function HubDashboardInner({
 
   const conversation = useConversation({
     onConnect: () => setVoiceConnecting(false),
-    onDisconnect: () => {
+    onDisconnect: (reason: any) => {
+      console.log('DISCONNECT REASON:', JSON.stringify(reason));
       if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
-      // Save transcript to localStorage (read ref, not state, to avoid side-effects in setState)
       const msgs = voiceTranscriptRef.current;
       if (msgs.length > 0) {
         try {
@@ -163,13 +163,10 @@ function HubDashboardInner({
       let text: string | undefined;
       let source: "user" | "assistant" = "assistant";
 
-      // ElevenLabs SDK shape: { source: "ai"|"user", role: "agent"|"user", message: "..." }
       if (message.message && typeof message.message === "string") {
         text = message.message;
         source = (message.source === "user" || message.role === "user") ? "user" : "assistant";
-      }
-      // Alternate shapes
-      else if (message.type === "user_transcript") {
+      } else if (message.type === "user_transcript") {
         text = message.user_transcription_event?.user_transcript; source = "user";
       } else if (message.type === "agent_response") {
         text = message.agent_response_event?.agent_response; source = "assistant";
@@ -181,23 +178,21 @@ function HubDashboardInner({
         text = message.text; source = message.source === "user" ? "user" : "assistant";
       }
 
-      if (text?.trim()) {
-        // Deduplicate by event_id
-        const eventId = message.event_id;
-        if (eventId != null) {
-          const isDuplicate = voiceTranscriptRef.current.some(
-            (m: any) => m.eventId === eventId
-          );
-          if (isDuplicate) return;
-          voiceTranscriptRef.current.push({ role: source, text: text.trim(), eventId } as any);
-        } else {
-          voiceTranscriptRef.current.push({ role: source, text: text.trim() });
-        }
-        pushCallMessage(source, text.trim());
-      }
+      if (!text?.trim()) return;
 
-      // Farewell auto-end
-      if (source === "assistant" && text && FAREWELL_PATTERNS.test(text)) {
+      // Deduplicate by event_id — if duplicate, skip everything including farewell check
+      const eventId = message.event_id;
+      if (eventId != null) {
+        const isDuplicate = voiceTranscriptRef.current.some((m: any) => m.eventId === eventId);
+        if (isDuplicate) return;
+        voiceTranscriptRef.current.push({ role: source, text: text.trim(), eventId } as any);
+      } else {
+        voiceTranscriptRef.current.push({ role: source, text: text.trim() });
+      }
+      pushCallMessage(source, text.trim());
+
+      // Farewell auto-end — ONLY after dedup check passes
+      if (source === "assistant" && FAREWELL_PATTERNS.test(text)) {
         if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
         autoEndTimerRef.current = setTimeout(() => {
           try { conversation.endSession(); } catch {}
@@ -216,6 +211,7 @@ function HubDashboardInner({
       console.log("[HubDash Voice] onAgentResponseCorrection:", text);
     }) as any,
     onError: (err: any) => {
+      console.log('ERROR DETAIL:', JSON.stringify(err));
       toast.error(typeof err === "string" ? err : err?.message || "Error de conexión.");
       setVoiceConnecting(false);
     },
@@ -257,7 +253,15 @@ function HubDashboardInner({
   }, [conversation]);
 
   useEffect(() => {
-    return () => { if (conversation.status === "connected") conversation.endSession(); };
+    conversationStatusRef.current = conversation.status;
+  }, [conversation.status]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      try { conversation.endSession(); } catch {}
+    };
   }, []);
 
   // TTS greeting
