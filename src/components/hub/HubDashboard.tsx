@@ -1,18 +1,74 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Send, Mic, MicOff, Briefcase, Calendar, Users,
   MessageSquare, FileSearch, Clock, ChevronRight, ChevronLeft,
   X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
   Newspaper, Shield, Globe, Scale, Gavel, BookOpen, FileText,
-  Phone
+  Phone, PhoneOff
 } from "lucide-react";
+import { toast } from "sonner";
+import { useConversation } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
 import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
+
+async function fetchSignedUrl() {
+  const { data, error } = await supabase.functions.invoke(
+    "elevenlabs-conversation-token",
+    { body: { agent_id: AGENT_ID } },
+  );
+  if (error) throw new Error(error.message || "No se pudo iniciar la sesión de voz.");
+  if (!data?.signed_url) throw new Error(data?.error || "No se recibió signed_url.");
+  return data.signed_url;
+}
+
+async function fetchOfficeContextLite(accountId: string) {
+  const [
+    { data: officeConfig },
+    { count: activeCasesCount },
+    { count: pendingTasksCount },
+    { count: clientsCount },
+  ] = await Promise.all([
+    supabase.from("office_config" as any).select("firm_name, attorney_name").eq("account_id", accountId).maybeSingle(),
+    supabase.from("client_cases").select("*", { count: "exact", head: true }).eq("account_id", accountId).in("status", ["active", "pending", "in_progress"]),
+    supabase.from("case_tasks").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("status", "pending"),
+    supabase.from("client_profiles").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("is_test", false),
+  ]);
+  const office = (officeConfig as any) || {};
+  const ownerFirstName = (office.attorney_name || "Jefe").split(" ")[0];
+  const dayName = new Date().toLocaleDateString("es-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  return {
+    ownerFirstName,
+    context: [
+      `El usuario se llama "${ownerFirstName}".`,
+      `Firma: ${office.firm_name || "Sin nombre"}`,
+      `Casos activos: ${activeCasesCount ?? 0}`,
+      `Tareas pendientes: ${pendingTasksCount ?? 0}`,
+      `Clientes: ${clientsCount ?? 0}`,
+      `Fecha: ${dayName}`,
+    ].join("\n"),
+  };
+}
+
+function unlockAudioContext() {
+  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtx) return;
+  const ctx = new AudioCtx();
+  if (ctx.state === "suspended") void ctx.resume();
+  const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start(0);
+}
+
+const FAREWELL_PATTERNS = /\b(adiós|adios|nos vemos|hasta luego|chao|bye|que tengas|buen día|buenas noches|un placer|hasta pronto|cuídate)\b/i;
 
 interface Props {
   accountId: string;
