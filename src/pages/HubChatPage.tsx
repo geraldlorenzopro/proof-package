@@ -343,7 +343,7 @@ function MessageActions({
 function HubChatPageInner() {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { initialMessage?: string; accountId?: string; accountName?: string; plan?: string; staffName?: string } | null;
+  const state = location.state as { initialMessage?: string; autoStartVoice?: boolean; accountId?: string; accountName?: string; plan?: string; staffName?: string } | null;
 
   const accountId = state?.accountId || sessionStorage.getItem("ner_active_account_id") || "";
   const accountName = state?.accountName || "";
