@@ -501,10 +501,17 @@ function HubChatPageInner() {
     if (!isVoiceActive) setTimeout(() => inputRef.current?.focus(), 300);
   }, [isVoiceActive]);
 
+  const autoVoiceTriggered = useRef(false);
   useEffect(() => {
     if (state?.initialMessage && !sentInitial.current) {
       sentInitial.current = true;
       setTimeout(() => sendRef.current(state.initialMessage!), 200);
+    }
+    if (state?.autoStartVoice && !autoVoiceTriggered.current) {
+      autoVoiceTriggered.current = true;
+      setTimeout(() => {
+        handleVoiceButtonClick();
+      }, 400);
     }
   }, []);
 
