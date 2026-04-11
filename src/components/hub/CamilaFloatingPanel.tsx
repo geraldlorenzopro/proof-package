@@ -457,14 +457,6 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
         {open && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
-              onClick={() => setOpen(false)}
-            />
-
-            <motion.div
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}
@@ -537,171 +529,155 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                 </div>
               </div>
 
-              {/* ── Voice Active Overlay ── */}
+              {/* ── Voice Active Banner (compact) ── */}
               {isVoiceActive && (
-                <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 relative"
-                  style={{ background: "radial-gradient(ellipse at 50% 45%, hsl(195 100% 50% / 0.04) 0%, transparent 60%)" }}
+                <div className="shrink-0 flex items-center gap-3 px-4 py-3"
+                  style={{ borderBottom: "1px solid hsl(195 100% 50% / 0.1)", background: "radial-gradient(ellipse at 50% 50%, hsl(195 100% 50% / 0.04) 0%, transparent 70%)" }}
                 >
-                  {/* Orb */}
-                  <div className="relative w-28 h-28 mb-5">
-                    {/* Glow ring */}
-                    <div className={`absolute -inset-3 rounded-full transition-all duration-700 ${
-                      isCamilaSpeaking
-                        ? "bg-emerald-400/5 shadow-[0_0_40px_hsl(150_60%_50%/0.15)]"
-                        : "bg-jarvis/5 shadow-[0_0_40px_hsl(195_100%_50%/0.12)]"
-                    }`} />
-                    {/* Pulse ring */}
+                  <div className="relative w-12 h-12 shrink-0">
                     <div className={`absolute inset-0 rounded-full border transition-all duration-500 ${
                       isCamilaSpeaking ? "border-emerald-400/30 animate-pulse" : "border-jarvis/30 animate-pulse"
                     }`} />
-                    {/* Core orb */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <motion.div
                         animate={{ scale: orbScale }}
                         transition={{ duration: 0.15 }}
-                        className={`w-16 h-16 rounded-full transition-colors duration-500 ${
+                        className={`w-8 h-8 rounded-full transition-colors duration-500 ${
                           isCamilaSpeaking
-                            ? "bg-gradient-to-br from-emerald-400 to-teal-400/70 shadow-[0_0_40px_hsl(150_60%_50%/0.4)]"
-                            : "bg-gradient-to-br from-jarvis to-cyan-400/70 shadow-[0_0_40px_hsl(195_100%_50%/0.4)]"
+                            ? "bg-gradient-to-br from-emerald-400 to-teal-400/70 shadow-[0_0_20px_hsl(150_60%_50%/0.4)]"
+                            : "bg-gradient-to-br from-jarvis to-cyan-400/70 shadow-[0_0_20px_hsl(195_100%_50%/0.4)]"
                         }`}
                       />
                     </div>
                   </div>
-
-                  <p className="text-sm font-semibold text-foreground/80 mb-1">
-                    {isCamilaSpeaking ? "Camila está respondiendo..." : "Escuchando tu voz..."}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/40 mb-6">
-                    Conversación en tiempo real
-                  </p>
-
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground/80">
+                      {isCamilaSpeaking ? "Camila respondiendo..." : "Escuchando tu voz..."}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/40">Conversación en tiempo real</p>
+                  </div>
                   <button
                     onClick={stopVoiceConversation}
-                    className="w-12 h-12 rounded-full bg-red-500/15 border border-red-400/25 flex items-center justify-center hover:bg-red-500/25 transition-all"
+                    className="w-9 h-9 rounded-full bg-red-500/15 border border-red-400/25 flex items-center justify-center hover:bg-red-500/25 transition-all shrink-0"
                   >
-                    <PhoneOff className="w-5 h-5 text-red-400" />
+                    <PhoneOff className="w-4 h-4 text-red-400" />
                   </button>
-                  <p className="text-[9px] text-muted-foreground/25 mt-2 font-mono tracking-wider">TOCA PARA FINALIZAR</p>
                 </div>
               )}
 
-              {/* ── Messages (hidden when voice active) ── */}
-              {!isVoiceActive && (
-                <>
-                  <div
-                    ref={scrollRef}
-                    className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3"
-                    style={{ scrollbarWidth: "thin", scrollbarColor: "hsl(195 100% 50% / 0.2) transparent" }}
-                  >
-                    {messages.length === 0 && (
-                      <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-4">
-                        <div className="relative w-20 h-20">
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-jarvis/20 to-transparent border border-jarvis/20 animate-pulse" />
-                          <div className="absolute inset-2 rounded-full bg-gradient-to-br from-jarvis/10 to-transparent border border-jarvis/10" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Sparkles className="w-8 h-8 text-jarvis/60" />
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-foreground/80">Hola, soy Camila 👋</p>
-                          <p className="text-xs text-muted-foreground/50 mt-1 max-w-[260px]">
-                            Pregúntame sobre tu oficina o inicia una conversación por voz con el botón <Phone className="w-3 h-3 inline" />.
-                          </p>
-                        </div>
-                        <div className="flex flex-col gap-1.5 w-full max-w-[280px]">
-                          {["¿Qué tenemos hoy?", "¿Hay tareas vencidas?", "¿Cuántos casos activos hay?", "Resumen de la semana"].map((q) => (
-                            <button
-                              key={q}
-                              onClick={() => send(q)}
-                              className="text-[11px] text-left px-3 py-2 rounded-xl border border-jarvis/10 bg-jarvis/5 text-jarvis/70 hover:bg-jarvis/10 hover:text-jarvis hover:border-jarvis/20 transition-all"
-                            >
-                              {q}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {messages.map((m, i) => (
-                      <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                        <div
-                          className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed ${
-                            m.role === "user"
-                              ? "bg-jarvis/15 text-foreground border border-jarvis/20 rounded-br-md"
-                              : "bg-card/80 text-foreground/90 border border-jarvis/30 shadow-[0_0_8px_hsl(var(--jarvis)/0.1)] rounded-bl-md"
-                          }`}
-                        >
-                          {m.role === "assistant" ? (
-                            <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_li]:my-0.5 [&_ul]:my-1 [&_ol]:my-1 [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs">
-                              <ReactMarkdown>{m.content}</ReactMarkdown>
-                            </div>
-                          ) : (
-                            <span>{m.content}</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
-                    {isLoading && messages[messages.length - 1]?.role === "user" && (
-                      <div className="flex justify-start">
-                        <div className="bg-card/80 border border-border/30 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
-                          <div className="flex gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-jarvis/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                            <span className="w-1.5 h-1.5 rounded-full bg-jarvis/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                            <span className="w-1.5 h-1.5 rounded-full bg-jarvis/60 animate-bounce" style={{ animationDelay: "300ms" }} />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ── Input Bar ── */}
-                  <div
-                    className="px-4 py-3 shrink-0"
-                    style={{
-                      borderTop: "1px solid hsl(195 100% 50% / 0.1)",
-                      background: "linear-gradient(180deg, hsl(220 25% 8%) 0%, hsl(220 25% 7%) 100%)",
-                    }}
-                  >
-                    <div className="flex items-end gap-2 rounded-xl border border-jarvis/15 bg-background/50 px-3 py-2 focus-within:border-jarvis/30 transition-colors">
-                      <textarea
-                        ref={inputRef}
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Pregúntale a Camila..."
-                        rows={1}
-                        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none max-h-20"
-                        style={{ scrollbarWidth: "none" }}
-                      />
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Dictation mic */}
-                        <button
-                          onClick={toggleMic}
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                            isListening
-                              ? "bg-red-500/20 text-red-400 border border-red-400/40 animate-pulse"
-                              : "text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10"
-                          }`}
-                          title={isListening ? "Detener grabación" : "Dictar"}
-                        >
-                          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                        </button>
-                        {/* Send */}
-                        <button
-                          onClick={() => send(input)}
-                          disabled={!input.trim() || isLoading}
-                          className="w-8 h-8 rounded-lg bg-jarvis/20 text-jarvis flex items-center justify-center hover:bg-jarvis/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                        >
-                          <Send className="w-4 h-4" />
-                        </button>
+              {/* ── Messages (always visible) ── */}
+              <div
+                ref={scrollRef}
+                className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3"
+                style={{ scrollbarWidth: "thin", scrollbarColor: "hsl(195 100% 50% / 0.2) transparent" }}
+              >
+                {messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-4">
+                    <div className="relative w-20 h-20">
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-jarvis/20 to-transparent border border-jarvis/20 animate-pulse" />
+                      <div className="absolute inset-2 rounded-full bg-gradient-to-br from-jarvis/10 to-transparent border border-jarvis/10" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Sparkles className="w-8 h-8 text-jarvis/60" />
                       </div>
                     </div>
-                    <p className="text-[9px] text-muted-foreground/30 text-center mt-1.5 font-mono tracking-wider">
-                      CAMILA · OFICINA VIRTUAL AI
-                    </p>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground/80">Hola, soy Camila 👋</p>
+                      <p className="text-xs text-muted-foreground/50 mt-1 max-w-[260px]">
+                        Pregúntame sobre tu oficina o inicia una conversación por voz con el botón <Phone className="w-3 h-3 inline" />.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1.5 w-full max-w-[280px]">
+                      {["¿Qué tenemos hoy?", "¿Hay tareas vencidas?", "¿Cuántos casos activos hay?", "Resumen de la semana"].map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => send(q)}
+                          className="text-[11px] text-left px-3 py-2 rounded-xl border border-jarvis/10 bg-jarvis/5 text-jarvis/70 hover:bg-jarvis/10 hover:text-jarvis hover:border-jarvis/20 transition-all"
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </>
+                )}
+
+                {messages.map((m, i) => (
+                  <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed ${
+                        m.role === "user"
+                          ? "bg-jarvis/15 text-foreground border border-jarvis/20 rounded-br-md"
+                          : "bg-card/80 text-foreground/90 border border-jarvis/30 shadow-[0_0_8px_hsl(var(--jarvis)/0.1)] rounded-bl-md"
+                      }`}
+                    >
+                      {m.role === "assistant" ? (
+                        <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_li]:my-0.5 [&_ul]:my-1 [&_ol]:my-1 [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs">
+                          <ReactMarkdown>{m.content}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <span>{m.content}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {isLoading && messages[messages.length - 1]?.role === "user" && (
+                  <div className="flex justify-start">
+                    <div className="bg-card/80 border border-border/30 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-jarvis/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-jarvis/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-jarvis/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Input Bar (hidden during voice) ── */}
+              {!isVoiceActive && (
+                <div
+                  className="px-4 py-3 shrink-0"
+                  style={{
+                    borderTop: "1px solid hsl(195 100% 50% / 0.1)",
+                    background: "linear-gradient(180deg, hsl(220 25% 8%) 0%, hsl(220 25% 7%) 100%)",
+                  }}
+                >
+                  <div className="flex items-end gap-2 rounded-xl border border-jarvis/15 bg-background/50 px-3 py-2 focus-within:border-jarvis/30 transition-colors">
+                    <textarea
+                      ref={inputRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Pregúntale a Camila..."
+                      rows={1}
+                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none max-h-20"
+                      style={{ scrollbarWidth: "none" }}
+                    />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={toggleMic}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                          isListening
+                            ? "bg-red-500/20 text-red-400 border border-red-400/40 animate-pulse"
+                            : "text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10"
+                        }`}
+                        title={isListening ? "Detener grabación" : "Dictar"}
+                      >
+                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      </button>
+                      <button
+                        onClick={() => send(input)}
+                        disabled={!input.trim() || isLoading}
+                        className="w-8 h-8 rounded-lg bg-jarvis/20 text-jarvis flex items-center justify-center hover:bg-jarvis/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground/30 text-center mt-1.5 font-mono tracking-wider">
+                    CAMILA · OFICINA VIRTUAL AI
+                  </p>
+                </div>
               )}
             </motion.div>
           </>
