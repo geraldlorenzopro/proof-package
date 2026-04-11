@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Mic, MicOff, Sparkles, Phone, PhoneOff, Copy, Check, Pencil, X } from "lucide-react";
+import { ArrowLeft, Send, Mic, MicOff, Sparkles, Phone, PhoneOff, Copy, Check, Pencil, X, RotateCcw, ThumbsUp, ThumbsDown, MoreHorizontal } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
@@ -171,20 +171,25 @@ async function fetchOfficeContext(accountId: string) {
 
 const FAREWELL_PATTERNS = /\b(adiós|adios|nos vemos|hasta luego|chao|bye|que tengas|buen día|buenas noches|un placer|hasta pronto|cuídate)\b/i;
 
-/* ── Message action bar ── */
+/* ── Message action bar (Lovable-style: below bubble) ── */
 function MessageActions({
   msg,
   index,
   onEdit,
+  onRetry,
 }: {
   msg: Msg;
   index: number;
   onEdit: (index: number, newContent: string) => void;
+  onRetry?: (index: number) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(msg.content);
+  const [showMore, setShowMore] = useState(false);
+  const [liked, setLiked] = useState<"up" | "down" | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
 
   const isUser = msg.role === "user";
   const rawText = msg.content.replace(/^(🎙️|🔊)\s*/, "");
@@ -192,6 +197,16 @@ function MessageActions({
   useEffect(() => {
     if (editing) inputRef.current?.focus();
   }, [editing]);
+
+  // Close "..." menu on click outside
+  useEffect(() => {
+    if (!showMore) return;
+    const handler = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setShowMore(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMore]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(rawText);
@@ -201,7 +216,7 @@ function MessageActions({
 
   if (editing) {
     return (
-      <div className="mt-2 space-y-2">
+      <div className="mt-2 space-y-2 w-full">
         <textarea
           ref={inputRef}
           value={draft}
@@ -228,25 +243,99 @@ function MessageActions({
   }
 
   return (
-    <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
-      isUser ? "-left-16" : "-right-16"
+    <div className={`flex items-center gap-0.5 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
+      isUser ? "justify-end" : "justify-start"
     }`}>
+      {/* Copy */}
       <button
         onClick={handleCopy}
-        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:border hover:border-border/40 transition-all"
+        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-accent/50 transition-all"
         title="Copiar"
       >
         {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
       </button>
+
+      {/* Thumbs up/down for assistant messages */}
+      {!isUser && (
+        <>
+          <button
+            onClick={() => setLiked(liked === "up" ? null : "up")}
+            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+              liked === "up" ? "text-jarvis bg-jarvis/10" : "text-muted-foreground/40 hover:text-foreground hover:bg-accent/50"
+            }`}
+            title="Útil"
+          >
+            <ThumbsUp className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => setLiked(liked === "down" ? null : "down")}
+            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+              liked === "down" ? "text-red-400 bg-red-400/10" : "text-muted-foreground/40 hover:text-foreground hover:bg-accent/50"
+            }`}
+            title="No útil"
+          >
+            <ThumbsDown className="w-3.5 h-3.5" />
+          </button>
+        </>
+      )}
+
+      {/* Retry for assistant */}
+      {!isUser && onRetry && (
+        <button
+          onClick={() => onRetry(index)}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-accent/50 transition-all"
+          title="Reintentar"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+        </button>
+      )}
+
+      {/* Edit for user */}
       {isUser && (
         <button
           onClick={() => setEditing(true)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:border hover:border-border/40 transition-all"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-accent/50 transition-all"
           title="Editar"
         >
           <Pencil className="w-3.5 h-3.5" />
         </button>
       )}
+
+      {/* More "..." menu */}
+      <div className="relative" ref={moreRef}>
+        <button
+          onClick={() => setShowMore(!showMore)}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-accent/50 transition-all"
+        >
+          <MoreHorizontal className="w-3.5 h-3.5" />
+        </button>
+        {showMore && (
+          <div className={`absolute bottom-full mb-1 ${isUser ? "right-0" : "left-0"} min-w-[160px] bg-popover border border-border/40 rounded-xl shadow-xl py-1.5 z-50`}>
+            <button
+              onClick={() => { handleCopy(); setShowMore(false); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-foreground/80 hover:bg-accent/50 transition-colors"
+            >
+              <Copy className="w-3.5 h-3.5 text-muted-foreground" /> Copiar texto
+            </button>
+            {isUser && (
+              <button
+                onClick={() => { setEditing(true); setShowMore(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-foreground/80 hover:bg-accent/50 transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5 text-muted-foreground" /> Editar mensaje
+              </button>
+            )}
+            {!isUser && onRetry && (
+              <button
+                onClick={() => { onRetry(index); setShowMore(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-foreground/80 hover:bg-accent/50 transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" /> Reintentar
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -453,6 +542,17 @@ function HubChatPageInner() {
     // Send edited content as new message for Camila to respond
     setTimeout(() => sendRef.current(newContent), 100);
   }, []);
+
+  // Retry handler: resend the user message before this assistant message
+  const handleRetry = useCallback((assistantIndex: number) => {
+    // Find the user message right before this assistant response
+    const userMsg = messages.slice(0, assistantIndex).reverse().find(m => m.role === "user");
+    if (userMsg) {
+      // Remove the assistant message and resend
+      setMessages(prev => prev.filter((_, i) => i !== assistantIndex));
+      setTimeout(() => sendRef.current(userMsg.content), 100);
+    }
+  }, [messages]);
 
   // Voice call
   const startConversation = useCallback(async () => {
@@ -669,8 +769,7 @@ function HubChatPageInner() {
             )}
 
             {messages.map((m, i) => (
-              <div key={m.id || i} className={`group relative flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                <MessageActions msg={m} index={i} onEdit={handleEditMessage} />
+              <div key={m.id || i} className={`group flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
                 <div className={`max-w-[80%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${
                   m.role === "user"
                     ? "bg-jarvis/15 text-foreground border border-jarvis/20 rounded-br-md"
@@ -684,6 +783,7 @@ function HubChatPageInner() {
                     <span>{m.content}</span>
                   )}
                 </div>
+                <MessageActions msg={m} index={i} onEdit={handleEditMessage} onRetry={m.role === "assistant" ? handleRetry : undefined} />
               </div>
             ))}
 
