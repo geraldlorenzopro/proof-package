@@ -512,7 +512,6 @@ function HubChatPageInner() {
       // Delay to let useCallback hooks initialize
       setTimeout(() => startConversationRef.current?.(), 600);
     }
-    }
   }, []);
 
   // Cleanup on unmount
