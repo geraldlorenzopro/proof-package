@@ -298,6 +298,13 @@ export default function HubDashboard({
                 {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </button>
               <button
+                onClick={() => navigate("/hub/chat", { state: { autoStartVoice: true, accountId, accountName, staffName } })}
+                className="w-8 h-8 rounded-xl bg-jarvis/10 hover:bg-jarvis/20 flex items-center justify-center transition-all text-jarvis border border-jarvis/20 hover:border-jarvis/30"
+                title="Llamar a Camila"
+              >
+                <Phone className="w-4 h-4" />
+              </button>
+              <button
                 onClick={() => sendMessage()}
                 disabled={!input.trim()}
                 className="w-8 h-8 rounded-xl bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
