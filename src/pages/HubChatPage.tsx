@@ -618,6 +618,8 @@ function HubChatPageInner() {
   }, [conversation, accountId, messages]);
 
   useEffect(() => { startConversationRef.current = startConversation; }, [startConversation]);
+
+  const handleVoiceButtonClick = useCallback(async () => {
     if (isVoiceActive) {
       await conversation.endSession();
       return;
