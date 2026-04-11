@@ -125,17 +125,36 @@ function HubDashboardInner({
   // Voice call (ElevenLabs WebSocket — inline on home page)
   const [voiceConnecting, setVoiceConnecting] = useState(false);
   const [callEnded, setCallEnded] = useState(false);
+  const [callMessages, setCallMessages] = useState<{id: string; role: "user" | "assistant"; content: string}[]>([]);
   const voiceTranscriptRef = useRef<{role: string; text: string}[]>([]);
   const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const callScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll transcript
+  useEffect(() => {
+    if (callScrollRef.current) {
+      callScrollRef.current.scrollTop = callScrollRef.current.scrollHeight;
+    }
+  }, [callMessages]);
+
+  const pushCallMessage = useCallback((role: "user" | "assistant", text: string) => {
+    const prefix = role === "user" ? "🎙️ " : "🔊 ";
+    setCallMessages(prev => [...prev, { id: Date.now().toString() + Math.random(), role, content: prefix + text }]);
+  }, []);
 
   const conversation = useConversation({
     onConnect: () => setVoiceConnecting(false),
     onDisconnect: () => {
       if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
-      if (voiceTranscriptRef.current.length > 0) {
-        setCallEnded(true);
-        setTimeout(() => setCallEnded(false), 8000);
-      }
+      // Save transcript to localStorage
+      setCallMessages(prev => {
+        if (prev.length > 0) {
+          localStorage.setItem("camila_last_call_transcript", JSON.stringify(prev));
+          setCallEnded(true);
+          setTimeout(() => setCallEnded(false), 8000);
+        }
+        return prev;
+      });
     },
     onMessage: (message: any) => {
       console.log("[HubDash Voice] onMessage:", JSON.stringify(message, null, 2));
@@ -156,6 +175,7 @@ function HubDashboardInner({
       }
       if (text?.trim()) {
         voiceTranscriptRef.current.push({ role: source, text: text.trim() });
+        pushCallMessage(source, text.trim());
       }
       if (message.type === "agent_response") {
         const agentText = message.agent_response_event?.agent_response;
@@ -165,11 +185,22 @@ function HubDashboardInner({
         }
       }
     },
+    onUserTranscript: ((text: string) => {
+      console.log("[HubDash Voice] onUserTranscript:", text);
+      if (text?.trim()) pushCallMessage("user", text.trim());
+    }) as any,
+    onAgentResponse: ((text: string) => {
+      console.log("[HubDash Voice] onAgentResponse:", text);
+      if (text?.trim()) pushCallMessage("assistant", text.trim());
+    }) as any,
+    onAgentResponseCorrection: ((text: string) => {
+      console.log("[HubDash Voice] onAgentResponseCorrection:", text);
+    }) as any,
     onError: (err: any) => {
       toast.error(typeof err === "string" ? err : err?.message || "Error de conexión.");
       setVoiceConnecting(false);
     },
-  });
+  } as any);
 
   const isVoiceActive = conversation.status === "connected";
 
