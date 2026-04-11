@@ -343,7 +343,7 @@ function MessageActions({
 function HubChatPageInner() {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { initialMessage?: string; accountId?: string; accountName?: string; plan?: string; staffName?: string } | null;
+  const state = location.state as { initialMessage?: string; autoStartVoice?: boolean; accountId?: string; accountName?: string; plan?: string; staffName?: string } | null;
 
   const accountId = state?.accountId || sessionStorage.getItem("ner_active_account_id") || "";
   const accountName = state?.accountName || "";
@@ -501,10 +501,17 @@ function HubChatPageInner() {
     if (!isVoiceActive) setTimeout(() => inputRef.current?.focus(), 300);
   }, [isVoiceActive]);
 
+  const startConversationRef = useRef<(() => void) | null>(null);
+  const autoVoiceTriggered = useRef(false);
   useEffect(() => {
     if (state?.initialMessage && !sentInitial.current) {
       sentInitial.current = true;
       setTimeout(() => sendRef.current(state.initialMessage!), 200);
+    }
+    if (state?.autoStartVoice && !autoVoiceTriggered.current) {
+      autoVoiceTriggered.current = true;
+      // Delay to let useCallback hooks initialize
+      setTimeout(() => startConversationRef.current?.(), 600);
     }
   }, []);
 
@@ -609,6 +616,8 @@ function HubChatPageInner() {
       setIsConnecting(false);
     }
   }, [conversation, accountId, messages]);
+
+  useEffect(() => { startConversationRef.current = startConversation; }, [startConversation]);
 
   const handleVoiceButtonClick = useCallback(async () => {
     if (isVoiceActive) {
