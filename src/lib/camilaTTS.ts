@@ -1,14 +1,46 @@
-// Camila TTS — ElevenLabs via Edge Function, fallback to Browser SpeechSynthesis
+import { supabase } from "@/integrations/supabase/client";
 
 let currentAudio: HTMLAudioElement | null = null;
-let ttsEnabled = true;
-let currentAbort: AbortController | null = null;
-let isFetching = false;
+let isSpeakingFlag = false;
 
-const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-tts`;
+const anglicisms: Record<string, string> = {
+  'deadline': 'fecha límite',
+  'deadlines': 'fechas límite',
+  'meeting': 'reunión',
+  'meetings': 'reuniones',
+  'follow-up': 'seguimiento',
+  'follow up': 'seguimiento',
+  'update': 'actualización',
+  'updates': 'actualizaciones',
+  'email': 'correo',
+  'emails': 'correos',
+  'schedule': 'agenda',
+  'task': 'tarea',
+  'tasks': 'tareas',
+  'client': 'cliente',
+  'clients': 'clientes',
+  'status': 'estado',
+  'pending': 'pendiente',
+  'billing': 'facturación',
+  'overdue': 'vencido',
+  'dashboard': 'panel',
+  'link': 'enlace',
+  'links': 'enlaces',
+  'ticket': 'expediente',
+  'tickets': 'expedientes',
+  'issue': 'problema',
+  'issues': 'problemas',
+  'ok': 'bien',
+  'okay': 'entendido',
+  'check': 'verificar',
+  'chat': 'conversación',
+  'login': 'acceso',
+  'case': 'caso',
+  'cases': 'casos',
+};
 
-function cleanForSpeech(text: string): string {
-  return text
+export function cleanForSpeech(text: string): string {
+  let result = text
     .replace(/#{1,6}\s*/g, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")
@@ -16,8 +48,14 @@ function cleanForSpeech(text: string): string {
     .replace(/```[\s\S]*?```/g, "")
     .replace(/- /g, ". ")
     .replace(/\[(.+?)\]\(.+?\)/g, "$1")
-    .replace(/[|─═┌┐└┘┬┴├┤]/g, "")
-    .replace(/[•·]\s/g, "")
+    .replace(/[|─═┌┐└┘┬┴├┤]/g, "");
+
+  for (const [eng, esp] of Object.entries(anglicisms)) {
+    const escaped = eng.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    result = result.replace(new RegExp(`\\b${escaped}\\b`, 'gi'), esp);
+  }
+
+  result = result
     .replace(/[\u{1F600}-\u{1F64F}]/gu, "")
     .replace(/[\u{1F300}-\u{1F5FF}]/gu, "")
     .replace(/[\u{1F680}-\u{1F6FF}]/gu, "")
@@ -34,138 +72,94 @@ function cleanForSpeech(text: string): string {
     .replace(/\n/g, ". ")
     .replace(/\s{2,}/g, " ")
     .trim();
+
+  return result;
 }
 
-/** Speak text aloud as Camila using ElevenLabs (via edge function) */
 export async function speakAsCamila(text: string): Promise<void> {
-  if (!ttsEnabled) return;
+  if (!text?.trim()) return;
   stopSpeaking();
 
-  const clean = cleanForSpeech(text);
-  if (!clean) return;
-
-  // Prevent overlapping requests
-  if (isFetching) return;
-  isFetching = true;
-
-  const abort = new AbortController();
-  currentAbort = abort;
+  const cleaned = cleanForSpeech(text);
+  if (!cleaned.trim()) return;
 
   try {
-    const resp = await fetch(TTS_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({ text: clean }),
-      signal: abort.signal,
+    isSpeakingFlag = true;
+    const { data, error } = await supabase.functions.invoke("camila-tts-openai", {
+      body: { text: cleaned },
     });
 
-    if (abort.signal.aborted) return;
-    if (!resp.ok) throw new Error(`TTS ${resp.status}`);
+    if (error) throw error;
 
-    const data = await resp.json();
+    const blob = new Blob([data], { type: "audio/mpeg" });
+    const url = URL.createObjectURL(blob);
+    currentAudio = new Audio(url);
+    currentAudio.playbackRate = 1.0;
 
-    if (abort.signal.aborted) return;
-
-    if (data.audio) {
-      const audioType = data.audioType || "audio/mpeg";
-      const audioUrl = `data:${audioType};base64,${data.audio}`;
-      const audio = new Audio(audioUrl);
-      currentAudio = audio;
-      await audio.play();
-      console.log("Camila TTS ✓ source:", data.source || "elevenlabs");
-      return;
-    }
-  } catch (err: any) {
-    if (err?.name === "AbortError") return;
-    console.warn("Camila TTS edge function failed, falling back to browser:", err);
-  } finally {
-    isFetching = false;
+    await new Promise<void>((resolve) => {
+      if (!currentAudio) return resolve();
+      currentAudio.onended = () => {
+        URL.revokeObjectURL(url);
+        isSpeakingFlag = false;
+        resolve();
+      };
+      currentAudio.onerror = () => {
+        URL.revokeObjectURL(url);
+        isSpeakingFlag = false;
+        fallbackBrowserTTS(cleaned);
+        resolve();
+      };
+      currentAudio.play().catch(() => {
+        isSpeakingFlag = false;
+        fallbackBrowserTTS(cleaned);
+        resolve();
+      });
+    });
+  } catch (err) {
+    console.error("OpenAI TTS error, falling back to browser TTS:", err);
+    isSpeakingFlag = false;
+    fallbackBrowserTTS(cleaned);
   }
-
-  // Fallback: browser SpeechSynthesis
-  if (!abort.signal.aborted) fallbackBrowserTTS(clean);
 }
 
-function fallbackBrowserTTS(text: string) {
-  if (!("speechSynthesis" in window)) return;
+function fallbackBrowserTTS(text: string): void {
+  if (!window.speechSynthesis) return;
+  stopSpeaking();
+  isSpeakingFlag = true;
 
-  const chunks = splitIntoChunks(text, 250);
-  const voces = speechSynthesis.getVoices();
-  const esVoz = voces.find(v => v.lang.startsWith("es") && v.lang !== "es-ES")
-    || voces.find(v => v.lang.startsWith("es"))
-    || null;
+  const chunks = text.match(/.{1,250}(?:\s|$)/g) || [text];
+  let index = 0;
 
-  chunks.forEach((chunk) => {
-    const u = new SpeechSynthesisUtterance(chunk);
-    u.lang = "es-419";
-    u.rate = 0.97;
-    u.pitch = 1.1;
-    if (esVoz) u.voice = esVoz;
-    speechSynthesis.speak(u);
-  });
+  function speakNext() {
+    if (index >= chunks.length) { isSpeakingFlag = false; return; }
+    const utterance = new SpeechSynthesisUtterance(chunks[index++]);
+    utterance.lang = "es-419";
+    utterance.rate = 0.92;
+    utterance.pitch = 0.95;
+
+    const voices = window.speechSynthesis.getVoices();
+    const latinVoice = voices.find(v =>
+      ['es-DO','es-PR','es-419','es-MX','es-CO','es-US'].some(l => v.lang.startsWith(l))
+    );
+    if (latinVoice) utterance.voice = latinVoice;
+
+    utterance.onend = speakNext;
+    utterance.onerror = () => { isSpeakingFlag = false; };
+    window.speechSynthesis.speak(utterance);
+  }
+  speakNext();
 }
 
-/** Stop current speech and cancel in-flight requests */
 export function stopSpeaking(): void {
-  if (currentAbort) {
-    currentAbort.abort();
-    currentAbort = null;
-  }
-  isFetching = false;
   if (currentAudio) {
     currentAudio.pause();
-    currentAudio.currentTime = 0;
+    currentAudio.src = "";
     currentAudio = null;
   }
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  isSpeakingFlag = false;
 }
 
-/** Check if currently speaking */
 export function isSpeaking(): boolean {
-  if (currentAudio && !currentAudio.paused) return true;
-  if ("speechSynthesis" in window) return speechSynthesis.speaking;
-  return false;
-}
-
-/** Enable/disable TTS globally */
-export function setTtsEnabled(enabled: boolean): void {
-  ttsEnabled = enabled;
-  if (!enabled) stopSpeaking();
-}
-
-export function isTtsEnabled(): boolean {
-  return ttsEnabled;
-}
-
-function splitIntoChunks(text: string, maxLen: number): string[] {
-  const chunks: string[] = [];
-  let remaining = text;
-  while (remaining.length > maxLen) {
-    let splitAt = remaining.lastIndexOf(". ", maxLen);
-    if (splitAt === -1 || splitAt < maxLen / 2) splitAt = remaining.lastIndexOf(", ", maxLen);
-    if (splitAt === -1 || splitAt < maxLen / 2) splitAt = remaining.lastIndexOf(" ", maxLen);
-    if (splitAt === -1) splitAt = maxLen;
-    chunks.push(remaining.slice(0, splitAt + 1).trim());
-    remaining = remaining.slice(splitAt + 1).trim();
-  }
-  if (remaining) chunks.push(remaining);
-  return chunks;
-}
-
-/** Log available Spanish voices for diagnostics */
-export function logVocesDiagnostico(): void {
-  if (!("speechSynthesis" in window)) return;
-  const voces = speechSynthesis.getVoices();
-  const espanol = voces.filter(v => v.lang.startsWith("es"));
-  console.log("Camila TTS — Voces español:", espanol.map(v => `${v.name} (${v.lang})`));
-}
-
-// Preload browser voices as fallback
-if (typeof window !== "undefined" && "speechSynthesis" in window) {
-  speechSynthesis.getVoices();
-  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+  return isSpeakingFlag;
 }
