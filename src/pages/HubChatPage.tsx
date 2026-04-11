@@ -501,6 +501,7 @@ function HubChatPageInner() {
     if (!isVoiceActive) setTimeout(() => inputRef.current?.focus(), 300);
   }, [isVoiceActive]);
 
+  const startConversationRef = useRef<(() => void) | null>(null);
   const autoVoiceTriggered = useRef(false);
   useEffect(() => {
     if (state?.initialMessage && !sentInitial.current) {
