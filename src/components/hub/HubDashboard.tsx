@@ -526,6 +526,28 @@ function HubDashboardInner({
             )}
           </div>
 
+          {/* ─── Live transcript during call ─── */}
+          {isVoiceActive && callMessages.length > 0 && (
+            <div className="w-full max-w-[640px] mx-auto mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div
+                ref={callScrollRef}
+                className="max-h-48 overflow-y-auto rounded-xl border border-border/20 bg-card/60 backdrop-blur-sm p-3 space-y-2 scrollbar-thin"
+              >
+                {callMessages.map(msg => (
+                  <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[80%] px-3 py-2 rounded-xl text-xs leading-relaxed ${
+                      msg.role === "user"
+                        ? "bg-jarvis/15 text-foreground border border-jarvis/20"
+                        : "bg-muted/40 text-foreground border border-border/20"
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* ─── Quick action chips (2 rows x 3) ─── */}
           <div className="w-full max-w-[640px] mx-auto grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
             {quickChips.map(chip => (
