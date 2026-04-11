@@ -422,39 +422,76 @@ export default function HubDashboard({
 
           {/* ─── Input bar ─── */}
           <div className="w-full max-w-[640px] mx-auto mb-5">
-            <div className="flex items-center gap-2 bg-card border border-border/40 rounded-2xl px-4 py-3.5 shadow-sm focus-within:border-jarvis/40 focus-within:ring-1 focus-within:ring-jarvis/20 transition-all">
+            <div className={`flex items-center gap-2 bg-card border rounded-2xl px-4 py-3.5 shadow-sm transition-all ${
+              isVoiceActive
+                ? "border-emerald-400/40 ring-1 ring-emerald-400/20"
+                : "border-border/40 focus-within:border-jarvis/40 focus-within:ring-1 focus-within:ring-jarvis/20"
+            }`}>
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Pregúntale algo a Camila o elige una acción..."
-                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/40"
+                placeholder={isVoiceActive ? "Llamada activa — habla con naturalidad..." : "Pregúntale algo a Camila o elige una acción..."}
+                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/40 disabled:opacity-50"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                disabled={isVoiceActive}
               />
+              {!isVoiceActive && (
+                <button
+                  onClick={toggleSTT}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                    isListening ? "bg-red-500/20 text-red-400" : "bg-muted/30 text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+              )}
               <button
-                onClick={toggleSTT}
+                onClick={isVoiceActive ? stopVoiceCall : startVoiceCall}
+                disabled={voiceConnecting}
                 className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-                  isListening ? "bg-red-500/20 text-red-400" : "bg-muted/30 text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50"
+                  isVoiceActive
+                    ? "bg-red-500/15 text-red-400 border border-red-400/30 hover:bg-red-500/25"
+                    : voiceConnecting
+                    ? "bg-jarvis/10 text-jarvis border border-jarvis/20 animate-pulse"
+                    : "bg-jarvis/10 hover:bg-jarvis/20 text-jarvis border border-jarvis/20 hover:border-jarvis/30"
                 }`}
+                title={isVoiceActive ? "Finalizar llamada" : "Llamar a Camila"}
               >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                {isVoiceActive ? <PhoneOff className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
               </button>
-              <button
-                onClick={() => navigate("/hub/chat", { state: { autoStartVoice: true, accountId, accountName, staffName } })}
-                className="w-8 h-8 rounded-xl bg-jarvis/10 hover:bg-jarvis/20 flex items-center justify-center transition-all text-jarvis border border-jarvis/20 hover:border-jarvis/30"
-                title="Llamar a Camila"
-              >
-                <Phone className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => sendMessage()}
-                disabled={!input.trim()}
-                className="w-8 h-8 rounded-xl bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <Send className="w-4 h-4 text-jarvis" />
-              </button>
+              {!isVoiceActive && (
+                <button
+                  onClick={() => sendMessage()}
+                  disabled={!input.trim()}
+                  className="w-8 h-8 rounded-xl bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4 text-jarvis" />
+                </button>
+              )}
             </div>
+
+            {/* Call active indicator */}
+            {isVoiceActive && (
+              <div className="flex items-center justify-center gap-2 mt-2 animate-in fade-in duration-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs text-emerald-400/80 font-medium">EN LLAMADA · Habla con naturalidad</span>
+              </div>
+            )}
+
+            {/* Call ended — link to transcript */}
+            {callEnded && !isVoiceActive && (
+              <div className="flex items-center justify-center gap-2 mt-2 animate-in fade-in duration-300">
+                <span className="text-xs text-muted-foreground/60">Conversación guardada ·</span>
+                <button
+                  onClick={() => navigate("/hub/chat", { state: { accountId, accountName, staffName } })}
+                  className="text-xs text-jarvis hover:text-jarvis/80 font-medium transition-colors"
+                >
+                  Ver historial →
+                </button>
+              </div>
+            )}
           </div>
 
           {/* ─── Quick action chips (2 rows x 3) ─── */}
