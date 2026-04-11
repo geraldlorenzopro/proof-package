@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2 } from "lucide-react";
+import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2, Phone } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
 import { initializeOfficeConfig, STANDARD_CASE_TYPES, AI_CASE_TYPES, TIMEZONES, US_STATES } from "@/lib/officeSetup";
 
@@ -111,6 +111,7 @@ export default function OfficeSettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<TeamMember | null>(null);
   const [customCaseOpen, setCustomCaseOpen] = useState(false);
   const [newCase, setNewCase] = useState({ case_type: '', display_name: '', description: '', main_form: '', icon: '📋' });
+  const [voiceMinutesUsed, setVoiceMinutesUsed] = useState<number>(0);
 
   const isAdmin = userRole === 'owner' || userRole === 'admin';
 
@@ -190,6 +191,14 @@ export default function OfficeSettingsPage() {
         .eq('account_id', mem.account_id)
         .order('sort_order');
       if (cts) setCaseTypes(cts as unknown as CaseType[]);
+
+      // Load voice minutes
+      const { data: acctVoice } = await supabase
+        .from('ner_accounts')
+        .select('voice_minutes_used')
+        .eq('id', mem.account_id)
+        .single();
+      if (acctVoice) setVoiceMinutesUsed(Number((acctVoice as any).voice_minutes_used || 0));
 
       setLoading(false);
     })();
@@ -342,6 +351,18 @@ export default function OfficeSettingsPage() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{accountName}</p>
         </div>
+
+        {/* Voice minutes card */}
+        <Card className="bg-card/60 border-border/30 p-4 mb-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center shrink-0">
+            <Phone className="w-5 h-5 text-amber-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">Minutos de voz usados este mes</p>
+            <p className="text-lg font-bold text-foreground">{voiceMinutesUsed.toFixed(1)} min usados este mes</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Los minutos de voz se facturan según tu plan activo.</p>
+          </div>
+        </Card>
 
         {/* Completeness bar */}
         <Card className="bg-card/60 border-border/30 p-4 mb-6">
