@@ -207,6 +207,7 @@ function HubDashboardInner({
   const startVoiceCall = useCallback(async () => {
     setVoiceConnecting(true);
     setCallEnded(false);
+    setCallMessages([]);
     voiceTranscriptRef.current = [];
     unlockAudioContext();
     try {
