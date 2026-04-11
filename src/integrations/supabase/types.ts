@@ -2316,6 +2316,8 @@ export type Database = {
           phone: string | null
           plan: Database["public"]["Enums"]["ner_plan"]
           updated_at: string
+          voice_minutes_reset_month: string | null
+          voice_minutes_used: number
         }
         Insert: {
           account_name: string
@@ -2328,6 +2330,8 @@ export type Database = {
           phone?: string | null
           plan?: Database["public"]["Enums"]["ner_plan"]
           updated_at?: string
+          voice_minutes_reset_month?: string | null
+          voice_minutes_used?: number
         }
         Update: {
           account_name?: string
@@ -2340,6 +2344,8 @@ export type Database = {
           phone?: string | null
           plan?: Database["public"]["Enums"]["ner_plan"]
           updated_at?: string
+          voice_minutes_reset_month?: string | null
+          voice_minutes_used?: number
         }
         Relationships: []
       }
