@@ -543,6 +543,17 @@ function HubChatPageInner() {
     setTimeout(() => sendRef.current(newContent), 100);
   }, []);
 
+  // Retry handler: resend the user message before this assistant message
+  const handleRetry = useCallback((assistantIndex: number) => {
+    // Find the user message right before this assistant response
+    const userMsg = messages.slice(0, assistantIndex).reverse().find(m => m.role === "user");
+    if (userMsg) {
+      // Remove the assistant message and resend
+      setMessages(prev => prev.filter((_, i) => i !== assistantIndex));
+      setTimeout(() => sendRef.current(userMsg.content), 100);
+    }
+  }, [messages]);
+
   // Voice call
   const startConversation = useCallback(async () => {
     setIsConnecting(true);
