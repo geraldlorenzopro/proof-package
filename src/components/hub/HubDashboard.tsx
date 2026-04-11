@@ -122,6 +122,93 @@ export default function HubDashboard({
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
 
+  // Voice call (ElevenLabs WebSocket — inline on home page)
+  const [voiceConnecting, setVoiceConnecting] = useState(false);
+  const [callEnded, setCallEnded] = useState(false);
+  const voiceTranscriptRef = useRef<{role: string; text: string}[]>([]);
+  const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const conversation = useConversation({
+    onConnect: () => setVoiceConnecting(false),
+    onDisconnect: () => {
+      if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+      if (voiceTranscriptRef.current.length > 0) {
+        setCallEnded(true);
+        setTimeout(() => setCallEnded(false), 8000);
+      }
+    },
+    onMessage: (message: any) => {
+      console.log("[HubDash Voice] onMessage:", JSON.stringify(message, null, 2));
+      let text: string | undefined;
+      let source: "user" | "assistant" = "assistant";
+      if (message.type === "user_transcript") {
+        text = message.user_transcription_event?.user_transcript; source = "user";
+      } else if (message.type === "agent_response") {
+        text = message.agent_response_event?.agent_response; source = "assistant";
+      } else if (message.type === "agent_response_correction") {
+        text = message.agent_response_correction_event?.corrected_agent_response; source = "assistant";
+      } else if (message.type === "transcript" && message.text?.trim()) {
+        text = message.text; source = message.source === "user" ? "user" : "assistant";
+      } else if (message.transcript) {
+        text = message.transcript; source = message.source === "user" ? "user" : "assistant";
+      } else if (message.text && message.source) {
+        text = message.text; source = message.source === "user" ? "user" : "assistant";
+      }
+      if (text?.trim()) {
+        voiceTranscriptRef.current.push({ role: source, text: text.trim() });
+      }
+      if (message.type === "agent_response") {
+        const agentText = message.agent_response_event?.agent_response;
+        if (agentText && FAREWELL_PATTERNS.test(agentText)) {
+          if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+          autoEndTimerRef.current = setTimeout(() => conversation.endSession(), 5000);
+        }
+      }
+    },
+    onError: (err: any) => {
+      toast.error(typeof err === "string" ? err : err?.message || "Error de conexión.");
+      setVoiceConnecting(false);
+    },
+  });
+
+  const isVoiceActive = conversation.status === "connected";
+
+  const startVoiceCall = useCallback(async () => {
+    setVoiceConnecting(true);
+    setCallEnded(false);
+    voiceTranscriptRef.current = [];
+    unlockAudioContext();
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const [signedUrl, officeData] = await Promise.all([
+        fetchSignedUrl(),
+        fetchOfficeContextLite(accountId),
+      ]);
+      await conversation.startSession({
+        signedUrl,
+        connectionType: "websocket",
+        dynamicVariables: {
+          info_oficina: officeData.context,
+          nombre_usuario: officeData.ownerFirstName,
+        },
+      } as any);
+    } catch (err: any) {
+      const msg = String(err?.message || err || "");
+      toast.error(msg.includes("Permission") || msg.includes("NotAllowed")
+        ? "Se necesita permiso de micrófono."
+        : `No se pudo conectar: ${msg}`);
+      setVoiceConnecting(false);
+    }
+  }, [conversation, accountId]);
+
+  const stopVoiceCall = useCallback(async () => {
+    await conversation.endSession();
+  }, [conversation]);
+
+  useEffect(() => {
+    return () => { if (conversation.status === "connected") conversation.endSession(); };
+  }, []);
+
   // TTS greeting
   const greetedRef = useRef(false);
   const [briefingNews, setBriefingNews] = useState<string | null>(null);
