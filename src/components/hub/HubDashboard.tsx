@@ -96,7 +96,7 @@ function getCategoryStyle(cat: string) {
   return categoryStyles[cat] || categoryStyles.USCIS;
 }
 
-export default function HubDashboard({
+function HubDashboardInner({
   accountId, accountName, staffName, showOnboardingBanner, onTriggerOnboarding
 }: Props) {
   const navigate = useNavigate();
@@ -670,5 +670,15 @@ export default function HubDashboard({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+import { ConversationProvider } from "@elevenlabs/react";
+
+export default function HubDashboard(props: Props) {
+  return (
+    <ConversationProvider>
+      <HubDashboardInner {...props} />
+    </ConversationProvider>
   );
 }
