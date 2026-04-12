@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Send, ExternalLink, Clock, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
+import { Search, Send, ExternalLink, Clock, ChevronLeft, ChevronRight, PlusCircle, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -81,6 +81,7 @@ export default function ConsultationsPage() {
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [intakePrefill, setIntakePrefill] = useState<any>(undefined);
 
   useEffect(() => {
     loadAccount();
@@ -201,7 +202,7 @@ export default function ConsultationsPage() {
             <p className="text-sm text-muted-foreground">{total} registros</p>
           </div>
         </div>
-        <Button onClick={() => setIntakeOpen(true)} size="sm" className="gap-1.5">
+        <Button onClick={() => { setIntakePrefill(undefined); setIntakeOpen(true); }} size="sm" className="gap-1.5">
           <PlusCircle className="w-4 h-4" /> Nueva Consulta
         </Button>
       </div>
@@ -311,6 +312,20 @@ export default function ConsultationsPage() {
                     <ExternalLink className="w-3 h-3" /> Ver caso
                   </button>
                 )}
+                {item.client_profile_id && !item.converted_to_case && (
+                  <button onClick={(e) => {
+                    e.stopPropagation();
+                    setIntakePrefill({
+                      name: `${item.client_first_name || ""} ${item.client_last_name || ""}`.trim(),
+                      phone: item.client_phone || undefined,
+                      client_profile_id: item.client_profile_id || undefined,
+                    });
+                    setIntakeOpen(true);
+                  }}
+                    className="text-[10px] font-semibold text-accent hover:text-accent/80 flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg border border-accent/20 hover:bg-accent/10 transition-all">
+                    <Plus className="w-3 h-3" /> Nueva consulta
+                  </button>
+                )}
               </div>
             );
           })}
@@ -332,7 +347,7 @@ export default function ConsultationsPage() {
         </div>
       )}
 
-      <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
+      <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} prefill={intakePrefill} />
     </div>
     </HubLayout>
   );
