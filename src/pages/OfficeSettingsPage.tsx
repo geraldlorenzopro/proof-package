@@ -688,6 +688,11 @@ export default function OfficeSettingsPage() {
               )}
             </div>
           </TabsContent>
+
+          {/* ═══════ TAB 6: GHL ═══════ */}
+          <TabsContent value="ghl" className="mt-4 space-y-4">
+            <GhlIntegrationCard accountId={accountId} config={config} />
+          </TabsContent>
         </Tabs>
       </div>
 
