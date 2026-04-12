@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
+import { getCaseTypeLabel, normalizeClientName } from "@/lib/caseTypeLabels";
 import {
   ArrowLeft, Loader2, AlertTriangle, BarChart3, FileText,
   MessageSquare, ListTodo, Clock, FolderOpen, Sparkles, Mic,
@@ -285,7 +285,7 @@ export default function CaseEnginePage() {
             <div className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-xl font-bold text-foreground tracking-tight">{caseData.client_name}</h1>
+                  <h1 className="text-xl font-bold text-foreground tracking-tight">{normalizeClientName(caseData.client_name)}</h1>
                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {caseData.file_number && (
                       <TooltipProvider>

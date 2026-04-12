@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
 import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
+import TodayAppointments from "./TodayAppointments";
+import HubRecentConsultations from "./HubRecentConsultations";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -475,7 +477,7 @@ function HubDashboardInner({
         )}
 
       {/* ─── Main centered area ─── */}
-        <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-6 text-center">
+        <div className="flex-1 flex flex-col items-center min-h-0 px-6 text-center overflow-y-auto pt-8">
 
           {/* ─── Camila avatar + greeting ─── */}
           <div className="text-center mb-6">
@@ -592,7 +594,13 @@ function HubDashboardInner({
             {quickChips.map(chip => (
               <button
                 key={chip.label}
-                onClick={() => sendMessage(chip.label)}
+                onClick={() => {
+                  if (chip.label === "Nueva consulta") {
+                    setIntakeOpen(true);
+                  } else {
+                    sendMessage(chip.label);
+                  }
+                }}
                 className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-border/30 bg-card/50 hover:bg-card hover:border-jarvis/20 text-sm text-muted-foreground hover:text-foreground transition-all"
               >
                 <chip.icon className="w-4 h-4 text-jarvis/50 shrink-0" />
@@ -712,6 +720,15 @@ function HubDashboardInner({
                 ))}
               </div>
             )}
+          </div>
+          {/* ─── Citas de Hoy ─── */}
+          <div className="w-full max-w-[640px] mx-auto mt-2 mb-4">
+            <TodayAppointments accountId={accountId} maxItems={5} hideStats />
+          </div>
+
+          {/* ─── Consultas Recientes ─── */}
+          <div className="w-full max-w-[640px] mx-auto mb-6">
+            <HubRecentConsultations accountId={accountId} maxItems={5} />
           </div>
         </div>
       </div>
