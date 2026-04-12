@@ -60,7 +60,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   }
 
   const currentPath = location.pathname;
-  const isHubSection = currentPath === "/hub" || currentPath.startsWith("/hub/");
+  const isHubSection = currentPath === "/hub" || currentPath.startsWith("/hub/") || currentPath.startsWith("/case-engine/");
   const isHubAiPage = currentPath === "/hub/ai";
 
   return (
