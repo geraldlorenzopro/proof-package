@@ -477,7 +477,7 @@ function HubDashboardInner({
         )}
 
       {/* ─── Main centered area ─── */}
-        <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-6 text-center">
+        <div className="flex-1 flex flex-col items-center min-h-0 px-6 text-center overflow-y-auto pt-8">
 
           {/* ─── Camila avatar + greeting ─── */}
           <div className="text-center mb-6">
