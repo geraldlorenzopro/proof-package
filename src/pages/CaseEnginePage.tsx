@@ -285,7 +285,14 @@ export default function CaseEnginePage() {
             <div className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-xl font-bold text-foreground tracking-tight">{normalizeClientName(caseData.client_name)}</h1>
+                  <h1 className="text-xl font-bold text-foreground tracking-tight">
+                    {caseData.client_profile_id ? (
+                      <span
+                        onClick={() => navigate(`/hub/clients/${caseData.client_profile_id}`)}
+                        className="hover:text-jarvis transition-colors cursor-pointer underline decoration-jarvis/30 underline-offset-4"
+                      >{normalizeClientName(caseData.client_name)}</span>
+                    ) : normalizeClientName(caseData.client_name)}
+                  </h1>
                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {caseData.file_number && (
                       <TooltipProvider>

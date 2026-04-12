@@ -283,7 +283,14 @@ export default function ConsultationsPage() {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground truncate">{name || "Sin nombre"}</span>
+                    {item.client_profile_id ? (
+                      <span
+                        onClick={(e) => { e.stopPropagation(); navigate(`/hub/clients/${item.client_profile_id}`); }}
+                        className="text-sm font-semibold text-foreground truncate hover:text-jarvis transition-colors cursor-pointer underline decoration-jarvis/30 underline-offset-2"
+                      >{name || "Sin nombre"}</span>
+                    ) : (
+                      <span className="text-sm font-semibold text-foreground truncate">{name || "Sin nombre"}</span>
+                    )}
                     {item.client_phone && <span className="text-[10px] text-muted-foreground/50 font-mono">{item.client_phone}</span>}
                     <span className="text-[10px] text-muted-foreground/40">{timeAgo}</span>
                   </div>
