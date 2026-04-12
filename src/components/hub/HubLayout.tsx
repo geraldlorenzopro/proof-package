@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  ArrowLeft, Shield, Home, LogOut, Users, MessageSquare,
+  ArrowLeft, Shield, Home, LogOut, Users, UserSearch, MessageSquare,
   FolderOpen, Calendar, BarChart3, Bot, Settings
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,7 @@ interface Props {
 
 const NAV_ITEMS = [
   { icon: Home, label: "Inicio", path: "/hub", match: (p: string) => p === "/hub" },
+  { icon: UserSearch, label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads") },
   { icon: Users, label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients") },
   { icon: MessageSquare, label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations" },
   { icon: FolderOpen, label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases") },
