@@ -594,7 +594,13 @@ function HubDashboardInner({
             {quickChips.map(chip => (
               <button
                 key={chip.label}
-                onClick={() => sendMessage(chip.label)}
+                onClick={() => {
+                  if (chip.label === "Nueva consulta") {
+                    setIntakeOpen(true);
+                  } else {
+                    sendMessage(chip.label);
+                  }
+                }}
                 className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-border/30 bg-card/50 hover:bg-card hover:border-jarvis/20 text-sm text-muted-foreground hover:text-foreground transition-all"
               >
                 <chip.icon className="w-4 h-4 text-jarvis/50 shrink-0" />
