@@ -235,7 +235,11 @@ export default function ClientProfilePage() {
               sessions.map((s) => {
                 const u = URGENCY[s.urgency_level || ""] || { label: s.urgency_level || "—", color: "text-muted-foreground bg-muted" };
                 return (
-                  <div key={s.id} className="flex items-center justify-between border border-border rounded-lg px-4 py-3">
+                  <button
+                    key={s.id}
+                    onClick={() => navigate(`/hub/consultations/${s.id}`)}
+                    className="w-full flex items-center justify-between border border-border rounded-lg px-4 py-3 text-left hover:border-jarvis/30 transition-colors"
+                  >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       {s.entry_channel && <ChannelLogo channel={s.entry_channel} size={16} />}
                       <div className="min-w-0">
@@ -246,7 +250,7 @@ export default function ClientProfilePage() {
                       </div>
                     </div>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${u.color}`}>{u.label}</span>
-                  </div>
+                  </button>
                 );
               })
             )}
