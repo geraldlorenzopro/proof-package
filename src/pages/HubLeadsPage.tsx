@@ -176,7 +176,7 @@ export default function HubLeadsPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Contactos</h1>
-              <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos de GHL</p>
+              <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos registrados</p>
             </div>
           </div>
         </div>

@@ -10,11 +10,11 @@ const URGENCY_OPTIONS = [
 
 const REASONS = [
   { key: "iniciar-proceso", label: "Quiere iniciar un proceso migratorio" },
-  { key: "seguimiento", label: "Tiene un caso y quiere seguimiento" },
-  { key: "calificacion", label: "Quiere saber si califica para un beneficio migratorio" },
-  { key: "situacion-urgente", label: "Tiene una situación urgente" },
+  { key: "seguimiento", label: "Tiene un caso activo y necesita seguimiento" },
+  { key: "calificacion", label: "Quiere saber si califica" },
+  { key: "situacion-urgente", label: "Situación urgente (audiencia, detención, deportación)" },
   { key: "informacion", label: "Solo busca información general" },
-  { key: "otra", label: "Otra razón" },
+  { key: "otra", label: "Otro motivo" },
 ];
 
 const TOPICS = [
@@ -245,11 +245,11 @@ export default function StepConsulta({ data, update }: Props) {
       )}
 
       {/* 4 — Delivery */}
-      <SectionHeader title="Formulario de consulta" number={4} done={deliveryDone} open={openSections.has("delivery")} onClick={() => toggleSection("delivery")} />
+      <SectionHeader title="Enviar pre-intake al cliente" number={4} done={deliveryDone} open={openSections.has("delivery")} onClick={() => toggleSection("delivery")} />
       {openSections.has("delivery") && (
         <div className="px-1 pb-1 animate-fade-in">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Medio de envío principal</label>
-          <p className="text-[10px] text-muted-foreground mb-2">¿Cómo desea recibir el formulario previo a la consulta?</p>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">¿Por dónde quiere recibir el formulario previo a la consulta?</label>
+          <p className="text-[10px] text-muted-foreground mb-2"></p>
           <div className="grid grid-cols-2 gap-2">
             {DELIVERY_OPTIONS.map(d => {
               const disabled = (d.needsPhone && !hasPhone) || (d.needsEmail && !hasEmail);

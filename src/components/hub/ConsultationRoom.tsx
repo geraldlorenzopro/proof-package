@@ -296,7 +296,11 @@ export default function ConsultationRoom() {
           pre_intake_data: apptData?.pre_intake_data || null,
         },
       });
-      if (result?.case_type) {
+      if (result?.suggested_type && (result.confidence ?? 0) >= 40) {
+        const suggestion = { case_type: result.suggested_type, confidence: result.confidence, reasoning: result.reasoning };
+        setFelixSuggestion(suggestion);
+        setSelectedCaseType(result.suggested_type);
+      } else if (result?.case_type && (result.confidence ?? 0) >= 40) {
         setFelixSuggestion(result);
         setSelectedCaseType(result.case_type);
       }
@@ -334,11 +338,15 @@ export default function ConsultationRoom() {
   }
 
   // ═══ CONTRACTED HANDLER ═══
+  function capitalizeName(name: string): string {
+    return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').trim();
+  }
+
   async function handleContracted() {
     if (!selectedCaseType || !honorarios || !profile || !accountId) return;
     setSubmitting(true);
     try {
-      const clientName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim();
+      const clientName = capitalizeName(`${profile.first_name || ""} ${profile.last_name || ""}`.trim());
       const timerMinutes = Math.round(seconds / 60);
 
       // Save notes first
@@ -579,7 +587,7 @@ export default function ConsultationRoom() {
                 )}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+              <div className="flex flex-col items-center justify-center py-8 text-center space-y-3">
                 <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
                   <Clock className="w-6 h-6 text-amber-400" />
                 </div>
@@ -603,6 +611,37 @@ export default function ConsultationRoom() {
                 )}
               </div>
             )}
+
+            {/* Known data from intake */}
+            <div className="mt-4 space-y-2 text-sm px-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Lo que sabemos</p>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Canal</span>
+                <span className="text-foreground">{channelLabel}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tema</span>
+                <span className="text-foreground text-right max-w-[60%]">{topicLabel}</span>
+              </div>
+              {urgency && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Urgencia</span>
+                  <Badge variant="outline" className={`${urgency.color} text-[9px] py-0`}>{urgency.label}</Badge>
+                </div>
+              )}
+              {intake?.consultation_reason && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Motivo</span>
+                  <span className="text-foreground">{intake.consultation_reason}</span>
+                </div>
+              )}
+              {intake?.notes && (
+                <div className="pt-2 border-t border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Notas del registro</p>
+                  <p className="text-sm italic text-foreground">"{intake.notes}"</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* RIGHT — Notes + Felix */}
@@ -645,9 +684,7 @@ export default function ConsultationRoom() {
                   <p className="text-xs text-muted-foreground">{felixSuggestion.reasoning}</p>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground py-2">
-                  {appointment?.pre_intake_completed ? "No se pudo generar sugerencia" : "Esperando datos del pre-intake para generar sugerencia"}
-                </p>
+                <p className="text-xs text-muted-foreground py-2">No se pudo generar sugerencia</p>
               )}
             </div>
           </div>
