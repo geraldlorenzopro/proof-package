@@ -775,36 +775,74 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
   const [lastSync, setLastSync] = useState<string | null>((config as any)?.ghl_last_sync || null);
   const [contactsSynced, setContactsSynced] = useState<number>((config as any)?.ghl_contacts_synced || 0);
   const [appointmentsSynced, setAppointmentsSynced] = useState<number>((config as any)?.ghl_appointments_synced || 0);
+  const [syncProgress, setSyncProgress] = useState<{ page: number; inserted: number; updated: number; skipped: number } | null>(null);
+  const ESTIMATED_PAGES = 21; // ~2060 contacts / 100
 
   async function handleSync() {
     setSyncing(true);
+    setSyncProgress({ page: 0, inserted: 0, updated: 0, skipped: 0 });
+
+    let cursor: any = null;
+    let totalInserted = 0;
+    let totalUpdated = 0;
+    let totalSkipped = 0;
+    let done = false;
+    let page = 0;
+
     try {
-      const { data, error } = await supabase.functions.invoke("sync-ghl-contacts", { method: "POST", body: {} });
-      if (error) throw error;
+      // Phase 1: Contacts (paginated)
+      while (!done) {
+        const { data, error } = await supabase.functions.invoke("sync-ghl-contacts", {
+          body: { cursor, mode: "contacts" },
+        });
 
-      const contacts = data?.contacts;
-      const appointments = data?.appointments;
+        if (error) {
+          toast.error("Error en sync: " + error.message);
+          break;
+        }
 
-      if (contacts?.errors?.length && contacts.errors[0]?.includes("401")) {
-        toast.error("API Key de GHL inválida. Ve a Configuración.");
-        return;
+        if (data?.progress?.errors?.length) {
+          const firstErr = data.progress.errors[0];
+          if (firstErr.includes("401")) {
+            toast.error("API Key de GHL inválida. Ve a Configuración.");
+            break;
+          }
+        }
+
+        totalInserted += data.progress?.inserted || 0;
+        totalUpdated += data.progress?.updated || 0;
+        totalSkipped += data.progress?.skipped || 0;
+        cursor = data.cursor;
+        done = data.done;
+        page = data.progress?.page ?? page + 1;
+
+        setSyncProgress({ page, inserted: totalInserted, updated: totalUpdated, skipped: totalSkipped });
       }
 
-      const totalContacts = (contacts?.inserted || 0) + (contacts?.updated || 0);
-      const totalApts = (appointments?.inserted || 0) + (appointments?.updated || 0);
+      // Phase 2: Appointments (single call)
+      if (done) {
+        setSyncProgress(prev => prev ? { ...prev, page: -1 } : null); // -1 = appointments phase
+        const { data: aptData } = await supabase.functions.invoke("sync-ghl-contacts", {
+          body: { mode: "appointments" },
+        });
+        const aptTotal = (aptData?.progress?.inserted || 0) + (aptData?.progress?.updated || 0);
+        setAppointmentsSynced(aptTotal);
+      }
 
+      setContactsSynced(totalInserted + totalUpdated);
       setLastSync(new Date().toISOString());
-      setContactsSynced(totalContacts);
-      setAppointmentsSynced(totalApts);
 
-      toast.success(`✅ Sync completo: ${totalContacts} contactos, ${totalApts} citas sincronizadas`);
+      toast.success(`✅ Sync completo: ${totalInserted} nuevos, ${totalUpdated} actualizados`);
     } catch (err: any) {
       console.error("Sync error:", err);
       toast.error("Error al sincronizar con GHL");
     } finally {
       setSyncing(false);
+      setSyncProgress(null);
     }
   }
+
+  const progressPct = syncProgress ? Math.min(100, Math.round(((syncProgress.page >= 0 ? syncProgress.page : ESTIMATED_PAGES) / ESTIMATED_PAGES) * 100)) : 0;
 
   return (
     <Card className="bg-card/60 border-border/30 p-5 space-y-4">
@@ -819,26 +857,48 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
         <Badge className="ml-auto bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px]">✅ Conectado</Badge>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 text-xs">
-        <div className="bg-secondary/30 rounded-lg p-3">
-          <p className="text-muted-foreground">Location ID</p>
-          <p className="font-mono text-foreground mt-0.5 text-[10px]">NgaxlyDdwg93PvQb5KCw</p>
-        </div>
-        <div className="bg-secondary/30 rounded-lg p-3">
-          <p className="text-muted-foreground">Última sync</p>
-          <p className="font-medium text-foreground mt-0.5">
-            {lastSync ? new Date(lastSync).toLocaleString("es") : "Nunca"}
+      {syncing && syncProgress ? (
+        <div className="space-y-3 py-2">
+          <p className="text-sm font-medium text-foreground">
+            {syncProgress.page === -1 ? "Sincronizando citas..." : "Sincronizando contactos..."}
           </p>
+          {syncProgress.page >= 0 && (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Página {syncProgress.page + 1} de ~{ESTIMATED_PAGES}
+              </p>
+              <Progress value={progressPct} className="h-2" />
+            </>
+          )}
+          <div className="flex gap-4 text-xs text-muted-foreground">
+            <span className="text-emerald-400 font-medium">{syncProgress.inserted} importados</span>
+            <span>{syncProgress.updated} actualizados</span>
+            {syncProgress.skipped > 0 && <span>{syncProgress.skipped} omitidos</span>}
+          </div>
+          <p className="text-[10px] text-muted-foreground/60 italic">No cierres esta ventana</p>
         </div>
-        <div className="bg-secondary/30 rounded-lg p-3">
-          <p className="text-muted-foreground">Contactos importados</p>
-          <p className="text-lg font-bold text-foreground">{contactsSynced}</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="bg-secondary/30 rounded-lg p-3">
+            <p className="text-muted-foreground">Location ID</p>
+            <p className="font-mono text-foreground mt-0.5 text-[10px]">NgaxlyDdwg93PvQb5KCw</p>
+          </div>
+          <div className="bg-secondary/30 rounded-lg p-3">
+            <p className="text-muted-foreground">Última sync</p>
+            <p className="font-medium text-foreground mt-0.5">
+              {lastSync ? new Date(lastSync).toLocaleString("es") : "Nunca"}
+            </p>
+          </div>
+          <div className="bg-secondary/30 rounded-lg p-3">
+            <p className="text-muted-foreground">Contactos importados</p>
+            <p className="text-lg font-bold text-foreground">{contactsSynced}</p>
+          </div>
+          <div className="bg-secondary/30 rounded-lg p-3">
+            <p className="text-muted-foreground">Citas sincronizadas</p>
+            <p className="text-lg font-bold text-foreground">{appointmentsSynced}</p>
+          </div>
         </div>
-        <div className="bg-secondary/30 rounded-lg p-3">
-          <p className="text-muted-foreground">Citas sincronizadas</p>
-          <p className="text-lg font-bold text-foreground">{appointmentsSynced}</p>
-        </div>
-      </div>
+      )}
 
       <Button
         onClick={handleSync}
