@@ -721,6 +721,15 @@ function HubDashboardInner({
               </div>
             )}
           </div>
+          {/* ─── Citas de Hoy ─── */}
+          <div className="w-full max-w-[640px] mx-auto mt-2 mb-4">
+            <TodayAppointments accountId={accountId} maxItems={5} hideStats />
+          </div>
+
+          {/* ─── Consultas Recientes ─── */}
+          <div className="w-full max-w-[640px] mx-auto mb-6">
+            <HubRecentConsultations accountId={accountId} maxItems={5} />
+          </div>
         </div>
       </div>
 
