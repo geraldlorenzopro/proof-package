@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2, Phone } from "lucide-react";
+import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2, Phone, Link2, RefreshCw } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
 import { initializeOfficeConfig, STANDARD_CASE_TYPES, AI_CASE_TYPES, TIMEZONES, US_STATES } from "@/lib/officeSetup";
 
@@ -407,6 +407,9 @@ export default function OfficeSettingsPage() {
             </TabsTrigger>
             <TabsTrigger value="casos" className="data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis text-xs gap-1.5">
               <FolderOpen className="w-3.5 h-3.5" /> Tipos de Caso
+            </TabsTrigger>
+            <TabsTrigger value="ghl" className="data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis text-xs gap-1.5">
+              <Link2 className="w-3.5 h-3.5" /> GHL
             </TabsTrigger>
           </TabsList>
 
