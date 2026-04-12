@@ -45,7 +45,7 @@ export default function HubCasesPage() {
 
   return (
     <HubLayout>
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-5">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-foreground">Casos</h1>
