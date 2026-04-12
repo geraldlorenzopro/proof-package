@@ -89,13 +89,15 @@ export default function HubClientsPage() {
         .select("id, first_name, middle_name, last_name, email, phone, dob, country_of_birth, address_city, address_state, immigration_status, created_at, updated_at")
         .eq("account_id", accountId)
         .eq("is_test", false)
+        .eq("contact_stage", "client")
         .order("updated_at", { ascending: false })
         .limit(PAGE_SIZE),
       supabase
         .from("client_profiles")
         .select("id", { count: "exact", head: true })
         .eq("account_id", accountId)
-        .eq("is_test", false),
+        .eq("is_test", false)
+        .eq("contact_stage", "client"),
       supabase
         .from("client_cases")
         .select("client_profile_id, case_type, file_number")
@@ -123,9 +125,10 @@ export default function HubClientsPage() {
       .from("client_profiles")
       .select("id, first_name, middle_name, last_name, email, phone, dob, country_of_birth, address_city, address_state, immigration_status, created_at, updated_at")
       .eq("account_id", accountId)
-      .eq("is_test", false)
-      .order("updated_at", { ascending: false })
-      .range(from, from + PAGE_SIZE - 1);
+        .eq("is_test", false)
+        .eq("contact_stage", "client")
+        .order("updated_at", { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
     if (data) setClients(prev => [...prev, ...data]);
     setLoadingMore(false);
   }
@@ -181,7 +184,7 @@ export default function HubClientsPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Clientes</h1>
-              <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} clientes registrados</p>
+              <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} expedientes activos</p>
             </div>
           </div>
           <Button variant="default" size="sm" className="gap-2 bg-jarvis hover:bg-jarvis/90" onClick={() => setShowNewModal(true)}>
