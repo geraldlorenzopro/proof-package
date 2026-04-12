@@ -12,6 +12,21 @@ import ChannelLogo from "@/components/intake/ChannelLogo";
 import IntakeWizard from "@/components/intake/IntakeWizard";
 import HubLayout from "@/components/hub/HubLayout";
 
+const TOPIC_LABELS: Record<string, string> = {
+  "proceso:familia": "Residencia / Green Card por familia",
+  "proceso:ajuste-estatus": "Ajuste de estatus",
+  "proceso:consular": "Proceso consular",
+  "proceso:naturalizacion": "Ciudadanía / Naturalización",
+  "proceso:ead-documentos": "Permiso de trabajo",
+  "proceso:visa-temporal": "Visa temporal",
+  "proceso:empleo-inversion": "Green Card por trabajo",
+  "proceso:asilo-humanitario": "Asilo humanitario",
+  "proceso:proteccion-especial": "Protección especial",
+  "proceso:waiver": "Perdón migratorio",
+  "proceso:corte-ice-cbp": "Corte / ICE / Frontera",
+  "proceso:otro": "Otro tema",
+};
+
 interface ConsultationRow {
   id: string;
   client_first_name: string | null;
@@ -274,7 +289,7 @@ export default function ConsultationsPage() {
                   <div className="flex items-center gap-2 mt-0.5">
                     <ChannelLogo channel={item.entry_channel || "otro"} size={14} showLabel={false} />
                     {(item.consultation_topic_tag || item.consultation_topic) && (
-                      <span className="text-[11px] text-muted-foreground/60 truncate">{item.consultation_topic_tag || item.consultation_topic}</span>
+                      <span className="text-[11px] text-muted-foreground/60 truncate">{TOPIC_LABELS[item.consultation_topic_tag || ""] || item.consultation_topic_tag || item.consultation_topic}</span>
                     )}
                   </div>
                 </div>
