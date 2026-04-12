@@ -149,9 +149,7 @@ export default function ConsultationsPage() {
   }
 
   function handleRowClick(item: ConsultationRow) {
-    if (item.client_profile_id) {
-      navigate(`/hub/clients/${item.client_profile_id}`);
-    }
+    navigate(`/hub/consultations/${item.id}`);
   }
 
   async function sendWhatsApp(e: React.MouseEvent, item: ConsultationRow) {

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import HubLayout from "@/components/hub/HubLayout";
@@ -39,7 +40,7 @@ export default function HubLeadsPage() {
   const [search, setSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>("all");
   const [intakeOpen, setIntakeOpen] = useState(false);
-  const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string }>({});
+  const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string }>({});
   const PAGE_SIZE = 500;
 
   const accountId = (() => {
@@ -145,8 +146,23 @@ export default function HubLeadsPage() {
       name: getName(lead),
       phone: lead.phone || undefined,
       email: lead.email || undefined,
+      client_profile_id: lead.id,
     });
     setIntakeOpen(true);
+  }
+
+  function handleIntakeSuccess(result: any) {
+    if (prefillData?.client_profile_id) {
+      setLeads(prev => prev.filter(l => l.id !== prefillData.client_profile_id));
+      setTotalCount(prev => Math.max(0, prev - 1));
+      toast.success(
+        `${prefillData.name || 'Contacto'} movido a Consultas ✅`,
+        { duration: 4000 }
+      );
+    }
+    setIntakeOpen(false);
+    setPrefillData({});
+    navigate('/hub/consultations');
   }
 
   return (
@@ -159,7 +175,7 @@ export default function HubLeadsPage() {
               <UserSearch className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Leads</h1>
+              <h1 className="text-xl font-bold text-foreground">Contactos</h1>
               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos de GHL</p>
             </div>
           </div>
@@ -193,7 +209,7 @@ export default function HubLeadsPage() {
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <UserSearch className="w-10 h-10 text-muted-foreground mb-3" />
-            <h3 className="text-lg font-semibold text-foreground mb-1">{search ? "Sin resultados" : "Sin leads"}</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-1">{search ? "Sin resultados" : "Sin contactos"}</h3>
             <p className="text-sm text-muted-foreground">{search ? "Intenta con otro término." : "Sincroniza contactos desde GHL."}</p>
           </div>
         ) : (
@@ -260,8 +276,9 @@ export default function HubLeadsPage() {
       {intakeOpen && (
         <IntakeWizard
           open={intakeOpen}
-          onOpenChange={setIntakeOpen}
+          onOpenChange={(o) => { if (!o) { setIntakeOpen(false); setPrefillData({}); } }}
           prefill={prefillData}
+          onCreated={handleIntakeSuccess}
         />
       )}
     </HubLayout>

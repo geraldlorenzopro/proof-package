@@ -1161,7 +1161,7 @@ export type Database = {
           account_id: string
           assigned_to: string | null
           assigned_to_name: string | null
-          case_id: string
+          case_id: string | null
           completed_at: string | null
           created_at: string
           created_by: string
@@ -1178,7 +1178,7 @@ export type Database = {
           account_id: string
           assigned_to?: string | null
           assigned_to_name?: string | null
-          case_id: string
+          case_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by: string
@@ -1195,7 +1195,7 @@ export type Database = {
           account_id?: string
           assigned_to?: string | null
           assigned_to_name?: string | null
-          case_id?: string
+          case_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string
