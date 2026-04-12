@@ -41,6 +41,15 @@ const TOPIC_LABELS: Record<string, string> = {
   "otro": "Otro tema",
 };
 
+const REASON_LABELS: Record<string, string> = {
+  'iniciar-proceso': 'Quiere iniciar un proceso migratorio',
+  'seguimiento': 'Tiene un caso activo y necesita seguimiento',
+  'calificacion': 'Quiere saber si califica',
+  'situacion-urgente': 'Situación urgente (audiencia, detención)',
+  'informacion': 'Solo busca información general',
+  'otra': 'Otro motivo',
+};
+
 const CASE_TYPE_LABELS: Record<string, string> = {
   'adjustment-of-status': 'Ajuste de Estatus',
   'family-petition': 'Petición Familiar',
@@ -58,6 +67,7 @@ const CASE_TYPE_LABELS: Record<string, string> = {
   'affidavit-support': 'Affidavit of Support',
   'travel-document': 'Travel Document',
   'waiver': 'Perdón Migratorio',
+  'consultation': 'Consulta inicial requerida',
 };
 
 const INITIAL_TASKS: Record<string, Array<{ title: string; days: number; priority: string }>> = {

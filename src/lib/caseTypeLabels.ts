@@ -23,6 +23,7 @@ export const CASE_TYPE_LABELS: Record<string, string> = {
   'vawa': 'VAWA',
   'u-visa': 'U-Visa',
   'general': 'General',
+  'consultation': 'Consulta inicial requerida',
 };
 
 export function getCaseTypeLabel(caseType: string): string {
