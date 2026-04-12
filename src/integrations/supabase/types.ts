@@ -1420,6 +1420,7 @@ export type Database = {
           address_zip: string | null
           city_of_birth: string | null
           class_of_admission: string | null
+          contact_stage: string
           country_of_birth: string | null
           country_of_citizenship: string | null
           created_at: string
@@ -1470,6 +1471,7 @@ export type Database = {
           address_zip?: string | null
           city_of_birth?: string | null
           class_of_admission?: string | null
+          contact_stage?: string
           country_of_birth?: string | null
           country_of_citizenship?: string | null
           created_at?: string
@@ -1520,6 +1522,7 @@ export type Database = {
           address_zip?: string | null
           city_of_birth?: string | null
           class_of_admission?: string | null
+          contact_stage?: string
           country_of_birth?: string | null
           country_of_citizenship?: string | null
           created_at?: string

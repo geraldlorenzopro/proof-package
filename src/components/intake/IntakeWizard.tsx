@@ -102,11 +102,22 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (caseData: any) => void;
+  prefill?: { name?: string; phone?: string; email?: string };
 }
 
-export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
+export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }: Props) {
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<IntakeData>({ ...INITIAL_DATA });
+  const [data, setData] = useState<IntakeData>(() => {
+    const initial = { ...INITIAL_DATA };
+    if (prefill) {
+      const parts = (prefill.name || "").split(" ");
+      initial.client_first_name = parts[0] || "";
+      initial.client_last_name = parts.slice(1).join(" ") || "";
+      initial.client_phone = prefill.phone || "";
+      initial.client_email = prefill.email || "";
+    }
+    return initial;
+  });
   const [accountId, setAccountId] = useState<string>("");
   const [creating, setCreating] = useState(false);
   const [slideDir, setSlideDir] = useState<"left" | "right">("left");

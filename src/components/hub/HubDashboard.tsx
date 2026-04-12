@@ -106,6 +106,7 @@ function HubDashboardInner({
   // KPI
   const [activeCases, setActiveCases] = useState(0);
   const [totalClients, setTotalClients] = useState(0);
+  const [totalLeads, setTotalLeads] = useState(0);
   const [weekConsultations, setWeekConsultations] = useState(0);
   const [todayAppointments, setTodayAppointments] = useState(0);
   const [overdueDeadlines, setOverdueDeadlines] = useState(0);
@@ -373,11 +374,13 @@ function HubDashboardInner({
       startOfWeek.setDate(now.getDate() - now.getDay());
       const todayStr = now.toISOString().split("T")[0];
 
-      const [activeRes, clientsRes, weekRes, todayRes, deadlineRes] = await Promise.all([
+      const [activeRes, clientsRes, leadsRes, weekRes, todayRes, deadlineRes] = await Promise.all([
         supabase.from("client_cases").select("id", { count: "exact", head: true })
           .eq("account_id", accountId).not("status", "eq", "completed"),
         supabase.from("client_profiles").select("id", { count: "exact", head: true })
-          .eq("account_id", accountId).eq("is_test", false),
+          .eq("account_id", accountId).eq("is_test", false).eq("contact_stage", "client"),
+        supabase.from("client_profiles").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).eq("is_test", false).eq("contact_stage", "lead"),
         supabase.from("intake_sessions" as any).select("id", { count: "exact", head: true })
           .eq("account_id", accountId).gte("created_at", startOfWeek.toISOString()),
         supabase.from("appointments").select("id", { count: "exact", head: true })
@@ -388,6 +391,7 @@ function HubDashboardInner({
 
       setActiveCases(activeRes.count || 0);
       setTotalClients(clientsRes.count || 0);
+      setTotalLeads(leadsRes.count || 0);
       setWeekConsultations(weekRes.count || 0);
       setTodayAppointments(todayRes.count || 0);
       setOverdueDeadlines(deadlineRes.count || 0);
@@ -443,7 +447,7 @@ function HubDashboardInner({
   const kpis = [
     { label: "Casos activos", value: activeCases, route: "/hub/cases", icon: FolderOpen, accent: "text-jarvis", bgAccent: "bg-jarvis/10 border-jarvis/20" },
     { label: "Clientes", value: totalClients, route: "/hub/clients", icon: Users, accent: "text-violet-400", bgAccent: "bg-violet-500/10 border-violet-500/20" },
-    { label: "Consultas", value: weekConsultations, route: "/hub/consultations", icon: MessageSquare, accent: "text-emerald-400", bgAccent: "bg-emerald-500/10 border-emerald-500/20" },
+    { label: "Leads GHL", value: totalLeads, route: "/hub/leads", icon: Users, accent: "text-amber-400", bgAccent: "bg-amber-500/10 border-amber-500/20" },
     { label: "Citas hoy", value: todayAppointments, route: "/hub/agenda", icon: CalendarCheck, accent: "text-sky-400", bgAccent: "bg-sky-500/10 border-sky-500/20", urgent: overdueDeadlines > 0 },
   ];
 
