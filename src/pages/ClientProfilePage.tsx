@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { toast } from "sonner";
 import ChannelLogo from "@/components/intake/ChannelLogo";
 import HubLayout from "@/components/hub/HubLayout";
+import IntakeWizard from "@/components/intake/IntakeWizard";
 
 interface Profile {
   id: string;
@@ -92,6 +94,7 @@ export default function ClientProfilePage() {
   const [docs, setDocs] = useState<CaseDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [intakeOpen, setIntakeOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -174,6 +177,9 @@ export default function ClientProfilePage() {
           <div className="flex items-center gap-2 shrink-0">
             {waLink && <Button variant="outline" size="sm" asChild><a href={waLink} target="_blank" rel="noopener noreferrer"><Phone className="w-4 h-4" /></a></Button>}
             {mailLink && <Button variant="outline" size="sm" asChild><a href={mailLink}><Mail className="w-4 h-4" /></a></Button>}
+            <Button onClick={() => setIntakeOpen(true)} size="sm" className="gap-1.5">
+              <MessageSquare className="w-4 h-4" /> Nueva consulta
+            </Button>
           </div>
         </div>
 
@@ -287,6 +293,23 @@ export default function ClientProfilePage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {intakeOpen && profile && (
+        <IntakeWizard
+          open={intakeOpen}
+          onOpenChange={(o) => { if (!o) setIntakeOpen(false); }}
+          prefill={{
+            name: [profile.first_name, profile.last_name].filter(Boolean).join(' '),
+            phone: profile.phone || undefined,
+            email: profile.email || undefined,
+            client_profile_id: profile.id,
+          }}
+          onCreated={() => {
+            setIntakeOpen(false);
+            toast.success('Consulta registrada');
+          }}
+        />
+      )}
     </HubLayout>
   );
 }
