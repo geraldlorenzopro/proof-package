@@ -769,6 +769,92 @@ export default function OfficeSettingsPage() {
   );
 }
 
+// ── GHL Integration Card ──
+function GhlIntegrationCard({ accountId, config }: { accountId: string | null; config: OfficeConfig | null }) {
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<string | null>((config as any)?.ghl_last_sync || null);
+  const [contactsSynced, setContactsSynced] = useState<number>((config as any)?.ghl_contacts_synced || 0);
+  const [appointmentsSynced, setAppointmentsSynced] = useState<number>((config as any)?.ghl_appointments_synced || 0);
+
+  async function handleSync() {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-ghl-contacts", { method: "POST", body: {} });
+      if (error) throw error;
+
+      const contacts = data?.contacts;
+      const appointments = data?.appointments;
+
+      if (contacts?.errors?.length && contacts.errors[0]?.includes("401")) {
+        toast.error("API Key de GHL inválida. Ve a Configuración.");
+        return;
+      }
+
+      const totalContacts = (contacts?.inserted || 0) + (contacts?.updated || 0);
+      const totalApts = (appointments?.inserted || 0) + (appointments?.updated || 0);
+
+      setLastSync(new Date().toISOString());
+      setContactsSynced(totalContacts);
+      setAppointmentsSynced(totalApts);
+
+      toast.success(`✅ Sync completo: ${totalContacts} contactos, ${totalApts} citas sincronizadas`);
+    } catch (err: any) {
+      console.error("Sync error:", err);
+      toast.error("Error al sincronizar con GHL");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  return (
+    <Card className="bg-card/60 border-border/30 p-5 space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+          <Link2 className="w-5 h-5 text-emerald-400" />
+        </div>
+        <div>
+          <h3 className="text-sm font-bold text-foreground">GoHighLevel</h3>
+          <p className="text-xs text-muted-foreground">Sub-cuenta: Mr Visa Immigration</p>
+        </div>
+        <Badge className="ml-auto bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px]">✅ Conectado</Badge>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="bg-secondary/30 rounded-lg p-3">
+          <p className="text-muted-foreground">Location ID</p>
+          <p className="font-mono text-foreground mt-0.5 text-[10px]">NgaxlyDdwg93PvQb5KCw</p>
+        </div>
+        <div className="bg-secondary/30 rounded-lg p-3">
+          <p className="text-muted-foreground">Última sync</p>
+          <p className="font-medium text-foreground mt-0.5">
+            {lastSync ? new Date(lastSync).toLocaleString("es") : "Nunca"}
+          </p>
+        </div>
+        <div className="bg-secondary/30 rounded-lg p-3">
+          <p className="text-muted-foreground">Contactos importados</p>
+          <p className="text-lg font-bold text-foreground">{contactsSynced}</p>
+        </div>
+        <div className="bg-secondary/30 rounded-lg p-3">
+          <p className="text-muted-foreground">Citas sincronizadas</p>
+          <p className="text-lg font-bold text-foreground">{appointmentsSynced}</p>
+        </div>
+      </div>
+
+      <Button
+        onClick={handleSync}
+        disabled={syncing}
+        className="w-full bg-jarvis hover:bg-jarvis-glow text-background gap-2"
+      >
+        {syncing ? (
+          <><Loader2 className="w-4 h-4 animate-spin" /> Sincronizando...</>
+        ) : (
+          <><RefreshCw className="w-4 h-4" /> Sincronizar ahora</>
+        )}
+      </Button>
+    </Card>
+  );
+}
+
 // ── Helpers ──
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (

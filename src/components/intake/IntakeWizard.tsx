@@ -302,6 +302,26 @@ export default function IntakeWizard({ open, onOpenChange, onCreated }: Props) {
         clientProfileId: profileId || null,
         createdAt: new Date().toISOString(),
       });
+
+      // Flow 3: Push contact to GHL (fire-and-forget)
+      if (profileId) {
+        supabase.functions.invoke("push-contact-to-ghl", {
+          body: {
+            client_profile_id: profileId,
+            first_name: data.client_first_name,
+            last_name: data.client_last_name,
+            email: data.client_email,
+            phone: data.client_phone,
+            entry_channel: data.entry_channel,
+            consultation_topic_tag: data.consultation_topic_tag,
+            urgency_level: data.urgency_level,
+            intake_session_id: intakeSession?.id,
+            account_id: accountId,
+            created_by: user.id,
+          },
+        }).catch(err => console.warn("GHL push failed (non-blocking):", err));
+      }
+
       toast.success(`${clientName} registrado correctamente`);
     } catch (err: any) {
       console.error("Intake submit error:", err);
