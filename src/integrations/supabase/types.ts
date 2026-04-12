@@ -1429,6 +1429,7 @@ export type Database = {
           email: string | null
           first_name: string | null
           gender: string | null
+          ghl_contact_id: string | null
           i94_number: string | null
           id: string
           immigration_status: string | null
@@ -1478,6 +1479,7 @@ export type Database = {
           email?: string | null
           first_name?: string | null
           gender?: string | null
+          ghl_contact_id?: string | null
           i94_number?: string | null
           id?: string
           immigration_status?: string | null
@@ -1527,6 +1529,7 @@ export type Database = {
           email?: string | null
           first_name?: string | null
           gender?: string | null
+          ghl_contact_id?: string | null
           i94_number?: string | null
           id?: string
           immigration_status?: string | null
@@ -2364,6 +2367,8 @@ export type Database = {
           firm_logo_url: string | null
           firm_name: string | null
           firm_phone: string | null
+          ghl_appointments_synced: number | null
+          ghl_contacts_synced: number | null
           ghl_last_sync: string | null
           ghl_location_id: string | null
           id: string
@@ -2386,6 +2391,8 @@ export type Database = {
           firm_logo_url?: string | null
           firm_name?: string | null
           firm_phone?: string | null
+          ghl_appointments_synced?: number | null
+          ghl_contacts_synced?: number | null
           ghl_last_sync?: string | null
           ghl_location_id?: string | null
           id?: string
@@ -2408,6 +2415,8 @@ export type Database = {
           firm_logo_url?: string | null
           firm_name?: string | null
           firm_phone?: string | null
+          ghl_appointments_synced?: number | null
+          ghl_contacts_synced?: number | null
           ghl_last_sync?: string | null
           ghl_location_id?: string | null
           id?: string
