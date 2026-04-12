@@ -237,19 +237,27 @@ async function syncAppointments(apiKey: string, admin: ReturnType<typeof createC
     try {
       const cals = JSON.parse(text4);
       const calList = cals.calendars || cals.data || [];
+      console.log(`Found ${calList.length} calendars, trying per-calendar fetch...`);
       for (const cal of calList.slice(0, 5)) {
+        // Use calendarId as query param, not path param
         const evRes = await ghlFetch(
-          `/calendars/${cal.id}/events?locationId=${LOCATION_ID}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
+          `/calendars/events?locationId=${LOCATION_ID}&calendarId=${cal.id}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
           apiKey
         );
+        const evText = await evRes.text();
+        console.log(`Calendar ${cal.id} (${cal.name || 'unnamed'}): status=${evRes.status}, preview=${evText.substring(0, 200)}`);
         if (evRes.ok) {
-          const evData = await evRes.json();
-          const found = evData.events || evData.data || [];
-          events.push(...found);
+          try {
+            const evData = JSON.parse(evText);
+            const found = evData.events || evData.data || [];
+            events.push(...found);
+          } catch {}
         }
       }
-      if (events.length > 0) usedEndpoint = "calendars/:id/events";
-    } catch {}
+      if (events.length > 0) usedEndpoint = "calendars/events?calendarId=";
+    } catch (e) {
+      console.error("Per-calendar fetch error:", e);
+    }
   }
 
   stats.total_in_ghl = events.length;
