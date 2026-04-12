@@ -33,7 +33,7 @@ export default function HubCasesPage() {
     if (!accountId) return;
     supabase
       .from("client_cases")
-      .select("id, client_name, case_type, pipeline_stage, file_number, status, updated_at")
+      .select("id, client_name, case_type, pipeline_stage, file_number, status, updated_at, client_profile_id")
       .eq("account_id", accountId)
       .not("status", "eq", "completed")
       .order("updated_at", { ascending: false })
@@ -67,7 +67,14 @@ export default function HubCasesPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground truncate">{c.client_name}</span>
+                    {c.client_profile_id ? (
+                      <span
+                        onClick={(e) => { e.stopPropagation(); navigate(`/hub/clients/${c.client_profile_id}`); }}
+                        className="text-sm font-semibold text-foreground truncate hover:text-jarvis transition-colors cursor-pointer underline decoration-jarvis/30 underline-offset-2"
+                      >{c.client_name}</span>
+                    ) : (
+                      <span className="text-sm font-semibold text-foreground truncate">{c.client_name}</span>
+                    )}
                     {c.file_number && <span className="text-[10px] font-mono text-muted-foreground/50">{c.file_number}</span>}
                   </div>
                   <span className="text-[11px] text-muted-foreground/60">{getCaseTypeLabel(c.case_type)}</span>
