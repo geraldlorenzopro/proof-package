@@ -15,6 +15,7 @@ export interface IntakeData {
   referral_source: string;
   entry_channel_detail: string;
   client_profile_id: string | null;
+  existing_client_profile_id: string | null;
   is_existing_client: boolean;
   client_first_name: string;
   client_last_name: string;
@@ -41,6 +42,7 @@ const INITIAL_DATA: IntakeData = {
   referral_source: "",
   entry_channel_detail: "",
   client_profile_id: null,
+  existing_client_profile_id: null,
   is_existing_client: false,
   client_first_name: "",
   client_last_name: "",
@@ -101,8 +103,8 @@ const DELIVERY_LABELS: Record<string, string> = {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreated?: (caseData: any) => void;
-  prefill?: { name?: string; phone?: string; email?: string };
+  onCreated?: (data: any) => void;
+  prefill?: { name?: string; phone?: string; email?: string; client_profile_id?: string };
 }
 
 export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }: Props) {
@@ -115,6 +117,10 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
       initial.client_last_name = parts.slice(1).join(" ") || "";
       initial.client_phone = prefill.phone || "";
       initial.client_email = prefill.email || "";
+      if (prefill.client_profile_id) {
+        initial.existing_client_profile_id = prefill.client_profile_id;
+        initial.is_existing_client = true;
+      }
     }
     return initial;
   });
@@ -145,7 +151,19 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
   useEffect(() => {
     if (open) {
       setStep(0);
-      setData({ ...INITIAL_DATA });
+      const initial = { ...INITIAL_DATA };
+      if (prefill) {
+        const parts = (prefill.name || "").split(" ");
+        initial.client_first_name = parts[0] || "";
+        initial.client_last_name = parts.slice(1).join(" ") || "";
+        initial.client_phone = prefill.phone || "";
+        initial.client_email = prefill.email || "";
+        if (prefill.client_profile_id) {
+          initial.existing_client_profile_id = prefill.client_profile_id;
+          initial.is_existing_client = true;
+        }
+      }
+      setData(initial);
       setCompleted(null);
       setAnimating(false);
       loadAccountId();
@@ -199,8 +217,16 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
 
       const clientName = `${data.client_first_name} ${data.client_last_name}`.trim();
 
-      let profileId = data.client_profile_id;
-      if (!profileId) {
+      // FIX 2: Use existing profile if provided, don't duplicate
+      let profileId = data.existing_client_profile_id || data.client_profile_id;
+      
+      if (profileId) {
+        // Just touch the updated_at
+        await supabase
+          .from("client_profiles")
+          .update({ updated_at: new Date().toISOString() } as any)
+          .eq("id", profileId);
+      } else {
         const { data: profile, error: profErr } = await supabase
           .from("client_profiles")
           .insert({
@@ -231,7 +257,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
           entry_channel_detail: data.entry_channel_detail || null,
           referral_source: data.referral_source || null,
           client_profile_id: profileId,
-          is_existing_client: data.is_existing_client,
+          is_existing_client: !!data.existing_client_profile_id,
           client_first_name: data.client_first_name,
           client_last_name: data.client_last_name,
           client_phone: data.client_phone,
@@ -297,7 +323,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
         window.open(preIntakeUrl, "_blank");
       }
 
-      setCompleted({
+      const completedData = {
         clientName,
         firstName: data.client_first_name,
         phone: data.client_phone,
@@ -312,9 +338,11 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
         appointmentId: appointment?.id || null,
         clientProfileId: profileId || null,
         createdAt: new Date().toISOString(),
-      });
+      };
 
-      // Flow 3: Push contact to GHL (fire-and-forget)
+      setCompleted(completedData);
+
+      // Push contact to GHL (fire-and-forget)
       if (profileId) {
         supabase.functions.invoke("push-contact-to-ghl", {
           body: {
@@ -334,6 +362,11 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
       }
 
       toast.success(`${clientName} registrado correctamente`);
+
+      // Call onCreated callback
+      if (onCreated) {
+        onCreated(completedData);
+      }
     } catch (err: any) {
       console.error("Intake submit error:", err);
       const msg = err?.message || err?.details || "Error al registrar el cliente";
@@ -398,7 +431,6 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
                 {STEPS.map((s, i) => {
                   const isDone = i < step || (i === 0 && step0Done && step > 0) || (i === 1 && step1Done && step > 1);
                   const isActive = i === step;
-                  const isPending = i > step;
                   return (
                     <div key={s.key} className="flex items-center flex-1 gap-2">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-200 ${
@@ -537,7 +569,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
                     </div>
                   )}
 
-                  {/* Action buttons - hierarchy: profile (medium), register another (ghost) */}
+                  {/* Action buttons */}
                   <div className="space-y-2 pt-1">
                     <button
                       onClick={() => {
