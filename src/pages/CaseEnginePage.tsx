@@ -272,11 +272,11 @@ export default function CaseEnginePage() {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={() => navigate('/hub/cases')} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="h-4 w-px bg-border" />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Case Engine</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Volver a Casos</span>
           </div>
 
           {/* Hero card */}
