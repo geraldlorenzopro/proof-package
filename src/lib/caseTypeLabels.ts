@@ -27,7 +27,14 @@ export const CASE_TYPE_LABELS: Record<string, string> = {
 };
 
 export function getCaseTypeLabel(caseType: string): string {
-  return CASE_TYPE_LABELS[caseType] || caseType;
+  if (!caseType) return 'General';
+  // Direct match
+  if (CASE_TYPE_LABELS[caseType]) return CASE_TYPE_LABELS[caseType];
+  // Normalize: lowercase + replace spaces with hyphens
+  const normalized = caseType.toLowerCase().replace(/\s+/g, '-');
+  if (CASE_TYPE_LABELS[normalized]) return CASE_TYPE_LABELS[normalized];
+  // Fallback: return original
+  return caseType;
 }
 
 export function normalizeClientName(name: string): string {
