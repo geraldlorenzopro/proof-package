@@ -41,6 +41,15 @@ const TOPIC_LABELS: Record<string, string> = {
   "otro": "Otro tema",
 };
 
+const REASON_LABELS: Record<string, string> = {
+  'iniciar-proceso': 'Quiere iniciar un proceso migratorio',
+  'seguimiento': 'Tiene un caso activo y necesita seguimiento',
+  'calificacion': 'Quiere saber si califica',
+  'situacion-urgente': 'Situación urgente (audiencia, detención)',
+  'informacion': 'Solo busca información general',
+  'otra': 'Otro motivo',
+};
+
 const CASE_TYPE_LABELS: Record<string, string> = {
   'adjustment-of-status': 'Ajuste de Estatus',
   'family-petition': 'Petición Familiar',
@@ -58,6 +67,7 @@ const CASE_TYPE_LABELS: Record<string, string> = {
   'affidavit-support': 'Affidavit of Support',
   'travel-document': 'Travel Document',
   'waiver': 'Perdón Migratorio',
+  'consultation': 'Consulta inicial requerida',
 };
 
 const INITIAL_TASKS: Record<string, Array<{ title: string; days: number; priority: string }>> = {
@@ -510,7 +520,8 @@ export default function ConsultationRoom() {
   }
 
   const formatTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-  const clientName = profile ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() : intake?.client_first_name || "";
+  const rawClientName = profile ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() : intake?.client_first_name || "";
+  const clientName = capitalizeName(rawClientName);
   const topicLabel = TOPIC_LABELS[intake?.consultation_topic || ""] || intake?.consultation_topic || "";
   const urgency = URGENCY_CONFIG[intake?.urgency_level || ""];
   const channelLabel = CHANNEL_LABELS[intake?.entry_channel || ""] || intake?.entry_channel || "";
@@ -632,7 +643,7 @@ export default function ConsultationRoom() {
               {intake?.consultation_reason && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Motivo</span>
-                  <span className="text-foreground">{intake.consultation_reason}</span>
+                  <span className="text-foreground">{REASON_LABELS[intake.consultation_reason] || intake.consultation_reason}</span>
                 </div>
               )}
               {intake?.notes && (
@@ -681,7 +692,11 @@ export default function ConsultationRoom() {
                     <span className="text-sm font-semibold text-foreground">🤖 {CASE_TYPE_LABELS[felixSuggestion.case_type] || felixSuggestion.case_type}</span>
                     <Badge variant="outline" className="text-[9px]">Confianza: {felixSuggestion.confidence}%</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">{felixSuggestion.reasoning}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {felixSuggestion.case_type === 'consultation' 
+                      ? "Felix necesita más información del cliente para sugerir un tipo de caso específico. Completa el pre-intake para una sugerencia más precisa."
+                      : felixSuggestion.reasoning}
+                  </p>
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground py-2">No se pudo generar sugerencia</p>
