@@ -57,12 +57,15 @@ type SortType = "recent" | "name" | "completeness";
 export default function HubClientsPage() {
   const navigate = useNavigate();
   const [clients, setClients] = useState<ClientProfile[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [caseMap, setCaseMap] = useState<Record<string, { case_type: string; file_number: string | null }>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [sortBy, setSortBy] = useState<SortType>("recent");
   const [showNewModal, setShowNewModal] = useState(false);
+  const PAGE_SIZE = 500;
 
   const accountId = (() => {
     try {
@@ -80,13 +83,19 @@ export default function HubClientsPage() {
 
   async function fetchClients() {
     setLoading(true);
-    const [profilesRes, casesRes] = await Promise.all([
+    const [profilesRes, countRes, casesRes] = await Promise.all([
       supabase
         .from("client_profiles")
         .select("id, first_name, middle_name, last_name, email, phone, dob, country_of_birth, address_city, address_state, immigration_status, created_at, updated_at")
         .eq("account_id", accountId)
         .eq("is_test", false)
-        .order("updated_at", { ascending: false }),
+        .order("updated_at", { ascending: false })
+        .limit(PAGE_SIZE),
+      supabase
+        .from("client_profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("account_id", accountId)
+        .eq("is_test", false),
       supabase
         .from("client_cases")
         .select("client_profile_id, case_type, file_number")
@@ -94,6 +103,7 @@ export default function HubClientsPage() {
         .order("created_at", { ascending: false }),
     ]);
     if (profilesRes.data) setClients(profilesRes.data);
+    setTotalCount(countRes.count || 0);
     if (casesRes.data) {
       const map: Record<string, { case_type: string; file_number: string | null }> = {};
       for (const c of casesRes.data as any[]) {
@@ -104,6 +114,20 @@ export default function HubClientsPage() {
       setCaseMap(map);
     }
     setLoading(false);
+  }
+
+  async function loadMore() {
+    setLoadingMore(true);
+    const from = clients.length;
+    const { data } = await supabase
+      .from("client_profiles")
+      .select("id, first_name, middle_name, last_name, email, phone, dob, country_of_birth, address_city, address_state, immigration_status, created_at, updated_at")
+      .eq("account_id", accountId)
+      .eq("is_test", false)
+      .order("updated_at", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+    if (data) setClients(prev => [...prev, ...data]);
+    setLoadingMore(false);
   }
 
   const getName = (c: ClientProfile) => normalizeClientName([c.first_name, c.middle_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre");
@@ -157,7 +181,7 @@ export default function HubClientsPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Clientes</h1>
-              <p className="text-xs text-muted-foreground">{clients.length} cliente{clients.length !== 1 ? "s" : ""} registrados</p>
+              <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} clientes registrados</p>
             </div>
           </div>
           <Button variant="default" size="sm" className="gap-2 bg-jarvis hover:bg-jarvis/90" onClick={() => setShowNewModal(true)}>
@@ -266,6 +290,15 @@ export default function HubClientsPage() {
               })}
             </AnimatePresence>
           </motion.div>
+        )}
+
+        {!loading && totalCount > clients.length && (
+          <div className="flex justify-center pt-4">
+            <Button variant="outline" onClick={loadMore} disabled={loadingMore} className="gap-2">
+              {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Cargar más clientes → ({clients.length.toLocaleString("es")} de {totalCount.toLocaleString("es")})
+            </Button>
+          </div>
         )}
       </div>
 
