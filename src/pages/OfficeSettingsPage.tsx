@@ -776,7 +776,20 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
   const [contactsSynced, setContactsSynced] = useState<number>((config as any)?.ghl_contacts_synced || 0);
   const [appointmentsSynced, setAppointmentsSynced] = useState<number>((config as any)?.ghl_appointments_synced || 0);
   const [syncProgress, setSyncProgress] = useState<{ page: number; inserted: number; updated: number; skipped: number } | null>(null);
-  const ESTIMATED_PAGES = 21; // ~2060 contacts / 100
+  const [totalNer, setTotalNer] = useState(0);
+  const [ghlLinked, setGhlLinked] = useState(0);
+  const ESTIMATED_PAGES = 21;
+
+  useEffect(() => {
+    if (!accountId) return;
+    Promise.all([
+      supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId).eq("is_test", false),
+      supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId).not("ghl_contact_id", "is", null),
+    ]).then(([totalRes, linkedRes]) => {
+      setTotalNer(totalRes.count || 0);
+      setGhlLinked(linkedRes.count || 0);
+    });
+  }, [accountId]);
 
   async function handleSync() {
     setSyncing(true);
@@ -790,49 +803,58 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
     let page = 0;
 
     try {
-      // Phase 1: Contacts (paginated)
       while (!done) {
         const { data, error } = await supabase.functions.invoke("sync-ghl-contacts", {
           body: { cursor, mode: "contacts" },
         });
-
-        if (error) {
-          toast.error("Error en sync: " + error.message);
-          break;
-        }
-
+        if (error) { toast.error("Error en sync: " + error.message); break; }
         if (data?.progress?.errors?.length) {
           const firstErr = data.progress.errors[0];
-          if (firstErr.includes("401")) {
-            toast.error("API Key de GHL inválida. Ve a Configuración.");
-            break;
-          }
+          if (firstErr.includes("401")) { toast.error("API Key de GHL inválida. Ve a Configuración."); break; }
         }
-
         totalInserted += data.progress?.inserted || 0;
         totalUpdated += data.progress?.updated || 0;
         totalSkipped += data.progress?.skipped || 0;
         cursor = data.cursor;
         done = data.done;
         page = data.progress?.page ?? page + 1;
-
         setSyncProgress({ page, inserted: totalInserted, updated: totalUpdated, skipped: totalSkipped });
       }
 
-      // Phase 2: Appointments (single call)
+      // Phase 2: Appointments
       if (done) {
-        setSyncProgress(prev => prev ? { ...prev, page: -1 } : null); // -1 = appointments phase
+        setSyncProgress(prev => prev ? { ...prev, page: -1 } : null);
         const { data: aptData } = await supabase.functions.invoke("sync-ghl-contacts", {
           body: { mode: "appointments" },
         });
         const aptTotal = (aptData?.progress?.inserted || 0) + (aptData?.progress?.updated || 0);
         setAppointmentsSynced(aptTotal);
+
+        // Debug toast for appointments
+        if (aptData?.debug) {
+          const d = aptData.debug;
+          console.log("GHL Appointments Debug:", d);
+          if (d.events_found > 0) {
+            toast.success(`✅ ${d.events_found} citas encontradas via ${d.used_endpoint}`);
+          } else {
+            const summary = (d.tests || []).map((t: any) => `Test ${t.test}: ${t.status}`).join(", ");
+            toast.error(`Citas: 0 encontradas. ${summary}`);
+          }
+        }
       }
 
       setContactsSynced(totalInserted + totalUpdated);
       setLastSync(new Date().toISOString());
 
-      toast.success(`✅ Sync completo: ${totalInserted} nuevos, ${totalUpdated} actualizados`);
+      // Refresh counts
+      const [totalRes, linkedRes] = await Promise.all([
+        supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId!).eq("is_test", false),
+        supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId!).not("ghl_contact_id", "is", null),
+      ]);
+      setTotalNer(totalRes.count || 0);
+      setGhlLinked(linkedRes.count || 0);
+
+      toast.success(`✅ Sync completo: ${totalInserted.toLocaleString("es")} nuevos, ${totalUpdated.toLocaleString("es")} actualizados`);
     } catch (err: any) {
       console.error("Sync error:", err);
       toast.error("Error al sincronizar con GHL");
@@ -871,31 +893,37 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
             </>
           )}
           <div className="flex gap-4 text-xs text-muted-foreground">
-            <span className="text-emerald-400 font-medium">{syncProgress.inserted} importados</span>
-            <span>{syncProgress.updated} actualizados</span>
-            {syncProgress.skipped > 0 && <span>{syncProgress.skipped} omitidos</span>}
+            <span className="text-emerald-400 font-medium">{syncProgress.inserted.toLocaleString("es")} importados</span>
+            <span>{syncProgress.updated.toLocaleString("es")} actualizados</span>
+            {syncProgress.skipped > 0 && <span>{syncProgress.skipped.toLocaleString("es")} omitidos</span>}
           </div>
           <p className="text-[10px] text-muted-foreground/60 italic">No cierres esta ventana</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 text-xs">
-          <div className="bg-secondary/30 rounded-lg p-3">
-            <p className="text-muted-foreground">Location ID</p>
-            <p className="font-mono text-foreground mt-0.5 text-[10px]">NgaxlyDdwg93PvQb5KCw</p>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="bg-secondary/30 rounded-lg p-3">
+              <p className="text-muted-foreground">Total en NER</p>
+              <p className="text-lg font-bold text-foreground">{totalNer.toLocaleString("es")}</p>
+            </div>
+            <div className="bg-secondary/30 rounded-lg p-3">
+              <p className="text-muted-foreground">Vinculados a GHL</p>
+              <p className="text-lg font-bold text-foreground">{ghlLinked.toLocaleString("es")}</p>
+            </div>
+            <div className="bg-secondary/30 rounded-lg p-3">
+              <p className="text-muted-foreground">Nuevos último sync</p>
+              <p className="text-lg font-bold text-foreground">{contactsSynced.toLocaleString("es")}</p>
+            </div>
+            <div className="bg-secondary/30 rounded-lg p-3">
+              <p className="text-muted-foreground">Citas sincronizadas</p>
+              <p className="text-lg font-bold text-foreground">{appointmentsSynced.toLocaleString("es")}</p>
+            </div>
           </div>
-          <div className="bg-secondary/30 rounded-lg p-3">
+          <div className="bg-secondary/30 rounded-lg p-3 text-xs">
             <p className="text-muted-foreground">Última sync</p>
             <p className="font-medium text-foreground mt-0.5">
               {lastSync ? new Date(lastSync).toLocaleString("es") : "Nunca"}
             </p>
-          </div>
-          <div className="bg-secondary/30 rounded-lg p-3">
-            <p className="text-muted-foreground">Contactos importados</p>
-            <p className="text-lg font-bold text-foreground">{contactsSynced}</p>
-          </div>
-          <div className="bg-secondary/30 rounded-lg p-3">
-            <p className="text-muted-foreground">Citas sincronizadas</p>
-            <p className="text-lg font-bold text-foreground">{appointmentsSynced}</p>
           </div>
         </div>
       )}

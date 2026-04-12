@@ -41,7 +41,6 @@ function makeAdmin() {
 async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createClient>, cursor: CursorState | null) {
   const progress = { page: cursor?.page ?? 0, total_processed: 0, inserted: 0, updated: 0, skipped: 0, errors: [] as string[] };
 
-  // Get created_by (any member)
   const { data: member } = await admin
     .from("account_members")
     .select("user_id")
@@ -51,7 +50,6 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
   const createdBy = member?.user_id;
   if (!createdBy) { progress.errors.push("No member found for account"); return { done: true, cursor: null, progress }; }
 
-  // Build GHL URL
   const params = new URLSearchParams({ locationId: LOCATION_ID, limit: "100" });
   if (cursor) {
     params.set("startAfterId", cursor.startAfterId);
@@ -83,12 +81,10 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
     return { done: true, cursor: null, progress };
   }
 
-  // Batch lookup: collect all identifiers
   const ghlIds = contacts.map((c: any) => c.id).filter(Boolean);
   const phones = contacts.map((c: any) => (c.phone || "").trim()).filter(Boolean);
   const emails = contacts.map((c: any) => (c.email || "").trim()).filter(Boolean);
 
-  // Build OR filter for batch lookup
   const orParts: string[] = [];
   if (ghlIds.length) orParts.push(`ghl_contact_id.in.(${ghlIds.join(",")})`);
   if (phones.length) orParts.push(`phone.in.(${phones.join(",")})`);
@@ -118,7 +114,6 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
     const email = (c.email || "").trim();
     if (!phone && !email) { progress.skipped++; continue; }
 
-    // Find existing match
     const match =
       existingMap.get(`ghl:${c.id}`) ||
       (phone ? existingMap.get(`phone:${phone}`) : null) ||
@@ -152,32 +147,24 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
     }
   }
 
-  // Batch insert
   if (toInsert.length) {
     const { error } = await admin.from("client_profiles").insert(toInsert);
-    if (error) {
-      progress.errors.push(`Batch insert error: ${error.message}`);
-    } else {
-      progress.inserted = toInsert.length;
-    }
+    if (error) progress.errors.push(`Batch insert error: ${error.message}`);
+    else progress.inserted = toInsert.length;
   }
 
-  // Parallel updates (chunked to avoid overwhelming)
   if (toUpdate.length) {
     const results = await Promise.all(
       toUpdate.map(r => admin.from("client_profiles").update(r.data).eq("id", r.id))
     );
     let updateErrors = 0;
-    for (const r of results) {
-      if (r.error) updateErrors++;
-    }
+    for (const r of results) { if (r.error) updateErrors++; }
     progress.updated = toUpdate.length - updateErrors;
     if (updateErrors) progress.errors.push(`${updateErrors} update errors`);
   }
 
   progress.skipped = contacts.length - toInsert.length - toUpdate.length;
 
-  // Determine next cursor
   const hasMore = contacts.length === 100;
   const nextCursor: CursorState | null = hasMore
     ? {
@@ -190,47 +177,85 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
   return { done: !hasMore, cursor: nextCursor, progress };
 }
 
-// ── Appointments: single call ──
+// ── Appointments: debug + multi-endpoint discovery ──
 async function syncAppointments(apiKey: string, admin: ReturnType<typeof createClient>) {
   const stats = { total_in_ghl: 0, inserted: 0, updated: 0, skipped: 0, errors: [] as string[] };
+  const debugResults: any[] = [];
 
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 30);
-  const endDate = new Date();
-  endDate.setDate(endDate.getDate() + 60);
+  const startTime = new Date();
+  startTime.setDate(startTime.getDate() - 30);
+  const endTime = new Date();
+  endTime.setDate(endTime.getDate() + 60);
 
-  // Try /calendars/events
-  const params = new URLSearchParams({
-    locationId: LOCATION_ID,
-    startTime: startDate.toISOString(),
-    endTime: endDate.toISOString(),
-  });
+  // TEST 1 — calendars/events with dates
+  const test1Res = await ghlFetch(
+    `/calendars/events?locationId=${LOCATION_ID}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
+    apiKey
+  );
+  const text1 = await test1Res.text();
+  debugResults.push({ test: 1, endpoint: "/calendars/events con fechas", status: test1Res.status, preview: text1.substring(0, 300) });
 
+  // TEST 2 — calendars/events without dates
+  const test2Res = await ghlFetch(`/calendars/events?locationId=${LOCATION_ID}`, apiKey);
+  const text2 = await test2Res.text();
+  debugResults.push({ test: 2, endpoint: "/calendars/events sin fechas", status: test2Res.status, preview: text2.substring(0, 300) });
+
+  // TEST 3 — appointments endpoint
+  const test3Res = await ghlFetch(`/appointments/?locationId=${LOCATION_ID}`, apiKey);
+  const text3 = await test3Res.text();
+  debugResults.push({ test: 3, endpoint: "/appointments/", status: test3Res.status, preview: text3.substring(0, 300) });
+
+  // TEST 4 — list calendars
+  const test4Res = await ghlFetch(`/calendars/?locationId=${LOCATION_ID}`, apiKey);
+  const text4 = await test4Res.text();
+  debugResults.push({ test: 4, endpoint: "/calendars/ (listar)", status: test4Res.status, preview: text4.substring(0, 300) });
+
+  console.log("GHL Appointments debug results:", JSON.stringify(debugResults));
+
+  // Find events from the first working endpoint
   let events: any[] = [];
-  const res = await ghlFetch(`/calendars/events?${params}`, apiKey);
-  const rawText = await res.text();
+  let usedEndpoint = "";
+  const fullTexts = [text1, text2, text3, text4];
 
-  if (res.ok) {
-    try {
-      const data = JSON.parse(rawText);
-      events = data.events || data.appointments || [];
-    } catch { stats.errors.push("JSON parse error"); }
-  } else {
-    // Fallback: try without date params
-    const fallbackRes = await ghlFetch(`/calendars/events?locationId=${LOCATION_ID}`, apiKey);
-    const fallbackText = await fallbackRes.text();
-    if (fallbackRes.ok) {
+  for (let i = 0; i < debugResults.length; i++) {
+    const result = debugResults[i];
+    if (result.status === 200) {
       try {
-        const data = JSON.parse(fallbackText);
-        events = data.events || data.appointments || [];
-      } catch { stats.errors.push("Fallback JSON parse error"); }
-    } else {
-      stats.errors.push(`Appointments failed: ${res.status}, fallback: ${fallbackRes.status}`);
-      return stats;
+        const parsed = JSON.parse(fullTexts[i]);
+        const found = parsed.events || parsed.appointments || parsed.data || [];
+        if (found.length > 0) {
+          events = found;
+          usedEndpoint = result.endpoint;
+          break;
+        }
+      } catch {}
     }
   }
 
+  // If test4 (calendars list) worked and no events yet, try per-calendar
+  if (events.length === 0 && test4Res.status === 200) {
+    try {
+      const cals = JSON.parse(text4);
+      const calList = cals.calendars || cals.data || [];
+      for (const cal of calList.slice(0, 5)) {
+        const evRes = await ghlFetch(
+          `/calendars/${cal.id}/events?locationId=${LOCATION_ID}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
+          apiKey
+        );
+        if (evRes.ok) {
+          const evData = await evRes.json();
+          const found = evData.events || evData.data || [];
+          events.push(...found);
+        }
+      }
+      if (events.length > 0) usedEndpoint = "calendars/:id/events";
+    } catch {}
+  }
+
   stats.total_in_ghl = events.length;
+  console.log(`GHL appointments: ${events.length} found via "${usedEndpoint}"`);
+
+  // Process events
   const statusMap: Record<string, string> = { confirmed: "confirmed", showed: "completed", noshow: "no_show", cancelled: "cancelled" };
 
   for (const apt of events) {
@@ -249,11 +274,11 @@ async function syncAppointments(apiKey: string, admin: ReturnType<typeof createC
         clientProfileId = prof?.id || null;
       }
 
-      const startTime = apt.startTime || apt.start;
-      const appointmentDate = startTime ? startTime.split("T")[0] : null;
+      const st = apt.startTime || apt.start;
+      const appointmentDate = st ? st.split("T")[0] : null;
       if (!appointmentDate) { stats.skipped++; continue; }
 
-      const timeMatch = startTime?.match(/T(\d{2}:\d{2})/);
+      const timeMatch = st?.match(/T(\d{2}:\d{2})/);
       const appointmentTime = timeMatch ? timeMatch[1] + ":00" : null;
       const mappedStatus = statusMap[apt.appointmentStatus || apt.status || ""] || "scheduled";
 
@@ -263,7 +288,7 @@ async function syncAppointments(apiKey: string, admin: ReturnType<typeof createC
         client_email: apt.contact?.email || apt.email || null,
         client_phone: apt.contact?.phone || apt.phone || null,
         appointment_date: appointmentDate,
-        appointment_datetime: startTime,
+        appointment_datetime: st,
         appointment_time: appointmentTime,
         appointment_type: apt.calendarName || apt.calendar?.name || "consultation",
         status: mappedStatus,
@@ -290,11 +315,19 @@ async function syncAppointments(apiKey: string, admin: ReturnType<typeof createC
         else stats.inserted++;
       }
     } catch (e) {
-      stats.errors.push(`Apt ${apt.id}: ${e.message}`);
+      stats.errors.push(`Apt ${apt.id}: ${(e as Error).message}`);
     }
   }
 
-  return stats;
+  return {
+    stats,
+    debug: {
+      tests: debugResults,
+      events_found: events.length,
+      used_endpoint: usedEndpoint,
+      first_event: events[0] || null,
+    },
+  };
 }
 
 Deno.serve(async (req) => {
@@ -356,15 +389,14 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "appointments") {
-      const stats = await syncAppointments(apiKey, admin);
-      // Update office_config
+      const { stats, debug } = await syncAppointments(apiKey, admin);
       await admin.from("office_config").update({
         ghl_last_sync: new Date().toISOString(),
         ghl_appointments_synced: stats.inserted + stats.updated,
       } as any).eq("account_id", ACCOUNT_ID);
 
       return new Response(
-        JSON.stringify({ done: true, cursor: null, progress: stats }),
+        JSON.stringify({ done: true, cursor: null, progress: stats, debug }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -374,7 +406,6 @@ Deno.serve(async (req) => {
     const result = await syncContactsPage(apiKey, admin, cursor);
     console.log(`Page ${result.progress.page}: +${result.progress.inserted} inserted, +${result.progress.updated} updated, done=${result.done}`);
 
-    // If contacts done, update office_config
     if (result.done) {
       await admin.from("office_config").update({
         ghl_contacts_synced: result.progress.inserted + result.progress.updated,
@@ -388,7 +419,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Sync error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error", detail: error.message }),
+      JSON.stringify({ error: "Internal server error", detail: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
