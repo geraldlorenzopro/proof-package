@@ -12,6 +12,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-f
 import { es } from "date-fns/locale";
 import StartConsultationModal from "./StartConsultationModal";
 import ResendModal from "./ResendModal";
+import IntakeWizard from "../intake/IntakeWizard";
 
 interface Appointment {
   id: string;
@@ -27,6 +28,7 @@ interface Appointment {
   pre_intake_token: string;
   case_id: string | null;
   converted_to_case: boolean;
+  intake_session_id: string | null;
 }
 
 interface Props {
@@ -53,6 +55,8 @@ export default function TodayAppointments({ accountId, maxItems, hideStats }: Pr
   const [newApptOpen, setNewApptOpen] = useState(false);
   const [consultationAppt, setConsultationAppt] = useState<Appointment | null>(null);
   const [resendAppt, setResendAppt] = useState<Appointment | null>(null);
+  const [intakeOpen, setIntakeOpen] = useState(false);
+  const [intakePrefill, setIntakePrefill] = useState<any>(undefined);
 
   // New appointment form
   const [newName, setNewName] = useState("");
@@ -78,7 +82,7 @@ export default function TodayAppointments({ accountId, maxItems, hideStats }: Pr
 
       const [todayRes, weekRes, monthRes, convertedRes] = await Promise.all([
         supabase.from("appointments")
-          .select("id, client_name, client_email, client_phone, client_profile_id, appointment_time, appointment_type, status, pre_intake_sent, pre_intake_completed, pre_intake_token, case_id, converted_to_case")
+          .select("id, client_name, client_email, client_phone, client_profile_id, appointment_time, appointment_type, status, pre_intake_sent, pre_intake_completed, pre_intake_token, case_id, converted_to_case, intake_session_id")
           .eq("account_id", accountId)
           .eq("appointment_date", today)
           .not("status", "eq", "cancelled")
@@ -108,8 +112,17 @@ export default function TodayAppointments({ accountId, maxItems, hideStats }: Pr
   function handleStartConsultation(appt: Appointment) {
     if (appt.case_id) {
       navigate(`/case-engine/${appt.case_id}`);
+    } else if (appt.intake_session_id) {
+      navigate(`/hub/consultations/${appt.intake_session_id}`);
     } else {
-      setConsultationAppt(appt);
+      // Open IntakeWizard with prefill from appointment
+      setIntakePrefill({
+        name: appt.client_name,
+        phone: appt.client_phone || undefined,
+        email: appt.client_email || undefined,
+        client_profile_id: appt.client_profile_id || undefined,
+      });
+      setIntakeOpen(true);
     }
   }
 
@@ -238,7 +251,7 @@ export default function TodayAppointments({ accountId, maxItems, hideStats }: Pr
                     </Button>
                   )}
                   <Button variant="outline" size="sm" onClick={() => handleStartConsultation(appt)} className="h-7 px-2.5 text-[10px] font-semibold">
-                    {appt.case_id ? "Ver caso" : "Iniciar consulta"}
+                    {appt.case_id ? "Ver caso" : appt.intake_session_id ? "Ver consulta" : "Iniciar consulta"}
                   </Button>
                 </div>
               </div>
@@ -280,13 +293,24 @@ export default function TodayAppointments({ accountId, maxItems, hideStats }: Pr
         </div>
       )}
 
-      {/* FIX 1: Start consultation modal */}
+      {/* FIX 1: Start consultation modal (fallback) */}
       <StartConsultationModal
         open={!!consultationAppt}
         onOpenChange={(open) => { if (!open) setConsultationAppt(null); }}
         appointment={consultationAppt}
         accountId={accountId}
         onCreated={() => loadData()}
+      />
+
+      {/* IntakeWizard with prefill */}
+      <IntakeWizard
+        open={intakeOpen}
+        onOpenChange={setIntakeOpen}
+        prefill={intakePrefill}
+        onCreated={() => {
+          setIntakeOpen(false);
+          loadData();
+        }}
       />
 
       {/* FIX 5: Resend modal with WhatsApp + Email */}
