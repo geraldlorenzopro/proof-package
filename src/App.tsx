@@ -60,6 +60,7 @@ import HubAgendaPage from "./pages/HubAgendaPage";
 import HubAiPage from "./pages/HubAiPage";
 import HubChatPage from "./pages/HubChatPage";
 import HubLeadsPage from "./pages/HubLeadsPage";
+import ConsultationRoom from "./components/hub/ConsultationRoom";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +96,7 @@ const App = () => (
           <Route path="/hub/intelligence" element={<ProtectedRoute><IntelligenceCenterPage /></ProtectedRoute>} />
           <Route path="/hub/reports" element={<ProtectedRoute><IntelligenceCenterPage /></ProtectedRoute>} />
           <Route path="/hub/consultations" element={<ProtectedRoute><ConsultationsPage /></ProtectedRoute>} />
+          <Route path="/hub/consultations/:intakeId" element={<ProtectedRoute><ConsultationRoom /></ProtectedRoute>} />
           <Route path="/hub/leads" element={<ProtectedRoute><HubLeadsPage /></ProtectedRoute>} />
           <Route path="/hub/clients" element={<ProtectedRoute><HubClientsPage /></ProtectedRoute>} />
           <Route path="/hub/clients/:id" element={<ProtectedRoute><ClientProfilePage /></ProtectedRoute>} />
