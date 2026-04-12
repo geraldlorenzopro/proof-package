@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Send, ExternalLink, Clock } from "lucide-react";
+import { ChevronRight, Send, ExternalLink, Clock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import ChannelLogo from "../intake/ChannelLogo";
+import IntakeWizard from "../intake/IntakeWizard";
 
 interface RecentConsultation {
   id: string;
@@ -49,6 +50,8 @@ export default function HubRecentConsultations({ accountId, maxItems }: Props) {
   const navigate = useNavigate();
   const [items, setItems] = useState<RecentConsultation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [intakeOpen, setIntakeOpen] = useState(false);
+  const [intakePrefill, setIntakePrefill] = useState<any>(undefined);
 
   useEffect(() => {
     loadData();
@@ -215,10 +218,36 @@ export default function HubRecentConsultations({ accountId, maxItems }: Props) {
                   <ExternalLink className="w-3 h-3" /> Ver caso
                 </button>
               )}
+              {item.client_profile_id && !item.converted_to_case && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIntakePrefill({
+                      name: `${item.client_first_name || ""} ${item.client_last_name || ""}`.trim(),
+                      phone: item.client_phone || undefined,
+                      client_profile_id: item.client_profile_id || undefined,
+                    });
+                    setIntakeOpen(true);
+                  }}
+                  className="text-[10px] font-semibold text-accent hover:text-accent/80 flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg border border-accent/20 hover:bg-accent/10 transition-all"
+                >
+                  <Plus className="w-3 h-3" /> Nueva consulta
+                </button>
+              )}
             </div>
           );
         })}
       </div>
+
+      <IntakeWizard
+        open={intakeOpen}
+        onOpenChange={setIntakeOpen}
+        prefill={intakePrefill}
+        onCreated={() => {
+          setIntakeOpen(false);
+          loadData();
+        }}
+      />
     </section>
   );
 }
