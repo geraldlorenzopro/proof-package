@@ -1,23 +1,256 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const GHL_BASE = "https://services.leadconnectorhq.com";
+const GHL_VERSION = "2021-07-28";
+const LOCATION_ID = "NgaxlyDdwg93PvQb5KCw";
+const ACCOUNT_ID = "443d8719-94c7-47f9-9bef-3d911ba4c174";
+
+interface SyncStats {
+  contacts: { total_in_ghl: number; inserted: number; updated: number; skipped: number; errors: string[] };
+  appointments: { total_in_ghl: number; inserted: number; updated: number; skipped: number; errors: string[] };
+}
+
+async function ghlFetch(path: string, apiKey: string, opts?: RequestInit & { retries?: number }): Promise<Response> {
+  const retries = opts?.retries ?? 3;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch(`${GHL_BASE}${path}`, {
+      ...opts,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Version: GHL_VERSION,
+        "Content-Type": "application/json",
+        ...(opts?.headers || {}),
+      },
+    });
+    if (res.status === 429 && attempt < retries) {
+      await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+      continue;
+    }
+    return res;
+  }
+  throw new Error("Max retries exceeded");
+}
+
+// ── FLOW 1: Import GHL Contacts → client_profiles ──
+async function syncContacts(apiKey: string, admin: ReturnType<typeof createClient>): Promise<SyncStats["contacts"]> {
+  const stats = { total_in_ghl: 0, inserted: 0, updated: 0, skipped: 0, errors: [] as string[] };
+
+  // Get account owner for created_by
+  const { data: owner } = await admin
+    .from("account_members")
+    .select("user_id")
+    .eq("account_id", ACCOUNT_ID)
+    .eq("role", "owner")
+    .maybeSingle();
+  const createdBy = owner?.user_id;
+  if (!createdBy) { stats.errors.push("No owner found for account"); return stats; }
+
+  let startAfterId: string | undefined;
+  let startAfter: number | undefined;
+  let hasMore = true;
+
+  while (hasMore) {
+    const params = new URLSearchParams({ locationId: LOCATION_ID, limit: "100" });
+    if (startAfterId) { params.set("startAfterId", startAfterId); params.set("startAfter", String(startAfter)); }
+
+    const res = await ghlFetch(`/contacts/?${params}`, apiKey);
+    if (res.status === 401) { stats.errors.push("GHL API Key inválida (401)"); return stats; }
+    if (!res.ok) { stats.errors.push(`GHL contacts error: ${res.status}`); return stats; }
+
+    const data = await res.json();
+    const contacts = data.contacts || [];
+    stats.total_in_ghl += contacts.length;
+
+    for (const c of contacts) {
+      try {
+        const phone = (c.phone || "").trim();
+        const email = (c.email || "").trim();
+        if (!phone && !email) { stats.skipped++; continue; }
+
+        const profileData: Record<string, unknown> = {
+          account_id: ACCOUNT_ID,
+          created_by: createdBy,
+          ghl_contact_id: c.id,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Only set non-null values from GHL
+        if (c.firstName) profileData.first_name = c.firstName;
+        if (c.lastName) profileData.last_name = c.lastName;
+        if (email) profileData.email = email;
+        if (phone) { profileData.phone = phone; profileData.mobile_phone = phone; }
+        if (c.address1) profileData.address_street = c.address1;
+        if (c.city) profileData.address_city = c.city;
+        if (c.state) profileData.address_state = c.state;
+        if (c.postalCode) profileData.address_zip = c.postalCode;
+        if (c.country) profileData.address_country = c.country;
+        if (c.source) profileData.source_channel = c.source;
+        if (c.attributionSource?.medium) profileData.source_detail = c.attributionSource.medium;
+
+        // Check if already exists by ghl_contact_id
+        const { data: existing } = await admin
+          .from("client_profiles")
+          .select("id")
+          .eq("account_id", ACCOUNT_ID)
+          .eq("ghl_contact_id", c.id)
+          .maybeSingle();
+
+        if (existing) {
+          // Update — don't overwrite with nulls (we only set non-null fields above)
+          const { account_id: _a, created_by: _c, ...updateData } = profileData;
+          const { error } = await admin.from("client_profiles").update(updateData).eq("id", existing.id);
+          if (error) { stats.errors.push(`Update ${c.id}: ${error.message}`); } else { stats.updated++; }
+        } else {
+          // Try by phone or email
+          let existingId: string | null = null;
+          if (phone) {
+            const { data: byPhone } = await admin.from("client_profiles").select("id").eq("account_id", ACCOUNT_ID).eq("phone", phone).maybeSingle();
+            existingId = byPhone?.id || null;
+          }
+          if (!existingId && email) {
+            const { data: byEmail } = await admin.from("client_profiles").select("id").eq("account_id", ACCOUNT_ID).eq("email", email).maybeSingle();
+            existingId = byEmail?.id || null;
+          }
+
+          if (existingId) {
+            const { account_id: _a, created_by: _c, ...updateData } = profileData;
+            const { error } = await admin.from("client_profiles").update(updateData).eq("id", existingId);
+            if (error) { stats.errors.push(`Update ${c.id}: ${error.message}`); } else { stats.updated++; }
+          } else {
+            const { error } = await admin.from("client_profiles").insert(profileData);
+            if (error) { stats.errors.push(`Insert ${c.id}: ${error.message}`); } else { stats.inserted++; }
+          }
+        }
+      } catch (e) {
+        stats.errors.push(`Contact ${c.id}: ${e.message}`);
+      }
+    }
+
+    if (contacts.length < 100) {
+      hasMore = false;
+    } else {
+      const last = contacts[contacts.length - 1];
+      startAfterId = last.id;
+      startAfter = new Date(last.dateAdded).getTime();
+    }
+  }
+
+  return stats;
+}
+
+// ── FLOW 2: Import GHL Appointments → appointments ──
+async function syncAppointments(apiKey: string, admin: ReturnType<typeof createClient>): Promise<SyncStats["appointments"]> {
+  const stats = { total_in_ghl: 0, inserted: 0, updated: 0, skipped: 0, errors: [] as string[] };
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 30);
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + 60);
+
+  const params = new URLSearchParams({
+    locationId: LOCATION_ID,
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+  });
+
+  const res = await ghlFetch(`/calendars/events?${params}`, apiKey);
+  if (res.status === 401) { stats.errors.push("GHL API Key inválida (401)"); return stats; }
+  if (!res.ok) { stats.errors.push(`GHL appointments error: ${res.status} ${await res.text()}`); return stats; }
+
+  const data = await res.json();
+  const events = data.events || data.appointments || [];
+  stats.total_in_ghl = events.length;
+
+  const statusMap: Record<string, string> = {
+    confirmed: "confirmed",
+    showed: "completed",
+    noshow: "no_show",
+    cancelled: "cancelled",
+  };
+
+  for (const apt of events) {
+    try {
+      const ghlAptId = apt.id;
+      if (!ghlAptId) { stats.skipped++; continue; }
+
+      // Lookup client_profile_id
+      let clientProfileId: string | null = null;
+      if (apt.contactId) {
+        const { data: prof } = await admin
+          .from("client_profiles")
+          .select("id")
+          .eq("account_id", ACCOUNT_ID)
+          .eq("ghl_contact_id", apt.contactId)
+          .maybeSingle();
+        clientProfileId = prof?.id || null;
+      }
+
+      const startTime = apt.startTime || apt.start;
+      const appointmentDate = startTime ? startTime.split("T")[0] : null;
+      if (!appointmentDate) { stats.skipped++; continue; }
+
+      const timeMatch = startTime?.match(/T(\d{2}:\d{2})/);
+      const appointmentTime = timeMatch ? timeMatch[1] + ":00" : null;
+
+      const mappedStatus = statusMap[apt.appointmentStatus || apt.status || ""] || "scheduled";
+
+      const appointmentData: Record<string, unknown> = {
+        account_id: ACCOUNT_ID,
+        client_name: apt.title || apt.contactName || apt.contact?.name || "Sin nombre",
+        client_email: apt.contact?.email || apt.email || null,
+        client_phone: apt.contact?.phone || apt.phone || null,
+        appointment_date: appointmentDate,
+        appointment_datetime: startTime,
+        appointment_time: appointmentTime,
+        appointment_type: apt.calendarName || apt.calendar?.name || "consultation",
+        status: mappedStatus,
+        ghl_appointment_id: ghlAptId,
+        ghl_contact_id: apt.contactId || null,
+        updated_at: new Date().toISOString(),
+      };
+      if (clientProfileId) appointmentData.client_profile_id = clientProfileId;
+
+      // Check if already exists
+      const { data: existing } = await admin
+        .from("appointments")
+        .select("id")
+        .eq("ghl_appointment_id", ghlAptId)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await admin.from("appointments").update(appointmentData).eq("id", existing.id);
+        if (error) { stats.errors.push(`Update apt ${ghlAptId}: ${error.message}`); } else { stats.updated++; }
+      } else {
+        appointmentData.pre_intake_token = crypto.randomUUID();
+        const { error } = await admin.from("appointments").insert(appointmentData);
+        if (error) { stats.errors.push(`Insert apt ${ghlAptId}: ${error.message}`); } else { stats.inserted++; }
+      }
+    } catch (e) {
+      stats.errors.push(`Appointment ${apt.id}: ${e.message}`);
+    }
+  }
+
+  return stats;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // FIX 4 — Test endpoint
+  const apiKey = Deno.env.get("MRVISA_API_KEY");
+  if (!apiKey) {
+    return new Response(
+      JSON.stringify({ error: "MRVISA_API_KEY not configured" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  // Health check
   if (req.method === "GET") {
     return new Response(
-      JSON.stringify({
-        status: "ok",
-        function: "sync-ghl-contacts",
-        env_check: {
-          has_webhook_secret: !!Deno.env.get("GHL_WEBHOOK_SECRET"),
-          has_supabase_url: !!Deno.env.get("SUPABASE_URL"),
-          has_service_role_key: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
-        },
-      }),
+      JSON.stringify({ status: "ok", function: "sync-ghl-contacts", has_api_key: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -30,198 +263,68 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // FIX 1 — Relaxed secret validation
-    const webhookSecret = Deno.env.get("GHL_WEBHOOK_SECRET");
-    const secretHeader = req.headers.get("x-ghl-secret");
-    const secretQuery = new URL(req.url).searchParams.get("secret");
-    const providedSecret = secretHeader || secretQuery;
-    const secretMatches = !!(webhookSecret && providedSecret && providedSecret === webhookSecret);
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    console.log(`Webhook received - method: ${req.method}, has secret: ${!!providedSecret}, secret matches: ${secretMatches}`);
-
-    if (webhookSecret) {
-      if (!providedSecret || !secretMatches) {
-        console.error("Webhook secret mismatch");
+    // Verify caller is authenticated and belongs to the account
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) {
         return new Response(
           JSON.stringify({ error: "Unauthorized" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-    } else {
-      console.warn("GHL_WEBHOOK_SECRET environment variable is not set. Allowing request to proceed without validation.");
-    }
-
-    const body = await req.json();
-    console.log("GHL webhook payload:", JSON.stringify(body).slice(0, 2000));
-
-    const locationId = body.location?.id || body.locationId || body.location_id || body.companyId;
-    const contact = (body.contact?.email || body.contact?.firstName) ? body.contact : body;
-
-    if (!locationId) {
-      console.error("No location ID found in payload keys:", Object.keys(body));
-      return new Response(
-        JSON.stringify({ error: "Missing location ID" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // FIX 2 — Email OR phone required, not just email
-    const email = (
-      contact.email || contact.contact_email || contact.Email ||
-      body.email || body.contact_email || ""
-    ).trim();
-
-    const phone = (
-      contact.phone || contact.phone_raw || contact.Phone ||
-      body.phone || body.phone_raw || ""
-    ).trim();
-
-    if ((!email || email.length < 3) && (!phone || phone.length < 3)) {
-      console.error("No email or phone found. Contact keys:", Object.keys(contact), "Body keys:", Object.keys(body));
-      return new Response(
-        JSON.stringify({ error: "Missing both email and phone — at least one is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const hasValidEmail = email && email.length >= 3;
-
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // FIX 3 — Fallback to first active account
-    let account: { id: string } | null = null;
-
-    const { data: exactAccount, error: accountError } = await adminClient
-      .from("ner_accounts")
-      .select("id")
-      .eq("external_crm_id", locationId)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (accountError) {
-      console.error("Account lookup error:", accountError);
-    }
-
-    if (exactAccount) {
-      account = exactAccount;
-    } else {
-      console.warn(`Account not found by location ID ${locationId}, falling back to first active account`);
-      const { data: fallbackAccount, error: fallbackError } = await adminClient
-        .from("ner_accounts")
-        .select("id")
-        .eq("is_active", true)
-        .order("created_at", { ascending: true })
-        .limit(1)
+      // Verify membership
+      const { data: member } = await admin
+        .from("account_members")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("account_id", ACCOUNT_ID)
         .maybeSingle();
-
-      if (fallbackError) {
-        console.error("Fallback account lookup error:", fallbackError);
-      }
-      if (fallbackAccount) {
-        account = fallbackAccount;
-        console.warn(`Falling back to first active account ${account!.id}`);
+      if (!member) {
+        return new Response(
+          JSON.stringify({ error: "Not a member of this account" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     }
 
-    if (!account) {
-      console.error("No active accounts found at all");
-      return new Response(
-        JSON.stringify({ error: "No active account found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    console.log("Starting GHL sync...");
 
-    // Get account owner
-    const { data: owner } = await adminClient
-      .from("account_members")
-      .select("user_id")
-      .eq("account_id", account.id)
-      .eq("role", "owner")
-      .maybeSingle();
+    // Flow 1: Contacts
+    const contactStats = await syncContacts(apiKey, admin);
+    console.log("Contact sync done:", JSON.stringify(contactStats));
 
-    const createdBy = owner?.user_id;
-    if (!createdBy) {
-      console.error("No owner found for account:", account.id);
-      return new Response(
-        JSON.stringify({ error: "Account owner not found" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Flow 2: Appointments
+    const appointmentStats = await syncAppointments(apiKey, admin);
+    console.log("Appointment sync done:", JSON.stringify(appointmentStats));
 
-    // Map fields
-    const profileData: Record<string, unknown> = {
-      account_id: account.id,
-      created_by: createdBy,
-      first_name: contact.first_name || contact.firstName || null,
-      last_name: contact.last_name || contact.lastName || null,
-      phone: phone || null,
-      mobile_phone: phone || null,
-      address_street: contact.address1 || contact.addressStreet || null,
-      address_city: contact.city || contact.addressCity || null,
-      address_state: contact.state || contact.addressState || null,
-      address_zip: contact.postal_code || contact.postalCode || contact.addressZip || null,
-      address_country: contact.country || "US",
-      dob: contact.date_of_birth || contact.dateOfBirth || contact.dob || null,
-      updated_at: new Date().toISOString(),
-    };
+    // Update office_config with sync stats
+    await admin.from("office_config").update({
+      ghl_last_sync: new Date().toISOString(),
+      ghl_contacts_synced: contactStats.inserted + contactStats.updated,
+      ghl_appointments_synced: appointmentStats.inserted + appointmentStats.updated,
+    } as any).eq("account_id", ACCOUNT_ID);
 
-    if (hasValidEmail) {
-      profileData.email = email;
-    }
-
-    // Upsert with appropriate conflict key
-    let upsertError;
-    if (hasValidEmail) {
-      profileData.email = email;
-      const { error } = await adminClient
-        .from("client_profiles")
-        .upsert(profileData, { onConflict: "account_id,email", ignoreDuplicates: false });
-      upsertError = error;
-    } else {
-      // Phone-only: try insert, update on match
-      const { data: existing } = await adminClient
-        .from("client_profiles")
-        .select("id")
-        .eq("account_id", account.id)
-        .eq("phone", phone)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await adminClient
-          .from("client_profiles")
-          .update(profileData)
-          .eq("id", existing.id);
-        upsertError = error;
-      } else {
-        const { error } = await adminClient
-          .from("client_profiles")
-          .insert(profileData);
-        upsertError = error;
-      }
-    }
-
-    if (upsertError) {
-      console.error("Upsert error:", upsertError);
-      return new Response(
-        JSON.stringify({ error: "Failed to sync contact", detail: upsertError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const identifier = hasValidEmail ? email : phone;
-    console.log(`Synced contact ${identifier} for account ${account.id}`);
+    const result: SyncStats = { contacts: contactStats, appointments: appointmentStats };
 
     return new Response(
-      JSON.stringify({ success: true, identifier, account_id: account.id }),
+      JSON.stringify(result),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Sync error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "Internal server error", detail: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
