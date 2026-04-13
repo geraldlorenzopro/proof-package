@@ -6,7 +6,7 @@ import { normalizeClientName } from "@/lib/caseTypeLabels";
 import {
   Search, UserSearch,
   Phone, Mail, Calendar, MessageSquare, Clock, Info,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, ArrowUpDown, SortAsc, SortDesc
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -100,9 +100,10 @@ export default function HubLeadsPage() {
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
 
-  // Pagination state
+  // Pagination & sort state
   const [pageSize, setPageSize] = useState(18);
   const [currentPage, setCurrentPage] = useState(0);
+  const [sortBy, setSortBy] = useState<"recent" | "name_asc" | "name_desc" | "oldest">("recent");
 
   const accountId = (() => {
     try {
@@ -114,12 +115,12 @@ export default function HubLeadsPage() {
   })();
 
   // Reset page when filters change
-  useEffect(() => { setCurrentPage(0); }, [search, channelFilter, pageSize]);
+  useEffect(() => { setCurrentPage(0); }, [search, channelFilter, pageSize, sortBy]);
 
   useEffect(() => {
     if (!accountId) return;
     fetchPage();
-  }, [accountId, currentPage, pageSize, channelFilter]);
+  }, [accountId, currentPage, pageSize, channelFilter, sortBy]);
 
   async function fetchPage() {
     setLoading(true);
@@ -131,8 +132,18 @@ export default function HubLeadsPage() {
       .select("id, first_name, middle_name, last_name, email, phone, source_channel, source_detail, created_at", { count: "exact" })
       .eq("account_id", accountId)
       .eq("is_test", false)
-      .eq("contact_stage", "lead")
-      .order("created_at", { ascending: false });
+      .eq("contact_stage", "lead");
+
+    // Sort
+    if (sortBy === "name_asc") {
+      query = query.order("first_name", { ascending: true });
+    } else if (sortBy === "name_desc") {
+      query = query.order("first_name", { ascending: false });
+    } else if (sortBy === "oldest") {
+      query = query.order("created_at", { ascending: true });
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
 
     // Server-side channel filter
     if (channelFilter !== "all") {
@@ -213,6 +224,20 @@ export default function HubLeadsPage() {
               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos registrados</p>
             </div>
           </div>
+
+          {/* Sort */}
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+            <SelectTrigger className="w-[160px] h-9 text-xs bg-muted/50 border-border gap-1.5">
+              <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Más recientes</SelectItem>
+              <SelectItem value="oldest">Más antiguos</SelectItem>
+              <SelectItem value="name_asc">Nombre A-Z</SelectItem>
+              <SelectItem value="name_desc">Nombre Z-A</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Fixed top: Search */}
