@@ -89,7 +89,7 @@ const CHANNEL_DISPLAY: Record<string, string> = {
   youtube: "YouTube", "sin-canal": "Sin canal",
 };
 
-const PAGE_SIZE_OPTIONS = [15, 30, 45, 90];
+const PAGE_SIZE_OPTIONS = [15, 30, 45, 90, 120];
 
 export default function HubLeadsPage() {
   const navigate = useNavigate();
@@ -261,8 +261,17 @@ export default function HubLeadsPage() {
             placeholder="Buscar por nombre, email o teléfono..."
             value={searchDebounce}
             onChange={(e) => setSearchDebounce(e.target.value)}
-            className="pl-10 bg-muted/50 border-border"
+            className="pl-10 pr-9 bg-muted/50 border-border"
           />
+          {searchDebounce && (
+            <button
+              onClick={() => setSearchDebounce("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Limpiar búsqueda"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Fixed top: Channel filters */}
