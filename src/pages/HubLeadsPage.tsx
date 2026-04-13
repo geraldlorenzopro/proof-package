@@ -101,7 +101,7 @@ export default function HubLeadsPage() {
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
 
   // Pagination state
-  const [pageSize, setPageSize] = useState(21);
+  const [pageSize, setPageSize] = useState(18);
   const [currentPage, setCurrentPage] = useState(0);
 
   const accountId = (() => {
