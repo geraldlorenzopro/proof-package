@@ -276,17 +276,17 @@ export default function HubLeadsPage() {
                   >
                     {/* Top row: avatar + name + consulta icon */}
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-md bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center text-[10px] font-bold text-amber-400 shrink-0">
+                      <div className="w-8 h-8 rounded-md bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0">
                         {getInitials(lead)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <button
                           onClick={() => navigate(`/hub/clients/${lead.id}`)}
-                          className="font-semibold text-foreground truncate block hover:text-amber-400 transition-colors text-xs leading-tight"
+                          className="font-semibold text-foreground truncate block hover:text-amber-400 transition-colors text-sm leading-tight"
                         >
                           {getName(lead)}
                         </button>
-                        <Badge className={`mt-0.5 text-[9px] leading-none px-1.5 py-0.5 border ${badgeStyle}`}>
+                        <Badge className={`mt-0.5 text-[10px] leading-none px-1.5 py-0.5 border ${badgeStyle}`}>
                           {displayLabel}
                         </Badge>
                       </div>
@@ -301,14 +301,14 @@ export default function HubLeadsPage() {
                     </div>
 
                     {/* Bottom row: phone + email + date */}
-                    <div className="flex items-center gap-3 mt-1.5 text-[10px] text-muted-foreground">
+                    <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                       {lead.phone ? (
-                        <span className="flex items-center gap-1 truncate"><Phone className="w-2.5 h-2.5 shrink-0" />{lead.phone}</span>
+                        <span className="flex items-center gap-1 truncate"><Phone className="w-3 h-3 shrink-0" />{lead.phone}</span>
                       ) : null}
                       {lead.email ? (
-                        <span className="flex items-center gap-1 truncate flex-1 min-w-0"><Mail className="w-2.5 h-2.5 shrink-0" />{lead.email}</span>
+                        <span className="flex items-center gap-1 truncate flex-1 min-w-0"><Mail className="w-3 h-3 shrink-0" />{lead.email}</span>
                       ) : null}
-                      <span className="flex items-center gap-1 shrink-0 ml-auto"><Calendar className="w-2.5 h-2.5" />{format(createdDate, "d MMM", { locale: es })}</span>
+                      <span className="flex items-center gap-1 shrink-0 ml-auto"><Calendar className="w-3 h-3" />{format(createdDate, "d MMM", { locale: es })}</span>
                     </div>
                   </div>
                 );
