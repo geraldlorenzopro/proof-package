@@ -88,7 +88,7 @@ const CHANNEL_DISPLAY: Record<string, string> = {
   youtube: "YouTube", "sin-canal": "Sin canal",
 };
 
-const PAGE_SIZE_OPTIONS = [15, 30, 50, 100];
+const PAGE_SIZE_OPTIONS = [12, 24, 48, 96];
 
 export default function HubLeadsPage() {
   const navigate = useNavigate();
