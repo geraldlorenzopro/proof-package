@@ -201,7 +201,7 @@ export default function HubLeadsPage() {
 
   return (
     <HubLayout>
-      <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
         {/* Fixed top: Header */}
         <div className="flex items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-3">
