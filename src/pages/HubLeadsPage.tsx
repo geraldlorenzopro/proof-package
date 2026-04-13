@@ -115,7 +115,7 @@ export default function HubLeadsPage() {
   })();
 
   // Reset page when filters change
-  useEffect(() => { setCurrentPage(0); }, [search, channelFilter, pageSize]);
+  useEffect(() => { setCurrentPage(0); }, [search, channelFilter, pageSize, sortBy]);
 
   useEffect(() => {
     if (!accountId) return;
