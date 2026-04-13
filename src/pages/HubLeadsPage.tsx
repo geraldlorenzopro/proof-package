@@ -292,11 +292,10 @@ export default function HubLeadsPage() {
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); openIntakeForLead(lead); }}
-                        className="shrink-0 h-7 rounded-md border border-amber-500/20 flex items-center gap-1.5 px-2 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 transition-all"
+                        className="shrink-0 w-7 h-7 rounded-md border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 transition-all"
                         title="Iniciar consulta"
                       >
-                        <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                        <span className="text-[10px] font-medium hidden group-hover:inline whitespace-nowrap">Iniciar consulta</span>
+                        <MessageSquare className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
