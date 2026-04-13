@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       client_profile_id,
+      ghl_contact_id, // FIX 2: receive existing GHL ID for dedup
       first_name,
       last_name,
       email,
@@ -61,21 +62,40 @@ Deno.serve(async (req) => {
     if (email) ghlBody.email = email;
     if (phone) ghlBody.phone = phone;
 
-    const res = await fetch(`${GHL_BASE}/contacts/`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        Version: GHL_VERSION,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(ghlBody),
-    });
+    let res: Response;
+
+    // FIX 2: If ghl_contact_id exists, UPDATE instead of CREATE
+    if (ghl_contact_id) {
+      // Remove locationId from update body (not needed for PATCH)
+      const updateBody = { ...ghlBody };
+      delete updateBody.locationId;
+
+      res = await fetch(`${GHL_BASE}/contacts/${ghl_contact_id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Version: GHL_VERSION,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updateBody),
+      });
+    } else {
+      res = await fetch(`${GHL_BASE}/contacts/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Version: GHL_VERSION,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(ghlBody),
+      });
+    }
 
     const data = await res.json();
     console.log("GHL push response:", res.status, JSON.stringify(data).slice(0, 500));
 
-    if (res.ok && data.contact?.id && client_profile_id) {
-      // Save ghl_contact_id back to client_profiles
+    // Save ghl_contact_id back to client_profiles (only for new contacts)
+    if (res.ok && !ghl_contact_id && data.contact?.id && client_profile_id) {
       const admin = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -87,7 +107,6 @@ Deno.serve(async (req) => {
     }
 
     if (!res.ok) {
-      // Log error to audit_logs but don't fail
       if (account_id) {
         const admin = createClient(
           Deno.env.get("SUPABASE_URL")!,
@@ -99,7 +118,7 @@ Deno.serve(async (req) => {
           action: "ghl_push_failed",
           entity_type: "client_profile",
           entity_id: client_profile_id,
-          metadata: { ghl_status: res.status, ghl_error: data },
+          metadata: { ghl_status: res.status, ghl_error: data, was_update: !!ghl_contact_id },
         } as any);
       }
       console.error("GHL push failed:", res.status, data);
@@ -108,7 +127,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         pushed: res.ok,
-        ghl_contact_id: data.contact?.id || null,
+        ghl_contact_id: ghl_contact_id || data.contact?.id || null,
+        was_update: !!ghl_contact_id,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

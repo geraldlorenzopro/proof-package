@@ -51,7 +51,7 @@ const INITIAL_DATA: IntakeData = {
   client_mobile_phone: "",
   client_mobile_phone_label: "mobile",
   client_email: "",
-  client_language: "",
+  client_language: "es",
   client_relationship: "",
   client_relationship_detail: "",
   urgency_level: "",
@@ -217,111 +217,92 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
 
       const clientName = `${data.client_first_name} ${data.client_last_name}`.trim();
 
-      // FIX 2: Use existing profile if provided, don't duplicate
-      let profileId = data.existing_client_profile_id || data.client_profile_id;
-      
-      if (profileId) {
-        // Just touch the updated_at
-        await supabase
-          .from("client_profiles")
-          .update({ updated_at: new Date().toISOString() } as any)
-          .eq("id", profileId);
-      } else {
-        const { data: profile, error: profErr } = await supabase
-          .from("client_profiles")
-          .insert({
-            account_id: accountId,
-            created_by: user.id,
-            first_name: data.client_first_name,
-            last_name: data.client_last_name,
-            phone: data.client_phone,
-            phone_label: data.client_phone_label || "mobile",
-            mobile_phone: data.client_mobile_phone || null,
-            mobile_phone_label: data.client_mobile_phone_label || "mobile",
-            email: data.client_email || null,
-            source_channel: data.entry_channel,
-            source_detail: data.referral_source || data.entry_channel_detail || null,
-          } as any)
-          .select("id")
-          .single();
-        if (profErr) throw profErr;
-        profileId = profile.id;
-      }
-
-      const { data: intakeSession, error: intakeErr } = await supabase
-        .from("intake_sessions")
-        .insert({
-          account_id: accountId,
-          created_by: user.id,
-          entry_channel: data.entry_channel || null,
-          entry_channel_detail: data.entry_channel_detail || null,
-          referral_source: data.referral_source || null,
-          client_profile_id: profileId,
-          is_existing_client: !!data.existing_client_profile_id,
+      // FIX 3: Atomic transaction via RPC — no orphaned records
+      const { data: result, error: rpcErr } = await supabase.rpc("create_intake_with_profile", {
+        p_account_id: accountId,
+        p_user_id: user.id,
+        p_profile_data: {
+          first_name: data.client_first_name,
+          last_name: data.client_last_name,
+          phone: data.client_phone,
+          email: data.client_email || "",
+          phone_label: data.client_phone_label || "mobile",
+          mobile_phone: data.client_mobile_phone || "",
+          mobile_phone_label: data.client_mobile_phone_label || "mobile",
+          source_channel: data.entry_channel,
+          source_detail: data.referral_source || data.entry_channel_detail || "",
+        },
+        p_intake_data: {
+          entry_channel: data.entry_channel,
+          entry_channel_detail: data.entry_channel_detail || "",
+          referral_source: data.referral_source || "",
           client_first_name: data.client_first_name,
           client_last_name: data.client_last_name,
           client_phone: data.client_phone,
-          client_email: data.client_email || null,
-          client_language: data.client_language || null,
-          client_relationship: data.client_relationship || null,
-          client_relationship_detail: data.client_relationship_detail || null,
-          consultation_reason: data.consultation_reason || null,
-          consultation_topic: data.consultation_topic || null,
-          consultation_topic_tag: data.consultation_topic_tag || null,
-          intake_delivery_channel: data.intake_delivery_channel || null,
-          urgency_level: data.urgency_level || null,
-          notes: data.notes || null,
-          status: "in_progress",
-          entry_date: new Date().toISOString().split("T")[0],
-          entry_method: "wizard",
-        } as any)
-        .select("id")
-        .single();
-      if (intakeErr) throw intakeErr;
-
-      const { data: appointment, error: apptErr } = await supabase
-        .from("appointments")
-        .insert({
-          account_id: accountId,
+          client_email: data.client_email || "",
+          client_language: data.client_language || "es",
+          client_relationship: data.client_relationship || "",
+          client_relationship_detail: data.client_relationship_detail || "",
+          consultation_reason: data.consultation_reason || "",
+          consultation_topic: data.consultation_topic || "",
+          consultation_topic_tag: data.consultation_topic_tag || "",
+          intake_delivery_channel: data.intake_delivery_channel || "",
+          urgency_level: data.urgency_level || "",
+          notes: data.notes || "",
+        },
+        p_appointment_data: {
           client_name: clientName,
           client_phone: data.client_phone,
-          client_email: data.client_email || null,
-          client_profile_id: profileId,
-          appointment_date: new Date().toISOString().split("T")[0],
-          appointment_type: "consultation",
-          status: "scheduled",
-          intake_session_id: intakeSession?.id || null,
-          pre_intake_sent: data.intake_delivery_channel !== "presencial",
-        })
-        .select("id, pre_intake_token")
-        .single();
-      if (apptErr) throw apptErr;
+          client_email: data.client_email || "",
+        },
+        p_existing_profile_id: data.existing_client_profile_id || null,
+      });
 
-      const preIntakeUrl = appointment?.pre_intake_token
-        ? `${window.location.origin}/intake/${appointment.pre_intake_token}`
+      if (rpcErr) throw rpcErr;
+
+      const profileId = (result as any)?.profile_id;
+      const intakeId = (result as any)?.intake_id;
+      const preIntakeToken = (result as any)?.pre_intake_token;
+      const appointmentId = (result as any)?.appointment_id;
+
+      const preIntakeUrl = preIntakeToken
+        ? `${window.location.origin}/intake/${preIntakeToken}`
         : "";
 
-      if (appointment?.pre_intake_token && data.intake_delivery_channel !== "presencial") {
-        if (data.intake_delivery_channel === "email" && data.client_email) {
-          try {
-            await supabase.functions.invoke("send-email", {
-              body: {
-                template_type: "questionnaire",
-                recipient_email: data.client_email,
-                recipient_name: clientName,
-                account_id: accountId,
-                data: { pre_intake_url: preIntakeUrl, client_name: data.client_first_name },
-              },
-            });
-          } catch (emailErr) {
-            console.warn("Pre-intake email failed:", emailErr);
-          }
+      // FIX 1: SMS delivery — open native SMS app
+      if (preIntakeToken && data.intake_delivery_channel === "sms" && data.client_phone) {
+        const phone = data.client_phone.replace(/\D/g, "");
+        const smsMsg = encodeURIComponent(
+          `Hola ${data.client_first_name}, completa este formulario antes de tu consulta: ${preIntakeUrl}`
+        );
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const smsUrl = isIOS ? `sms:${phone}&body=${smsMsg}` : `sms:${phone}?body=${smsMsg}`;
+        window.open(smsUrl, "_blank");
+      }
+
+      // Email delivery
+      if (preIntakeToken && data.intake_delivery_channel === "email" && data.client_email) {
+        try {
+          await supabase.functions.invoke("send-email", {
+            body: {
+              template_type: "questionnaire",
+              recipient_email: data.client_email,
+              recipient_name: clientName,
+              account_id: accountId,
+              data: { pre_intake_url: preIntakeUrl, client_name: data.client_first_name },
+            },
+          });
+        } catch (emailErr) {
+          console.warn("Pre-intake email failed:", emailErr);
         }
       }
 
+      // Presencial: open form in new tab
       if (data.intake_delivery_channel === "presencial" && preIntakeUrl) {
         window.open(preIntakeUrl, "_blank");
       }
+
+      // WhatsApp: open in confirmation screen, not here
 
       const completedData = {
         clientName,
@@ -334,19 +315,30 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
         topicTag: data.consultation_topic_tag || "",
         deliveryChannel: data.intake_delivery_channel,
         preIntakeUrl,
-        preIntakeToken: appointment?.pre_intake_token || "",
-        appointmentId: appointment?.id || null,
+        preIntakeToken: preIntakeToken || "",
+        appointmentId: appointmentId || null,
         clientProfileId: profileId || null,
         createdAt: new Date().toISOString(),
       };
 
       setCompleted(completedData);
 
-      // Push contact to GHL (fire-and-forget)
+      // FIX 2: Push contact to GHL with dedup — pass ghl_contact_id if exists
       if (profileId) {
+        let ghlContactId: string | null = null;
+        if (data.existing_client_profile_id) {
+          const { data: profileData } = await supabase
+            .from("client_profiles")
+            .select("ghl_contact_id")
+            .eq("id", profileId)
+            .maybeSingle();
+          ghlContactId = profileData?.ghl_contact_id || null;
+        }
+
         supabase.functions.invoke("push-contact-to-ghl", {
           body: {
             client_profile_id: profileId,
+            ghl_contact_id: ghlContactId,
             first_name: data.client_first_name,
             last_name: data.client_last_name,
             email: data.client_email,
@@ -354,7 +346,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
             entry_channel: data.entry_channel,
             consultation_topic_tag: data.consultation_topic_tag,
             urgency_level: data.urgency_level,
-            intake_session_id: intakeSession?.id,
+            intake_session_id: intakeId,
             account_id: accountId,
             created_by: user.id,
           },
@@ -363,7 +355,6 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
 
       toast.success(`${clientName} registrado correctamente`);
 
-      // Call onCreated callback
       if (onCreated) {
         onCreated(completedData);
       }
@@ -537,23 +528,29 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
                         </button>
                       </div>
 
-                      {/* WhatsApp - primary CTA */}
-                      <button
-                        onClick={() => {
-                          const topicLabel = TOPIC_LABELS[completed.topic] || completed.topic;
-                          const msg = encodeURIComponent(
-                            `Hola ${completed.firstName}, soy del equipo de Mr Visa Immigration.\n\n` +
-                            `Para continuar con tu proceso de ${topicLabel}, necesitamos que completes este breve formulario:\n\n` +
-                            `${completed.preIntakeUrl}\n\n` +
-                            `Si tienes alguna pregunta, responde a este mensaje. 🙏`
-                          );
-                          const phone = completed.phone.replace(/[^+\d]/g, "");
-                          window.open(`https://wa.me/${phone.replace("+", "")}?text=${msg}`, "_blank");
-                        }}
-                        className="w-full flex items-center justify-center gap-2 text-sm font-bold bg-emerald-600 text-white py-3 rounded-xl hover:bg-emerald-700 transition-all">
-                        <MessageCircle className="w-4 h-4" />
-                        Compartir por WhatsApp
-                      </button>
+                      {/* FIX 5: WhatsApp - only show if phone exists */}
+                      {completed.phone ? (
+                        <button
+                          onClick={() => {
+                            const topicLabel = TOPIC_LABELS[completed.topic] || completed.topic;
+                            const msg = encodeURIComponent(
+                              `Hola ${completed.firstName}, soy del equipo de Mr Visa Immigration.\n\n` +
+                              `Para continuar con tu proceso de ${topicLabel}, necesitamos que completes este breve formulario:\n\n` +
+                              `${completed.preIntakeUrl}\n\n` +
+                              `Si tienes alguna pregunta, responde a este mensaje. 🙏`
+                            );
+                            const phone = completed.phone.replace(/[^+\d]/g, "");
+                            window.open(`https://wa.me/${phone.replace("+", "")}?text=${msg}`, "_blank");
+                          }}
+                          className="w-full flex items-center justify-center gap-2 text-sm font-bold bg-emerald-600 text-white py-3 rounded-xl hover:bg-emerald-700 transition-all">
+                          <MessageCircle className="w-4 h-4" />
+                          Compartir por WhatsApp
+                        </button>
+                      ) : (
+                        <p className="text-xs text-muted-foreground text-center py-2">
+                          Sin teléfono registrado — comparte el enlace manualmente
+                        </p>
+                      )}
                     </div>
                   )}
 

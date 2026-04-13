@@ -2881,6 +2881,17 @@ export type Database = {
         Args: { _data: Json; _token: string }
         Returns: undefined
       }
+      create_intake_with_profile: {
+        Args: {
+          p_account_id: string
+          p_appointment_data: Json
+          p_existing_profile_id?: string
+          p_intake_data: Json
+          p_profile_data: Json
+          p_user_id: string
+        }
+        Returns: Json
+      }
       delete_evidence_by_token: {
         Args: { _evidence_id: string; _token: string }
         Returns: string
