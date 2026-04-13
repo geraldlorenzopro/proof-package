@@ -335,9 +335,9 @@ export default function HubLeadsPage() {
           )}
         </div>
 
-        {/* Pagination bar — GHL style */}
+        {/* Fixed bottom: Pagination bar */}
         {totalCount > 0 && (
-          <div className="flex items-center justify-between border-t border-border pt-4">
+          <div className="flex items-center justify-between border-t border-border pt-4 mt-4 shrink-0">
             {/* Page info */}
             <p className="text-xs text-muted-foreground">
               Página <span className="font-semibold text-foreground">{currentPage + 1}</span> de{" "}
