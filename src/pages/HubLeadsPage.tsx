@@ -88,7 +88,7 @@ const CHANNEL_DISPLAY: Record<string, string> = {
   youtube: "YouTube", "sin-canal": "Sin canal",
 };
 
-const PAGE_SIZE_OPTIONS = [9, 18, 50, 100];
+const PAGE_SIZE_OPTIONS = [15, 30, 50, 100];
 
 export default function HubLeadsPage() {
   const navigate = useNavigate();
@@ -101,7 +101,7 @@ export default function HubLeadsPage() {
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
 
   // Pagination state
-  const [pageSize, setPageSize] = useState(9);
+  const [pageSize, setPageSize] = useState(30);
   const [currentPage, setCurrentPage] = useState(0);
 
   const accountId = (() => {
@@ -261,7 +261,7 @@ export default function HubLeadsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+              className="flex flex-col gap-1"
             >
               {leads.map((lead) => {
                 const classified = classifyChannel(lead.source_channel);
@@ -272,61 +272,55 @@ export default function HubLeadsPage() {
                 return (
                   <div
                     key={lead.id}
-                    className="group relative bg-card border border-border rounded-xl p-3 text-left transition-all hover:border-amber-500/30 hover:shadow-lg hover:shadow-amber-500/5"
+                    className="group flex items-center gap-3 bg-card border border-border rounded-lg px-3 py-2 transition-all hover:border-amber-500/30 hover:bg-card/80"
                   >
-                    <div className="flex items-start gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0">
-                        {getInitials(lead)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <button
-                          onClick={() => navigate(`/hub/clients/${lead.id}`)}
-                          className="font-semibold text-foreground truncate block hover:text-amber-400 transition-colors text-sm"
-                        >
-                          {getName(lead)}
-                        </button>
-                        <Badge className={`mt-1 text-[10px] border ${badgeStyle}`}>
-                          {displayLabel}
-                        </Badge>
-                      </div>
+                    {/* Avatar */}
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0">
+                      {getInitials(lead)}
                     </div>
 
-                    <div className="space-y-1.5 text-xs text-muted-foreground">
-                      {lead.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-3 h-3 shrink-0" /><span>{lead.phone}</span>
-                        </div>
-                      )}
-                      {lead.email && (
-                        <div className="flex items-center gap-2 truncate">
-                          <Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3 h-3 shrink-0" />
-                        <span>{format(createdDate, "d MMM yyyy", { locale: es })}</span>
-                        <span className="text-muted-foreground/60">·</span>
-                        <Clock className="w-3 h-3 shrink-0" />
-                        <span>{format(createdDate, "h:mm a")}</span>
-                      </div>
-                      {lead.source_detail && (
-                        <div className="flex items-center gap-2">
-                          <Info className="w-3 h-3 shrink-0" />
-                          <span className="truncate italic text-muted-foreground/70" title={lead.source_detail}>
-                            {lead.source_detail.length > 35 ? lead.source_detail.slice(0, 32) + "…" : lead.source_detail}
-                          </span>
-                        </div>
-                      )}
+                    {/* Name + badge */}
+                    <div className="w-48 shrink-0 min-w-0">
+                      <button
+                        onClick={() => navigate(`/hub/clients/${lead.id}`)}
+                        className="font-semibold text-foreground truncate block hover:text-amber-400 transition-colors text-sm"
+                      >
+                        {getName(lead)}
+                      </button>
+                      <Badge className={`mt-0.5 text-[10px] border ${badgeStyle}`}>
+                        {displayLabel}
+                      </Badge>
                     </div>
 
+                    {/* Phone */}
+                    <div className="w-36 shrink-0 text-xs text-muted-foreground hidden md:flex items-center gap-1.5">
+                      {lead.phone ? (
+                        <><Phone className="w-3 h-3 shrink-0" /><span className="truncate">{lead.phone}</span></>
+                      ) : <span className="text-muted-foreground/40">—</span>}
+                    </div>
+
+                    {/* Email */}
+                    <div className="flex-1 min-w-0 text-xs text-muted-foreground hidden lg:flex items-center gap-1.5">
+                      {lead.email ? (
+                        <><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></>
+                      ) : <span className="text-muted-foreground/40">—</span>}
+                    </div>
+
+                    {/* Date */}
+                    <div className="w-32 shrink-0 text-xs text-muted-foreground hidden xl:flex items-center gap-1.5">
+                      <Calendar className="w-3 h-3 shrink-0" />
+                      <span>{format(createdDate, "d MMM yyyy", { locale: es })}</span>
+                    </div>
+
+                    {/* Action */}
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="mt-2 w-full gap-2 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 h-7"
+                      className="shrink-0 gap-1.5 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 h-7 px-3"
                       onClick={(e) => { e.stopPropagation(); openIntakeForLead(lead); }}
                     >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      Iniciar consulta
+                      <MessageSquare className="w-3 h-3" />
+                      <span className="hidden sm:inline">Consulta</span>
                     </Button>
                   </div>
                 );
