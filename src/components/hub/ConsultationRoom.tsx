@@ -298,7 +298,7 @@ export default function ConsultationRoom() {
         action: "viewed",
         entityType: "consultation_room",
         entityId: intakeId,
-        metadata: { client_name: intakeData.client_name || "" },
+        metadata: { client_name: intakeData.client_first_name || "" },
       });
     }
 
