@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { normalizeClientName } from "@/lib/caseTypeLabels";
 import {
   Search, UserSearch,
-  Phone, Mail, Calendar, MessageSquare, Clock, Info,
-  ChevronLeft, ChevronRight, ArrowUpDown, SortAsc, SortDesc
+   Phone, Mail, Calendar, MessageSquare, Clock, Info,
+   ChevronLeft, ChevronRight, ArrowUpDown, SortAsc, SortDesc, X
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
