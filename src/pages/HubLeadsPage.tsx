@@ -201,9 +201,9 @@ export default function HubLeadsPage() {
 
   return (
     <HubLayout>
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-5">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4">
+      <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+        {/* Fixed top: Header */}
+        <div className="flex items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
               <UserSearch className="w-5 h-5 text-amber-400" />
@@ -215,8 +215,8 @@ export default function HubLeadsPage() {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="relative">
+        {/* Fixed top: Search */}
+        <div className="relative shrink-0 mt-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por nombre, email o teléfono..."
@@ -226,8 +226,8 @@ export default function HubLeadsPage() {
           />
         </div>
 
-        {/* Channel filters */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Fixed top: Channel filters */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0 mt-4">
           {CHANNEL_FILTERS.map((f) => (
             <button
               key={f.key}
@@ -243,8 +243,8 @@ export default function HubLeadsPage() {
           ))}
         </div>
 
-        {/* Cards grid — fixed height container */}
-        <div className="min-h-[500px]">
+        {/* Scrollable cards area */}
+        <div className="flex-1 overflow-y-auto mt-4 min-h-0">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {Array.from({ length: pageSize > 20 ? 12 : 9 }).map((_, i) => <Skeleton key={i} className="h-44 rounded-xl" />)}
@@ -335,9 +335,9 @@ export default function HubLeadsPage() {
           )}
         </div>
 
-        {/* Pagination bar — GHL style */}
+        {/* Fixed bottom: Pagination bar */}
         {totalCount > 0 && (
-          <div className="flex items-center justify-between border-t border-border pt-4">
+          <div className="flex items-center justify-between border-t border-border pt-4 mt-4 shrink-0">
             {/* Page info */}
             <p className="text-xs text-muted-foreground">
               Página <span className="font-semibold text-foreground">{currentPage + 1}</span> de{" "}
