@@ -88,7 +88,7 @@ const CHANNEL_DISPLAY: Record<string, string> = {
   youtube: "YouTube", "sin-canal": "Sin canal",
 };
 
-const PAGE_SIZE_OPTIONS = [21, 42, 63, 96];
+const PAGE_SIZE_OPTIONS = [18, 36, 54, 96];
 
 export default function HubLeadsPage() {
   const navigate = useNavigate();
@@ -101,7 +101,7 @@ export default function HubLeadsPage() {
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
 
   // Pagination state
-  const [pageSize, setPageSize] = useState(21);
+  const [pageSize, setPageSize] = useState(18);
   const [currentPage, setCurrentPage] = useState(0);
 
   const accountId = (() => {
@@ -244,10 +244,10 @@ export default function HubLeadsPage() {
         </div>
 
         {/* Scrollable cards area */}
-        <div className="flex-1 overflow-y-auto mt-2 min-h-0">
+        <div className="flex-1 overflow-y-auto mt-2 min-h-0 flex flex-col">
           {loading ? (
-            <div className="grid grid-cols-3 gap-2">
-              {Array.from({ length: 15 }).map((_, i) => <Skeleton key={i} className="h-[72px] rounded-lg" />)}
+            <div className="grid grid-cols-3 gap-2 flex-1">
+              {Array.from({ length: 18 }).map((_, i) => <Skeleton key={i} className="h-full min-h-[60px] rounded-lg" />)}
             </div>
           ) : leads.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -261,7 +261,7 @@ export default function HubLeadsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
-              className="grid grid-cols-3 gap-2"
+              className="grid grid-cols-3 gap-2 flex-1 auto-rows-fr"
             >
               {leads.map((lead) => {
                 const classified = classifyChannel(lead.source_channel);
