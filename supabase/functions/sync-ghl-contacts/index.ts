@@ -109,6 +109,25 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
   const toInsert: Record<string, unknown>[] = [];
   const toUpdate: { id: string; data: Record<string, unknown> }[] = [];
 
+  // Normalize GHL source to canonical channel keys matching the intake wizard
+  function normalizeGhlSource(raw: string | undefined | null): { channel: string | null; detail: string | null } {
+    if (!raw) return { channel: null, detail: null };
+    const lower = raw.toLowerCase().trim();
+    // Direct channel matches
+    if (lower === "facebook" || lower.includes("facebook")) return { channel: "facebook", detail: null };
+    if (lower === "instagram" || lower.includes("instagram")) return { channel: "instagram", detail: null };
+    if (lower === "whatsapp" || lower.includes("whatsapp")) return { channel: "whatsapp", detail: null };
+    if (lower === "tiktok" || lower.includes("tiktok")) return { channel: "tiktok", detail: null };
+    if (lower === "youtube" || lower.includes("youtube")) return { channel: "youtube", detail: null };
+    if (lower.includes("website") || lower.includes("web form") || lower.includes("landing")) return { channel: "website", detail: null };
+    if (lower.includes("referr") || lower.includes("referido")) return { channel: "referido", detail: raw };
+    if (lower.includes("ad") || lower.includes("anuncio") || lower.includes("campaign") || lower.includes("google ads")) return { channel: "anuncio", detail: raw };
+    if (lower.includes("call") || lower.includes("llamada") || lower.includes("phone")) return { channel: "llamada", detail: null };
+    if (lower.includes("walk") || lower.includes("presencial")) return { channel: "walk-in", detail: null };
+    // CRM imports or unknown campaigns → null channel, preserve raw as detail
+    return { channel: null, detail: raw };
+  }
+
   for (const c of contacts) {
     const phone = (c.phone || "").trim();
     const email = (c.email || "").trim();
@@ -118,6 +137,8 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
       existingMap.get(`ghl:${c.id}`) ||
       (phone ? existingMap.get(`phone:${phone}`) : null) ||
       (email ? existingMap.get(`email:${email}`) : null);
+
+    const { channel, detail } = normalizeGhlSource(c.source);
 
     const profileData: Record<string, unknown> = {
       ghl_contact_id: c.id,
@@ -133,8 +154,10 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
     if (c.state) profileData.address_state = c.state;
     if (c.postalCode) profileData.address_zip = c.postalCode;
     if (c.country) profileData.address_country = c.country;
-    if (c.source) profileData.source_channel = c.source;
-    if (c.attributionSource?.medium) profileData.source_detail = c.attributionSource.medium;
+    if (channel) profileData.source_channel = channel;
+    // Preserve attribution medium or normalized detail
+    const finalDetail = c.attributionSource?.medium || detail;
+    if (finalDetail) profileData.source_detail = finalDetail;
 
     if (match) {
       toUpdate.push({ id: match.id, data: profileData });

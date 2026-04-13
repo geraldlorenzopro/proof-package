@@ -85,7 +85,23 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Map and insert
+    // Normalize GHL source to canonical channel keys
+    function normalizeGhlSource(raw: string | undefined | null): { channel: string | null; detail: string | null } {
+      if (!raw) return { channel: null, detail: null };
+      const lower = raw.toLowerCase().trim();
+      if (lower === "facebook" || lower.includes("facebook")) return { channel: "facebook", detail: null };
+      if (lower === "instagram" || lower.includes("instagram")) return { channel: "instagram", detail: null };
+      if (lower === "whatsapp" || lower.includes("whatsapp")) return { channel: "whatsapp", detail: null };
+      if (lower === "tiktok" || lower.includes("tiktok")) return { channel: "tiktok", detail: null };
+      if (lower === "youtube" || lower.includes("youtube")) return { channel: "youtube", detail: null };
+      if (lower.includes("website") || lower.includes("web form") || lower.includes("landing")) return { channel: "website", detail: null };
+      if (lower.includes("referr") || lower.includes("referido")) return { channel: "referido", detail: raw };
+      if (lower.includes("ad") || lower.includes("anuncio") || lower.includes("campaign") || lower.includes("google ads")) return { channel: "anuncio", detail: raw };
+      if (lower.includes("call") || lower.includes("llamada") || lower.includes("phone")) return { channel: "llamada", detail: null };
+      if (lower.includes("walk") || lower.includes("presencial")) return { channel: "walk-in", detail: null };
+      return { channel: null, detail: raw };
+    }
+
     let inserted = 0;
     let updated = 0;
     let skipped = 0;
@@ -96,11 +112,12 @@ Deno.serve(async (req) => {
       const firstName = c.firstName || c.first_name || null;
       const lastName = c.lastName || c.last_name || null;
 
-      // Skip contacts with no name at all
       if (!firstName && !lastName) {
         skipped++;
         continue;
       }
+
+      const { channel, detail } = normalizeGhlSource(c.source);
 
       const profileData: Record<string, unknown> = {
         account_id: accountId,
@@ -115,8 +132,8 @@ Deno.serve(async (req) => {
         address_zip: c.postalCode || null,
         address_country: c.country || "US",
         dob: c.dateOfBirth || null,
-        source_channel: c.source || "ghl_import",
-        source_detail: `GHL Contact ID: ${c.id}`,
+        source_channel: channel,
+        source_detail: detail,
         updated_at: new Date().toISOString(),
       };
 
