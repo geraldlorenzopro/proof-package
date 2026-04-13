@@ -100,9 +100,10 @@ export default function HubLeadsPage() {
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
 
-  // Pagination state
+  // Pagination & sort state
   const [pageSize, setPageSize] = useState(18);
   const [currentPage, setCurrentPage] = useState(0);
+  const [sortBy, setSortBy] = useState<"recent" | "name_asc" | "name_desc" | "oldest">("recent");
 
   const accountId = (() => {
     try {
