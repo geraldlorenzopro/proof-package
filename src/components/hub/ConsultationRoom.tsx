@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { logAccess } from "@/lib/auditLog";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Clock, Pause, Play, Loader2, Bot, Send, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
