@@ -88,7 +88,7 @@ const CHANNEL_DISPLAY: Record<string, string> = {
   youtube: "YouTube", "sin-canal": "Sin canal",
 };
 
-const PAGE_SIZE_OPTIONS = [20, 50, 100];
+const PAGE_SIZE_OPTIONS = [9, 18, 50, 100];
 
 export default function HubLeadsPage() {
   const navigate = useNavigate();
@@ -101,7 +101,7 @@ export default function HubLeadsPage() {
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
 
   // Pagination state
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(9);
   const [currentPage, setCurrentPage] = useState(0);
 
   const accountId = (() => {
