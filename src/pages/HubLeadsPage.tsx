@@ -89,7 +89,7 @@ const CHANNEL_DISPLAY: Record<string, string> = {
   youtube: "YouTube", "sin-canal": "Sin canal",
 };
 
-const PAGE_SIZE_OPTIONS = [18, 36, 54, 96];
+const PAGE_SIZE_OPTIONS = [15, 30, 45, 90];
 
 export default function HubLeadsPage() {
   const navigate = useNavigate();
@@ -102,7 +102,7 @@ export default function HubLeadsPage() {
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
 
   // Pagination & sort state
-  const [pageSize, setPageSize] = useState(18);
+  const [pageSize, setPageSize] = useState(15);
   const [currentPage, setCurrentPage] = useState(0);
   const [sortBy, setSortBy] = useState<"recent" | "name_asc" | "name_desc" | "oldest">("recent");
 
@@ -311,7 +311,7 @@ export default function HubLeadsPage() {
                 return (
                   <div
                     key={lead.id}
-                    className="group bg-card border border-border rounded-lg px-3 py-2.5 transition-all hover:border-amber-500/30 hover:bg-card/80 flex flex-col justify-between"
+                    className="group bg-card border border-border rounded-lg px-3 py-3 transition-all hover:border-amber-500/30 hover:bg-card/80 flex flex-col justify-between"
                   >
                     {/* Top row: avatar + name + consulta icon */}
                     <div className="flex items-center gap-2">
