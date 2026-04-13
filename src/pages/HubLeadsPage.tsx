@@ -338,16 +338,19 @@ export default function HubLeadsPage() {
                       </button>
                     </div>
 
-                    {/* Bottom row: phone + email + date */}
+                    {/* Bottom rows: phone + date, then email */}
                     <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                       {lead.phone ? (
                         <span className="flex items-center gap-1 shrink-0"><Phone className="w-3 h-3 shrink-0" />{lead.phone}</span>
                       ) : null}
-                      {lead.email ? (
-                        <span className="flex items-center gap-1 truncate min-w-0" title={lead.email}><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></span>
-                      ) : null}
                       <span className="flex items-center gap-1 shrink-0 ml-auto"><Calendar className="w-3 h-3" />{format(createdDate, "d MMM", { locale: es })}</span>
                     </div>
+                    {lead.email ? (
+                      <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground min-w-0">
+                        <Mail className="w-3 h-3 shrink-0" />
+                        <span className="truncate" title={lead.email}>{lead.email}</span>
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}
