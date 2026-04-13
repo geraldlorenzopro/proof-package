@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Phone, Mail, Calendar, Tag, FileText, Loader2, MessageSquare, Pencil, Plus, Briefcase, Activity, FolderOpen } from "lucide-react";
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
+import { logAccess } from "@/lib/auditLog";
 import ChannelLogo from "@/components/intake/ChannelLogo";
 import HubLayout from "@/components/hub/HubLayout";
 import IntakeWizard from "@/components/intake/IntakeWizard";
@@ -95,7 +96,7 @@ export default function ClientProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [intakeOpen, setIntakeOpen] = useState(false);
-
+  const auditLoggedRef = useRef(false);
   useEffect(() => {
     if (!id) return;
     (async () => {
@@ -121,6 +122,25 @@ export default function ClientProfilePage() {
         const caseIds = casesRes.data.map((c: any) => c.id);
         const { data: docsData } = await supabase.from("case_documents").select("id, file_name, category, created_at").in("case_id", caseIds).order("created_at", { ascending: false });
         setDocs(docsData || []);
+      }
+
+      // Audit log
+      if (!auditLoggedRef.current && data) {
+        auditLoggedRef.current = true;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const acctId = await supabase.rpc("user_account_id", { _user_id: user.id });
+          if (acctId.data) {
+            logAccess({
+              accountId: acctId.data,
+              userId: user.id,
+              action: "viewed",
+              entityType: "client_profile",
+              entityId: id,
+              metadata: { client_name: [data.first_name, data.last_name].filter(Boolean).join(" ") },
+            });
+          }
+        }
       }
 
       setLoading(false);

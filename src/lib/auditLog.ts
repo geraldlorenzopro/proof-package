@@ -7,9 +7,12 @@ export type AuditAction =
   | "evidence.uploaded" | "evidence.deleted"
   | "vawa.created" | "vawa.updated"
   | "tool.used"
-  | "auth.login" | "auth.logout";
+  | "auth.login" | "auth.logout"
+  | "viewed_contacts_list" | "viewed_client_profile" | "viewed_client_case"
+  | "viewed_consultation_room" | "exported" | "downloaded" | "modified";
 
-export type AuditEntityType = "client" | "case" | "form" | "evidence" | "vawa" | "tool" | "auth";
+export type AuditEntityType = "client" | "case" | "form" | "evidence" | "vawa" | "tool" | "auth"
+  | "contacts_list" | "client_profile" | "client_case" | "consultation_room";
 
 interface AuditEntry {
   action: AuditAction;
@@ -48,6 +51,45 @@ export async function logAudit(entry: AuditEntry): Promise<void> {
       metadata: entry.metadata || {},
     });
   } catch (err) {
-    console.warn("[audit]", err);
+    // Silent — never block UX
+  }
+}
+
+/**
+ * Convenience function for logging page/data access events.
+ */
+export async function logAccess({
+  accountId,
+  userId,
+  userName,
+  action,
+  entityType,
+  entityId,
+  metadata = {},
+}: {
+  accountId: string;
+  userId: string;
+  userName?: string;
+  action: "viewed" | "exported" | "downloaded" | "modified";
+  entityType: string;
+  entityId?: string;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    await supabase.from("audit_logs" as any).insert({
+      account_id: accountId,
+      user_id: userId,
+      user_display_name: userName || "Usuario",
+      action: `${action}_${entityType}`,
+      entity_type: entityType,
+      entity_id: entityId || accountId,
+      metadata: {
+        ...metadata,
+        timestamp: new Date().toISOString(),
+        url: window.location.pathname,
+      },
+    });
+  } catch {
+    // Silent — never block UX
   }
 }

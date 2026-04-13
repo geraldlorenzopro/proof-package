@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { logAccess } from "@/lib/auditLog";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Clock, Pause, Play, Loader2, Bot, Send, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -286,6 +287,19 @@ export default function ConsultationRoom() {
         setTeamMembers((profiles || []).map(p => ({ user_id: p.user_id, name: p.full_name || "Usuario" })));
         setSelectedAssignee(user.id);
       }
+    }
+
+    // Audit log
+    if (aid && user && intakeData) {
+      logAccess({
+        accountId: aid,
+        userId: user.id,
+        userName: prof?.full_name || undefined,
+        action: "viewed",
+        entityType: "consultation_room",
+        entityId: intakeId,
+        metadata: { client_name: intakeData.client_first_name || "" },
+      });
     }
 
     // Run Felix AI

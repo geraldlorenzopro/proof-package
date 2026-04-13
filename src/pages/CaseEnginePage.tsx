@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { getCaseTypeLabel, normalizeClientName } from "@/lib/caseTypeLabels";
+import { logAccess } from "@/lib/auditLog";
 import {
   ArrowLeft, Loader2, AlertTriangle, BarChart3, FileText,
   MessageSquare, ListTodo, Clock, FolderOpen, Sparkles, Mic,
@@ -148,7 +149,28 @@ export default function CaseEnginePage() {
     }
   }, [caseId, navigate]);
 
+  const auditLoggedRef = useRef(false);
   useEffect(() => { loadCase(); }, [loadCase]);
+
+  // Audit log on case load
+  useEffect(() => {
+    if (caseData && !auditLoggedRef.current) {
+      auditLoggedRef.current = true;
+      (async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && caseData.account_id) {
+          logAccess({
+            accountId: caseData.account_id,
+            userId: user.id,
+            action: "viewed",
+            entityType: "client_case",
+            entityId: caseId,
+            metadata: { file_number: caseData.file_number, case_type: caseData.case_type },
+          });
+        }
+      })();
+    }
+  }, [caseData]);
 
   const stages: PipelineStage[] = useMemo(() => {
     if (!template?.stages) return [];

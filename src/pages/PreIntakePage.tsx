@@ -92,7 +92,8 @@ export default function PreIntakePage() {
     try {
       const { data, error: err } = await supabase.rpc("get_appointment_by_token", { _token: token! });
       if (err || !data || (Array.isArray(data) && data.length === 0)) {
-        setError("invalid");
+        // Check if token exists but is expired (function filters expired tokens)
+        setError("expired");
         return;
       }
       const appt = Array.isArray(data) ? data[0] : data;
@@ -165,6 +166,23 @@ export default function PreIntakePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error === "expired") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="text-center space-y-3 max-w-sm">
+          <span className="text-5xl">⏰</span>
+          <h1 className="text-xl font-bold text-foreground">Este formulario ha expirado</h1>
+          <p className="text-muted-foreground text-sm">
+            Por seguridad, los formularios de pre-consulta tienen vigencia de 72 horas.
+          </p>
+          <p className="text-muted-foreground/70 text-xs">
+            Contacta a tu preparador para recibir un nuevo enlace.
+          </p>
+        </div>
       </div>
     );
   }

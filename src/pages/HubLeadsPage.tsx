@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { logAccess } from "@/lib/auditLog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import HubLayout from "@/components/hub/HubLayout";
@@ -117,9 +118,22 @@ export default function HubLeadsPage() {
   // Reset page when filters change
   useEffect(() => { setCurrentPage(0); }, [search, channelFilter, pageSize, sortBy]);
 
+  const auditLoggedRef = useRef(false);
+
   useEffect(() => {
     if (!accountId) return;
     fetchPage();
+
+    // Audit log: first load only
+    if (!auditLoggedRef.current) {
+      auditLoggedRef.current = true;
+      (async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          logAccess({ accountId, userId: user.id, action: "viewed", entityType: "contacts_list" });
+        }
+      })();
+    }
   }, [accountId, currentPage, pageSize, channelFilter, sortBy]);
 
   async function fetchPage() {
