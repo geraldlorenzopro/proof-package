@@ -289,6 +289,19 @@ export default function ConsultationRoom() {
       }
     }
 
+    // Audit log
+    if (aid && user && intakeData) {
+      logAccess({
+        accountId: aid,
+        userId: user.id,
+        userName: prof?.full_name || undefined,
+        action: "viewed",
+        entityType: "consultation_room",
+        entityId: intakeId,
+        metadata: { client_name: intakeData.client_name || "" },
+      });
+    }
+
     // Run Felix AI
     runFelix(intakeData, apptData);
     setLoading(false);
