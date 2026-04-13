@@ -263,7 +263,7 @@ export default function ClientProfilePage() {
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       {s.entry_channel && <ChannelLogo channel={s.entry_channel} size={16} />}
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{s.consultation_topic_tag || "Sin tema"}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{TOPIC_LABELS[s.consultation_topic_tag || ""] || s.consultation_topic_tag || "Sin tema"}</p>
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                           <Calendar className="w-3 h-3" />{format(new Date(s.created_at), "d MMM yyyy, HH:mm", { locale: es })}
                         </p>
