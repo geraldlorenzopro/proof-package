@@ -222,8 +222,21 @@ export default function HubLeadsPage() {
             <div>
               <h1 className="text-xl font-bold text-foreground">Contactos</h1>
               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos registrados</p>
-            </div>
           </div>
+
+          {/* Sort */}
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+            <SelectTrigger className="w-[160px] h-9 text-xs bg-muted/50 border-border gap-1.5">
+              <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Más recientes</SelectItem>
+              <SelectItem value="oldest">Más antiguos</SelectItem>
+              <SelectItem value="name_asc">Nombre A-Z</SelectItem>
+              <SelectItem value="name_desc">Nombre Z-A</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Fixed top: Search */}
