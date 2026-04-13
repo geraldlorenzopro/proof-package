@@ -246,8 +246,8 @@ export default function HubLeadsPage() {
         {/* Scrollable cards area */}
         <div className="flex-1 overflow-y-auto mt-2 min-h-0 flex flex-col">
           {loading ? (
-            <div className="grid grid-cols-3 gap-2">
-              {Array.from({ length: 15 }).map((_, i) => <Skeleton key={i} className="h-[72px] rounded-lg" />)}
+            <div className="grid grid-cols-3 gap-2 flex-1">
+              {Array.from({ length: 18 }).map((_, i) => <Skeleton key={i} className="h-full min-h-[60px] rounded-lg" />)}
             </div>
           ) : leads.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
