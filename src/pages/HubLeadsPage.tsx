@@ -222,6 +222,7 @@ export default function HubLeadsPage() {
             <div>
               <h1 className="text-xl font-bold text-foreground">Contactos</h1>
               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos registrados</p>
+            </div>
           </div>
 
           {/* Sort */}
