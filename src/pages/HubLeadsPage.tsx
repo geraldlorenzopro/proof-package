@@ -247,7 +247,7 @@ export default function HubLeadsPage() {
         <div className="flex-1 overflow-y-auto mt-2 min-h-0">
           {loading ? (
             <div className="grid grid-cols-3 gap-2">
-              {Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="h-[72px] rounded-lg" />)}
+              {Array.from({ length: 15 }).map((_, i) => <Skeleton key={i} className="h-[72px] rounded-lg" />)}
             </div>
           ) : leads.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
