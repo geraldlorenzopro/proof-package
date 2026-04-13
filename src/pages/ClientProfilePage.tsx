@@ -13,6 +13,33 @@ import ChannelLogo from "@/components/intake/ChannelLogo";
 import HubLayout from "@/components/hub/HubLayout";
 import IntakeWizard from "@/components/intake/IntakeWizard";
 
+const TOPIC_LABELS: Record<string, string> = {
+  "proceso:familia": "Residencia / Green Card por familia",
+  "proceso:ajuste-estatus": "Ajuste de estatus",
+  "proceso:consular": "Proceso consular",
+  "proceso:naturalizacion": "Ciudadanía / Naturalización",
+  "proceso:ead-documentos": "Permiso de trabajo",
+  "proceso:visa-temporal": "Visa temporal",
+  "proceso:empleo-inversion": "Green Card por trabajo",
+  "proceso:asilo-humanitario": "Asilo humanitario",
+  "proceso:proteccion-especial": "Protección especial",
+  "proceso:waiver": "Perdón migratorio",
+  "proceso:corte-ice-cbp": "Corte / ICE / Frontera",
+  "proceso:otro": "Otro tema",
+  "familia": "Residencia / Green Card por familia",
+  "ajuste-estatus": "Ajuste de estatus",
+  "consular": "Proceso consular",
+  "naturalizacion": "Ciudadanía / Naturalización",
+  "ead-documentos": "Permiso de trabajo",
+  "visa-temporal": "Visa temporal",
+  "empleo-inversion": "Green Card por trabajo",
+  "asilo-humanitario": "Asilo humanitario",
+  "proteccion-especial": "Protección especial",
+  "waiver": "Perdón migratorio",
+  "corte-ice-cbp": "Corte / ICE / Frontera",
+  "otro": "Otro tema",
+};
+
 interface Profile {
   id: string;
   first_name: string | null;
