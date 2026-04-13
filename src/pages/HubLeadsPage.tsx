@@ -244,7 +244,7 @@ export default function HubLeadsPage() {
         </div>
 
         {/* Scrollable cards area */}
-        <div className="flex-1 overflow-y-auto mt-2 min-h-0">
+        <div className="flex-1 overflow-y-auto mt-2 min-h-0 flex flex-col">
           {loading ? (
             <div className="grid grid-cols-3 gap-2">
               {Array.from({ length: 15 }).map((_, i) => <Skeleton key={i} className="h-[72px] rounded-lg" />)}
