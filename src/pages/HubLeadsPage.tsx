@@ -132,8 +132,18 @@ export default function HubLeadsPage() {
       .select("id, first_name, middle_name, last_name, email, phone, source_channel, source_detail, created_at", { count: "exact" })
       .eq("account_id", accountId)
       .eq("is_test", false)
-      .eq("contact_stage", "lead")
-      .order("created_at", { ascending: false });
+      .eq("contact_stage", "lead");
+
+    // Sort
+    if (sortBy === "name_asc") {
+      query = query.order("first_name", { ascending: true });
+    } else if (sortBy === "name_desc") {
+      query = query.order("first_name", { ascending: false });
+    } else if (sortBy === "oldest") {
+      query = query.order("created_at", { ascending: true });
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
 
     // Server-side channel filter
     if (channelFilter !== "all") {
