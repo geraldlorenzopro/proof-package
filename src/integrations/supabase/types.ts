@@ -532,6 +532,7 @@ export type Database = {
           notes: string | null
           pre_intake_completed: boolean | null
           pre_intake_data: Json | null
+          pre_intake_expires_at: string | null
           pre_intake_sent: boolean | null
           pre_intake_token: string | null
           status: string
@@ -558,6 +559,7 @@ export type Database = {
           notes?: string | null
           pre_intake_completed?: boolean | null
           pre_intake_data?: Json | null
+          pre_intake_expires_at?: string | null
           pre_intake_sent?: boolean | null
           pre_intake_token?: string | null
           status?: string
@@ -584,6 +586,7 @@ export type Database = {
           notes?: string | null
           pre_intake_completed?: boolean | null
           pre_intake_data?: Json | null
+          pre_intake_expires_at?: string | null
           pre_intake_sent?: boolean | null
           pre_intake_token?: string | null
           status?: string
