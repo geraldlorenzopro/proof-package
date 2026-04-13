@@ -120,7 +120,7 @@ export default function HubLeadsPage() {
   useEffect(() => {
     if (!accountId) return;
     fetchPage();
-  }, [accountId, currentPage, pageSize, channelFilter]);
+  }, [accountId, currentPage, pageSize, channelFilter, sortBy]);
 
   async function fetchPage() {
     setLoading(true);
