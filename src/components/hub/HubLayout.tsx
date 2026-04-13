@@ -1,10 +1,11 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Shield, Home, LogOut, Users, UserSearch, MessageSquare,
   FolderOpen, Calendar, BarChart3, Bot, Settings
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import HubCreditsWidget from "./HubCreditsWidget";
 import CamilaFloatingPanel from "./CamilaFloatingPanel";
 interface Props {
@@ -27,9 +28,40 @@ const NAV_ITEMS = [
   { icon: Settings, label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings") },
 ];
 
+const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 hours
+
 export default function HubLayout({ children, accountName, staffName, plan }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // ═══ Inactivity timeout ═══
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        sessionStorage.removeItem("ner_hub_data");
+        sessionStorage.removeItem("ner_impersonate");
+        sessionStorage.removeItem("ner_active_account_id");
+        await supabase.auth.signOut();
+        toast.warning(
+          "Sesión cerrada por inactividad. Tus datos de clientes están protegidos.",
+          { duration: 6000 }
+        );
+        navigate("/auth", { replace: true });
+      }, INACTIVITY_MS);
+    };
+
+    const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart", "click"];
+    events.forEach(e => window.addEventListener(e, reset, { passive: true }));
+    reset();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach(e => window.removeEventListener(e, reset));
+    };
+  }, [navigate]);
 
   const accountId = (() => {
     try {

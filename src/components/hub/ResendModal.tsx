@@ -31,7 +31,7 @@ export default function ResendModal({ open, onOpenChange, appointmentId, clientN
     const msg = `Hola ${firstName}, soy del equipo de Mr Visa Immigration.\n\nPara continuar con tu proceso, necesitamos que completes este breve formulario:\n\n${preIntakeUrl}\n\nCualquier pregunta, responde aquí. 🙏`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
 
-    await supabase.from("appointments").update({ pre_intake_sent: true } as any).eq("id", appointmentId);
+    await supabase.from("appointments").update({ pre_intake_sent: true, pre_intake_expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString() } as any).eq("id", appointmentId);
     toast.success("Formulario reenviado por WhatsApp");
     setSending(null);
     onOpenChange(false);
@@ -54,7 +54,7 @@ export default function ResendModal({ open, onOpenChange, appointmentId, clientN
           },
         },
       });
-      await supabase.from("appointments").update({ pre_intake_sent: true } as any).eq("id", appointmentId);
+      await supabase.from("appointments").update({ pre_intake_sent: true, pre_intake_expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString() } as any).eq("id", appointmentId);
       toast.success("Formulario reenviado por Email");
       onOpenChange(false);
       onSent?.();
