@@ -88,7 +88,7 @@ const CHANNEL_DISPLAY: Record<string, string> = {
   youtube: "YouTube", "sin-canal": "Sin canal",
 };
 
-const PAGE_SIZE_OPTIONS = [12, 24, 48, 96];
+const PAGE_SIZE_OPTIONS = [15, 30, 48, 96];
 
 export default function HubLeadsPage() {
   const navigate = useNavigate();
@@ -101,7 +101,7 @@ export default function HubLeadsPage() {
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
 
   // Pagination state
-  const [pageSize, setPageSize] = useState(12);
+  const [pageSize, setPageSize] = useState(15);
   const [currentPage, setCurrentPage] = useState(0);
 
   const accountId = (() => {
@@ -247,7 +247,7 @@ export default function HubLeadsPage() {
         <div className="flex-1 overflow-y-auto mt-2 min-h-0">
           {loading ? (
             <div className="grid grid-cols-3 gap-2">
-              {Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="h-[72px] rounded-lg" />)}
+              {Array.from({ length: 15 }).map((_, i) => <Skeleton key={i} className="h-[72px] rounded-lg" />)}
             </div>
           ) : leads.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -292,10 +292,11 @@ export default function HubLeadsPage() {
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); openIntakeForLead(lead); }}
-                        className="shrink-0 w-7 h-7 rounded-md border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 transition-colors"
+                        className="shrink-0 h-7 rounded-md border border-amber-500/20 flex items-center gap-1.5 px-2 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 transition-all"
                         title="Iniciar consulta"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
+                        <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                        <span className="text-[10px] font-medium hidden group-hover:inline whitespace-nowrap">Iniciar consulta</span>
                       </button>
                     </div>
 
