@@ -216,7 +216,7 @@ export default function HubLeadsPage() {
         </div>
 
         {/* Fixed top: Search */}
-        <div className="relative shrink-0 mt-4">
+        <div className="relative shrink-0 mt-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por nombre, email o teléfono..."
@@ -227,7 +227,7 @@ export default function HubLeadsPage() {
         </div>
 
         {/* Fixed top: Channel filters */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0 mt-4">
+        <div className="flex flex-wrap items-center gap-1.5 shrink-0 mt-2">
           {CHANNEL_FILTERS.map((f) => (
             <button
               key={f.key}
@@ -244,7 +244,7 @@ export default function HubLeadsPage() {
         </div>
 
         {/* Scrollable cards area */}
-        <div className="flex-1 overflow-y-auto mt-4 min-h-0">
+        <div className="flex-1 overflow-y-auto mt-2 min-h-0">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {Array.from({ length: pageSize > 20 ? 12 : 9 }).map((_, i) => <Skeleton key={i} className="h-44 rounded-xl" />)}
@@ -261,7 +261,7 @@ export default function HubLeadsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
             >
               {leads.map((lead) => {
                 const classified = classifyChannel(lead.source_channel);
@@ -272,10 +272,10 @@ export default function HubLeadsPage() {
                 return (
                   <div
                     key={lead.id}
-                    className="group relative bg-card border border-border rounded-xl p-4 text-left transition-all hover:border-amber-500/30 hover:shadow-lg hover:shadow-amber-500/5"
+                    className="group relative bg-card border border-border rounded-xl p-3 text-left transition-all hover:border-amber-500/30 hover:shadow-lg hover:shadow-amber-500/5"
                   >
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center text-sm font-bold text-amber-400 shrink-0">
+                    <div className="flex items-start gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0">
                         {getInitials(lead)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -322,7 +322,7 @@ export default function HubLeadsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="mt-3 w-full gap-2 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20"
+                      className="mt-2 w-full gap-2 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 h-7"
                       onClick={(e) => { e.stopPropagation(); openIntakeForLead(lead); }}
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
