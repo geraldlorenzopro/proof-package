@@ -282,7 +282,7 @@ export default function HubLeadsPage() {
                       <div className="flex-1 min-w-0">
                         <button
                           onClick={() => navigate(`/hub/clients/${lead.id}`)}
-                          className="font-semibold text-foreground truncate block hover:text-amber-400 transition-colors text-sm leading-tight"
+                          className="font-semibold text-foreground truncate block hover:text-amber-400 transition-colors text-base leading-tight"
                         >
                           {getName(lead)}
                         </button>
