@@ -381,8 +381,25 @@ function HubDashboardInner({
   return (
     <>
       {/* ═══ COCKPIT — fixed height, no scroll ═══ */}
-      <div className="h-[calc(100vh-0px)] w-full overflow-hidden flex items-center justify-center bg-background" style={{ width: "calc(100vw - 60px)" }}>
+      <div className="h-screen w-full overflow-hidden flex items-center justify-center bg-background relative" style={{ width: "calc(100vw - 60px)" }}>
 
+        {/* Onboarding banner */}
+        {showOnboardingBanner && !bannerDismissed && (
+          <div className="absolute top-0 left-0 right-0 bg-amber-500/10 border-b border-amber-500/15 px-6 py-2 flex items-center justify-between z-10">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-400" />
+              <span className="text-xs text-amber-200/90">¡Completa la configuración de tu oficina!</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={onTriggerOnboarding} className="text-xs font-semibold text-amber-300 hover:text-amber-200 transition-colors flex items-center gap-1">
+                Completar <ChevronRight className="w-3 h-3" />
+              </button>
+              <button onClick={() => setBannerDismissed(true)} className="text-amber-400/50 hover:text-amber-400">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Main content — centered, no scroll */}
         <div className="w-full max-w-4xl h-full overflow-hidden flex flex-col gap-3 px-6 py-5">
