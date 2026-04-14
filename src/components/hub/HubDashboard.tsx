@@ -700,7 +700,7 @@ function HubDashboardInner({
                     const title = selectedNews.title;
                     const summary = selectedNews.summary;
                     setSelectedNews(null);
-                    sendMessage(`Camila, noticia de inmigración: ${title} — ${summary}. ¿Hay algún caso que pudiera verse afectado?`);
+                    sendMessage(`Camila, analiza esta noticia de inmigración:\n\n"${title}"\n\n${summary}\n\nPor favor:\n1. Explícame qué significa esto en términos simples para nuestra firma\n2. ¿Hay algún caso activo que pudiera verse afectado?\n3. ¿Qué acción concreta recomiendas?`);
                   }}
                   className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-jarvis/10 border border-jarvis/20 text-sm font-medium text-jarvis hover:bg-jarvis/20 transition-all"
                 >
