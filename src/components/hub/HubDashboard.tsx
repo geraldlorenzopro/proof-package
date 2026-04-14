@@ -106,6 +106,16 @@ const sourceColors: Record<string, string> = {
   Noticias: "text-muted-foreground bg-muted/20 border-border/20",
 };
 
+const SOURCE_URLS: Record<string, string> = {
+  USCIS: "https://www.uscis.gov/newsroom",
+  DOS: "https://travel.state.gov/content/travel/en/News/visas-news.html",
+  ICE: "https://www.ice.gov/news",
+  CBP: "https://www.cbp.gov/newsroom",
+  EOIR: "https://www.justice.gov/eoir/news",
+  "Federal Register": "https://www.federalregister.gov/agencies/homeland-security-department",
+  Noticias: "https://www.uscis.gov/newsroom",
+};
+
 function getCategoryStyle(cat: string) {
   return categoryStyles[cat] || categoryStyles.USCIS;
 }
@@ -339,8 +349,14 @@ function HubDashboardInner({
     if (alreadyGreeted) return;
     sessionStorage.setItem(todayKey, "1");
     const fn = resolvedName.split(" ")[0];
-    const h = new Date().getHours();
-    const saludo = h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches";
+    const localHour = parseInt(
+      new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        hour12: false,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }).format(new Date())
+    );
+    const saludo = localHour < 12 ? "Buenos días" : localHour < 18 ? "Buenas tardes" : "Buenas noches";
     setTimeout(() => {
       let greetText = `${saludo}, ${fn}.`;
       if (briefingWeather) greetText += ` ${briefingWeather}`;
@@ -372,9 +388,15 @@ function HubDashboardInner({
   }
 
   const greeting = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return "Buenos días";
-    if (h < 18) return "Buenas tardes";
+    const lh = parseInt(
+      new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        hour12: false,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }).format(new Date())
+    );
+    if (lh < 12) return "Buenos días";
+    if (lh < 18) return "Buenas tardes";
     return "Buenas noches";
   })();
 
@@ -687,11 +709,14 @@ function HubDashboardInner({
                     {selectedNews.summary}
                   </DialogDescription>
                 </DialogHeader>
-                {selectedNews.url && (
-                  <a href={selectedNews.url} target="_blank" rel="noopener noreferrer" className="text-xs text-jarvis hover:underline">
-                    Ver fuente original →
-                  </a>
-                )}
+                {(() => {
+                  const newsUrl = selectedNews.url || SOURCE_URLS[selectedNews.source || ""] || SOURCE_URLS.Noticias;
+                  return (
+                    <a href={newsUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-jarvis hover:underline">
+                      Ver fuente original →
+                    </a>
+                  );
+                })()}
                 <p className="text-[10px] text-muted-foreground/40 text-center mt-1">
                   Información de carácter informativo.
                 </p>
