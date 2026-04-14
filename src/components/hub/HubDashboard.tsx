@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
 import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
-import HubAlertsMini from "./HubAlertsMini";
+
 import HubMyTasks from "./HubMyTasks";
 import HubCreditsWidget from "./HubCreditsWidget";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
