@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Send, Mic, MicOff, Briefcase, Calendar, Users,
-  MessageSquare, ChevronRight, ChevronLeft,
+  MessageSquare, ChevronRight,
   X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
-  Newspaper, Shield, Globe, Scale, Gavel, BookOpen, FileText,
+  BookOpen,
   Phone, PhoneOff, AlertTriangle, BarChart3, ListTodo, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
@@ -16,7 +16,6 @@ import NewContactModal from "../workspace/NewContactModal";
 
 import HubMyTasks from "./HubMyTasks";
 import HubCreditsWidget from "./HubCreditsWidget";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const OFFICIAL_RESOURCES = [
@@ -97,39 +96,6 @@ interface Props {
   onTriggerOnboarding?: () => void;
 }
 
-// Category styles for news — now with source badge support
-const categoryStyles: Record<string, { bg: string; stroke: string; icon: any }> = {
-  USCIS: { bg: "#E6F1FB", stroke: "#185FA5", icon: Shield },
-  "Visa Bulletin": { bg: "#EAF3DE", stroke: "#3B6D11", icon: Globe },
-  "ICE/CBP": { bg: "#FCEBEB", stroke: "#A32D2D", icon: Gavel },
-  Cortes: { bg: "#FAEEDA", stroke: "#854F0B", icon: Scale },
-  "DACA/TPS": { bg: "#EEEDFE", stroke: "#534AB7", icon: BookOpen },
-  Legislación: { bg: "#E1F5EE", stroke: "#0F6E56", icon: FileText },
-};
-
-const sourceColors: Record<string, string> = {
-  USCIS: "text-blue-400 bg-blue-500/10 border-blue-500/20",
-  DOS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-  ICE: "text-red-400 bg-red-500/10 border-red-500/20",
-  CBP: "text-red-400 bg-red-500/10 border-red-500/20",
-  EOIR: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-  "Federal Register": "text-muted-foreground bg-muted/30 border-border/30",
-  Noticias: "text-muted-foreground bg-muted/20 border-border/20",
-};
-
-const SOURCE_URLS: Record<string, string> = {
-  USCIS: "https://www.uscis.gov/newsroom",
-  DOS: "https://travel.state.gov/content/travel/en/News/visas-news.html",
-  ICE: "https://www.ice.gov/news",
-  CBP: "https://www.cbp.gov/newsroom",
-  EOIR: "https://www.justice.gov/eoir/news",
-  "Federal Register": "https://www.federalregister.gov/agencies/homeland-security-department",
-  Noticias: "https://www.uscis.gov/newsroom",
-};
-
-function getCategoryStyle(cat: string) {
-  return categoryStyles[cat] || categoryStyles.USCIS;
-}
 
 function HubDashboardInner({
   accountId, accountName, staffName, showOnboardingBanner, onTriggerOnboarding
@@ -290,10 +256,6 @@ function HubDashboardInner({
   // TTS greeting
   const greetedRef = useRef(false);
   const [briefingWeather, setBriefingWeather] = useState<string | null>(null);
-  const [newsCards, setNewsCards] = useState<{title:string;summary:string;source?:string;category:string;urgency?:string;url?:string;time:string;pubDate?:string}[]>([]);
-  const [newsLoading, setNewsLoading] = useState(true);
-  const [selectedNews, setSelectedNews] = useState<typeof newsCards[0] | null>(null);
-  const [newsPage, setNewsPage] = useState(0);
 
   const BRIEFING_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-briefing`;
 
@@ -312,52 +274,6 @@ function HubDashboardInner({
     if (accountId) loadKpis();
   }, [accountId]);
 
-  useEffect(() => {
-    if (!accountId) return;
-    // Force clear old cache to load new RSS-based news
-    localStorage.removeItem(`hub_news_${accountId}`);
-    const CACHE_KEY = `hub_news_${accountId}`;
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      try {
-        const { ts, data } = JSON.parse(cached);
-        // Limpiar cache viejo de Perplexity (noticias sin URL real)
-        if (data.newsCards?.some((n: any) => !n.url || n.url === "")) {
-          localStorage.removeItem(CACHE_KEY);
-        } else if (Date.now() - ts < 2 * 60 * 60 * 1000 && data.newsCards?.length) {
-          if (data.weather) setBriefingWeather(data.weather);
-          setNewsCards(data.newsCards);
-          setNewsLoading(false);
-          return;
-        }
-      } catch {
-        localStorage.removeItem(CACHE_KEY);
-      }
-    }
-    (async () => {
-      try {
-        const resp = await fetch(BRIEFING_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ account_id: accountId }),
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.weather) setBriefingWeather(data.weather);
-          if (data.newsCards?.length) setNewsCards(data.newsCards);
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
-        }
-      } catch (e) {
-        console.warn("Briefing fetch failed:", e);
-      } finally {
-        setNewsLoading(false);
-      }
-    })();
-  }, [accountId]);
 
   // Auto-greet TTS
   useEffect(() => {
@@ -460,12 +376,12 @@ function HubDashboardInner({
     { label: "Tareas pend.", value: pendingTasks, route: "/hub/cases", icon: ListTodo, accent: "text-amber-400", bgAccent: "bg-amber-500/10 border-amber-500/20" },
   ];
 
-  const NEWS_PER_PAGE = 3;
+  
 
   return (
     <>
       {/* ═══ COCKPIT — fixed height, no scroll ═══ */}
-      <div className="h-[calc(100vh-0px)] overflow-hidden flex flex-col">
+      <div className="h-[calc(100vh-64px)] overflow-hidden flex flex-col">
 
         {/* Onboarding banner */}
         {showOnboardingBanner && !bannerDismissed && (
@@ -485,11 +401,11 @@ function HubDashboardInner({
           </div>
         )}
 
-        {/* Main content — padded, no overflow */}
-        <div className="flex-1 flex flex-col min-h-0 px-8 py-3 gap-3">
+        {/* Main content — centered, no scroll */}
+        <div className="flex-1 flex flex-col min-h-0 px-8 py-3 gap-2 max-w-5xl mx-auto w-full">
 
           {/* ─── ZONA A: Header ─── */}
-          <div className="text-center shrink-0">
+          <div className="text-center shrink-0 flex-none">
             <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center mx-auto mb-2 relative">
               <Sparkles className="w-5 h-5 text-jarvis" />
               <div className="absolute inset-0 rounded-xl animate-pulse bg-jarvis/5" />
@@ -501,7 +417,7 @@ function HubDashboardInner({
           </div>
 
           {/* ─── ZONA B: Camila Input ─── */}
-          <div className="w-full max-w-5xl mx-auto shrink-0">
+          <div className="w-full shrink-0 flex-none">
             <div className={`flex items-center gap-2 bg-card border rounded-2xl px-4 py-3 shadow-sm transition-all ${
               isVoiceActive
                 ? "border-emerald-400/40 ring-1 ring-emerald-400/20"
@@ -576,7 +492,7 @@ function HubDashboardInner({
           )}
 
           {/* ─── ZONA C: Quick Actions ─── */}
-          <div className="w-full max-w-5xl mx-auto grid grid-cols-3 gap-2 shrink-0">
+          <div className="w-full grid grid-cols-3 gap-2 shrink-0 flex-none">
             {quickChips.map((chip, i) => (
               <button
                 key={chip.label}
@@ -590,7 +506,7 @@ function HubDashboardInner({
           </div>
 
           {/* ─── ZONA D: KPIs + Alerts ─── */}
-          <div className="w-full max-w-5xl mx-auto grid grid-cols-4 gap-2 shrink-0">
+          <div className="w-full grid grid-cols-4 gap-2 shrink-0 flex-none">
               {kpis.map(kpi => (
                 <button
                   key={kpi.label}
@@ -608,118 +524,44 @@ function HubDashboardInner({
               ))}
           </div>
 
-          {/* ─── ZONA E: News Carousel ─── */}
-          <div className="w-full max-w-5xl mx-auto shrink-0">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-px flex-1 bg-border/20" />
-              <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold flex items-center gap-1">
-                <Newspaper className="w-3 h-3" /> Noticias de inmigración
-              </span>
-              <div className="h-px flex-1 bg-border/20" />
-            </div>
-            <div className="relative px-8">
-              {newsPage > 0 && newsCards.length > NEWS_PER_PAGE && (
-                <button onClick={() => setNewsPage(p => p - 1)} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis transition-all shadow">
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-              )}
-              {newsPage < Math.ceil(newsCards.length / NEWS_PER_PAGE) - 1 && newsCards.length > NEWS_PER_PAGE && (
-                <button onClick={() => setNewsPage(p => p + 1)} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis transition-all shadow">
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              )}
-              <div className="grid grid-cols-3 gap-2">
-                {newsLoading || newsCards.length === 0
-                  ? Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl border border-border/20 bg-card/40">
-                        <Skeleton className="w-7 h-7 rounded-lg shrink-0" />
-                        <div className="flex-1 space-y-1.5">
-                          <Skeleton className="h-3 w-full" />
-                          <Skeleton className="h-3 w-3/4" />
-                          <Skeleton className="h-2 w-1/2" />
-                        </div>
-                      </div>
-                    ))
-                  : newsCards.slice(newsPage * NEWS_PER_PAGE, newsPage * NEWS_PER_PAGE + NEWS_PER_PAGE).map((card, i) => {
-                      const catStyle = getCategoryStyle(card.category);
-                      const srcColor = sourceColors[card.source || "Noticias"] || sourceColors.Noticias;
-                      return (
-                        <button
-                          key={`${newsPage}-${i}`}
-                          onClick={() => setSelectedNews(card)}
-                          className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-left group"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: catStyle.bg }}>
-                              <catStyle.icon className="w-3 h-3" style={{ color: catStyle.stroke }} />
-                            </div>
-                            {card.source && (
-                              <span className={`text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${srcColor}`}>
-                                {card.source}
-                              </span>
-                            )}
-                            {card.urgency === "alta" && (
-                              <span className="text-[8px] font-bold text-red-400 bg-red-500/10 px-1 py-0.5 rounded border border-red-500/20">URGENTE</span>
-                            )}
-                          </div>
-                          <p className="text-[11px] font-medium text-foreground/90 line-clamp-2 leading-snug group-hover:text-foreground">
-                            {card.title}
-                          </p>
-                          <p className="text-[9px] text-muted-foreground/40">
-                            {card.time} · <span className="uppercase tracking-wider font-semibold" style={{ color: catStyle.stroke }}>{card.category}</span>
-                          </p>
-                        </button>
-                      );
-                    })}
-              </div>
-            </div>
-            {newsCards.length > NEWS_PER_PAGE && (
-              <div className="flex items-center justify-center gap-1 mt-2">
-                {Array.from({ length: Math.ceil(newsCards.length / NEWS_PER_PAGE) }).map((_, i) => (
-                  <button key={i} onClick={() => setNewsPage(i)} className={`w-1.5 h-1.5 rounded-full transition-all ${i === newsPage ? "bg-jarvis w-3" : "bg-muted-foreground/20 hover:bg-muted-foreground/40"}`} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ─── ZONA E2: Recursos Oficiales ─── */}
-          <div className="w-full max-w-5xl mx-auto shrink-0">
-            <div className="flex items-center gap-2 mb-2">
+          {/* ─── ZONA E: Recursos Oficiales ─── */}
+          <div className="w-full shrink-0">
+            <div className="flex items-center gap-2 mb-1.5">
               <div className="h-px flex-1 bg-border/20" />
               <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold flex items-center gap-1">
                 <BookOpen className="w-3 h-3" /> Recursos Oficiales
               </span>
               <div className="h-px flex-1 bg-border/20" />
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               {OFFICIAL_RESOURCES.map((r) => (
                 <a
                   key={r.label}
                   href={r.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all group"
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all group"
                 >
-                  <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 border ${r.bg}`}>
-                    <ExternalLink className={`w-3 h-3 ${r.color}`} />
-                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-medium text-foreground/90 truncate group-hover:text-foreground">{r.label}</p>
-                    <p className="text-[9px] text-muted-foreground/40 truncate">{r.desc}</p>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className={`text-[7px] font-bold uppercase tracking-wider px-1 py-0.5 rounded border ${r.bg} ${r.color} shrink-0`}>{r.source}</span>
+                    </div>
+                    <p className="text-[11px] font-semibold text-foreground/90 truncate group-hover:text-foreground">{r.label}</p>
+                    <p className="text-[10px] text-muted-foreground/40 truncate">{r.desc}</p>
                   </div>
-                  <span className={`text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded border ${r.bg} ${r.color} shrink-0`}>{r.source}</span>
+                  <ExternalLink className="w-3 h-3 text-muted-foreground/20 group-hover:text-muted-foreground/50 shrink-0" />
                 </a>
               ))}
             </div>
           </div>
 
           {/* ─── ZONA F: My Tasks ─── */}
-          <div className="w-full max-w-5xl mx-auto flex-1 min-h-0">
+          <div className="w-full flex-1 min-h-0">
             <HubMyTasks accountId={accountId} />
           </div>
 
           {/* ─── ZONA G: Credits Footer ─── */}
-          <div className="w-full max-w-5xl mx-auto flex justify-center shrink-0 py-1">
+          <div className="w-full flex justify-center shrink-0 py-1">
             <HubCreditsWidget accountId={accountId} />
           </div>
         </div>
@@ -728,68 +570,6 @@ function HubDashboardInner({
       <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
       <NewContactModal open={contactOpen} onOpenChange={setContactOpen} accountId={accountId} />
 
-      {/* News detail modal */}
-      <Dialog open={!!selectedNews} onOpenChange={() => setSelectedNews(null)}>
-        <DialogContent className="sm:max-w-md">
-          {selectedNews && (() => {
-            const cs = getCategoryStyle(selectedNews.category);
-            const srcColor = sourceColors[selectedNews.source || "Noticias"] || sourceColors.Noticias;
-            return (
-              <>
-                <DialogHeader>
-                  <div className="flex items-center gap-3 mb-1">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: cs.bg }}>
-                      <cs.icon className="w-5 h-5" style={{ color: cs.stroke }} />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        {selectedNews.source && (
-                          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${srcColor}`}>
-                            {selectedNews.source}
-                          </span>
-                        )}
-                        <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: cs.stroke }}>{selectedNews.category}</span>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground/40">
-                        {selectedNews.pubDate
-                          ? new Date(selectedNews.pubDate).toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
-                          : selectedNews.time}
-                      </span>
-                    </div>
-                  </div>
-                  <DialogTitle className="text-base">{selectedNews.title}</DialogTitle>
-                  <DialogDescription className="text-sm text-muted-foreground mt-2">
-                    {selectedNews.summary}
-                  </DialogDescription>
-                </DialogHeader>
-                {(() => {
-                  const newsUrl = selectedNews.url || SOURCE_URLS[selectedNews.source || ""] || SOURCE_URLS.Noticias;
-                  return (
-                    <a href={newsUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-jarvis hover:underline">
-                      Ver fuente original →
-                    </a>
-                  );
-                })()}
-                <p className="text-[10px] text-muted-foreground/40 text-center mt-1">
-                  Información de carácter informativo.
-                </p>
-                <button
-                  onClick={() => {
-                    const title = selectedNews.title;
-                    const summary = selectedNews.summary;
-                    setSelectedNews(null);
-                    sendMessage(`Camila, analiza esta noticia de inmigración:\n\n"${title}"\n\n${summary}\n\nPor favor:\n1. Explícame qué significa esto en términos simples para nuestra firma\n2. ¿Hay algún caso activo que pudiera verse afectado?\n3. ¿Qué acción concreta recomiendas?`);
-                  }}
-                  className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-jarvis/10 border border-jarvis/20 text-sm font-medium text-jarvis hover:bg-jarvis/20 transition-all"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Preguntarle a Camila sobre esto →
-                </button>
-              </>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
