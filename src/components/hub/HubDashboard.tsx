@@ -279,7 +279,7 @@ function HubDashboardInner({
   // TTS greeting
   const greetedRef = useRef(false);
   const [briefingWeather, setBriefingWeather] = useState<string | null>(null);
-  const [newsCards, setNewsCards] = useState<{title:string;summary:string;source?:string;category:string;urgency?:string;url?:string;time:string}[]>([]);
+  const [newsCards, setNewsCards] = useState<{title:string;summary:string;source?:string;category:string;urgency?:string;url?:string;time:string;pubDate?:string}[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [selectedNews, setSelectedNews] = useState<typeof newsCards[0] | null>(null);
   const [newsPage, setNewsPage] = useState(0);
@@ -308,13 +308,18 @@ function HubDashboardInner({
     if (cached) {
       try {
         const { ts, data } = JSON.parse(cached);
-        if (Date.now() - ts < 30 * 60 * 1000 && data.newsCards?.length) {
+        // Limpiar cache viejo de Perplexity (noticias sin URL real)
+        if (data.newsCards?.some((n: any) => !n.url || n.url === "")) {
+          localStorage.removeItem(CACHE_KEY);
+        } else if (Date.now() - ts < 2 * 60 * 60 * 1000 && data.newsCards?.length) {
           if (data.weather) setBriefingWeather(data.weather);
           setNewsCards(data.newsCards);
           setNewsLoading(false);
           return;
         }
-      } catch {}
+      } catch {
+        localStorage.removeItem(CACHE_KEY);
+      }
     }
     (async () => {
       try {
