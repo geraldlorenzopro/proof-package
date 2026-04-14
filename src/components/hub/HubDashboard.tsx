@@ -565,6 +565,24 @@ function HubDashboardInner({
       <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
       <NewContactModal open={contactOpen} onOpenChange={setContactOpen} accountId={accountId} />
 
+      {openingResource && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setOpeningResource(null)}>
+          <div className="bg-card border border-border/40 rounded-2xl p-6 shadow-2xl flex flex-col items-center gap-4 w-[320px] text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-14 h-14 rounded-full bg-jarvis/10 border border-jarvis/20 flex items-center justify-center">
+              <ExternalLink className="w-6 h-6 text-jarvis" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-semibold text-foreground">Saliendo de NER momentáneamente</p>
+              <p className="text-xs text-muted-foreground">Se abrirá <span className="font-medium text-foreground">{openingResource.label}</span> en una nueva pestaña. Tu sesión no se cerrará.</p>
+            </div>
+            <div className="flex gap-2 w-full">
+              <button onClick={() => setOpeningResource(null)} className="flex-1 py-2 rounded-xl border border-border/40 text-xs text-muted-foreground hover:bg-muted/20 transition-all">Cancelar</button>
+              <button onClick={() => { window.open(openingResource.url, "_blank", "noopener,noreferrer"); setOpeningResource(null); }} className="flex-1 py-2 rounded-xl bg-jarvis/15 border border-jarvis/20 text-xs font-medium text-jarvis hover:bg-jarvis/25 transition-all">Abrir ↗</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   );
 }
