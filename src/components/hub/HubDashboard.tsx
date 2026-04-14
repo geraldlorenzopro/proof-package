@@ -381,28 +381,11 @@ function HubDashboardInner({
   return (
     <>
       {/* ═══ COCKPIT — fixed height, no scroll ═══ */}
-      <div className="h-[calc(100vh-64px)] overflow-hidden flex flex-col">
+      <div className="h-[calc(100vh-0px)] w-full overflow-hidden flex items-center justify-center bg-background" style={{ width: "calc(100vw - 60px)" }}>
 
-        {/* Onboarding banner */}
-        {showOnboardingBanner && !bannerDismissed && (
-          <div className="bg-amber-500/10 border-b border-amber-500/15 px-6 py-2 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-400" />
-              <span className="text-xs text-amber-200/90">¡Completa la configuración de tu oficina!</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={onTriggerOnboarding} className="text-xs font-semibold text-amber-300 hover:text-amber-200 transition-colors flex items-center gap-1">
-                Completar <ChevronRight className="w-3 h-3" />
-              </button>
-              <button onClick={() => setBannerDismissed(true)} className="text-amber-400/50 hover:text-amber-400">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Main content — centered, no scroll */}
-        <div className="flex-1 flex flex-col min-h-0 px-8 py-3 gap-2 max-w-5xl mx-auto w-full">
+        <div className="w-full max-w-4xl h-full overflow-hidden flex flex-col gap-3 px-6 py-5">
 
           {/* ─── ZONA A: Header ─── */}
           <div className="text-center shrink-0 flex-none">
@@ -528,19 +511,26 @@ function HubDashboardInner({
           <div className="w-full shrink-0">
             <div className="flex items-center gap-2 mb-1.5">
               <div className="h-px flex-1 bg-border/20" />
-              <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold flex items-center gap-1">
+              <span className="text-[9px] uppercase tracking-[0.15em] text-foreground/80 font-semibold flex items-center gap-1">
                 <BookOpen className="w-3 h-3" /> Recursos Oficiales
               </span>
               <div className="h-px flex-1 bg-border/20" />
             </div>
             <div className="grid grid-cols-4 gap-1.5">
               {OFFICIAL_RESOURCES.map((r) => (
-                <a
+                <div
                   key={r.label}
-                  href={r.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all group"
+                  onClick={() => {
+                    toast("Abriendo en nueva pestaña", {
+                      description: r.label,
+                      duration: 2000,
+                      icon: "↗️",
+                    });
+                    setTimeout(() => {
+                      window.open(r.url, "_blank", "noopener,noreferrer");
+                    }, 400);
+                  }}
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all group cursor-pointer"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
@@ -550,7 +540,7 @@ function HubDashboardInner({
                     <p className="text-[10px] text-muted-foreground/40 truncate">{r.desc}</p>
                   </div>
                   <ExternalLink className="w-3 h-3 text-muted-foreground/20 group-hover:text-muted-foreground/50 shrink-0" />
-                </a>
+                </div>
               ))}
             </div>
           </div>
