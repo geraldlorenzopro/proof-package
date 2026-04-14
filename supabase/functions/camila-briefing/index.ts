@@ -66,149 +66,119 @@ Deno.serve(async (req) => {
       console.warn("Weather fetch failed:", e);
     }
 
-    // ─── Noticias de inmigración en español via Perplexity ───
+    // ─── Noticias oficiales traducidas al español ───
     let newsCards: any[] = [];
     try {
-      const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+      // PASO 1: Obtener noticias del Federal Register
+      const agencyIds = [499, 501, 503, 149, 227];
+      const params = agencyIds
+        .map(id => `conditions[agency_ids][]=${id}`)
+        .join("&");
+      const frUrl = `https://www.federalregister.gov/api/v1/articles?${params}&per_page=9&order=newest&fields[]=title&fields[]=abstract&fields[]=html_url&fields[]=publication_date&fields[]=agency_names`;
 
-      if (PERPLEXITY_API_KEY) {
-        const pxResp = await fetch(
-          "https://api.perplexity.ai/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${PERPLEXITY_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "sonar",
-              messages: [
-                {
-                  role: "system",
-                  content: `Eres un asistente especializado en inmigración en Estados Unidos.
+      const frResp = await fetch(frUrl, {
+        headers: { "Accept": "application/json" },
+        signal: AbortSignal.timeout(10000),
+      });
 
-Busca ÚNICAMENTE noticias recientes sobre inmigración en USA que estén escritas en español.
-TIPOS DE NOTICIAS A INCLUIR:
-- Cambios en políticas de USCIS
-- Actualizaciones de DACA, TPS, Parole
-- Operaciones de ICE y deportaciones
-- Cambios en el Visa Bulletin
-- Decisiones de cortes de inmigración
-- Cambios en fees o formularios
-- Noticias que afecten directamente a inmigrantes hispanohablantes en USA
+      if (frResp.ok) {
+        const frData = await frResp.json();
+        const articles = (frData.results || []).slice(0, 9);
 
-NO incluyas:
-- Noticias en inglés
-- Política general sin relación directa con inmigración
-- Noticias de otros países que no afecten a inmigrantes en USA
+        if (articles.length > 0) {
+          // PASO 2: Traducir todos al español con Claude
+          const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 
-Responde SOLO con un JSON array de exactamente 9 objetos.
-Cada objeto:
-{
-  "title": "título en español máx 80 chars",
-  "summary": "resumen en español máx 150 chars",
-  "source": "nombre del medio (ej: Univision, Telemundo, CNN Español)",
-  "category": "USCIS" | "ICE/CBP" | "DACA/TPS" | "Cortes" | "Visa Bulletin" | "Legislación",
-  "urgency": "alta" | "media" | "baja",
-  "url": "URL exacta del artículo",
-  "time": "hace Xh o hace X días"
-}
-Sin texto fuera del JSON.`,
-                },
-                {
+          const toTranslate = articles.map((a: any) => ({
+            title: a.title || "",
+            abstract: (a.abstract || "").replace(/<[^>]*>/g, "").slice(0, 200),
+            agencies: (a.agency_names || []).join(", "),
+          }));
+
+          const claudeResp = await fetch(
+            "https://api.anthropic.com/v1/messages",
+            {
+              method: "POST",
+              headers: {
+                "x-api-key": ANTHROPIC_KEY!,
+                "anthropic-version": "2023-06-01",
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "claude-haiku-4-5",
+                max_tokens: 2000,
+                messages: [{
                   role: "user",
-                  content: `Dame las 9 noticias más recientes sobre inmigración en Estados Unidos publicadas en medios en español. Hoy es ${todayStr}. Busca en Univision, Telemundo, CNN en Español, El Nuevo Herald, BBC Mundo, y otros medios confiables en español.`,
-                },
-              ],
-              max_tokens: 2000,
-              temperature: 0.1,
-              search_recency_filter: "week",
-              search_domain_filter: [
-                "univision.com",
-                "telemundo.com",
-                "cnnespanol.cnn.com",
-                "elnuevoherald.com",
-                "bbc.com/mundo",
-                "mundohispanico.com",
-                "laopinion.com",
-                "noticiasunivision.com",
-                "aila.org",
-                "immi-usa.com",
-              ],
-            }),
-            signal: AbortSignal.timeout(15000),
-          }
-        );
+                  content: `Traduce estos artículos del Federal Register al español para profesionales de inmigración hispanos.
 
-        if (pxResp.ok) {
-          const pxData = await pxResp.json();
-          const raw = pxData.choices?.[0]?.message?.content?.trim() || "";
+Para cada artículo genera:
+- title: título en español (máx 80 chars, claro y directo)
+- summary: resumen en español (máx 130 chars, qué significa para una firma de inmigración)
+- category: exactamente uno de: USCIS | ICE/CBP | Cortes | DACA/TPS | Visa Bulletin | Legislación
+- urgency: alta | media | baja
 
-          try {
-            const jsonMatch = raw.match(/\[[\s\S]*\]/);
-            if (jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              if (Array.isArray(parsed)) {
-                newsCards = parsed
-                  .slice(0, 9)
-                  .map((item: any) => ({
-                    title: String(item.title || "").slice(0, 100),
-                    summary: String(item.summary || "").slice(0, 200),
-                    source: String(item.source || "Noticias"),
-                    category: String(item.category || "USCIS"),
-                    urgency: String(item.urgency || "media"),
-                    url: String(item.url || ""),
-                    time: String(item.time || "hoy"),
-                  }))
-                  .filter((n: any) =>
-                    n.url &&
-                    n.url.startsWith("http") &&
-                    n.title.length > 5
-                  );
-              }
+Responde SOLO con un JSON array. Sin texto adicional.
+
+Artículos:
+${JSON.stringify(toTranslate, null, 2)}`,
+                }],
+              }),
+              signal: AbortSignal.timeout(15000),
             }
-          } catch (parseErr) {
-            console.warn("Failed to parse news:", parseErr);
+          );
+
+          if (claudeResp.ok) {
+            const claudeData = await claudeResp.json();
+            const raw = claudeData.content?.[0]?.text?.trim() || "";
+            const jsonMatch = raw.match(/\[[\s\S]*\]/);
+
+            if (jsonMatch) {
+              const translated = JSON.parse(jsonMatch[0]);
+
+              newsCards = articles.map((article: any, i: number) => {
+                const t = translated[i] || {};
+                const agNames: string[] = article.agency_names || [];
+                let source = "DHS";
+                if (agNames.some((n: string) => n.includes("Citizenship"))) source = "USCIS";
+                else if (agNames.some((n: string) => n.includes("Customs and Border"))) source = "CBP";
+                else if (agNames.some((n: string) => n.includes("Immigration and Customs"))) source = "ICE";
+                else if (agNames.some((n: string) => n.includes("Immigration Review"))) source = "EOIR";
+
+                const pub = article.publication_date || "";
+                const diffD = pub ? Math.floor((Date.now() - new Date(pub).getTime()) / 86400000) : 0;
+                const time = diffD === 0 ? "Hoy" : diffD === 1 ? "Ayer" : `Hace ${diffD} días`;
+
+                return {
+                  title: String(t.title || article.title).slice(0, 100),
+                  summary: String(t.summary || "").slice(0, 150),
+                  source,
+                  category: String(t.category || "USCIS"),
+                  urgency: String(t.urgency || "media"),
+                  url: article.html_url || "https://www.federalregister.gov",
+                  time,
+                  pubDate: pub,
+                };
+              });
+            }
+          } else {
+            console.warn("Claude translation failed:", claudeResp.status);
           }
-        } else {
-          console.warn(`Perplexity news: HTTP ${pxResp.status}`);
         }
       }
     } catch (e) {
-      console.warn("News fetch failed:", e);
+      console.warn("News error:", e);
     }
 
-    // Fallback si Perplexity no retorna noticias
     if (newsCards.length === 0) {
-      newsCards = [
-        {
-          title: "Ver últimas noticias de inmigración",
-          summary: "Visita Univision Noticias para las últimas actualizaciones sobre inmigración en Estados Unidos.",
-          source: "Univision",
-          category: "USCIS",
-          urgency: "baja",
-          url: "https://www.univision.com/noticias/inmigracion",
-          time: "Ahora",
-        },
-        {
-          title: "Noticias de inmigración en Telemundo",
-          summary: "Mantente informado con las últimas noticias de inmigración en Telemundo.",
-          source: "Telemundo",
-          category: "USCIS",
-          urgency: "baja",
-          url: "https://www.telemundo.com/noticias/inmigracion",
-          time: "Ahora",
-        },
-        {
-          title: "CNN en Español — Inmigración",
-          summary: "Cobertura completa de inmigración en CNN en Español.",
-          source: "CNN Español",
-          category: "USCIS",
-          urgency: "baja",
-          url: "https://cnnespanol.cnn.com/category/inmigracion/",
-          time: "Ahora",
-        },
-      ];
+      newsCards = [{
+        title: "Ver noticias oficiales de inmigración",
+        summary: "Visita el Federal Register para las últimas actualizaciones oficiales.",
+        source: "USCIS",
+        category: "USCIS",
+        urgency: "baja",
+        url: "https://www.federalregister.gov",
+        time: "Ahora",
+      }];
     }
 
     return new Response(
