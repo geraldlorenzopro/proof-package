@@ -108,9 +108,9 @@
 
     "@dnd-kit/utilities": ["@dnd-kit/utilities@3.2.2", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@dnd-kit/utilities/-/utilities-3.2.2.tgz", { "dependencies": { "tslib": "^2.0.0" }, "peerDependencies": { "react": ">=16.8.0" } }, "sha512-+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg=="],
 
-    "@elevenlabs/client": ["@elevenlabs/client@1.2.0", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@elevenlabs/client/-/client-1.2.0.tgz", { "dependencies": { "@elevenlabs/types": "0.9.1", "livekit-client": "^2.11.4" } }, "sha512-eZJUylgI5oUMPvjMdmYbaC/Nn70Mu7yuxN0YG1L0x5MDBRw+2YD+yRDNNTDg6Axz3RYz2ayKrTqd8HlHytHDcQ=="],
+    "@elevenlabs/client": ["@elevenlabs/client@1.2.1", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@elevenlabs/client/-/client-1.2.1.tgz", { "dependencies": { "@elevenlabs/types": "0.9.1", "livekit-client": "^2.11.4" } }, "sha512-As4IXftct0vHuQ6+7gQNT4IGQfCmqD4TOshNByBkdBcSrV3oH/Of+D+ET7HxMha/KNBKU3mlkSgismHTsL3fEw=="],
 
-    "@elevenlabs/react": ["@elevenlabs/react@1.1.0", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@elevenlabs/react/-/react-1.1.0.tgz", { "dependencies": { "@elevenlabs/client": "1.2.0" }, "peerDependencies": { "react": ">=16.8.0" } }, "sha512-/e55nqmfDAchss6uOFgfF9rTUjeQu4xbmdqND/hSOe/OfQ9oW75t2f1836yUUA00hSzfhV9b2iHft7WvVlcBDw=="],
+    "@elevenlabs/react": ["@elevenlabs/react@1.1.1", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@elevenlabs/react/-/react-1.1.1.tgz", { "dependencies": { "@elevenlabs/client": "1.2.1" }, "peerDependencies": { "react": ">=16.8.0" } }, "sha512-KCvFEv+QaHUbiLiZxCo6D8DZHio5d34BFf8nccMoWK+Eo4ySWez6hl7zHxwOjbXHCtPhAGh9gzUll5RIyt8vbw=="],
 
     "@elevenlabs/types": ["@elevenlabs/types@0.9.1", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@elevenlabs/types/-/types-0.9.1.tgz", {}, "sha512-lkWAMaFJLsGNWcblryBRHbtozMh7wHy0YsqURLwQwjhpvycuFN5qUa94CZtVU01jFwrfr5h1ca24+nYEkKf0Ew=="],
 
