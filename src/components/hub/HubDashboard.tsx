@@ -706,7 +706,11 @@ function HubDashboardInner({
                         )}
                         <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: cs.stroke }}>{selectedNews.category}</span>
                       </div>
-                      <span className="text-[10px] text-muted-foreground/40">{selectedNews.time}</span>
+                      <span className="text-[10px] text-muted-foreground/40">
+                        {selectedNews.pubDate
+                          ? new Date(selectedNews.pubDate).toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+                          : selectedNews.time}
+                      </span>
                     </div>
                   </div>
                   <DialogTitle className="text-base">{selectedNews.title}</DialogTitle>
