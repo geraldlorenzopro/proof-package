@@ -597,8 +597,16 @@ function HubDashboardInner({
                 onClick={() => {
                   if (chip.label === "Nueva consulta") {
                     setIntakeOpen(true);
-                  } else {
-                    sendMessage(chip.label);
+                  } else if (chip.label === "Ver casos activos") {
+                    navigate("/hub/cases");
+                  } else if (chip.label === "Agendar cita") {
+                    navigate("/hub/agenda");
+                  } else if (chip.label === "Clientes sin documentos") {
+                    navigate("/hub/clients");
+                  } else if (chip.label === "Plazos de esta semana") {
+                    navigate("/hub/cases");
+                  } else if (chip.label === "Resumen del día") {
+                    sendMessage("Resumen del día");
                   }
                 }}
                 className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-border/30 bg-card/50 hover:bg-card hover:border-jarvis/20 text-sm text-muted-foreground hover:text-foreground transition-all"
