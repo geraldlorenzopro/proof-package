@@ -1,6 +1,62 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
+// ─── FEDERAL REGISTER API — fuentes oficiales verificadas ───
+const FR_AGENCY_SOURCES = [
+  { agency_id: 499, name: "USCIS", category: "USCIS" },
+  { agency_id: 501, name: "CBP", category: "ICE/CBP" },
+  { agency_id: 503, name: "ICE", category: "ICE/CBP" },
+  { agency_id: 149, name: "EOIR", category: "Cortes" },
+  { agency_id: 227, name: "DHS", category: "Legislación" },
+];
+
+// Función para calcular tiempo relativo
+function relativeTime(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffH = Math.floor(diffMs / 3_600_000);
+    const diffD = Math.floor(diffMs / 86_400_000);
+    if (diffH < 1) return "Hace menos de 1h";
+    if (diffH < 24) return `Hace ${diffH}h`;
+    if (diffD === 1) return "Ayer";
+    if (diffD < 7) return `Hace ${diffD} días`;
+    return date.toLocaleDateString("es", { day: "numeric", month: "short" });
+  } catch {
+    return "Reciente";
+  }
+}
+
+// Función para determinar urgencia
+function getUrgency(title: string, desc: string): string {
+  const text = (title + " " + desc).toLowerCase();
+  const highKeywords = [
+    "urgent", "alert", "deadline", "effective immediately",
+    "immediately", "court order", "injunction", "fee increase",
+    "policy change", "deportation", "rfe", "noid", "denial",
+    "final rule", "emergency", "interim final",
+  ];
+  const medKeywords = [
+    "update", "change", "new", "announce", "processing",
+    "bulletin", "visa", "proposed rule", "notice",
+  ];
+  if (highKeywords.some((k) => text.includes(k))) return "alta";
+  if (medKeywords.some((k) => text.includes(k))) return "media";
+  return "baja";
+}
+
+// Determinar categoría más específica basándose en el título
+function refineCategory(title: string, baseCategory: string): string {
+  const t = title.toLowerCase();
+  if (t.includes("visa bulletin") || t.includes("priority date")) return "Visa Bulletin";
+  if (t.includes("daca") || t.includes("tps") || t.includes("temporary protected")) return "DACA/TPS";
+  if (t.includes("court") || t.includes("eoir") || t.includes("bia") || t.includes("immigration judge")) return "Cortes";
+  if (t.includes("ice") || t.includes("enforcement") || t.includes("removal") || t.includes("detention")) return "ICE/CBP";
+  if (t.includes("cbp") || t.includes("border") || t.includes("port of entry")) return "ICE/CBP";
+  return baseCategory;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -27,8 +83,6 @@ Deno.serve(async (req) => {
       .single();
 
     const todayStr = new Date().toISOString().split("T")[0];
-    const startOfWeek = new Date();
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
 
     const [activeCasesRes, todayApptsRes, overdueRes] = await Promise.all([
       supabase.from("client_cases").select("id", { count: "exact", head: true })
@@ -68,179 +122,160 @@ Deno.serve(async (req) => {
       console.warn("Weather fetch failed:", e);
     }
 
-    // ─── Immigration news via Perplexity — official sources ───
-    let newsText = "";
-    let newsCitations: string[] = [];
+    // ─── Immigration news via Federal Register JSON API ───
     let newsCards: any[] = [];
     try {
-      const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
-      if (PERPLEXITY_API_KEY) {
-        const pxResp = await fetch("https://api.perplexity.ai/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${PERPLEXITY_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "sonar",
-            messages: [
-              {
-                role: "system",
-                content: `Eres un asistente especializado en inmigración en Estados Unidos.
+      // Build agency IDs query param
+      const agencyParams = FR_AGENCY_SOURCES.map(s => `conditions[agency_ids][]=${s.agency_id}`).join("&");
+      const frUrl = `https://www.federalregister.gov/api/v1/articles?${agencyParams}&per_page=20&order=newest&fields[]=title&fields[]=abstract&fields[]=html_url&fields[]=publication_date&fields[]=agency_names&fields[]=type`;
 
-Busca noticias Y alertas oficiales de estas fuentes en orden de prioridad:
+      const frResp = await fetch(frUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; NER-Immigration-Monitor/1.0)",
+          "Accept": "application/json",
+        },
+        signal: AbortSignal.timeout(12000),
+      });
 
-FUENTES OFICIALES (prioridad máxima):
-- uscis.gov — alertas, policy updates, fee changes, form updates
-- travel.state.gov — Visa Bulletin mensual, fechas de prioridad, alertas consulares
-- ice.gov — operaciones, políticas, prioridades de enforcement
-- cbp.gov — puertos de entrada, políticas fronterizas
-- justice.gov/eoir — cortes de inmigración, decisiones del BIA
-- federalregister.gov — nuevas reglas y propuestas de USCIS/DHS
+      if (frResp.ok) {
+        const frData = await frResp.json();
+        const results = frData.results || [];
+        console.log(`Federal Register API: ${results.length} articles`);
 
-TIPOS DE CONTENIDO A INCLUIR:
-- Nuevo Visa Bulletin (sale el 2do miércoles de cada mes)
-- Cambios en fechas de prioridad
-- Cambios en fees de USCIS
-- Nuevas versiones de formularios
-- Alertas de procesamiento
-- Cambios en políticas de entrevistas
-- Operaciones de ICE relevantes
-- Cambios en puertos de entrada CBP
-- Decisiones del BIA que crean precedente
-- Nuevas reglas en Federal Register
+        // Map agency names to our source names
+        const agencyMap: Record<string, { name: string; category: string }> = {};
+        for (const s of FR_AGENCY_SOURCES) {
+          agencyMap[s.agency_id.toString()] = { name: s.name, category: s.category };
+        }
 
-NO incluyas:
-- Política general o legislación amplia sin impacto directo
-- Economía o empleo general
-- Noticias internacionales sin relación directa con inmigración en USA
-- Opiniones o editoriales
+        const agencyNameMap: Record<string, { name: string; category: string }> = {
+          "U.S. Citizenship and Immigration Services": { name: "USCIS", category: "USCIS" },
+          "U.S. Customs and Border Protection": { name: "CBP", category: "ICE/CBP" },
+          "U.S. Immigration and Customs Enforcement": { name: "ICE", category: "ICE/CBP" },
+          "Executive Office for Immigration Review": { name: "EOIR", category: "Cortes" },
+          "Homeland Security Department": { name: "DHS", category: "Legislación" },
+          "State Department": { name: "DOS", category: "Visa Bulletin" },
+        };
 
-Responde SOLO con un JSON array de exactamente 9 objetos.
-Distribución: 3 de USCIS/DOS, 2 de Visa Bulletin/fechas, 2 de ICE/CBP/Cortes, 2 de noticias generales de inmigración.
+        for (const article of results) {
+          const title = (article.title || "").slice(0, 100);
+          const summary = (article.abstract || "").replace(/<[^>]*>/g, "").slice(0, 200);
+          const url = article.html_url || "";
+          const pubDate = article.publication_date || "";
+          const agencyNames: string[] = article.agency_names || [];
 
-Cada objeto:
-{
-  "title": "máx 70 chars, en español",
-  "summary": "máx 130 chars, en español",
-  "source": "USCIS" | "DOS" | "ICE" | "CBP" | "EOIR" | "Federal Register" | "Noticias",
-  "category": "USCIS" | "Visa Bulletin" | "ICE/CBP" | "Cortes" | "DACA/TPS" | "Legislación",
-  "urgency": "alta" | "media" | "baja",
-  "url": "string (si disponible, sino vacío)",
-  "time": "hace Xh"
-}
-
-No incluyas ningún texto fuera del JSON.`,
-              },
-              {
-                role: "user",
-                content: `Dame las 9 noticias y alertas oficiales más recientes sobre inmigración en Estados Unidos hoy ${todayStr}. Prioriza fuentes gubernamentales (uscis.gov, travel.state.gov, ice.gov).`,
-              },
-            ],
-            max_tokens: 1800,
-            temperature: 0.2,
-            search_recency_filter: "day",
-            search_domain_filter: [
-              "uscis.gov",
-              "travel.state.gov",
-              "ice.gov",
-              "cbp.gov",
-              "justice.gov",
-              "federalregister.gov",
-              "boundless.com",
-              "aila.org",
-              "reuters.com",
-              "apnews.com",
-            ],
-          }),
-          signal: AbortSignal.timeout(15000),
-        });
-
-        if (pxResp.ok) {
-          const pxData = await pxResp.json();
-          const raw = pxData.choices?.[0]?.message?.content?.trim() || "";
-          newsCitations = pxData.citations || [];
-          newsText = raw;
-
-          try {
-            const jsonMatch = raw.match(/\[[\s\S]*\]/);
-            if (jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              if (Array.isArray(parsed) && parsed.length >= 1) {
-                newsCards = parsed.slice(0, 9).map((item: any) => ({
-                  title: String(item.title || "").slice(0, 100),
-                  summary: String(item.summary || "").slice(0, 200),
-                  source: String(item.source || "Noticias"),
-                  category: String(item.category || "USCIS"),
-                  urgency: String(item.urgency || "media"),
-                  url: String(item.url || ""),
-                  time: String(item.time || "hoy"),
-                }));
-              }
+          // Find best matching source
+          let source = "DHS";
+          let category = "Legislación";
+          for (const agName of agencyNames) {
+            const match = agencyNameMap[agName];
+            if (match) {
+              source = match.name;
+              category = match.category;
+              break;
             }
-          } catch (parseErr) {
-            console.warn("Failed to parse structured news:", parseErr);
           }
-        }
-      }
 
-      // Fallback
-      if (!newsText && !newsCards.length) {
-        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-        if (LOVABLE_API_KEY) {
-          const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
-              messages: [
-                {
-                  role: "system",
-                  content: `Responde SOLO con un JSON array de exactamente 9 objetos. Cada objeto tiene: title (titular en español, máx 70 chars sobre inmigración en EE.UU.), summary (resumen en español, máx 130 chars), source (USCIS, DOS, ICE, CBP, EOIR, Federal Register, o Noticias), category (USCIS, Visa Bulletin, ICE/CBP, Cortes, DACA/TPS, o Legislación), urgency (alta, media, baja), url (vacío), time (ej: 'hoy'). Sin texto extra.`,
-                },
-                {
-                  role: "user",
-                  content: `Dame 9 noticias recientes importantes sobre inmigración en Estados Unidos.`,
-                },
-              ],
-              max_tokens: 1800,
-              temperature: 0.3,
-            }),
-            signal: AbortSignal.timeout(8000),
+          category = refineCategory(title, category);
+
+          newsCards.push({
+            title,
+            summary,
+            source,
+            category,
+            urgency: getUrgency(title, summary),
+            url,
+            time: relativeTime(pubDate),
+            pubDate,
           });
-
-          if (aiResp.ok) {
-            const aiData = await aiResp.json();
-            const raw2 = aiData.choices?.[0]?.message?.content?.trim() || "";
-            try {
-              const jsonMatch2 = raw2.match(/\[[\s\S]*\]/);
-              if (jsonMatch2) {
-                const parsed2 = JSON.parse(jsonMatch2[0]);
-                if (Array.isArray(parsed2)) {
-                  newsCards = parsed2.slice(0, 9).map((item: any) => ({
-                    title: String(item.title || "").slice(0, 100),
-                    summary: String(item.summary || "").slice(0, 200),
-                    source: String(item.source || "Noticias"),
-                    category: String(item.category || "USCIS"),
-                    urgency: String(item.urgency || "media"),
-                    url: String(item.url || ""),
-                    time: String(item.time || "hoy"),
-                  }));
-                }
-              }
-            } catch {}
-          }
         }
+      } else {
+        console.warn(`Federal Register API: HTTP ${frResp.status}`);
       }
     } catch (e) {
-      console.warn("News fetch failed:", e);
+      console.warn("Federal Register fetch failed:", e);
+    }
+
+    // Also try USCIS newsroom RSS as supplemental source
+    try {
+      // USCIS news alerts feed
+      const uscisResp = await fetch("https://www.uscis.gov/news/alerts/feed", {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; NER-Immigration-Monitor/1.0)",
+          "Accept": "application/rss+xml, application/xml, text/xml, */*",
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (uscisResp.ok) {
+        const xml = await uscisResp.text();
+        const itemMatches = xml.matchAll(/<item>([\s\S]*?)<\/item>/g);
+        let count = 0;
+        for (const match of itemMatches) {
+          if (count >= 3) break;
+          const item = match[1];
+          const title = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/);
+          const link = item.match(/<link>(.*?)<\/link>|<guid[^>]*>(.*?)<\/guid>/);
+          const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>|<dc:date>(.*?)<\/dc:date>/);
+          const desc = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>|<description>([\s\S]*?)<\/description>/);
+
+          const t = (title?.[1] || title?.[2] || "").trim();
+          if (!t) continue;
+          const d = (pubDate?.[1] || pubDate?.[2] || "").trim();
+
+          newsCards.push({
+            title: t.slice(0, 100),
+            summary: (desc?.[1] || desc?.[2] || "").replace(/<[^>]*>/g, "").trim().slice(0, 200),
+            source: "USCIS",
+            category: refineCategory(t, "USCIS"),
+            urgency: getUrgency(t, ""),
+            url: (link?.[1] || link?.[2] || "").trim(),
+            time: relativeTime(d),
+            pubDate: d,
+          });
+          count++;
+        }
+        console.log(`USCIS alerts feed: ${count} items`);
+      }
+    } catch (e) {
+      console.warn("USCIS alerts feed failed:", e);
+    }
+
+    // Deduplicate by title similarity and sort by date
+    const seen = new Set<string>();
+    newsCards = newsCards.filter(card => {
+      const key = card.title.toLowerCase().slice(0, 50);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Sort by most recent
+    newsCards.sort((a, b) => {
+      const da = new Date(a.pubDate || 0).getTime();
+      const db = new Date(b.pubDate || 0).getTime();
+      return db - da;
+    });
+
+    // Take top 9
+    newsCards = newsCards.slice(0, 9);
+
+    // Fallback if nothing found
+    if (newsCards.length === 0) {
+      newsCards = [
+        {
+          title: "No se pudieron cargar las noticias",
+          summary: "Verifica tu conexión o visita uscis.gov directamente para noticias oficiales.",
+          source: "USCIS",
+          category: "USCIS",
+          urgency: "baja",
+          url: "https://www.uscis.gov/newsroom",
+          time: "Ahora",
+        },
+      ];
     }
 
     return new Response(
-      JSON.stringify({ weather: weatherText, news: newsText, citations: newsCitations, newsCards, kpis }),
+      JSON.stringify({ weather: weatherText, newsCards, kpis }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
