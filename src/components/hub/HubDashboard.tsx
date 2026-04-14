@@ -2,10 +2,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Send, Mic, MicOff, Briefcase, Calendar, Users,
-  MessageSquare, FileSearch, Clock, ChevronRight, ChevronLeft,
+  MessageSquare, ChevronRight, ChevronLeft,
   X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
   Newspaper, Shield, Globe, Scale, Gavel, BookOpen, FileText,
-  Phone, PhoneOff
+  Phone, PhoneOff, AlertTriangle, BarChart3, ListTodo
 } from "lucide-react";
 import { toast } from "sonner";
 import { useConversation } from "@elevenlabs/react";
@@ -13,8 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
 import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
-import TodayAppointments from "./TodayAppointments";
-import HubRecentConsultations from "./HubRecentConsultations";
+import HubAlertsMini from "./HubAlertsMini";
+import HubMyTasks from "./HubMyTasks";
+import HubCreditsWidget from "./HubCreditsWidget";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -85,13 +86,24 @@ interface Props {
   onTriggerOnboarding?: () => void;
 }
 
+// Category styles for news — now with source badge support
 const categoryStyles: Record<string, { bg: string; stroke: string; icon: any }> = {
   USCIS: { bg: "#E6F1FB", stroke: "#185FA5", icon: Shield },
-  DACA: { bg: "#FCEBEB", stroke: "#A32D2D", icon: BookOpen },
-  Visas: { bg: "#EAF3DE", stroke: "#3B6D11", icon: Globe },
-  Deportación: { bg: "#FAEEDA", stroke: "#854F0B", icon: Gavel },
-  Naturalización: { bg: "#EEEDFE", stroke: "#534AB7", icon: FileText },
-  Legislación: { bg: "#E1F5EE", stroke: "#0F6E56", icon: Scale },
+  "Visa Bulletin": { bg: "#EAF3DE", stroke: "#3B6D11", icon: Globe },
+  "ICE/CBP": { bg: "#FCEBEB", stroke: "#A32D2D", icon: Gavel },
+  Cortes: { bg: "#FAEEDA", stroke: "#854F0B", icon: Scale },
+  "DACA/TPS": { bg: "#EEEDFE", stroke: "#534AB7", icon: BookOpen },
+  Legislación: { bg: "#E1F5EE", stroke: "#0F6E56", icon: FileText },
+};
+
+const sourceColors: Record<string, string> = {
+  USCIS: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+  DOS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+  ICE: "text-red-400 bg-red-500/10 border-red-500/20",
+  CBP: "text-red-400 bg-red-500/10 border-red-500/20",
+  EOIR: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+  "Federal Register": "text-muted-foreground bg-muted/30 border-border/30",
+  Noticias: "text-muted-foreground bg-muted/20 border-border/20",
 };
 
 function getCategoryStyle(cat: string) {
@@ -108,10 +120,8 @@ function HubDashboardInner({
   // KPI
   const [activeCases, setActiveCases] = useState(0);
   const [totalClients, setTotalClients] = useState(0);
-  const [totalLeads, setTotalLeads] = useState(0);
-  const [weekConsultations, setWeekConsultations] = useState(0);
-  const [todayAppointments, setTodayAppointments] = useState(0);
-  const [overdueDeadlines, setOverdueDeadlines] = useState(0);
+  const [todayAppointmentsCount, setTodayAppointmentsCount] = useState(0);
+  const [pendingTasks, setPendingTasks] = useState(0);
 
   // Chat input
   const [input, setInput] = useState("");
@@ -125,7 +135,7 @@ function HubDashboardInner({
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
 
-  // Voice call (ElevenLabs WebSocket — inline on home page)
+  // Voice call (ElevenLabs WebSocket)
   const [voiceConnecting, setVoiceConnecting] = useState(false);
   const [callEnded, setCallEnded] = useState(false);
   const [callMessages, setCallMessages] = useState<{id: string; role: "user" | "assistant"; content: string}[]>([]);
@@ -137,7 +147,6 @@ function HubDashboardInner({
   const isMountedRef = useRef(true);
   const conversationStatusRef = useRef("disconnected");
 
-  // Auto-scroll transcript
   useEffect(() => {
     if (callScrollRef.current) {
       callScrollRef.current.scrollTop = callScrollRef.current.scrollHeight;
@@ -153,26 +162,20 @@ function HubDashboardInner({
     onConnect: () => {
       setVoiceConnecting(false);
       callStartTimeRef.current = Date.now();
-      console.log('ELEVENLABS CONNECTED:', new Date().toISOString());
     },
-    onDisconnect: (reason: any) => {
-      console.log('ELEVENLABS DISCONNECTED:', JSON.stringify(reason), 'Call duration:', callStartTimeRef.current ? Date.now() - callStartTimeRef.current : 'unknown', 'ms');
+    onDisconnect: () => {
       callStartTimeRef.current = null;
       if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
       const msgs = voiceTranscriptRef.current;
       if (msgs.length > 0) {
-        try {
-          localStorage.setItem("camila_last_call_transcript", JSON.stringify(msgs));
-        } catch {}
+        try { localStorage.setItem("camila_last_call_transcript", JSON.stringify(msgs)); } catch {}
         setCallEnded(true);
         setTimeout(() => setCallEnded(false), 8000);
       }
     },
     onMessage: (message: any) => {
-      console.log("[HubDash Voice] onMessage:", JSON.stringify(message, null, 2));
       let text: string | undefined;
       let source: "user" | "assistant" = "assistant";
-
       if (message.message && typeof message.message === "string") {
         text = message.message;
         source = (message.source === "user" || message.role === "user") ? "user" : "assistant";
@@ -187,10 +190,7 @@ function HubDashboardInner({
       } else if (message.text) {
         text = message.text; source = message.source === "user" ? "user" : "assistant";
       }
-
       if (!text?.trim()) return;
-
-      // Deduplicate by event_id — if duplicate, skip everything including farewell check
       const eventId = message.event_id;
       if (eventId != null) {
         const isDuplicate = voiceTranscriptRef.current.some((m: any) => m.eventId === eventId);
@@ -200,8 +200,6 @@ function HubDashboardInner({
         voiceTranscriptRef.current.push({ role: source, text: text.trim() });
       }
       pushCallMessage(source, text.trim());
-
-      // Farewell auto-end — ONLY after dedup check passes
       if (source === "assistant" && FAREWELL_PATTERNS.test(text)) {
         const callDuration = callStartTimeRef.current ? Date.now() - callStartTimeRef.current : 0;
         if (callDuration > 10000) {
@@ -216,18 +214,13 @@ function HubDashboardInner({
       }
     },
     onUserTranscript: ((text: string) => {
-      console.log("[HubDash Voice] onUserTranscript:", text);
       if (text?.trim()) pushCallMessage("user", text.trim());
     }) as any,
     onAgentResponse: ((text: string) => {
-      console.log("[HubDash Voice] onAgentResponse:", text);
       if (text?.trim()) pushCallMessage("assistant", text.trim());
     }) as any,
-    onAgentResponseCorrection: ((text: string) => {
-      console.log("[HubDash Voice] onAgentResponseCorrection:", text);
-    }) as any,
+    onAgentResponseCorrection: (() => {}) as any,
     onError: (err: any) => {
-      console.log('ELEVENLABS ERROR:', JSON.stringify(err), 'Call duration:', callStartTimeRef.current ? Date.now() - callStartTimeRef.current : 'unknown', 'ms');
       toast.error(typeof err === "string" ? err : err?.message || "Error de conexión.");
       setVoiceConnecting(false);
     },
@@ -267,26 +260,18 @@ function HubDashboardInner({
   const stopVoiceCall = useCallback(async () => {
     if (isEndingSessionRef.current) return;
     isEndingSessionRef.current = true;
-
-    try {
-      await conversation.endSession();
-    } catch {}
-
+    try { await conversation.endSession(); } catch {}
     setTimeout(() => { isEndingSessionRef.current = false; }, 2000);
   }, [conversation]);
 
-  useEffect(() => {
-    conversationStatusRef.current = conversation.status;
-  }, [conversation.status]);
+  useEffect(() => { conversationStatusRef.current = conversation.status; }, [conversation.status]);
 
   // TTS greeting
   const greetedRef = useRef(false);
-  const [briefingNews, setBriefingNews] = useState<string | null>(null);
-  const [briefingCitations, setBriefingCitations] = useState<string[]>([]);
   const [briefingWeather, setBriefingWeather] = useState<string | null>(null);
-  const [newsCards, setNewsCards] = useState<{title:string;summary:string;category:string;time:string}[]>([]);
+  const [newsCards, setNewsCards] = useState<{title:string;summary:string;source?:string;category:string;urgency?:string;url?:string;time:string}[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
-  const [selectedNews, setSelectedNews] = useState<{title:string;summary:string;category:string;time:string}|null>(null);
+  const [selectedNews, setSelectedNews] = useState<typeof newsCards[0] | null>(null);
   const [newsPage, setNewsPage] = useState(0);
 
   const BRIEFING_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/camila-briefing`;
@@ -306,7 +291,6 @@ function HubDashboardInner({
     if (accountId) loadKpis();
   }, [accountId]);
 
-  // Always fetch briefing data for the news panel
   useEffect(() => {
     if (!accountId) return;
     const CACHE_KEY = `hub_news_${accountId}`;
@@ -315,8 +299,6 @@ function HubDashboardInner({
       try {
         const { ts, data } = JSON.parse(cached);
         if (Date.now() - ts < 30 * 60 * 1000 && data.newsCards?.length) {
-          if (data.news) setBriefingNews(data.news);
-          if (data.citations?.length) setBriefingCitations(data.citations);
           if (data.weather) setBriefingWeather(data.weather);
           setNewsCards(data.newsCards);
           setNewsLoading(false);
@@ -337,8 +319,6 @@ function HubDashboardInner({
         });
         if (resp.ok) {
           const data = await resp.json();
-          if (data.news) setBriefingNews(data.news);
-          if (data.citations?.length) setBriefingCitations(data.citations);
           if (data.weather) setBriefingWeather(data.weather);
           if (data.newsCards?.length) setNewsCards(data.newsCards);
           localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -351,7 +331,7 @@ function HubDashboardInner({
     })();
   }, [accountId]);
 
-  // Auto-greet TTS — only once per browser session
+  // Auto-greet TTS
   useEffect(() => {
     if (!resolvedName || !accountId) return;
     const todayKey = `camila_greeted_${accountId}_${new Date().toISOString().split("T")[0]}`;
@@ -371,32 +351,21 @@ function HubDashboardInner({
 
   async function loadKpis() {
     try {
-      const now = new Date();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      const todayStr = now.toISOString().split("T")[0];
-
-      const [activeRes, clientsRes, leadsRes, weekRes, todayRes, deadlineRes] = await Promise.all([
+      const todayStr = new Date().toISOString().split("T")[0];
+      const [activeRes, clientsRes, todayRes, tasksRes] = await Promise.all([
         supabase.from("client_cases").select("id", { count: "exact", head: true })
           .eq("account_id", accountId).not("status", "eq", "completed"),
         supabase.from("client_profiles").select("id", { count: "exact", head: true })
           .eq("account_id", accountId).eq("is_test", false).eq("contact_stage", "client"),
-        supabase.from("client_profiles").select("id", { count: "exact", head: true })
-          .eq("account_id", accountId).eq("is_test", false).eq("contact_stage", "lead"),
-        supabase.from("intake_sessions" as any).select("id", { count: "exact", head: true })
-          .eq("account_id", accountId).gte("created_at", startOfWeek.toISOString()),
         supabase.from("appointments").select("id", { count: "exact", head: true })
           .eq("account_id", accountId).eq("appointment_date", todayStr).neq("status", "cancelled"),
-        supabase.from("case_deadlines").select("id", { count: "exact", head: true })
-          .eq("account_id", accountId).eq("status", "active").lt("deadline_date", todayStr),
+        supabase.from("case_tasks").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).eq("status", "pending"),
       ]);
-
       setActiveCases(activeRes.count || 0);
       setTotalClients(clientsRes.count || 0);
-      setTotalLeads(leadsRes.count || 0);
-      setWeekConsultations(weekRes.count || 0);
-      setTodayAppointments(todayRes.count || 0);
-      setOverdueDeadlines(deadlineRes.count || 0);
+      setTodayAppointmentsCount(todayRes.count || 0);
+      setPendingTasks(tasksRes.count || 0);
     } catch (err) {
       console.error("KPI load error:", err);
     }
@@ -411,7 +380,6 @@ function HubDashboardInner({
 
   const firstName = (resolvedName || staffName || "").split(" ")[0] || "Usuario";
 
-  // ─── Chat — navigate to full-screen chat ───
   function sendMessage(text?: string) {
     const msg = (text || input).trim();
     if (!msg) return;
@@ -421,7 +389,6 @@ function HubDashboardInner({
     });
   }
 
-  // ─── STT ───
   function toggleSTT() {
     if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -438,64 +405,64 @@ function HubDashboardInner({
   }
 
   const quickChips = [
-    { label: "Ver casos activos", icon: Briefcase },
-    { label: "Nueva consulta", icon: MessageSquare },
-    { label: "Agendar cita", icon: Calendar },
-    { label: "Clientes sin documentos", icon: FileSearch },
-    { label: "Plazos de esta semana", icon: Clock },
-    { label: "Resumen del día", icon: Sparkles },
+    { label: "Nueva consulta", icon: MessageSquare, action: () => setIntakeOpen(true) },
+    { label: "Agenda de hoy", icon: Calendar, action: () => navigate("/hub/agenda") },
+    { label: "Urgentes", icon: AlertTriangle, action: () => navigate("/hub/cases?filter=urgent") },
+    { label: "Casos activos", icon: Briefcase, action: () => navigate("/hub/cases") },
+    { label: "Mensajes", icon: MessageSquare, action: () => navigate("/hub/clients") },
+    { label: "Resumen del día", icon: BarChart3, action: () => sendMessage("Dame el resumen del día") },
   ];
 
   const kpis = [
     { label: "Casos activos", value: activeCases, route: "/hub/cases", icon: FolderOpen, accent: "text-jarvis", bgAccent: "bg-jarvis/10 border-jarvis/20" },
     { label: "Clientes", value: totalClients, route: "/hub/clients", icon: Users, accent: "text-violet-400", bgAccent: "bg-violet-500/10 border-violet-500/20" },
-    { label: "Leads GHL", value: totalLeads, route: "/hub/leads", icon: Users, accent: "text-amber-400", bgAccent: "bg-amber-500/10 border-amber-500/20" },
-    { label: "Citas hoy", value: todayAppointments, route: "/hub/agenda", icon: CalendarCheck, accent: "text-sky-400", bgAccent: "bg-sky-500/10 border-sky-500/20", urgent: overdueDeadlines > 0 },
+    { label: "Citas hoy", value: todayAppointmentsCount, route: "/hub/agenda", icon: CalendarCheck, accent: "text-sky-400", bgAccent: "bg-sky-500/10 border-sky-500/20" },
+    { label: "Tareas pend.", value: pendingTasks, route: "/hub/cases", icon: ListTodo, accent: "text-amber-400", bgAccent: "bg-amber-500/10 border-amber-500/20" },
   ];
+
+  const NEWS_PER_PAGE = 3;
 
   return (
     <>
-      <div className="flex flex-col h-full overflow-hidden relative">
-        {/* ─── Onboarding banner ─── */}
+      {/* ═══ COCKPIT — fixed height, no scroll ═══ */}
+      <div className="h-[calc(100vh-0px)] overflow-hidden flex flex-col">
+
+        {/* Onboarding banner */}
         {showOnboardingBanner && !bannerDismissed && (
-          <div className="bg-amber-500/10 border-b border-amber-500/15 px-6 py-2.5 flex items-center justify-between shrink-0">
+          <div className="bg-amber-500/10 border-b border-amber-500/15 px-6 py-2 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-amber-400" />
-              <span className="text-sm text-amber-200/90">
-                ¡Completa la configuración de tu oficina para activar todas las funciones de Camila!
-              </span>
+              <span className="text-xs text-amber-200/90">¡Completa la configuración de tu oficina!</span>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={onTriggerOnboarding} className="text-xs font-semibold text-amber-300 hover:text-amber-200 transition-colors flex items-center gap-1">
-                Completar configuración <ChevronRight className="w-3 h-3" />
+                Completar <ChevronRight className="w-3 h-3" />
               </button>
-              <button onClick={() => setBannerDismissed(true)} className="text-amber-400/50 hover:text-amber-400 transition-colors">
-                <X className="w-4 h-4" />
+              <button onClick={() => setBannerDismissed(true)} className="text-amber-400/50 hover:text-amber-400">
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
         )}
 
-      {/* ─── Main centered area ─── */}
-        <div className="flex-1 flex flex-col items-center min-h-0 px-6 text-center overflow-y-auto pt-8">
+        {/* Main content — padded, no overflow */}
+        <div className="flex-1 flex flex-col min-h-0 px-6 py-4 gap-3">
 
-          {/* ─── Camila avatar + greeting ─── */}
-          <div className="text-center mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center mx-auto mb-5 relative">
-              <Sparkles className="w-7 h-7 text-jarvis" />
-              <div className="absolute inset-0 rounded-2xl animate-pulse bg-jarvis/5" />
+          {/* ─── ZONA A: Header ─── */}
+          <div className="text-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center mx-auto mb-2 relative">
+              <Sparkles className="w-5 h-5 text-jarvis" />
+              <div className="absolute inset-0 rounded-xl animate-pulse bg-jarvis/5" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
               {greeting}, <span className="text-jarvis">{firstName}</span>
             </h1>
-            <p className="text-muted-foreground/50 mt-2 text-base">
-              Bienvenido a tu oficina virtual. ¿Qué haremos hoy?
-            </p>
+            <p className="text-muted-foreground/50 text-sm">Bienvenido a tu oficina virtual</p>
           </div>
 
-          {/* ─── Input bar ─── */}
-          <div className="w-full max-w-[640px] mx-auto mb-5">
-            <div className={`flex items-center gap-2 bg-card border rounded-2xl px-4 py-3.5 shadow-sm transition-all ${
+          {/* ─── ZONA B: Camila Input ─── */}
+          <div className="w-full max-w-[640px] mx-auto shrink-0">
+            <div className={`flex items-center gap-2 bg-card border rounded-2xl px-4 py-3 shadow-sm transition-all ${
               isVoiceActive
                 ? "border-emerald-400/40 ring-1 ring-emerald-400/20"
                 : "border-border/40 focus-within:border-jarvis/40 focus-within:ring-1 focus-within:ring-jarvis/20"
@@ -503,7 +470,7 @@ function HubDashboardInner({
               <input
                 ref={inputRef}
                 type="text"
-                placeholder={isVoiceActive ? "Llamada activa — habla con naturalidad..." : "Pregúntale algo a Camila o elige una acción..."}
+                placeholder={isVoiceActive ? "Llamada activa — habla con naturalidad..." : "Pregúntale algo a Camila..."}
                 className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/40 disabled:opacity-50"
                 value={input}
                 onChange={e => setInput(e.target.value)}
@@ -511,12 +478,9 @@ function HubDashboardInner({
                 disabled={isVoiceActive}
               />
               {!isVoiceActive && (
-                <button
-                  onClick={toggleSTT}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-                    isListening ? "bg-red-500/20 text-red-400" : "bg-muted/30 text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50"
-                  }`}
-                >
+                <button onClick={toggleSTT} className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                  isListening ? "bg-red-500/20 text-red-400" : "bg-muted/30 text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50"
+                }`}>
                   {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                 </button>
               )}
@@ -535,208 +499,170 @@ function HubDashboardInner({
                 {isVoiceActive ? <PhoneOff className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
               </button>
               {!isVoiceActive && (
-                <button
-                  onClick={() => sendMessage()}
-                  disabled={!input.trim()}
-                  className="w-8 h-8 rounded-xl bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                >
+                <button onClick={() => sendMessage()} disabled={!input.trim()} className="w-8 h-8 rounded-xl bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30">
                   <Send className="w-4 h-4 text-jarvis" />
                 </button>
               )}
             </div>
-
-            {/* Call active indicator */}
             {isVoiceActive && (
-              <div className="flex items-center justify-center gap-2 mt-2 animate-in fade-in duration-300">
+              <div className="flex items-center justify-center gap-2 mt-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs text-emerald-400/80 font-medium">EN LLAMADA · Habla con naturalidad</span>
+                <span className="text-[10px] text-emerald-400/80 font-medium">EN LLAMADA</span>
               </div>
             )}
-
-            {/* Call ended — link to transcript */}
             {callEnded && !isVoiceActive && (
-              <div className="flex items-center justify-center gap-2 mt-2 animate-in fade-in duration-300">
-                <span className="text-xs text-muted-foreground/60">Conversación guardada ·</span>
-                <button
-                  onClick={() => navigate("/hub/chat", { state: { accountId, accountName, staffName } })}
-                  className="text-xs text-jarvis hover:text-jarvis/80 font-medium transition-colors"
-                >
+              <div className="flex items-center justify-center gap-2 mt-1.5">
+                <span className="text-[10px] text-muted-foreground/60">Conversación guardada ·</span>
+                <button onClick={() => navigate("/hub/chat", { state: { accountId, accountName, staffName } })} className="text-[10px] text-jarvis hover:text-jarvis/80 font-medium">
                   Ver historial →
                 </button>
               </div>
             )}
           </div>
 
-          {/* ─── Live transcript during call ─── */}
+          {/* Live transcript */}
           {isVoiceActive && callMessages.length > 0 && (
-            <div className="w-full max-w-[640px] mx-auto mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div
-                ref={callScrollRef}
-                className="max-h-48 overflow-y-auto rounded-xl border border-border/20 bg-card/60 backdrop-blur-sm p-3 space-y-2 scrollbar-thin"
-              >
+            <div className="w-full max-w-[640px] mx-auto shrink-0">
+              <div ref={callScrollRef} className="max-h-32 overflow-y-auto rounded-xl border border-border/20 bg-card/60 p-2 space-y-1.5">
                 {callMessages.map(msg => (
                   <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[80%] px-3 py-2 rounded-xl text-xs leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-jarvis/15 text-foreground border border-jarvis/20"
-                        : "bg-muted/40 text-foreground border border-border/20"
-                    }`}>
-                      {msg.content}
-                    </div>
+                    <div className={`max-w-[80%] px-2.5 py-1.5 rounded-lg text-[11px] leading-relaxed ${
+                      msg.role === "user" ? "bg-jarvis/15 text-foreground border border-jarvis/20" : "bg-muted/40 text-foreground border border-border/20"
+                    }`}>{msg.content}</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* ─── Quick action chips (2 rows x 3) ─── */}
-          <div className="w-full max-w-[640px] mx-auto grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
-            {quickChips.map(chip => (
+          {/* ─── ZONA C: Quick Actions ─── */}
+          <div className="w-full max-w-[640px] mx-auto grid grid-cols-3 gap-2 shrink-0">
+            {quickChips.map((chip, i) => (
               <button
                 key={chip.label}
-                onClick={() => {
-                  if (chip.label === "Nueva consulta") {
-                    setIntakeOpen(true);
-                  } else if (chip.label === "Ver casos activos") {
-                    navigate("/hub/cases");
-                  } else if (chip.label === "Agendar cita") {
-                    navigate("/hub/agenda");
-                  } else if (chip.label === "Clientes sin documentos") {
-                    navigate("/hub/clients");
-                  } else if (chip.label === "Plazos de esta semana") {
-                    navigate("/hub/cases");
-                  } else if (chip.label === "Resumen del día") {
-                    sendMessage("Resumen del día");
-                  }
-                }}
-                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-border/30 bg-card/50 hover:bg-card hover:border-jarvis/20 text-sm text-muted-foreground hover:text-foreground transition-all"
+                onClick={chip.action}
+                className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl border border-border/30 bg-card/50 hover:bg-card hover:border-jarvis/20 text-xs text-muted-foreground hover:text-foreground transition-all"
               >
-                <chip.icon className="w-4 h-4 text-jarvis/50 shrink-0" />
-                <span className="text-xs font-medium truncate">{chip.label}</span>
+                <chip.icon className="w-3.5 h-3.5 text-jarvis/50 shrink-0" />
+                <span className="font-medium truncate">{chip.label}</span>
               </button>
             ))}
           </div>
 
-          {/* ─── Office stats — elegant mini-cards ─── */}
-          <div className="w-full max-w-[640px] mx-auto">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-px flex-1 bg-border/20" />
-              <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold">Tu oficina hoy</span>
-              <div className="h-px flex-1 bg-border/20" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {/* ─── ZONA D: KPIs + Alerts ─── */}
+          <div className="w-full max-w-[640px] mx-auto flex gap-3 shrink-0">
+            {/* KPI cards */}
+            <div className="flex-1 grid grid-cols-4 gap-2">
               {kpis.map(kpi => (
                 <button
                   key={kpi.label}
                   onClick={() => navigate(kpi.route)}
-                  className="group flex flex-col items-center justify-center gap-1 px-3.5 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-center"
+                  className="group flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-center"
                 >
-                  <div className={`w-9 h-9 rounded-lg ${kpi.bgAccent} border flex items-center justify-center shrink-0`}>
-                    <kpi.icon className={`w-4 h-4 ${kpi.accent}`} />
+                  <div className={`w-7 h-7 rounded-lg ${kpi.bgAccent} border flex items-center justify-center shrink-0`}>
+                    <kpi.icon className={`w-3.5 h-3.5 ${kpi.accent}`} />
                   </div>
-                  <div className={`text-xl font-bold tabular-nums leading-none ${kpi.value === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
+                  <div className={`text-lg font-bold tabular-nums leading-none ${kpi.value === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
                     {kpi.value}
-                    {kpi.urgent && kpi.value > 0 && (
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse ml-1 align-top" />
-                    )}
                   </div>
-                  <div className="text-[10px] text-muted-foreground/40 font-medium truncate group-hover:text-muted-foreground/60 transition-colors">
-                    {kpi.label}
-                  </div>
+                  <div className="text-[9px] text-muted-foreground/40 font-medium truncate">{kpi.label}</div>
                 </button>
               ))}
             </div>
+            {/* Alerts mini */}
+            <div className="w-56 rounded-xl border border-border/20 bg-card/40 p-2 overflow-hidden">
+              <div className="flex items-center gap-1.5 mb-1.5 px-1">
+                <AlertTriangle className="w-3 h-3 text-amber-400" />
+                <span className="text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Requiere atención</span>
+              </div>
+              <div className="max-h-[90px] overflow-y-auto">
+                <HubAlertsMini accountId={accountId} />
+              </div>
+            </div>
           </div>
 
-          {/* ─── News Cards Section ─── */}
-          <div className="w-full max-w-[640px] mx-auto px-6 pb-4">
-            <div className="flex items-center gap-2 mb-3">
+          {/* ─── ZONA E: News Carousel ─── */}
+          <div className="w-full max-w-[640px] mx-auto shrink-0">
+            <div className="flex items-center gap-2 mb-2">
               <div className="h-px flex-1 bg-border/20" />
-              <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold flex items-center gap-1">
                 <Newspaper className="w-3 h-3" /> Noticias de inmigración
               </span>
               <div className="h-px flex-1 bg-border/20" />
             </div>
-
-            {/* Carousel container */}
-            <div className="relative px-10">
-              {newsPage > 0 && newsCards.length > 3 && (
-                <button
-                  onClick={() => setNewsPage(p => p - 1)}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis hover:border-jarvis/30 transition-all shadow-md"
-                >
-                  <ChevronLeft className="w-4 h-4" />
+            <div className="relative px-8">
+              {newsPage > 0 && newsCards.length > NEWS_PER_PAGE && (
+                <button onClick={() => setNewsPage(p => p - 1)} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis transition-all shadow">
+                  <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
               )}
-              {newsPage < Math.ceil(newsCards.length / 3) - 1 && newsCards.length > 3 && (
-                <button
-                  onClick={() => setNewsPage(p => p + 1)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis hover:border-jarvis/30 transition-all shadow-md"
-                >
-                  <ChevronRight className="w-4 h-4" />
+              {newsPage < Math.ceil(newsCards.length / NEWS_PER_PAGE) - 1 && newsCards.length > NEWS_PER_PAGE && (
+                <button onClick={() => setNewsPage(p => p + 1)} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-card border border-border/40 flex items-center justify-center text-muted-foreground hover:text-jarvis transition-all shadow">
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-3 gap-2">
                 {newsLoading || newsCards.length === 0
                   ? Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40">
-                        <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
-                        <div className="flex-1 space-y-2">
+                      <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl border border-border/20 bg-card/40">
+                        <Skeleton className="w-7 h-7 rounded-lg shrink-0" />
+                        <div className="flex-1 space-y-1.5">
                           <Skeleton className="h-3 w-full" />
                           <Skeleton className="h-3 w-3/4" />
                           <Skeleton className="h-2 w-1/2" />
                         </div>
                       </div>
                     ))
-                  : newsCards.slice(newsPage * 3, newsPage * 3 + 3).map((card, i) => {
+                  : newsCards.slice(newsPage * NEWS_PER_PAGE, newsPage * NEWS_PER_PAGE + NEWS_PER_PAGE).map((card, i) => {
                       const catStyle = getCategoryStyle(card.category);
+                      const srcColor = sourceColors[card.source || "Noticias"] || sourceColors.Noticias;
                       return (
                         <button
                           key={`${newsPage}-${i}`}
                           onClick={() => setSelectedNews(card)}
-                          className="flex items-start gap-3 px-3 py-3 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-left group"
+                          className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all text-left group"
                         >
-                          <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: catStyle.bg }}
-                          >
-                            <catStyle.icon className="w-4 h-4" style={{ color: catStyle.stroke }} />
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: catStyle.bg }}>
+                              <catStyle.icon className="w-3 h-3" style={{ color: catStyle.stroke }} />
+                            </div>
+                            {card.source && (
+                              <span className={`text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${srcColor}`}>
+                                {card.source}
+                              </span>
+                            )}
+                            {card.urgency === "alta" && (
+                              <span className="text-[8px] font-bold text-red-400 bg-red-500/10 px-1 py-0.5 rounded border border-red-500/20">URGENTE</span>
+                            )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-foreground/90 line-clamp-2 leading-snug group-hover:text-foreground transition-colors">
-                              {card.title}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground/40 mt-1">
-                              {card.time} · <span className="uppercase tracking-wider font-semibold" style={{ color: catStyle.stroke }}>{card.category}</span>
-                            </p>
-                          </div>
+                          <p className="text-[11px] font-medium text-foreground/90 line-clamp-2 leading-snug group-hover:text-foreground">
+                            {card.title}
+                          </p>
+                          <p className="text-[9px] text-muted-foreground/40">
+                            {card.time} · <span className="uppercase tracking-wider font-semibold" style={{ color: catStyle.stroke }}>{card.category}</span>
+                          </p>
                         </button>
                       );
                     })}
               </div>
             </div>
-
-            {newsCards.length > 3 && (
-              <div className="flex items-center justify-center gap-1.5 mt-3">
-                {Array.from({ length: Math.ceil(newsCards.length / 3) }).map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setNewsPage(i)}
-                    className={`w-1.5 h-1.5 rounded-full transition-all ${i === newsPage ? "bg-jarvis w-3" : "bg-muted-foreground/20 hover:bg-muted-foreground/40"}`}
-                  />
+            {newsCards.length > NEWS_PER_PAGE && (
+              <div className="flex items-center justify-center gap-1 mt-2">
+                {Array.from({ length: Math.ceil(newsCards.length / NEWS_PER_PAGE) }).map((_, i) => (
+                  <button key={i} onClick={() => setNewsPage(i)} className={`w-1.5 h-1.5 rounded-full transition-all ${i === newsPage ? "bg-jarvis w-3" : "bg-muted-foreground/20 hover:bg-muted-foreground/40"}`} />
                 ))}
               </div>
             )}
           </div>
-          {/* ─── Citas de Hoy ─── */}
-          <div className="w-full max-w-[640px] mx-auto mt-2 mb-4">
-            <TodayAppointments accountId={accountId} maxItems={5} hideStats />
+
+          {/* ─── ZONA F: My Tasks ─── */}
+          <div className="w-full max-w-[640px] mx-auto flex-1 min-h-0">
+            <HubMyTasks accountId={accountId} />
           </div>
 
-          {/* ─── Consultas Recientes ─── */}
-          <div className="w-full max-w-[640px] mx-auto mb-6">
-            <HubRecentConsultations accountId={accountId} maxItems={5} />
+          {/* ─── ZONA G: Credits Footer ─── */}
+          <div className="w-full max-w-[640px] mx-auto flex justify-center shrink-0 py-1">
+            <HubCreditsWidget accountId={accountId} />
           </div>
         </div>
       </div>
@@ -749,6 +675,7 @@ function HubDashboardInner({
         <DialogContent className="sm:max-w-md">
           {selectedNews && (() => {
             const cs = getCategoryStyle(selectedNews.category);
+            const srcColor = sourceColors[selectedNews.source || "Noticias"] || sourceColors.Noticias;
             return (
               <>
                 <DialogHeader>
@@ -756,9 +683,16 @@ function HubDashboardInner({
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: cs.bg }}>
                       <cs.icon className="w-5 h-5" style={{ color: cs.stroke }} />
                     </div>
-                    <div>
-                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: cs.stroke }}>{selectedNews.category}</span>
-                      <span className="text-[10px] text-muted-foreground/40 ml-2">{selectedNews.time}</span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        {selectedNews.source && (
+                          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${srcColor}`}>
+                            {selectedNews.source}
+                          </span>
+                        )}
+                        <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: cs.stroke }}>{selectedNews.category}</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground/40">{selectedNews.time}</span>
                     </div>
                   </div>
                   <DialogTitle className="text-base">{selectedNews.title}</DialogTitle>
@@ -766,16 +700,20 @@ function HubDashboardInner({
                     {selectedNews.summary}
                   </DialogDescription>
                 </DialogHeader>
-                <p className="text-[10px] text-muted-foreground/40 text-center mt-2">
-                  Esta información es de carácter informativo. Se recomienda un análisis exhaustivo antes de tomar cualquier acción.
+                {selectedNews.url && (
+                  <a href={selectedNews.url} target="_blank" rel="noopener noreferrer" className="text-xs text-jarvis hover:underline">
+                    Ver fuente original →
+                  </a>
+                )}
+                <p className="text-[10px] text-muted-foreground/40 text-center mt-1">
+                  Información de carácter informativo.
                 </p>
                 <button
                   onClick={() => {
                     const title = selectedNews.title;
                     const summary = selectedNews.summary;
                     setSelectedNews(null);
-                    const preBuiltMsg = `Camila, aquí hay una noticia reciente de inmigración: ${title} — ${summary}. Revisando los casos activos de la oficina, ¿hay algún cliente o caso que pudiera verse afectado por esto? Se recomienda un análisis exhaustivo antes de tomar cualquier acción.`;
-                    sendMessage(preBuiltMsg);
+                    sendMessage(`Camila, noticia de inmigración: ${title} — ${summary}. ¿Hay algún caso que pudiera verse afectado?`);
                   }}
                   className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-jarvis/10 border border-jarvis/20 text-sm font-medium text-jarvis hover:bg-jarvis/20 transition-all"
                 >
