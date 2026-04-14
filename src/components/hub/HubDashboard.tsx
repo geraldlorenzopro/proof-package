@@ -14,7 +14,7 @@ import { speakAsCamila } from "@/lib/camilaTTS";
 import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
 
-import HubMyTasks from "./HubMyTasks";
+
 import HubCreditsWidget from "./HubCreditsWidget";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -402,7 +402,7 @@ function HubDashboardInner({
         )}
 
         {/* Main content — centered, no scroll */}
-        <div className="w-full max-w-4xl h-full overflow-hidden flex flex-col gap-3 px-6 py-5">
+        <div className="w-full max-w-4xl flex flex-col gap-4 px-8 py-6">
 
           {/* ─── ZONA A: Header ─── */}
           <div className="text-center shrink-0 flex-none">
@@ -533,7 +533,7 @@ function HubDashboardInner({
               </span>
               <div className="h-px flex-1 bg-border/20" />
             </div>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-4 gap-3">
               {OFFICIAL_RESOURCES.map((r) => (
                 <div
                   key={r.label}
@@ -547,7 +547,7 @@ function HubDashboardInner({
                       window.open(r.url, "_blank", "noopener,noreferrer");
                     }, 400);
                   }}
-                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all group cursor-pointer"
+                  className="flex items-center gap-2 p-3 rounded-lg border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all group cursor-pointer"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
@@ -562,10 +562,6 @@ function HubDashboardInner({
             </div>
           </div>
 
-          {/* ─── ZONA F: My Tasks ─── */}
-          <div className="w-full flex-1 min-h-0">
-            <HubMyTasks accountId={accountId} />
-          </div>
 
           {/* ─── ZONA G: Credits Footer ─── */}
           <div className="w-full flex justify-center shrink-0 py-1">
