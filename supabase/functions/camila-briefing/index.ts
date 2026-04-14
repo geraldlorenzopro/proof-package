@@ -229,25 +229,29 @@ Deno.serve(async (req) => {
             const items = parseRSS(xml);
             console.log(`RSS ${source.name}: parsed ${items.length} items`);
 
-          // Filtrar últimos 7 días
-          const sevenDaysAgo = Date.now() - 7 * 86_400_000;
-          return items
-            .filter((item) => {
-              if (!item.pubDate) return true;
-              const d = new Date(item.pubDate).getTime();
-              return d > sevenDaysAgo;
-            })
-            .slice(0, 3) // max 3 por fuente
-            .map((item) => ({
-              title: item.title.slice(0, 100),
-              summary: item.description.slice(0, 200),
-              source: source.name,
-              category: source.category,
-              urgency: getUrgency(item.title, item.description),
-              url: item.link,
-              time: relativeTime(item.pubDate),
-              pubDate: item.pubDate,
-            }));
+            // Filtrar últimos 30 días (wider window for gov sites that update less often)
+            const thirtyDaysAgo = Date.now() - 30 * 86_400_000;
+            return items
+              .filter((item) => {
+                if (!item.pubDate) return true;
+                const d = new Date(item.pubDate).getTime();
+                return !isNaN(d) && d > thirtyDaysAgo;
+              })
+              .slice(0, 3) // max 3 por fuente
+              .map((item) => ({
+                title: item.title.slice(0, 100),
+                summary: item.description.slice(0, 200),
+                source: source.name,
+                category: source.category,
+                urgency: getUrgency(item.title, item.description),
+                url: item.link,
+                time: relativeTime(item.pubDate),
+                pubDate: item.pubDate,
+              }));
+          } catch (err) {
+            console.warn(`RSS ${source.name} failed:`, err);
+            throw err;
+          }
         })
       );
 
