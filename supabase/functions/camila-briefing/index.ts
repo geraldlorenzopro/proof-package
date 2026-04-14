@@ -35,7 +35,7 @@ const RSS_SOURCES = [
   },
 ];
 
-// Función para parsear XML RSS básico
+// Función para parsear XML RSS/Atom básico
 function parseRSS(xmlText: string): Array<{
   title: string;
   link: string;
@@ -48,6 +48,8 @@ function parseRSS(xmlText: string): Array<{
     pubDate: string;
     description: string;
   }> = [];
+
+  // Try RSS <item> format
   const itemMatches = xmlText.matchAll(/<item>([\s\S]*?)<\/item>/g);
   for (const match of itemMatches) {
     const item = match[1];
@@ -55,22 +57,46 @@ function parseRSS(xmlText: string): Array<{
       /<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/
     );
     const link = item.match(
-      /<link>(.*?)<\/link>|<guid>(.*?)<\/guid>/
+      /<link>(.*?)<\/link>|<guid[^>]*>(.*?)<\/guid>/
     );
-    const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/);
+    const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>|<dc:date>(.*?)<\/dc:date>/);
     const desc = item.match(
       /<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>|<description>([\s\S]*?)<\/description>/
     );
     items.push({
       title: (title?.[1] || title?.[2] || "").trim(),
       link: (link?.[1] || link?.[2] || "").trim(),
-      pubDate: (pubDate?.[1] || "").trim(),
+      pubDate: (pubDate?.[1] || pubDate?.[2] || "").trim(),
       description: (desc?.[1] || desc?.[2] || "")
         .replace(/<[^>]*>/g, "")
         .trim()
         .slice(0, 200),
     });
   }
+
+  // If no RSS items, try Atom <entry> format
+  if (items.length === 0) {
+    const entryMatches = xmlText.matchAll(/<entry>([\s\S]*?)<\/entry>/g);
+    for (const match of entryMatches) {
+      const entry = match[1];
+      const title = entry.match(/<title[^>]*>(.*?)<\/title>|<title[^>]*><!\[CDATA\[(.*?)\]\]><\/title>/);
+      const link = entry.match(/<link[^>]*href="([^"]*)"/) || entry.match(/<link>(.*?)<\/link>/);
+      const updated = entry.match(/<updated>(.*?)<\/updated>|<published>(.*?)<\/published>/);
+      const summary = entry.match(/<summary[^>]*>([\s\S]*?)<\/summary>|<content[^>]*>([\s\S]*?)<\/content>/);
+      items.push({
+        title: (title?.[1] || title?.[2] || "").trim(),
+        link: (link?.[1] || "").trim(),
+        pubDate: (updated?.[1] || updated?.[2] || "").trim(),
+        description: (summary?.[1] || summary?.[2] || "")
+          .replace(/<[^>]*>/g, "")
+          .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/<[^>]*>/g, "")
+          .replace(/&amp;/g, "&").replace(/&nbsp;/g, " ")
+          .trim()
+          .slice(0, 200),
+      });
+    }
+  }
+
   return items;
 }
 
