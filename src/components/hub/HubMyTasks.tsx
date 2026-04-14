@@ -97,17 +97,17 @@ export default function HubMyTasks({ accountId }: { accountId: string }) {
             <button
               key={t.id}
               onClick={() => navigate(`/case-engine/${t.caseId}`)}
-              className="w-full text-left p-2.5 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all group flex items-center gap-3"
+              className="w-full text-left py-1.5 px-2 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all group flex items-center gap-3"
             >
               <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${priorityDot[t.priority] || priorityDot.low}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-foreground truncate">{t.title}</p>
-                <p className="text-[10px] text-muted-foreground/50 truncate">
+                <p className="text-[13px] font-medium text-foreground truncate">{t.title}</p>
+                <p className="text-[11px] text-muted-foreground/50 truncate">
                   {t.clientName}{t.fileNumber ? ` · ${t.fileNumber}` : ""}
                 </p>
               </div>
               <div className="text-right shrink-0 flex items-center gap-1.5">
-                <span className="text-[10px] text-muted-foreground/40">{relativeDate(t.dueDate)}</span>
+                <span className="text-[11px] text-muted-foreground/40">{relativeDate(t.dueDate)}</span>
                 <ChevronRight className="w-3 h-3 text-muted-foreground/20 group-hover:text-jarvis transition-colors" />
               </div>
             </button>
