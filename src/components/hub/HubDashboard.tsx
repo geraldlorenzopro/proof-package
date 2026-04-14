@@ -303,6 +303,8 @@ function HubDashboardInner({
 
   useEffect(() => {
     if (!accountId) return;
+    // Force clear old cache to load new RSS-based news
+    localStorage.removeItem(`hub_news_${accountId}`);
     const CACHE_KEY = `hub_news_${accountId}`;
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
