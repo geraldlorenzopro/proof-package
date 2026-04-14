@@ -1,104 +1,15 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-// ─── RSS FEEDS OFICIALES ───
-const RSS_SOURCES = [
-  {
-    name: "USCIS",
-    url: "https://www.uscis.gov/feeds/news.rss",
-    category: "USCIS",
-  },
-  {
-    name: "ICE",
-    url: "https://www.ice.gov/feeds/news",
-    category: "ICE/CBP",
-  },
-  {
-    name: "CBP",
-    url: "https://www.cbp.gov/feeds/news",
-    category: "ICE/CBP",
-  },
-  {
-    name: "Federal Register",
-    url: "https://www.federalregister.gov/api/v1/articles.rss?conditions%5Bagency_ids%5D%5B%5D=573",
-    category: "USCIS",
-  },
-  {
-    name: "DOS",
-    url: "https://travel.state.gov/content/travel/en/News/visas-news.rss.xml",
-    category: "Visa Bulletin",
-  },
-  {
-    name: "EOIR",
-    url: "https://www.justice.gov/eoir/rss.xml",
-    category: "Cortes",
-  },
+// ─── FEDERAL REGISTER API — fuentes oficiales verificadas ───
+const FR_AGENCY_SOURCES = [
+  { agency_id: 499, name: "USCIS", category: "USCIS" },
+  { agency_id: 501, name: "CBP", category: "ICE/CBP" },
+  { agency_id: 503, name: "ICE", category: "ICE/CBP" },
+  { agency_id: 149, name: "EOIR", category: "Cortes" },
+  { agency_id: 227, name: "DHS", category: "Legislación" },
+  { agency_id: 476, name: "DOS", category: "Visa Bulletin" },
 ];
-
-// Función para parsear XML RSS/Atom básico
-function parseRSS(xmlText: string): Array<{
-  title: string;
-  link: string;
-  pubDate: string;
-  description: string;
-}> {
-  const items: Array<{
-    title: string;
-    link: string;
-    pubDate: string;
-    description: string;
-  }> = [];
-
-  // Try RSS <item> format
-  const itemMatches = xmlText.matchAll(/<item>([\s\S]*?)<\/item>/g);
-  for (const match of itemMatches) {
-    const item = match[1];
-    const title = item.match(
-      /<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/
-    );
-    const link = item.match(
-      /<link>(.*?)<\/link>|<guid[^>]*>(.*?)<\/guid>/
-    );
-    const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>|<dc:date>(.*?)<\/dc:date>/);
-    const desc = item.match(
-      /<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>|<description>([\s\S]*?)<\/description>/
-    );
-    items.push({
-      title: (title?.[1] || title?.[2] || "").trim(),
-      link: (link?.[1] || link?.[2] || "").trim(),
-      pubDate: (pubDate?.[1] || pubDate?.[2] || "").trim(),
-      description: (desc?.[1] || desc?.[2] || "")
-        .replace(/<[^>]*>/g, "")
-        .trim()
-        .slice(0, 200),
-    });
-  }
-
-  // If no RSS items, try Atom <entry> format
-  if (items.length === 0) {
-    const entryMatches = xmlText.matchAll(/<entry>([\s\S]*?)<\/entry>/g);
-    for (const match of entryMatches) {
-      const entry = match[1];
-      const title = entry.match(/<title[^>]*>(.*?)<\/title>|<title[^>]*><!\[CDATA\[(.*?)\]\]><\/title>/);
-      const link = entry.match(/<link[^>]*href="([^"]*)"/) || entry.match(/<link>(.*?)<\/link>/);
-      const updated = entry.match(/<updated>(.*?)<\/updated>|<published>(.*?)<\/published>/);
-      const summary = entry.match(/<summary[^>]*>([\s\S]*?)<\/summary>|<content[^>]*>([\s\S]*?)<\/content>/);
-      items.push({
-        title: (title?.[1] || title?.[2] || "").trim(),
-        link: (link?.[1] || "").trim(),
-        pubDate: (updated?.[1] || updated?.[2] || "").trim(),
-        description: (summary?.[1] || summary?.[2] || "")
-          .replace(/<[^>]*>/g, "")
-          .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/<[^>]*>/g, "")
-          .replace(/&amp;/g, "&").replace(/&nbsp;/g, " ")
-          .trim()
-          .slice(0, 200),
-      });
-    }
-  }
-
-  return items;
-}
 
 // Función para calcular tiempo relativo
 function relativeTime(dateStr: string): string {
@@ -112,10 +23,7 @@ function relativeTime(dateStr: string): string {
     if (diffH < 24) return `Hace ${diffH}h`;
     if (diffD === 1) return "Ayer";
     if (diffD < 7) return `Hace ${diffD} días`;
-    return date.toLocaleDateString("es", {
-      day: "numeric",
-      month: "short",
-    });
+    return date.toLocaleDateString("es", { day: "numeric", month: "short" });
   } catch {
     return "Reciente";
   }
@@ -125,19 +33,29 @@ function relativeTime(dateStr: string): string {
 function getUrgency(title: string, desc: string): string {
   const text = (title + " " + desc).toLowerCase();
   const highKeywords = [
-    "urgent", "alert", "alerta", "deadline",
-    "effective immediately", "immediately",
-    "court order", "injunction", "fee increase",
-    "policy change", "deportation", "deportación",
-    "rfe", "noid", "denial",
+    "urgent", "alert", "deadline", "effective immediately",
+    "immediately", "court order", "injunction", "fee increase",
+    "policy change", "deportation", "rfe", "noid", "denial",
+    "final rule", "emergency", "interim final",
   ];
   const medKeywords = [
-    "update", "change", "new", "announce",
-    "processing", "bulletin", "visa",
+    "update", "change", "new", "announce", "processing",
+    "bulletin", "visa", "proposed rule", "notice",
   ];
   if (highKeywords.some((k) => text.includes(k))) return "alta";
   if (medKeywords.some((k) => text.includes(k))) return "media";
   return "baja";
+}
+
+// Determinar categoría más específica basándose en el título
+function refineCategory(title: string, baseCategory: string): string {
+  const t = title.toLowerCase();
+  if (t.includes("visa bulletin") || t.includes("priority date")) return "Visa Bulletin";
+  if (t.includes("daca") || t.includes("tps") || t.includes("temporary protected")) return "DACA/TPS";
+  if (t.includes("court") || t.includes("eoir") || t.includes("bia") || t.includes("immigration judge")) return "Cortes";
+  if (t.includes("ice") || t.includes("enforcement") || t.includes("removal") || t.includes("detention")) return "ICE/CBP";
+  if (t.includes("cbp") || t.includes("border") || t.includes("port of entry")) return "ICE/CBP";
+  return baseCategory;
 }
 
 Deno.serve(async (req) => {
@@ -166,8 +84,6 @@ Deno.serve(async (req) => {
       .single();
 
     const todayStr = new Date().toISOString().split("T")[0];
-    const startOfWeek = new Date();
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
 
     const [activeCasesRes, todayApptsRes, overdueRes] = await Promise.all([
       supabase.from("client_cases").select("id", { count: "exact", head: true })
@@ -207,75 +123,144 @@ Deno.serve(async (req) => {
       console.warn("Weather fetch failed:", e);
     }
 
-    // ─── Immigration news via RSS feeds oficiales ───
+    // ─── Immigration news via Federal Register JSON API ───
     let newsCards: any[] = [];
     try {
-      const rssResults = await Promise.allSettled(
-        RSS_SOURCES.map(async (source) => {
-          try {
-            const resp = await fetch(source.url, {
-              headers: {
-                "User-Agent": "Mozilla/5.0 (compatible; NER-Immigration-Monitor/1.0)",
-                "Accept": "application/rss+xml, application/xml, text/xml, */*",
-              },
-              signal: AbortSignal.timeout(12000),
-            });
-            if (!resp.ok) {
-              console.warn(`RSS ${source.name}: HTTP ${resp.status}`);
-              throw new Error(`HTTP ${resp.status}`);
-            }
-            const xml = await resp.text();
-            console.log(`RSS ${source.name}: got ${xml.length} chars`);
-            const items = parseRSS(xml);
-            console.log(`RSS ${source.name}: parsed ${items.length} items`);
+      // Build agency IDs query param
+      const agencyParams = FR_AGENCY_SOURCES.map(s => `conditions[agency_ids][]=${s.agency_id}`).join("&");
+      const frUrl = `https://www.federalregister.gov/api/v1/articles?${agencyParams}&per_page=20&order=newest&fields[]=title&fields[]=abstract&fields[]=html_url&fields[]=publication_date&fields[]=agency_names&fields[]=type`;
 
-            // Filtrar últimos 30 días (wider window for gov sites that update less often)
-            const thirtyDaysAgo = Date.now() - 30 * 86_400_000;
-            return items
-              .filter((item) => {
-                if (!item.pubDate) return true;
-                const d = new Date(item.pubDate).getTime();
-                return !isNaN(d) && d > thirtyDaysAgo;
-              })
-              .slice(0, 3) // max 3 por fuente
-              .map((item) => ({
-                title: item.title.slice(0, 100),
-                summary: item.description.slice(0, 200),
-                source: source.name,
-                category: source.category,
-                urgency: getUrgency(item.title, item.description),
-                url: item.link,
-                time: relativeTime(item.pubDate),
-                pubDate: item.pubDate,
-              }));
-          } catch (err) {
-            console.warn(`RSS ${source.name} failed:`, err);
-            throw err;
-          }
-        })
-      );
-
-      // Consolidar y ordenar por fecha
-      for (const result of rssResults) {
-        if (result.status === "fulfilled") {
-          newsCards.push(...result.value);
-        }
-      }
-
-      // Ordenar por más reciente primero
-      newsCards.sort((a, b) => {
-        const da = new Date(a.pubDate || 0).getTime();
-        const db = new Date(b.pubDate || 0).getTime();
-        return db - da;
+      const frResp = await fetch(frUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; NER-Immigration-Monitor/1.0)",
+          "Accept": "application/json",
+        },
+        signal: AbortSignal.timeout(12000),
       });
 
-      // Tomar las 9 más recientes
-      newsCards = newsCards.slice(0, 9);
+      if (frResp.ok) {
+        const frData = await frResp.json();
+        const results = frData.results || [];
+        console.log(`Federal Register API: ${results.length} articles`);
+
+        // Map agency names to our source names
+        const agencyMap: Record<string, { name: string; category: string }> = {};
+        for (const s of FR_AGENCY_SOURCES) {
+          agencyMap[s.agency_id.toString()] = { name: s.name, category: s.category };
+        }
+
+        const agencyNameMap: Record<string, { name: string; category: string }> = {
+          "U.S. Citizenship and Immigration Services": { name: "USCIS", category: "USCIS" },
+          "U.S. Customs and Border Protection": { name: "CBP", category: "ICE/CBP" },
+          "U.S. Immigration and Customs Enforcement": { name: "ICE", category: "ICE/CBP" },
+          "Executive Office for Immigration Review": { name: "EOIR", category: "Cortes" },
+          "Homeland Security Department": { name: "DHS", category: "Legislación" },
+          "State Department": { name: "DOS", category: "Visa Bulletin" },
+        };
+
+        for (const article of results) {
+          const title = (article.title || "").slice(0, 100);
+          const summary = (article.abstract || "").replace(/<[^>]*>/g, "").slice(0, 200);
+          const url = article.html_url || "";
+          const pubDate = article.publication_date || "";
+          const agencyNames: string[] = article.agency_names || [];
+
+          // Find best matching source
+          let source = "DHS";
+          let category = "Legislación";
+          for (const agName of agencyNames) {
+            const match = agencyNameMap[agName];
+            if (match) {
+              source = match.name;
+              category = match.category;
+              break;
+            }
+          }
+
+          category = refineCategory(title, category);
+
+          newsCards.push({
+            title,
+            summary,
+            source,
+            category,
+            urgency: getUrgency(title, summary),
+            url,
+            time: relativeTime(pubDate),
+            pubDate,
+          });
+        }
+      } else {
+        console.warn(`Federal Register API: HTTP ${frResp.status}`);
+      }
     } catch (e) {
-      console.warn("RSS fetch failed:", e);
+      console.warn("Federal Register fetch failed:", e);
     }
 
-    // Si no hay noticias de RSS (todos fallaron), mostrar fallback
+    // Also try USCIS newsroom RSS as supplemental source
+    try {
+      // USCIS news alerts feed
+      const uscisResp = await fetch("https://www.uscis.gov/news/alerts/feed", {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; NER-Immigration-Monitor/1.0)",
+          "Accept": "application/rss+xml, application/xml, text/xml, */*",
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (uscisResp.ok) {
+        const xml = await uscisResp.text();
+        const itemMatches = xml.matchAll(/<item>([\s\S]*?)<\/item>/g);
+        let count = 0;
+        for (const match of itemMatches) {
+          if (count >= 3) break;
+          const item = match[1];
+          const title = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/);
+          const link = item.match(/<link>(.*?)<\/link>|<guid[^>]*>(.*?)<\/guid>/);
+          const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>|<dc:date>(.*?)<\/dc:date>/);
+          const desc = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>|<description>([\s\S]*?)<\/description>/);
+
+          const t = (title?.[1] || title?.[2] || "").trim();
+          if (!t) continue;
+          const d = (pubDate?.[1] || pubDate?.[2] || "").trim();
+
+          newsCards.push({
+            title: t.slice(0, 100),
+            summary: (desc?.[1] || desc?.[2] || "").replace(/<[^>]*>/g, "").trim().slice(0, 200),
+            source: "USCIS",
+            category: refineCategory(t, "USCIS"),
+            urgency: getUrgency(t, ""),
+            url: (link?.[1] || link?.[2] || "").trim(),
+            time: relativeTime(d),
+            pubDate: d,
+          });
+          count++;
+        }
+        console.log(`USCIS alerts feed: ${count} items`);
+      }
+    } catch (e) {
+      console.warn("USCIS alerts feed failed:", e);
+    }
+
+    // Deduplicate by title similarity and sort by date
+    const seen = new Set<string>();
+    newsCards = newsCards.filter(card => {
+      const key = card.title.toLowerCase().slice(0, 50);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Sort by most recent
+    newsCards.sort((a, b) => {
+      const da = new Date(a.pubDate || 0).getTime();
+      const db = new Date(b.pubDate || 0).getTime();
+      return db - da;
+    });
+
+    // Take top 9
+    newsCards = newsCards.slice(0, 9);
+
+    // Fallback if nothing found
     if (newsCards.length === 0) {
       newsCards = [
         {
