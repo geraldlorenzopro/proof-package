@@ -121,6 +121,7 @@ function HubDashboardInner({
   // Modals
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [openingResource, setOpeningResource] = useState<{label: string; url: string} | null>(null);
 
   // Voice call (ElevenLabs WebSocket)
   const [voiceConnecting, setVoiceConnecting] = useState(false);
@@ -537,16 +538,7 @@ function HubDashboardInner({
               {OFFICIAL_RESOURCES.map((r) => (
                 <div
                   key={r.label}
-                  onClick={() => {
-                    toast("Abriendo en nueva pestaña", {
-                      description: r.label,
-                      duration: 2000,
-                      icon: "↗️",
-                    });
-                    setTimeout(() => {
-                      window.open(r.url, "_blank", "noopener,noreferrer");
-                    }, 400);
-                  }}
+                  onClick={() => setOpeningResource({ label: r.label, url: r.url })}
                   className="flex items-center gap-2 p-3 rounded-lg border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all group cursor-pointer"
                 >
                   <div className="flex-1 min-w-0">
