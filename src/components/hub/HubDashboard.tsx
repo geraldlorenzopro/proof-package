@@ -446,7 +446,7 @@ function HubDashboardInner({
         )}
 
         {/* Main content — padded, no overflow */}
-        <div className="flex-1 flex flex-col min-h-0 px-6 py-4 gap-3">
+        <div className="flex-1 flex flex-col min-h-0 px-8 py-3 gap-3">
 
           {/* ─── ZONA A: Header ─── */}
           <div className="text-center shrink-0">
@@ -461,7 +461,7 @@ function HubDashboardInner({
           </div>
 
           {/* ─── ZONA B: Camila Input ─── */}
-          <div className="w-full max-w-[640px] mx-auto shrink-0">
+          <div className="w-full max-w-5xl mx-auto shrink-0">
             <div className={`flex items-center gap-2 bg-card border rounded-2xl px-4 py-3 shadow-sm transition-all ${
               isVoiceActive
                 ? "border-emerald-400/40 ring-1 ring-emerald-400/20"
@@ -522,7 +522,7 @@ function HubDashboardInner({
 
           {/* Live transcript */}
           {isVoiceActive && callMessages.length > 0 && (
-            <div className="w-full max-w-[640px] mx-auto shrink-0">
+            <div className="w-full max-w-5xl mx-auto shrink-0">
               <div ref={callScrollRef} className="max-h-32 overflow-y-auto rounded-xl border border-border/20 bg-card/60 p-2 space-y-1.5">
                 {callMessages.map(msg => (
                   <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -536,7 +536,7 @@ function HubDashboardInner({
           )}
 
           {/* ─── ZONA C: Quick Actions ─── */}
-          <div className="w-full max-w-[640px] mx-auto grid grid-cols-3 gap-2 shrink-0">
+          <div className="w-full max-w-5xl mx-auto grid grid-cols-3 gap-2 shrink-0">
             {quickChips.map((chip, i) => (
               <button
                 key={chip.label}
@@ -550,7 +550,7 @@ function HubDashboardInner({
           </div>
 
           {/* ─── ZONA D: KPIs + Alerts ─── */}
-          <div className="w-full max-w-[640px] mx-auto flex gap-3 shrink-0">
+          <div className="w-full max-w-5xl mx-auto flex gap-3 shrink-0">
             {/* KPI cards */}
             <div className="flex-1 grid grid-cols-4 gap-2">
               {kpis.map(kpi => (
@@ -582,7 +582,7 @@ function HubDashboardInner({
           </div>
 
           {/* ─── ZONA E: News Carousel ─── */}
-          <div className="w-full max-w-[640px] mx-auto shrink-0">
+          <div className="w-full max-w-5xl mx-auto shrink-0">
             <div className="flex items-center gap-2 mb-2">
               <div className="h-px flex-1 bg-border/20" />
               <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold flex items-center gap-1">
@@ -656,12 +656,12 @@ function HubDashboardInner({
           </div>
 
           {/* ─── ZONA F: My Tasks ─── */}
-          <div className="w-full max-w-[640px] mx-auto flex-1 min-h-0">
+          <div className="w-full max-w-5xl mx-auto flex-1 min-h-0">
             <HubMyTasks accountId={accountId} />
           </div>
 
           {/* ─── ZONA G: Credits Footer ─── */}
-          <div className="w-full max-w-[640px] mx-auto flex justify-center shrink-0 py-1">
+          <div className="w-full max-w-5xl mx-auto flex justify-center shrink-0 py-1">
             <HubCreditsWidget accountId={accountId} />
           </div>
         </div>
