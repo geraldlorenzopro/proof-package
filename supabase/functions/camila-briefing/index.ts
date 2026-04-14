@@ -212,16 +212,22 @@ Deno.serve(async (req) => {
     try {
       const rssResults = await Promise.allSettled(
         RSS_SOURCES.map(async (source) => {
-          const resp = await fetch(source.url, {
-            headers: {
-              "User-Agent": "NER-Immigration-AI/1.0",
-              "Accept": "application/rss+xml, application/xml, text/xml",
-            },
-            signal: AbortSignal.timeout(8000),
-          });
-          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-          const xml = await resp.text();
-          const items = parseRSS(xml);
+          try {
+            const resp = await fetch(source.url, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (compatible; NER-Immigration-Monitor/1.0)",
+                "Accept": "application/rss+xml, application/xml, text/xml, */*",
+              },
+              signal: AbortSignal.timeout(12000),
+            });
+            if (!resp.ok) {
+              console.warn(`RSS ${source.name}: HTTP ${resp.status}`);
+              throw new Error(`HTTP ${resp.status}`);
+            }
+            const xml = await resp.text();
+            console.log(`RSS ${source.name}: got ${xml.length} chars`);
+            const items = parseRSS(xml);
+            console.log(`RSS ${source.name}: parsed ${items.length} items`);
 
           // Filtrar últimos 7 días
           const sevenDaysAgo = Date.now() - 7 * 86_400_000;
