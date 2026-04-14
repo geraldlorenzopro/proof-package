@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       console.warn("Weather fetch failed:", e);
     }
 
-    // ─── Immigration news via Perplexity — structured 9 cards ───
+    // ─── Immigration news via Perplexity — official sources ───
     let newsText = "";
     let newsCitations: string[] = [];
     let newsCards: any[] = [];
@@ -86,16 +86,72 @@ Deno.serve(async (req) => {
             messages: [
               {
                 role: "system",
-                content: `Eres un asistente que busca noticias recientes de inmigración en Estados Unidos. Responde SOLO con un JSON array de exactamente 9 objetos. Cada objeto tiene: title (titular en español, máx 80 caracteres), summary (resumen en español, máx 120 caracteres), category (una de: USCIS, DACA, Visas, Deportación, Naturalización, Legislación), time (tiempo aproximado como 'hace 2h', 'hace 5h', 'ayer'). No incluyas ningún texto fuera del JSON.`,
+                content: `Eres un asistente especializado en inmigración en Estados Unidos.
+
+Busca noticias Y alertas oficiales de estas fuentes en orden de prioridad:
+
+FUENTES OFICIALES (prioridad máxima):
+- uscis.gov — alertas, policy updates, fee changes, form updates
+- travel.state.gov — Visa Bulletin mensual, fechas de prioridad, alertas consulares
+- ice.gov — operaciones, políticas, prioridades de enforcement
+- cbp.gov — puertos de entrada, políticas fronterizas
+- justice.gov/eoir — cortes de inmigración, decisiones del BIA
+- federalregister.gov — nuevas reglas y propuestas de USCIS/DHS
+
+TIPOS DE CONTENIDO A INCLUIR:
+- Nuevo Visa Bulletin (sale el 2do miércoles de cada mes)
+- Cambios en fechas de prioridad
+- Cambios en fees de USCIS
+- Nuevas versiones de formularios
+- Alertas de procesamiento
+- Cambios en políticas de entrevistas
+- Operaciones de ICE relevantes
+- Cambios en puertos de entrada CBP
+- Decisiones del BIA que crean precedente
+- Nuevas reglas en Federal Register
+
+NO incluyas:
+- Política general o legislación amplia sin impacto directo
+- Economía o empleo general
+- Noticias internacionales sin relación directa con inmigración en USA
+- Opiniones o editoriales
+
+Responde SOLO con un JSON array de exactamente 9 objetos.
+Distribución: 3 de USCIS/DOS, 2 de Visa Bulletin/fechas, 2 de ICE/CBP/Cortes, 2 de noticias generales de inmigración.
+
+Cada objeto:
+{
+  "title": "máx 70 chars, en español",
+  "summary": "máx 130 chars, en español",
+  "source": "USCIS" | "DOS" | "ICE" | "CBP" | "EOIR" | "Federal Register" | "Noticias",
+  "category": "USCIS" | "Visa Bulletin" | "ICE/CBP" | "Cortes" | "DACA/TPS" | "Legislación",
+  "urgency": "alta" | "media" | "baja",
+  "url": "string (si disponible, sino vacío)",
+  "time": "hace Xh"
+}
+
+No incluyas ningún texto fuera del JSON.`,
               },
               {
                 role: "user",
-                content: `Dame las 9 noticias más recientes e importantes sobre inmigración en Estados Unidos hoy ${todayStr}.`,
+                content: `Dame las 9 noticias y alertas oficiales más recientes sobre inmigración en Estados Unidos hoy ${todayStr}. Prioriza fuentes gubernamentales (uscis.gov, travel.state.gov, ice.gov).`,
               },
             ],
-            max_tokens: 1200,
+            max_tokens: 1800,
             temperature: 0.2,
             search_recency_filter: "day",
+            search_domain_filter: [
+              "uscis.gov",
+              "travel.state.gov",
+              "ice.gov",
+              "cbp.gov",
+              "justice.gov",
+              "federalregister.gov",
+              "boundless.com",
+              "aila.org",
+              "reuters.com",
+              "apnews.com",
+            ],
           }),
           signal: AbortSignal.timeout(15000),
         });
@@ -114,7 +170,10 @@ Deno.serve(async (req) => {
                 newsCards = parsed.slice(0, 9).map((item: any) => ({
                   title: String(item.title || "").slice(0, 100),
                   summary: String(item.summary || "").slice(0, 200),
+                  source: String(item.source || "Noticias"),
                   category: String(item.category || "USCIS"),
+                  urgency: String(item.urgency || "media"),
+                  url: String(item.url || ""),
                   time: String(item.time || "hoy"),
                 }));
               }
@@ -140,14 +199,14 @@ Deno.serve(async (req) => {
               messages: [
                 {
                   role: "system",
-                  content: `Responde SOLO con un JSON array de exactamente 9 objetos. Cada objeto tiene: title (titular en español, máx 80 caracteres sobre inmigración en EE.UU.), summary (resumen en español, máx 120 chars), category (USCIS, DACA, Visas, Deportación, Naturalización, o Legislación), time (ej: 'hoy'). Sin texto extra.`,
+                  content: `Responde SOLO con un JSON array de exactamente 9 objetos. Cada objeto tiene: title (titular en español, máx 70 chars sobre inmigración en EE.UU.), summary (resumen en español, máx 130 chars), source (USCIS, DOS, ICE, CBP, EOIR, Federal Register, o Noticias), category (USCIS, Visa Bulletin, ICE/CBP, Cortes, DACA/TPS, o Legislación), urgency (alta, media, baja), url (vacío), time (ej: 'hoy'). Sin texto extra.`,
                 },
                 {
                   role: "user",
                   content: `Dame 9 noticias recientes importantes sobre inmigración en Estados Unidos.`,
                 },
               ],
-              max_tokens: 1200,
+              max_tokens: 1800,
               temperature: 0.3,
             }),
             signal: AbortSignal.timeout(8000),
@@ -164,7 +223,10 @@ Deno.serve(async (req) => {
                   newsCards = parsed2.slice(0, 9).map((item: any) => ({
                     title: String(item.title || "").slice(0, 100),
                     summary: String(item.summary || "").slice(0, 200),
+                    source: String(item.source || "Noticias"),
                     category: String(item.category || "USCIS"),
+                    urgency: String(item.urgency || "media"),
+                    url: String(item.url || ""),
                     time: String(item.time || "hoy"),
                   }));
                 }
