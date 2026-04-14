@@ -8,7 +8,6 @@ const FR_AGENCY_SOURCES = [
   { agency_id: 503, name: "ICE", category: "ICE/CBP" },
   { agency_id: 149, name: "EOIR", category: "Cortes" },
   { agency_id: 227, name: "DHS", category: "Legislación" },
-  { agency_id: 476, name: "DOS", category: "Visa Bulletin" },
 ];
 
 // Función para calcular tiempo relativo
