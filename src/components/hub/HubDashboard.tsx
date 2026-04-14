@@ -5,7 +5,7 @@ import {
   MessageSquare, ChevronRight, ChevronLeft,
   X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
   Newspaper, Shield, Globe, Scale, Gavel, BookOpen, FileText,
-  Phone, PhoneOff, AlertTriangle, BarChart3, ListTodo
+  Phone, PhoneOff, AlertTriangle, BarChart3, ListTodo, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { useConversation } from "@elevenlabs/react";
@@ -18,6 +18,17 @@ import HubMyTasks from "./HubMyTasks";
 import HubCreditsWidget from "./HubCreditsWidget";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const OFFICIAL_RESOURCES = [
+  { label: "Visa Bulletin", desc: "Fechas de prioridad del mes actual", url: "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html", source: "DOS", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { label: "Tiempos de Procesamiento", desc: "Tiempos actuales por tipo de caso", url: "https://egov.uscis.gov/processing-times/", source: "USCIS", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+  { label: "US Visa News", desc: "Noticias del Departamento de Estado", url: "https://travel.state.gov/content/travel/en/News/visas-news.html", source: "DOS", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { label: "Federal Register", desc: "Nuevas reglas y propuestas", url: "https://www.federalregister.gov/agencies/state-department", source: "FR", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+  { label: "NVC Timeframes", desc: "Tiempos del Centro Nacional de Visas", url: "https://travel.state.gov/content/travel/en/us-visas/immigrate/nvc-timeframes.html", source: "DOS", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { label: "EOIR — Avisos", desc: "Cortes de inmigración y comunicados", url: "https://www.justice.gov/eoir/notices-and-press-releases", source: "EOIR", color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
+  { label: "USCIS Alertas", desc: "Alertas y actualizaciones urgentes", url: "https://www.uscis.gov/newsroom/alerts", source: "USCIS", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+  { label: "USCIS Noticias", desc: "Comunicados de prensa oficiales", url: "https://www.uscis.gov/newsroom/news-releases", source: "USCIS", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+];
 
 const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
 
@@ -669,6 +680,37 @@ function HubDashboardInner({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* ─── ZONA E2: Recursos Oficiales ─── */}
+          <div className="w-full max-w-5xl mx-auto shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-px flex-1 bg-border/20" />
+              <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/30 font-semibold flex items-center gap-1">
+                <BookOpen className="w-3 h-3" /> Recursos Oficiales
+              </span>
+              <div className="h-px flex-1 bg-border/20" />
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {OFFICIAL_RESOURCES.map((r) => (
+                <a
+                  key={r.label}
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/20 bg-card/40 hover:bg-card hover:border-border/40 transition-all group"
+                >
+                  <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 border ${r.bg}`}>
+                    <ExternalLink className={`w-3 h-3 ${r.color}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-medium text-foreground/90 truncate group-hover:text-foreground">{r.label}</p>
+                    <p className="text-[9px] text-muted-foreground/40 truncate">{r.desc}</p>
+                  </div>
+                  <span className={`text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded border ${r.bg} ${r.color} shrink-0`}>{r.source}</span>
+                </a>
+              ))}
+            </div>
           </div>
 
           {/* ─── ZONA F: My Tasks ─── */}
