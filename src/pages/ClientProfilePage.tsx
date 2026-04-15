@@ -69,6 +69,7 @@ interface Profile {
   source_detail: string | null;
   notes: string | null;
   created_at: string;
+  ghl_tags: string[] | null;
 }
 
 interface IntakeSession {
@@ -130,7 +131,7 @@ export default function ClientProfilePage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("client_profiles")
-        .select("id, first_name, last_name, middle_name, phone, email, dob, gender, country_of_birth, city_of_birth, country_of_citizenship, immigration_status, a_number, i94_number, class_of_admission, date_of_last_entry, place_of_last_entry, passport_number, passport_country, passport_expiration, address_street, address_city, address_state, address_zip, source_channel, source_detail, notes, created_at")
+        .select("id, first_name, last_name, middle_name, phone, email, dob, gender, country_of_birth, city_of_birth, country_of_citizenship, immigration_status, a_number, i94_number, class_of_admission, date_of_last_entry, place_of_last_entry, passport_number, passport_country, passport_expiration, address_street, address_city, address_state, address_zip, source_channel, source_detail, notes, created_at, ghl_tags")
         .eq("id", id)
         .single();
 

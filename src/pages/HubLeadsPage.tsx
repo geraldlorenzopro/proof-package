@@ -243,12 +243,13 @@ export default function HubLeadsPage() {
 
   function openIntakeForLead(lead: LeadProfile) {
     const classified = classifyChannel(lead.source_channel);
+    const channelKey = KNOWN_CHANNELS.includes(classified.key) ? classified.key : undefined;
     setPrefillData({
       name: getName(lead),
       phone: lead.phone || undefined,
       email: lead.email || undefined,
       client_profile_id: lead.id,
-      source_channel: KNOWN_CHANNELS.includes(classified.key) ? classified.key : undefined,
+      source_channel: channelKey,
     });
     setIntakeOpen(true);
   }
@@ -528,6 +529,8 @@ export default function HubLeadsPage() {
           onOpenChange={(o) => { if (!o) { setIntakeOpen(false); setPrefillData({}); } }}
           prefill={prefillData}
           onCreated={handleIntakeSuccess}
+          initialStep={prefillData.client_profile_id ? 2 : 0}
+          prefillChannel={prefillData.source_channel}
         />
       )}
     </HubLayout>
