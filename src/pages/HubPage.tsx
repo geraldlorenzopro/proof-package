@@ -36,12 +36,26 @@ interface HubStats {
   recentActivity: number;
 }
 
+function getCachedHubData() {
+  try {
+    const hasResolveParams = typeof window !== "undefined" && ["cid", "sig", "ts"].some((key) => new URLSearchParams(window.location.search).has(key));
+    if (hasResolveParams) return null;
+    const cached = sessionStorage.getItem("ner_hub_data");
+    return cached ? (JSON.parse(cached) as HubData) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function HubPage() {
   const [searchParams] = useSearchParams();
-  const [data, setData] = useState<HubData | null>(null);
+  const [data, setData] = useState<HubData | null>(() => getCachedHubData());
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [authReady, setAuthReady] = useState(false);
+  const [loading, setLoading] = useState(() => !getCachedHubData());
+  const [authReady, setAuthReady] = useState(() => {
+    const cached = getCachedHubData();
+    return cached ? !cached.auth_token : false;
+  });
   const [stats, setStats] = useState<HubStats>({ totalClients: 0, activeForms: 0, recentActivity: 0 });
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const navigate = useNavigate();
@@ -58,20 +72,19 @@ export default function HubPage() {
       resolveHub(cid, sig, ts, uemail, uname);
       return;
     }
-    const cached = sessionStorage.getItem("ner_hub_data");
+
+    const cached = getCachedHubData();
     if (cached) {
-      try {
-        const parsed = JSON.parse(cached) as HubData;
-        setData(parsed);
-        if (parsed.auth_token) {
-          establishSession(parsed.auth_token);
-        } else {
-          setAuthReady(true);
-        }
-        setLoading(false);
-        return;
-      } catch { /* fall through */ }
+      setData(cached);
+      setLoading(false);
+      if (cached.auth_token) {
+        establishSession(cached.auth_token);
+      } else {
+        setAuthReady(true);
+      }
+      return;
     }
+
     recoverFromSession();
   }, [cid, sig, ts]);
 
