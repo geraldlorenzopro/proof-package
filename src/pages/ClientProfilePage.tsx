@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, Mail, Calendar, Tag, FileText, Loader2, MessageSquare, Pencil, Plus, Briefcase, Activity, FolderOpen } from "lucide-react";
+import { Phone, Mail, Calendar, Tag, FileText, Loader2, MessageSquare, Pencil, Plus, Briefcase, Activity, FolderOpen, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
@@ -12,6 +14,7 @@ import { logAccess } from "@/lib/auditLog";
 import ChannelLogo from "@/components/intake/ChannelLogo";
 import HubLayout from "@/components/hub/HubLayout";
 import IntakeWizard from "@/components/intake/IntakeWizard";
+import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
 
 const TOPIC_LABELS: Record<string, string> = {
   "proceso:familia": "Residencia / Green Card por familia",
@@ -124,19 +127,38 @@ export default function ClientProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const auditLoggedRef = useRef(false);
+
+  const accountId = (() => {
+    try {
+      const imp = sessionStorage.getItem("ner_impersonate");
+      if (imp) { const p = JSON.parse(imp); if (new Date(p.expires_at) > new Date()) return p.account_id; }
+      const raw = sessionStorage.getItem("ner_hub_data");
+      return raw ? JSON.parse(raw).account_id : null;
+    } catch { return null; }
+  })();
+
+  async function loadProfile() {
+    if (!id) return;
+    const { data, error } = await supabase
+      .from("client_profiles")
+      .select("id, first_name, last_name, middle_name, phone, email, dob, gender, country_of_birth, city_of_birth, country_of_citizenship, immigration_status, a_number, i94_number, class_of_admission, date_of_last_entry, place_of_last_entry, passport_number, passport_country, passport_expiration, address_street, address_city, address_state, address_zip, source_channel, source_detail, notes, created_at, ghl_tags")
+      .eq("id", id)
+      .single();
+
+    if (error || !data) { setNotFound(true); return; }
+    setProfile(data);
+    return data;
+  }
+
   useEffect(() => {
     if (!id) return;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("client_profiles")
-        .select("id, first_name, last_name, middle_name, phone, email, dob, gender, country_of_birth, city_of_birth, country_of_citizenship, immigration_status, a_number, i94_number, class_of_admission, date_of_last_entry, place_of_last_entry, passport_number, passport_country, passport_expiration, address_street, address_city, address_state, address_zip, source_channel, source_detail, notes, created_at, ghl_tags")
-        .eq("id", id)
-        .single();
-
-      if (error || !data) { setNotFound(true); setLoading(false); return; }
-      setProfile(data);
+      const data = await loadProfile();
+      if (!data) { setLoading(false); return; }
 
       const [intakeRes, casesRes] = await Promise.all([
         supabase.from("intake_sessions").select("id, consultation_topic_tag, urgency_level, status, entry_channel, created_at").eq("client_profile_id", id).order("created_at", { ascending: false }),
@@ -145,7 +167,6 @@ export default function ClientProfilePage() {
       setSessions(intakeRes.data || []);
       setCases(casesRes.data || []);
 
-      // Fetch docs for all client cases
       if (casesRes.data && casesRes.data.length > 0) {
         const caseIds = casesRes.data.map((c: any) => c.id);
         const { data: docsData } = await supabase.from("case_documents").select("id, file_name, category, created_at").in("case_id", caseIds).order("created_at", { ascending: false });
@@ -174,6 +195,51 @@ export default function ClientProfilePage() {
       setLoading(false);
     })();
   }, [id]);
+
+  async function syncToGHL(profileId: string) {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) return;
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-contact-to-ghl`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.session.access_token}`,
+          },
+          body: JSON.stringify({
+            client_profile_id: profileId,
+            account_id: accountId,
+          }),
+        }
+      );
+    } catch (e) {
+      console.warn("GHL sync failed:", e);
+    }
+  }
+
+  const hasActiveCases = cases.some(c => c.status !== "completed");
+
+  async function handleSoftDelete() {
+    if (!profile || !accountId) return;
+    try {
+      await supabase
+        .from("client_profiles")
+        .update({
+          contact_stage: "inactive" as any,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", profile.id)
+        .eq("account_id", accountId);
+
+      toast.success("Contacto eliminado");
+      setDeleteConfirm(false);
+      navigate("/hub/leads");
+    } catch (e) {
+      toast.error("Error al eliminar");
+    }
+  }
 
   if (loading) {
     return <HubLayout><div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div></HubLayout>;
@@ -225,6 +291,20 @@ export default function ClientProfilePage() {
           <div className="flex items-center gap-2 shrink-0">
             {waLink && <Button variant="outline" size="sm" asChild><a href={waLink} target="_blank" rel="noopener noreferrer"><Phone className="w-4 h-4" /></a></Button>}
             {mailLink && <Button variant="outline" size="sm" asChild><a href={mailLink}><Mail className="w-4 h-4" /></a></Button>}
+            <button
+              onClick={() => setEditOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/40 text-xs text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Editar
+            </button>
+            <button
+              onClick={() => setDeleteConfirm(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-500/20 text-xs text-red-400 hover:bg-red-500/10 transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Eliminar
+            </button>
             <Button onClick={() => setIntakeOpen(true)} size="sm" className="gap-1.5">
               <MessageSquare className="w-4 h-4" /> Nueva consulta
             </Button>
@@ -356,6 +436,56 @@ export default function ClientProfilePage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit Sheet */}
+      <Sheet open={editOpen} onOpenChange={setEditOpen}>
+        <SheetContent className="w-[500px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Editar contacto</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <ClientProfileEditor
+              clientId={profile.id}
+              onUpdated={async () => {
+                setEditOpen(false);
+                await loadProfile();
+                await syncToGHL(profile.id);
+                toast.success("Contacto actualizado y sincronizado");
+              }}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>¿Eliminar este contacto?</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p>El contacto será marcado como inactivo y desaparecerá de las listas de NER.</p>
+            <p>Su historial y casos se mantienen. Esta acción se puede deshacer.</p>
+            {hasActiveCases && (
+              <p className="text-amber-400 text-xs p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                ⚠️ Este contacto tiene casos activos. Los casos no serán eliminados.
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2 mt-4">
+            <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirm(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleSoftDelete}
+            >
+              Sí, eliminar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {intakeOpen && profile && (
         <IntakeWizard

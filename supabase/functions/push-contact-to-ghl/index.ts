@@ -27,9 +27,9 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const {
+    let {
       client_profile_id,
-      ghl_contact_id, // FIX 2: receive existing GHL ID for dedup
+      ghl_contact_id,
       first_name,
       last_name,
       email,
@@ -40,6 +40,33 @@ Deno.serve(async (req) => {
       intake_session_id,
       account_id,
     } = body;
+
+    // Auto-fetch profile data if only client_profile_id is provided (sync-on-edit flow)
+    if (client_profile_id && !first_name && !last_name && !email && !phone) {
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: profile } = await admin
+        .from("client_profiles")
+        .select("first_name, last_name, email, phone, source_channel, ghl_contact_id")
+        .eq("id", client_profile_id)
+        .single();
+
+      if (!profile) {
+        return new Response(
+          JSON.stringify({ error: "Profile not found", pushed: false }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      first_name = profile.first_name || "";
+      last_name = profile.last_name || "";
+      email = profile.email || undefined;
+      phone = profile.phone || undefined;
+      entry_channel = profile.source_channel || entry_channel;
+      ghl_contact_id = ghl_contact_id || profile.ghl_contact_id || undefined;
+    }
 
     if (!first_name && !last_name && !email && !phone) {
       return new Response(
@@ -64,9 +91,7 @@ Deno.serve(async (req) => {
 
     let res: Response;
 
-    // FIX 2: If ghl_contact_id exists, UPDATE instead of CREATE
     if (ghl_contact_id) {
-      // Remove locationId from update body (not needed for PATCH)
       const updateBody = { ...ghlBody };
       delete updateBody.locationId;
 
