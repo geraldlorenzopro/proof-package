@@ -382,7 +382,7 @@ function HubDashboardInner({
   return (
     <>
       {/* ═══ COCKPIT — fixed height, no scroll ═══ */}
-      <div className="h-screen w-full overflow-hidden flex flex-col bg-background relative" style={{ width: "calc(100vw - 60px)" }}>
+      <div className="h-screen w-full overflow-hidden flex items-center justify-center bg-background relative" style={{ width: "calc(100vw - 60px)" }}>
 
         {/* Onboarding banner */}
         {showOnboardingBanner && !bannerDismissed && (
