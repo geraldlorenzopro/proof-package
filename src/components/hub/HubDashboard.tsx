@@ -15,7 +15,7 @@ import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
 
 
-import HubCreditsWidget from "./HubCreditsWidget";
+
 import { Skeleton } from "@/components/ui/skeleton";
 
 const OFFICIAL_RESOURCES = [
@@ -554,11 +554,6 @@ function HubDashboardInner({
             </div>
           </div>
 
-
-          {/* ─── ZONA G: Credits Footer ─── */}
-          <div className="w-full flex justify-center shrink-0 py-1">
-            <HubCreditsWidget accountId={accountId} />
-          </div>
         </div>
       </div>
 
