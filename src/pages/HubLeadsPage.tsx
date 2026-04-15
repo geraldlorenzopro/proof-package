@@ -269,28 +269,45 @@ export default function HubLeadsPage() {
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
         {/* Fixed top: Header */}
         <div className="flex items-center justify-between gap-4 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
-              <UserSearch className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Contactos</h1>
-              <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos registrados</p>
-            </div>
-          </div>
+           <div className="flex items-center gap-3">
+             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+               <UserSearch className="w-5 h-5 text-amber-400" />
+             </div>
+             <div>
+               <div className="flex items-center gap-2">
+                 <h1 className="text-xl font-bold text-foreground">Contactos</h1>
+                 {syncing && (
+                   <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
+                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                     Sincronizando...
+                   </span>
+                 )}
+               </div>
+               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos registrados</p>
+             </div>
+           </div>
 
-          {/* Sort */}
+           <div className="flex items-center gap-2">
+             <button
+               onClick={() => { setPrefillData({}); setIntakeOpen(true); }}
+               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-medium text-amber-400 hover:bg-amber-500/20 transition-all"
+             >
+               <Plus className="w-3.5 h-3.5" />
+               Nuevo contacto
+             </button>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
             <SelectTrigger className="w-[160px] h-9 text-xs bg-muted/50 border-border gap-1.5">
               <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">Más recientes</SelectItem>
-              <SelectItem value="oldest">Más antiguos</SelectItem>
-              <SelectItem value="name_asc">Nombre A-Z</SelectItem>
-              <SelectItem value="name_desc">Nombre Z-A</SelectItem>
-            </SelectContent>
+             <SelectContent>
+               <SelectItem value="recent">Más recientes</SelectItem>
+               <SelectItem value="oldest">Más antiguos</SelectItem>
+               <SelectItem value="name_asc">Nombre A-Z</SelectItem>
+               <SelectItem value="name_desc">Nombre Z-A</SelectItem>
+             </SelectContent>
+           </Select>
+           </div>
           </Select>
         </div>
 
