@@ -201,7 +201,7 @@ async function syncContactsPage(apiKey: string, locationId: string, accountId: s
 }
 
 // ── Appointments: debug + multi-endpoint discovery ──
-async function syncAppointments(apiKey: string, admin: ReturnType<typeof createClient>) {
+async function syncAppointments(apiKey: string, locationId: string, accountId: string, admin: ReturnType<typeof createClient>) {
   const stats = { total_in_ghl: 0, inserted: 0, updated: 0, skipped: 0, errors: [] as string[] };
   const debugResults: any[] = [];
 
@@ -366,17 +366,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const apiKey = Deno.env.get("MRVISA_API_KEY");
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "MRVISA_API_KEY not configured" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-
   if (req.method === "GET") {
     return new Response(
-      JSON.stringify({ status: "ok", function: "sync-ghl-contacts", has_api_key: true }),
+      JSON.stringify({ status: "ok", function: "sync-ghl-contacts" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -392,7 +384,25 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const cursor: CursorState | null = body.cursor || null;
     const mode: string = body.mode || "contacts";
+    const accountId: string | undefined = body.account_id;
     const admin = makeAdmin();
+
+    if (!accountId) {
+      return new Response(
+        JSON.stringify({ error: "account_id is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Resolve GHL credentials per-account
+    const ghlConfig = await getGHLConfig(accountId);
+    if (!ghlConfig) {
+      return new Response(
+        JSON.stringify({ error: "GHL not configured", done: true, cursor: null, progress: { inserted: 0, updated: 0, skipped: 0, errors: ["GHL not configured"] } }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { apiKey, locationId } = ghlConfig;
 
     // Auth check
     const authHeader = req.headers.get("Authorization");
@@ -420,7 +430,7 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "appointments") {
-      const { stats, debug } = await syncAppointments(apiKey, admin);
+      const { stats, debug } = await syncAppointments(apiKey, locationId, accountId, admin);
       await admin.from("office_config").update({
         ghl_last_sync: new Date().toISOString(),
         ghl_appointments_synced: stats.inserted + stats.updated,
@@ -434,7 +444,7 @@ Deno.serve(async (req) => {
 
     // Default: contacts (one page)
     console.log(`Sync contacts page ${cursor?.page ?? 0}...`);
-    const result = await syncContactsPage(apiKey, admin, cursor);
+    const result = await syncContactsPage(apiKey, locationId, accountId, admin, cursor);
     console.log(`Page ${result.progress.page}: +${result.progress.inserted} inserted, +${result.progress.updated} updated, done=${result.done}`);
 
     if (result.done) {
