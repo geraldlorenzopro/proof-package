@@ -1434,6 +1434,7 @@ export type Database = {
           first_name: string | null
           gender: string | null
           ghl_contact_id: string | null
+          ghl_tags: string[] | null
           i94_number: string | null
           id: string
           immigration_status: string | null
@@ -1485,6 +1486,7 @@ export type Database = {
           first_name?: string | null
           gender?: string | null
           ghl_contact_id?: string | null
+          ghl_tags?: string[] | null
           i94_number?: string | null
           id?: string
           immigration_status?: string | null
@@ -1536,6 +1538,7 @@ export type Database = {
           first_name?: string | null
           gender?: string | null
           ghl_contact_id?: string | null
+          ghl_tags?: string[] | null
           i94_number?: string | null
           id?: string
           immigration_status?: string | null
