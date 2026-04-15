@@ -194,7 +194,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             </header>
           )}
 
-          <main className={`flex-1 min-h-0 ${isHubAiPage ? "overflow-hidden" : "overflow-auto"}`}>
+          <main key={currentPath} className={`flex-1 min-h-0 animate-fade-in ${isHubAiPage ? "overflow-hidden" : "overflow-auto"}`}>
             {children}
           </main>
         </div>
