@@ -442,9 +442,16 @@ export default function HubLeadsPage() {
                           <Square className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                         )}
                       </button>
-                      <div className="w-8 h-8 rounded-md bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0">
-                        {getInitials(lead)}
-                      </div>
+                      {(() => {
+                        const ini = getInitials(lead);
+                        return (
+                          <div className={`w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${
+                            ini.isUnknown ? "bg-muted/50 text-muted-foreground" : "bg-gradient-to-br from-amber-500/20 to-orange-500/10 text-amber-400"
+                          }`}>
+                            {ini.text}
+                          </div>
+                        );
+                      })()}
                       <div className="flex-1 min-w-0">
                         <button
                           onClick={() => navigate(`/hub/clients/${lead.id}`)}
