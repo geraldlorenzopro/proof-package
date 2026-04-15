@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2, Phone, Link2, RefreshCw } from "lucide-react";
+import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2, Phone, Link2, RefreshCw, Webhook, Copy, Eye, EyeOff } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
 import { initializeOfficeConfig, STANDARD_CASE_TYPES, AI_CASE_TYPES, TIMEZONES, US_STATES } from "@/lib/officeSetup";
 
@@ -411,6 +411,9 @@ export default function OfficeSettingsPage() {
             <TabsTrigger value="ghl" className="data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis text-xs gap-1.5">
               <Link2 className="w-3.5 h-3.5" /> GHL
             </TabsTrigger>
+            <TabsTrigger value="webhook" className="data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis text-xs gap-1.5">
+              <Webhook className="w-3.5 h-3.5" /> Leads Externos
+            </TabsTrigger>
           </TabsList>
 
           {/* ═══════ TAB 1: FIRMA ═══════ */}
@@ -692,6 +695,11 @@ export default function OfficeSettingsPage() {
           {/* ═══════ TAB 6: GHL ═══════ */}
           <TabsContent value="ghl" className="mt-4 space-y-4">
             <GhlIntegrationCard accountId={accountId} config={config} />
+          </TabsContent>
+
+          {/* ═══════ TAB 7: WEBHOOK LEADS ═══════ */}
+          <TabsContent value="webhook" className="mt-4 space-y-4">
+            <WebhookLeadsSection accountId={accountId} />
           </TabsContent>
         </Tabs>
       </div>

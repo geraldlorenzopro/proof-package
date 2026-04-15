@@ -61,7 +61,7 @@ import HubAiPage from "./pages/HubAiPage";
 import HubChatPage from "./pages/HubChatPage";
 import HubLeadsPage from "./pages/HubLeadsPage";
 import ConsultationRoom from "./components/hub/ConsultationRoom";
-import GhlWebhookTest from "./pages/GhlWebhookTest";
+
 
 const queryClient = new QueryClient();
 
@@ -91,7 +91,7 @@ const App = () => (
           <Route path="/tools/evidence" element={<EvidenceTool />} />
           <Route path="/tools/cspa" element={<CspaTool />} />
           <Route path="/tools/uscis-analyzer" element={<UscisAnalyzer />} />
-          <Route path="/tools/ghl-test" element={<GhlWebhookTest />} />
+          
 
           {/* ═══ PROTECTED ROUTES ═══ */}
           <Route path="/hub" element={<HubPage />} />
