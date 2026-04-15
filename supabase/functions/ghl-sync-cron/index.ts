@@ -76,13 +76,13 @@ async function syncOfficeContacts(
     ? new Date(syncLog.last_synced_at)
     : new Date(Date.now() - 2 * 60 * 1000);
 
-  const lastSyncedUnix = Math.floor(lastSynced.getTime() / 1000);
-
-  // Call GHL API for contacts created/updated since last sync
+  // GHL API uses cursor-based pagination, not date filtering
+  // Fetch first page sorted by dateAdded desc, then filter by lastSynced
   const ghlUrl = new URL("https://services.leadconnectorhq.com/contacts/");
   ghlUrl.searchParams.set("locationId", office.ghl_location_id);
-  ghlUrl.searchParams.set("startAfterDate", String(lastSyncedUnix));
   ghlUrl.searchParams.set("limit", "100");
+  ghlUrl.searchParams.set("sortBy", "date_added");
+  ghlUrl.searchParams.set("order", "desc");
 
   const ghlResp = await fetch(ghlUrl.toString(), {
     headers: {
@@ -90,7 +90,7 @@ async function syncOfficeContacts(
       Version: "2021-07-28",
       Accept: "application/json",
     },
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!ghlResp.ok) {
@@ -99,9 +99,17 @@ async function syncOfficeContacts(
   }
 
   const ghlData = await ghlResp.json();
-  const contacts = ghlData.contacts || [];
+  const allContacts = ghlData.contacts || [];
 
-  console.log(`Office ${office.account_id}: ${contacts.length} new/updated contacts`);
+  // Filter only contacts added/updated after last sync
+  const contacts = allContacts.filter((c: any) => {
+    const dateAdded = c.dateAdded ? new Date(c.dateAdded) : null;
+    const dateUpdated = c.dateUpdated ? new Date(c.dateUpdated) : null;
+    const latest = dateUpdated || dateAdded;
+    return latest && latest > lastSynced;
+  });
+
+  console.log(`Office ${office.account_id}: ${contacts.length} new/updated contacts (of ${allContacts.length} fetched)`);
 
   let created = 0;
   let updated = 0;
