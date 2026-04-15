@@ -102,6 +102,7 @@ export default function HubLeadsPage() {
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
+  const [selected, setSelected] = useState<string[]>([]);
 
   // Pagination & sort state
   const [pageSize, setPageSize] = useState(15);
