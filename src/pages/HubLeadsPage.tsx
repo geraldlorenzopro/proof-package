@@ -30,6 +30,7 @@ interface LeadProfile {
   source_channel: string | null;
   source_detail: string | null;
   created_at: string;
+  ghl_tags: string[] | null;
 }
 
 // Aligned with StepChannel.tsx channels

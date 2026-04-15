@@ -158,6 +158,8 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
     // Preserve attribution medium or normalized detail
     const finalDetail = c.attributionSource?.medium || detail;
     if (finalDetail) profileData.source_detail = finalDetail;
+    // Save GHL tags
+    if (Array.isArray(c.tags) && c.tags.length > 0) profileData.ghl_tags = c.tags;
 
     if (match) {
       toUpdate.push({ id: match.id, data: profileData });
