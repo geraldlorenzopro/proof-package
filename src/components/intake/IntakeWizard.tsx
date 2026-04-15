@@ -466,11 +466,11 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, i
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
                       skippedToConsulta ? "bg-accent/10 text-accent" : "bg-accent/10 text-accent"
                     }`}>
-                      {skippedToConsulta ? <Check className="w-3.5 h-3.5" /> : data.client_first_name[0]?.toUpperCase()}
+                      {skippedToConsulta ? <Check className="w-3.5 h-3.5" /> : (displayName[0]?.toUpperCase() || "?")}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">
-                        {skippedToConsulta ? `Continuando con ${data.client_first_name} ${data.client_last_name}` : `${data.client_first_name} ${data.client_last_name}`}
+                        {skippedToConsulta ? `Continuando con ${displayName}` : displayName}
                       </p>
                       <p className="text-[10px] text-muted-foreground truncate">
                         {data.client_phone}{data.client_email ? ` · ${data.client_email}` : ""}{data.entry_channel ? ` · ${CHANNEL_LABELS[data.entry_channel] || data.entry_channel}` : ""}
