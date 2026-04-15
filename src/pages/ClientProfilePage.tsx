@@ -273,6 +273,17 @@ export default function ClientProfilePage() {
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{profile.notes}</p>
               </Section>
             )}
+            {profile.ghl_tags && profile.ghl_tags.length > 0 && (
+              <Section title="Tags de CRM">
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.ghl_tags.map(tag => (
+                    <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full border bg-muted/20 border-border/30 text-muted-foreground">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </Section>
+            )}
           </TabsContent>
 
           {/* CONSULTAS TAB */}
@@ -356,6 +367,8 @@ export default function ClientProfilePage() {
             email: profile.email || undefined,
             client_profile_id: profile.id,
           }}
+          initialStep={2}
+          prefillChannel={profile.source_channel || undefined}
           onCreated={() => {
             setIntakeOpen(false);
             toast.success('Consulta registrada');

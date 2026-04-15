@@ -307,6 +307,7 @@ export default function TodayAppointments({ accountId, maxItems, hideStats }: Pr
         open={intakeOpen}
         onOpenChange={setIntakeOpen}
         prefill={intakePrefill}
+        initialStep={intakePrefill?.client_profile_id ? 2 : 0}
         onCreated={() => {
           setIntakeOpen(false);
           loadData();
