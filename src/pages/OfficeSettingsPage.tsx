@@ -780,16 +780,51 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
   const [ghlLinked, setGhlLinked] = useState(0);
   const ESTIMATED_PAGES = 21;
 
+  // GHL config fields
+  const [ghlLocationId, setGhlLocationId] = useState("");
+  const [ghlApiKey, setGhlApiKey] = useState("");
+  const [isGhlConnected, setIsGhlConnected] = useState(false);
+  const [savingGhl, setSavingGhl] = useState(false);
+
+  // Load GHL config + stats
   useEffect(() => {
     if (!accountId) return;
     Promise.all([
       supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId).eq("is_test", false),
       supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId).not("ghl_contact_id", "is", null),
-    ]).then(([totalRes, linkedRes]) => {
+      supabase.from("office_config").select("ghl_api_key, ghl_location_id, ghl_last_sync, ghl_contacts_synced, ghl_appointments_synced").eq("account_id", accountId).single(),
+    ]).then(([totalRes, linkedRes, configRes]) => {
       setTotalNer(totalRes.count || 0);
       setGhlLinked(linkedRes.count || 0);
+      const d = configRes.data as any;
+      if (d) {
+        setGhlLocationId(d.ghl_location_id || "");
+        setGhlApiKey(d.ghl_api_key || "");
+        setIsGhlConnected(!!d.ghl_api_key && !!d.ghl_location_id);
+        if (d.ghl_last_sync) setLastSync(d.ghl_last_sync);
+        if (d.ghl_contacts_synced) setContactsSynced(d.ghl_contacts_synced);
+        if (d.ghl_appointments_synced) setAppointmentsSynced(d.ghl_appointments_synced);
+      }
     });
   }, [accountId]);
+
+  async function saveGHLConfig() {
+    if (!ghlLocationId || !ghlApiKey || !accountId) return;
+    setSavingGhl(true);
+    try {
+      const { error } = await supabase
+        .from("office_config")
+        .update({ ghl_location_id: ghlLocationId, ghl_api_key: ghlApiKey } as any)
+        .eq("account_id", accountId);
+      if (error) throw error;
+      setIsGhlConnected(true);
+      toast.success("Configuración GHL guardada ✅");
+    } catch {
+      toast.error("Error al guardar");
+    } finally {
+      setSavingGhl(false);
+    }
+  }
 
   async function handleSync() {
     setSyncing(true);
@@ -805,7 +840,7 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
     try {
       while (!done) {
         const { data, error } = await supabase.functions.invoke("sync-ghl-contacts", {
-          body: { cursor, mode: "contacts" },
+          body: { cursor, mode: "contacts", account_id: accountId },
         });
         if (error) { toast.error("Error en sync: " + error.message); break; }
         if (data?.progress?.errors?.length) {
@@ -825,12 +860,11 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
       if (done) {
         setSyncProgress(prev => prev ? { ...prev, page: -1 } : null);
         const { data: aptData } = await supabase.functions.invoke("sync-ghl-contacts", {
-          body: { mode: "appointments" },
+          body: { mode: "appointments", account_id: accountId },
         });
         const aptTotal = (aptData?.progress?.inserted || 0) + (aptData?.progress?.updated || 0);
         setAppointmentsSynced(aptTotal);
 
-        // Debug toast for appointments
         if (aptData?.debug) {
           const d = aptData.debug;
           console.log("GHL Appointments Debug:", d);
@@ -846,7 +880,6 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
       setContactsSynced(totalInserted + totalUpdated);
       setLastSync(new Date().toISOString());
 
-      // Refresh counts
       const [totalRes, linkedRes] = await Promise.all([
         supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId!).eq("is_test", false),
         supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId!).not("ghl_contact_id", "is", null),
@@ -874,9 +907,71 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
         </div>
         <div>
           <h3 className="text-sm font-bold text-foreground">GoHighLevel</h3>
-          <p className="text-xs text-muted-foreground">Sub-cuenta: Mr Visa Immigration</p>
+          <p className="text-xs text-muted-foreground">Conexión CRM</p>
         </div>
-        <Badge className="ml-auto bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px]">✅ Conectado</Badge>
+        {isGhlConnected ? (
+          <Badge className="ml-auto bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px]">✅ Conectado</Badge>
+        ) : (
+          <Badge className="ml-auto bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">⚠️ Sin configurar</Badge>
+        )}
+      </div>
+
+      {/* GHL Config Fields */}
+      <div className="space-y-3 border border-border/20 rounded-xl p-4 bg-secondary/20">
+        <p className="text-xs font-semibold text-foreground">Configuración GHL</p>
+
+        <div className="space-y-1">
+          <label className="text-[11px] font-medium text-muted-foreground">Location ID</label>
+          <input
+            value={ghlLocationId}
+            onChange={e => setGhlLocationId(e.target.value)}
+            placeholder="NgaxlyDdwg93PvQb5KCw"
+            className="w-full px-3 py-2 rounded-xl border border-border/40 bg-background text-sm focus:outline-none focus:border-jarvis/40"
+          />
+          <p className="text-[10px] text-muted-foreground/60">GHL → Settings → Business Info</p>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[11px] font-medium text-muted-foreground">API Key (Location)</label>
+          <input
+            type="password"
+            value={ghlApiKey}
+            onChange={e => setGhlApiKey(e.target.value)}
+            placeholder="pit-xxxxxxxx-xxxx..."
+            className="w-full px-3 py-2 rounded-xl border border-border/40 bg-background text-sm focus:outline-none focus:border-jarvis/40"
+          />
+          <p className="text-[10px] text-muted-foreground/60">GHL → Settings → Integrations → API Keys</p>
+        </div>
+
+        <Button
+          onClick={saveGHLConfig}
+          disabled={!ghlLocationId || !ghlApiKey || savingGhl}
+          size="sm"
+          className="bg-jarvis hover:bg-jarvis-glow text-background gap-1.5"
+        >
+          {savingGhl ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          Guardar configuración
+        </Button>
+
+        {/* Setup guide */}
+        <div className="mt-3 space-y-2 border-t border-border/20 pt-3">
+          <p className="text-[11px] font-medium text-muted-foreground">¿Cómo conectar tu GHL?</p>
+          {[
+            "Ve a tu cuenta de GHL",
+            "Settings → Integrations → API Keys",
+            "Crea un nuevo API Key",
+            "Selecciona TODOS los scopes",
+            "Copia el token y pégalo arriba",
+            "Copia tu Location ID de Settings → Business Info",
+            "Guarda la configuración",
+            "Haz click en Sincronizar contactos",
+          ].map((step, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <span className="w-5 h-5 rounded-full bg-jarvis/10 text-jarvis text-[10px] flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+              <p className="text-[11px] text-muted-foreground">{step}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {syncing && syncProgress ? (
@@ -930,7 +1025,7 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
 
       <Button
         onClick={handleSync}
-        disabled={syncing}
+        disabled={syncing || !isGhlConnected}
         className="w-full bg-jarvis hover:bg-jarvis-glow text-background gap-2"
       >
         {syncing ? (
@@ -939,6 +1034,9 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
           <><RefreshCw className="w-4 h-4" /> Sincronizar ahora</>
         )}
       </Button>
+      {!isGhlConnected && (
+        <p className="text-[10px] text-amber-400/80 text-center">Configura tu API Key y Location ID para sincronizar</p>
+      )}
     </Card>
   );
 }
