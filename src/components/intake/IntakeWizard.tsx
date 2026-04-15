@@ -105,12 +105,15 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   onCreated?: (data: any) => void;
   prefill?: { name?: string; phone?: string; email?: string; client_profile_id?: string };
+  initialStep?: number;
+  prefillChannel?: string;
 }
 
-export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }: Props) {
-  const [step, setStep] = useState(0);
+export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, initialStep, prefillChannel }: Props) {
+  const [step, setStep] = useState(initialStep || 0);
   const [data, setData] = useState<IntakeData>(() => {
     const initial = { ...INITIAL_DATA };
+    if (prefillChannel) initial.entry_channel = prefillChannel;
     if (prefill) {
       const parts = (prefill.name || "").split(" ");
       initial.client_first_name = parts[0] || "";
@@ -148,10 +151,14 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill }:
   const navigate = useNavigate();
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Track if wizard was opened with skipped steps (existing client)
+  const skippedToConsulta = (initialStep || 0) >= 2 && !!prefill?.client_profile_id;
+
   useEffect(() => {
     if (open) {
-      setStep(0);
+      setStep(initialStep || 0);
       const initial = { ...INITIAL_DATA };
+      if (prefillChannel) initial.entry_channel = prefillChannel;
       if (prefill) {
         const parts = (prefill.name || "").split(" ");
         initial.client_first_name = parts[0] || "";
