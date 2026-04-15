@@ -239,8 +239,18 @@ export default function HubLeadsPage() {
   }, [search]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
-  const getName = (c: LeadProfile) => normalizeClientName([c.first_name, c.middle_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre");
-  const getInitials = (c: LeadProfile) => ((c.first_name?.[0] || "") + (c.last_name?.[0] || "")).toUpperCase() || "?";
+  const getName = (c: LeadProfile) => {
+    const name = [c.first_name, c.middle_name, c.last_name].filter(Boolean).join(" ");
+    if (name) return normalizeClientName(name);
+    if (c.phone) return c.phone;
+    if (c.email) return c.email;
+    return "Sin identificar";
+  };
+  const getInitials = (c: LeadProfile): { text: string; isUnknown: boolean } => {
+    const hasName = !!(c.first_name || c.last_name);
+    if (hasName) return { text: ((c.first_name?.[0] || "") + (c.last_name?.[0] || "")).toUpperCase() || "?", isUnknown: false };
+    return { text: "?", isUnknown: true };
+  };
 
   function openIntakeForLead(lead: LeadProfile) {
     const classified = classifyChannel(lead.source_channel);
