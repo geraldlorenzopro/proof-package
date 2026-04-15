@@ -318,8 +318,10 @@ function HubDashboardInner({
       setTotalClients(clientsRes.count || 0);
       setTodayAppointmentsCount(todayRes.count || 0);
       setPendingTasks(tasksRes.count || 0);
+      setKpisLoaded(true);
     } catch (err) {
       console.error("KPI load error:", err);
+      setKpisLoaded(true);
     }
   }
 
