@@ -121,6 +121,44 @@ export default function HubLeadsPage() {
   useEffect(() => { setCurrentPage(0); }, [search, channelFilter, pageSize, sortBy]);
 
   const auditLoggedRef = useRef(false);
+  const syncTriggeredRef = useRef(false);
+
+  // Auto-sync GHL contacts on mount (throttled to 5 min)
+  useEffect(() => {
+    if (!accountId || syncTriggeredRef.current) return;
+    syncTriggeredRef.current = true;
+
+    (async () => {
+      const lastSync = localStorage.getItem(`ghl_last_sync_${accountId}`);
+      const now = Date.now();
+      if (lastSync && now - parseInt(lastSync) < 5 * 60 * 1000) return;
+
+      setSyncing(true);
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        if (!session.session) return;
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-ghl-contacts`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.session.access_token}`,
+            },
+            body: JSON.stringify({ account_id: accountId, mode: "contacts", silent: true }),
+          }
+        );
+        if (resp.ok) {
+          localStorage.setItem(`ghl_last_sync_${accountId}`, now.toString());
+          fetchPage();
+        }
+      } catch (e) {
+        console.warn("Auto-sync failed:", e);
+      } finally {
+        setSyncing(false);
+      }
+    })();
+  }, [accountId]);
 
   useEffect(() => {
     if (!accountId) return;
