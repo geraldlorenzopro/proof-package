@@ -683,6 +683,37 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, i
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit profile dialog for incomplete contacts */}
+      <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          {data.client_profile_id && (
+            <ClientProfileEditor
+              clientId={data.client_profile_id}
+              onUpdated={async () => {
+                setEditProfileOpen(false);
+                // Reload profile data into IntakeData
+                if (data.client_profile_id) {
+                  const { data: profile } = await supabase
+                    .from("client_profiles")
+                    .select("first_name, last_name, email, phone")
+                    .eq("id", data.client_profile_id)
+                    .single();
+                  if (profile) {
+                    setData(prev => ({
+                      ...prev,
+                      client_first_name: profile.first_name || "",
+                      client_last_name: profile.last_name || "",
+                      client_email: profile.email || "",
+                      client_phone: profile.phone || "",
+                    }));
+                  }
+                }
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
