@@ -1,9 +1,9 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getGHLConfig } from "../_shared/ghl.ts";
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_VERSION = "2021-07-28";
-const LOCATION_ID = "NgaxlyDdwg93PvQb5KCw";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -14,14 +14,6 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ error: "Method not allowed" }),
       { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-
-  const apiKey = Deno.env.get("MRVISA_API_KEY");
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "MRVISA_API_KEY not configured", pushed: false }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -67,6 +59,18 @@ Deno.serve(async (req) => {
       entry_channel = profile.source_channel || entry_channel;
       ghl_contact_id = ghl_contact_id || profile.ghl_contact_id || undefined;
     }
+
+    // Resolve GHL credentials per-account
+    const ghlConfig = await getGHLConfig(account_id);
+    if (!ghlConfig) {
+      console.warn("GHL not configured for account:", account_id);
+      return new Response(
+        JSON.stringify({ pushed: false, error: "GHL not configured" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { apiKey, locationId: LOCATION_ID } = ghlConfig;
 
     if (!first_name && !last_name && !email && !phone) {
       return new Response(
@@ -160,7 +164,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Push error:", error);
     return new Response(
-      JSON.stringify({ error: error.message, pushed: false }),
+      JSON.stringify({ error: (error as Error).message, pushed: false }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

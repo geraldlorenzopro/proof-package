@@ -1,10 +1,9 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getGHLConfig } from "../_shared/ghl.ts";
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_VERSION = "2021-07-28";
-const LOCATION_ID = "NgaxlyDdwg93PvQb5KCw";
-const ACCOUNT_ID = "443d8719-94c7-47f9-9bef-3d911ba4c174";
 
 interface CursorState {
   startAfterId: string;
@@ -37,20 +36,19 @@ function makeAdmin() {
   );
 }
 
-// ── Contacts: one page at a time ──
-async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createClient>, cursor: CursorState | null) {
+async function syncContactsPage(apiKey: string, locationId: string, accountId: string, admin: ReturnType<typeof createClient>, cursor: CursorState | null) {
   const progress = { page: cursor?.page ?? 0, total_processed: 0, inserted: 0, updated: 0, skipped: 0, errors: [] as string[] };
 
   const { data: member } = await admin
     .from("account_members")
     .select("user_id")
-    .eq("account_id", ACCOUNT_ID)
+    .eq("account_id", accountId)
     .limit(1)
     .maybeSingle();
   const createdBy = member?.user_id;
   if (!createdBy) { progress.errors.push("No member found for account"); return { done: true, cursor: null, progress }; }
 
-  const params = new URLSearchParams({ locationId: LOCATION_ID, limit: "100" });
+  const params = new URLSearchParams({ locationId: locationId, limit: "100" });
   if (cursor) {
     params.set("startAfterId", cursor.startAfterId);
     params.set("startAfter", String(cursor.startAfter));
@@ -96,7 +94,7 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
     const { data: existing } = await admin
       .from("client_profiles")
       .select("id, phone, email, ghl_contact_id")
-      .eq("account_id", ACCOUNT_ID)
+      .eq("account_id", accountId)
       .or(orParts.join(","));
 
     for (const e of (existing || [])) {
@@ -166,7 +164,7 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
     } else {
       toInsert.push({
         ...profileData,
-        account_id: ACCOUNT_ID,
+        account_id: accountId,
         created_by: createdBy,
       });
     }
@@ -203,7 +201,7 @@ async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createC
 }
 
 // ── Appointments: debug + multi-endpoint discovery ──
-async function syncAppointments(apiKey: string, admin: ReturnType<typeof createClient>) {
+async function syncAppointments(apiKey: string, locationId: string, accountId: string, admin: ReturnType<typeof createClient>) {
   const stats = { total_in_ghl: 0, inserted: 0, updated: 0, skipped: 0, errors: [] as string[] };
   const debugResults: any[] = [];
 
@@ -214,24 +212,24 @@ async function syncAppointments(apiKey: string, admin: ReturnType<typeof createC
 
   // TEST 1 — calendars/events with dates
   const test1Res = await ghlFetch(
-    `/calendars/events?locationId=${LOCATION_ID}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
+    `/calendars/events?locationId=${locationId}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
     apiKey
   );
   const text1 = await test1Res.text();
   debugResults.push({ test: 1, endpoint: "/calendars/events con fechas", status: test1Res.status, preview: text1.substring(0, 300) });
 
   // TEST 2 — calendars/events without dates
-  const test2Res = await ghlFetch(`/calendars/events?locationId=${LOCATION_ID}`, apiKey);
+  const test2Res = await ghlFetch(`/calendars/events?locationId=${locationId}`, apiKey);
   const text2 = await test2Res.text();
   debugResults.push({ test: 2, endpoint: "/calendars/events sin fechas", status: test2Res.status, preview: text2.substring(0, 300) });
 
   // TEST 3 — appointments endpoint
-  const test3Res = await ghlFetch(`/appointments/?locationId=${LOCATION_ID}`, apiKey);
+  const test3Res = await ghlFetch(`/appointments/?locationId=${locationId}`, apiKey);
   const text3 = await test3Res.text();
   debugResults.push({ test: 3, endpoint: "/appointments/", status: test3Res.status, preview: text3.substring(0, 300) });
 
   // TEST 4 — list calendars
-  const test4Res = await ghlFetch(`/calendars/?locationId=${LOCATION_ID}`, apiKey);
+  const test4Res = await ghlFetch(`/calendars/?locationId=${locationId}`, apiKey);
   const text4 = await test4Res.text();
   debugResults.push({ test: 4, endpoint: "/calendars/ (listar)", status: test4Res.status, preview: text4.substring(0, 300) });
 
@@ -266,7 +264,7 @@ async function syncAppointments(apiKey: string, admin: ReturnType<typeof createC
       for (const cal of calList.slice(0, 5)) {
         // Use calendarId as query param, not path param
         const evRes = await ghlFetch(
-          `/calendars/events?locationId=${LOCATION_ID}&calendarId=${cal.id}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
+          `/calendars/events?locationId=${locationId}&calendarId=${cal.id}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
           apiKey
         );
         const evText = await evRes.text();
@@ -301,7 +299,7 @@ async function syncAppointments(apiKey: string, admin: ReturnType<typeof createC
         const { data: prof } = await admin
           .from("client_profiles")
           .select("id")
-          .eq("account_id", ACCOUNT_ID)
+          .eq("account_id", accountId)
           .eq("ghl_contact_id", apt.contactId)
           .maybeSingle();
         clientProfileId = prof?.id || null;
@@ -316,7 +314,7 @@ async function syncAppointments(apiKey: string, admin: ReturnType<typeof createC
       const mappedStatus = statusMap[apt.appointmentStatus || apt.status || ""] || "scheduled";
 
       const appointmentData: Record<string, unknown> = {
-        account_id: ACCOUNT_ID,
+        account_id: accountId,
         client_name: apt.title || apt.contactName || apt.contact?.name || "Sin nombre",
         client_email: apt.contact?.email || apt.email || null,
         client_phone: apt.contact?.phone || apt.phone || null,
@@ -368,17 +366,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const apiKey = Deno.env.get("MRVISA_API_KEY");
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "MRVISA_API_KEY not configured" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-
   if (req.method === "GET") {
     return new Response(
-      JSON.stringify({ status: "ok", function: "sync-ghl-contacts", has_api_key: true }),
+      JSON.stringify({ status: "ok", function: "sync-ghl-contacts" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -394,7 +384,25 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const cursor: CursorState | null = body.cursor || null;
     const mode: string = body.mode || "contacts";
+    const accountId: string | undefined = body.account_id;
     const admin = makeAdmin();
+
+    if (!accountId) {
+      return new Response(
+        JSON.stringify({ error: "account_id is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Resolve GHL credentials per-account
+    const ghlConfig = await getGHLConfig(accountId);
+    if (!ghlConfig) {
+      return new Response(
+        JSON.stringify({ error: "GHL not configured", done: true, cursor: null, progress: { inserted: 0, updated: 0, skipped: 0, errors: ["GHL not configured"] } }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { apiKey, locationId } = ghlConfig;
 
     // Auth check
     const authHeader = req.headers.get("Authorization");
@@ -413,7 +421,7 @@ Deno.serve(async (req) => {
         .from("account_members")
         .select("role")
         .eq("user_id", user.id)
-        .eq("account_id", ACCOUNT_ID)
+        .eq("account_id", accountId)
         .maybeSingle();
       if (!memberCheck) {
         return new Response(JSON.stringify({ error: "Not a member" }),
@@ -422,11 +430,11 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "appointments") {
-      const { stats, debug } = await syncAppointments(apiKey, admin);
+      const { stats, debug } = await syncAppointments(apiKey, locationId, accountId, admin);
       await admin.from("office_config").update({
         ghl_last_sync: new Date().toISOString(),
         ghl_appointments_synced: stats.inserted + stats.updated,
-      } as any).eq("account_id", ACCOUNT_ID);
+      } as any).eq("account_id", accountId);
 
       return new Response(
         JSON.stringify({ done: true, cursor: null, progress: stats, debug }),
@@ -436,13 +444,13 @@ Deno.serve(async (req) => {
 
     // Default: contacts (one page)
     console.log(`Sync contacts page ${cursor?.page ?? 0}...`);
-    const result = await syncContactsPage(apiKey, admin, cursor);
+    const result = await syncContactsPage(apiKey, locationId, accountId, admin, cursor);
     console.log(`Page ${result.progress.page}: +${result.progress.inserted} inserted, +${result.progress.updated} updated, done=${result.done}`);
 
     if (result.done) {
       await admin.from("office_config").update({
         ghl_contacts_synced: result.progress.inserted + result.progress.updated,
-      } as any).eq("account_id", ACCOUNT_ID);
+      } as any).eq("account_id", accountId);
     }
 
     return new Response(
