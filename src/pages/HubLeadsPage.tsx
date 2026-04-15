@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeClientName } from "@/lib/caseTypeLabels";
 import {
-  Search, UserSearch,
+  Search, UserSearch, Plus,
    Phone, Mail, Calendar, MessageSquare, Clock, Info,
    ChevronLeft, ChevronRight, ArrowUpDown, SortAsc, SortDesc, X
 } from "lucide-react";
@@ -100,6 +100,7 @@ export default function HubLeadsPage() {
   const [search, setSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState<ChannelFilterKey>("all");
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
 
   // Pagination & sort state
