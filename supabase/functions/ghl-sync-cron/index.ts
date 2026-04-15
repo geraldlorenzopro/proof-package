@@ -26,21 +26,21 @@ Deno.serve(async (req) => {
       }))
       .filter((o) => o.ghl_api_key !== null);
 
-    if (!offices?.length) {
+    if (!resolvedOffices.length) {
       return new Response(
         JSON.stringify({ message: "No offices configured" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Syncing ${offices.length} offices`);
+    console.log(`Syncing ${resolvedOffices.length} offices`);
 
     const results = await Promise.allSettled(
-      offices.map((office) => syncOfficeContacts(supabase, office))
+      resolvedOffices.map((office) => syncOfficeContacts(supabase, office))
     );
 
     const summary = results.map((r, i) => ({
-      account_id: offices[i].account_id,
+      account_id: resolvedOffices[i].account_id,
       status: r.status,
       value: r.status === "fulfilled" ? r.value : (r as PromiseRejectedResult).reason?.message,
     }));
