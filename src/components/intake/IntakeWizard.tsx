@@ -727,9 +727,6 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, i
           })()}
         </DialogContent>
       </Dialog>
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
