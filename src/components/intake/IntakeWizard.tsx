@@ -453,10 +453,12 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, i
             )}
 
             {/* Client summary bar on step 3 — enhanced when skipped to consulta */}
-            {!completed && step === 2 && (data.client_first_name || data.client_last_name || data.client_phone || data.client_profile_id) && (() => {
+            {!completed && step === 2 && (() => {
+              const effectiveProfileId = data.client_profile_id || data.existing_client_profile_id;
+              const hasSummaryData = !!(data.client_first_name || data.client_last_name || data.client_phone || effectiveProfileId);
+              if (!hasSummaryData) return null;
               const displayName = [data.client_first_name, data.client_last_name].filter(Boolean).join(" ") || data.client_phone || "Contacto";
-              const isIncomplete = !!data.client_profile_id && (
-                (!data.client_first_name && !data.client_last_name) || !data.client_email || !data.client_phone
+              const isIncomplete = !!effectiveProfileId && (
               );
               return (
                 <div className={`mt-3 rounded-lg border ${
