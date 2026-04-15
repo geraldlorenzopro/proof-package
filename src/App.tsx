@@ -61,6 +61,7 @@ import HubAiPage from "./pages/HubAiPage";
 import HubChatPage from "./pages/HubChatPage";
 import HubLeadsPage from "./pages/HubLeadsPage";
 import ConsultationRoom from "./components/hub/ConsultationRoom";
+import GhlWebhookTest from "./pages/GhlWebhookTest";
 
 const queryClient = new QueryClient();
 
