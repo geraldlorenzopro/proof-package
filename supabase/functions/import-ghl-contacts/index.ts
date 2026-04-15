@@ -1,7 +1,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getGHLConfig } from "../_shared/ghl.ts";
 
-const GHL_API_KEY = Deno.env.get("GHL_API_KEY");
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_API_VERSION = "2021-07-28";
 
@@ -18,21 +18,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { locationId, accountId, ownerId } = await req.json();
+    const { locationId: bodyLocationId, accountId, ownerId } = await req.json();
 
-    if (!locationId || !accountId || !ownerId) {
+    if (!accountId || !ownerId) {
       return new Response(
-        JSON.stringify({ error: "Missing locationId, accountId, or ownerId" }),
+        JSON.stringify({ error: "Missing accountId or ownerId" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!GHL_API_KEY) {
+    // Resolve GHL credentials per-account
+    const ghlConfig = await getGHLConfig(accountId);
+    if (!ghlConfig) {
       return new Response(
-        JSON.stringify({ error: "GHL_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "GHL not configured for this account", success: false }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const { apiKey, locationId: resolvedLocationId } = ghlConfig;
+    const locationId = bodyLocationId || resolvedLocationId;
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -48,7 +53,7 @@ Deno.serve(async (req) => {
       console.log(`Fetching: ${nextPageUrl}`);
       const res = await fetch(nextPageUrl, {
         headers: {
-          Authorization: `Bearer ${GHL_API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
           Version: GHL_API_VERSION,
           "Content-Type": "application/json",
         },
