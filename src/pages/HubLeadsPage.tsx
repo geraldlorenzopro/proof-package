@@ -6,7 +6,7 @@ import { normalizeClientName } from "@/lib/caseTypeLabels";
 import {
   Search, UserSearch, Plus,
    Phone, Mail, Calendar, MessageSquare, Clock, Info,
-   ChevronLeft, ChevronRight, ArrowUpDown, SortAsc, SortDesc, X
+   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, SortAsc, SortDesc, X
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -471,6 +471,16 @@ export default function HubLeadsPage() {
                   variant="outline"
                   size="sm"
                   disabled={currentPage === 0}
+                  onClick={() => setCurrentPage(0)}
+                  className="h-8 px-2 text-xs"
+                  title="Primera página"
+                >
+                  <ChevronsLeft className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 0}
                   onClick={() => setCurrentPage(p => p - 1)}
                   className="h-8 px-2 text-xs gap-1"
                 >
@@ -478,7 +488,7 @@ export default function HubLeadsPage() {
                   Anterior
                 </Button>
 
-                {/* Page number quick jumps (show up to 5 pages) */}
+                {/* Page number quick jumps (show up to 7 pages) */}
                 <div className="flex items-center gap-0.5 mx-1">
                   {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
                     let pageNum: number;
@@ -516,6 +526,16 @@ export default function HubLeadsPage() {
                 >
                   Siguiente
                   <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= totalPages - 1}
+                  onClick={() => setCurrentPage(totalPages - 1)}
+                  className="h-8 px-2 text-xs"
+                  title="Última página"
+                >
+                  <ChevronsRight className="w-3.5 h-3.5" />
                 </Button>
               </div>
             </div>
