@@ -416,10 +416,22 @@ export default function HubLeadsPage() {
                 return (
                   <div
                     key={lead.id}
-                    className="group bg-card border border-border rounded-lg px-3 py-3 transition-all hover:border-amber-500/30 hover:bg-card/80 flex flex-col justify-between"
+                    className={`group bg-card border rounded-lg px-3 py-3 transition-all hover:border-amber-500/30 hover:bg-card/80 flex flex-col justify-between ${
+                      selected.includes(lead.id) ? "border-amber-500/40 bg-amber-500/5" : "border-border"
+                    }`}
                   >
-                    {/* Top row: avatar + name + consulta icon */}
+                    {/* Top row: checkbox + avatar + name + consulta icon */}
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleSelected(lead.id); }}
+                        className="shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground hover:text-amber-400 transition-colors"
+                      >
+                        {selected.includes(lead.id) ? (
+                          <CheckSquare className="w-4 h-4 text-amber-400" />
+                        ) : (
+                          <Square className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </button>
                       <div className="w-8 h-8 rounded-md bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0">
                         {getInitials(lead)}
                       </div>
