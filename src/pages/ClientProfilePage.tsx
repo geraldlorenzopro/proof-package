@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, Mail, Calendar, Tag, FileText, Loader2, MessageSquare, Pencil, Plus, Briefcase, Activity, FolderOpen, Trash2 } from "lucide-react";
+import { Phone, Mail, Calendar, Tag, FileText, Loader2, MessageSquare, Pencil, Plus, Briefcase, Activity, FolderOpen, Trash2, HelpCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -73,6 +73,8 @@ interface Profile {
   notes: string | null;
   created_at: string;
   ghl_tags: string[] | null;
+  marital_status: string | null;
+  ssn_last4: string | null;
 }
 
 interface IntakeSession {
@@ -107,7 +109,11 @@ const URGENCY: Record<string, { label: string; color: string }> = {
 };
 
 function getCompleteness(p: Profile): number {
-  const fields = [p.first_name, p.last_name, p.email, p.phone, p.dob, p.country_of_birth, p.address_city, p.address_state, p.immigration_status];
+  const fields = [
+    p.first_name, p.last_name, p.email, p.phone, p.dob,
+    p.country_of_birth, p.address_city, p.address_state, p.immigration_status,
+    p.passport_number, p.a_number, p.marital_status, p.ssn_last4,
+  ];
   return Math.round((fields.filter(Boolean).length / fields.length) * 100);
 }
 
@@ -115,6 +121,22 @@ function getStatusLabel(pct: number) {
   if (pct >= 80) return { label: "Completo", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" };
   if (pct >= 50) return { label: "En progreso", cls: "bg-accent/10 text-accent border-accent/20" };
   return { label: "Nuevo", cls: "bg-jarvis/10 text-jarvis border-jarvis/20" };
+}
+
+function getDisplayName(p: Profile): string {
+  const name = [p.first_name, p.middle_name, p.last_name].filter(Boolean).join(" ");
+  if (name) return name;
+  if (p.phone) return p.phone;
+  if (p.email) return p.email;
+  return "Sin identificar";
+}
+
+function getDisplayInitials(p: Profile): { text: string; isUnknown: boolean } {
+  const hasName = !!(p.first_name || p.last_name);
+  if (hasName) {
+    return { text: ((p.first_name?.[0] || "") + (p.last_name?.[0] || "")).toUpperCase() || "?", isUnknown: false };
+  }
+  return { text: "?", isUnknown: true };
 }
 
 export default function ClientProfilePage() {
@@ -144,7 +166,7 @@ export default function ClientProfilePage() {
     if (!id) return;
     const { data, error } = await supabase
       .from("client_profiles")
-      .select("id, first_name, last_name, middle_name, phone, email, dob, gender, country_of_birth, city_of_birth, country_of_citizenship, immigration_status, a_number, i94_number, class_of_admission, date_of_last_entry, place_of_last_entry, passport_number, passport_country, passport_expiration, address_street, address_city, address_state, address_zip, source_channel, source_detail, notes, created_at, ghl_tags")
+      .select("id, first_name, last_name, middle_name, phone, email, dob, gender, country_of_birth, city_of_birth, country_of_citizenship, immigration_status, a_number, i94_number, class_of_admission, date_of_last_entry, place_of_last_entry, passport_number, passport_country, passport_expiration, address_street, address_city, address_state, address_zip, source_channel, source_detail, notes, created_at, ghl_tags, marital_status, ssn_last4")
       .eq("id", id)
       .single();
 
@@ -256,10 +278,10 @@ export default function ClientProfilePage() {
     );
   }
 
-  const fullName = [profile.first_name, profile.middle_name, profile.last_name].filter(Boolean).join(" ") || "Sin nombre";
+  const fullName = getDisplayName(profile);
   const pct = getCompleteness(profile);
   const statusBadge = getStatusLabel(pct);
-  const initials = ((profile.first_name?.[0] || "") + (profile.last_name?.[0] || "")).toUpperCase() || "?";
+  const display = getDisplayInitials(profile);
 
   const waLink = profile.phone ? `https://wa.me/${profile.phone.replace(/[^0-9]/g, "")}` : null;
   const mailLink = profile.email ? `mailto:${profile.email}` : null;
@@ -272,8 +294,12 @@ export default function ClientProfilePage() {
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-jarvis/20 to-accent/10 flex items-center justify-center text-2xl font-bold text-jarvis shrink-0">
-            {initials}
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shrink-0 ${
+            display.isUnknown
+              ? "bg-muted/50 text-muted-foreground"
+              : "bg-gradient-to-br from-jarvis/20 to-accent/10 text-jarvis"
+          }`}>
+            {display.isUnknown ? <HelpCircle className="w-7 h-7" /> : display.text}
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold text-foreground truncate">{fullName}</h1>
@@ -323,9 +349,10 @@ export default function ClientProfilePage() {
           {/* INFO TAB */}
           <TabsContent value="info" className="space-y-4 mt-4">
             <Section title="Datos personales">
-              <InfoRow label="Nombre completo" value={fullName} />
+              <InfoRow label="Nombre completo" value={[profile.first_name, profile.middle_name, profile.last_name].filter(Boolean).join(" ") || null} />
               <InfoRow label="Fecha de nacimiento" value={profile.dob} />
               <InfoRow label="Género" value={profile.gender} />
+              <InfoRow label="Estado civil" value={profile.marital_status} />
               <InfoRow label="País de nacimiento" value={profile.country_of_birth} />
               <InfoRow label="Ciudad de nacimiento" value={profile.city_of_birth} />
               <InfoRow label="Ciudadanía" value={profile.country_of_citizenship} />
@@ -338,6 +365,7 @@ export default function ClientProfilePage() {
             <Section title="Inmigración">
               <InfoRow label="Status migratorio" value={profile.immigration_status} />
               <InfoRow label="A-Number" value={profile.a_number} />
+              <InfoRow label="SSN (últimos 4)" value={profile.ssn_last4} />
               <InfoRow label="I-94 Number" value={profile.i94_number} />
               <InfoRow label="Clase de admisión" value={profile.class_of_admission} />
               <InfoRow label="Última entrada" value={profile.date_of_last_entry} />
@@ -369,7 +397,18 @@ export default function ClientProfilePage() {
           {/* CONSULTAS TAB */}
           <TabsContent value="consultas" className="mt-4 space-y-2">
             {sessions.length === 0 ? (
-              <Empty label="Sin consultas registradas" />
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <MessageSquare className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                <h3 className="text-sm font-semibold text-foreground mb-1">Sin consultas registradas</h3>
+                <p className="text-xs text-muted-foreground mb-4 max-w-xs">Este cliente fue registrado antes de NER. Registra su próxima consulta aquí.</p>
+                <button
+                  onClick={() => setIntakeOpen(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-jarvis/10 border border-jarvis/20 text-xs font-medium text-jarvis hover:bg-jarvis/20 transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Registrar primera consulta
+                </button>
+              </div>
             ) : (
               sessions.map((s) => {
                 const u = URGENCY[s.urgency_level || ""] || { label: s.urgency_level || "—", color: "text-muted-foreground bg-muted" };
@@ -398,7 +437,11 @@ export default function ClientProfilePage() {
           {/* CASOS TAB */}
           <TabsContent value="casos" className="mt-4 space-y-2">
             {cases.length === 0 ? (
-              <Empty label="Sin casos vinculados" />
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Briefcase className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                <h3 className="text-sm font-semibold text-foreground mb-1">Sin casos activos</h3>
+                <p className="text-xs text-muted-foreground max-w-xs">Abre un nuevo caso para comenzar el expediente de este cliente.</p>
+              </div>
             ) : (
               cases.map((c) => (
                 <button
@@ -419,7 +462,11 @@ export default function ClientProfilePage() {
           {/* DOCUMENTOS TAB */}
           <TabsContent value="documentos" className="mt-4 space-y-2">
             {docs.length === 0 ? (
-              <Empty label="Sin documentos" />
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <FolderOpen className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                <h3 className="text-sm font-semibold text-foreground mb-1">Sin documentos registrados</h3>
+                <p className="text-xs text-muted-foreground max-w-xs">Los documentos aparecerán aquí cuando se agreguen al expediente.</p>
+              </div>
             ) : (
               docs.map((d) => (
                 <div key={d.id} className="flex items-center justify-between border border-border rounded-lg px-4 py-3">
@@ -516,8 +563,4 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       {children}
     </div>
   );
-}
-
-function Empty({ label }: { label: string }) {
-  return <p className="text-sm text-muted-foreground text-center py-8">{label}</p>;
 }

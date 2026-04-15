@@ -239,8 +239,18 @@ export default function HubLeadsPage() {
   }, [search]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
-  const getName = (c: LeadProfile) => normalizeClientName([c.first_name, c.middle_name, c.last_name].filter(Boolean).join(" ") || "Sin nombre");
-  const getInitials = (c: LeadProfile) => ((c.first_name?.[0] || "") + (c.last_name?.[0] || "")).toUpperCase() || "?";
+  const getName = (c: LeadProfile) => {
+    const name = [c.first_name, c.middle_name, c.last_name].filter(Boolean).join(" ");
+    if (name) return normalizeClientName(name);
+    if (c.phone) return c.phone;
+    if (c.email) return c.email;
+    return "Sin identificar";
+  };
+  const getInitials = (c: LeadProfile): { text: string; isUnknown: boolean } => {
+    const hasName = !!(c.first_name || c.last_name);
+    if (hasName) return { text: ((c.first_name?.[0] || "") + (c.last_name?.[0] || "")).toUpperCase() || "?", isUnknown: false };
+    return { text: "?", isUnknown: true };
+  };
 
   function openIntakeForLead(lead: LeadProfile) {
     const classified = classifyChannel(lead.source_channel);
@@ -432,9 +442,16 @@ export default function HubLeadsPage() {
                           <Square className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                         )}
                       </button>
-                      <div className="w-8 h-8 rounded-md bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0">
-                        {getInitials(lead)}
-                      </div>
+                      {(() => {
+                        const ini = getInitials(lead);
+                        return (
+                          <div className={`w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${
+                            ini.isUnknown ? "bg-muted/50 text-muted-foreground" : "bg-gradient-to-br from-amber-500/20 to-orange-500/10 text-amber-400"
+                          }`}>
+                            {ini.text}
+                          </div>
+                        );
+                      })()}
                       <div className="flex-1 min-w-0">
                         <button
                           onClick={() => navigate(`/hub/clients/${lead.id}`)}
