@@ -266,6 +266,22 @@ export default function HubLeadsPage() {
     navigate('/hub/consultations');
   }
 
+  async function handleBulkDelete() {
+    if (selected.length === 0) return;
+    await supabase
+      .from("client_profiles")
+      .update({ contact_stage: "inactive" as any, updated_at: new Date().toISOString() })
+      .in("id", selected)
+      .eq("account_id", accountId);
+    setSelected([]);
+    toast.success(`${selected.length} contactos eliminados`);
+    fetchPage();
+  }
+
+  function toggleSelected(id: string) {
+    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
   return (
     <HubLayout>
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
