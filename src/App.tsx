@@ -91,6 +91,7 @@ const App = () => (
           <Route path="/tools/evidence" element={<EvidenceTool />} />
           <Route path="/tools/cspa" element={<CspaTool />} />
           <Route path="/tools/uscis-analyzer" element={<UscisAnalyzer />} />
+          <Route path="/tools/ghl-test" element={<GhlWebhookTest />} />
 
           {/* ═══ PROTECTED ROUTES ═══ */}
           <Route path="/hub" element={<HubPage />} />
