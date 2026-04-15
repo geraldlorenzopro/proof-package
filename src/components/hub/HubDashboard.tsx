@@ -382,7 +382,7 @@ function HubDashboardInner({
   return (
     <>
       {/* ═══ COCKPIT — fixed height, no scroll ═══ */}
-      <div className="h-screen w-full overflow-hidden flex items-center justify-center bg-background relative" style={{ width: "calc(100vw - 60px)" }}>
+      <div className="h-screen w-full overflow-hidden flex flex-col bg-background relative" style={{ width: "calc(100vw - 60px)" }}>
 
         {/* Onboarding banner */}
         {showOnboardingBanner && !bannerDismissed && (
@@ -403,7 +403,7 @@ function HubDashboardInner({
         )}
 
         {/* Main content — centered, no scroll */}
-        <div className="w-full max-w-4xl flex flex-col gap-4 px-8 py-6">
+        <div className="w-full max-w-4xl mx-auto flex flex-col gap-4 px-8 py-6">
 
           {/* ─── ZONA A: Header ─── */}
           <div className="text-center shrink-0 flex-none">
