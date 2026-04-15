@@ -212,24 +212,24 @@ async function syncAppointments(apiKey: string, locationId: string, accountId: s
 
   // TEST 1 — calendars/events with dates
   const test1Res = await ghlFetch(
-    `/calendars/events?locationId=${LOCATION_ID}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
+    `/calendars/events?locationId=${locationId}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
     apiKey
   );
   const text1 = await test1Res.text();
   debugResults.push({ test: 1, endpoint: "/calendars/events con fechas", status: test1Res.status, preview: text1.substring(0, 300) });
 
   // TEST 2 — calendars/events without dates
-  const test2Res = await ghlFetch(`/calendars/events?locationId=${LOCATION_ID}`, apiKey);
+  const test2Res = await ghlFetch(`/calendars/events?locationId=${locationId}`, apiKey);
   const text2 = await test2Res.text();
   debugResults.push({ test: 2, endpoint: "/calendars/events sin fechas", status: test2Res.status, preview: text2.substring(0, 300) });
 
   // TEST 3 — appointments endpoint
-  const test3Res = await ghlFetch(`/appointments/?locationId=${LOCATION_ID}`, apiKey);
+  const test3Res = await ghlFetch(`/appointments/?locationId=${locationId}`, apiKey);
   const text3 = await test3Res.text();
   debugResults.push({ test: 3, endpoint: "/appointments/", status: test3Res.status, preview: text3.substring(0, 300) });
 
   // TEST 4 — list calendars
-  const test4Res = await ghlFetch(`/calendars/?locationId=${LOCATION_ID}`, apiKey);
+  const test4Res = await ghlFetch(`/calendars/?locationId=${locationId}`, apiKey);
   const text4 = await test4Res.text();
   debugResults.push({ test: 4, endpoint: "/calendars/ (listar)", status: test4Res.status, preview: text4.substring(0, 300) });
 
@@ -264,7 +264,7 @@ async function syncAppointments(apiKey: string, locationId: string, accountId: s
       for (const cal of calList.slice(0, 5)) {
         // Use calendarId as query param, not path param
         const evRes = await ghlFetch(
-          `/calendars/events?locationId=${LOCATION_ID}&calendarId=${cal.id}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
+          `/calendars/events?locationId=${locationId}&calendarId=${cal.id}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`,
           apiKey
         );
         const evText = await evRes.text();
