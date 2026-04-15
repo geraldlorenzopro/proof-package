@@ -453,25 +453,45 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, i
             )}
 
             {/* Client summary bar on step 3 — enhanced when skipped to consulta */}
-            {!completed && step === 2 && data.client_first_name && (
-              <div className={`mt-3 flex items-center gap-3 px-3 py-2 rounded-lg border ${
-                skippedToConsulta ? "bg-accent/5 border-accent/20" : "bg-secondary/30 border-border"
-              }`}>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
-                  skippedToConsulta ? "bg-accent/10 text-accent" : "bg-accent/10 text-accent"
+            {!completed && step === 2 && data.client_first_name && (() => {
+              const isIncomplete = !!data.client_profile_id && (
+                (!data.client_first_name && !data.client_last_name) || !data.client_email || !data.client_phone
+              );
+              return (
+                <div className={`mt-3 rounded-lg border ${
+                  skippedToConsulta ? "bg-accent/5 border-accent/20" : "bg-secondary/30 border-border"
                 }`}>
-                  {skippedToConsulta ? <Check className="w-3.5 h-3.5" /> : data.client_first_name[0]?.toUpperCase()}
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                      skippedToConsulta ? "bg-accent/10 text-accent" : "bg-accent/10 text-accent"
+                    }`}>
+                      {skippedToConsulta ? <Check className="w-3.5 h-3.5" /> : data.client_first_name[0]?.toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {skippedToConsulta ? `Continuando con ${data.client_first_name} ${data.client_last_name}` : `${data.client_first_name} ${data.client_last_name}`}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {data.client_phone}{data.client_email ? ` · ${data.client_email}` : ""}{data.entry_channel ? ` · ${CHANNEL_LABELS[data.entry_channel] || data.entry_channel}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  {isIncomplete && (
+                    <div className="flex items-center gap-2 px-3 py-2 border-t border-amber-500/20 bg-amber-500/5 rounded-b-lg">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span className="text-xs text-amber-400 flex-1">Datos incompletos — nombre, email o teléfono faltante</span>
+                      <button
+                        type="button"
+                        onClick={() => setEditProfileOpen(true)}
+                        className="text-xs px-3 py-1.5 rounded-lg border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-all shrink-0"
+                      >
+                        Completar datos
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    {skippedToConsulta ? `Continuando con ${data.client_first_name} ${data.client_last_name}` : `${data.client_first_name} ${data.client_last_name}`}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    {data.client_phone}{data.client_email ? ` · ${data.client_email}` : ""}{data.entry_channel ? ` · ${CHANNEL_LABELS[data.entry_channel] || data.entry_channel}` : ""}
-                  </p>
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Content with slide transition */}
