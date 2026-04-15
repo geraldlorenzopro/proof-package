@@ -2424,6 +2424,7 @@ export type Database = {
           preferred_language: string | null
           timezone: string | null
           updated_at: string | null
+          webhook_api_key: string | null
         }
         Insert: {
           account_id: string
@@ -2449,6 +2450,7 @@ export type Database = {
           preferred_language?: string | null
           timezone?: string | null
           updated_at?: string | null
+          webhook_api_key?: string | null
         }
         Update: {
           account_id?: string
@@ -2474,6 +2476,7 @@ export type Database = {
           preferred_language?: string | null
           timezone?: string | null
           updated_at?: string | null
+          webhook_api_key?: string | null
         }
         Relationships: [
           {

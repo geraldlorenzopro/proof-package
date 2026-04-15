@@ -1,0 +1,1 @@
+ALTER TABLE office_config ADD COLUMN IF NOT EXISTS webhook_api_key text;

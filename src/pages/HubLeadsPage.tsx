@@ -27,10 +27,15 @@ interface LeadProfile {
   last_name: string | null;
   email: string | null;
   phone: string | null;
+  notes: string | null;
   source_channel: string | null;
   source_detail: string | null;
   created_at: string;
   ghl_tags: string[] | null;
+}
+
+function isNewLead(createdAt: string) {
+  return Date.now() - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000;
 }
 
 // Aligned with StepChannel.tsx channels
@@ -184,7 +189,7 @@ export default function HubLeadsPage() {
 
     let query = supabase
       .from("client_profiles")
-      .select("id, first_name, middle_name, last_name, email, phone, source_channel, source_detail, created_at, ghl_tags", { count: "exact" })
+      .select("id, first_name, middle_name, last_name, email, phone, notes, source_channel, source_detail, created_at, ghl_tags", { count: "exact" })
       .eq("account_id", accountId)
       .eq("is_test", false)
       .eq("contact_stage", "lead");
@@ -459,9 +464,16 @@ export default function HubLeadsPage() {
                         >
                           {getName(lead)}
                         </button>
-                        <Badge className={`mt-0.5 text-[10px] leading-none px-1.5 py-0.5 border ${badgeStyle}`}>
-                          {displayLabel}
-                        </Badge>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <Badge className={`text-[10px] leading-none px-1.5 py-0.5 border ${badgeStyle}`}>
+                            {displayLabel}
+                          </Badge>
+                          {isNewLead(lead.created_at) && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse">
+                              NUEVO
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); openIntakeForLead(lead); }}
