@@ -416,6 +416,18 @@ export default function HubLeadsPage() {
                         <span className="truncate" title={lead.email}>{lead.email}</span>
                       </div>
                     ) : null}
+                    {lead.ghl_tags && lead.ghl_tags.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1 flex-wrap">
+                        {lead.ghl_tags.slice(0, 2).map(tag => (
+                          <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted/30 text-muted-foreground border border-border/20">
+                            {tag}
+                          </span>
+                        ))}
+                        {lead.ghl_tags.length > 2 && (
+                          <span className="text-[9px] text-muted-foreground/50">+{lead.ghl_tags.length - 2}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
