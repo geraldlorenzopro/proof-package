@@ -109,6 +109,7 @@ function HubDashboardInner({
   const [totalClients, setTotalClients] = useState(0);
   const [todayAppointmentsCount, setTodayAppointmentsCount] = useState(0);
   const [pendingTasks, setPendingTasks] = useState(0);
+  const [kpisLoaded, setKpisLoaded] = useState(false);
 
   // Chat input
   const [input, setInput] = useState("");
@@ -317,8 +318,10 @@ function HubDashboardInner({
       setTotalClients(clientsRes.count || 0);
       setTodayAppointmentsCount(todayRes.count || 0);
       setPendingTasks(tasksRes.count || 0);
+      setKpisLoaded(true);
     } catch (err) {
       console.error("KPI load error:", err);
+      setKpisLoaded(true);
     }
   }
 
@@ -517,9 +520,13 @@ function HubDashboardInner({
                   <div className={`w-7 h-7 rounded-lg ${kpi.bgAccent} border flex items-center justify-center shrink-0`}>
                     <kpi.icon className={`w-3.5 h-3.5 ${kpi.accent}`} />
                   </div>
-                  <div className={`text-4xl font-bold tabular-nums leading-none ${kpi.value === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
-                    {kpi.value}
-                  </div>
+                  {!kpisLoaded ? (
+                    <Skeleton className="h-9 w-10 rounded-md mt-0.5" />
+                  ) : (
+                    <div className={`text-4xl font-bold tabular-nums leading-none ${kpi.value === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
+                      {kpi.value}
+                    </div>
+                  )}
                   <div className="text-[11px] text-muted-foreground/40 font-medium truncate">{kpi.label}</div>
                 </button>
               ))}
