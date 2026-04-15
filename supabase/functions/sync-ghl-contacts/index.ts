@@ -42,13 +42,13 @@ async function syncContactsPage(apiKey: string, locationId: string, accountId: s
   const { data: member } = await admin
     .from("account_members")
     .select("user_id")
-    .eq("account_id", ACCOUNT_ID)
+    .eq("account_id", accountId)
     .limit(1)
     .maybeSingle();
   const createdBy = member?.user_id;
   if (!createdBy) { progress.errors.push("No member found for account"); return { done: true, cursor: null, progress }; }
 
-  const params = new URLSearchParams({ locationId: LOCATION_ID, limit: "100" });
+  const params = new URLSearchParams({ locationId: locationId, limit: "100" });
   if (cursor) {
     params.set("startAfterId", cursor.startAfterId);
     params.set("startAfter", String(cursor.startAfter));
@@ -94,7 +94,7 @@ async function syncContactsPage(apiKey: string, locationId: string, accountId: s
     const { data: existing } = await admin
       .from("client_profiles")
       .select("id, phone, email, ghl_contact_id")
-      .eq("account_id", ACCOUNT_ID)
+      .eq("account_id", accountId)
       .or(orParts.join(","));
 
     for (const e of (existing || [])) {
@@ -164,7 +164,7 @@ async function syncContactsPage(apiKey: string, locationId: string, accountId: s
     } else {
       toInsert.push({
         ...profileData,
-        account_id: ACCOUNT_ID,
+        account_id: accountId,
         created_by: createdBy,
       });
     }
@@ -299,7 +299,7 @@ async function syncAppointments(apiKey: string, admin: ReturnType<typeof createC
         const { data: prof } = await admin
           .from("client_profiles")
           .select("id")
-          .eq("account_id", ACCOUNT_ID)
+          .eq("account_id", accountId)
           .eq("ghl_contact_id", apt.contactId)
           .maybeSingle();
         clientProfileId = prof?.id || null;
@@ -314,7 +314,7 @@ async function syncAppointments(apiKey: string, admin: ReturnType<typeof createC
       const mappedStatus = statusMap[apt.appointmentStatus || apt.status || ""] || "scheduled";
 
       const appointmentData: Record<string, unknown> = {
-        account_id: ACCOUNT_ID,
+        account_id: accountId,
         client_name: apt.title || apt.contactName || apt.contact?.name || "Sin nombre",
         client_email: apt.contact?.email || apt.email || null,
         client_phone: apt.contact?.phone || apt.phone || null,
@@ -411,7 +411,7 @@ Deno.serve(async (req) => {
         .from("account_members")
         .select("role")
         .eq("user_id", user.id)
-        .eq("account_id", ACCOUNT_ID)
+        .eq("account_id", accountId)
         .maybeSingle();
       if (!memberCheck) {
         return new Response(JSON.stringify({ error: "Not a member" }),
@@ -424,7 +424,7 @@ Deno.serve(async (req) => {
       await admin.from("office_config").update({
         ghl_last_sync: new Date().toISOString(),
         ghl_appointments_synced: stats.inserted + stats.updated,
-      } as any).eq("account_id", ACCOUNT_ID);
+      } as any).eq("account_id", accountId);
 
       return new Response(
         JSON.stringify({ done: true, cursor: null, progress: stats, debug }),
@@ -440,7 +440,7 @@ Deno.serve(async (req) => {
     if (result.done) {
       await admin.from("office_config").update({
         ghl_contacts_synced: result.progress.inserted + result.progress.updated,
-      } as any).eq("account_id", ACCOUNT_ID);
+      } as any).eq("account_id", accountId);
     }
 
     return new Response(
