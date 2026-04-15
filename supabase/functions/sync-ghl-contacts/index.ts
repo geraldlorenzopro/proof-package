@@ -36,8 +36,7 @@ function makeAdmin() {
   );
 }
 
-// ── Contacts: one page at a time ──
-async function syncContactsPage(apiKey: string, admin: ReturnType<typeof createClient>, cursor: CursorState | null) {
+async function syncContactsPage(apiKey: string, locationId: string, accountId: string, admin: ReturnType<typeof createClient>, cursor: CursorState | null) {
   const progress = { page: cursor?.page ?? 0, total_processed: 0, inserted: 0, updated: 0, skipped: 0, errors: [] as string[] };
 
   const { data: member } = await admin
