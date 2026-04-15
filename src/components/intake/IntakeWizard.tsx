@@ -459,6 +459,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, i
               if (!hasSummaryData) return null;
               const displayName = [data.client_first_name, data.client_last_name].filter(Boolean).join(" ") || data.client_phone || "Contacto";
               const isIncomplete = !!effectiveProfileId && (
+                (!data.client_first_name && !data.client_last_name) || !data.client_email || !data.client_phone
               );
               return (
                 <div className={`mt-3 rounded-lg border ${
