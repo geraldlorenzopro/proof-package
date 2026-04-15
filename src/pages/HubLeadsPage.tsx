@@ -145,7 +145,7 @@ export default function HubLeadsPage() {
 
     let query = supabase
       .from("client_profiles")
-      .select("id, first_name, middle_name, last_name, email, phone, source_channel, source_detail, created_at", { count: "exact" })
+      .select("id, first_name, middle_name, last_name, email, phone, source_channel, source_detail, created_at, ghl_tags", { count: "exact" })
       .eq("account_id", accountId)
       .eq("is_test", false)
       .eq("contact_stage", "lead");
