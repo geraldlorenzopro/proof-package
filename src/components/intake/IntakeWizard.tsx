@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink, MessageCircle, AlertTriangle } from "lucide-react";
 import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
 import ChannelLogo from "./ChannelLogo";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import StepChannel from "./steps/StepChannel";
