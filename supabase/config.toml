@@ -86,3 +86,6 @@ verify_jwt = false
 
 [functions.elevenlabs-conversation-token]
 verify_jwt = false
+
+[functions.ghl-sync-cron]
+verify_jwt = false
