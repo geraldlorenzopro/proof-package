@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const DEFAULT_PAYLOAD = {
   first_name: "Test",
@@ -25,24 +26,27 @@ export default function GhlWebhookTest() {
     setSending(true);
     setResult(null);
     try {
-      const res = await fetch(webhookUrl.trim(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(DEFAULT_PAYLOAD),
+      const { data, error } = await supabase.functions.invoke("test-webhook-proxy", {
+        body: { webhook_url: webhookUrl.trim(), payload: DEFAULT_PAYLOAD },
       });
-      const text = await res.text();
-      console.log("GHL response:", res.status, text);
-      if (res.ok) {
-        setResult("✅ Lead sent successfully");
+
+      if (error) throw error;
+
+      console.log("Proxy response:", data);
+      if (data.ok) {
+        setResult(`✅ Lead sent successfully (status ${data.status})`);
         toast.success("Lead enviado correctamente");
+      } else if (data.error) {
+        setResult(`❌ Error: ${data.error}`);
+        toast.error("Error en el webhook");
       } else {
-        setResult(`❌ Error ${res.status}: ${text.slice(0, 200)}`);
+        setResult(`❌ Error ${data.status}: ${data.body?.slice(0, 200)}`);
         toast.error("GHL respondió con error");
       }
     } catch (err: any) {
       console.error("Webhook error:", err);
-      setResult(`❌ Error sending lead: ${err.message}`);
-      toast.error("No se pudo conectar al webhook");
+      setResult(`❌ Error: ${err.message}`);
+      toast.error("No se pudo enviar");
     } finally {
       setSending(false);
     }
@@ -56,7 +60,7 @@ export default function GhlWebhookTest() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Input
-            placeholder="Pega aquí la URL del webhook de GHL"
+            placeholder="Pega aquí la URL del webhook"
             value={webhookUrl}
             onChange={(e) => setWebhookUrl(e.target.value)}
           />
