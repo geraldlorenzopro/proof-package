@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeClientName } from "@/lib/caseTypeLabels";
 import {
-  Search, UserSearch,
+  Search, UserSearch, Plus,
    Phone, Mail, Calendar, MessageSquare, Clock, Info,
    ChevronLeft, ChevronRight, ArrowUpDown, SortAsc, SortDesc, X
 } from "lucide-react";
@@ -30,6 +30,7 @@ interface LeadProfile {
   source_channel: string | null;
   source_detail: string | null;
   created_at: string;
+  ghl_tags: string[] | null;
 }
 
 // Aligned with StepChannel.tsx channels
@@ -99,6 +100,7 @@ export default function HubLeadsPage() {
   const [search, setSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState<ChannelFilterKey>("all");
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
 
   // Pagination & sort state
@@ -119,6 +121,44 @@ export default function HubLeadsPage() {
   useEffect(() => { setCurrentPage(0); }, [search, channelFilter, pageSize, sortBy]);
 
   const auditLoggedRef = useRef(false);
+  const syncTriggeredRef = useRef(false);
+
+  // Auto-sync GHL contacts on mount (throttled to 5 min)
+  useEffect(() => {
+    if (!accountId || syncTriggeredRef.current) return;
+    syncTriggeredRef.current = true;
+
+    (async () => {
+      const lastSync = localStorage.getItem(`ghl_last_sync_${accountId}`);
+      const now = Date.now();
+      if (lastSync && now - parseInt(lastSync) < 5 * 60 * 1000) return;
+
+      setSyncing(true);
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        if (!session.session) return;
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-ghl-contacts`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.session.access_token}`,
+            },
+            body: JSON.stringify({ account_id: accountId, mode: "contacts", silent: true }),
+          }
+        );
+        if (resp.ok) {
+          localStorage.setItem(`ghl_last_sync_${accountId}`, now.toString());
+          fetchPage();
+        }
+      } catch (e) {
+        console.warn("Auto-sync failed:", e);
+      } finally {
+        setSyncing(false);
+      }
+    })();
+  }, [accountId]);
 
   useEffect(() => {
     if (!accountId) return;
@@ -143,7 +183,7 @@ export default function HubLeadsPage() {
 
     let query = supabase
       .from("client_profiles")
-      .select("id, first_name, middle_name, last_name, email, phone, source_channel, source_detail, created_at", { count: "exact" })
+      .select("id, first_name, middle_name, last_name, email, phone, source_channel, source_detail, created_at, ghl_tags", { count: "exact" })
       .eq("account_id", accountId)
       .eq("is_test", false)
       .eq("contact_stage", "lead");
@@ -229,30 +269,46 @@ export default function HubLeadsPage() {
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
         {/* Fixed top: Header */}
         <div className="flex items-center justify-between gap-4 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
-              <UserSearch className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Contactos</h1>
-              <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos registrados</p>
-            </div>
-          </div>
+           <div className="flex items-center gap-3">
+             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+               <UserSearch className="w-5 h-5 text-amber-400" />
+             </div>
+             <div>
+               <div className="flex items-center gap-2">
+                 <h1 className="text-xl font-bold text-foreground">Contactos</h1>
+                 {syncing && (
+                   <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
+                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                     Sincronizando...
+                   </span>
+                 )}
+               </div>
+               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos registrados</p>
+             </div>
+           </div>
 
-          {/* Sort */}
+           <div className="flex items-center gap-2">
+             <button
+               onClick={() => { setPrefillData({}); setIntakeOpen(true); }}
+               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-medium text-amber-400 hover:bg-amber-500/20 transition-all"
+             >
+               <Plus className="w-3.5 h-3.5" />
+               Nuevo contacto
+             </button>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
             <SelectTrigger className="w-[160px] h-9 text-xs bg-muted/50 border-border gap-1.5">
               <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">Más recientes</SelectItem>
-              <SelectItem value="oldest">Más antiguos</SelectItem>
-              <SelectItem value="name_asc">Nombre A-Z</SelectItem>
-              <SelectItem value="name_desc">Nombre Z-A</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+             <SelectContent>
+               <SelectItem value="recent">Más recientes</SelectItem>
+               <SelectItem value="oldest">Más antiguos</SelectItem>
+               <SelectItem value="name_asc">Nombre A-Z</SelectItem>
+               <SelectItem value="name_desc">Nombre Z-A</SelectItem>
+             </SelectContent>
+           </Select>
+           </div>
+         </div>
 
         {/* Fixed top: Search */}
         <div className="relative shrink-0 mt-2">
@@ -360,6 +416,18 @@ export default function HubLeadsPage() {
                         <span className="truncate" title={lead.email}>{lead.email}</span>
                       </div>
                     ) : null}
+                    {lead.ghl_tags && lead.ghl_tags.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1 flex-wrap">
+                        {lead.ghl_tags.slice(0, 2).map(tag => (
+                          <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted/30 text-muted-foreground border border-border/20">
+                            {tag}
+                          </span>
+                        ))}
+                        {lead.ghl_tags.length > 2 && (
+                          <span className="text-[9px] text-muted-foreground/50">+{lead.ghl_tags.length - 2}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
