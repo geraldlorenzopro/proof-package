@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink, MessageCircle, AlertTriangle } from "lucide-react";
 import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
 import ChannelLogo from "./ChannelLogo";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import StepChannel from "./steps/StepChannel";
@@ -453,9 +453,12 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, i
             )}
 
             {/* Client summary bar on step 3 — enhanced when skipped to consulta */}
-            {!completed && step === 2 && (data.client_first_name || data.client_last_name || data.client_phone || data.client_profile_id) && (() => {
+            {!completed && step === 2 && (() => {
+              const effectiveProfileId = data.client_profile_id || data.existing_client_profile_id;
+              const hasSummaryData = !!(data.client_first_name || data.client_last_name || data.client_phone || effectiveProfileId);
+              if (!hasSummaryData) return null;
               const displayName = [data.client_first_name, data.client_last_name].filter(Boolean).join(" ") || data.client_phone || "Contacto";
-              const isIncomplete = !!data.client_profile_id && (
+              const isIncomplete = !!effectiveProfileId && (
                 (!data.client_first_name && !data.client_last_name) || !data.client_email || !data.client_phone
               );
               return (
@@ -688,31 +691,40 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, i
       {/* Edit profile dialog for incomplete contacts */}
       <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          {data.client_profile_id && (
-            <ClientProfileEditor
-              clientId={data.client_profile_id}
-              onUpdated={async () => {
-                setEditProfileOpen(false);
-                // Reload profile data into IntakeData
-                if (data.client_profile_id) {
+          <DialogTitle>Completar datos del contacto</DialogTitle>
+          <DialogDescription>
+            Edita el perfil del contacto para completar nombre, email o teléfono faltante.
+          </DialogDescription>
+          {(() => {
+            const effectiveProfileId = data.client_profile_id || data.existing_client_profile_id;
+            if (!effectiveProfileId) return null;
+
+            return (
+              <ClientProfileEditor
+                clientId={effectiveProfileId}
+                onUpdated={async () => {
+                  setEditProfileOpen(false);
                   const { data: profile } = await supabase
                     .from("client_profiles")
                     .select("first_name, last_name, email, phone")
-                    .eq("id", data.client_profile_id)
+                    .eq("id", effectiveProfileId)
                     .single();
+
                   if (profile) {
                     setData(prev => ({
                       ...prev,
+                      client_profile_id: effectiveProfileId,
+                      existing_client_profile_id: effectiveProfileId,
                       client_first_name: profile.first_name || "",
                       client_last_name: profile.last_name || "",
                       client_email: profile.email || "",
                       client_phone: profile.phone || "",
                     }));
                   }
-                }
-              }}
-            />
-          )}
+                }}
+              />
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </>
