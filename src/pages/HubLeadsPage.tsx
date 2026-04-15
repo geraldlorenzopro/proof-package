@@ -6,7 +6,7 @@ import { normalizeClientName } from "@/lib/caseTypeLabels";
 import {
   Search, UserSearch, Plus,
    Phone, Mail, Calendar, MessageSquare, Clock, Info,
-   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, SortAsc, SortDesc, X
+   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, SortAsc, SortDesc, X, Trash2, CheckSquare, Square
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
