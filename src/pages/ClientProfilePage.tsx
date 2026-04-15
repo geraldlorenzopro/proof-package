@@ -69,6 +69,7 @@ interface Profile {
   source_detail: string | null;
   notes: string | null;
   created_at: string;
+  ghl_tags: string[] | null;
 }
 
 interface IntakeSession {
@@ -130,7 +131,7 @@ export default function ClientProfilePage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("client_profiles")
-        .select("id, first_name, last_name, middle_name, phone, email, dob, gender, country_of_birth, city_of_birth, country_of_citizenship, immigration_status, a_number, i94_number, class_of_admission, date_of_last_entry, place_of_last_entry, passport_number, passport_country, passport_expiration, address_street, address_city, address_state, address_zip, source_channel, source_detail, notes, created_at")
+        .select("id, first_name, last_name, middle_name, phone, email, dob, gender, country_of_birth, city_of_birth, country_of_citizenship, immigration_status, a_number, i94_number, class_of_admission, date_of_last_entry, place_of_last_entry, passport_number, passport_country, passport_expiration, address_street, address_city, address_state, address_zip, source_channel, source_detail, notes, created_at, ghl_tags")
         .eq("id", id)
         .single();
 
@@ -272,6 +273,17 @@ export default function ClientProfilePage() {
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{profile.notes}</p>
               </Section>
             )}
+            {profile.ghl_tags && profile.ghl_tags.length > 0 && (
+              <Section title="Tags de CRM">
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.ghl_tags.map(tag => (
+                    <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full border bg-muted/20 border-border/30 text-muted-foreground">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </Section>
+            )}
           </TabsContent>
 
           {/* CONSULTAS TAB */}
@@ -355,6 +367,8 @@ export default function ClientProfilePage() {
             email: profile.email || undefined,
             client_profile_id: profile.id,
           }}
+          initialStep={2}
+          prefillChannel={profile.source_channel || undefined}
           onCreated={() => {
             setIntakeOpen(false);
             toast.success('Consulta registrada');
