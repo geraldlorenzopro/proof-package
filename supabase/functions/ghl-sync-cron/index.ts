@@ -16,8 +16,15 @@ Deno.serve(async (req) => {
     const { data: offices } = await supabase
       .from("office_config")
       .select("account_id, ghl_location_id, ghl_api_key")
-      .not("ghl_location_id", "is", null)
-      .not("ghl_api_key", "is", null);
+      .not("ghl_location_id", "is", null);
+
+    // Resolve API keys: use DB column or fall back to env secrets
+    const resolvedOffices = (offices || [])
+      .map((o) => ({
+        ...o,
+        ghl_api_key: o.ghl_api_key || Deno.env.get("MRVISA_API_KEY") || null,
+      }))
+      .filter((o) => o.ghl_api_key !== null);
 
     if (!offices?.length) {
       return new Response(
