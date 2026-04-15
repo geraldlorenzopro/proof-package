@@ -1,10 +1,9 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getGHLConfig } from "../_shared/ghl.ts";
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_VERSION = "2021-07-28";
-const LOCATION_ID = "NgaxlyDdwg93PvQb5KCw";
-const ACCOUNT_ID = "443d8719-94c7-47f9-9bef-3d911ba4c174";
 
 interface CursorState {
   startAfterId: string;
