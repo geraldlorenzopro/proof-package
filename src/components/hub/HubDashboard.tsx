@@ -109,6 +109,7 @@ function HubDashboardInner({
   const [totalClients, setTotalClients] = useState(0);
   const [todayAppointmentsCount, setTodayAppointmentsCount] = useState(0);
   const [pendingTasks, setPendingTasks] = useState(0);
+  const [kpisLoaded, setKpisLoaded] = useState(false);
 
   // Chat input
   const [input, setInput] = useState("");
