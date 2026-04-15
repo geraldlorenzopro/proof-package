@@ -365,6 +365,28 @@ export default function HubLeadsPage() {
           ))}
         </div>
 
+        {/* Bulk action bar */}
+        {selected.length > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border border-border/40 shrink-0 mt-2">
+            <span className="text-xs text-muted-foreground">
+              {selected.length} seleccionados
+            </span>
+            <button
+              onClick={handleBulkDelete}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 hover:bg-red-500/20 transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Eliminar seleccionados
+            </button>
+            <button
+              onClick={() => setSelected([])}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+
         {/* Scrollable cards area */}
         <div className="flex-1 overflow-y-auto mt-2 min-h-0 flex flex-col">
           {loading ? (
