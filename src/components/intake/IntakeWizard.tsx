@@ -133,6 +133,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, i
   const [slideDir, setSlideDir] = useState<"left" | "right">("left");
   const [animating, setAnimating] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [completed, setCompleted] = useState<{
     clientName: string;
     firstName: string;
