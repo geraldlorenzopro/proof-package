@@ -89,3 +89,6 @@ verify_jwt = false
 
 [functions.ghl-sync-cron]
 verify_jwt = false
+
+[functions.push-contact-to-ghl]
+verify_jwt = false

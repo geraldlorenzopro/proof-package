@@ -6,7 +6,7 @@ import { normalizeClientName } from "@/lib/caseTypeLabels";
 import {
   Search, UserSearch, Plus,
    Phone, Mail, Calendar, MessageSquare, Clock, Info,
-   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, SortAsc, SortDesc, X
+   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, SortAsc, SortDesc, X, Trash2, CheckSquare, Square
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -102,6 +102,7 @@ export default function HubLeadsPage() {
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
+  const [selected, setSelected] = useState<string[]>([]);
 
   // Pagination & sort state
   const [pageSize, setPageSize] = useState(15);
@@ -265,6 +266,22 @@ export default function HubLeadsPage() {
     navigate('/hub/consultations');
   }
 
+  async function handleBulkDelete() {
+    if (selected.length === 0) return;
+    await supabase
+      .from("client_profiles")
+      .update({ contact_stage: "inactive" as any, updated_at: new Date().toISOString() })
+      .in("id", selected)
+      .eq("account_id", accountId);
+    setSelected([]);
+    toast.success(`${selected.length} contactos eliminados`);
+    fetchPage();
+  }
+
+  function toggleSelected(id: string) {
+    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
   return (
     <HubLayout>
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
@@ -348,6 +365,28 @@ export default function HubLeadsPage() {
           ))}
         </div>
 
+        {/* Bulk action bar */}
+        {selected.length > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border border-border/40 shrink-0 mt-2">
+            <span className="text-xs text-muted-foreground">
+              {selected.length} seleccionados
+            </span>
+            <button
+              onClick={handleBulkDelete}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 hover:bg-red-500/20 transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Eliminar seleccionados
+            </button>
+            <button
+              onClick={() => setSelected([])}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+
         {/* Scrollable cards area */}
         <div className="flex-1 overflow-y-auto mt-2 min-h-0 flex flex-col">
           {loading ? (
@@ -377,10 +416,22 @@ export default function HubLeadsPage() {
                 return (
                   <div
                     key={lead.id}
-                    className="group bg-card border border-border rounded-lg px-3 py-3 transition-all hover:border-amber-500/30 hover:bg-card/80 flex flex-col justify-between"
+                    className={`group bg-card border rounded-lg px-3 py-3 transition-all hover:border-amber-500/30 hover:bg-card/80 flex flex-col justify-between ${
+                      selected.includes(lead.id) ? "border-amber-500/40 bg-amber-500/5" : "border-border"
+                    }`}
                   >
-                    {/* Top row: avatar + name + consulta icon */}
+                    {/* Top row: checkbox + avatar + name + consulta icon */}
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleSelected(lead.id); }}
+                        className="shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground hover:text-amber-400 transition-colors"
+                      >
+                        {selected.includes(lead.id) ? (
+                          <CheckSquare className="w-4 h-4 text-amber-400" />
+                        ) : (
+                          <Square className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </button>
                       <div className="w-8 h-8 rounded-md bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0">
                         {getInitials(lead)}
                       </div>
