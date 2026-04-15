@@ -308,8 +308,7 @@ export default function HubLeadsPage() {
              </SelectContent>
            </Select>
            </div>
-          </Select>
-        </div>
+         </div>
 
         {/* Fixed top: Search */}
         <div className="relative shrink-0 mt-2">
