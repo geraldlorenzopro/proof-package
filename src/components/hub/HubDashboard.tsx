@@ -15,7 +15,7 @@ import IntakeWizard from "../intake/IntakeWizard";
 import NewContactModal from "../workspace/NewContactModal";
 
 
-import HubCreditsWidget from "./HubCreditsWidget";
+
 import { Skeleton } from "@/components/ui/skeleton";
 
 const OFFICIAL_RESOURCES = [
