@@ -2129,6 +2129,44 @@ export type Database = {
           },
         ]
       }
+      ghl_sync_log: {
+        Row: {
+          account_id: string
+          contacts_created: number | null
+          contacts_updated: number | null
+          created_at: string | null
+          id: string
+          last_synced_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          contacts_created?: number | null
+          contacts_updated?: number | null
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          contacts_created?: number | null
+          contacts_updated?: number | null
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ghl_sync_log_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hub_apps: {
         Row: {
           created_at: string
@@ -2373,6 +2411,7 @@ export type Database = {
           firm_logo_url: string | null
           firm_name: string | null
           firm_phone: string | null
+          ghl_api_key: string | null
           ghl_appointments_synced: number | null
           ghl_contacts_synced: number | null
           ghl_last_sync: string | null
@@ -2397,6 +2436,7 @@ export type Database = {
           firm_logo_url?: string | null
           firm_name?: string | null
           firm_phone?: string | null
+          ghl_api_key?: string | null
           ghl_appointments_synced?: number | null
           ghl_contacts_synced?: number | null
           ghl_last_sync?: string | null
@@ -2421,6 +2461,7 @@ export type Database = {
           firm_logo_url?: string | null
           firm_name?: string | null
           firm_phone?: string | null
+          ghl_api_key?: string | null
           ghl_appointments_synced?: number | null
           ghl_contacts_synced?: number | null
           ghl_last_sync?: string | null
