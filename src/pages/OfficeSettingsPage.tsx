@@ -777,6 +777,122 @@ export default function OfficeSettingsPage() {
   );
 }
 
+// ── Webhook Leads Section ──
+function WebhookLeadsSection({ accountId }: { accountId: string | null }) {
+  const [webhookApiKey, setWebhookApiKey] = useState<string | null>(null);
+  const [showKey, setShowKey] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/receive-lead`;
+
+  useEffect(() => {
+    if (!accountId) return;
+    (async () => {
+      const { data } = await supabase
+        .from('office_config')
+        .select('webhook_api_key')
+        .eq('account_id', accountId)
+        .single();
+      setWebhookApiKey((data as any)?.webhook_api_key || null);
+      setLoading(false);
+    })();
+  }, [accountId]);
+
+  async function generateKey() {
+    if (!accountId) return;
+    const newKey = 'ner_live_' + Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
+    const { error } = await supabase
+      .from('office_config')
+      .update({ webhook_api_key: newKey } as any)
+      .eq('account_id', accountId);
+    if (error) { toast.error("Error al generar clave"); return; }
+    setWebhookApiKey(newKey);
+    toast.success("Nueva API Key generada");
+  }
+
+  function copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado ✅`);
+  }
+
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-jarvis" /></div>;
+
+  const examplePayload = JSON.stringify({
+    account_id: accountId,
+    api_key: webhookApiKey || "tu_api_key",
+    first_name: "María",
+    last_name: "García",
+    email: "maria@gmail.com",
+    phone: "+14071234567",
+    message: "Quiero info sobre residencia",
+    source: "website",
+  }, null, 2);
+
+  return (
+    <div className="space-y-4">
+      <Card className="bg-card/60 border-border/30 p-5 space-y-5">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+            <Webhook className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Recibir leads externos</h3>
+            <p className="text-xs text-muted-foreground">Conecta formularios web para recibir leads automáticamente</p>
+          </div>
+        </div>
+
+        <FieldRow label="Webhook URL">
+          <div className="flex items-center gap-2">
+            <Input value={webhookUrl} readOnly className="bg-secondary/50 border-border/30 font-mono text-xs" />
+            <Button variant="outline" size="sm" onClick={() => copyToClipboard(webhookUrl, "URL")} className="shrink-0 gap-1.5">
+              <Copy className="w-3.5 h-3.5" /> Copiar
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1">Pega esta URL en tu formulario externo (Gravity Forms, Jotform, Typeform, etc.)</p>
+        </FieldRow>
+
+        <FieldRow label="API Key">
+          {webhookApiKey ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={showKey ? webhookApiKey : '•'.repeat(40)}
+                readOnly
+                className="bg-secondary/50 border-border/30 font-mono text-xs"
+              />
+              <Button variant="outline" size="sm" onClick={() => setShowKey(!showKey)} className="shrink-0 gap-1.5">
+                {showKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => copyToClipboard(webhookApiKey, "API Key")} className="shrink-0 gap-1.5">
+                <Copy className="w-3.5 h-3.5" /> Copiar
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={generateKey} variant="outline" size="sm" className="gap-1.5">
+              <Plus className="w-3.5 h-3.5" /> Generar API Key
+            </Button>
+          )}
+          <p className="text-[10px] text-muted-foreground mt-1">Incluye esta clave en cada request para autenticar tu formulario</p>
+        </FieldRow>
+      </Card>
+
+      <Card className="bg-card/60 border-border/30 p-5">
+        <h4 className="text-sm font-semibold text-foreground mb-3">Ejemplo de payload JSON</h4>
+        <pre className="text-[11px] bg-secondary/50 p-4 rounded-lg overflow-auto text-muted-foreground font-mono leading-relaxed border border-border/20">
+          {examplePayload}
+        </pre>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3 gap-1.5"
+          onClick={() => copyToClipboard(examplePayload, "Ejemplo")}
+        >
+          <Copy className="w-3.5 h-3.5" /> Copiar ejemplo
+        </Button>
+      </Card>
+    </div>
+  );
+}
+
 // ── GHL Integration Card ──
 function GhlIntegrationCard({ accountId, config }: { accountId: string | null; config: OfficeConfig | null }) {
   const [syncing, setSyncing] = useState(false);
