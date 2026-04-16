@@ -150,8 +150,11 @@ export default function CaseTasksPanel({ tasks, caseId, accountId, onTaskChanged
   async function handleDelete() {
     if (!deleteId) return;
     try {
+      const deletedTask = tasks.find(t => t.id === deleteId);
       const { error } = await supabase.from("case_tasks").delete().eq("id", deleteId);
       if (error) throw error;
+      const { logAudit } = await import("@/lib/auditLog");
+      logAudit({ action: "task.deleted" as any, entity_type: "task" as any, entity_id: deleteId, entity_label: deletedTask?.title || "Tarea" });
       setDeleteId(null);
       onTaskChanged();
       toast.success("Tarea eliminada");

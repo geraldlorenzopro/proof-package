@@ -136,8 +136,16 @@ export default function CasesPage() {
 
   async function deleteCase(id: string) {
     if (!confirm('¿Eliminar este caso y todas sus evidencias?')) return;
+    const deletedCase = cases.find(c => c.id === id);
     await supabase.from('client_cases').delete().eq('id', id);
     setCases(prev => prev.filter(c => c.id !== id));
+    const { logAudit } = await import("@/lib/auditLog");
+    logAudit({
+      action: "case.deleted",
+      entity_type: "case",
+      entity_id: id,
+      entity_label: deletedCase?.client_name || "Caso",
+    });
   }
 
   const stats = {
