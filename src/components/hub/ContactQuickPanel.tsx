@@ -15,7 +15,7 @@ import {
   FileText, Briefcase, ChevronRight, Check, Clock,
   StickyNote, CheckSquare, CalendarDays, Plus, X, Loader2
 } from "lucide-react";
-import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
+import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -873,16 +873,15 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     {/* Edit Contact Dialog */}
     {profile && (
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Editar contacto</DialogTitle>
           </DialogHeader>
-          <ClientProfileEditor
+          <ClientQuickEditor
             clientId={profile.id}
             onUpdated={() => {
               setEditOpen(false);
               loadData(profile.id);
-              toast.success("Contacto actualizado ✅");
             }}
           />
         </DialogContent>
