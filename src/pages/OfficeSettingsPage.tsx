@@ -168,11 +168,20 @@ export default function OfficeSettingsPage() {
         .eq('account_id', mem.account_id);
 
       if (mems) {
-        const enriched: TeamMember[] = [];
-        for (const m of mems) {
-          const { data: p } = await supabase.from('profiles').select('full_name').eq('user_id', m.user_id).single();
-          enriched.push({ ...m, full_name: p?.full_name || null, email: null });
-        }
+        const userIds = mems.map(m => m.user_id);
+        const { data: profiles } = userIds.length > 0
+          ? await supabase.from('profiles').select('user_id, full_name, email').in('user_id', userIds)
+          : { data: [] as any[] };
+
+        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+        const enriched: TeamMember[] = mems.map((m: any) => {
+          const profile = profileMap.get(m.user_id);
+          return {
+            ...m,
+            full_name: profile?.full_name || null,
+            email: profile?.email || null,
+          };
+        });
         setMembers(enriched);
       }
 
@@ -1179,6 +1188,9 @@ function GhlTeamSyncSection({ accountId }: { accountId: string | null }) {
   const [nerMembers, setNerMembers] = useState<any[]>([]);
   const [loadingMappings, setLoadingMappings] = useState(true);
 
+  const mappedCount = ghlUsers.filter(u => !!u.mapped_user_id).length;
+  const pendingCount = ghlUsers.length - mappedCount;
+
   useEffect(() => {
     if (!accountId) return;
     loadMappings();
@@ -1195,11 +1207,22 @@ function GhlTeamSyncSection({ accountId }: { accountId: string | null }) {
     const userIds = members.map(m => m.user_id);
     let profiles: any[] = [];
     if (userIds.length > 0) {
-      const { data: p } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+      const { data: p } = await supabase.from("profiles").select("user_id, full_name, email").in("user_id", userIds);
       profiles = p || [];
     }
-    const profileMap = new Map(profiles.map(p => [p.user_id, p.full_name]));
-    setNerMembers(members.map(m => ({ ...m, full_name: profileMap.get(m.user_id) || "Sin nombre" })));
+    const profileMap = new Map(profiles.map(p => [p.user_id, p]));
+    setNerMembers(
+      members
+        .map(m => {
+          const profile = profileMap.get(m.user_id);
+          return {
+            ...m,
+            full_name: profile?.full_name || profile?.email || "Sin nombre",
+            email: profile?.email || null,
+          };
+        })
+        .sort((a, b) => a.full_name.localeCompare(b.full_name))
+    );
     setGhlUsers((mappingsRes.data || []) as any[]);
     setLoadingMappings(false);
   }
@@ -1212,7 +1235,7 @@ function GhlTeamSyncSection({ accountId }: { accountId: string | null }) {
         body: { account_id: accountId },
       });
       if (error) throw error;
-      toast.success(`${data.imported || 0} usuarios importados de GHL`);
+      toast.success(`${data.imported || 0} usuarios importados · ${data.created_ner_users || 0} creados en NER`);
       await loadMappings();
     } catch (err: any) {
       toast.error("Error al importar usuarios: " + (err.message || ""));
@@ -1235,7 +1258,7 @@ function GhlTeamSyncSection({ accountId }: { accountId: string | null }) {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold text-foreground">Equipo GHL</p>
-          <p className="text-[10px] text-muted-foreground">Sincroniza y mapea usuarios de GHL a tu equipo en NER</p>
+          <p className="text-[10px] text-muted-foreground">Importa desde GHL y crea o reutiliza automáticamente los mismos usuarios en NER por email</p>
         </div>
         <Button
           onClick={handleSyncTeam}
@@ -1245,47 +1268,67 @@ function GhlTeamSyncSection({ accountId }: { accountId: string | null }) {
           className="gap-1.5 text-xs"
         >
           {syncingTeam ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-          Importar usuarios
+          Importar y mapear
         </Button>
       </div>
+
+      {!loadingMappings && ghlUsers.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" className="text-[10px]">{mappedCount} mapeados</Badge>
+          <Badge variant="outline" className="text-[10px]">{pendingCount} pendientes</Badge>
+          <Badge variant="outline" className="text-[10px]">{nerMembers.length} usuarios en NER</Badge>
+        </div>
+      )}
 
       {loadingMappings ? (
         <div className="flex items-center justify-center py-4">
           <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
         </div>
       ) : ghlUsers.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-3">No hay usuarios GHL importados. Haz clic en "Importar usuarios".</p>
+        <p className="text-xs text-muted-foreground text-center py-3">No hay usuarios GHL importados. Haz clic en "Importar y mapear".</p>
       ) : (
         <div className="space-y-2">
-          {ghlUsers.map(gu => (
+          {ghlUsers.map(gu => {
+            const linkedMember = nerMembers.find(m => m.user_id === gu.mapped_user_id);
+
+            return (
             <div key={gu.id} className="flex items-center gap-3 bg-secondary/30 rounded-lg p-3">
               <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
                 {(gu.ghl_user_name || "?")[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{gu.ghl_user_name || "Sin nombre"}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{gu.ghl_user_email || gu.ghl_user_role || "GHL"}</p>
+                <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                  <p className="text-[10px] text-muted-foreground truncate">{gu.ghl_user_email || gu.ghl_user_role || "GHL"}</p>
+                  {linkedMember ? (
+                    <Badge variant="secondary" className="text-[10px]">NER: {linkedMember.full_name}</Badge>
+                  ) : gu.ghl_user_email ? (
+                    <Badge variant="outline" className="text-[10px]">Pendiente de mapear</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px]">Sin email en GHL</Badge>
+                  )}
+                </div>
               </div>
               <div className="shrink-0">
                 <Select
                   value={gu.mapped_user_id || "none"}
                   onValueChange={(val) => handleMapUser(gu.id, val === "none" ? null : val)}
                 >
-                  <SelectTrigger className="h-8 w-[160px] text-xs border-border/40">
+                  <SelectTrigger className="h-8 w-[240px] text-xs border-border/40">
                     <SelectValue placeholder="Sin mapear" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Sin mapear</SelectItem>
                     {nerMembers.map(m => (
                       <SelectItem key={m.user_id} value={m.user_id}>
-                        {m.full_name} ({m.role})
+                        {m.full_name}{m.email ? ` · ${m.email}` : ""} ({m.role})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
     </div>

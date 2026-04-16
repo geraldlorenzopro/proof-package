@@ -5,6 +5,10 @@ import { getGHLConfig } from "../_shared/ghl.ts";
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_VERSION = "2021-07-28";
 
+function normalizeEmail(email: string | null | undefined) {
+  return email?.trim().toLowerCase() || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -74,6 +78,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    const { data: authUsersPage, error: authUsersError } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    if (authUsersError) {
+      console.error("Error listing auth users:", authUsersError);
+    }
+
+    const authUserByEmail = new Map<string, string>();
+    for (const authUser of authUsersPage?.users || []) {
+      const email = normalizeEmail(authUser.email);
+      if (email) authUserByEmail.set(email, authUser.id);
+    }
+
     // Upsert each user into ghl_user_mappings
     const rows = users.map((u: any) => ({
       account_id,
@@ -97,49 +112,150 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Auto-map by email: match ghl_user_email to profiles.email → account_members.user_id
+    const { data: members } = await admin
+      .from("account_members")
+      .select("account_id, user_id")
+      .eq("account_id", account_id);
+
+    const existingMemberIds = (members || []).map((m: any) => m.user_id);
+
+    let memberProfiles: any[] = [];
+    if (existingMemberIds.length > 0) {
+      const { data: profiles } = await admin
+        .from("profiles")
+        .select("user_id, email, full_name")
+        .in("user_id", existingMemberIds);
+
+      memberProfiles = profiles || [];
+    }
+
+    const accountMemberByEmail = new Map<string, string>();
+    for (const profile of memberProfiles) {
+      const email = normalizeEmail(profile.email);
+      if (email) accountMemberByEmail.set(email, profile.user_id);
+    }
+
+    // Auto-create/reuse NER users by email and map them deterministically
     const { data: mappings } = await admin
       .from("ghl_user_mappings")
-      .select("id, ghl_user_email")
+      .select("id, ghl_user_id, ghl_user_name, ghl_user_email, mapped_user_id")
       .eq("account_id", account_id)
-      .is("mapped_user_id", null);
+      .order("ghl_user_name", { ascending: true });
 
-    if (mappings && mappings.length > 0) {
-      const { data: members } = await admin
+    let createdNerUsers = 0;
+    let reusedNerUsers = 0;
+    let skippedWithoutEmail = 0;
+    const conflicts: Array<{ email: string; reason: string }> = [];
+
+    for (const mapping of mappings || []) {
+      const normalizedEmail = normalizeEmail(mapping.ghl_user_email);
+      if (!normalizedEmail) {
+        skippedWithoutEmail += 1;
+        continue;
+      }
+
+      let userId = mapping.mapped_user_id || accountMemberByEmail.get(normalizedEmail) || authUserByEmail.get(normalizedEmail) || null;
+
+      if (!userId) {
+        const randomPassword = `${crypto.randomUUID()}${crypto.randomUUID()}`;
+        const { data: createdAuth, error: createAuthError } = await admin.auth.admin.createUser({
+          email: normalizedEmail,
+          password: randomPassword,
+          email_confirm: true,
+          user_metadata: {
+            imported_from_ghl: true,
+            ghl_user_id: mapping.ghl_user_id,
+            ghl_user_name: mapping.ghl_user_name,
+            account_id,
+          },
+        });
+
+        if (createAuthError || !createdAuth.user) {
+          console.error("Error creating auth user:", normalizedEmail, createAuthError);
+          conflicts.push({ email: normalizedEmail, reason: createAuthError?.message || "No se pudo crear el usuario" });
+          continue;
+        }
+
+        userId = createdAuth.user.id;
+        authUserByEmail.set(normalizedEmail, userId);
+        createdNerUsers += 1;
+      } else {
+        reusedNerUsers += 1;
+      }
+
+      const { data: existingMemberships } = await admin
         .from("account_members")
-        .select("user_id")
-        .eq("account_id", account_id);
+        .select("account_id, user_id")
+        .eq("user_id", userId);
 
-      if (members) {
-        const memberIds = members.map((m: any) => m.user_id);
-        const { data: profiles } = await admin
-          .from("profiles")
-          .select("user_id, email")
-          .in("user_id", memberIds);
+      const belongsToOtherAccount = (existingMemberships || []).some((membership: any) => membership.account_id !== account_id);
+      if (belongsToOtherAccount) {
+        conflicts.push({ email: normalizedEmail, reason: "El usuario ya pertenece a otra cuenta" });
+        continue;
+      }
 
-        if (profiles) {
-          const emailMap = new Map<string, string>();
-          for (const p of profiles) {
-            if (p.email) emailMap.set(p.email.toLowerCase(), p.user_id);
-          }
+      const belongsToThisAccount = (existingMemberships || []).some((membership: any) => membership.account_id === account_id);
+      if (!belongsToThisAccount) {
+        const { error: memberInsertError } = await admin
+          .from("account_members")
+          .insert({ account_id, user_id: userId, role: "member" });
 
-          for (const m of mappings) {
-            if (m.ghl_user_email) {
-              const userId = emailMap.get(m.ghl_user_email.toLowerCase());
-              if (userId) {
-                await admin
-                  .from("ghl_user_mappings")
-                  .update({ mapped_user_id: userId })
-                  .eq("id", m.id);
-              }
-            }
-          }
+        if (memberInsertError) {
+          console.error("Error linking account member:", normalizedEmail, memberInsertError);
+          conflicts.push({ email: normalizedEmail, reason: memberInsertError.message });
+          continue;
         }
       }
+
+      const displayName = mapping.ghl_user_name || normalizedEmail;
+      const { data: existingProfile } = await admin
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingProfile) {
+        const profileUpdate: Record<string, string> = {};
+        if (!existingProfile.full_name && displayName) profileUpdate.full_name = displayName;
+        if (!existingProfile.email && normalizedEmail) profileUpdate.email = normalizedEmail;
+
+        if (Object.keys(profileUpdate).length > 0) {
+          const { error: profileUpdateError } = await admin
+            .from("profiles")
+            .update(profileUpdate)
+            .eq("user_id", userId);
+
+          if (profileUpdateError) {
+            console.error("Error updating profile:", normalizedEmail, profileUpdateError);
+          }
+        }
+      } else {
+        const { error: profileInsertError } = await admin
+          .from("profiles")
+          .insert({ user_id: userId, full_name: displayName, email: normalizedEmail });
+
+        if (profileInsertError) {
+          console.error("Error creating profile:", normalizedEmail, profileInsertError);
+        }
+      }
+
+      accountMemberByEmail.set(normalizedEmail, userId);
+
+      await admin
+        .from("ghl_user_mappings")
+        .update({ mapped_user_id: userId })
+        .eq("id", mapping.id);
     }
 
     return new Response(
-      JSON.stringify({ imported: rows.length, users: rows.map((r: any) => ({ name: r.ghl_user_name, email: r.ghl_user_email, ghl_id: r.ghl_user_id })) }),
+      JSON.stringify({
+        imported: rows.length,
+        created_ner_users: createdNerUsers,
+        reused_ner_users: reusedNerUsers,
+        skipped_without_email: skippedWithoutEmail,
+        conflicts,
+        users: rows.map((r: any) => ({ name: r.ghl_user_name, email: r.ghl_user_email, ghl_id: r.ghl_user_id })),
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
