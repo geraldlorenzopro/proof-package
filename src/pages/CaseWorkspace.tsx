@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ClientDirectory from "@/components/workspace/ClientDirectory";
-import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
+import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
 import NewCaseFromProfile from "@/components/workspace/NewCaseFromProfile";
 import HubLayout from "@/components/hub/HubLayout";
 import CasePipelineTracker, { type PipelineStage } from "@/components/case-engine/CasePipelineTracker";
@@ -998,7 +998,7 @@ export default function CaseWorkspace() {
         {/* ═══ PROFILE VIEW ═══ */}
         {activeView === "profile" && selectedClientId && (
           <div>
-            <ClientProfileEditor
+            <ClientQuickEditor
               clientId={selectedClientId}
               onUpdated={() => {
                 supabase.from("client_profiles")

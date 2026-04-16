@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { X, ArrowLeft, ArrowRight, Check, Loader2, Copy, ExternalLink, MessageCircle, AlertTriangle } from "lucide-react";
-import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
+import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
 import ChannelLogo from "./ChannelLogo";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -700,7 +700,7 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, i
             if (!effectiveProfileId) return null;
 
             return (
-              <ClientProfileEditor
+              <ClientQuickEditor
                 clientId={effectiveProfileId}
                 onUpdated={async () => {
                   setEditProfileOpen(false);
