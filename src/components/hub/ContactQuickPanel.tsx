@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import {
   Phone, Mail, MessageSquare, ExternalLink,
   FileText, Briefcase, ChevronRight, Check,
-  StickyNote, CheckSquare, CalendarDays, Plus, Trash2, X
+  StickyNote, CheckSquare, CalendarDays, Plus, X, Loader2
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
