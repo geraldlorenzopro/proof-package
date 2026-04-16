@@ -116,7 +116,7 @@ function HubDashboardInner({
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSkeleton(false);
-    }, 800);
+    }, 1200);
     return () => clearTimeout(timer);
   }, []);
 
