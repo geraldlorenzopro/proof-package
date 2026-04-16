@@ -444,6 +444,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   const noteLines = profile?.notes?.split("\n").filter(l => l.trim()) || [];
 
   return (
+    <>
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent side="right" className="w-[420px] sm:max-w-[420px] p-0 flex flex-col overflow-hidden">
         {loading || !profile ? (
