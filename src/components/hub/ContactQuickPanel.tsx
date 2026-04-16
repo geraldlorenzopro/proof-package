@@ -149,7 +149,7 @@ function TimeSelector({ value, onChange }: { value: string; onChange: (v: string
       <span className="text-foreground/60 text-sm">:</span>
       <select value={rawMin} onChange={e => update(h12, e.target.value, isPM)}
         onWheel={stopScroll} className={`${selectClass} w-16 text-center`}>
-        {Array.from({length:60},(_,i)=>String(i).padStart(2,"0")).map(m => <option key={m} value={m}>{m}</option>)}
+        {Array.from({length:12},(_,i)=>String(i*5).padStart(2,"0")).map(m => <option key={m} value={m}>{m}</option>)}
       </select>
       <select value={isPM ? "PM" : "AM"} onChange={e => update(h12, rawMin, e.target.value === "PM")}
         onWheel={stopScroll} className={`${selectClass} w-16 text-center`}>
