@@ -1163,6 +1163,11 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
       {!isGhlConnected && (
         <p className="text-[10px] text-amber-400/80 text-center">Configura tu API Key y Location ID para sincronizar</p>
       )}
+
+      {/* GHL Team Members Sync */}
+      {isGhlConnected && (
+        <GhlTeamSyncSection accountId={accountId} />
+      )}
     </Card>
   );
 }
