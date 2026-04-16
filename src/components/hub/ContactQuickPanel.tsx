@@ -300,7 +300,36 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       })
       .eq("id", taskId);
     if (!error) {
+      const task = tasks.find(t => t.id === taskId);
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+
+      // Sync status change to GHL if task has ghl_task_id
+      if (task && (task as any).ghl_task_id && profile?.ghl_contact_id) {
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          const { data: mem } = await supabase.from("account_members")
+            .select("account_id").eq("user_id", userData.user!.id).limit(1).single();
+          if (mem) {
+            const session = await supabase.auth.getSession();
+            fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-task-to-ghl`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${session.data.session?.access_token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                account_id: mem.account_id,
+                task_id: taskId,
+                ghl_contact_id: profile.ghl_contact_id,
+                ghl_task_id: (task as any).ghl_task_id,
+                title: task.title,
+                due_date: task.due_date,
+                status: newStatus,
+              }),
+            }).catch(() => {});
+          }
+        } catch {}
+      }
     }
   }
 
