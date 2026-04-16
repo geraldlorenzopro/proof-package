@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import logger from "./logger";
 
 export type AuditAction =
   | "client.created" | "client.updated" | "client.deleted" | "client.bulk_deleted"
@@ -28,36 +29,68 @@ interface AuditEntry {
   metadata?: Record<string, unknown>;
 }
 
+// Cache user context to avoid repeated queries within the same session
+let _cachedUserId: string | null = null;
+let _cachedAccountId: string | null = null;
+let _cachedDisplayName: string | null = null;
+
+async function resolveUserContext(): Promise<{
+  userId: string;
+  accountId: string;
+  displayName: string;
+} | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // If cached and same user, reuse
+  if (_cachedUserId === user.id && _cachedAccountId && _cachedDisplayName) {
+    return { userId: user.id, accountId: _cachedAccountId, displayName: _cachedDisplayName };
+  }
+
+  const { data: accountId } = await supabase.rpc("user_account_id", { _user_id: user.id });
+  if (!accountId) return null;
+
+  // Get display name from profile
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const displayName = profile?.full_name || user.email || "Unknown";
+
+  // Cache for future calls
+  _cachedUserId = user.id;
+  _cachedAccountId = accountId;
+  _cachedDisplayName = displayName;
+
+  return { userId: user.id, accountId, displayName };
+}
+
 /**
  * Record an audit log entry. Fails silently to never block UX.
  */
 export async function logAudit(entry: AuditEntry): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const ctx = await resolveUserContext();
+    if (!ctx) return;
 
-    const { data: accountId } = await supabase.rpc("user_account_id", { _user_id: user.id });
-    if (!accountId) return;
-
-    // Try to get display name from profile
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    await supabase.from("audit_logs" as any).insert({
-      account_id: accountId,
-      user_id: user.id,
-      user_display_name: profile?.full_name || user.email || "Unknown",
+    const { error } = await supabase.from("audit_logs").insert({
+      account_id: ctx.accountId,
+      user_id: ctx.userId,
+      user_display_name: ctx.displayName,
       action: entry.action,
       entity_type: entry.entity_type,
       entity_id: entry.entity_id || null,
       entity_label: entry.entity_label || null,
       metadata: entry.metadata || {},
     });
+
+    if (error) {
+      logger.warn("[auditLog] insert failed", error.message);
+    }
   } catch (err) {
-    // Silent — never block UX
+    logger.warn("[auditLog] exception", err);
   }
 }
 
@@ -82,10 +115,17 @@ export async function logAccess({
   metadata?: Record<string, unknown>;
 }): Promise<void> {
   try {
-    await supabase.from("audit_logs" as any).insert({
+    // If userName not provided, try to resolve it
+    let displayName = userName;
+    if (!displayName || displayName === "Usuario") {
+      const ctx = await resolveUserContext();
+      displayName = ctx?.displayName || userName || "Usuario";
+    }
+
+    const { error } = await supabase.from("audit_logs").insert({
       account_id: accountId,
       user_id: userId,
-      user_display_name: userName || "Usuario",
+      user_display_name: displayName,
       action: `${action}_${entityType}`,
       entity_type: entityType,
       entity_id: entityId || accountId,
@@ -95,7 +135,20 @@ export async function logAccess({
         url: window.location.pathname,
       },
     });
+
+    if (error) {
+      logger.warn("[auditLog] logAccess insert failed", error.message);
+    }
   } catch {
     // Silent — never block UX
   }
+}
+
+/**
+ * Clear cached user context (call on logout).
+ */
+export function clearAuditCache(): void {
+  _cachedUserId = null;
+  _cachedAccountId = null;
+  _cachedDisplayName = null;
 }
