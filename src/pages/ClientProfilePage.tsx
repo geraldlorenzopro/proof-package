@@ -317,11 +317,15 @@ export default function ClientProfilePage() {
             {waLink && <Button variant="outline" size="sm" asChild><a href={waLink} target="_blank" rel="noopener noreferrer"><Phone className="w-4 h-4" /></a></Button>}
             {mailLink && <Button variant="outline" size="sm" asChild><a href={mailLink}><Mail className="w-4 h-4" /></a></Button>}
             <button
-              onClick={() => setEditOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/40 text-xs text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
+              onClick={() => setEditOpen(!editOpen)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-all ${
+                editOpen
+                  ? "border-primary/40 text-primary bg-primary/10"
+                  : "border-border/40 text-muted-foreground hover:text-foreground hover:border-border/60"
+              }`}
             >
               <Pencil className="w-3.5 h-3.5" />
-              Editar
+              {editOpen ? "Cancelar edición" : "Editar"}
             </button>
             <button
               onClick={() => setDeleteConfirm(true)}
@@ -345,51 +349,66 @@ export default function ClientProfilePage() {
             <TabsTrigger value="documentos" className="gap-1.5 text-xs"><FolderOpen className="w-3.5 h-3.5" />Docs <Badge variant="outline" className="ml-1 text-[9px] px-1.5">{docs.length}</Badge></TabsTrigger>
           </TabsList>
 
-          {/* INFO TAB */}
           <TabsContent value="info" className="space-y-4 mt-4">
-            <Section title="Datos personales">
-              <InfoRow label="Nombre completo" value={[profile.first_name, profile.middle_name, profile.last_name].filter(Boolean).join(" ") || null} />
-              <InfoRow label="Fecha de nacimiento" value={profile.dob} />
-              <InfoRow label="Género" value={profile.gender} />
-              <InfoRow label="Estado civil" value={profile.marital_status} />
-              <InfoRow label="País de nacimiento" value={profile.country_of_birth} />
-              <InfoRow label="Ciudad de nacimiento" value={profile.city_of_birth} />
-              <InfoRow label="Ciudadanía" value={profile.country_of_citizenship} />
-            </Section>
-            <Section title="Contacto">
-              <InfoRow label="Teléfono" value={profile.phone} />
-              <InfoRow label="Email" value={profile.email} />
-              <InfoRow label="Dirección" value={[profile.address_street, profile.address_city, profile.address_state, profile.address_zip].filter(Boolean).join(", ") || null} />
-            </Section>
-            <Section title="Inmigración">
-              <InfoRow label="Status migratorio" value={profile.immigration_status} />
-              <InfoRow label="A-Number" value={profile.a_number} />
-              <InfoRow label="SSN (últimos 4)" value={profile.ssn_last4} />
-              <InfoRow label="I-94 Number" value={profile.i94_number} />
-              <InfoRow label="Clase de admisión" value={profile.class_of_admission} />
-              <InfoRow label="Última entrada" value={profile.date_of_last_entry} />
-              <InfoRow label="Lugar de entrada" value={profile.place_of_last_entry} />
-            </Section>
-            <Section title="Pasaporte">
-              <InfoRow label="Número" value={profile.passport_number} />
-              <InfoRow label="País" value={profile.passport_country} />
-              <InfoRow label="Expiración" value={profile.passport_expiration} />
-            </Section>
-            {profile.notes && (
-              <Section title="Notas">
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{profile.notes}</p>
-              </Section>
-            )}
-            {profile.ghl_tags && profile.ghl_tags.length > 0 && (
-              <Section title="Tags de CRM">
-                <div className="flex flex-wrap gap-1.5">
-                  {profile.ghl_tags.map(tag => (
-                    <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full border bg-muted/20 border-border/30 text-muted-foreground">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </Section>
+            {editOpen ? (
+              <div className="border border-border rounded-xl p-4">
+                <ClientProfileEditor
+                  clientId={profile.id}
+                  onUpdated={async () => {
+                    setEditOpen(false);
+                    await loadProfile();
+                    await syncToGHL(profile.id);
+                    toast.success("Contacto actualizado y sincronizado");
+                  }}
+                />
+              </div>
+            ) : (
+              <>
+                <Section title="Datos personales">
+                  <InfoRow label="Nombre completo" value={[profile.first_name, profile.middle_name, profile.last_name].filter(Boolean).join(" ") || null} />
+                  <InfoRow label="Fecha de nacimiento" value={profile.dob} />
+                  <InfoRow label="Género" value={profile.gender} />
+                  <InfoRow label="Estado civil" value={profile.marital_status} />
+                  <InfoRow label="País de nacimiento" value={profile.country_of_birth} />
+                  <InfoRow label="Ciudad de nacimiento" value={profile.city_of_birth} />
+                  <InfoRow label="Ciudadanía" value={profile.country_of_citizenship} />
+                </Section>
+                <Section title="Contacto">
+                  <InfoRow label="Teléfono" value={profile.phone} />
+                  <InfoRow label="Email" value={profile.email} />
+                  <InfoRow label="Dirección" value={[profile.address_street, profile.address_city, profile.address_state, profile.address_zip].filter(Boolean).join(", ") || null} />
+                </Section>
+                <Section title="Inmigración">
+                  <InfoRow label="Status migratorio" value={profile.immigration_status} />
+                  <InfoRow label="A-Number" value={profile.a_number} />
+                  <InfoRow label="SSN (últimos 4)" value={profile.ssn_last4} />
+                  <InfoRow label="I-94 Number" value={profile.i94_number} />
+                  <InfoRow label="Clase de admisión" value={profile.class_of_admission} />
+                  <InfoRow label="Última entrada" value={profile.date_of_last_entry} />
+                  <InfoRow label="Lugar de entrada" value={profile.place_of_last_entry} />
+                </Section>
+                <Section title="Pasaporte">
+                  <InfoRow label="Número" value={profile.passport_number} />
+                  <InfoRow label="País" value={profile.passport_country} />
+                  <InfoRow label="Expiración" value={profile.passport_expiration} />
+                </Section>
+                {profile.notes && (
+                  <Section title="Notas">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{profile.notes}</p>
+                  </Section>
+                )}
+                {profile.ghl_tags && profile.ghl_tags.length > 0 && (
+                  <Section title="Tags de CRM">
+                    <div className="flex flex-wrap gap-1.5">
+                      {profile.ghl_tags.map(tag => (
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full border bg-muted/20 border-border/30 text-muted-foreground">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </Section>
+                )}
+              </>
             )}
           </TabsContent>
 
