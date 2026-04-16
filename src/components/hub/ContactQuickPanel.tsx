@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import {
   Phone, Mail, MessageSquare, ExternalLink, Pencil,
   FileText, Briefcase, ChevronRight, Check, Loader2, Tag,
-  CalendarPlus, ListChecks, Plus, Square, CheckSquare
+  CalendarPlus, ListChecks, Plus, Square, CheckSquare, Download, Link2
 } from "lucide-react";
 import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
 import { formatDistanceToNow } from "date-fns";
