@@ -121,6 +121,43 @@ const APPT_TYPE_LABELS: Record<string, string> = {
   other: "Otro",
 };
 
+const selectClass = "px-2 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm text-foreground focus:outline-none focus:border-primary/40 [color-scheme:dark]";
+
+function TimeSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const parts = value ? value.split(":") : ["", ""];
+  const h24 = parseInt(parts[0]) || 0;
+  const rawMin = parts[1] || "00";
+  const isPM = h24 >= 12;
+  const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+
+  const update = (hour12: number, min: string, pm: boolean) => {
+    let h = hour12;
+    if (pm && h !== 12) h += 12;
+    if (!pm && h === 12) h = 0;
+    onChange(`${String(h).padStart(2, "0")}:${min}`);
+  };
+
+  return (
+    <div className="flex gap-1 items-center">
+      <select value={value ? h12 : ""} onChange={e => { if (e.target.value) update(parseInt(e.target.value), rawMin, isPM); }}
+        className={`${selectClass} w-16 text-center`}>
+        <option value="">--</option>
+        {[1,2,3,4,5,6,7,8,9,10,11,12].map(h => <option key={h} value={h}>{h}</option>)}
+      </select>
+      <span className="text-foreground/60 text-sm">:</span>
+      <select value={rawMin} onChange={e => update(h12, e.target.value, isPM)}
+        className={`${selectClass} w-16 text-center`}>
+        {["00","15","30","45"].map(m => <option key={m} value={m}>{m}</option>)}
+      </select>
+      <select value={isPM ? "PM" : "AM"} onChange={e => update(h12, rawMin, e.target.value === "PM")}
+        className={`${selectClass} w-16 text-center`}>
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </div>
+  );
+}
+
 export default function ContactQuickPanel({ contactId, open, onClose, onStartIntake }: ContactQuickPanelProps) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -582,8 +619,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                       <div className="flex gap-2">
                         <input type="date" value={newTask.due_date} onChange={e => setNewTask(prev => ({ ...prev, due_date: e.target.value }))}
                           className="flex-1 px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm text-foreground focus:outline-none focus:border-primary/40 [color-scheme:dark]" />
-                        <input type="time" value={newTask.due_time} onChange={e => setNewTask(prev => ({ ...prev, due_time: e.target.value }))}
-                          className="w-36 px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm text-foreground focus:outline-none focus:border-primary/40 [color-scheme:dark]" />
+                        <TimeSelector value={newTask.due_time} onChange={v => setNewTask(prev => ({ ...prev, due_time: v }))} />
                       </div>
 
                       {/* Priority */}
@@ -664,7 +700,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                     <div className="space-y-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
                       <div className="flex gap-2">
                         <Input type="date" value={newApptDate} onChange={(e) => setNewApptDate(e.target.value)} className="h-9 text-xs flex-1 text-foreground [color-scheme:dark]" />
-                        <Input type="time" value={newApptTime} onChange={(e) => setNewApptTime(e.target.value)} className="h-9 text-xs w-32 text-foreground [color-scheme:dark]" />
+                        <TimeSelector value={newApptTime} onChange={setNewApptTime} />
                       </div>
                       <select value={newApptType} onChange={(e) => setNewApptType(e.target.value)} className="w-full h-8 text-xs rounded-md border border-border bg-background px-2 text-foreground [color-scheme:dark]">
                         <option value="consultation">Consulta inicial</option>
