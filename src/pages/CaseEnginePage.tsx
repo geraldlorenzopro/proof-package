@@ -82,6 +82,7 @@ export default function CaseEnginePage() {
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [formsCount, setFormsCount] = useState(0);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [ghlContactId, setGhlContactId] = useState<string | null>(null);
 
   const hubData = useMemo(() => {
     try {
@@ -109,6 +110,12 @@ export default function CaseEnginePage() {
       // Case Engine handles all cases directly — no redirect needed
 
       setCaseData(c);
+
+      // Fetch ghl_contact_id from client profile
+      if (c.client_profile_id) {
+        supabase.from("client_profiles").select("ghl_contact_id").eq("id", c.client_profile_id).single()
+          .then(({ data: cp }) => { if (cp?.ghl_contact_id) setGhlContactId(cp.ghl_contact_id); });
+      }
 
       // Load user role
       const { data: { user } } = await supabase.auth.getUser();
@@ -529,6 +536,7 @@ export default function CaseEnginePage() {
                     caseId={caseId!}
                     accountId={caseData.account_id}
                     onTaskChanged={loadCase}
+                    ghlContactId={ghlContactId}
                   />
                 </div>
 
@@ -539,6 +547,7 @@ export default function CaseEnginePage() {
                     caseId={caseId!}
                     accountId={caseData.account_id}
                     onNoteAdded={loadCase}
+                    ghlContactId={ghlContactId}
                   />
                 </div>
 
