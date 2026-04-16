@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import HubLayout from "@/components/hub/HubLayout";
 import IntakeWizard from "@/components/intake/IntakeWizard";
+import ContactQuickPanel from "@/components/hub/ContactQuickPanel";
 
 interface LeadProfile {
   id: string;

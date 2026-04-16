@@ -94,6 +94,7 @@ export default function HubClientsPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [pageSize, setPageSize] = useState(15);
   const [currentPage, setCurrentPage] = useState(0);
+  const [selectedContact, setSelectedContact] = useState<string | null>(null);
 
   const accountId = (() => {
     try {
