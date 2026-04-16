@@ -168,9 +168,9 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
         .order("created_at", { ascending: false }).limit(3),
       supabase.from("case_tasks")
         .select("id, title, status, priority, due_date, created_at")
-        .eq("client_profile_id" as any, id)
+        .eq("client_profile_id" as string, id)
         .is("case_id", null)
-        .order("created_at", { ascending: false }).limit(10),
+        .order("created_at", { ascending: false }).limit(10) as any,
       supabase.from("appointments")
         .select("id, appointment_date, appointment_datetime, appointment_type, status, notes")
         .eq("client_profile_id", id)
