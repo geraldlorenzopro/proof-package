@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { logger } from "./logger";
 
 export type AuditAction =
@@ -83,7 +84,7 @@ export async function logAudit(entry: AuditEntry): Promise<void> {
       entity_type: entry.entity_type as string,
       entity_id: entry.entity_id || null,
       entity_label: entry.entity_label || null,
-      metadata: entry.metadata || {},
+      metadata: (entry.metadata || {}) as Json,
     };
 
     const { error } = await supabase.from("audit_logs").insert(payload);
