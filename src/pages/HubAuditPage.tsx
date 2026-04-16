@@ -95,7 +95,35 @@ function getActionConfig(action: string) {
   return { label: action, color: "text-gray-500", bgColor: "bg-gray-50 border-gray-200" };
 }
 
-function getModule(entry: AuditEntry) {
+const READABLE_ACTIONS: Record<string, string> = {
+  "viewed_contacts_list": "Lista de contactos",
+  "viewed_client_profile": "Perfil de contacto",
+  "viewed_client_case": "Caso de cliente",
+  "viewed_consultation_room": "Sala de consulta",
+  "client.created": "Nuevo contacto",
+  "client.updated": "Contacto editado",
+  "client.deleted": "Contacto eliminado",
+  "case.created": "Nuevo caso",
+  "case.updated": "Caso editado",
+  "case.deleted": "Caso eliminado",
+  "auth.login": "Inicio de sesión",
+  "auth.logout": "Cierre de sesión",
+  "task.created": "Nueva tarea",
+  "task.deleted": "Tarea eliminada",
+  "note.created": "Nueva nota",
+  "note.deleted": "Nota eliminada",
+  "document.uploaded": "Documento subido",
+  "document.deleted": "Documento eliminado",
+  "member.removed": "Miembro removido",
+  "form.created": "Formulario creado",
+  "ghl_push_failed": "Error de sincronización",
+  "admin.account_updated": "Cuenta actualizada",
+};
+
+function getReadableAction(action: string): string {
+  return READABLE_ACTIONS[action] || action.replace(/\./g, " ").replace(/_/g, " ");
+}
+
   const baseType = entry.entity_type.replace("_list", "").replace("client_profile", "client").replace("client_case", "case").replace("consultation_room", "consultation_room");
   return MODULE_MAP[baseType] || MODULE_MAP[entry.entity_type] || { label: entry.entity_type, icon: Activity };
 }
