@@ -292,7 +292,7 @@ export default function CaseEnginePage() {
     <Wrapper>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pt-16 lg:pt-8">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
           <div className="flex items-center gap-3 mb-4">
             <button onClick={() => navigate('/hub/cases')} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
