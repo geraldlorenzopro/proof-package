@@ -111,6 +111,12 @@ export default function CaseEnginePage() {
 
       setCaseData(c);
 
+      // Fetch ghl_contact_id from client profile
+      if (c.client_profile_id) {
+        supabase.from("client_profiles").select("ghl_contact_id").eq("id", c.client_profile_id).single()
+          .then(({ data: cp }) => { if (cp?.ghl_contact_id) setGhlContactId(cp.ghl_contact_id); });
+      }
+
       // Load user role
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
