@@ -28,8 +28,23 @@ interface QuickData {
   phone: string;
   email: string;
   immigration_status: string;
+  source_channel: string;
   notes: string;
 }
+
+const CHANNEL_OPTIONS = [
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "instagram", label: "Instagram" },
+  { value: "facebook", label: "Facebook" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "referido", label: "Referido" },
+  { value: "anuncio", label: "Anuncio / Ads" },
+  { value: "website", label: "Website" },
+  { value: "llamada", label: "Llamada" },
+  { value: "walk-in", label: "Walk-in" },
+  { value: "youtube", label: "YouTube" },
+  { value: "otro", label: "Otro" },
+];
 
 export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
   const [data, setData] = useState<QuickData>({
@@ -39,6 +54,7 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
     phone: "",
     email: "",
     immigration_status: "",
+    source_channel: "",
     notes: "",
   });
   const [loading, setLoading] = useState(true);
@@ -49,7 +65,7 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
       setLoading(true);
       const { data: p } = await supabase
         .from("client_profiles")
-        .select("first_name, middle_name, last_name, phone, email, immigration_status, notes")
+        .select("first_name, middle_name, last_name, phone, email, immigration_status, source_channel, notes")
         .eq("id", clientId)
         .single();
 
@@ -61,6 +77,7 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
           phone: p.phone || "",
           email: p.email || "",
           immigration_status: p.immigration_status || "",
+          source_channel: (p as any).source_channel || "",
           notes: p.notes || "",
         });
       }
@@ -84,6 +101,7 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
       phone: data.phone.trim() || null,
       email: data.email.trim() || null,
       immigration_status: data.immigration_status || null,
+      source_channel: data.source_channel || null,
       notes: data.notes.trim() || null,
     };
 
