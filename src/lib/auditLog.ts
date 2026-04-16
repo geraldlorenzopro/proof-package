@@ -1,18 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type AuditAction =
-  | "client.created" | "client.updated" | "client.deleted"
+  | "client.created" | "client.updated" | "client.deleted" | "client.bulk_deleted"
   | "case.created" | "case.updated" | "case.status_changed" | "case.deleted"
   | "form.created" | "form.submitted" | "form.updated" | "form.deleted"
   | "evidence.uploaded" | "evidence.deleted"
   | "vawa.created" | "vawa.updated"
   | "tool.used"
   | "auth.login" | "auth.logout"
+  | "task.created" | "task.completed" | "task.deleted"
+  | "note.created" | "note.deleted"
+  | "document.uploaded" | "document.deleted"
+  | "tag.added" | "tag.removed"
+  | "member.removed" | "settings.updated"
   | "viewed_contacts_list" | "viewed_client_profile" | "viewed_client_case"
   | "viewed_consultation_room" | "exported" | "downloaded" | "modified";
 
 export type AuditEntityType = "client" | "case" | "form" | "evidence" | "vawa" | "tool" | "auth"
-  | "contacts_list" | "client_profile" | "client_case" | "consultation_room";
+  | "contacts_list" | "client_profile" | "client_case" | "consultation_room"
+  | "task" | "note" | "document" | "tag" | "settings";
 
 interface AuditEntry {
   action: AuditAction;
