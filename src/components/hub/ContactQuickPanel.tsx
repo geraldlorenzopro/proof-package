@@ -455,7 +455,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 <SheetTitle className="sr-only">Contacto</SheetTitle>
               </SheetHeader>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center text-lg font-bold text-foreground shrink-0">
                   {getInitials(profile)}
                 </div>
                 <div className="flex-1 min-w-0">
