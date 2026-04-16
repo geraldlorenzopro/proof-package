@@ -136,7 +136,7 @@ export async function logAccess({
         ...metadata,
         timestamp: new Date().toISOString(),
         url: window.location.pathname,
-      },
+      } as Json,
     });
 
     if (error) {
