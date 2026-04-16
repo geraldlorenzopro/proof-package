@@ -59,6 +59,21 @@ export default function SidebarNotesCompact({ notes, caseId, accountId, onNoteAd
   const visible = sorted.slice(0, MAX_VISIBLE);
   const remaining = sorted.length - MAX_VISIBLE;
 
+  async function pushNoteToGhl(noteId: string, content: string, authorName: string) {
+    if (!ghlContactId) return;
+    try {
+      const session = await supabase.auth.getSession();
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-note-to-ghl`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.data.session?.access_token}` },
+        body: JSON.stringify({
+          account_id: accountId, note_id: noteId, ghl_contact_id: ghlContactId,
+          content, author_name: authorName,
+        }),
+      });
+    } catch {}
+  }
+
   async function handleSave() {
     if (!content.trim()) return;
     setSaving(true);
@@ -66,12 +81,14 @@ export default function SidebarNotesCompact({ notes, caseId, accountId, onNoteAd
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
-      await supabase.from("case_notes").insert({
+      const authorName = profile?.full_name || "Staff";
+      const { data: newNote } = await supabase.from("case_notes").insert({
         case_id: caseId, account_id: accountId, author_id: user.id,
-        author_name: profile?.full_name || "Staff", content: content.trim(), note_type: noteType,
-      });
+        author_name: authorName, content: content.trim(), note_type: noteType,
+      }).select("id").single();
       setContent(""); setAdding(false); onNoteAdded();
       toast.success("Nota agregada");
+      if (newNote) void pushNoteToGhl(newNote.id, content.trim(), authorName);
     } catch (err: any) { toast.error(err.message || "Error"); }
     finally { setSaving(false); }
   }
