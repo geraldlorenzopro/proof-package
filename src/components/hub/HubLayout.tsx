@@ -95,7 +95,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   const currentPath = location.pathname;
   const isHubSection = currentPath === "/hub" || currentPath.startsWith("/hub/") || currentPath.startsWith("/case-engine/");
   const isHubAiPage = currentPath === "/hub/ai";
-
+  const isFixedPage = isHubAiPage || currentPath === "/hub/audit";
   return (
     <div className="h-[100dvh] max-h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Impersonation banner */}
@@ -195,7 +195,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             </header>
           )}
 
-          <main key={currentPath} className={`flex-1 min-h-0 animate-fade-in ${isHubAiPage ? "overflow-hidden" : "overflow-auto"}`}>
+          <main key={currentPath} className={`flex-1 min-h-0 animate-fade-in ${isFixedPage ? "overflow-hidden" : "overflow-auto"}`}>
             {children}
           </main>
         </div>
