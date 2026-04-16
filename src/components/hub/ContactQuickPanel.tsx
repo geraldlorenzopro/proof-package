@@ -13,6 +13,7 @@ import {
   FileText, Briefcase, ChevronRight, Check, Loader2, Tag
 } from "lucide-react";
 import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
+import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
