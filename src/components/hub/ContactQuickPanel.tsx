@@ -137,20 +137,22 @@ function TimeSelector({ value, onChange }: { value: string; onChange: (v: string
     onChange(`${String(h).padStart(2, "0")}:${min}`);
   };
 
+  const stopScroll = (e: React.WheelEvent) => e.stopPropagation();
+
   return (
-    <div className="flex gap-1 items-center">
+    <div className="flex gap-1 items-center" onWheel={stopScroll}>
       <select value={value ? h12 : ""} onChange={e => { if (e.target.value) update(parseInt(e.target.value), rawMin, isPM); }}
-        className={`${selectClass} w-16 text-center`}>
+        onWheel={stopScroll} className={`${selectClass} w-16 text-center`}>
         <option value="">--</option>
         {[1,2,3,4,5,6,7,8,9,10,11,12].map(h => <option key={h} value={h}>{String(h).padStart(2,"0")}</option>)}
       </select>
       <span className="text-foreground/60 text-sm">:</span>
       <select value={rawMin} onChange={e => update(h12, e.target.value, isPM)}
-        className={`${selectClass} w-16 text-center`}>
+        onWheel={stopScroll} className={`${selectClass} w-16 text-center`}>
         {Array.from({length:60},(_,i)=>String(i).padStart(2,"0")).map(m => <option key={m} value={m}>{m}</option>)}
       </select>
       <select value={isPM ? "PM" : "AM"} onChange={e => update(h12, rawMin, e.target.value === "PM")}
-        className={`${selectClass} w-16 text-center`}>
+        onWheel={stopScroll} className={`${selectClass} w-16 text-center`}>
         <option value="AM">AM</option>
         <option value="PM">PM</option>
       </select>
