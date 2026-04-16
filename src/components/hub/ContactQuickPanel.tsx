@@ -483,7 +483,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                       <button
                         onClick={handleSaveNote}
                         disabled={!quickNote.trim() || savingNote}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-medium text-primary hover:bg-primary/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-foreground/10 border border-foreground/20 text-xs font-medium text-foreground hover:bg-foreground/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {savingNote ? (
                           <><Loader2 className="w-3 h-3 animate-spin" /> Guardando...</>
