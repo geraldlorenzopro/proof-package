@@ -367,7 +367,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
             <div className="p-4 border-t border-border">
               <button
                 onClick={() => { onClose(); navigate(`/hub/clients/${profile.id}`); }}
-                className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors w-full justify-center"
+                className="flex items-center gap-1.5 text-xs text-foreground hover:text-foreground/70 transition-colors w-full justify-center"
               >
                 Ver perfil completo
                 <ChevronRight className="w-3.5 h-3.5" />
