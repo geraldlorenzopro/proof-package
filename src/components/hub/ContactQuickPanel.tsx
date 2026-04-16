@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import {
   Phone, Mail, MessageSquare, ExternalLink, Pencil,
   FileText, Briefcase, ChevronRight, Check, Loader2, Tag,
-  CalendarPlus, ListChecks, Plus, Square, CheckSquare, Download, Link2
+  CalendarPlus, ListChecks, Plus, Square, CheckSquare, Download
 } from "lucide-react";
 import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
 import { formatDistanceToNow } from "date-fns";
@@ -119,7 +119,6 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   const [editOpen, setEditOpen] = useState(false);
   const [showGhlNotice, setShowGhlNotice] = useState(false);
   const [showCalendarNotice, setShowCalendarNotice] = useState(false);
-  const [fixingGhl, setFixingGhl] = useState(false);
   const [importingNotes, setImportingNotes] = useState(false);
 
   useEffect(() => {
