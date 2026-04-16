@@ -103,6 +103,7 @@ function HubDashboardInner({
   const navigate = useNavigate();
   const [resolvedName, setResolvedName] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(true);
 
   // KPI
   const [activeCases, setActiveCases] = useState(0);
@@ -110,6 +111,14 @@ function HubDashboardInner({
   const [todayAppointmentsCount, setTodayAppointmentsCount] = useState(0);
   const [pendingTasks, setPendingTasks] = useState(0);
   const [kpisLoaded, setKpisLoaded] = useState(false);
+
+  // Skeleton timer — show skeleton for at least 800ms then wait for KPIs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSkeleton(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Chat input
   const [input, setInput] = useState("");
