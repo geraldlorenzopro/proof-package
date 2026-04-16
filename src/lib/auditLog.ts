@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import logger from "./logger";
+import { logger } from "./logger";
 
 export type AuditAction =
   | "client.created" | "client.updated" | "client.deleted" | "client.bulk_deleted"
@@ -75,16 +75,18 @@ export async function logAudit(entry: AuditEntry): Promise<void> {
     const ctx = await resolveUserContext();
     if (!ctx) return;
 
-    const { error } = await supabase.from("audit_logs").insert({
+    const payload = {
       account_id: ctx.accountId,
       user_id: ctx.userId,
       user_display_name: ctx.displayName,
-      action: entry.action,
-      entity_type: entry.entity_type,
+      action: entry.action as string,
+      entity_type: entry.entity_type as string,
       entity_id: entry.entity_id || null,
       entity_label: entry.entity_label || null,
       metadata: entry.metadata || {},
-    });
+    };
+
+    const { error } = await supabase.from("audit_logs").insert(payload);
 
     if (error) {
       logger.warn("[auditLog] insert failed", error.message);
