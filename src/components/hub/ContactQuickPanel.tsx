@@ -554,8 +554,27 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   rows={2}
                   className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 resize-none"
                 />
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-muted-foreground/40">Ctrl+Enter para guardar</p>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[10px] text-muted-foreground/40">Ctrl+Enter</p>
+                    {locationId && (
+                      <button
+                        onClick={profile?.ghl_contact_id ? handleImportGhlNotes : handleFixGhlContactId}
+                        disabled={fixingGhl || importingNotes}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all disabled:opacity-40"
+                        title={profile?.ghl_contact_id ? "Importar notas de GHL" : "Vincular contacto con GHL"}
+                      >
+                        {fixingGhl || importingNotes ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : profile?.ghl_contact_id ? (
+                          <Download className="w-3 h-3" />
+                        ) : (
+                          <Link2 className="w-3 h-3" />
+                        )}
+                        {profile?.ghl_contact_id ? "Importar GHL" : "Vincular GHL"}
+                      </button>
+                    )}
+                  </div>
                   <button
                     onClick={handleSaveNote}
                     disabled={!quickNote.trim() || savingNote}
