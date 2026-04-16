@@ -291,11 +291,13 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 )}
               </div>
 
-              {/* Existing notes display */}
+              {/* Lead message / notes — prominent */}
               {profile.notes && profile.notes.trim().length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground">Mensaje / Notas</p>
-                  <div className="bg-muted/30 border border-border/40 rounded-lg p-3 text-sm text-foreground/80 whitespace-pre-wrap max-h-28 overflow-y-auto">
+                  <p className="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+                    💬 {intakes.length === 0 ? "Mensaje del lead" : "Mensaje / Notas"}
+                  </p>
+                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 text-sm text-foreground/90 whitespace-pre-wrap max-h-36 overflow-y-auto leading-relaxed">
                     {profile.notes}
                   </div>
                 </div>
