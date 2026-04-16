@@ -233,7 +233,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       .select("account_id").eq("user_id", userId).limit(1).single();
     if (!memberData) { setSavingTask(false); return; }
 
-    const { error } = await supabase.from("case_tasks").insert({
+    const { error } = await (supabase.from("case_tasks") as any).insert({
       account_id: memberData.account_id,
       created_by: userId,
       title: newTaskTitle.trim(),
@@ -241,7 +241,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       priority: newTaskPriority,
       status: "pending",
       client_profile_id: profile.id,
-    } as any);
+    });
 
     if (!error) {
       toast.success("Tarea creada ✅");
