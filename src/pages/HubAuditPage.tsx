@@ -424,6 +424,7 @@ export default function HubAuditPage() {
               })}
             </div>
           )}
+          </div>
         </div>
 
         {/* Pagination */}
