@@ -2,7 +2,7 @@ import { ReactNode, useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Shield, Home, LogOut, Users, UserSearch, MessageSquare,
-  FolderOpen, Calendar, BarChart3, Bot, Settings
+  FolderOpen, Calendar, BarChart3, Bot, Settings, ClipboardList
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { icon: BarChart3, label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence" },
   { icon: Bot, label: "Equipo AI", path: "/hub/ai", match: (p: string) => p === "/hub/ai" },
   { icon: Settings, label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings") },
+  { icon: ClipboardList, label: "Audit Logs", path: "/hub/audit", match: (p: string) => p === "/hub/audit" },
 ];
 
 const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 hours
