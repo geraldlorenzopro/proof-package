@@ -35,14 +35,13 @@ Deno.serve(async (req) => {
       ? new Date(due_date).getTime()
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).getTime();
 
-    const taskBody = {
+    const taskBody: Record<string, any> = {
       title,
       body: description || "",
-      dueDate: dueDateMs,
-      status: status === "completed" ? "completed" : "incompleted",
-      assignedTo: assigned_to_name || "",
-      contactId: ghl_contact_id,
+      dueDate: due_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      completed: status === "completed",
     };
+    if (assigned_to_name) taskBody.assignedTo = assigned_to_name;
 
     const ghlUrl = `${GHL_BASE}/contacts/${ghl_contact_id}/tasks`;
     console.log("Pushing task to GHL:", ghlUrl, JSON.stringify(taskBody));
