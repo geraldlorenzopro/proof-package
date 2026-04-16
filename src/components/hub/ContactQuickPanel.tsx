@@ -154,32 +154,38 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
   async function loadData(id: string) {
     setLoading(true);
+
+    const profileP = supabase.from("client_profiles")
+      .select("id, first_name, last_name, middle_name, email, phone, notes, source_channel, source_detail, contact_stage, created_at")
+      .eq("id", id).single();
+    const intakesP = supabase.from("intake_sessions")
+      .select("id, consultation_topic_tag, status, created_at")
+      .eq("client_profile_id", id)
+      .order("created_at", { ascending: false }).limit(3);
+    const casesP = supabase.from("client_cases")
+      .select("id, case_type, file_number, status, pipeline_stage")
+      .eq("client_profile_id", id)
+      .order("created_at", { ascending: false }).limit(3);
+    const apptsP = supabase.from("appointments")
+      .select("id, appointment_date, appointment_datetime, appointment_type, status, notes")
+      .eq("client_profile_id", id)
+      .order("appointment_date", { ascending: false }).limit(5);
+
+    // client_profile_id is a new column not yet in generated types
+    const tasksP = (supabase.from("case_tasks") as any)
+      .select("id, title, status, priority, due_date, created_at")
+      .eq("client_profile_id", id)
+      .is("case_id", null)
+      .order("created_at", { ascending: false }).limit(10);
+
     const [profileRes, intakesRes, casesRes, tasksRes, apptsRes] = await Promise.all([
-      supabase.from("client_profiles")
-        .select("id, first_name, last_name, middle_name, email, phone, notes, source_channel, source_detail, contact_stage, created_at")
-        .eq("id", id).single(),
-      supabase.from("intake_sessions")
-        .select("id, consultation_topic_tag, status, created_at")
-        .eq("client_profile_id", id)
-        .order("created_at", { ascending: false }).limit(3),
-      supabase.from("client_cases")
-        .select("id, case_type, file_number, status, pipeline_stage")
-        .eq("client_profile_id", id)
-        .order("created_at", { ascending: false }).limit(3),
-      supabase.from("case_tasks")
-        .select("id, title, status, priority, due_date, created_at")
-        .eq("client_profile_id" as string, id)
-        .is("case_id", null)
-        .order("created_at", { ascending: false }).limit(10) as any,
-      supabase.from("appointments")
-        .select("id, appointment_date, appointment_datetime, appointment_type, status, notes")
-        .eq("client_profile_id", id)
-        .order("appointment_date", { ascending: false }).limit(5),
+      profileP, intakesP, casesP, tasksP, apptsP,
     ]);
+
     setProfile(profileRes.data as any);
     setIntakes((intakesRes.data as any) || []);
     setCases((casesRes.data as any) || []);
-    setTasks((tasksRes.data as any) || []);
+    setTasks((tasksRes.data || []) as TaskRecord[]);
     setAppointments((apptsRes.data as any) || []);
     setLoading(false);
   }
