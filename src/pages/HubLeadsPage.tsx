@@ -433,7 +433,7 @@ export default function HubLeadsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
-              className={`grid grid-cols-3 gap-2 ${leads.length < 9 ? 'content-start' : 'flex-1 auto-rows-fr'}`}
+              className={`grid grid-cols-3 gap-1.5 ${leads.length < 9 ? 'content-start' : 'flex-1 auto-rows-fr'}`}
             >
               {leads.map((lead) => {
                 const classified = classifyChannel(lead.source_channel);
