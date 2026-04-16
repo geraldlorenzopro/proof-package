@@ -35,8 +35,11 @@ Deno.serve(async (req) => {
       body: author_name ? `[${author_name}]: ${content}` : content,
     };
 
+    const ghlUrl = `${GHL_BASE}/contacts/${ghl_contact_id}/notes`;
+    console.log("Pushing note to GHL:", ghlUrl, JSON.stringify(noteBody));
+
     const res = await fetch(
-      `${GHL_BASE}/contacts/${ghl_contact_id}/notes`,
+      ghlUrl,
       {
         method: "POST",
         headers: {
