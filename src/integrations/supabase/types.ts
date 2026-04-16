@@ -1165,6 +1165,7 @@ export type Database = {
           assigned_to: string | null
           assigned_to_name: string | null
           case_id: string | null
+          client_profile_id: string | null
           completed_at: string | null
           created_at: string
           created_by: string
@@ -1182,6 +1183,7 @@ export type Database = {
           assigned_to?: string | null
           assigned_to_name?: string | null
           case_id?: string | null
+          client_profile_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by: string
@@ -1199,6 +1201,7 @@ export type Database = {
           assigned_to?: string | null
           assigned_to_name?: string | null
           case_id?: string | null
+          client_profile_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string
@@ -1224,6 +1227,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_tasks_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
             referencedColumns: ["id"]
           },
         ]

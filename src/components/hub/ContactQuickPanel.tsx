@@ -6,10 +6,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
-  Phone, Mail, MessageSquare, ExternalLink, Send,
-  FileText, Briefcase, Clock, ChevronRight, Check
+  Phone, Mail, MessageSquare, ExternalLink,
+  FileText, Briefcase, ChevronRight, Check,
+  StickyNote, CheckSquare, CalendarDays, Plus, Trash2, X
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -50,6 +53,24 @@ interface CaseRecord {
   pipeline_stage: string | null;
 }
 
+interface TaskRecord {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  due_date: string | null;
+  created_at: string;
+}
+
+interface AppointmentRecord {
+  id: string;
+  appointment_date: string;
+  appointment_datetime: string | null;
+  appointment_type: string | null;
+  status: string;
+  notes: string | null;
+}
+
 const CHANNEL_LABELS: Record<string, string> = {
   whatsapp: "WhatsApp", instagram: "Instagram", facebook: "Facebook",
   tiktok: "TikTok", referido: "Referido", anuncio: "Anuncio",
@@ -83,20 +104,48 @@ const TOPIC_LABELS: Record<string, string> = {
   adjustment: "Ajuste de Estatus", consular: "Consular",
 };
 
+const APPT_TYPE_LABELS: Record<string, string> = {
+  consultation: "Consulta inicial",
+  followup: "Seguimiento",
+  document_delivery: "Entrega documentos",
+  other: "Otro",
+};
+
 export default function ContactQuickPanel({ contactId, open, onClose, onStartIntake }: ContactQuickPanelProps) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [intakes, setIntakes] = useState<IntakeRecord[]>([]);
   const [cases, setCases] = useState<CaseRecord[]>([]);
+  const [tasks, setTasks] = useState<TaskRecord[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Notes
   const [quickNote, setQuickNote] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+
+  // New task form
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDue, setNewTaskDue] = useState("");
+  const [newTaskPriority, setNewTaskPriority] = useState("normal");
+  const [savingTask, setSavingTask] = useState(false);
+
+  // New appointment form
+  const [showApptForm, setShowApptForm] = useState(false);
+  const [newApptDate, setNewApptDate] = useState("");
+  const [newApptTime, setNewApptTime] = useState("");
+  const [newApptType, setNewApptType] = useState("consultation");
+  const [newApptNotes, setNewApptNotes] = useState("");
+  const [savingAppt, setSavingAppt] = useState(false);
 
   useEffect(() => {
     if (!contactId || !open) {
       setProfile(null);
       setIntakes([]);
       setCases([]);
+      setTasks([]);
+      setAppointments([]);
       setLoading(true);
       return;
     }
@@ -105,25 +154,39 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
   async function loadData(id: string) {
     setLoading(true);
-    const [profileRes, intakesRes, casesRes] = await Promise.all([
-      supabase.from("client_profiles")
-        .select("id, first_name, last_name, middle_name, email, phone, notes, source_channel, source_detail, contact_stage, created_at")
-        .eq("id", id)
-        .single(),
-      supabase.from("intake_sessions")
-        .select("id, consultation_topic_tag, status, created_at")
-        .eq("client_profile_id", id)
-        .order("created_at", { ascending: false })
-        .limit(3),
-      supabase.from("client_cases")
-        .select("id, case_type, file_number, status, pipeline_stage")
-        .eq("client_profile_id", id)
-        .order("created_at", { ascending: false })
-        .limit(3),
+
+    const profileP = supabase.from("client_profiles")
+      .select("id, first_name, last_name, middle_name, email, phone, notes, source_channel, source_detail, contact_stage, created_at")
+      .eq("id", id).single();
+    const intakesP = supabase.from("intake_sessions")
+      .select("id, consultation_topic_tag, status, created_at")
+      .eq("client_profile_id", id)
+      .order("created_at", { ascending: false }).limit(3);
+    const casesP = supabase.from("client_cases")
+      .select("id, case_type, file_number, status, pipeline_stage")
+      .eq("client_profile_id", id)
+      .order("created_at", { ascending: false }).limit(3);
+    const apptsP = supabase.from("appointments")
+      .select("id, appointment_date, appointment_datetime, appointment_type, status, notes")
+      .eq("client_profile_id", id)
+      .order("appointment_date", { ascending: false }).limit(5);
+
+    // client_profile_id is a new column not yet in generated types
+    const tasksP = (supabase.from("case_tasks") as any)
+      .select("id, title, status, priority, due_date, created_at")
+      .eq("client_profile_id", id)
+      .is("case_id", null)
+      .order("created_at", { ascending: false }).limit(10);
+
+    const [profileRes, intakesRes, casesRes, tasksRes, apptsRes] = await Promise.all([
+      profileP, intakesP, casesP, tasksP, apptsP,
     ]);
+
     setProfile(profileRes.data as any);
     setIntakes((intakesRes.data as any) || []);
     setCases((casesRes.data as any) || []);
+    setTasks((tasksRes.data || []) as TaskRecord[]);
+    setAppointments((apptsRes.data as any) || []);
     setLoading(false);
   }
 
@@ -140,7 +203,6 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   };
 
   const isNew = (created: string) => Date.now() - new Date(created).getTime() < 24 * 60 * 60 * 1000;
-
   const cleanPhone = (phone: string) => phone.replace(/[^+\d]/g, "");
 
   async function handleSaveNote() {
@@ -149,19 +211,108 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     const now = format(new Date(), "d MMM h:mma", { locale: es });
     const entry = `[${now}]: ${quickNote.trim()}`;
     const newNotes = profile.notes ? `${entry}\n${profile.notes}` : entry;
-    const { error } = await supabase
-      .from("client_profiles")
+    const { error } = await supabase.from("client_profiles")
       .update({ notes: newNotes, updated_at: new Date().toISOString() })
       .eq("id", profile.id);
     if (!error) {
       setProfile({ ...profile, notes: newNotes });
       setQuickNote("");
       toast.success("Nota guardada ✅");
-    } else {
-      toast.error("Error al guardar nota");
-    }
+    } else toast.error("Error al guardar nota");
     setSavingNote(false);
   }
+
+  async function handleCreateTask() {
+    if (!newTaskTitle.trim() || !profile) return;
+    setSavingTask(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) { setSavingTask(false); return; }
+
+    const { data: memberData } = await supabase.from("account_members")
+      .select("account_id").eq("user_id", userId).limit(1).single();
+    if (!memberData) { setSavingTask(false); return; }
+
+    const { error } = await (supabase.from("case_tasks") as any).insert({
+      account_id: memberData.account_id,
+      created_by: userId,
+      title: newTaskTitle.trim(),
+      due_date: newTaskDue || null,
+      priority: newTaskPriority,
+      status: "pending",
+      client_profile_id: profile.id,
+    });
+
+    if (!error) {
+      toast.success("Tarea creada ✅");
+      setNewTaskTitle("");
+      setNewTaskDue("");
+      setNewTaskPriority("normal");
+      setShowTaskForm(false);
+      loadData(profile.id);
+    } else toast.error("Error al crear tarea");
+    setSavingTask(false);
+  }
+
+  async function handleCompleteTask(taskId: string) {
+    const { error } = await supabase.from("case_tasks")
+      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .eq("id", taskId);
+    if (!error && profile) {
+      toast.success("Tarea completada ✅");
+      loadData(profile.id);
+    }
+  }
+
+  async function handleCreateAppointment() {
+    if (!newApptDate || !profile) return;
+    setSavingAppt(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) { setSavingAppt(false); return; }
+
+    const { data: memberData } = await supabase.from("account_members")
+      .select("account_id").eq("user_id", userId).limit(1).single();
+    if (!memberData) { setSavingAppt(false); return; }
+
+    const datetime = newApptTime ? `${newApptDate}T${newApptTime}:00` : null;
+
+    const { error } = await supabase.from("appointments").insert({
+      account_id: memberData.account_id,
+      client_profile_id: profile.id,
+      client_name: getName(profile),
+      client_phone: profile.phone,
+      client_email: profile.email,
+      appointment_date: newApptDate,
+      appointment_datetime: datetime,
+      appointment_type: newApptType,
+      notes: newApptNotes || null,
+      status: "scheduled",
+    });
+
+    if (!error) {
+      toast.success("Cita agendada ✅");
+      setNewApptDate("");
+      setNewApptTime("");
+      setNewApptType("consultation");
+      setNewApptNotes("");
+      setShowApptForm(false);
+      loadData(profile.id);
+    } else toast.error("Error al agendar cita");
+    setSavingAppt(false);
+  }
+
+  async function handleCancelAppointment(apptId: string) {
+    const { error } = await supabase.from("appointments")
+      .update({ status: "cancelled" }).eq("id", apptId);
+    if (!error && profile) {
+      toast.success("Cita cancelada");
+      loadData(profile.id);
+    }
+  }
+
+  // Parse notes into lines for display
+  const noteLines = profile?.notes?.split("\n").filter(l => l.trim()) || [];
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -178,7 +329,6 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-20 w-full" />
           </div>
         ) : (
           <>
@@ -213,7 +363,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
             </div>
 
             {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {/* Contact info */}
               <div className="space-y-2">
                 {profile.phone && (
@@ -237,10 +387,10 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 )}
               </div>
 
-              {/* Website message */}
-              {profile.source_channel === "website" && profile.notes && (
+              {/* Notes/message - always show if notes exist */}
+              {profile.notes && profile.notes.trim().length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground">Su mensaje:</p>
+                  <p className="text-xs font-medium text-muted-foreground">Mensaje / Notas</p>
                   <div className="bg-muted/30 border border-border/40 rounded-lg p-3 text-sm text-foreground/80 whitespace-pre-wrap max-h-28 overflow-y-auto">
                     {profile.notes}
                   </div>
@@ -249,13 +399,12 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
               {/* History */}
               <div className="space-y-3">
-                {/* Intakes */}
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5" />
                     Consultas anteriores: {intakes.length}
                   </p>
-                  {intakes.length > 0 ? (
+                  {intakes.length > 0 && (
                     <div className="space-y-1">
                       {intakes.map((i) => (
                         <div key={i.id} className="flex items-center gap-2 text-xs text-muted-foreground pl-5">
@@ -268,16 +417,14 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                         </div>
                       ))}
                     </div>
-                  ) : null}
+                  )}
                 </div>
-
-                {/* Cases */}
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
                     <Briefcase className="w-3.5 h-3.5" />
                     Casos activos: {cases.filter(c => c.status !== "completed").length}
                   </p>
-                  {cases.length > 0 ? (
+                  {cases.length > 0 && (
                     <div className="space-y-1">
                       {cases.map((c) => (
                         <div key={c.id} className="flex items-center gap-2 text-xs text-muted-foreground pl-5">
@@ -288,34 +435,169 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                         </div>
                       ))}
                     </div>
-                  ) : null}
+                  )}
                 </div>
-
                 {intakes.length === 0 && cases.length === 0 && (
                   <p className="text-xs text-muted-foreground/60 italic pl-1">Cliente nuevo — sin historial previo</p>
                 )}
               </div>
 
-              {/* Quick note */}
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground">Nota rápida</p>
-                <div className="flex items-center gap-2">
-                  <input
-                    value={quickNote}
-                    onChange={(e) => setQuickNote(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleSaveNote(); }}
-                    placeholder="Agregar nota rápida..."
-                    className="flex-1 h-9 px-3 rounded-lg bg-muted/40 border border-border text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary/30 transition-colors"
-                  />
-                  <button
-                    onClick={handleSaveNote}
-                    disabled={!quickNote.trim() || savingNote}
-                    className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/20 disabled:opacity-40 transition-all"
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+              {/* Tabs: Notas / Tareas / Citas */}
+              <Tabs defaultValue="notas" className="w-full">
+                <TabsList className="w-full grid grid-cols-3 h-9">
+                  <TabsTrigger value="notas" className="text-xs gap-1">
+                    <StickyNote className="w-3.5 h-3.5" /> Notas
+                  </TabsTrigger>
+                  <TabsTrigger value="tareas" className="text-xs gap-1">
+                    <CheckSquare className="w-3.5 h-3.5" /> Tareas
+                  </TabsTrigger>
+                  <TabsTrigger value="citas" className="text-xs gap-1">
+                    <CalendarDays className="w-3.5 h-3.5" /> Citas
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* NOTAS TAB */}
+                <TabsContent value="notas" className="mt-3 space-y-3">
+                  {noteLines.length > 0 ? (
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                      {noteLines.map((line, i) => (
+                        <div key={i} className="text-xs text-foreground/70 bg-muted/20 rounded px-2.5 py-1.5 border border-border/30">
+                          {line}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground/50 italic">Sin notas aún</p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={quickNote}
+                      onChange={(e) => setQuickNote(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveNote(); }}
+                      placeholder="Agregar nota rápida..."
+                      className="h-8 text-xs"
+                    />
+                    <button
+                      onClick={handleSaveNote}
+                      disabled={!quickNote.trim() || savingNote}
+                      className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/20 disabled:opacity-40 transition-all shrink-0"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </TabsContent>
+
+                {/* TAREAS TAB */}
+                <TabsContent value="tareas" className="mt-3 space-y-3">
+                  {tasks.length > 0 ? (
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                      {tasks.map((t) => (
+                        <div key={t.id} className={`flex items-start gap-2 text-xs rounded px-2.5 py-2 border border-border/30 ${t.status === "completed" ? "bg-muted/10 opacity-60" : "bg-muted/20"}`}>
+                          <button
+                            onClick={() => t.status !== "completed" && handleCompleteTask(t.id)}
+                            className={`mt-0.5 w-4 h-4 rounded border shrink-0 flex items-center justify-center transition-colors ${t.status === "completed" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "border-border hover:border-primary/40"}`}
+                          >
+                            {t.status === "completed" && <Check className="w-3 h-3" />}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-foreground/80 ${t.status === "completed" ? "line-through" : ""}`}>{t.title}</p>
+                            {t.due_date && (
+                              <p className="text-muted-foreground/60 mt-0.5">
+                                Vence: {formatDistanceToNow(new Date(t.due_date), { locale: es, addSuffix: true })}
+                              </p>
+                            )}
+                          </div>
+                          {t.priority === "high" && <span className="text-[9px] px-1 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 shrink-0">Alta</span>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground/50 italic">Sin tareas de seguimiento</p>
+                  )}
+
+                  {showTaskForm ? (
+                    <div className="space-y-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
+                      <Input value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} placeholder="Título de la tarea..." className="h-8 text-xs" />
+                      <div className="flex gap-2">
+                        <Input type="date" value={newTaskDue} onChange={(e) => setNewTaskDue(e.target.value)} className="h-8 text-xs flex-1" />
+                        <select value={newTaskPriority} onChange={(e) => setNewTaskPriority(e.target.value)} className="h-8 text-xs rounded-md border border-border bg-background px-2">
+                          <option value="low">Baja</option>
+                          <option value="normal">Media</option>
+                          <option value="high">Alta</option>
+                        </select>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="h-7 text-xs flex-1" onClick={handleCreateTask} disabled={!newTaskTitle.trim() || savingTask}>
+                          Crear tarea
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowTaskForm(false)}>
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5" onClick={() => setShowTaskForm(true)}>
+                      <Plus className="w-3.5 h-3.5" /> Nueva tarea
+                    </Button>
+                  )}
+                </TabsContent>
+
+                {/* CITAS TAB */}
+                <TabsContent value="citas" className="mt-3 space-y-3">
+                  {appointments.length > 0 ? (
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                      {appointments.map((a) => (
+                        <div key={a.id} className={`flex items-center gap-2 text-xs rounded px-2.5 py-2 border border-border/30 ${a.status === "cancelled" ? "bg-muted/10 opacity-50" : "bg-muted/20"}`}>
+                          <CalendarDays className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-foreground/80">
+                              {format(new Date(a.appointment_date), "d MMM yyyy", { locale: es })}
+                              {a.appointment_datetime && ` · ${format(new Date(a.appointment_datetime), "h:mma", { locale: es })}`}
+                            </p>
+                            <p className="text-muted-foreground/60">{APPT_TYPE_LABELS[a.appointment_type || ""] || a.appointment_type || "Consulta"}</p>
+                          </div>
+                          {a.status === "scheduled" && (
+                            <button onClick={() => handleCancelAppointment(a.id)} className="text-muted-foreground/40 hover:text-red-400 transition-colors">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {a.status === "cancelled" && <span className="text-[9px] text-red-400">Cancelada</span>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground/50 italic">Sin citas registradas</p>
+                  )}
+
+                  {showApptForm ? (
+                    <div className="space-y-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
+                      <div className="flex gap-2">
+                        <Input type="date" value={newApptDate} onChange={(e) => setNewApptDate(e.target.value)} className="h-8 text-xs flex-1" />
+                        <Input type="time" value={newApptTime} onChange={(e) => setNewApptTime(e.target.value)} className="h-8 text-xs w-24" />
+                      </div>
+                      <select value={newApptType} onChange={(e) => setNewApptType(e.target.value)} className="w-full h-8 text-xs rounded-md border border-border bg-background px-2">
+                        <option value="consultation">Consulta inicial</option>
+                        <option value="followup">Seguimiento</option>
+                        <option value="document_delivery">Entrega documentos</option>
+                        <option value="other">Otro</option>
+                      </select>
+                      <Input value={newApptNotes} onChange={(e) => setNewApptNotes(e.target.value)} placeholder="Notas de la cita..." className="h-8 text-xs" />
+                      <div className="flex gap-2">
+                        <Button size="sm" className="h-7 text-xs flex-1" onClick={handleCreateAppointment} disabled={!newApptDate || savingAppt}>
+                          Agendar
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowApptForm(false)}>
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5" onClick={() => setShowApptForm(true)}>
+                      <Plus className="w-3.5 h-3.5" /> Nueva cita
+                    </Button>
+                  )}
+                </TabsContent>
+              </Tabs>
 
               {/* Actions */}
               <div className="space-y-2.5">
@@ -336,7 +618,6 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   <MessageSquare className="w-4 h-4" />
                   Nueva consulta
                 </Button>
-
                 <div className="flex items-center gap-2">
                   {profile.phone && (
                     <a href={`tel:${cleanPhone(profile.phone)}`} className="flex-1">
