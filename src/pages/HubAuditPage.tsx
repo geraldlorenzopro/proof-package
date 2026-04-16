@@ -343,11 +343,13 @@ export default function HubAuditPage() {
                     {/* Name + ID */}
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">
-                        {entry.entity_label || entry.action.replace(/\./g, " ").replace(/_/g, " ")}
+                        {entry.entity_label || getReadableAction(entry.action)}
                       </p>
-                      <p className="text-[11px] text-muted-foreground/50 truncate font-mono">
-                        {entry.entity_id ? entry.entity_id.slice(0, 20) : "—"}
-                      </p>
+                      {entry.entity_id && entry.entity_id.length > 8 && (
+                        <p className="text-[11px] text-muted-foreground/50 truncate font-mono">
+                          {entry.entity_id.slice(0, 20)}
+                        </p>
+                      )}
                     </div>
 
                     {/* Module */}
