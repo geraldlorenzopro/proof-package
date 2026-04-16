@@ -102,6 +102,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   const [savingNote, setSavingNote] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
+  const [showGhlNotice, setShowGhlNotice] = useState(false);
 
   useEffect(() => {
     if (!contactId || !open) {
