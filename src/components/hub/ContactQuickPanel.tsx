@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import {
   Phone, Mail, MessageSquare, ExternalLink,
   FileText, Briefcase, ChevronRight, Check,
-  StickyNote, CheckSquare, CalendarDays, Plus, Trash2, X
+  StickyNote, CheckSquare, CalendarDays, Plus, X, Loader2
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -469,21 +469,29 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   ) : (
                     <p className="text-xs text-muted-foreground/50 italic">Sin notas aún</p>
                   )}
-                  <div className="flex items-center gap-2">
-                    <Input
+                  <div className="flex flex-col gap-2">
+                    <textarea
                       value={quickNote}
                       onChange={(e) => setQuickNote(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveNote(); }}
-                      placeholder="Agregar nota rápida..."
-                      className="h-8 text-xs"
+                      onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSaveNote(); }}
+                      placeholder={"Escribe una nota...\nej: Contactada por WhatsApp, interesada en ajuste de estatus"}
+                      rows={3}
+                      className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 resize-none"
                     />
-                    <button
-                      onClick={handleSaveNote}
-                      disabled={!quickNote.trim() || savingNote}
-                      className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/20 disabled:opacity-40 transition-all shrink-0"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-muted-foreground/40">Ctrl+Enter para guardar</p>
+                      <button
+                        onClick={handleSaveNote}
+                        disabled={!quickNote.trim() || savingNote}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-medium text-primary hover:bg-primary/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {savingNote ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> Guardando...</>
+                        ) : (
+                          <><Check className="w-3 h-3" /> Guardar nota</>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </TabsContent>
 
