@@ -364,6 +364,8 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       if (!error && newTask) {
         setTasks(prev => [newTask as any, ...prev]);
         setNewTaskTitle("");
+        setNewTaskDueDate("");
+        setNewTaskDueTime("17:00");
         toast.success("Tarea creada ✅");
 
         // Push task to GHL if contact is linked
@@ -380,7 +382,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   task_id: (newTask as any).id,
                   ghl_contact_id: profile.ghl_contact_id,
                   title: newTaskTitle.trim(),
-                  due_date: (newTask as any).due_date || undefined,
+                  due_date: dueValue || undefined,
                   assigned_to_name: (prof as any)?.full_name || undefined,
                   status: "pending",
                 }),
