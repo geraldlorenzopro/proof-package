@@ -290,7 +290,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                     <span className="truncate">{profile.email}</span>
                   </a>
                 )}
-                {profile.ghl_contact_id && locationId && (
+                {locationId && (
                   <button
                     type="button"
                     onClick={() => setShowGhlNotice(true)}
@@ -328,7 +328,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                         onClick={() => {
                           setShowGhlNotice(false);
                           window.open(
-                            `https://app.nertech.ai/v2/location/${locationId}/conversations/conversations?category=team-inbox&tab=all`,
+                            `https://app.nertech.ai/v2/location/${locationId}/conversations/conversations/`,
                             "_blank"
                           );
                         }}
