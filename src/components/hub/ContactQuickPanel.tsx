@@ -132,6 +132,70 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     loadData(contactId);
   }, [contactId, open]);
 
+  async function resolveAccountContext() {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return { accountId: null as string | null, accessToken: null as string | null };
+
+    const [{ data: memberData }, { data: sessionData }] = await Promise.all([
+      supabase.from("account_members").select("account_id").eq("user_id", userData.user.id).limit(1).single(),
+      supabase.auth.getSession(),
+    ]);
+
+    if (memberData?.account_id) {
+      const { data: officeData } = await supabase.from("office_config" as any)
+        .select("ghl_location_id").eq("account_id", memberData.account_id).single();
+      if ((officeData as any)?.ghl_location_id) {
+        setLocationId((officeData as any).ghl_location_id);
+      }
+    }
+
+    return {
+      accountId: memberData?.account_id || null,
+      accessToken: sessionData.session?.access_token || null,
+    };
+  }
+
+  async function ensureValidGhlContactId(targetProfile: ProfileData, options?: { silent?: boolean }) {
+    const { silent = true } = options || {};
+    const { accountId, accessToken } = await resolveAccountContext();
+    if (!accountId || !accessToken) {
+      return { ghlContactId: targetProfile.ghl_contact_id, found: Boolean(targetProfile.ghl_contact_id) };
+    }
+
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-ghl-contact-id`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          account_id: accountId,
+          profile_id: targetProfile.id,
+          validate_existing: true,
+        }),
+      }
+    );
+
+    const data = await res.json();
+    const nextId = data.ghl_contact_id ?? null;
+
+    if (data.fixed || data.cleared || data.reason === "already_valid") {
+      setProfile(prev => prev ? { ...prev, ghl_contact_id: nextId } : prev);
+    }
+
+    if (!silent && data.reason === "invalid_id_cleared") {
+      toast.info("El vínculo anterior con GHL era inválido; lo limpié y volveré a intentar automáticamente");
+    }
+
+    return {
+      ghlContactId: data.fixed || data.reason === "already_valid" ? nextId : null,
+      found: Boolean(data.fixed || data.reason === "already_valid"),
+      cleared: Boolean(data.cleared),
+    };
+  }
+
   async function loadData(id: string) {
     setLoading(true);
 
@@ -159,45 +223,11 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     setIntakes((intakesRes.data as any) || []);
     setCases((casesRes.data as any) || []);
     setTasks((tasksRes.data as any) || []);
-
-    // Load office config for GHL location
-    const { data: userData } = await supabase.auth.getUser();
-    let accountId: string | null = null;
-    if (userData.user) {
-      const { data: memberData } = await supabase.from("account_members")
-        .select("account_id").eq("user_id", userData.user.id).limit(1).single();
-      if (memberData) {
-        accountId = memberData.account_id;
-        const { data: officeData } = await supabase.from("office_config" as any)
-          .select("ghl_location_id").eq("account_id", memberData.account_id).single();
-        if ((officeData as any)?.ghl_location_id) {
-          setLocationId((officeData as any).ghl_location_id);
-        }
-      }
-    }
-
-    // Auto-fix GHL contact ID if missing
-    if (loadedProfile && !loadedProfile.ghl_contact_id && accountId) {
-      try {
-        const { data: session } = await supabase.auth.getSession();
-        if (session.session) {
-          const res = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-ghl-contact-id`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.session.access_token}` },
-              body: JSON.stringify({ account_id: accountId, profile_id: loadedProfile.id }),
-            }
-          );
-          const data = await res.json();
-          if (data.fixed) {
-            setProfile(prev => prev ? { ...prev, ghl_contact_id: data.ghl_contact_id } : prev);
-          }
-        }
-      } catch {}
-    }
-
     setLoading(false);
+
+    if (loadedProfile) {
+      void ensureValidGhlContactId(loadedProfile, { silent: true });
+    }
   }
 
   const getName = (p: ProfileData) => {
@@ -218,45 +248,45 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   async function handleSaveNote() {
     if (!quickNote.trim() || !profile) return;
     setSavingNote(true);
+    const noteContent = quickNote.trim();
     const now = new Date().toLocaleString("es", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
-    const entry = `[${now}]: ${quickNote.trim()}`;
+    const entry = `[${now}]: ${noteContent}`;
     const newNotes = profile.notes ? `${entry}\n${profile.notes}` : entry;
     const { error } = await supabase.from("client_profiles")
       .update({ notes: newNotes, updated_at: new Date().toISOString() })
       .eq("id", profile.id);
     if (!error) {
-      setProfile({ ...profile, notes: newNotes });
+      const nextProfile = { ...profile, notes: newNotes };
+      setProfile(nextProfile);
       setQuickNote("");
       toast.success("Nota guardada ✅");
 
-      // Push to GHL in background
-      if (profile.ghl_contact_id) {
-        (async () => {
-          try {
-            const { data: session } = await supabase.auth.getSession();
-            if (!session.session) return;
-            const { data: mem } = await supabase.from("account_members")
-              .select("account_id").eq("user_id", session.session.user.id).limit(1).single();
-            if (!mem) return;
-            await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-note-to-ghl`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${session.session.access_token}`,
-                },
-                body: JSON.stringify({
-                  account_id: mem.account_id,
-                  ghl_contact_id: profile.ghl_contact_id,
-                  content: quickNote.trim(),
-                  author_name: "NER",
-                }),
-              }
-            );
-          } catch {}
-        })();
-      }
+      void (async () => {
+        try {
+          const { accountId, accessToken } = await resolveAccountContext();
+          if (!accountId || !accessToken) return;
+
+          const { ghlContactId } = await ensureValidGhlContactId(nextProfile, { silent: true });
+          if (!ghlContactId) return;
+
+          await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-note-to-ghl`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+              },
+              body: JSON.stringify({
+                account_id: accountId,
+                ghl_contact_id: ghlContactId,
+                content: noteContent,
+                author_name: "NER",
+              }),
+            }
+          );
+        } catch {}
+      })();
     } else toast.error("Error al guardar nota");
     setSavingNote(false);
   }
@@ -308,42 +338,22 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     if (!profile) return;
     setImportingNotes(true);
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) return;
-      const { data: mem } = await supabase.from("account_members")
-        .select("account_id").eq("user_id", session.session.user.id).limit(1).single();
-      if (!mem) return;
+      const { accountId, accessToken } = await resolveAccountContext();
+      if (!accountId || !accessToken) return;
 
-      let ghlContactId = profile.ghl_contact_id;
-
-      // Step 1: Auto-fix if no ghl_contact_id
-      if (!ghlContactId) {
-        const fixRes = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-ghl-contact-id`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.session.access_token}` },
-            body: JSON.stringify({ account_id: mem.account_id, profile_id: profile.id }),
-          }
-        );
-        const fixData = await fixRes.json();
-        if (fixData.fixed) {
-          ghlContactId = fixData.ghl_contact_id;
-          setProfile(prev => prev ? { ...prev, ghl_contact_id: ghlContactId } : prev);
-        } else {
-          toast.error("No se encontró este contacto en GHL");
-          setImportingNotes(false);
-          return;
-        }
+      const ensured = await ensureValidGhlContactId(profile, { silent: false });
+      if (!ensured.ghlContactId) {
+        toast.info("Este contacto no existe todavía en GHL; cuando aparezca allá, se vinculará automáticamente");
+        setImportingNotes(false);
+        return;
       }
 
-      // Step 2: Import notes
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-ghl-notes`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.session.access_token}` },
-          body: JSON.stringify({ account_id: mem.account_id, ghl_contact_id: ghlContactId }),
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ account_id: accountId, ghl_contact_id: ensured.ghlContactId }),
         }
       );
       const data = await res.json();
