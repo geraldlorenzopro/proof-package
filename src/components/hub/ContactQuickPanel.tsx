@@ -181,9 +181,9 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       .eq("client_profile_id", id)
       .order("appointment_date", { ascending: false }).limit(5);
 
-    // client_profile_id is a new column not yet in generated types
+    // client_profile_id, is_recurring, recurring_interval are new columns not yet in generated types
     const tasksP = (supabase.from("case_tasks") as any)
-      .select("id, title, status, priority, due_date, created_at")
+      .select("id, title, description, status, priority, due_date, assigned_to_name, is_recurring, recurring_interval, created_at")
       .eq("client_profile_id", id)
       .is("case_id", null)
       .order("created_at", { ascending: false }).limit(10);
@@ -197,6 +197,27 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     setCases((casesRes.data as any) || []);
     setTasks((tasksRes.data || []) as TaskRecord[]);
     setAppointments((apptsRes.data as any) || []);
+
+    // Load team members for assignment
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData.user) {
+      const { data: memberData } = await supabase.from("account_members")
+        .select("account_id").eq("user_id", userData.user.id).limit(1).single();
+      if (memberData) {
+        const { data: members } = await supabase.from("account_members")
+          .select("user_id, role").eq("account_id", memberData.account_id);
+        if (members) {
+          const { data: profiles } = await supabase.from("profiles" as any)
+            .select("user_id, full_name")
+            .in("user_id", members.map(m => m.user_id));
+          setTeamMembers(members.map(m => ({
+            user_id: m.user_id,
+            role: m.role,
+            full_name: (profiles as any)?.find((p: any) => p.user_id === m.user_id)?.full_name || null,
+          })));
+        }
+      }
+    }
     setLoading(false);
   }
 
