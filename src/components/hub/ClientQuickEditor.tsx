@@ -118,8 +118,8 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Row 1: Nombre + Apellido */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Row 1: Nombre + Segundo nombre + Apellido */}
+      <div className="grid grid-cols-3 gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Nombre *</Label>
           <Input
@@ -127,6 +127,15 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
             value={data.first_name}
             onChange={(e) => set("first_name", e.target.value)}
             placeholder="Nombre"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Segundo nombre</Label>
+          <Input
+            className={fieldClass}
+            value={data.middle_name}
+            onChange={(e) => set("middle_name", e.target.value)}
+            placeholder="Opcional"
           />
         </div>
         <div className="space-y-1.5">
@@ -140,30 +149,30 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
         </div>
       </div>
 
-      {/* Row 2: Teléfono + Email */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Teléfono</Label>
-          <Input
-            className={fieldClass}
-            value={data.phone}
-            onChange={(e) => set("phone", e.target.value)}
-            placeholder="+1 (000) 000-0000"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Email</Label>
-          <Input
-            className={fieldClass}
-            type="email"
-            value={data.email}
-            onChange={(e) => set("email", e.target.value)}
-            placeholder="correo@email.com"
-          />
-        </div>
+      {/* Row 2: Teléfono */}
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">Teléfono</Label>
+        <Input
+          className={fieldClass}
+          value={data.phone}
+          onChange={(e) => set("phone", e.target.value)}
+          placeholder="+1 (000) 000-0000"
+        />
       </div>
 
-      {/* Row 3: Estatus migratorio */}
+      {/* Row 3: Email — full width */}
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">Email</Label>
+        <Input
+          className={fieldClass}
+          type="email"
+          value={data.email}
+          onChange={(e) => set("email", e.target.value)}
+          placeholder="correo@email.com"
+        />
+      </div>
+
+      {/* Row 4: Estatus migratorio */}
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Estatus migratorio</Label>
         <Select value={data.immigration_status} onValueChange={(v) => set("immigration_status", v)}>
@@ -180,11 +189,11 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
         </Select>
       </div>
 
-      {/* Row 4: Notas */}
+      {/* Row 5: Notas — bigger */}
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Notas</Label>
         <Textarea
-          className="bg-muted/50 border-border focus:border-jarvis/50 text-sm min-h-[72px] resize-none"
+          className="bg-muted/50 border-border focus:border-jarvis/50 text-sm min-h-[100px] resize-y"
           value={data.notes}
           onChange={(e) => set("notes", e.target.value)}
           placeholder="Notas sobre este contacto..."
