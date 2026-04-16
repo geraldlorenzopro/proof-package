@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeClientName } from "@/lib/caseTypeLabels";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,10 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
-  Phone, Mail, MessageSquare, ExternalLink,
+  Phone, Mail, MessageSquare, ExternalLink, Pencil,
   FileText, Briefcase, ChevronRight, Check, Clock,
   StickyNote, CheckSquare, CalendarDays, Plus, X, Loader2
 } from "lucide-react";
+import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -236,6 +238,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   const [newApptType, setNewApptType] = useState("consultation");
   const [newApptNotes, setNewApptNotes] = useState("");
   const [savingAppt, setSavingAppt] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     if (!contactId || !open) {
