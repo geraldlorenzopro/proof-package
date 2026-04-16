@@ -334,6 +334,8 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       }
     }
   }
+
+  async function handleAddTask() {
     if (!newTaskTitle.trim() || !profile) return;
     setSavingTask(true);
     try {
