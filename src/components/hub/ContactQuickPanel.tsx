@@ -830,7 +830,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
                 {profile.ghl_contact_id && (
                   <a
-                    href={`https://app.nertech.ai/v2/location/${locationId}/conversations`}
+                    href={`https://app.nertech.ai/v2/location/${locationId}/conversations/conversations/`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl border border-border/30 text-xs text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
