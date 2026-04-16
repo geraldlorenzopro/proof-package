@@ -608,6 +608,9 @@ function HubDashboardInner({
             </div>
           </div>
 
+          </>
+          )}
+
         </div>
       </div>
 
