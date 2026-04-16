@@ -737,7 +737,6 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                       />
                     </div>
                   )}
-                  </button>
                 </div>
               </div>
 
