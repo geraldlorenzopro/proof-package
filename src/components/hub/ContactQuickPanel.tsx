@@ -617,7 +617,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
                       {/* Date & Time */}
                       <div className="flex gap-2">
-                        <input type="date" value={newTask.due_date} onChange={e => setNewTask(prev => ({ ...prev, due_date: e.target.value }))}
+                        <input type="date" value={newTask.due_date} min={new Date().toISOString().split("T")[0]} onChange={e => setNewTask(prev => ({ ...prev, due_date: e.target.value }))}
                           className="flex-1 px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm text-foreground focus:outline-none focus:border-primary/40 [color-scheme:dark]" />
                         <TimeSelector value={newTask.due_time} onChange={v => setNewTask(prev => ({ ...prev, due_time: v }))} />
                       </div>
