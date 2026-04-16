@@ -136,10 +136,9 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
   // New task form
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [newTask, setNewTask] = useState({ title: "", notes: "", due_date: "", due_time: "", priority: "normal", assigned_to: "", is_recurring: false, recurring_interval: "weekly" });
+  const [newTask, setNewTask] = useState({ title: "", due_date: "", due_time: "", priority: "normal", assigned_to: "" });
   const [savingTask, setSavingTask] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const taskNotesRef = useRef<HTMLTextAreaElement>(null);
 
   // New appointment form
   const [showApptForm, setShowApptForm] = useState(false);
@@ -253,36 +252,6 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     setSavingNote(false);
   }
 
-  function simpleMarkdown(text: string) {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/^- (.+)/gm, "<li>$1</li>")
-      .replace(/\n/g, "<br/>");
-  }
-
-  function insertFormat(marker: string) {
-    const el = taskNotesRef.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const text = newTask.notes;
-    const selected = text.slice(start, end);
-    const newText = selected
-      ? text.slice(0, start) + marker + selected + marker + text.slice(end)
-      : text.slice(0, start) + marker + marker + text.slice(end);
-    setNewTask(prev => ({ ...prev, notes: newText }));
-    setTimeout(() => { el.focus(); el.setSelectionRange(start + marker.length, end + marker.length); }, 0);
-  }
-
-  function insertText(text: string) {
-    const el = taskNotesRef.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const current = newTask.notes;
-    const newText = current.slice(0, start) + text + current.slice(start);
-    setNewTask(prev => ({ ...prev, notes: newText }));
-  }
 
   async function handleCreateTask() {
     if (!newTask.title.trim() || !profile) return;
@@ -299,19 +268,16 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       account_id: memberData.account_id,
       created_by: userId,
       title: newTask.title.trim(),
-      description: newTask.notes || null,
-      due_date: newTask.due_date || null,
+      due_date: newTask.due_date ? `${newTask.due_date}T${newTask.due_time || "09:00"}:00` : null,
       priority: newTask.priority === "alta" ? "high" : newTask.priority === "baja" ? "low" : "normal",
       assigned_to: newTask.assigned_to || null,
-      is_recurring: newTask.is_recurring,
-      recurring_interval: newTask.is_recurring ? newTask.recurring_interval : null,
       status: "pending",
       client_profile_id: profile.id,
     });
 
     if (!error) {
       toast.success("Tarea creada ✅");
-      setNewTask({ title: "", notes: "", due_date: "", due_time: "", priority: "normal", assigned_to: "", is_recurring: false, recurring_interval: "weekly" });
+      setNewTask({ title: "", due_date: "", due_time: "", priority: "normal", assigned_to: "" });
       setShowTaskForm(false);
       loadData(profile.id);
     } else toast.error("Error al crear tarea");
@@ -560,7 +526,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 </TabsContent>
 
                 {/* TAREAS TAB */}
-                <TabsContent value="tareas" className="mt-3 space-y-3">
+                <TabsContent value="tareas" className="mt-3 space-y-3 max-h-[60vh] overflow-y-auto pr-1">
                   {tasks.length > 0 ? (
                     <div className="space-y-1.5 max-h-40 overflow-y-auto">
                       {tasks.map((t) => (
@@ -580,7 +546,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                               </p>
                             )}
                             {t.description && (
-                              <p className="text-[10px] text-muted-foreground/60 mt-1" dangerouslySetInnerHTML={{ __html: simpleMarkdown(t.description) }} />
+                              <p className="text-[10px] text-muted-foreground/60 mt-1">{t.description}</p>
                             )}
                           </div>
                           <span className={`text-[9px] px-1.5 py-0.5 rounded-full shrink-0 ${
@@ -607,42 +573,17 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                           onChange={e => setNewTask(prev => ({ ...prev, title: e.target.value }))}
                           placeholder="Título de la tarea"
                           maxLength={200}
-                          className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm focus:outline-none focus:border-primary/40"
+                          className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm text-foreground focus:outline-none focus:border-primary/40"
                         />
                         <p className="text-[10px] text-muted-foreground/40 text-right mt-0.5">{newTask.title.length}/200</p>
-                      </div>
-
-                      {/* Notes with toolbar */}
-                      <div>
-                        <div className="flex gap-1 p-1 rounded-lg border border-border/30 bg-muted/10 w-fit mb-1.5">
-                          {[
-                            { icon: "B", label: "Negrita", action: () => insertFormat("**"), className: "font-bold" },
-                            { icon: "I", label: "Cursiva", action: () => insertFormat("*"), className: "italic" },
-                            { icon: "—", label: "Separador", action: () => insertText("\n---\n") },
-                            { icon: "≡", label: "Lista", action: () => insertText("\n- ") },
-                          ].map(btn => (
-                            <button key={btn.icon} onClick={btn.action} title={btn.label}
-                              className={`w-6 h-6 rounded text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-all ${btn.className || ""}`}>
-                              {btn.icon}
-                            </button>
-                          ))}
-                        </div>
-                        <textarea
-                          ref={taskNotesRef}
-                          value={newTask.notes}
-                          onChange={e => setNewTask(prev => ({ ...prev, notes: e.target.value }))}
-                          placeholder="Notas adicionales..."
-                          rows={3}
-                          className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm focus:outline-none focus:border-primary/40 resize-none"
-                        />
                       </div>
 
                       {/* Date & Time */}
                       <div className="flex gap-2">
                         <input type="date" value={newTask.due_date} onChange={e => setNewTask(prev => ({ ...prev, due_date: e.target.value }))}
-                          className="flex-1 px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm focus:outline-none focus:border-primary/40" />
+                          className="flex-1 px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm text-foreground focus:outline-none focus:border-primary/40 [color-scheme:dark]" />
                         <input type="time" value={newTask.due_time} onChange={e => setNewTask(prev => ({ ...prev, due_time: e.target.value }))}
-                          className="w-28 px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm focus:outline-none focus:border-primary/40" />
+                          className="w-36 px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm text-foreground focus:outline-none focus:border-primary/40 [color-scheme:dark]" />
                       </div>
 
                       {/* Priority */}
@@ -666,33 +607,11 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                       {/* Assign to */}
                       {teamMembers.length > 0 && (
                         <select value={newTask.assigned_to} onChange={e => setNewTask(prev => ({ ...prev, assigned_to: e.target.value }))}
-                          className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm focus:outline-none focus:border-primary/40">
+                          className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm text-foreground focus:outline-none focus:border-primary/40 [color-scheme:dark]">
                           <option value="">Sin asignar</option>
                           {teamMembers.map(m => (
                             <option key={m.user_id} value={m.user_id}>{m.full_name || m.role}</option>
                           ))}
-                        </select>
-                      )}
-
-                      {/* Recurring toggle */}
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-foreground">Tarea recurrente</p>
-                          <p className="text-[10px] text-muted-foreground/60">Se repetirá automáticamente</p>
-                        </div>
-                        <button onClick={() => setNewTask(prev => ({ ...prev, is_recurring: !prev.is_recurring }))}
-                          className={`w-10 h-5 rounded-full transition-all relative ${newTask.is_recurring ? "bg-primary" : "bg-muted/40"}`}>
-                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${newTask.is_recurring ? "left-5" : "left-0.5"}`} />
-                        </button>
-                      </div>
-
-                      {newTask.is_recurring && (
-                        <select value={newTask.recurring_interval} onChange={e => setNewTask(prev => ({ ...prev, recurring_interval: e.target.value }))}
-                          className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm">
-                          <option value="daily">Cada día</option>
-                          <option value="weekly">Cada semana</option>
-                          <option value="biweekly">Cada 2 semanas</option>
-                          <option value="monthly">Cada mes</option>
                         </select>
                       )}
 
@@ -744,10 +663,10 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   {showApptForm ? (
                     <div className="space-y-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
                       <div className="flex gap-2">
-                        <Input type="date" value={newApptDate} onChange={(e) => setNewApptDate(e.target.value)} className="h-8 text-xs flex-1" />
-                        <Input type="time" value={newApptTime} onChange={(e) => setNewApptTime(e.target.value)} className="h-8 text-xs w-24" />
+                        <Input type="date" value={newApptDate} onChange={(e) => setNewApptDate(e.target.value)} className="h-9 text-xs flex-1 text-foreground [color-scheme:dark]" />
+                        <Input type="time" value={newApptTime} onChange={(e) => setNewApptTime(e.target.value)} className="h-9 text-xs w-32 text-foreground [color-scheme:dark]" />
                       </div>
-                      <select value={newApptType} onChange={(e) => setNewApptType(e.target.value)} className="w-full h-8 text-xs rounded-md border border-border bg-background px-2">
+                      <select value={newApptType} onChange={(e) => setNewApptType(e.target.value)} className="w-full h-8 text-xs rounded-md border border-border bg-background px-2 text-foreground [color-scheme:dark]">
                         <option value="consultation">Consulta inicial</option>
                         <option value="followup">Seguimiento</option>
                         <option value="document_delivery">Entrega documentos</option>
