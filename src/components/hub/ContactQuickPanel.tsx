@@ -379,7 +379,6 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
   const noteLines = profile?.notes?.split("\n").filter(l => l.trim()) || [];
   const totalNotes = noteLines.length;
-  const totalNotes = noteLines.length;
   const tags = profile?.ghl_tags?.filter(Boolean) || [];
   const visibleTags = tags.slice(0, MAX_VISIBLE_TAGS);
   const hiddenTagCount = tags.length - visibleTags.length;
