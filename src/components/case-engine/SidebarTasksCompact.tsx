@@ -86,6 +86,22 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
     setModalOpen(true);
   }
 
+  async function pushTaskToGhl(taskId: string, title: string, dueDate: string | null, status: string, ghlTaskId?: string, assignedName?: string) {
+    if (!ghlContactId) return;
+    try {
+      const session = await supabase.auth.getSession();
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-task-to-ghl`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.data.session?.access_token}` },
+        body: JSON.stringify({
+          account_id: accountId, task_id: taskId, ghl_contact_id: ghlContactId,
+          ghl_task_id: ghlTaskId || undefined, title, due_date: dueDate || undefined,
+          assigned_to_name: assignedName || undefined, status,
+        }),
+      });
+    } catch {}
+  }
+
   async function handleSave() {
     if (!form.title.trim()) return;
     setSaving(true);
@@ -99,19 +115,22 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
           assigned_to_name: form.assigned_to_name.trim() || null,
         }).eq("id", editingTask.id);
         toast.success("Tarea actualizada");
+        void pushTaskToGhl(editingTask.id, form.title.trim(), form.due_date ? format(form.due_date, "yyyy-MM-dd") : null, editingTask.status, (editingTask as any).ghl_task_id, form.assigned_to_name.trim() || undefined);
       } else {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
         const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
-        await supabase.from("case_tasks").insert({
+        const dueDateStr = form.due_date ? format(form.due_date, "yyyy-MM-dd") : null;
+        const { data: newTask } = await supabase.from("case_tasks").insert({
           case_id: caseId, account_id: accountId, created_by: user.id,
           created_by_name: profile?.full_name || "Staff",
           title: form.title.trim(), description: form.description.trim() || null,
           priority: form.priority,
-          due_date: form.due_date ? format(form.due_date, "yyyy-MM-dd") : null,
+          due_date: dueDateStr,
           assigned_to_name: form.assigned_to_name.trim() || null, status: "pending",
-        });
+        }).select("id").single();
         toast.success("Tarea creada");
+        if (newTask) void pushTaskToGhl(newTask.id, form.title.trim(), dueDateStr, "pending", undefined, form.assigned_to_name.trim() || undefined);
       }
       setModalOpen(false);
       onTaskChanged();
