@@ -56,10 +56,20 @@ interface CaseRecord {
 interface TaskRecord {
   id: string;
   title: string;
+  description: string | null;
   status: string;
   priority: string;
   due_date: string | null;
+  assigned_to_name: string | null;
+  is_recurring: boolean;
+  recurring_interval: string | null;
   created_at: string;
+}
+
+interface TeamMember {
+  user_id: string;
+  role: string;
+  full_name: string | null;
 }
 
 interface AppointmentRecord {
