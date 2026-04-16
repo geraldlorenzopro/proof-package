@@ -396,29 +396,6 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   <MessageSquare className="w-4 h-4" />
                   Nueva consulta
                 </Button>
-                <div className="flex items-center gap-2">
-                  {profile.phone && (
-                    <a href={`tel:${cleanPhone(profile.phone)}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs">
-                        <Phone className="w-3.5 h-3.5" />Llamar
-                      </Button>
-                    </a>
-                  )}
-                  {profile.phone && (
-                    <a href={`https://wa.me/${cleanPhone(profile.phone)}`} target="_blank" rel="noopener noreferrer" className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs">
-                        <MessageSquare className="w-3.5 h-3.5" />WhatsApp
-                      </Button>
-                    </a>
-                  )}
-                  {profile.email && (
-                    <a href={`mailto:${profile.email}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs">
-                        <Mail className="w-3.5 h-3.5" />Email
-                      </Button>
-                    </a>
-                  )}
-                </div>
 
                 {profile.ghl_contact_id && (
                   <a
