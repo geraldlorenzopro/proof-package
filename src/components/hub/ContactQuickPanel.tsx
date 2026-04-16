@@ -211,7 +211,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       .eq("client_profile_id", id)
       .order("created_at", { ascending: false }).limit(3);
     const tasksP = supabase.from("case_tasks")
-      .select("id, title, status, due_date, priority")
+      .select("id, title, status, due_date, priority, ghl_task_id")
       .eq("client_profile_id", id)
       .is("case_id", null)
       .order("created_at", { ascending: false }).limit(5);
