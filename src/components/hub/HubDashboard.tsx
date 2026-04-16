@@ -381,7 +381,7 @@ function HubDashboardInner({
 
   
 
-  const isReady = !showSkeleton && kpisLoaded;
+  const isReady = kpisLoaded;
 
   return (
     <>
