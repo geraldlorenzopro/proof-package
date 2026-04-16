@@ -207,7 +207,24 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
         </Select>
       </div>
 
-      {/* Row 5: Notas — bigger */}
+      {/* Row 5: Canal de entrada */}
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">Canal de entrada</Label>
+        <Select value={data.source_channel} onValueChange={(v) => set("source_channel", v)}>
+          <SelectTrigger className={fieldClass}>
+            <SelectValue placeholder="¿Por dónde llegó?" />
+          </SelectTrigger>
+          <SelectContent>
+            {CHANNEL_OPTIONS.map((ch) => (
+              <SelectItem key={ch.value} value={ch.value}>
+                {ch.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Row 6: Notas — bigger */}
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Notas</Label>
         <Textarea
