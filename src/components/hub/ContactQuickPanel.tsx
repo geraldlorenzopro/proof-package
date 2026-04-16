@@ -36,6 +36,7 @@ interface ProfileData {
   source_detail: string | null;
   contact_stage: string;
   created_at: string;
+  ghl_contact_id: string | null;
 }
 
 interface IntakeRecord {
@@ -216,6 +217,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [locationId, setLocationId] = useState("NgaxlyDdwg93PvQb5KCw");
 
   // Notes
   const [quickNote, setQuickNote] = useState("");
@@ -252,7 +254,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     setLoading(true);
 
     const profileP = supabase.from("client_profiles")
-      .select("id, first_name, last_name, middle_name, email, phone, notes, source_channel, source_detail, contact_stage, created_at")
+      .select("id, first_name, last_name, middle_name, email, phone, notes, source_channel, source_detail, contact_stage, created_at, ghl_contact_id")
       .eq("id", id).single();
     const intakesP = supabase.from("intake_sessions")
       .select("id, consultation_topic_tag, status, created_at")
@@ -284,14 +286,21 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     setTasks((tasksRes.data || []) as TaskRecord[]);
     setAppointments((apptsRes.data as any) || []);
 
-    // Load team members for assignment
+    // Load team members for assignment + office config for GHL location
     const { data: userData } = await supabase.auth.getUser();
     if (userData.user) {
       const { data: memberData } = await supabase.from("account_members")
         .select("account_id").eq("user_id", userData.user.id).limit(1).single();
       if (memberData) {
-        const { data: members } = await supabase.from("account_members")
-          .select("user_id, role").eq("account_id", memberData.account_id);
+        const [membersRes, officeRes] = await Promise.all([
+          supabase.from("account_members").select("user_id, role").eq("account_id", memberData.account_id),
+          supabase.from("office_config" as any).select("ghl_location_id").eq("account_id", memberData.account_id).single(),
+        ]);
+        const officeData = officeRes.data as any;
+        if (officeData?.ghl_location_id) {
+          setLocationId(officeData.ghl_location_id);
+        }
+        const members = membersRes.data;
         if (members) {
           const { data: profiles } = await supabase.from("profiles" as any)
             .select("user_id, full_name")
@@ -818,6 +827,18 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                     </a>
                   )}
                 </div>
+
+                {profile.ghl_contact_id && (
+                  <a
+                    href={`https://app.nertech.ai/v2/location/${locationId}/conversations`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl border border-border/30 text-xs text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Ver conversaciones en GHL
+                  </a>
+                )}
               </div>
             </div>
 
