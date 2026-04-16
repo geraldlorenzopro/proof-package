@@ -152,7 +152,7 @@ function TimeSelector({ value, onChange }: { value: string; onChange: (v: string
 
   const colClass = "overflow-y-auto overscroll-contain flex flex-col gap-0.5 px-1 scrollbar-thin";
   const itemBase = "px-3 py-1.5 text-sm rounded-md cursor-pointer text-center transition-colors text-foreground";
-  const itemActive = "bg-primary/20 text-primary font-semibold";
+  const itemActive = "bg-primary text-primary-foreground font-semibold";
   const itemInactive = "hover:bg-foreground/10";
 
   return (
