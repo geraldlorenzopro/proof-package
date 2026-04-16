@@ -329,6 +329,31 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
         setTasks(prev => [newTask as any, ...prev]);
         setNewTaskTitle("");
         toast.success("Tarea creada ✅");
+
+        // Push task to GHL if contact is linked
+        if (profile.ghl_contact_id) {
+          try {
+            const accessToken = (await supabase.auth.getSession()).data.session?.access_token;
+            await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-task-to-ghl`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+                body: JSON.stringify({
+                  account_id: mem.account_id,
+                  task_id: (newTask as any).id,
+                  ghl_contact_id: profile.ghl_contact_id,
+                  title: newTaskTitle.trim(),
+                  due_date: (newTask as any).due_date || undefined,
+                  assigned_to_name: (prof as any)?.full_name || undefined,
+                  status: "pending",
+                }),
+              }
+            );
+          } catch (e) {
+            console.warn("GHL task sync failed silently");
+          }
+        }
       }
     } catch {}
     setSavingTask(false);
