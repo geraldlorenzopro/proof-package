@@ -45,7 +45,6 @@ Deno.serve(async (req) => {
       dueDate: dueDateISO,
       completed: status === "completed",
     };
-    if (assigned_to_name) taskBody.assignedTo = assigned_to_name;
 
     // If ghl_task_id exists, UPDATE existing task; otherwise CREATE new
     const isUpdate = !!ghl_task_id;
