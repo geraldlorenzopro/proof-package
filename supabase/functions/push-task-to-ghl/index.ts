@@ -44,8 +44,11 @@ Deno.serve(async (req) => {
       contactId: ghl_contact_id,
     };
 
+    const ghlUrl = `${GHL_BASE}/contacts/${ghl_contact_id}/tasks`;
+    console.log("Pushing task to GHL:", ghlUrl, JSON.stringify(taskBody));
+
     const res = await fetch(
-      `${GHL_BASE}/contacts/${ghl_contact_id}/tasks`,
+      ghlUrl,
       {
         method: "POST",
         headers: {
@@ -57,7 +60,10 @@ Deno.serve(async (req) => {
       }
     );
 
-    const data = await res.json();
+    const rawText = await res.text();
+    console.log("GHL tasks response:", res.status, rawText);
+    let data: any = {};
+    try { data = JSON.parse(rawText); } catch { data = { raw: rawText }; }
 
     if (res.ok && data.task?.id && task_id) {
       const admin = createClient(
