@@ -31,9 +31,6 @@ Deno.serve(async (req) => {
 
     const { apiKey } = ghlConfig;
 
-    const dueDateMs = due_date
-      ? new Date(due_date).getTime()
-      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).getTime();
 
     const taskBody: Record<string, any> = {
       title,
