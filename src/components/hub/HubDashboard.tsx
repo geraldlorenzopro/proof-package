@@ -103,6 +103,7 @@ function HubDashboardInner({
   const navigate = useNavigate();
   const [resolvedName, setResolvedName] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(true);
 
   // KPI
   const [activeCases, setActiveCases] = useState(0);
@@ -110,6 +111,14 @@ function HubDashboardInner({
   const [todayAppointmentsCount, setTodayAppointmentsCount] = useState(0);
   const [pendingTasks, setPendingTasks] = useState(0);
   const [kpisLoaded, setKpisLoaded] = useState(false);
+
+  // Skeleton timer — show skeleton for at least 800ms then wait for KPIs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSkeleton(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Chat input
   const [input, setInput] = useState("");
@@ -382,6 +391,8 @@ function HubDashboardInner({
 
   
 
+  const isReady = !showSkeleton && kpisLoaded;
+
   return (
     <>
       {/* ═══ COCKPIT — fixed height, no scroll ═══ */}
@@ -407,6 +418,42 @@ function HubDashboardInner({
 
         {/* Main content — centered, no scroll */}
         <div className="w-full max-w-4xl flex flex-col gap-4 px-8 py-6">
+
+          {!isReady ? (
+            /* ═══ SKELETON STATE ═══ */
+            <div className="flex flex-col gap-4">
+              {/* Header skeleton */}
+              <div className="flex flex-col items-center gap-2">
+                <Skeleton className="w-10 h-10 rounded-xl" />
+                <Skeleton className="h-7 w-64 rounded-lg" />
+                <Skeleton className="h-4 w-48 rounded-md" />
+              </div>
+              {/* Input skeleton */}
+              <Skeleton className="h-12 w-full rounded-2xl" />
+              {/* Quick actions skeleton */}
+              <div className="grid grid-cols-3 gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 rounded-xl" />
+                ))}
+              </div>
+              {/* KPI skeleton */}
+              <div className="grid grid-cols-4 gap-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-24 rounded-xl" />
+                ))}
+              </div>
+              {/* Resources skeleton */}
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-4 w-40 mx-auto rounded-md" />
+                <div className="grid grid-cols-4 gap-3">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 rounded-lg" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+          <>
 
           {/* ─── ZONA A: Header ─── */}
           <div className="text-center shrink-0 flex-none">
@@ -560,6 +607,9 @@ function HubDashboardInner({
               ))}
             </div>
           </div>
+
+          </>
+          )}
 
         </div>
       </div>
