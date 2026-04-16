@@ -444,7 +444,7 @@ export default function HubLeadsPage() {
                 return (
                   <div
                     key={lead.id}
-                    className={`group bg-card border rounded-lg px-3 py-3 transition-all hover:border-amber-500/30 hover:bg-card/80 flex flex-col justify-between ${
+                    className={`group bg-card border rounded-lg px-3 py-2 transition-all hover:border-amber-500/30 hover:bg-card/80 flex flex-col justify-between ${
                       selected.includes(lead.id) ? "border-amber-500/40 bg-amber-500/5" : "border-border"
                     }`}
                   >
@@ -507,7 +507,7 @@ export default function HubLeadsPage() {
                     {lead.email ? (
                       <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground min-w-0">
                         <Mail className="w-3 h-3 shrink-0" />
-                        <span className="truncate" title={lead.email}>{lead.email}</span>
+                        <span className="truncate no-underline decoration-transparent" style={{ textDecoration: 'none' }} title={lead.email}>{lead.email}</span>
                       </div>
                     ) : null}
                     {lead.ghl_tags && lead.ghl_tags.length > 0 && (
