@@ -79,6 +79,7 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
     setSaving(true);
     const payload: Record<string, string | null> = {
       first_name: data.first_name.trim() || null,
+      middle_name: data.middle_name.trim() || null,
       last_name: data.last_name.trim() || null,
       phone: data.phone.trim() || null,
       email: data.email.trim() || null,
