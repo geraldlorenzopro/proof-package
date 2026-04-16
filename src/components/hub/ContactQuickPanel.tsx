@@ -305,8 +305,8 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       const task = tasks.find(t => t.id === taskId);
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
 
-      // Sync status change to GHL if task has ghl_task_id
-      if (task && (task as any).ghl_task_id && profile?.ghl_contact_id) {
+      // Sync status change to GHL if contact is linked
+      if (task && profile?.ghl_contact_id) {
         try {
           const { data: userData } = await supabase.auth.getUser();
           const { data: mem } = await supabase.from("account_members")
@@ -323,7 +323,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 account_id: mem.account_id,
                 task_id: taskId,
                 ghl_contact_id: profile.ghl_contact_id,
-                ghl_task_id: (task as any).ghl_task_id,
+                ghl_task_id: (task as any).ghl_task_id || undefined,
                 title: task.title,
                 due_date: task.due_date,
                 status: newStatus,
@@ -334,8 +334,6 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       }
     }
   }
-
-  async function handleAddTask() {
     if (!newTaskTitle.trim() || !profile) return;
     setSavingTask(true);
     try {
