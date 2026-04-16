@@ -156,17 +156,20 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
     const [profileRes, intakesRes, casesRes, tasksRes] = await Promise.all([profileP, intakesP, casesP, tasksP]);
 
-    setProfile(profileRes.data as any);
+    const loadedProfile = profileRes.data as ProfileData | null;
+    setProfile(loadedProfile);
     setIntakes((intakesRes.data as any) || []);
     setCases((casesRes.data as any) || []);
     setTasks((tasksRes.data as any) || []);
 
     // Load office config for GHL location
     const { data: userData } = await supabase.auth.getUser();
+    let accountId: string | null = null;
     if (userData.user) {
       const { data: memberData } = await supabase.from("account_members")
         .select("account_id").eq("user_id", userData.user.id).limit(1).single();
       if (memberData) {
+        accountId = memberData.account_id;
         const { data: officeData } = await supabase.from("office_config" as any)
           .select("ghl_location_id").eq("account_id", memberData.account_id).single();
         if ((officeData as any)?.ghl_location_id) {
@@ -174,6 +177,28 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
         }
       }
     }
+
+    // Auto-fix GHL contact ID if missing
+    if (loadedProfile && !loadedProfile.ghl_contact_id && accountId) {
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        if (session.session) {
+          const res = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-ghl-contact-id`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.session.access_token}` },
+              body: JSON.stringify({ account_id: accountId, profile_id: loadedProfile.id }),
+            }
+          );
+          const data = await res.json();
+          if (data.fixed) {
+            setProfile(prev => prev ? { ...prev, ghl_contact_id: data.ghl_contact_id } : prev);
+          }
+        }
+      } catch {}
+    }
+
     setLoading(false);
   }
 
