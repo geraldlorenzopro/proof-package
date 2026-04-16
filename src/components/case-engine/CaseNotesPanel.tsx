@@ -70,16 +70,50 @@ export default function CaseNotesPanel({ notes, caseId, accountId, onNoteAdded }
         .eq("user_id", user.id)
         .single();
 
-      const { error } = await supabase.from("case_notes").insert({
+      const { data: insertedNote, error } = await supabase.from("case_notes").insert({
         case_id: caseId,
         account_id: accountId,
         author_id: user.id,
         author_name: profile?.full_name || "Staff",
         content: content.trim(),
         note_type: noteType,
-      });
+      }).select("id").single();
 
       if (error) throw error;
+
+      // Push to GHL in background if client has ghl_contact_id
+      if (insertedNote?.id) {
+        (async () => {
+          try {
+            const { data: caseData } = await supabase.from("client_cases")
+              .select("client_profile_id").eq("id", caseId).single();
+            if (!caseData?.client_profile_id) return;
+            const { data: cp } = await supabase.from("client_profiles")
+              .select("ghl_contact_id").eq("id", caseData.client_profile_id).single();
+            if (!cp?.ghl_contact_id) return;
+            const { data: session } = await supabase.auth.getSession();
+            if (!session.session) return;
+            await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-note-to-ghl`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${session.session.access_token}`,
+                },
+                body: JSON.stringify({
+                  account_id: accountId,
+                  note_id: insertedNote.id,
+                  ghl_contact_id: cp.ghl_contact_id,
+                  content: content.trim(),
+                  author_name: profile?.full_name || "Staff",
+                }),
+              }
+            );
+          } catch {}
+        })();
+      }
+
       setContent("");
       setAdding(false);
       onNoteAdded();
