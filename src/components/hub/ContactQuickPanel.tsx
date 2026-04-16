@@ -352,7 +352,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
         created_by: userData.user.id,
         created_by_name: (prof as any)?.full_name || "Usuario",
         priority: "normal",
-      }).select("id, title, status, due_date, priority").single();
+      }).select("id, title, status, due_date, priority, ghl_task_id").single();
 
       if (!error && newTask) {
         setTasks(prev => [newTask as any, ...prev]);
