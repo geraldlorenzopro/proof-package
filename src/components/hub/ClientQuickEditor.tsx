@@ -49,13 +49,14 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
       setLoading(true);
       const { data: p } = await supabase
         .from("client_profiles")
-        .select("first_name, last_name, phone, email, immigration_status, notes")
+        .select("first_name, middle_name, last_name, phone, email, immigration_status, notes")
         .eq("id", clientId)
         .single();
 
       if (p) {
         setData({
           first_name: p.first_name || "",
+          middle_name: p.middle_name || "",
           last_name: p.last_name || "",
           phone: p.phone || "",
           email: p.email || "",
