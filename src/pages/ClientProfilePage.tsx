@@ -502,25 +502,6 @@ export default function ClientProfilePage() {
         </Tabs>
       </div>
 
-      {/* Edit Sheet */}
-      <Sheet open={editOpen} onOpenChange={setEditOpen}>
-        <SheetContent className="w-[500px] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Editar contacto</SheetTitle>
-          </SheetHeader>
-          <div className="mt-4">
-            <ClientProfileEditor
-              clientId={profile.id}
-              onUpdated={async () => {
-                setEditOpen(false);
-                await loadProfile();
-                await syncToGHL(profile.id);
-                toast.success("Contacto actualizado y sincronizado");
-              }}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
