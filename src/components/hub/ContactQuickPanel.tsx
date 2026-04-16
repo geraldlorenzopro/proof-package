@@ -289,6 +289,18 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                     <span className="truncate">{profile.email}</span>
                   </a>
                 )}
+                {profile.ghl_contact_id && (
+                  <a
+                    href={`https://app.nertech.ai/v2/location/${locationId}/conversations/${profile.ghl_contact_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+                  >
+                    <ExternalLink className="w-4 h-4 shrink-0 text-orange-500 group-hover:text-orange-400" />
+                    <span>Conversación en GHL</span>
+                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-50" />
+                  </a>
+                )}
               </div>
 
               {/* Lead message / notes — prominent */}
