@@ -418,7 +418,7 @@ export default function HubLeadsPage() {
         {/* Scrollable cards area */}
         <div className="flex-1 overflow-y-auto mt-2 min-h-0 flex flex-col">
           {loading ? (
-            <div className="grid grid-cols-3 gap-2 content-start">
+             <div className="grid grid-cols-3 gap-2 flex-1 auto-rows-fr">
               {Array.from({ length: 18 }).map((_, i) => <Skeleton key={i} className="h-full min-h-[60px] rounded-lg" />)}
             </div>
           ) : leads.length === 0 ? (
@@ -433,7 +433,7 @@ export default function HubLeadsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
-              className="grid grid-cols-3 gap-2 content-start"
+              className={`grid grid-cols-3 gap-2 ${leads.length < 9 ? 'content-start' : 'flex-1 auto-rows-fr'}`}
             >
               {leads.map((lead) => {
                 const classified = classifyChannel(lead.source_channel);
