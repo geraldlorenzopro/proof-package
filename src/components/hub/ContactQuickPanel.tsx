@@ -699,7 +699,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   {showApptForm ? (
                     <div className="space-y-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
                       <div className="flex gap-2">
-                        <Input type="date" value={newApptDate} onChange={(e) => setNewApptDate(e.target.value)} className="h-9 text-xs flex-1 text-foreground [color-scheme:dark]" />
+                        <Input type="date" min={new Date().toISOString().split("T")[0]} value={newApptDate} onChange={(e) => setNewApptDate(e.target.value)} className="h-9 text-xs flex-1 text-foreground [color-scheme:dark]" />
                         <TimeSelector value={newApptTime} onChange={setNewApptTime} />
                       </div>
                       <select value={newApptType} onChange={(e) => setNewApptType(e.target.value)} className="w-full h-8 text-xs rounded-md border border-border bg-background px-2 text-foreground [color-scheme:dark]">
