@@ -93,8 +93,8 @@ export default function HubAgentTeam({ accountId, plan }: { accountId: string; p
           return (
             <motion.div
               key={agent.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: i * 0.06 }}
               className={`rounded-xl border ${isAvailable ? colors.border : "border-border/30"} ${isAvailable ? "bg-card" : "bg-card/40"} p-4 transition-all`}
             >

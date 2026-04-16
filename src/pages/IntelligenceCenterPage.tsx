@@ -216,8 +216,8 @@ export default function IntelligenceCenterPage() {
     <div className="min-h-screen bg-background">
       {/* ═══ TOP BAR ═══ */}
       <motion.header
-        initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/30"
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between px-5 py-3">
@@ -262,8 +262,8 @@ export default function IntelligenceCenterPage() {
           <>
             {/* ═══ ROW 1 — EFFICIENCY CLOCK (Hero) ═══ */}
             <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
               <SectionHeader icon={Gauge} label="Reloj de Eficiencia" subtitle="Net Case Velocity — Click en una etapa para ver sus casos" color="text-accent" />
@@ -323,8 +323,8 @@ export default function IntelligenceCenterPage() {
 
             {/* ═══ ROW 2 — WORKLOAD + PIPELINE ═══ */}
             <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.5 }}
               className="grid grid-cols-1 lg:grid-cols-2 gap-4"
             >
@@ -463,8 +463,8 @@ export default function IntelligenceCenterPage() {
 
             {/* ═══ ROW 3 — TRENDS + COMPLETION ═══ */}
             <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <SectionHeader icon={TrendingUp} label="Tendencias Mensuales" subtitle="Crecimiento y completación" color="text-emerald-400" />
@@ -519,8 +519,8 @@ export default function IntelligenceCenterPage() {
             {/* ═══ ROW 4 — BOTTLENECKS ═══ */}
             {teamBottlenecks.length > 0 && (
               <motion.section
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ delay: 0.3, duration: 0.5 }}
               >
                 <SectionHeader icon={ShieldAlert} label="Alertas de Cuellos de Botella" subtitle={`Click para ver casos atascados`} color="text-rose-400" />
