@@ -15,7 +15,7 @@ import {
   FileText, Briefcase, ChevronRight, Check, Clock,
   StickyNote, CheckSquare, CalendarDays, Plus, X, Loader2
 } from "lucide-react";
-import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
+import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
