@@ -322,8 +322,8 @@ export default function HubAuditPage() {
 
         {/* Table — scrollable */}
         <div className="rounded-xl border border-border bg-card overflow-hidden flex-1 flex flex-col min-h-0">
-          {/* Table Header */}
-          <div className="grid grid-cols-[1.5fr_1fr_1fr_1.2fr_1fr] gap-4 px-4 py-3 bg-muted/30 border-b border-border">
+          {/* Table Header — sticky */}
+          <div className="grid grid-cols-[1.5fr_1fr_1fr_1.2fr_1fr] gap-4 px-4 py-3 bg-muted/30 border-b border-border shrink-0">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Name</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Module</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Action</span>
@@ -331,6 +331,7 @@ export default function HubAuditPage() {
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date & Time</span>
           </div>
 
+          <div className="flex-1 overflow-y-auto min-h-0">
           {loading ? (
             <div className="space-y-0">
               {[...Array(8)].map((_, i) => (
