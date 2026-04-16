@@ -1173,7 +1173,9 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          is_recurring: boolean | null
           priority: string
+          recurring_interval: string | null
           status: string
           title: string
           updated_at: string
@@ -1191,7 +1193,9 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_recurring?: boolean | null
           priority?: string
+          recurring_interval?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -1209,7 +1213,9 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_recurring?: boolean | null
           priority?: string
+          recurring_interval?: string | null
           status?: string
           title?: string
           updated_at?: string
