@@ -253,8 +253,39 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     setSavingNote(false);
   }
 
+  function simpleMarkdown(text: string) {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(/^- (.+)/gm, "<li>$1</li>")
+      .replace(/\n/g, "<br/>");
+  }
+
+  function insertFormat(marker: string) {
+    const el = taskNotesRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const text = newTask.notes;
+    const selected = text.slice(start, end);
+    const newText = selected
+      ? text.slice(0, start) + marker + selected + marker + text.slice(end)
+      : text.slice(0, start) + marker + marker + text.slice(end);
+    setNewTask(prev => ({ ...prev, notes: newText }));
+    setTimeout(() => { el.focus(); el.setSelectionRange(start + marker.length, end + marker.length); }, 0);
+  }
+
+  function insertText(text: string) {
+    const el = taskNotesRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const current = newTask.notes;
+    const newText = current.slice(0, start) + text + current.slice(start);
+    setNewTask(prev => ({ ...prev, notes: newText }));
+  }
+
   async function handleCreateTask() {
-    if (!newTaskTitle.trim() || !profile) return;
+    if (!newTask.title.trim() || !profile) return;
     setSavingTask(true);
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
@@ -267,18 +298,20 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     const { error } = await (supabase.from("case_tasks") as any).insert({
       account_id: memberData.account_id,
       created_by: userId,
-      title: newTaskTitle.trim(),
-      due_date: newTaskDue || null,
-      priority: newTaskPriority,
+      title: newTask.title.trim(),
+      description: newTask.notes || null,
+      due_date: newTask.due_date || null,
+      priority: newTask.priority === "alta" ? "high" : newTask.priority === "baja" ? "low" : "normal",
+      assigned_to: newTask.assigned_to || null,
+      is_recurring: newTask.is_recurring,
+      recurring_interval: newTask.is_recurring ? newTask.recurring_interval : null,
       status: "pending",
       client_profile_id: profile.id,
     });
 
     if (!error) {
       toast.success("Tarea creada ✅");
-      setNewTaskTitle("");
-      setNewTaskDue("");
-      setNewTaskPriority("normal");
+      setNewTask({ title: "", notes: "", due_date: "", due_time: "", priority: "normal", assigned_to: "", is_recurring: false, recurring_interval: "weekly" });
       setShowTaskForm(false);
       loadData(profile.id);
     } else toast.error("Error al crear tarea");
