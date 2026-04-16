@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   Phone, Mail, MessageSquare, ExternalLink,
-  FileText, Briefcase, ChevronRight, Check,
+  FileText, Briefcase, ChevronRight, Check, Clock,
   StickyNote, CheckSquare, CalendarDays, Plus, X, Loader2
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
