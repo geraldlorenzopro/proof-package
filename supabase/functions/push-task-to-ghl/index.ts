@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { account_id, task_id, ghl_contact_id, ghl_task_id, title, description, due_date, assigned_to_name, status } = body;
+    const { account_id, task_id, ghl_contact_id, ghl_task_id, title, description, due_date, assigned_to, status } = body;
 
     if (!account_id || !ghl_contact_id || !title) {
       return new Response(
@@ -31,6 +31,11 @@ Deno.serve(async (req) => {
 
     const { apiKey } = ghlConfig;
 
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     // GHL expects dueDate as full ISO-8601 datetime string
     let dueDateISO: string;
     if (due_date) {
@@ -45,6 +50,22 @@ Deno.serve(async (req) => {
       dueDate: dueDateISO,
       completed: status === "completed",
     };
+
+    // Resolve GHL user ID from ghl_user_mappings if assigned_to is provided
+    if (assigned_to) {
+      const { data: mapping } = await admin
+        .from("ghl_user_mappings")
+        .select("ghl_user_id")
+        .eq("account_id", account_id)
+        .eq("mapped_user_id", assigned_to)
+        .limit(1)
+        .maybeSingle();
+
+      if (mapping?.ghl_user_id) {
+        taskBody.assignedTo = mapping.ghl_user_id;
+        console.log("Mapped NER user to GHL user:", mapping.ghl_user_id);
+      }
+    }
 
     // If ghl_task_id exists, UPDATE existing task; otherwise CREATE new
     const isUpdate = !!ghl_task_id;
@@ -71,10 +92,6 @@ Deno.serve(async (req) => {
     try { data = JSON.parse(rawText); } catch { data = { raw: rawText }; }
 
     if (res.ok && data.task?.id && task_id) {
-      const admin = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
       await admin.from("case_tasks").update({ ghl_task_id: data.task.id }).eq("id", task_id);
     }
 

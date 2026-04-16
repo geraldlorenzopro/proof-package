@@ -2192,6 +2192,53 @@ export type Database = {
           },
         ]
       }
+      ghl_user_mappings: {
+        Row: {
+          account_id: string
+          created_at: string
+          ghl_user_email: string | null
+          ghl_user_id: string
+          ghl_user_name: string | null
+          ghl_user_phone: string | null
+          ghl_user_role: string | null
+          id: string
+          mapped_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          ghl_user_email?: string | null
+          ghl_user_id: string
+          ghl_user_name?: string | null
+          ghl_user_phone?: string | null
+          ghl_user_role?: string | null
+          id?: string
+          mapped_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          ghl_user_email?: string | null
+          ghl_user_id?: string
+          ghl_user_name?: string | null
+          ghl_user_phone?: string | null
+          ghl_user_role?: string | null
+          id?: string
+          mapped_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ghl_user_mappings_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hub_apps: {
         Row: {
           created_at: string
