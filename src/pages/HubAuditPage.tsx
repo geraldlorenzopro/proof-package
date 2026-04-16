@@ -250,7 +250,7 @@ export default function HubAuditPage() {
 
   return (
     <HubLayout>
-      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col h-full overflow-hidden">
         {/* Header — fixed */}
         <div className="flex items-center justify-between mb-3 shrink-0">
           <div>
