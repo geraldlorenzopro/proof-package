@@ -148,12 +148,12 @@ function TimeSelector({ value, onChange }: { value: string; onChange: (v: string
   }, []);
 
   const hours = [1,2,3,4,5,6,7,8,9,10,11,12];
-  const minutes = Array.from({length:12},(_,i)=>String(i*5).padStart(2,"0"));
+  const minutes = Array.from({length:60},(_,i)=>String(i).padStart(2,"0"));
 
   const colClass = "overflow-y-auto overscroll-contain flex flex-col gap-0.5 px-1 scrollbar-thin";
-  const itemBase = "px-3 py-1.5 text-sm rounded-md cursor-pointer text-center transition-colors";
+  const itemBase = "px-3 py-1.5 text-sm rounded-md cursor-pointer text-center transition-colors text-foreground";
   const itemActive = "bg-primary/20 text-primary font-semibold";
-  const itemInactive = "text-foreground/70 hover:bg-muted/60";
+  const itemInactive = "hover:bg-foreground/10";
 
   return (
     <div className="relative" ref={ref}>
