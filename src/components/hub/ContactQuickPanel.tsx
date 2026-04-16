@@ -113,6 +113,8 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
   // Tasks
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [newTaskDueTime, setNewTaskDueTime] = useState("17:00");
   const [savingTask, setSavingTask] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
