@@ -536,6 +536,7 @@ export default function CaseEnginePage() {
                     caseId={caseId!}
                     accountId={caseData.account_id}
                     onTaskChanged={loadCase}
+                    ghlContactId={ghlContactId}
                   />
                 </div>
 
@@ -546,6 +547,7 @@ export default function CaseEnginePage() {
                     caseId={caseId!}
                     accountId={caseData.account_id}
                     onNoteAdded={loadCase}
+                    ghlContactId={ghlContactId}
                   />
                 </div>
 
