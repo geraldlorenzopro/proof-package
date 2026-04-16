@@ -873,7 +873,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     {/* Edit Contact Dialog */}
     {profile && (
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Editar contacto</DialogTitle>
           </DialogHeader>
