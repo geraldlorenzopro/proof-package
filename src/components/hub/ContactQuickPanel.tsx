@@ -572,19 +572,17 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                     <p className="text-[10px] text-muted-foreground/40">Ctrl+Enter</p>
                     {locationId && (
                       <button
-                        onClick={profile?.ghl_contact_id ? handleImportGhlNotes : handleFixGhlContactId}
-                        disabled={fixingGhl || importingNotes}
+                        onClick={handleSyncGhl}
+                        disabled={importingNotes}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all disabled:opacity-40"
-                        title={profile?.ghl_contact_id ? "Importar notas de GHL" : "Vincular contacto con GHL"}
+                        title="Sincronizar notas con GHL"
                       >
-                        {fixingGhl || importingNotes ? (
+                        {importingNotes ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : profile?.ghl_contact_id ? (
-                          <Download className="w-3 h-3" />
                         ) : (
-                          <Link2 className="w-3 h-3" />
+                          <Download className="w-3 h-3" />
                         )}
-                        {profile?.ghl_contact_id ? "Importar GHL" : "Vincular GHL"}
+                        Sincronizar GHL
                       </button>
                     )}
                   </div>
