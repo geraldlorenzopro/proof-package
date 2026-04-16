@@ -42,8 +42,8 @@ const MODULE_MAP: Record<string, { label: string; icon: any }> = {
   tool: { label: "Herramienta", icon: Settings2 },
   auth: { label: "Auth", icon: Shield },
   consultation_room: { label: "Consultas", icon: CalendarIcon },
-  tag: { label: "Tag", icon: Tag },
-  settings: { label: "Config", icon: Settings2 },
+  tag: { label: "Etiqueta", icon: Tag },
+  settings: { label: "Configuración", icon: Settings2 },
   task: { label: "Tareas", icon: Activity },
   note: { label: "Notas", icon: FileText },
   document: { label: "Documentos", icon: FileText },
@@ -68,10 +68,10 @@ const ACTION_CONFIG: Record<string, { label: string; color: string; bgColor: str
   "vawa.created": { label: "Creado", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
   "vawa.updated": { label: "Editado", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
   "tool.used": { label: "Usado", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "auth.login": { label: "Login", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "auth.logout": { label: "Logout", color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200" },
-  "tag.added": { label: "Tag agregado", color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200" },
-  "tag.removed": { label: "Tag removido", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "auth.login": { label: "Inicio sesión", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
+  "auth.logout": { label: "Cierre sesión", color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200" },
+  "tag.added": { label: "Etiqueta agregada", color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200" },
+  "tag.removed": { label: "Etiqueta removida", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
   "task.created": { label: "Creada", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
   "task.completed": { label: "Completada", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
   "task.deleted": { label: "Eliminada", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
@@ -81,8 +81,8 @@ const ACTION_CONFIG: Record<string, { label: string; color: string; bgColor: str
   "document.deleted": { label: "Eliminado", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
   "member.removed": { label: "Removido", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
   "settings.updated": { label: "Editado", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
-  "ghl_push_failed": { label: "Error sync", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "admin.account_updated": { label: "Admin edit", color: "text-purple-600", bgColor: "bg-purple-50 border-purple-200" },
+  "ghl_push_failed": { label: "Error sincronización", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "admin.account_updated": { label: "Cuenta editada", color: "text-purple-600", bgColor: "bg-purple-50 border-purple-200" },
 };
 
 function getActionConfig(action: string) {
@@ -117,7 +117,7 @@ const READABLE_ACTIONS: Record<string, string> = {
   "member.removed": "Miembro removido",
   "form.created": "Formulario creado",
   "ghl_push_failed": "Error de sincronización",
-  "admin.account_updated": "Cuenta actualizada",
+  "admin.account_updated": "Cuenta editada por admin",
 };
 
 function getReadableAction(action: string): string {
@@ -146,17 +146,17 @@ function getAvatarColor(userId: string) {
 const PAGE_SIZE = 20;
 
 const MODULE_FILTER_OPTIONS = [
-  { value: "all", label: "Module - All" },
+  { value: "all", label: "Módulo - Todos" },
   { value: "client", label: "Contactos" },
   { value: "case", label: "Casos" },
   { value: "form", label: "Formularios" },
   { value: "evidence", label: "Evidencia" },
   { value: "vawa", label: "VAWA" },
-  { value: "auth", label: "Auth" },
+  { value: "auth", label: "Autenticación" },
   { value: "task", label: "Tareas" },
   { value: "note", label: "Notas" },
   { value: "document", label: "Documentos" },
-  { value: "settings", label: "Config" },
+  { value: "settings", label: "Configuración" },
 ];
 
 const ACTION_FILTER_OPTIONS = [
@@ -165,7 +165,7 @@ const ACTION_FILTER_OPTIONS = [
   { value: "updated", label: "Editado" },
   { value: "deleted", label: "Eliminado" },
   { value: "viewed", label: "Visto" },
-  { value: "login", label: "Login" },
+  { value: "login", label: "Inicio sesión" },
 ];
 
 export default function HubAuditPage() {
@@ -254,13 +254,13 @@ export default function HubAuditPage() {
         {/* Header — fixed */}
         <div className="flex items-center justify-between mb-3 shrink-0">
           <div>
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              Audit Logs
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Track and monitor all system activities, user actions, and data changes across your account
-            </p>
+             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+               <Shield className="w-5 h-5 text-primary" />
+               Registro de Auditoría
+             </h1>
+             <p className="text-sm text-muted-foreground mt-0.5">
+               Seguimiento y monitoreo de todas las actividades, acciones de usuarios y cambios de datos en su cuenta
+             </p>
           </div>
           <Button
             variant="outline"
@@ -268,9 +268,9 @@ export default function HubAuditPage() {
             onClick={() => { setPage(0); load(); }}
             className="gap-1.5"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+             Actualizar
+           </Button>
         </div>
 
         {/* Filters Row */}
@@ -278,19 +278,19 @@ export default function HubAuditPage() {
           <div className="relative flex-1 min-w-[200px] max-w-[300px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or ID..."
+              placeholder="Buscar por nombre o ID..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(0); }}
               className="pl-9 h-9 text-sm"
             />
           </div>
 
-          <Select value={userFilter} onValueChange={(v) => { setUserFilter(v); setPage(0); }}>
-            <SelectTrigger className="w-[180px] h-9 text-sm">
-              <SelectValue placeholder="Select users" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Users</SelectItem>
+           <Select value={userFilter} onValueChange={(v) => { setUserFilter(v); setPage(0); }}>
+             <SelectTrigger className="w-[180px] h-9 text-sm">
+               <SelectValue placeholder="Usuarios" />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="all">Todos los usuarios</SelectItem>
               {users.map(u => (
                 <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
               ))}
@@ -324,11 +324,11 @@ export default function HubAuditPage() {
         <div className="rounded-xl border border-border bg-card overflow-hidden flex-1 flex flex-col min-h-0">
           {/* Table Header — sticky */}
           <div className="grid grid-cols-[1.5fr_1fr_1fr_1.2fr_1fr] gap-4 px-4 py-3 bg-muted/30 border-b border-border shrink-0">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Name</span>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Module</span>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Action</span>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Done By</span>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date & Time</span>
+             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nombre</span>
+             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Módulo</span>
+             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acción</span>
+             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Realizado por</span>
+             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fecha y Hora</span>
           </div>
 
           <div className="flex-1 overflow-y-auto min-h-0">
@@ -350,8 +350,8 @@ export default function HubAuditPage() {
           ) : entries.length === 0 ? (
             <div className="text-center py-16">
               <Shield className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No audit logs found</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Actions will appear here automatically</p>
+               <p className="text-sm text-muted-foreground">No se encontraron registros</p>
+               <p className="text-xs text-muted-foreground/60 mt-1">Las acciones aparecerán aquí automáticamente</p>
             </div>
           ) : (
             <div className="divide-y divide-border/50">
@@ -404,7 +404,7 @@ export default function HubAuditPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-medium text-foreground/80 truncate">
-                          {entry.user_display_name || "UNKNOWN"}
+                          {entry.user_display_name || "Desconocido"}
                         </p>
                       </div>
                     </div>
@@ -415,7 +415,7 @@ export default function HubAuditPage() {
                         {format(new Date(entry.created_at), "MMM d, yyyy", { locale: es })}
                         <br />
                         <span className="text-muted-foreground/50">
-                          at {format(new Date(entry.created_at), "h:mm a")}
+                          {format(new Date(entry.created_at), "h:mm a")}
                         </span>
                       </span>
                     </div>
@@ -431,7 +431,7 @@ export default function HubAuditPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-3 shrink-0 py-2">
             <p className="text-xs text-muted-foreground">
-              Rows per page: {PAGE_SIZE} &nbsp;·&nbsp; {page * PAGE_SIZE + 1} - {Math.min((page + 1) * PAGE_SIZE, total)} of {total}
+              Filas por página: {PAGE_SIZE} &nbsp;·&nbsp; {page * PAGE_SIZE + 1} - {Math.min((page + 1) * PAGE_SIZE, total)} de {total}
             </p>
             <div className="flex items-center gap-1">
               <Button
