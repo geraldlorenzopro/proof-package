@@ -347,14 +347,19 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       const { data: prof } = await supabase.from("profiles" as any)
         .select("full_name").eq("user_id", userData.user.id).single();
 
-      const { data: newTask, error } = await supabase.from("case_tasks").insert({
-        account_id: mem.account_id,
-        client_profile_id: profile.id,
-        title: newTaskTitle.trim(),
-        created_by: userData.user.id,
-        created_by_name: (prof as any)?.full_name || "Usuario",
-        priority: "normal",
-      }).select("id, title, status, due_date, priority, ghl_task_id").single();
+        const dueValue = newTaskDueDate
+          ? `${newTaskDueDate}T${newTaskDueTime || "17:00"}:00`
+          : undefined;
+
+        const { data: newTask, error } = await supabase.from("case_tasks").insert({
+          account_id: mem.account_id,
+          client_profile_id: profile.id,
+          title: newTaskTitle.trim(),
+          created_by: userData.user.id,
+          created_by_name: (prof as any)?.full_name || "Usuario",
+          priority: "normal",
+          ...(dueValue ? { due_date: newTaskDueDate } : {}),
+        }).select("id, title, status, due_date, priority, ghl_task_id").single();
 
       if (!error && newTask) {
         setTasks(prev => [newTask as any, ...prev]);
