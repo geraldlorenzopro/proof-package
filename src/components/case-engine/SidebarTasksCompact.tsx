@@ -42,6 +42,7 @@ interface Props {
   accountId: string;
   onTaskChanged: () => void;
   onViewAll?: () => void;
+  ghlContactId?: string | null;
 }
 
 const priorityConfig: Record<string, { label: string; dot: string }> = {

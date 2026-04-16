@@ -29,6 +29,7 @@ interface Props {
   accountId: string;
   onNoteAdded: () => void;
   onViewAll?: () => void;
+  ghlContactId?: string | null;
 }
 
 const typeConfig: Record<string, { icon: any; color: string; label: string; border: string }> = {
