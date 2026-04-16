@@ -296,8 +296,9 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
           supabase.from("account_members").select("user_id, role").eq("account_id", memberData.account_id),
           supabase.from("office_config" as any).select("ghl_location_id").eq("account_id", memberData.account_id).single(),
         ]);
-        if (officeRes.data?.ghl_location_id) {
-          setLocationId(officeRes.data.ghl_location_id);
+        const officeData = officeRes.data as any;
+        if (officeData?.ghl_location_id) {
+          setLocationId(officeData.ghl_location_id);
         }
         const members = membersRes.data;
         if (members) {
