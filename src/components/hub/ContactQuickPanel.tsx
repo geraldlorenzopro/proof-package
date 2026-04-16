@@ -121,6 +121,43 @@ const APPT_TYPE_LABELS: Record<string, string> = {
   other: "Otro",
 };
 
+const selectClass = "px-2 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm text-foreground focus:outline-none focus:border-primary/40 [color-scheme:dark]";
+
+function TimeSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const parts = value ? value.split(":") : ["", ""];
+  const h24 = parseInt(parts[0]) || 0;
+  const rawMin = parts[1] || "00";
+  const isPM = h24 >= 12;
+  const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+
+  const update = (hour12: number, min: string, pm: boolean) => {
+    let h = hour12;
+    if (pm && h !== 12) h += 12;
+    if (!pm && h === 12) h = 0;
+    onChange(`${String(h).padStart(2, "0")}:${min}`);
+  };
+
+  return (
+    <div className="flex gap-1 items-center">
+      <select value={value ? h12 : ""} onChange={e => { if (e.target.value) update(parseInt(e.target.value), rawMin, isPM); }}
+        className={`${selectClass} w-16 text-center`}>
+        <option value="">--</option>
+        {[1,2,3,4,5,6,7,8,9,10,11,12].map(h => <option key={h} value={h}>{h}</option>)}
+      </select>
+      <span className="text-foreground/60 text-sm">:</span>
+      <select value={rawMin} onChange={e => update(h12, e.target.value, isPM)}
+        className={`${selectClass} w-16 text-center`}>
+        {["00","15","30","45"].map(m => <option key={m} value={m}>{m}</option>)}
+      </select>
+      <select value={isPM ? "PM" : "AM"} onChange={e => update(h12, rawMin, e.target.value === "PM")}
+        className={`${selectClass} w-16 text-center`}>
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </div>
+  );
+}
+
 export default function ContactQuickPanel({ contactId, open, onClose, onStartIntake }: ContactQuickPanelProps) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
