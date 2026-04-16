@@ -103,6 +103,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
   const [editOpen, setEditOpen] = useState(false);
   const [showGhlNotice, setShowGhlNotice] = useState(false);
+  const [showCalendarNotice, setShowCalendarNotice] = useState(false);
 
   useEffect(() => {
     if (!contactId || !open) {
@@ -447,16 +448,52 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 </Button>
 
                 {locationId && (
-                  <a
-                    href={`https://app.nertech.ai/v2/location/${locationId}/calendars`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => setShowCalendarNotice(true)}
                     className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl border border-border/30 text-xs text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
                   >
                     <ExternalLink className="w-3 h-3" />
                     Ver calendario en GHL
-                  </a>
+                  </button>
                 )}
+
+                {/* Calendar Redirect Notice */}
+                <Dialog open={showCalendarNotice} onOpenChange={setShowCalendarNotice}>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="text-lg">Agendar cita en GHL</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 text-sm text-muted-foreground">
+                      <p>
+                        Serás redirigido a la vista de <strong className="text-foreground">Calendarios</strong> en GHL.
+                      </p>
+                      <p>Para agendar una cita con este contacto:</p>
+                      <ol className="list-decimal list-inside space-y-2 pl-1">
+                        <li>Selecciona el <strong className="text-foreground">calendario</strong> donde deseas agendar</li>
+                        <li>Busca al cliente: <strong className="text-foreground">{normalizeClientName(`${profile.first_name || ""} ${profile.last_name || ""}`.trim())}</strong></li>
+                        <li>Completa la fecha, hora y detalles de la cita</li>
+                      </ol>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button variant="outline" size="sm" onClick={() => setShowCalendarNotice(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setShowCalendarNotice(false);
+                          window.open(
+                            `https://app.nertech.ai/v2/location/${locationId}/calendars/view?user_ids=`,
+                            "_blank"
+                          );
+                        }}
+                      >
+                        Ir a Calendarios
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
 
