@@ -157,7 +157,6 @@ export default function HubLeadsPage() {
         );
         if (resp.ok) {
           localStorage.setItem(`ghl_last_sync_${accountId}`, now.toString());
-          fetchPage();
         }
       } catch (e) {
         console.warn("Auto-sync failed:", e);
