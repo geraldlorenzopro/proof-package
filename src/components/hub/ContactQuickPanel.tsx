@@ -289,9 +289,9 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                     <span className="truncate">{profile.email}</span>
                   </a>
                 )}
-                {profile.ghl_contact_id && (
+                {profile.ghl_contact_id && locationId && (
                   <a
-                    href={`https://app.nertech.ai/v2/location/${locationId}/conversations/${profile.ghl_contact_id}`}
+                    href={`https://app.nertech.ai/v2/location/${locationId}/conversations/conversations/${profile.ghl_contact_id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors group"
