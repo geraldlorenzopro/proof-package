@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import NewClientModal from "@/components/workspace/NewClientModal";
 import HubLayout from "@/components/hub/HubLayout";
+import ContactQuickPanel from "@/components/hub/ContactQuickPanel";
 
 interface ClientProfile {
   id: string;
@@ -94,6 +95,7 @@ export default function HubClientsPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [pageSize, setPageSize] = useState(15);
   const [currentPage, setCurrentPage] = useState(0);
+  const [selectedContact, setSelectedContact] = useState<string | null>(null);
 
   const accountId = (() => {
     try {
@@ -289,7 +291,7 @@ export default function HubClientsPage() {
                       exit={{ opacity: 0, scale: 0.95 }}
                       whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => navigate(`/hub/clients/${client.id}`)}
+                      onClick={() => setSelectedContact(client.id)}
                       className="group relative bg-card border border-border rounded-xl p-4 text-left transition-all hover:border-jarvis/30 hover:shadow-lg hover:shadow-jarvis/5"
                     >
                       <div className="flex items-start gap-3 mb-3">
@@ -408,6 +410,16 @@ export default function HubClientsPage() {
         onCreated={(id) => {
           setShowNewModal(false);
           navigate(`/hub/clients/${id}`);
+        }}
+      />
+
+      <ContactQuickPanel
+        contactId={selectedContact}
+        open={!!selectedContact}
+        onClose={() => setSelectedContact(null)}
+        onStartIntake={(profileId, data) => {
+          setSelectedContact(null);
+          navigate(`/hub/clients/${profileId}`);
         }}
       />
     </HubLayout>
