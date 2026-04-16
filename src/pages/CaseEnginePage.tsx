@@ -82,6 +82,7 @@ export default function CaseEnginePage() {
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [formsCount, setFormsCount] = useState(0);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [ghlContactId, setGhlContactId] = useState<string | null>(null);
 
   const hubData = useMemo(() => {
     try {
