@@ -32,10 +32,19 @@ Deno.serve(async (req) => {
     const { apiKey } = ghlConfig;
 
 
+    // GHL expects dueDate as full ISO-8601 datetime string
+    let dueDateISO: string;
+    if (due_date) {
+      // If only date (YYYY-MM-DD), append end-of-business time
+      dueDateISO = due_date.includes("T") ? due_date : `${due_date}T17:00:00.000Z`;
+    } else {
+      dueDateISO = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
     const taskBody: Record<string, any> = {
       title,
       body: description || "",
-      dueDate: due_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      dueDate: dueDateISO,
       completed: status === "completed",
     };
     if (assigned_to_name) taskBody.assignedTo = assigned_to_name;
