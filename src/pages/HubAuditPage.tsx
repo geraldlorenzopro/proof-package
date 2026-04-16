@@ -51,44 +51,47 @@ const MODULE_MAP: Record<string, { label: string; icon: any }> = {
 
 /* ═══ Action labels & colors ═══ */
 const ACTION_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
-  "client.created": { label: "Created", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "client.updated": { label: "Updated", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
-  "client.deleted": { label: "Deleted", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "client.bulk_deleted": { label: "Bulk Deleted", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "case.created": { label: "Created", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "case.updated": { label: "Updated", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
-  "case.status_changed": { label: "Updated", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
-  "case.deleted": { label: "Deleted", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "form.created": { label: "Created", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "form.submitted": { label: "Updated", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
-  "form.updated": { label: "Updated", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
-  "form.deleted": { label: "Deleted", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "evidence.uploaded": { label: "Created", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "evidence.deleted": { label: "Deleted", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "vawa.created": { label: "Created", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "vawa.updated": { label: "Updated", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
-  "tool.used": { label: "Created", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "auth.login": { label: "Created", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "auth.logout": { label: "Deleted", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "tag.added": { label: "Tag Added", color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200" },
-  "tag.removed": { label: "Tag Removed", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "task.created": { label: "Created", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "task.completed": { label: "Updated", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
-  "task.deleted": { label: "Deleted", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "note.created": { label: "Created", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "note.deleted": { label: "Deleted", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "document.uploaded": { label: "Created", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
-  "document.deleted": { label: "Deleted", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "member.removed": { label: "Deleted", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
-  "settings.updated": { label: "Updated", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
+  "client.created": { label: "Creado", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
+  "client.updated": { label: "Editado", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
+  "client.deleted": { label: "Eliminado", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "client.bulk_deleted": { label: "Eliminación masiva", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "case.created": { label: "Creado", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
+  "case.updated": { label: "Editado", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
+  "case.status_changed": { label: "Etapa cambiada", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
+  "case.deleted": { label: "Eliminado", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "form.created": { label: "Creado", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
+  "form.submitted": { label: "Enviado", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
+  "form.updated": { label: "Editado", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
+  "form.deleted": { label: "Eliminado", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "evidence.uploaded": { label: "Subido", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
+  "evidence.deleted": { label: "Eliminado", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "vawa.created": { label: "Creado", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
+  "vawa.updated": { label: "Editado", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
+  "tool.used": { label: "Usado", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
+  "auth.login": { label: "Login", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
+  "auth.logout": { label: "Logout", color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200" },
+  "tag.added": { label: "Tag agregado", color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200" },
+  "tag.removed": { label: "Tag removido", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "task.created": { label: "Creada", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
+  "task.completed": { label: "Completada", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
+  "task.deleted": { label: "Eliminada", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "note.created": { label: "Creada", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
+  "note.deleted": { label: "Eliminada", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "document.uploaded": { label: "Subido", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" },
+  "document.deleted": { label: "Eliminado", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "member.removed": { label: "Removido", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "settings.updated": { label: "Editado", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" },
+  "ghl_push_failed": { label: "Error sync", color: "text-red-600", bgColor: "bg-red-50 border-red-200" },
+  "admin.account_updated": { label: "Admin edit", color: "text-purple-600", bgColor: "bg-purple-50 border-purple-200" },
 };
 
 function getActionConfig(action: string) {
   if (ACTION_CONFIG[action]) return ACTION_CONFIG[action];
-  if (action.includes("created") || action.includes("uploaded")) return { label: "Created", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" };
-  if (action.includes("deleted") || action.includes("removed")) return { label: "Deleted", color: "text-red-600", bgColor: "bg-red-50 border-red-200" };
-  if (action.includes("updated") || action.includes("changed") || action.includes("modified")) return { label: "Updated", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" };
-  if (action.includes("viewed")) return { label: "Viewed", color: "text-gray-500", bgColor: "bg-gray-50 border-gray-200" };
+  if (action.startsWith("viewed_")) return { label: "Visto", color: "text-gray-500", bgColor: "bg-gray-50 border-gray-200" };
+  if (action.includes("created") || action.includes("uploaded")) return { label: "Creado", color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200" };
+  if (action.includes("deleted") || action.includes("removed")) return { label: "Eliminado", color: "text-red-600", bgColor: "bg-red-50 border-red-200" };
+  if (action.includes("updated") || action.includes("changed") || action.includes("modified")) return { label: "Editado", color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200" };
+  if (action.includes("viewed")) return { label: "Visto", color: "text-gray-500", bgColor: "bg-gray-50 border-gray-200" };
   return { label: action, color: "text-gray-500", bgColor: "bg-gray-50 border-gray-200" };
 }
 
