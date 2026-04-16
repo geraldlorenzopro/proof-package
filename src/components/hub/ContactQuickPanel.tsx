@@ -453,11 +453,11 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     {/* Edit Contact Dialog */}
     {profile && (
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar contacto</DialogTitle>
           </DialogHeader>
-          <ClientQuickEditor
+          <ClientProfileEditor
             clientId={profile.id}
             onUpdated={() => {
               setEditOpen(false);
