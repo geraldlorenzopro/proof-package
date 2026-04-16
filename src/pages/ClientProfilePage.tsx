@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, Mail, Calendar, Tag, FileText, Loader2, MessageSquare, Pencil, Plus, Briefcase, Activity, FolderOpen, Trash2, HelpCircle } from "lucide-react";
+import { Phone, Mail, Calendar, Tag, FileText, Loader2, MessageSquare, Pencil, Plus, Briefcase, FolderOpen, Trash2, HelpCircle, ListChecks, Check, Square, CheckSquare, CalendarPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -101,6 +101,17 @@ interface CaseDoc {
   created_at: string;
 }
 
+interface TaskRecord {
+  id: string;
+  title: string;
+  status: string;
+  due_date: string | null;
+  priority: string;
+  created_at: string;
+  created_by_name: string | null;
+  completed_at: string | null;
+}
+
 const URGENCY: Record<string, { label: string; color: string }> = {
   urgente: { label: "Urgente", color: "text-red-400 bg-red-500/10" },
   prioritario: { label: "Prioritario", color: "text-amber-400 bg-amber-500/10" },
@@ -138,19 +149,33 @@ function getDisplayInitials(p: Profile): { text: string; isUnknown: boolean } {
   return { text: "?", isUnknown: true };
 }
 
+const TAB_MAP: Record<string, string> = { notas: "notas", tareas: "tareas", consultas: "consultas", casos: "casos", documentos: "documentos", info: "info" };
+
 export default function ClientProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialTab = TAB_MAP[searchParams.get("tab") || ""] || "info";
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sessions, setSessions] = useState<IntakeSession[]>([]);
   const [cases, setCases] = useState<ClientCase[]>([]);
   const [docs, setDocs] = useState<CaseDoc[]>([]);
+  const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const auditLoggedRef = useRef(false);
+
+  // Notes
+  const [quickNote, setQuickNote] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+
+  // Tasks
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [savingTask, setSavingTask] = useState(false);
 
   const accountId = (() => {
     try {
@@ -181,12 +206,14 @@ export default function ClientProfilePage() {
       const data = await loadProfile();
       if (!data) { setLoading(false); return; }
 
-      const [intakeRes, casesRes] = await Promise.all([
+      const [intakeRes, casesRes, tasksRes] = await Promise.all([
         supabase.from("intake_sessions").select("id, consultation_topic_tag, urgency_level, status, entry_channel, created_at").eq("client_profile_id", id).order("created_at", { ascending: false }),
         supabase.from("client_cases").select("id, case_type, file_number, status, pipeline_stage, created_at").eq("client_profile_id", id).order("created_at", { ascending: false }),
+        supabase.from("case_tasks").select("id, title, status, due_date, priority, created_at, created_by_name, completed_at").eq("client_profile_id", id).is("case_id", null).order("created_at", { ascending: false }),
       ]);
       setSessions(intakeRes.data || []);
       setCases(casesRes.data || []);
+      setTasks((tasksRes.data as any) || []);
 
       if (casesRes.data && casesRes.data.length > 0) {
         const caseIds = casesRes.data.map((c: any) => c.id);
@@ -262,6 +289,66 @@ export default function ClientProfilePage() {
     }
   }
 
+  async function handleSaveNote() {
+    if (!quickNote.trim() || !profile) return;
+    setSavingNote(true);
+    const now = new Date().toLocaleString("es", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
+    const entry = `[${now}]: ${quickNote.trim()}`;
+    const newNotes = profile.notes ? `${entry}\n${profile.notes}` : entry;
+    const { error } = await supabase.from("client_profiles")
+      .update({ notes: newNotes, updated_at: new Date().toISOString() })
+      .eq("id", profile.id);
+    if (!error) {
+      setProfile({ ...profile, notes: newNotes });
+      setQuickNote("");
+      toast.success("Nota guardada ✅");
+    } else toast.error("Error al guardar nota");
+    setSavingNote(false);
+  }
+
+  async function handleToggleTask(taskId: string, currentStatus: string) {
+    const newStatus = currentStatus === "completed" ? "pending" : "completed";
+    const { error } = await supabase.from("case_tasks")
+      .update({
+        status: newStatus,
+        completed_at: newStatus === "completed" ? new Date().toISOString() : null,
+      })
+      .eq("id", taskId);
+    if (!error) {
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus, completed_at: newStatus === "completed" ? new Date().toISOString() : null } : t));
+    }
+  }
+
+  async function handleAddTask() {
+    if (!newTaskTitle.trim() || !profile) return;
+    setSavingTask(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const { data: mem } = await supabase.from("account_members")
+        .select("account_id").eq("user_id", userData.user.id).limit(1).single();
+      if (!mem) return;
+      const { data: prof } = await supabase.from("profiles" as any)
+        .select("full_name").eq("user_id", userData.user.id).single();
+
+      const { data: newTask, error } = await supabase.from("case_tasks").insert({
+        account_id: mem.account_id,
+        client_profile_id: profile.id,
+        title: newTaskTitle.trim(),
+        created_by: userData.user.id,
+        created_by_name: (prof as any)?.full_name || "Usuario",
+        priority: "normal",
+      }).select("id, title, status, due_date, priority, created_at, created_by_name, completed_at").single();
+
+      if (!error && newTask) {
+        setTasks(prev => [newTask as any, ...prev]);
+        setNewTaskTitle("");
+        toast.success("Tarea creada ✅");
+      }
+    } catch {}
+    setSavingTask(false);
+  }
+
   if (loading) {
     return <HubLayout><div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div></HubLayout>;
   }
@@ -284,6 +371,10 @@ export default function ClientProfilePage() {
 
   const waLink = profile.phone ? `https://wa.me/${profile.phone.replace(/[^0-9]/g, "")}` : null;
   const mailLink = profile.email ? `mailto:${profile.email}` : null;
+
+  const noteLines = profile.notes?.split("\n").filter(l => l.trim()) || [];
+  const pendingTasks = tasks.filter(t => t.status !== "completed");
+  const completedTasks = tasks.filter(t => t.status === "completed");
 
   const InfoRow = ({ label, value }: { label: string; value: string | null }) =>
     value ? <div className="flex justify-between py-2 border-b border-border/40"><span className="text-xs text-muted-foreground">{label}</span><span className="text-sm text-foreground font-medium">{value}</span></div> : null;
@@ -341,9 +432,11 @@ export default function ClientProfilePage() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="info" className="w-full">
+        <Tabs defaultValue={initialTab} className="w-full">
           <TabsList className="w-full justify-start bg-muted/30 border border-border rounded-xl p-1">
             <TabsTrigger value="info" className="gap-1.5 text-xs"><FileText className="w-3.5 h-3.5" />Información</TabsTrigger>
+            <TabsTrigger value="notas" className="gap-1.5 text-xs">💬 Notas <Badge variant="outline" className="ml-1 text-[9px] px-1.5">{noteLines.length}</Badge></TabsTrigger>
+            <TabsTrigger value="tareas" className="gap-1.5 text-xs"><ListChecks className="w-3.5 h-3.5" />Tareas <Badge variant="outline" className="ml-1 text-[9px] px-1.5">{pendingTasks.length}</Badge></TabsTrigger>
             <TabsTrigger value="consultas" className="gap-1.5 text-xs"><MessageSquare className="w-3.5 h-3.5" />Consultas <Badge variant="outline" className="ml-1 text-[9px] px-1.5">{sessions.length}</Badge></TabsTrigger>
             <TabsTrigger value="casos" className="gap-1.5 text-xs"><Briefcase className="w-3.5 h-3.5" />Casos <Badge variant="outline" className="ml-1 text-[9px] px-1.5">{cases.length}</Badge></TabsTrigger>
             <TabsTrigger value="documentos" className="gap-1.5 text-xs"><FolderOpen className="w-3.5 h-3.5" />Docs <Badge variant="outline" className="ml-1 text-[9px] px-1.5">{docs.length}</Badge></TabsTrigger>
@@ -392,11 +485,6 @@ export default function ClientProfilePage() {
                   <InfoRow label="País" value={profile.passport_country} />
                   <InfoRow label="Expiración" value={profile.passport_expiration} />
                 </Section>
-                {profile.notes && (
-                  <Section title="Notas">
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{profile.notes}</p>
-                  </Section>
-                )}
                 {profile.ghl_tags && profile.ghl_tags.length > 0 && (
                   <Section title="Tags de CRM">
                     <div className="flex flex-wrap gap-1.5">
@@ -409,6 +497,126 @@ export default function ClientProfilePage() {
                   </Section>
                 )}
               </>
+            )}
+          </TabsContent>
+
+          {/* NOTAS TAB */}
+          <TabsContent value="notas" className="mt-4 space-y-4">
+            {/* Add note */}
+            <div className="border border-border rounded-xl p-4 space-y-3">
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Agregar nota</p>
+              <textarea
+                value={quickNote}
+                onChange={(e) => setQuickNote(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSaveNote(); }}
+                placeholder="ej: Contactada por WhatsApp, interesada en ajuste de estatus"
+                rows={3}
+                className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 resize-none"
+              />
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] text-muted-foreground/40">Ctrl+Enter para guardar</p>
+                <Button
+                  size="sm"
+                  onClick={handleSaveNote}
+                  disabled={!quickNote.trim() || savingNote}
+                  className="gap-1.5"
+                >
+                  {savingNote ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  Guardar nota
+                </Button>
+              </div>
+            </div>
+
+            {/* Notes history */}
+            {noteLines.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <MessageSquare className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                <h3 className="text-sm font-semibold text-foreground mb-1">Sin notas</h3>
+                <p className="text-xs text-muted-foreground max-w-xs">Agrega la primera nota para este contacto.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {noteLines.map((line, idx) => (
+                  <div key={idx} className="border border-border rounded-lg px-4 py-3 text-sm text-foreground/90 leading-relaxed">
+                    {line}
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* TAREAS TAB */}
+          <TabsContent value="tareas" className="mt-4 space-y-4">
+            {/* Add task */}
+            <div className="flex items-center gap-2">
+              <input
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleAddTask(); }}
+                placeholder="Nueva tarea..."
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border/40 bg-muted/20 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40"
+              />
+              <Button
+                size="sm"
+                onClick={handleAddTask}
+                disabled={!newTaskTitle.trim() || savingTask}
+                className="gap-1.5"
+              >
+                {savingTask ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                Crear
+              </Button>
+            </div>
+
+            {tasks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <ListChecks className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                <h3 className="text-sm font-semibold text-foreground mb-1">Sin tareas</h3>
+                <p className="text-xs text-muted-foreground max-w-xs">Crea una tarea de seguimiento para este contacto.</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {pendingTasks.length > 0 && (
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Pendientes ({pendingTasks.length})</p>
+                )}
+                {pendingTasks.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => handleToggleTask(t.id, t.status)}
+                    className="flex items-center gap-3 w-full text-left border border-border rounded-lg px-4 py-3 hover:border-primary/30 transition-colors group"
+                  >
+                    <Square className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{t.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t.created_by_name && <span>{t.created_by_name} · </span>}
+                        {format(new Date(t.created_at), "d MMM yyyy", { locale: es })}
+                        {t.due_date && <span> · Vence {format(new Date(t.due_date), "d MMM", { locale: es })}</span>}
+                      </p>
+                    </div>
+                    {t.priority === "high" && <Badge className="text-[10px] bg-red-500/10 text-red-400 border-red-500/20">Alta</Badge>}
+                  </button>
+                ))}
+                {completedTasks.length > 0 && (
+                  <>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-4 mb-2">Completadas ({completedTasks.length})</p>
+                    {completedTasks.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => handleToggleTask(t.id, t.status)}
+                        className="flex items-center gap-3 w-full text-left border border-border/30 rounded-lg px-4 py-3 opacity-60 hover:opacity-80 transition-all group"
+                      >
+                        <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-muted-foreground line-through truncate">{t.title}</p>
+                          <p className="text-xs text-muted-foreground/60">
+                            {t.completed_at && <span>Completada {format(new Date(t.completed_at), "d MMM yyyy", { locale: es })}</span>}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
             )}
           </TabsContent>
 
