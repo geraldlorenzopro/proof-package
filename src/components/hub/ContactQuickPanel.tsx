@@ -181,6 +181,35 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       setProfile({ ...profile, notes: newNotes });
       setQuickNote("");
       toast.success("Nota guardada ✅");
+
+      // Push to GHL in background (fire-and-forget)
+      if (profile.ghl_contact_id) {
+        (async () => {
+          try {
+            const { data: session } = await supabase.auth.getSession();
+            if (!session.session) return;
+            const { data: mem } = await supabase.from("account_members")
+              .select("account_id").eq("user_id", session.session.user.id).limit(1).single();
+            if (!mem) return;
+            await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-note-to-ghl`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${session.session.access_token}`,
+                },
+                body: JSON.stringify({
+                  account_id: mem.account_id,
+                  ghl_contact_id: profile.ghl_contact_id,
+                  content: quickNote.trim(),
+                  author_name: "NER",
+                }),
+              }
+            );
+          } catch {}
+        })();
+      }
     } else toast.error("Error al guardar nota");
     setSavingNote(false);
   }

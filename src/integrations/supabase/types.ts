@@ -914,6 +914,7 @@ export type Database = {
           case_id: string
           content: string
           created_at: string
+          ghl_note_id: string | null
           id: string
           is_pinned: boolean
           note_type: string
@@ -925,6 +926,7 @@ export type Database = {
           case_id: string
           content: string
           created_at?: string
+          ghl_note_id?: string | null
           id?: string
           is_pinned?: boolean
           note_type?: string
@@ -936,6 +938,7 @@ export type Database = {
           case_id?: string
           content?: string
           created_at?: string
+          ghl_note_id?: string | null
           id?: string
           is_pinned?: boolean
           note_type?: string
@@ -1172,6 +1175,7 @@ export type Database = {
           created_by_name: string | null
           description: string | null
           due_date: string | null
+          ghl_task_id: string | null
           id: string
           is_recurring: boolean | null
           priority: string
@@ -1192,6 +1196,7 @@ export type Database = {
           created_by_name?: string | null
           description?: string | null
           due_date?: string | null
+          ghl_task_id?: string | null
           id?: string
           is_recurring?: boolean | null
           priority?: string
@@ -1212,6 +1217,7 @@ export type Database = {
           created_by_name?: string | null
           description?: string | null
           due_date?: string | null
+          ghl_task_id?: string | null
           id?: string
           is_recurring?: boolean | null
           priority?: string
