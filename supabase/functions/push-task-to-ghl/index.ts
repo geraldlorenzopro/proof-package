@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { account_id, task_id, ghl_contact_id, title, description, due_date, assigned_to_name, status } = body;
+    const { account_id, task_id, ghl_contact_id, ghl_task_id, title, description, due_date, assigned_to_name, status } = body;
 
     if (!account_id || !ghl_contact_id || !title) {
       return new Response(
@@ -31,11 +31,9 @@ Deno.serve(async (req) => {
 
     const { apiKey } = ghlConfig;
 
-
     // GHL expects dueDate as full ISO-8601 datetime string
     let dueDateISO: string;
     if (due_date) {
-      // If only date (YYYY-MM-DD), append end-of-business time
       dueDateISO = due_date.includes("T") ? due_date : `${due_date}T17:00:00.000Z`;
     } else {
       dueDateISO = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -49,21 +47,24 @@ Deno.serve(async (req) => {
     };
     if (assigned_to_name) taskBody.assignedTo = assigned_to_name;
 
-    const ghlUrl = `${GHL_BASE}/contacts/${ghl_contact_id}/tasks`;
-    console.log("Pushing task to GHL:", ghlUrl, JSON.stringify(taskBody));
+    // If ghl_task_id exists, UPDATE existing task; otherwise CREATE new
+    const isUpdate = !!ghl_task_id;
+    const ghlUrl = isUpdate
+      ? `${GHL_BASE}/contacts/${ghl_contact_id}/tasks/${ghl_task_id}`
+      : `${GHL_BASE}/contacts/${ghl_contact_id}/tasks`;
+    const method = isUpdate ? "PUT" : "POST";
 
-    const res = await fetch(
-      ghlUrl,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          Version: GHL_VERSION,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(taskBody),
-      }
-    );
+    console.log(`${method} task to GHL:`, ghlUrl, JSON.stringify(taskBody));
+
+    const res = await fetch(ghlUrl, {
+      method,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Version: GHL_VERSION,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(taskBody),
+    });
 
     const rawText = await res.text();
     console.log("GHL tasks response:", res.status, rawText);
@@ -79,7 +80,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ pushed: res.ok, ghl_task_id: data.task?.id || null, status: res.status }),
+      JSON.stringify({ pushed: res.ok, ghl_task_id: data.task?.id || ghl_task_id || null, status: res.status }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
