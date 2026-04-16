@@ -267,6 +267,8 @@ export default function OfficeSettingsPage() {
     setMembers(prev => prev.filter(m => m.id !== member.id));
     toast.success("Miembro eliminado");
     setDeleteConfirm(null);
+    const { logAudit } = await import("@/lib/auditLog");
+    logAudit({ action: "member.removed" as any, entity_type: "settings" as any, entity_id: member.id, entity_label: member.full_name || member.email || "Miembro" });
   }
 
   // ── Consultation CRUD ──
