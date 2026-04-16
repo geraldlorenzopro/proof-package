@@ -703,20 +703,40 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 ) : tasks.length > 0 ? (
                   <p className="text-[10px] text-muted-foreground/50 pl-1">✓ Todas completadas</p>
                 ) : null}
-                <div className="flex items-center gap-2">
-                  <input
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleAddTask(); }}
-                    placeholder="Nueva tarea..."
-                    className="flex-1 px-3 py-1.5 rounded-xl border border-border/40 bg-muted/20 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40"
-                  />
-                  <button
-                    onClick={handleAddTask}
-                    disabled={!newTaskTitle.trim() || savingTask}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-foreground/10 border border-foreground/20 text-xs font-medium text-foreground hover:bg-foreground/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                  >
-                    {savingTask ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleAddTask(); }}
+                      placeholder="Nueva tarea..."
+                      className="flex-1 px-3 py-1.5 rounded-xl border border-border/40 bg-muted/20 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40"
+                    />
+                    <button
+                      onClick={handleAddTask}
+                      disabled={!newTaskTitle.trim() || savingTask}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-foreground/10 border border-foreground/20 text-xs font-medium text-foreground hover:bg-foreground/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                    >
+                      {savingTask ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                    </button>
+                  </div>
+                  {newTaskTitle.trim() && (
+                    <div className="flex items-center gap-2 pl-1">
+                      <Clock className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                      <input
+                        type="date"
+                        value={newTaskDueDate}
+                        onChange={(e) => setNewTaskDueDate(e.target.value)}
+                        className="px-2 py-1 rounded-lg border border-border/40 bg-muted/20 text-[11px] text-foreground focus:outline-none focus:border-primary/40"
+                      />
+                      <input
+                        type="time"
+                        value={newTaskDueTime}
+                        onChange={(e) => setNewTaskDueTime(e.target.value)}
+                        className="px-2 py-1 rounded-lg border border-border/40 bg-muted/20 text-[11px] text-foreground focus:outline-none focus:border-primary/40 w-[90px]"
+                      />
+                    </div>
+                  )}
                   </button>
                 </div>
               </div>
