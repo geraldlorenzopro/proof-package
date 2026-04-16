@@ -144,6 +144,8 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
     await supabase.from("case_tasks").update({
       status: newStatus, completed_at: newStatus === "done" ? new Date().toISOString() : null,
     }).eq("id", taskId);
+    const task = tasks.find(t => t.id === taskId);
+    if (task) void pushTaskToGhl(taskId, task.title, task.due_date, newStatus === "done" ? "completed" : "pending", (task as any).ghl_task_id);
     onTaskChanged();
   }
 
