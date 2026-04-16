@@ -51,7 +51,10 @@ Deno.serve(async (req) => {
       }
     );
 
-    const data = await res.json();
+    const rawText = await res.text();
+    console.log("GHL notes response:", res.status, rawText);
+    let data: any = {};
+    try { data = JSON.parse(rawText); } catch { data = { raw: rawText }; }
 
     if (res.ok && data.note?.id && note_id) {
       const admin = createClient(
