@@ -34,6 +34,7 @@ interface QuickData {
 export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
   const [data, setData] = useState<QuickData>({
     first_name: "",
+    middle_name: "",
     last_name: "",
     phone: "",
     email: "",
