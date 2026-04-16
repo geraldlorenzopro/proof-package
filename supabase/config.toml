@@ -92,3 +92,12 @@ verify_jwt = false
 
 [functions.push-contact-to-ghl]
 verify_jwt = false
+
+[functions.fix-ghl-contact-id]
+verify_jwt = false
+
+[functions.import-ghl-notes]
+verify_jwt = false
+
+[functions.push-note-to-ghl]
+verify_jwt = false
