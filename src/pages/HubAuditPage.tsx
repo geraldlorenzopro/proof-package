@@ -123,7 +123,7 @@ const READABLE_ACTIONS: Record<string, string> = {
 function getReadableAction(action: string): string {
   return READABLE_ACTIONS[action] || action.replace(/\./g, " ").replace(/_/g, " ");
 }
-
+function getModule(entry: AuditEntry) {
   const baseType = entry.entity_type.replace("_list", "").replace("client_profile", "client").replace("client_case", "case").replace("consultation_room", "consultation_room");
   return MODULE_MAP[baseType] || MODULE_MAP[entry.entity_type] || { label: entry.entity_type, icon: Activity };
 }
