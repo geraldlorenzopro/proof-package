@@ -136,10 +136,10 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
   // New task form
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [newTaskDue, setNewTaskDue] = useState("");
-  const [newTaskPriority, setNewTaskPriority] = useState("normal");
+  const [newTask, setNewTask] = useState({ title: "", notes: "", due_date: "", due_time: "", priority: "normal", assigned_to: "", is_recurring: false, recurring_interval: "weekly" });
   const [savingTask, setSavingTask] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const taskNotesRef = useRef<HTMLTextAreaElement>(null);
 
   // New appointment form
   const [showApptForm, setShowApptForm] = useState(false);
