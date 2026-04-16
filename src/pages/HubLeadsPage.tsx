@@ -108,7 +108,7 @@ export default function HubLeadsPage() {
   const [syncing, setSyncing] = useState(false);
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
   const [selected, setSelected] = useState<string[]>([]);
-
+  const [selectedContact, setSelectedContact] = useState<string | null>(null);
   // Pagination & sort state
   const [pageSize, setPageSize] = useState(15);
   const [currentPage, setCurrentPage] = useState(0);
@@ -472,7 +472,7 @@ export default function HubLeadsPage() {
                       })()}
                       <div className="flex-1 min-w-0">
                         <button
-                          onClick={() => navigate(`/hub/clients/${lead.id}`)}
+                          onClick={() => setSelectedContact(lead.id)}
                           className="font-semibold text-foreground truncate block hover:text-amber-400 transition-colors text-base leading-tight"
                         >
                           {getName(lead)}
@@ -646,6 +646,17 @@ export default function HubLeadsPage() {
           prefillChannel={prefillData.source_channel}
         />
       )}
+
+      <ContactQuickPanel
+        contactId={selectedContact}
+        open={!!selectedContact}
+        onClose={() => setSelectedContact(null)}
+        onStartIntake={(profileId, data) => {
+          const channelKey = KNOWN_CHANNELS.includes(data.source_channel || "") ? data.source_channel : undefined;
+          setPrefillData({ ...data, client_profile_id: profileId, source_channel: channelKey });
+          setIntakeOpen(true);
+        }}
+      />
     </HubLayout>
   );
 }
