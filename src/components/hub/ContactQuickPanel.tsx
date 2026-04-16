@@ -281,6 +281,91 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     setSavingTask(false);
   }
 
+  async function handleFixGhlContactId() {
+    if (!profile) return;
+    setFixingGhl(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) return;
+      const { data: mem } = await supabase.from("account_members")
+        .select("account_id").eq("user_id", session.session.user.id).limit(1).single();
+      if (!mem) return;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-ghl-contact-id`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.session.access_token}` },
+          body: JSON.stringify({ account_id: mem.account_id, profile_id: profile.id }),
+        }
+      );
+      const data = await res.json();
+      if (data.fixed) {
+        setProfile({ ...profile, ghl_contact_id: data.ghl_contact_id });
+        toast.success("¡Contacto vinculado con GHL! ✅");
+      } else if (data.reason === "already_has_id") {
+        toast.info("Ya tiene un ID de GHL vinculado");
+      } else if (data.reason === "not_found_in_ghl") {
+        toast.error("No se encontró este contacto en GHL");
+      } else {
+        toast.error(data.error || "Error al buscar en GHL");
+      }
+    } catch {
+      toast.error("Error de conexión");
+    }
+    setFixingGhl(false);
+  }
+
+  async function handleImportGhlNotes() {
+    if (!profile?.ghl_contact_id) {
+      toast.error("Este contacto no tiene un ID de GHL vinculado. Intenta vincular primero.");
+      return;
+    }
+    setImportingNotes(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) return;
+      const { data: mem } = await supabase.from("account_members")
+        .select("account_id").eq("user_id", session.session.user.id).limit(1).single();
+      if (!mem) return;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-ghl-notes`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.session.access_token}` },
+          body: JSON.stringify({
+            account_id: mem.account_id,
+            ghl_contact_id: profile.ghl_contact_id,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.notes && data.notes.length > 0) {
+        // Append GHL notes to local notes display
+        const ghlNoteLines = data.notes.map((n: any) => {
+          const d = n.date ? new Date(n.date).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" }) : "";
+          return `[GHL ${d}]: ${n.body}`;
+        });
+        const newNotes = profile.notes
+          ? `${profile.notes}\n${ghlNoteLines.join("\n")}`
+          : ghlNoteLines.join("\n");
+
+        // Save to profile notes
+        await supabase.from("client_profiles")
+          .update({ notes: newNotes, updated_at: new Date().toISOString() })
+          .eq("id", profile.id);
+        setProfile({ ...profile, notes: newNotes });
+        toast.success(`${data.notes.length} notas importadas de GHL ✅`);
+      } else {
+        toast.info("No hay notas en GHL para este contacto");
+      }
+    } catch {
+      toast.error("Error al importar notas");
+    }
+    setImportingNotes(false);
+  }
+
   const noteLines = profile?.notes?.split("\n").filter(l => l.trim()) || [];
   const visibleNotes = noteLines.slice(0, MAX_VISIBLE_NOTES);
   const totalNotes = noteLines.length;
