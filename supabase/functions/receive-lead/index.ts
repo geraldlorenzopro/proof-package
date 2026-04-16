@@ -1,5 +1,6 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { getGHLConfig } from "../_shared/ghl.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -178,8 +179,76 @@ Deno.serve(async (req) => {
       action = "created";
     }
 
+    // ── GHL Sync (fire-and-forget) ──
+    let ghlResult: { pushed: boolean; ghl_contact_id?: string } = { pushed: false };
+    try {
+      const ghlConfig = await getGHLConfig(account_id);
+      if (ghlConfig) {
+        const GHL_BASE = "https://services.leadconnectorhq.com";
+        const GHL_VERSION = "2021-07-28";
+
+        // Check if profile already has a ghl_contact_id
+        const { data: profileForGhl } = await supabase
+          .from("client_profiles")
+          .select("ghl_contact_id")
+          .eq("id", leadId)
+          .single();
+
+        const existingGhlId = profileForGhl?.ghl_contact_id;
+
+        const ghlBody: Record<string, unknown> = {
+          locationId: ghlConfig.locationId,
+          firstName: cleanFirst || "",
+          lastName: cleanLast || "",
+          source: cleanSource,
+          tags: ["website-lead"],
+        };
+        if (cleanEmail) ghlBody.email = cleanEmail;
+        if (cleanPhone) ghlBody.phone = cleanPhone;
+
+        let ghlRes: Response;
+        if (existingGhlId) {
+          const updateBody = { ...ghlBody };
+          delete updateBody.locationId;
+          ghlRes = await fetch(`${GHL_BASE}/contacts/${existingGhlId}`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${ghlConfig.apiKey}`,
+              Version: GHL_VERSION,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(updateBody),
+          });
+        } else {
+          ghlRes = await fetch(`${GHL_BASE}/contacts/`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${ghlConfig.apiKey}`,
+              Version: GHL_VERSION,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(ghlBody),
+          });
+        }
+
+        const ghlData = await ghlRes.json();
+        ghlResult.pushed = ghlRes.ok;
+
+        // Save ghl_contact_id back if new contact
+        if (ghlRes.ok && !existingGhlId && ghlData.contact?.id) {
+          ghlResult.ghl_contact_id = ghlData.contact.id;
+          await supabase
+            .from("client_profiles")
+            .update({ ghl_contact_id: ghlData.contact.id })
+            .eq("id", leadId);
+        }
+      }
+    } catch (ghlErr) {
+      console.error("GHL sync error (non-blocking):", ghlErr);
+    }
+
     return new Response(
-      JSON.stringify({ success: true, lead_id: leadId, action }),
+      JSON.stringify({ success: true, lead_id: leadId, action, ghl_pushed: ghlResult.pushed, ghl_contact_id: ghlResult.ghl_contact_id || null }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
