@@ -132,11 +132,11 @@ const MODULE_FILTER_OPTIONS = [
 ];
 
 const ACTION_FILTER_OPTIONS = [
-  { value: "all", label: "Action - All" },
-  { value: "created", label: "Created" },
-  { value: "updated", label: "Updated" },
-  { value: "deleted", label: "Deleted" },
-  { value: "viewed", label: "Viewed" },
+  { value: "all", label: "Acción - Todas" },
+  { value: "created", label: "Creado" },
+  { value: "updated", label: "Editado" },
+  { value: "deleted", label: "Eliminado" },
+  { value: "viewed", label: "Visto" },
   { value: "login", label: "Login" },
 ];
 
