@@ -155,13 +155,13 @@ export default function HubAuditPage() {
   useEffect(() => {
     (async () => {
       const { data } = await supabase
-        .from("audit_logs" as any)
+        .from("audit_logs")
         .select("user_id, user_display_name")
         .order("created_at", { ascending: false })
         .limit(500);
       if (data) {
         const unique = new Map<string, string>();
-        (data as any[]).forEach((d: any) => {
+        (data as any[]).forEach((d) => {
           if (d.user_id && !unique.has(d.user_id)) {
             unique.set(d.user_id, d.user_display_name || "Usuario");
           }
@@ -175,7 +175,7 @@ export default function HubAuditPage() {
     setLoading(true);
     try {
       let query = supabase
-        .from("audit_logs" as any)
+        .from("audit_logs")
         .select("id, user_id, user_display_name, action, entity_type, entity_id, entity_label, metadata, created_at", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
