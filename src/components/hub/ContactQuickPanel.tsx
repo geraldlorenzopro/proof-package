@@ -445,6 +445,18 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   <MessageSquare className="w-4 h-4" />
                   Nueva consulta
                 </Button>
+
+                {locationId && (
+                  <a
+                    href={`https://app.nertech.ai/v2/location/${locationId}/calendars`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl border border-border/30 text-xs text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Ver calendario en GHL
+                  </a>
+                )}
               </div>
             </div>
 
