@@ -290,17 +290,53 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   </a>
                 )}
                 {profile.ghl_contact_id && locationId && (
-                  <a
-                    href={`https://app.nertech.ai/v2/location/${locationId}/conversations/conversations/${profile.ghl_contact_id}?category=team-inbox&tab=all`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+                  <button
+                    type="button"
+                    onClick={() => setShowGhlNotice(true)}
+                    className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors group w-full text-left"
                   >
                     <ExternalLink className="w-4 h-4 shrink-0 text-orange-500 group-hover:text-orange-400" />
                     <span>Conversación en GHL</span>
                     <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-50" />
-                  </a>
+                  </button>
                 )}
+
+                {/* GHL Conversation Redirect Notice */}
+                <Dialog open={showGhlNotice} onOpenChange={setShowGhlNotice}>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="text-lg">Iniciar conversación en GHL</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 text-sm text-muted-foreground">
+                      <p>
+                        Serás redirigido al tab de <strong className="text-foreground">Conversaciones</strong> en GHL.
+                      </p>
+                      <p>Para iniciar una conversación con este contacto:</p>
+                      <ol className="list-decimal list-inside space-y-2 pl-1">
+                        <li>Haz clic en <strong className="text-foreground">"Nueva Conversación"</strong> (botón azul)</li>
+                        <li>Selecciona <strong className="text-foreground">"Enviar mensaje a contactos"</strong></li>
+                        <li>Busca el nombre del cliente: <strong className="text-foreground">{normalizeClientName(`${profile.first_name || ""} ${profile.last_name || ""}`.trim())}</strong></li>
+                      </ol>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button variant="outline" size="sm" onClick={() => setShowGhlNotice(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setShowGhlNotice(false);
+                          window.open(
+                            `https://app.nertech.ai/v2/location/${locationId}/conversations/conversations?category=team-inbox&tab=all`,
+                            "_blank"
+                          );
+                        }}
+                      >
+                        Ir a Conversaciones
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               {/* Lead message / notes — prominent */}
