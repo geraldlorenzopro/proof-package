@@ -408,18 +408,6 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   <MessageSquare className="w-4 h-4" />
                   Nueva consulta
                 </Button>
-
-                {profile.ghl_contact_id && (
-                  <a
-                    href={`https://app.nertech.ai/v2/location/${locationId}/conversations/${profile.ghl_contact_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl border border-border/30 text-xs text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    Abrir conversación en GHL
-                  </a>
-                )}
               </div>
             </div>
 
