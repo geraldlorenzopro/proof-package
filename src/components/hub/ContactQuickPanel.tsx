@@ -593,47 +593,43 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 </div>
               </div>
 
-              {/* Tasks */}
-              <div className="space-y-2">
+              {/* Tasks — compact checklist */}
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                     <ListChecks className="w-3.5 h-3.5" />
-                    Tareas ({pendingTasks.length} pendientes)
+                    Tareas {pendingTasks.length > 0 && <span className="text-amber-400/80 text-[10px]">· {pendingTasks.length} pendientes</span>}
                   </p>
                   {tasks.length > 3 && (
                     <button
                       onClick={() => { onClose(); navigate(`/hub/clients/${profile.id}?tab=tareas`); }}
                       className="text-[10px] text-primary hover:text-primary/80 transition-colors"
                     >
-                      Ver todas ({tasks.length}) →
+                      Ver todas →
                     </button>
                   )}
                 </div>
-                {tasks.length > 0 && (
-                  <div className="space-y-1">
-                    {tasks.slice(0, 5).map((t) => (
+                {pendingTasks.length > 0 ? (
+                  <div className="space-y-0.5">
+                    {pendingTasks.slice(0, 3).map((t) => (
                       <button
                         key={t.id}
                         onClick={() => handleToggleTask(t.id, t.status)}
-                        className="flex items-center gap-2 text-xs w-full text-left group hover:bg-muted/20 rounded-lg px-2 py-1.5 transition-colors"
+                        className="flex items-center gap-2 text-xs w-full text-left group hover:bg-muted/20 rounded-lg px-2 py-1 transition-colors"
                       >
-                        {t.status === "completed" ? (
-                          <CheckSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        ) : (
-                          <Square className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary shrink-0" />
-                        )}
-                        <span className={`flex-1 truncate ${t.status === "completed" ? "line-through text-muted-foreground/50" : "text-foreground/80"}`}>
-                          {t.title}
-                        </span>
+                        <Square className="w-3 h-3 text-muted-foreground group-hover:text-primary shrink-0" />
+                        <span className="flex-1 truncate text-foreground/80">{t.title}</span>
                         {t.due_date && (
-                          <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                          <span className={`text-[10px] shrink-0 ${new Date(t.due_date) < new Date() ? "text-destructive" : "text-muted-foreground/50"}`}>
                             {new Date(t.due_date).toLocaleDateString("es", { day: "numeric", month: "short" })}
                           </span>
                         )}
                       </button>
                     ))}
                   </div>
-                )}
+                ) : tasks.length > 0 ? (
+                  <p className="text-[10px] text-muted-foreground/50 pl-1">✓ Todas completadas</p>
+                ) : null}
                 <div className="flex items-center gap-2">
                   <input
                     value={newTaskTitle}
