@@ -124,6 +124,8 @@ const APPT_TYPE_LABELS: Record<string, string> = {
 const selectClass = "px-2 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm text-foreground focus:outline-none focus:border-primary/40 [color-scheme:dark]";
 
 function TimeSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const parts = value ? value.split(":") : ["", ""];
   const h24 = parseInt(parts[0]) || 0;
   const rawMin = parts[1] || "00";
@@ -137,25 +139,71 @@ function TimeSelector({ value, onChange }: { value: string; onChange: (v: string
     onChange(`${String(h).padStart(2, "0")}:${min}`);
   };
 
-  const stopScroll = (e: React.WheelEvent) => e.stopPropagation();
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const hours = [1,2,3,4,5,6,7,8,9,10,11,12];
+  const minutes = Array.from({length:12},(_,i)=>String(i*5).padStart(2,"0"));
+
+  const colClass = "overflow-y-auto overscroll-contain flex flex-col gap-0.5 px-1 scrollbar-thin";
+  const itemBase = "px-3 py-1.5 text-sm rounded-md cursor-pointer text-center transition-colors";
+  const itemActive = "bg-primary/20 text-primary font-semibold";
+  const itemInactive = "text-foreground/70 hover:bg-muted/60";
 
   return (
-    <div className="flex gap-1 items-center" onWheel={stopScroll}>
-      <select value={value ? h12 : ""} onChange={e => { if (e.target.value) update(parseInt(e.target.value), rawMin, isPM); }}
-        onWheel={stopScroll} className={`${selectClass} w-16 text-center`}>
-        <option value="">--</option>
-        {[1,2,3,4,5,6,7,8,9,10,11,12].map(h => <option key={h} value={h}>{String(h).padStart(2,"0")}</option>)}
-      </select>
-      <span className="text-foreground/60 text-sm">:</span>
-      <select value={rawMin} onChange={e => update(h12, e.target.value, isPM)}
-        onWheel={stopScroll} className={`${selectClass} w-16 text-center`}>
-        {Array.from({length:12},(_,i)=>String(i*5).padStart(2,"0")).map(m => <option key={m} value={m}>{m}</option>)}
-      </select>
-      <select value={isPM ? "PM" : "AM"} onChange={e => update(h12, rawMin, e.target.value === "PM")}
-        onWheel={stopScroll} className={`${selectClass} w-16 text-center`}>
-        <option value="AM">AM</option>
-        <option value="PM">PM</option>
-      </select>
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className={`${selectClass} w-[90px] text-center flex items-center justify-center gap-1`}>
+        <Clock className="h-3.5 w-3.5 opacity-50" />
+        <span>{value ? `${String(h12).padStart(2,"0")}:${rawMin}` : "--:--"}</span>
+        <span className="text-[10px] opacity-60">{isPM ? "PM" : "AM"}</span>
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 right-0 z-50 bg-popover border border-border rounded-xl shadow-lg p-2 flex gap-0 min-w-[200px]"
+          onWheel={e => e.stopPropagation()}>
+          {/* Hours */}
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] font-medium text-muted-foreground mb-1">hh</span>
+            <div className={`${colClass} max-h-[200px] w-14`}>
+              {hours.map(h => (
+                <div key={h} onClick={() => update(h, rawMin, isPM)}
+                  className={`${itemBase} ${h === h12 ? itemActive : itemInactive}`}>
+                  {String(h).padStart(2,"0")}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="w-px bg-border/40 mx-1" />
+          {/* Minutes */}
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] font-medium text-muted-foreground mb-1">mm</span>
+            <div className={`${colClass} max-h-[200px] w-14`}>
+              {minutes.map(m => (
+                <div key={m} onClick={() => update(h12, m, isPM)}
+                  className={`${itemBase} ${m === rawMin ? itemActive : itemInactive}`}>
+                  {m}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="w-px bg-border/40 mx-1" />
+          {/* AM/PM */}
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] font-medium text-muted-foreground mb-1">&nbsp;</span>
+            <div className="flex flex-col gap-0.5 px-1">
+              <div onClick={() => update(h12, rawMin, false)}
+                className={`${itemBase} ${!isPM ? itemActive : itemInactive}`}>AM</div>
+              <div onClick={() => update(h12, rawMin, true)}
+                className={`${itemBase} ${isPM ? itemActive : itemInactive}`}>PM</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
