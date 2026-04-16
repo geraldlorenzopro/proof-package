@@ -868,5 +868,25 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
         )}
       </SheetContent>
     </Sheet>
+
+    {/* Edit Contact Dialog */}
+    {profile && (
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar contacto</DialogTitle>
+          </DialogHeader>
+          <ClientProfileEditor
+            clientId={profile.id}
+            onUpdated={() => {
+              setEditOpen(false);
+              loadData(profile.id);
+              toast.success("Contacto actualizado ✅");
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }
