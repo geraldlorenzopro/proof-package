@@ -427,9 +427,9 @@ export default function HubAuditPage() {
           </div>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination — fixed bottom */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center justify-between mt-3 shrink-0 py-2">
             <p className="text-xs text-muted-foreground">
               Rows per page: {PAGE_SIZE} &nbsp;·&nbsp; {page * PAGE_SIZE + 1} - {Math.min((page + 1) * PAGE_SIZE, total)} of {total}
             </p>
