@@ -86,7 +86,7 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
     setModalOpen(true);
   }
 
-  async function pushTaskToGhl(taskId: string, title: string, dueDate: string | null, status: string, ghlTaskId?: string, assignedName?: string) {
+  async function pushTaskToGhl(taskId: string, title: string, dueDate: string | null, status: string, ghlTaskId?: string, assignedToUserId?: string | null) {
     if (!ghlContactId) return;
     try {
       const session = await supabase.auth.getSession();
@@ -96,7 +96,7 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
         body: JSON.stringify({
           account_id: accountId, task_id: taskId, ghl_contact_id: ghlContactId,
           ghl_task_id: ghlTaskId || undefined, title, due_date: dueDate || undefined,
-          assigned_to_name: assignedName || undefined, status,
+          assigned_to: assignedToUserId || undefined, status,
         }),
       });
     } catch {}
@@ -115,7 +115,7 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
           assigned_to_name: form.assigned_to_name.trim() || null,
         }).eq("id", editingTask.id);
         toast.success("Tarea actualizada");
-        void pushTaskToGhl(editingTask.id, form.title.trim(), form.due_date ? format(form.due_date, "yyyy-MM-dd") : null, editingTask.status, (editingTask as any).ghl_task_id, form.assigned_to_name.trim() || undefined);
+        void pushTaskToGhl(editingTask.id, form.title.trim(), form.due_date ? format(form.due_date, "yyyy-MM-dd") : null, editingTask.status, (editingTask as any).ghl_task_id, editingTask.assigned_to);
       } else {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
@@ -130,7 +130,7 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
           assigned_to_name: form.assigned_to_name.trim() || null, status: "pending",
         }).select("id").single();
         toast.success("Tarea creada");
-        if (newTask) void pushTaskToGhl(newTask.id, form.title.trim(), dueDateStr, "pending", undefined, form.assigned_to_name.trim() || undefined);
+        if (newTask) void pushTaskToGhl(newTask.id, form.title.trim(), dueDateStr, "pending", undefined, null);
       }
       setModalOpen(false);
       onTaskChanged();
@@ -145,7 +145,7 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
       status: newStatus, completed_at: newStatus === "done" ? new Date().toISOString() : null,
     }).eq("id", taskId);
     const task = tasks.find(t => t.id === taskId);
-    if (task) void pushTaskToGhl(taskId, task.title, task.due_date, newStatus === "done" ? "completed" : "pending", (task as any).ghl_task_id);
+    if (task) void pushTaskToGhl(taskId, task.title, task.due_date, newStatus === "done" ? "completed" : "pending", (task as any).ghl_task_id, task.assigned_to);
     onTaskChanged();
   }
 
