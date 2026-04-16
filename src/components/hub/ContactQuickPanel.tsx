@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import {
   Phone, Mail, MessageSquare, ExternalLink, Pencil,
   FileText, Briefcase, ChevronRight, Check, Loader2, Tag,
-  CalendarPlus, ListChecks, Plus, Square, CheckSquare, Download
+  CalendarPlus, ListChecks, Plus, Square, Download
 } from "lucide-react";
 import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
 import { formatDistanceToNow } from "date-fns";
@@ -97,7 +97,6 @@ const TOPIC_LABELS: Record<string, string> = {
 };
 
 const MAX_VISIBLE_TAGS = 3;
-const MAX_VISIBLE_NOTES = 3;
 
 export default function ContactQuickPanel({ contactId, open, onClose, onStartIntake }: ContactQuickPanelProps) {
   const navigate = useNavigate();
@@ -379,7 +378,6 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   }
 
   const noteLines = profile?.notes?.split("\n").filter(l => l.trim()) || [];
-  const visibleNotes = noteLines.slice(0, MAX_VISIBLE_NOTES);
   const totalNotes = noteLines.length;
   const tags = profile?.ghl_tags?.filter(Boolean) || [];
   const visibleTags = tags.slice(0, MAX_VISIBLE_TAGS);
@@ -534,112 +532,104 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 )}
               </div>
 
-              {/* Notes with history */}
+              {/* Notes — compact timeline style */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                    💬 Notas
+                    💬 Notas {totalNotes > 0 && <span className="text-muted-foreground/50">({totalNotes})</span>}
                   </p>
-                  {totalNotes > MAX_VISIBLE_NOTES && (
-                    <button
-                      onClick={() => { onClose(); navigate(`/hub/clients/${profile.id}?tab=notas`); }}
-                      className="text-[10px] text-primary hover:text-primary/80 transition-colors"
-                    >
-                      Ver todas ({totalNotes}) →
-                    </button>
-                  )}
-                </div>
-                {visibleNotes.length > 0 && (
-                  <div className="space-y-1.5 max-h-28 overflow-y-auto">
-                    {visibleNotes.map((line, idx) => (
-                      <p key={idx} className="text-xs text-foreground/80 bg-muted/20 rounded-lg px-2.5 py-1.5 leading-relaxed">
-                        {line}
-                      </p>
-                    ))}
-                  </div>
-                )}
-                <textarea
-                  value={quickNote}
-                  onChange={(e) => setQuickNote(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSaveNote(); }}
-                  placeholder="ej: Contactada por WhatsApp, interesada en ajuste de estatus"
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 resize-none"
-                />
-                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-[10px] text-muted-foreground/40">Ctrl+Enter</p>
                     {locationId && (
                       <button
                         onClick={handleSyncGhl}
                         disabled={importingNotes}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all disabled:opacity-40"
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground/50 hover:text-foreground hover:bg-muted/30 transition-all disabled:opacity-40"
                         title="Sincronizar notas con GHL"
                       >
-                        {importingNotes ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <Download className="w-3 h-3" />
-                        )}
-                        Sincronizar GHL
+                        {importingNotes ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Download className="w-2.5 h-2.5" />}
+                      </button>
+                    )}
+                    {totalNotes > 1 && (
+                      <button
+                        onClick={() => { onClose(); navigate(`/hub/clients/${profile.id}?tab=notas`); }}
+                        className="text-[10px] text-primary hover:text-primary/80 transition-colors"
+                      >
+                        Ver todas →
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* Latest note preview */}
+                {noteLines.length > 0 && (
+                  <div className="relative pl-3 border-l-2 border-primary/20">
+                    <p className="text-xs text-foreground/80 leading-relaxed line-clamp-2">
+                      {noteLines[0]}
+                    </p>
+                    {noteLines.length > 1 && (
+                      <p className="text-[10px] text-muted-foreground/40 mt-0.5 line-clamp-1 italic">
+                        {noteLines[1]}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Inline note input */}
+                <div className="flex items-center gap-2">
+                  <input
+                    value={quickNote}
+                    onChange={(e) => setQuickNote(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSaveNote(); }}
+                    placeholder="Agregar nota rápida..."
+                    className="flex-1 px-3 py-1.5 rounded-xl border border-border/40 bg-muted/20 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40"
+                  />
                   <button
                     onClick={handleSaveNote}
                     disabled={!quickNote.trim() || savingNote}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-foreground/10 border border-foreground/20 text-xs font-medium text-foreground hover:bg-foreground/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-foreground/10 border border-foreground/20 text-xs font-medium text-foreground hover:bg-foreground/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                   >
-                    {savingNote ? (
-                      <><Loader2 className="w-3 h-3 animate-spin" /> Guardando...</>
-                    ) : (
-                      <><Check className="w-3 h-3" /> Guardar nota</>
-                    )}
+                    {savingNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                   </button>
                 </div>
               </div>
 
-              {/* Tasks */}
-              <div className="space-y-2">
+              {/* Tasks — compact checklist */}
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                     <ListChecks className="w-3.5 h-3.5" />
-                    Tareas ({pendingTasks.length} pendientes)
+                    Tareas {pendingTasks.length > 0 && <span className="text-amber-400/80 text-[10px]">· {pendingTasks.length} pendientes</span>}
                   </p>
                   {tasks.length > 3 && (
                     <button
                       onClick={() => { onClose(); navigate(`/hub/clients/${profile.id}?tab=tareas`); }}
                       className="text-[10px] text-primary hover:text-primary/80 transition-colors"
                     >
-                      Ver todas ({tasks.length}) →
+                      Ver todas →
                     </button>
                   )}
                 </div>
-                {tasks.length > 0 && (
-                  <div className="space-y-1">
-                    {tasks.slice(0, 5).map((t) => (
+                {pendingTasks.length > 0 ? (
+                  <div className="space-y-0.5">
+                    {pendingTasks.slice(0, 3).map((t) => (
                       <button
                         key={t.id}
                         onClick={() => handleToggleTask(t.id, t.status)}
-                        className="flex items-center gap-2 text-xs w-full text-left group hover:bg-muted/20 rounded-lg px-2 py-1.5 transition-colors"
+                        className="flex items-center gap-2 text-xs w-full text-left group hover:bg-muted/20 rounded-lg px-2 py-1 transition-colors"
                       >
-                        {t.status === "completed" ? (
-                          <CheckSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        ) : (
-                          <Square className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary shrink-0" />
-                        )}
-                        <span className={`flex-1 truncate ${t.status === "completed" ? "line-through text-muted-foreground/50" : "text-foreground/80"}`}>
-                          {t.title}
-                        </span>
+                        <Square className="w-3 h-3 text-muted-foreground group-hover:text-primary shrink-0" />
+                        <span className="flex-1 truncate text-foreground/80">{t.title}</span>
                         {t.due_date && (
-                          <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                          <span className={`text-[10px] shrink-0 ${new Date(t.due_date) < new Date() ? "text-destructive" : "text-muted-foreground/50"}`}>
                             {new Date(t.due_date).toLocaleDateString("es", { day: "numeric", month: "short" })}
                           </span>
                         )}
                       </button>
                     ))}
                   </div>
-                )}
+                ) : tasks.length > 0 ? (
+                  <p className="text-[10px] text-muted-foreground/50 pl-1">✓ Todas completadas</p>
+                ) : null}
                 <div className="flex items-center gap-2">
                   <input
                     value={newTaskTitle}
