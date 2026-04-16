@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { account_id, profile_id } = body;
+    const { account_id, profile_id, validate_existing = false } = body;
 
     if (!account_id || !profile_id) {
       return new Response(
@@ -26,7 +26,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get the profile
     const { data: profile } = await admin
       .from("client_profiles")
       .select("email, phone, mobile_phone, ghl_contact_id, first_name, last_name")
@@ -41,14 +40,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // If already has a valid ghl_contact_id, skip
-    if (profile.ghl_contact_id) {
-      return new Response(
-        JSON.stringify({ fixed: false, reason: "already_has_id", ghl_contact_id: profile.ghl_contact_id }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const ghlConfig = await getGHLConfig(account_id);
     if (!ghlConfig) {
       return new Response(
@@ -59,12 +50,9 @@ Deno.serve(async (req) => {
 
     const { apiKey, locationId } = ghlConfig;
 
-    // Search by email first, then by phone
-    let ghlContactId: string | null = null;
-
-    if (profile.email) {
+    const searchDuplicate = async (value: string, type: "email" | "phone") => {
       const res = await fetch(
-        `${GHL_BASE}/contacts/search/duplicate?locationId=${locationId}&email=${encodeURIComponent(profile.email)}`,
+        `${GHL_BASE}/contacts/search/duplicate?locationId=${locationId}&${type}=${encodeURIComponent(value)}`,
         {
           headers: {
             Authorization: `Bearer ${apiKey}`,
@@ -72,60 +60,94 @@ Deno.serve(async (req) => {
           },
         }
       );
-      const data = await res.json();
-      if (data.contact?.id) {
-        ghlContactId = data.contact.id;
+
+      const rawText = await res.text();
+      let data: any = {};
+      try { data = JSON.parse(rawText); } catch { data = { raw: rawText }; }
+
+      if (!res.ok) {
+        console.warn(`GHL duplicate search failed (${type}):`, res.status, rawText);
+        return null;
       }
+
+      return data.contact?.id || null;
+    };
+
+    const normalizePhone = (phone: string | null | undefined) => {
+      if (!phone) return null;
+      const digits = phone.replace(/\D/g, "");
+      if (digits.length < 10) return null;
+      return digits.startsWith("1") ? `+${digits}` : `+1${digits}`;
+    };
+
+    if (profile.ghl_contact_id) {
+      if (!validate_existing) {
+        return new Response(
+          JSON.stringify({ fixed: false, reason: "already_has_id", ghl_contact_id: profile.ghl_contact_id }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const validateRes = await fetch(`${GHL_BASE}/contacts/${profile.ghl_contact_id}`, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Version: GHL_VERSION,
+        },
+      });
+
+      const validateRaw = await validateRes.text();
+      let validateData: any = {};
+      try { validateData = JSON.parse(validateRaw); } catch { validateData = { raw: validateRaw }; }
+
+      if (validateRes.ok && (validateData.contact?.id || validateData.id)) {
+        return new Response(
+          JSON.stringify({ fixed: false, reason: "already_valid", ghl_contact_id: profile.ghl_contact_id, valid: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.warn(`Invalid ghl_contact_id detected for profile ${profile_id}: ${profile.ghl_contact_id}`);
     }
 
-    if (!ghlContactId && profile.phone) {
-      const phone = profile.phone.replace(/\D/g, "");
-      if (phone.length >= 10) {
-        const searchPhone = phone.startsWith("1") ? `+${phone}` : `+1${phone}`;
-        const res = await fetch(
-          `${GHL_BASE}/contacts/search/duplicate?locationId=${locationId}&phone=${encodeURIComponent(searchPhone)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              Version: GHL_VERSION,
-            },
-          }
-        );
-        const data = await res.json();
-        if (data.contact?.id) {
-          ghlContactId = data.contact.id;
-        }
-      }
+    let ghlContactId: string | null = null;
+
+    if (profile.email) {
+      ghlContactId = await searchDuplicate(profile.email, "email");
     }
 
-    if (!ghlContactId && profile.mobile_phone) {
-      const phone = profile.mobile_phone.replace(/\D/g, "");
-      if (phone.length >= 10) {
-        const searchPhone = phone.startsWith("1") ? `+${phone}` : `+1${phone}`;
-        const res = await fetch(
-          `${GHL_BASE}/contacts/search/duplicate?locationId=${locationId}&phone=${encodeURIComponent(searchPhone)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              Version: GHL_VERSION,
-            },
-          }
-        );
-        const data = await res.json();
-        if (data.contact?.id) {
-          ghlContactId = data.contact.id;
-        }
+    if (!ghlContactId) {
+      const normalizedPhone = normalizePhone(profile.phone);
+      if (normalizedPhone) {
+        ghlContactId = await searchDuplicate(normalizedPhone, "phone");
       }
     }
 
     if (!ghlContactId) {
+      const normalizedMobilePhone = normalizePhone(profile.mobile_phone);
+      if (normalizedMobilePhone) {
+        ghlContactId = await searchDuplicate(normalizedMobilePhone, "phone");
+      }
+    }
+
+    if (!ghlContactId) {
+      if (profile.ghl_contact_id) {
+        await admin
+          .from("client_profiles")
+          .update({ ghl_contact_id: null })
+          .eq("id", profile_id);
+
+        return new Response(
+          JSON.stringify({ fixed: false, cleared: true, reason: "invalid_id_cleared", ghl_contact_id: null }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ fixed: false, reason: "not_found_in_ghl" }),
+        JSON.stringify({ fixed: false, reason: "not_found_in_ghl", ghl_contact_id: null }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Update the profile
     await admin
       .from("client_profiles")
       .update({ ghl_contact_id: ghlContactId })
@@ -134,7 +156,7 @@ Deno.serve(async (req) => {
     console.log(`Fixed ghl_contact_id for profile ${profile_id}: ${ghlContactId}`);
 
     return new Response(
-      JSON.stringify({ fixed: true, ghl_contact_id: ghlContactId }),
+      JSON.stringify({ fixed: true, ghl_contact_id: ghlContactId, valid: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
