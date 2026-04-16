@@ -283,11 +283,24 @@ export default function HubLeadsPage() {
 
   async function handleBulkDelete() {
     if (selected.length === 0) return;
+    // Get names before deleting for audit
+    const deletedNames = leads.filter(l => selected.includes(l.id)).map(l => `${l.first_name || ""} ${l.last_name || ""}`.trim());
     await supabase
       .from("client_profiles")
       .update({ contact_stage: "inactive" as any, updated_at: new Date().toISOString() })
       .in("id", selected)
       .eq("account_id", accountId);
+    // Audit log each deletion
+    const { logAudit } = await import("@/lib/auditLog");
+    for (let i = 0; i < selected.length; i++) {
+      logAudit({
+        action: "client.deleted" as any,
+        entity_type: "client",
+        entity_id: selected[i],
+        entity_label: deletedNames[i] || "Contacto",
+        metadata: { bulk: true, count: selected.length },
+      });
+    }
     setSelected([]);
     toast.success(`${selected.length} contactos eliminados`);
     fetchPage();

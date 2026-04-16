@@ -146,6 +146,8 @@ export default function CaseDocumentsPanel({ caseId, accountId }: Props) {
     try {
       await supabase.storage.from("case-documents").remove([doc.file_url]);
       await supabase.from("case_documents").delete().eq("id", doc.id);
+      const { logAudit } = await import("@/lib/auditLog");
+      logAudit({ action: "document.deleted" as any, entity_type: "document" as any, entity_id: doc.id, entity_label: doc.file_name });
       toast.success("Documento eliminado");
       loadDocs();
     } catch {

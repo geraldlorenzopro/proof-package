@@ -114,6 +114,8 @@ export default function CaseNotesPanel({ notes, caseId, accountId, onNoteAdded }
     try {
       const { error } = await supabase.from("case_notes").delete().eq("id", deleteId);
       if (error) throw error;
+      const { logAudit } = await import("@/lib/auditLog");
+      logAudit({ action: "note.deleted" as any, entity_type: "note" as any, entity_id: deleteId, entity_label: "Nota eliminada" });
       setDeleteId(null);
       onNoteAdded();
       toast.success("Nota eliminada");
