@@ -251,8 +251,8 @@ export default function HubAuditPage() {
   return (
     <HubLayout>
       <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
+        {/* Header — fixed */}
+        <div className="flex items-center justify-between mb-3 shrink-0">
           <div>
             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" />
@@ -274,7 +274,7 @@ export default function HubAuditPage() {
         </div>
 
         {/* Filters Row */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="flex flex-wrap items-center gap-2 mb-3 shrink-0">
           <div className="relative flex-1 min-w-[200px] max-w-[300px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -320,8 +320,8 @@ export default function HubAuditPage() {
           </Select>
         </div>
 
-        {/* Table */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {/* Table — scrollable */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden flex-1 flex flex-col min-h-0">
           {/* Table Header */}
           <div className="grid grid-cols-[1.5fr_1fr_1fr_1.2fr_1fr] gap-4 px-4 py-3 bg-muted/30 border-b border-border">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Name</span>
