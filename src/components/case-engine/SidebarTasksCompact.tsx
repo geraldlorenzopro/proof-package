@@ -53,7 +53,7 @@ const priorityConfig: Record<string, { label: string; dot: string }> = {
 
 const MAX_VISIBLE = 3;
 
-export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskChanged, onViewAll }: Props) {
+export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskChanged, onViewAll, ghlContactId }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<CaseTask | null>(null);
   const [form, setForm] = useState({ title: "", description: "", priority: "normal", due_date: undefined as Date | undefined, assigned_to_name: "" });

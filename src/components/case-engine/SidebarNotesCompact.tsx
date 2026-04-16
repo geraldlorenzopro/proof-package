@@ -42,7 +42,7 @@ const typeConfig: Record<string, { icon: any; color: string; label: string; bord
 
 const MAX_VISIBLE = 3;
 
-export default function SidebarNotesCompact({ notes, caseId, accountId, onNoteAdded, onViewAll }: Props) {
+export default function SidebarNotesCompact({ notes, caseId, accountId, onNoteAdded, onViewAll, ghlContactId }: Props) {
   const [adding, setAdding] = useState(false);
   const [content, setContent] = useState("");
   const [noteType, setNoteType] = useState("general");
