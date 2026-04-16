@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeClientName } from "@/lib/caseTypeLabels";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,10 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
-  Phone, Mail, MessageSquare, ExternalLink,
+  Phone, Mail, MessageSquare, ExternalLink, Pencil,
   FileText, Briefcase, ChevronRight, Check, Clock,
   StickyNote, CheckSquare, CalendarDays, Plus, X, Loader2
 } from "lucide-react";
+import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -236,6 +238,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   const [newApptType, setNewApptType] = useState("consultation");
   const [newApptNotes, setNewApptNotes] = useState("");
   const [savingAppt, setSavingAppt] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     if (!contactId || !open) {
@@ -441,6 +444,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   const noteLines = profile?.notes?.split("\n").filter(l => l.trim()) || [];
 
   return (
+    <>
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent side="right" className="w-[420px] sm:max-w-[420px] p-0 flex flex-col overflow-hidden">
         {loading || !profile ? (
@@ -468,7 +472,16 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   {getInitials(profile)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-bold text-foreground text-lg truncate">{getName(profile)}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-foreground text-lg truncate">{getName(profile)}</h2>
+                    <button
+                      onClick={() => setEditOpen(true)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all shrink-0"
+                      title="Editar contacto"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     {profile.source_channel && (
                       <Badge className={`text-[10px] border ${CHANNEL_COLORS[profile.source_channel] || "bg-muted/50 text-muted-foreground border-border"}`}>
@@ -856,5 +869,25 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
         )}
       </SheetContent>
     </Sheet>
+
+    {/* Edit Contact Dialog */}
+    {profile && (
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar contacto</DialogTitle>
+          </DialogHeader>
+          <ClientProfileEditor
+            clientId={profile.id}
+            onUpdated={() => {
+              setEditOpen(false);
+              loadData(profile.id);
+              toast.success("Contacto actualizado ✅");
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }
