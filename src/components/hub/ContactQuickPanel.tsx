@@ -471,7 +471,16 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   {getInitials(profile)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-bold text-foreground text-lg truncate">{getName(profile)}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-foreground text-lg truncate">{getName(profile)}</h2>
+                    <button
+                      onClick={() => setEditOpen(true)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all shrink-0"
+                      title="Editar contacto"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     {profile.source_channel && (
                       <Badge className={`text-[10px] border ${CHANNEL_COLORS[profile.source_channel] || "bg-muted/50 text-muted-foreground border-border"}`}>
