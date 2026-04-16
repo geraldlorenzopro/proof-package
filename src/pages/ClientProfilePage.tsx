@@ -13,7 +13,7 @@ import { logAccess } from "@/lib/auditLog";
 import ChannelLogo from "@/components/intake/ChannelLogo";
 import HubLayout from "@/components/hub/HubLayout";
 import IntakeWizard from "@/components/intake/IntakeWizard";
-import ClientProfileEditor from "@/components/workspace/ClientProfileEditor";
+import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
 
 const TOPIC_LABELS: Record<string, string> = {
   "proceso:familia": "Residencia / Green Card por familia",
@@ -352,7 +352,7 @@ export default function ClientProfilePage() {
           <TabsContent value="info" className="space-y-4 mt-4">
             {editOpen ? (
               <div className="border border-border rounded-xl p-4">
-                <ClientProfileEditor
+                <ClientQuickEditor
                   clientId={profile.id}
                   onUpdated={async () => {
                     setEditOpen(false);
