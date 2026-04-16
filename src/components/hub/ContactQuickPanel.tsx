@@ -562,24 +562,34 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 {/* TAREAS TAB */}
                 <TabsContent value="tareas" className="mt-3 space-y-3">
                   {tasks.length > 0 ? (
-                    <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
                       {tasks.map((t) => (
-                        <div key={t.id} className={`flex items-start gap-2 text-xs rounded px-2.5 py-2 border border-border/30 ${t.status === "completed" ? "bg-muted/10 opacity-60" : "bg-muted/20"}`}>
+                        <div key={t.id} className={`flex items-start gap-2 text-xs rounded-xl px-2.5 py-2 border border-border/20 ${t.status === "completed" ? "bg-muted/10 opacity-60" : "bg-muted/10"}`}>
                           <button
                             onClick={() => t.status !== "completed" && handleCompleteTask(t.id)}
-                            className={`mt-0.5 w-4 h-4 rounded border shrink-0 flex items-center justify-center transition-colors ${t.status === "completed" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "border-border hover:border-primary/40"}`}
+                            className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${t.status === "completed" ? "bg-emerald-500 border-emerald-500" : "border-border/40 hover:border-primary/40"}`}
                           >
-                            {t.status === "completed" && <Check className="w-3 h-3" />}
+                            {t.status === "completed" && <Check className="w-2.5 h-2.5 text-white" />}
                           </button>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-foreground/80 ${t.status === "completed" ? "line-through" : ""}`}>{t.title}</p>
+                            <p className={`text-xs font-medium ${t.status === "completed" ? "line-through text-muted-foreground" : "text-foreground"}`}>{t.title}</p>
                             {t.due_date && (
-                              <p className="text-muted-foreground/60 mt-0.5">
-                                Vence: {formatDistanceToNow(new Date(t.due_date), { locale: es, addSuffix: true })}
+                              <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                                📅 {format(new Date(t.due_date), "d MMM", { locale: es })}
+                                {" · "}{formatDistanceToNow(new Date(t.due_date), { locale: es, addSuffix: true })}
                               </p>
                             )}
+                            {t.description && (
+                              <p className="text-[10px] text-muted-foreground/60 mt-1" dangerouslySetInnerHTML={{ __html: simpleMarkdown(t.description) }} />
+                            )}
                           </div>
-                          {t.priority === "high" && <span className="text-[9px] px-1 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 shrink-0">Alta</span>}
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full shrink-0 ${
+                            t.priority === "high" ? "bg-red-500/10 text-red-400" :
+                            t.priority === "low" ? "bg-emerald-500/10 text-emerald-400" :
+                            "bg-amber-500/10 text-amber-400"
+                          }`}>
+                            {t.priority === "high" ? "Alta" : t.priority === "low" ? "Baja" : "Media"}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -588,27 +598,117 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   )}
 
                   {showTaskForm ? (
-                    <div className="space-y-2 p-2.5 bg-muted/20 rounded-lg border border-border/30">
-                      <Input value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} placeholder="Título de la tarea..." className="h-8 text-xs" />
-                      <div className="flex gap-2">
-                        <Input type="date" value={newTaskDue} onChange={(e) => setNewTaskDue(e.target.value)} className="h-8 text-xs flex-1" />
-                        <select value={newTaskPriority} onChange={(e) => setNewTaskPriority(e.target.value)} className="h-8 text-xs rounded-md border border-border bg-background px-2">
-                          <option value="low">Baja</option>
-                          <option value="normal">Media</option>
-                          <option value="high">Alta</option>
-                        </select>
+                    <div className="space-y-3 p-3 bg-muted/20 rounded-xl border border-border/30">
+                      {/* Title */}
+                      <div>
+                        <input
+                          type="text"
+                          value={newTask.title}
+                          onChange={e => setNewTask(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="Título de la tarea"
+                          maxLength={200}
+                          className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm focus:outline-none focus:border-primary/40"
+                        />
+                        <p className="text-[10px] text-muted-foreground/40 text-right mt-0.5">{newTask.title.length}/200</p>
                       </div>
+
+                      {/* Notes with toolbar */}
+                      <div>
+                        <div className="flex gap-1 p-1 rounded-lg border border-border/30 bg-muted/10 w-fit mb-1.5">
+                          {[
+                            { icon: "B", label: "Negrita", action: () => insertFormat("**"), className: "font-bold" },
+                            { icon: "I", label: "Cursiva", action: () => insertFormat("*"), className: "italic" },
+                            { icon: "—", label: "Separador", action: () => insertText("\n---\n") },
+                            { icon: "≡", label: "Lista", action: () => insertText("\n- ") },
+                          ].map(btn => (
+                            <button key={btn.icon} onClick={btn.action} title={btn.label}
+                              className={`w-6 h-6 rounded text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-all ${btn.className || ""}`}>
+                              {btn.icon}
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          ref={taskNotesRef}
+                          value={newTask.notes}
+                          onChange={e => setNewTask(prev => ({ ...prev, notes: e.target.value }))}
+                          placeholder="Notas adicionales..."
+                          rows={3}
+                          className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm focus:outline-none focus:border-primary/40 resize-none"
+                        />
+                      </div>
+
+                      {/* Date & Time */}
                       <div className="flex gap-2">
-                        <Button size="sm" className="h-7 text-xs flex-1" onClick={handleCreateTask} disabled={!newTaskTitle.trim() || savingTask}>
-                          Crear tarea
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowTaskForm(false)}>
-                          <X className="w-3.5 h-3.5" />
+                        <input type="date" value={newTask.due_date} onChange={e => setNewTask(prev => ({ ...prev, due_date: e.target.value }))}
+                          className="flex-1 px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm focus:outline-none focus:border-primary/40" />
+                        <input type="time" value={newTask.due_time} onChange={e => setNewTask(prev => ({ ...prev, due_time: e.target.value }))}
+                          className="w-28 px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm focus:outline-none focus:border-primary/40" />
+                      </div>
+
+                      {/* Priority */}
+                      <div className="flex gap-2">
+                        {[
+                          { value: "alta", label: "🔴 Alta" },
+                          { value: "normal", label: "🟡 Media" },
+                          { value: "baja", label: "🟢 Baja" },
+                        ].map(p => (
+                          <button key={p.value} onClick={() => setNewTask(prev => ({ ...prev, priority: p.value }))}
+                            className={`flex-1 py-1.5 rounded-xl text-xs font-medium border transition-all ${
+                              newTask.priority === p.value
+                                ? "bg-foreground/10 border-foreground/30 text-foreground"
+                                : "bg-muted/20 border-border/30 text-muted-foreground hover:border-border/50"
+                            }`}>
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Assign to */}
+                      {teamMembers.length > 0 && (
+                        <select value={newTask.assigned_to} onChange={e => setNewTask(prev => ({ ...prev, assigned_to: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm focus:outline-none focus:border-primary/40">
+                          <option value="">Sin asignar</option>
+                          {teamMembers.map(m => (
+                            <option key={m.user_id} value={m.user_id}>{m.full_name || m.role}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      {/* Recurring toggle */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-foreground">Tarea recurrente</p>
+                          <p className="text-[10px] text-muted-foreground/60">Se repetirá automáticamente</p>
+                        </div>
+                        <button onClick={() => setNewTask(prev => ({ ...prev, is_recurring: !prev.is_recurring }))}
+                          className={`w-10 h-5 rounded-full transition-all relative ${newTask.is_recurring ? "bg-primary" : "bg-muted/40"}`}>
+                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${newTask.is_recurring ? "left-5" : "left-0.5"}`} />
+                        </button>
+                      </div>
+
+                      {newTask.is_recurring && (
+                        <select value={newTask.recurring_interval} onChange={e => setNewTask(prev => ({ ...prev, recurring_interval: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm">
+                          <option value="daily">Cada día</option>
+                          <option value="weekly">Cada semana</option>
+                          <option value="biweekly">Cada 2 semanas</option>
+                          <option value="monthly">Cada mes</option>
+                        </select>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <button onClick={handleCreateTask} disabled={!newTask.title.trim() || savingTask}
+                          className="flex-1 py-2 rounded-xl bg-foreground/10 border border-foreground/20 text-sm font-medium text-foreground hover:bg-foreground/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                          {savingTask ? "Guardando..." : "✓ Crear tarea"}
+                        </button>
+                        <Button size="sm" variant="ghost" className="h-auto px-3 rounded-xl" onClick={() => setShowTaskForm(false)}>
+                          <X className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5" onClick={() => setShowTaskForm(true)}>
+                    <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5 rounded-xl" onClick={() => setShowTaskForm(true)}>
                       <Plus className="w-3.5 h-3.5" /> Nueva tarea
                     </Button>
                   )}
