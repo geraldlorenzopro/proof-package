@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import {
   Phone, Mail, MessageSquare, ExternalLink, Pencil,
   FileText, Briefcase, ChevronRight, Check, Loader2, Tag,
-  CalendarPlus, ListChecks, Plus, Square, Download
+  CalendarPlus, ListChecks, Plus, Square, Download, Clock
 } from "lucide-react";
 import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
 import { formatDistanceToNow } from "date-fns";
@@ -113,6 +113,8 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
   // Tasks
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [newTaskDueTime, setNewTaskDueTime] = useState("17:00");
   const [savingTask, setSavingTask] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
@@ -303,8 +305,8 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       const task = tasks.find(t => t.id === taskId);
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
 
-      // Sync status change to GHL if task has ghl_task_id
-      if (task && (task as any).ghl_task_id && profile?.ghl_contact_id) {
+      // Sync status change to GHL if contact is linked
+      if (task && profile?.ghl_contact_id) {
         try {
           const { data: userData } = await supabase.auth.getUser();
           const { data: mem } = await supabase.from("account_members")
@@ -321,7 +323,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 account_id: mem.account_id,
                 task_id: taskId,
                 ghl_contact_id: profile.ghl_contact_id,
-                ghl_task_id: (task as any).ghl_task_id,
+                ghl_task_id: (task as any).ghl_task_id || undefined,
                 title: task.title,
                 due_date: task.due_date,
                 status: newStatus,
@@ -345,18 +347,25 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       const { data: prof } = await supabase.from("profiles" as any)
         .select("full_name").eq("user_id", userData.user.id).single();
 
-      const { data: newTask, error } = await supabase.from("case_tasks").insert({
-        account_id: mem.account_id,
-        client_profile_id: profile.id,
-        title: newTaskTitle.trim(),
-        created_by: userData.user.id,
-        created_by_name: (prof as any)?.full_name || "Usuario",
-        priority: "normal",
-      }).select("id, title, status, due_date, priority, ghl_task_id").single();
+        const dueValue = newTaskDueDate
+          ? `${newTaskDueDate}T${newTaskDueTime || "17:00"}:00`
+          : undefined;
+
+        const { data: newTask, error } = await supabase.from("case_tasks").insert({
+          account_id: mem.account_id,
+          client_profile_id: profile.id,
+          title: newTaskTitle.trim(),
+          created_by: userData.user.id,
+          created_by_name: (prof as any)?.full_name || "Usuario",
+          priority: "normal",
+          ...(dueValue ? { due_date: newTaskDueDate } : {}),
+        }).select("id, title, status, due_date, priority, ghl_task_id").single();
 
       if (!error && newTask) {
         setTasks(prev => [newTask as any, ...prev]);
         setNewTaskTitle("");
+        setNewTaskDueDate("");
+        setNewTaskDueTime("17:00");
         toast.success("Tarea creada ✅");
 
         // Push task to GHL if contact is linked
@@ -373,7 +382,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   task_id: (newTask as any).id,
                   ghl_contact_id: profile.ghl_contact_id,
                   title: newTaskTitle.trim(),
-                  due_date: (newTask as any).due_date || undefined,
+                  due_date: dueValue || undefined,
                   assigned_to_name: (prof as any)?.full_name || undefined,
                   status: "pending",
                 }),
@@ -694,21 +703,40 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 ) : tasks.length > 0 ? (
                   <p className="text-[10px] text-muted-foreground/50 pl-1">✓ Todas completadas</p>
                 ) : null}
-                <div className="flex items-center gap-2">
-                  <input
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleAddTask(); }}
-                    placeholder="Nueva tarea..."
-                    className="flex-1 px-3 py-1.5 rounded-xl border border-border/40 bg-muted/20 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40"
-                  />
-                  <button
-                    onClick={handleAddTask}
-                    disabled={!newTaskTitle.trim() || savingTask}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-foreground/10 border border-foreground/20 text-xs font-medium text-foreground hover:bg-foreground/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                  >
-                    {savingTask ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-                  </button>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleAddTask(); }}
+                      placeholder="Nueva tarea..."
+                      className="flex-1 px-3 py-1.5 rounded-xl border border-border/40 bg-muted/20 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40"
+                    />
+                    <button
+                      onClick={handleAddTask}
+                      disabled={!newTaskTitle.trim() || savingTask}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-foreground/10 border border-foreground/20 text-xs font-medium text-foreground hover:bg-foreground/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                    >
+                      {savingTask ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                    </button>
+                  </div>
+                  {newTaskTitle.trim() && (
+                    <div className="flex items-center gap-2 pl-1">
+                      <Clock className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                      <input
+                        type="date"
+                        value={newTaskDueDate}
+                        onChange={(e) => setNewTaskDueDate(e.target.value)}
+                        className="px-2 py-1 rounded-lg border border-border/40 bg-muted/20 text-[11px] text-foreground focus:outline-none focus:border-primary/40"
+                      />
+                      <input
+                        type="time"
+                        value={newTaskDueTime}
+                        onChange={(e) => setNewTaskDueTime(e.target.value)}
+                        className="px-2 py-1 rounded-lg border border-border/40 bg-muted/20 text-[11px] text-foreground focus:outline-none focus:border-primary/40 w-[90px]"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
