@@ -20,6 +20,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
+import TaskEditModal from "@/components/hub/TaskEditModal";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -64,12 +65,15 @@ interface CaseRecord {
 interface TaskRecord {
   id: string;
   title: string;
+  description?: string | null;
   status: string;
   due_date: string | null;
   priority: string;
   ghl_task_id?: string | null;
   assigned_to?: string | null;
   assigned_to_name?: string | null;
+  is_recurring?: boolean | null;
+  recurring_interval?: string | null;
 }
 
 interface TeamMember {
@@ -140,6 +144,11 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   const [showGhlNotice, setShowGhlNotice] = useState(false);
   const [showCalendarNotice, setShowCalendarNotice] = useState(false);
   const [importingNotes, setImportingNotes] = useState(false);
+
+  // Task edit modal
+  const [editingTask, setEditingTask] = useState<TaskRecord | null>(null);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [accountIdState, setAccountIdState] = useState<string | null>(null);
 
   useEffect(() => {
     if (!contactId || !open) {
@@ -232,7 +241,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       .eq("client_profile_id", id)
       .order("created_at", { ascending: false }).limit(3);
     const tasksP = supabase.from("case_tasks")
-      .select("id, title, status, due_date, priority, ghl_task_id, assigned_to, assigned_to_name")
+      .select("id, title, description, status, due_date, priority, ghl_task_id, assigned_to, assigned_to_name, is_recurring, recurring_interval")
       .eq("client_profile_id", id)
       .is("case_id", null)
       .order("created_at", { ascending: false }).limit(5);
@@ -262,6 +271,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       .limit(1)
       .maybeSingle();
     if (!mem?.account_id) return;
+    setAccountIdState(mem.account_id);
     const { data: membersData } = await supabase
       .from("account_members")
       .select("user_id")
@@ -832,17 +842,18 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                     {pendingTasks.slice(0, 3).map((t) => (
                       <div
                         key={t.id}
-                        className="flex items-center gap-2 text-xs w-full text-left group hover:bg-background/60 rounded-lg px-2 py-1.5 transition-colors"
+                        className="flex items-center gap-2 text-xs w-full text-left group hover:bg-background/60 rounded-lg px-2 py-1.5 transition-colors cursor-pointer"
+                        onClick={() => { setEditingTask(t); setTaskModalOpen(true); }}
                       >
                         <button
-                          onClick={() => handleToggleTask(t.id, t.status)}
+                          onClick={(e) => { e.stopPropagation(); handleToggleTask(t.id, t.status); }}
                           className="shrink-0"
                           title="Marcar completada"
                         >
                           <Square className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors" />
                         </button>
                         <div className="flex-1 min-w-0">
-                          <p className="truncate text-foreground">{t.title}</p>
+                          <p className="truncate text-foreground group-hover:text-primary transition-colors">{t.title}</p>
                           {t.assigned_to_name && (
                             <p className="text-[10px] text-primary/80 truncate flex items-center gap-1">
                               <UserRound className="w-2.5 h-2.5" />
@@ -850,6 +861,9 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                             </p>
                           )}
                         </div>
+                        {t.is_recurring && (
+                          <span className="text-[10px] shrink-0 text-violet-400" title="Recurrente">↻</span>
+                        )}
                         {t.due_date && (
                           <span className={`text-[10px] shrink-0 font-medium ${new Date(t.due_date) < new Date() ? "text-destructive" : "text-muted-foreground"}`}>
                             {new Date(t.due_date).toLocaleDateString("es", { day: "numeric", month: "short" })}
@@ -1101,6 +1115,17 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
         </DialogContent>
       </Dialog>
     )}
+
+    {/* Task edit modal */}
+    <TaskEditModal
+      task={editingTask}
+      open={taskModalOpen}
+      onClose={() => { setTaskModalOpen(false); setEditingTask(null); }}
+      onSaved={() => { if (contactId) loadData(contactId); }}
+      members={members}
+      ghlContactId={profile?.ghl_contact_id || null}
+      accountId={accountIdState}
+    />
     </>
   );
 }
