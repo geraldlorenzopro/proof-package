@@ -129,7 +129,12 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDueDate, setNewTaskDueDate] = useState("");
   const [newTaskDueTime, setNewTaskDueTime] = useState("17:00");
+  const [newTaskAssignee, setNewTaskAssignee] = useState<string | null>(null);
   const [savingTask, setSavingTask] = useState(false);
+
+  // Team members (for assignment)
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [assigneeOpen, setAssigneeOpen] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [showGhlNotice, setShowGhlNotice] = useState(false);
