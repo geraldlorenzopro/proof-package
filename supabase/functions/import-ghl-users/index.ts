@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
 
       const belongsToOtherAccount = (existingMemberships || []).some((membership: any) => membership.account_id !== account_id);
       if (belongsToOtherAccount) {
-        conflicts.push({ email: normalizedEmail, reason: "El usuario ya pertenece a otra cuenta" });
+        conflicts.push({ email: normalizedEmail || mapping.ghl_user_name || "", reason: "El usuario ya pertenece a otra cuenta" });
         continue;
       }
 
@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
 
         if (memberInsertError) {
           console.error("Error linking account member:", normalizedEmail, memberInsertError);
-          conflicts.push({ email: normalizedEmail, reason: memberInsertError.message });
+          conflicts.push({ email: normalizedEmail || mapping.ghl_user_name || "", reason: memberInsertError.message });
           continue;
         }
       }
