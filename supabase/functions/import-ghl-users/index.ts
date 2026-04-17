@@ -9,6 +9,20 @@ function normalizeEmail(email: string | null | undefined) {
   return email?.trim().toLowerCase() || null;
 }
 
+function normalizeName(name: string | null | undefined) {
+  if (!name) return null;
+  // Lowercase, strip accents, remove parentheticals like "(NER)" or "-Mr. Visa", collapse whitespace
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[-–—].*$/, " ")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim() || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
