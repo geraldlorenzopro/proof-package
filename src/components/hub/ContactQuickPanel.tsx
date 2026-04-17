@@ -145,6 +145,11 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   const [showCalendarNotice, setShowCalendarNotice] = useState(false);
   const [importingNotes, setImportingNotes] = useState(false);
 
+  // Task edit modal
+  const [editingTask, setEditingTask] = useState<TaskRecord | null>(null);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [accountIdState, setAccountIdState] = useState<string | null>(null);
+
   useEffect(() => {
     if (!contactId || !open) {
       setProfile(null);
