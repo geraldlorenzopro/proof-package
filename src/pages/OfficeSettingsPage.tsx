@@ -585,15 +585,20 @@ export default function OfficeSettingsPage() {
               )}
             </div>
             <div className="space-y-2">
-              {members.map(m => {
-                const initials = (m.full_name || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+             {members.map(m => {
+                // Fallback: si no hay full_name, usa la parte local del email (sin dominios internos)
+                const emailLocal = m.email && !m.email.endsWith('@hub.ner.internal')
+                  ? m.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                  : null;
+                const displayName = m.full_name || emailLocal || 'Pendiente de sincronizar';
+                const initials = displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
                 const roleColor = m.role === 'owner' ? 'bg-accent/20 text-accent border-accent/30' : m.role === 'admin' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-secondary text-muted-foreground border-border/30';
                 return (
                   <Card key={m.id} className="bg-card/60 border-border/30 p-3 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-secondary/80 flex items-center justify-center text-sm font-bold text-foreground shrink-0">{initials}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{m.full_name || 'Sin nombre'}</p>
-                      <p className="text-xs text-muted-foreground">{m.email || m.user_id.slice(0, 8) + '...'}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{m.email || m.user_id.slice(0, 8) + '...'}</p>
                     </div>
                     <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${roleColor}`}>{m.role}</Badge>
                     <span className="text-xs text-muted-foreground hidden sm:inline">{new Date(m.created_at).toLocaleDateString()}</span>
