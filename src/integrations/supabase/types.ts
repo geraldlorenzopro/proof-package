@@ -58,7 +58,10 @@ export type Database = {
           account_id: string
           created_at: string
           custom_permissions: Json | null
+          deactivated_at: string | null
+          deactivated_reason: string | null
           id: string
+          is_active: boolean
           permissions: Json | null
           role: Database["public"]["Enums"]["account_role"]
           user_id: string
@@ -67,7 +70,10 @@ export type Database = {
           account_id: string
           created_at?: string
           custom_permissions?: Json | null
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           id?: string
+          is_active?: boolean
           permissions?: Json | null
           role?: Database["public"]["Enums"]["account_role"]
           user_id: string
@@ -76,7 +82,10 @@ export type Database = {
           account_id?: string
           created_at?: string
           custom_permissions?: Json | null
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           id?: string
+          is_active?: boolean
           permissions?: Json | null
           role?: Database["public"]["Enums"]["account_role"]
           user_id?: string
