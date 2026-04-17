@@ -222,7 +222,137 @@ async function syncOfficeContacts(
     { onConflict: "account_id" }
   );
 
-  return { created, updated };
+  // Sync tasks GHL → NER for linked contacts of this office
+  let tasksImported = 0;
+  let tasksUpdated = 0;
+  try {
+    const taskResult = await syncOfficeTasks(supabase, office);
+    tasksImported = taskResult.imported;
+    tasksUpdated = taskResult.updated;
+  } catch (e) {
+    console.error("task sync error", office.account_id, e);
+  }
+
+  return { created, updated, tasksImported, tasksUpdated };
+}
+
+async function syncOfficeTasks(
+  supabase: ReturnType<typeof createClient>,
+  office: { account_id: string; ghl_api_key: string }
+) {
+  const { data: contacts } = await supabase
+    .from("client_profiles")
+    .select("id, ghl_contact_id")
+    .eq("account_id", office.account_id)
+    .not("ghl_contact_id", "is", null)
+    .limit(200);
+
+  if (!contacts || contacts.length === 0) return { imported: 0, updated: 0 };
+
+  const { data: owner } = await supabase
+    .from("account_members")
+    .select("user_id")
+    .eq("account_id", office.account_id)
+    .eq("role", "owner")
+    .limit(1)
+    .maybeSingle();
+  const fallbackCreatedBy = owner?.user_id;
+  if (!fallbackCreatedBy) return { imported: 0, updated: 0 };
+
+  const { data: mappings } = await supabase
+    .from("ghl_user_mappings")
+    .select("ghl_user_id, mapped_user_id, ghl_user_name")
+    .eq("account_id", office.account_id);
+  const mapByGhlId = new Map((mappings || []).map((m: any) => [m.ghl_user_id, m]));
+
+  let imported = 0;
+  let updated = 0;
+
+  for (const contact of contacts) {
+    try {
+      const tasksRes = await fetch(
+        `https://services.leadconnectorhq.com/contacts/${contact.ghl_contact_id}/tasks`,
+        {
+          headers: {
+            Authorization: `Bearer ${office.ghl_api_key}`,
+            Version: "2021-07-28",
+          },
+          signal: AbortSignal.timeout(8000),
+        }
+      );
+      if (!tasksRes.ok) continue;
+      const data = await tasksRes.json();
+      const ghlTasks: any[] = data.tasks || [];
+
+      for (const ghlTask of ghlTasks) {
+        const ghlTaskId = ghlTask.id;
+        if (!ghlTaskId) continue;
+
+        const { data: existing } = await supabase
+          .from("case_tasks")
+          .select("id, status, title, due_date")
+          .eq("ghl_task_id", ghlTaskId)
+          .maybeSingle();
+
+        const mapping: any = ghlTask.assignedTo ? mapByGhlId.get(ghlTask.assignedTo) : null;
+        const dueDate = ghlTask.dueDate
+          ? new Date(ghlTask.dueDate).toISOString().slice(0, 10)
+          : null;
+        const isCompleted = ghlTask.completed === true;
+        const status = isCompleted ? "completed" : "pending";
+
+        if (existing) {
+          if (
+            existing.status !== status ||
+            existing.title !== (ghlTask.title || existing.title) ||
+            existing.due_date !== dueDate
+          ) {
+            await supabase
+              .from("case_tasks")
+              .update({
+                title: ghlTask.title || existing.title,
+                status,
+                due_date: dueDate,
+                completed_at: isCompleted ? new Date().toISOString() : null,
+                ...(mapping?.mapped_user_id
+                  ? {
+                      assigned_to: mapping.mapped_user_id,
+                      assigned_to_name: mapping.ghl_user_name || null,
+                    }
+                  : {}),
+              })
+              .eq("id", existing.id);
+            updated++;
+          }
+        } else {
+          await supabase.from("case_tasks").insert({
+            account_id: office.account_id,
+            client_profile_id: contact.id,
+            title: ghlTask.title || "Tarea sin título",
+            description: ghlTask.body || null,
+            due_date: dueDate,
+            status,
+            priority: "normal",
+            created_by: mapping?.mapped_user_id || fallbackCreatedBy,
+            created_by_name: mapping?.ghl_user_name || "GHL",
+            ghl_task_id: ghlTaskId,
+            ...(mapping?.mapped_user_id
+              ? {
+                  assigned_to: mapping.mapped_user_id,
+                  assigned_to_name: mapping.ghl_user_name || null,
+                }
+              : {}),
+            completed_at: isCompleted ? new Date().toISOString() : null,
+          });
+          imported++;
+        }
+      }
+    } catch (e) {
+      console.error("task contact loop", contact.id, e);
+    }
+  }
+
+  return { imported, updated };
 }
 
 function normalizeChannel(source: string): string {
