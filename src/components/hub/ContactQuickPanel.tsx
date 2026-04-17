@@ -516,11 +516,20 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
   }
 
   const noteLines = profile?.notes?.split("\n").filter(l => l.trim()) || [];
+  // Original lead message: any note line that doesn't start with a timestamp/GHL prefix.
+  // Lead messages from `receive-lead` are stored as plain text (no `[...]:` prefix).
+  const leadMessage = noteLines.find((l) => !l.trim().startsWith("[")) || null;
+  // Timeline notes are everything that has a timestamp/GHL prefix.
+  const timelineNotes = noteLines.filter((l) => l.trim().startsWith("["));
   const totalNotes = noteLines.length;
   const tags = profile?.ghl_tags?.filter(Boolean) || [];
   const visibleTags = tags.slice(0, MAX_VISIBLE_TAGS);
   const hiddenTagCount = tags.length - visibleTags.length;
   const pendingTasks = tasks.filter(t => t.status !== "completed");
+
+  const selectedAssignee = newTaskAssignee
+    ? members.find((m) => m.user_id === newTaskAssignee)
+    : null;
 
   return (
     <>
