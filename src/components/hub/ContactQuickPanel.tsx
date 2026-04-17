@@ -1115,6 +1115,17 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
         </DialogContent>
       </Dialog>
     )}
+
+    {/* Task edit modal */}
+    <TaskEditModal
+      task={editingTask}
+      open={taskModalOpen}
+      onClose={() => { setTaskModalOpen(false); setEditingTask(null); }}
+      onSaved={() => { if (contactId) loadData(contactId); }}
+      members={members}
+      ghlContactId={profile?.ghl_contact_id || null}
+      accountId={accountIdState}
+    />
     </>
   );
 }
