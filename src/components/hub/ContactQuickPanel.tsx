@@ -20,6 +20,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
+import TaskEditModal from "@/components/hub/TaskEditModal";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
