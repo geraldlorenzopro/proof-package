@@ -68,11 +68,11 @@ export default function CaseTasksPanel({ tasks, caseId, accountId, onTaskChanged
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
 
-  const pending = tasks.filter(t => t.status !== "done").sort((a, b) => {
+  const pending = tasks.filter(t => t.status !== "done" && t.status !== "completed").sort((a, b) => {
     const pOrder: Record<string, number> = { high: 0, normal: 1, low: 2 };
     return (pOrder[a.priority] ?? 1) - (pOrder[b.priority] ?? 1);
   });
-  const completed = tasks.filter(t => t.status === "done").sort((a, b) =>
+  const completed = tasks.filter(t => t.status === "done" || t.status === "completed").sort((a, b) =>
     new Date(b.completed_at || b.created_at).getTime() - new Date(a.completed_at || a.created_at).getTime()
   );
 
@@ -138,10 +138,11 @@ export default function CaseTasksPanel({ tasks, caseId, accountId, onTaskChanged
   }
 
   async function toggleTask(taskId: string, currentStatus: string) {
-    const newStatus = currentStatus === "done" ? "pending" : "done";
+    const isDone = currentStatus === "done" || currentStatus === "completed";
+    const newStatus = isDone ? "pending" : "completed";
     const { error } = await supabase.from("case_tasks").update({
       status: newStatus,
-      completed_at: newStatus === "done" ? new Date().toISOString() : null,
+      completed_at: newStatus === "completed" ? new Date().toISOString() : null,
     }).eq("id", taskId);
     if (error) toast.error("Error al actualizar tarea");
     else onTaskChanged();
