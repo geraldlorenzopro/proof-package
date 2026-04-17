@@ -196,6 +196,11 @@ Deno.serve(async (req) => {
       }
 
       if (!userId) {
+        if (!normalizedEmail) {
+          // Cannot create without an email; skip
+          skippedWithoutEmail += 1;
+          continue;
+        }
         const randomPassword = `${crypto.randomUUID()}${crypto.randomUUID()}`;
         const { data: createdAuth, error: createAuthError } = await admin.auth.admin.createUser({
           email: normalizedEmail,
@@ -218,7 +223,7 @@ Deno.serve(async (req) => {
         userId = createdAuth.user.id;
         authUserByEmail.set(normalizedEmail, userId);
         createdNerUsers += 1;
-      } else {
+      } else if (!matchedByName) {
         reusedNerUsers += 1;
       }
 
