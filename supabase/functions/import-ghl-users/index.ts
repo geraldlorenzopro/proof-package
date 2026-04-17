@@ -283,7 +283,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      accountMemberByEmail.set(normalizedEmail, userId);
+      if (normalizedEmail) accountMemberByEmail.set(normalizedEmail, userId);
+      if (normalizedName) accountMemberByName.set(normalizedName, userId);
 
       await admin
         .from("ghl_user_mappings")
@@ -296,6 +297,7 @@ Deno.serve(async (req) => {
         imported: rows.length,
         created_ner_users: createdNerUsers,
         reused_ner_users: reusedNerUsers,
+        mapped_by_name: mappedByName,
         skipped_without_email: skippedWithoutEmail,
         conflicts,
         users: rows.map((r: any) => ({ name: r.ghl_user_name, email: r.ghl_user_email, ghl_id: r.ghl_user_id })),
