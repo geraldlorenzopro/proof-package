@@ -110,6 +110,9 @@ interface TaskRecord {
   created_at: string;
   created_by_name: string | null;
   completed_at: string | null;
+  ghl_task_id?: string | null;
+  description?: string | null;
+  assigned_to?: string | null;
 }
 
 const URGENCY: Record<string, { label: string; color: string }> = {
@@ -209,7 +212,7 @@ export default function ClientProfilePage() {
       const [intakeRes, casesRes, tasksRes] = await Promise.all([
         supabase.from("intake_sessions").select("id, consultation_topic_tag, urgency_level, status, entry_channel, created_at").eq("client_profile_id", id).order("created_at", { ascending: false }),
         supabase.from("client_cases").select("id, case_type, file_number, status, pipeline_stage, created_at").eq("client_profile_id", id).order("created_at", { ascending: false }),
-        supabase.from("case_tasks").select("id, title, status, due_date, priority, created_at, created_by_name, completed_at").eq("client_profile_id", id).is("case_id", null).order("created_at", { ascending: false }),
+        supabase.from("case_tasks").select("id, title, status, due_date, priority, created_at, created_by_name, completed_at, ghl_task_id, description, assigned_to").eq("client_profile_id", id).is("case_id", null).order("created_at", { ascending: false }),
       ]);
       setSessions(intakeRes.data || []);
       setCases(casesRes.data || []);
@@ -308,6 +311,7 @@ export default function ClientProfilePage() {
 
   async function handleToggleTask(taskId: string, currentStatus: string) {
     const newStatus = currentStatus === "completed" ? "pending" : "completed";
+    const task = tasks.find(t => t.id === taskId);
     const { error } = await supabase.from("case_tasks")
       .update({
         status: newStatus,
@@ -316,6 +320,41 @@ export default function ClientProfilePage() {
       .eq("id", taskId);
     if (!error) {
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus, completed_at: newStatus === "completed" ? new Date().toISOString() : null } : t));
+      // Sync to GHL if task is linked
+      if (task?.ghl_task_id && accountId && profile) {
+        try {
+          const { data: profRow } = await supabase
+            .from("client_profiles")
+            .select("ghl_contact_id")
+            .eq("id", profile.id)
+            .maybeSingle();
+          const ghlContactId = (profRow as any)?.ghl_contact_id;
+          if (ghlContactId) {
+            const session = await supabase.auth.getSession();
+            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-task-to-ghl`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.data.session?.access_token}`,
+              },
+              body: JSON.stringify({
+                account_id: accountId,
+                task_id: taskId,
+                ghl_contact_id: ghlContactId,
+                ghl_task_id: task.ghl_task_id,
+                title: task.title,
+                description: task.description || "",
+                due_date: task.due_date,
+                assigned_to: task.assigned_to,
+                status: newStatus,
+              }),
+            });
+            toast.success(newStatus === "completed" ? "Tarea completada ✅ (GHL)" : "Tarea reactivada");
+          }
+        } catch (e) {
+          console.warn("[ClientProfilePage] GHL sync failed:", e);
+        }
+      }
     }
   }
 
