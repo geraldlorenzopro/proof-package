@@ -60,11 +60,11 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const pending = tasks.filter(t => t.status !== "done").sort((a, b) => {
+  const pending = tasks.filter(t => t.status !== "completed" && t.status !== "done").sort((a, b) => {
     const o: Record<string, number> = { high: 0, normal: 1, low: 2 };
     return (o[a.priority] ?? 1) - (o[b.priority] ?? 1);
   });
-  const completed = tasks.filter(t => t.status === "done");
+  const completed = tasks.filter(t => t.status === "completed" || t.status === "done");
   const visible = pending.slice(0, MAX_VISIBLE);
   const remaining = pending.length - MAX_VISIBLE;
 
@@ -140,12 +140,13 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
   }
 
   async function toggleTask(taskId: string, currentStatus: string) {
-    const newStatus = currentStatus === "done" ? "pending" : "done";
+    const isDone = currentStatus === "completed" || currentStatus === "done";
+    const newStatus = isDone ? "pending" : "completed";
     await supabase.from("case_tasks").update({
-      status: newStatus, completed_at: newStatus === "done" ? new Date().toISOString() : null,
+      status: newStatus, completed_at: newStatus === "completed" ? new Date().toISOString() : null,
     }).eq("id", taskId);
     const task = tasks.find(t => t.id === taskId);
-    if (task) void pushTaskToGhl(taskId, task.title, task.due_date, newStatus === "done" ? "completed" : "pending", (task as any).ghl_task_id, task.assigned_to);
+    if (task) void pushTaskToGhl(taskId, task.title, task.due_date, newStatus, (task as any).ghl_task_id, task.assigned_to);
     onTaskChanged();
   }
 
