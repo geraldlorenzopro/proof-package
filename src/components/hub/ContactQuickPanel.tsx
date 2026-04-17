@@ -296,7 +296,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       return n.replace(/\s+/g, " ").trim() || null;
     };
 
-    const built = membersData
+    const rawBuilt = membersData
       .map((m) => {
         const profileName = profMap.get(m.user_id) as string | null;
         const ghlEntry = ghlMap.get(m.user_id);
@@ -304,6 +304,24 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
         return { user_id: m.user_id, full_name: display };
       })
       .filter((m) => !!m.full_name);
+
+    // Para nombres duplicados sin sufijo diferenciador, agregar "(NER)" automáticamente
+    const baseKey = (n: string) => n.replace(/\s*[\(\-].*$/, "").trim().toLowerCase();
+    const baseCounts = new Map<string, number>();
+    rawBuilt.forEach((m) => {
+      const k = baseKey(m.full_name!);
+      baseCounts.set(k, (baseCounts.get(k) || 0) + 1);
+    });
+
+    const built = rawBuilt.map((m) => {
+      const name = m.full_name!;
+      const hasSuffix = /[\(\-]/.test(name);
+      const isDup = (baseCounts.get(baseKey(name)) || 0) > 1;
+      return {
+        user_id: m.user_id,
+        full_name: isDup && !hasSuffix ? `${name} (NER)` : name,
+      };
+    });
 
     built.sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
     setMembers(built);
