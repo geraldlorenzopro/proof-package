@@ -151,7 +151,35 @@ export default function TaskEditModal({
         })
         .eq("id", task.id);
       if (error) throw error;
-      toast.success(newStatus === "completed" ? "Tarea completada ✅" : "Tarea reactivada");
+
+      // Sync status to GHL if linked
+      if (ghlContactId && accountId && task.ghl_task_id) {
+        try {
+          const session = await supabase.auth.getSession();
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-task-to-ghl`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.data.session?.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              account_id: accountId,
+              task_id: task.id,
+              ghl_contact_id: ghlContactId,
+              ghl_task_id: task.ghl_task_id,
+              title: task.title,
+              description: task.description || "",
+              due_date: task.due_date,
+              assigned_to: task.assigned_to,
+              status: newStatus,
+            }),
+          });
+        } catch (syncErr) {
+          console.warn("[TaskEditModal] GHL sync failed:", syncErr);
+        }
+      }
+
+      toast.success(newStatus === "completed" ? "Tarea completada ✅ (sincronizada con GHL)" : "Tarea reactivada");
       onSaved();
       onClose();
     } catch (e: any) {
