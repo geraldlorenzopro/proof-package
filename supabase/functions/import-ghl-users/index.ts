@@ -144,9 +144,12 @@ Deno.serve(async (req) => {
     }
 
     const accountMemberByEmail = new Map<string, string>();
+    const accountMemberByName = new Map<string, string>();
     for (const profile of memberProfiles) {
       const email = normalizeEmail(profile.email);
       if (email) accountMemberByEmail.set(email, profile.user_id);
+      const nameKey = normalizeName(profile.full_name);
+      if (nameKey) accountMemberByName.set(nameKey, profile.user_id);
     }
 
     // Auto-create/reuse NER users by email and map them deterministically
@@ -158,17 +161,39 @@ Deno.serve(async (req) => {
 
     let createdNerUsers = 0;
     let reusedNerUsers = 0;
+    let mappedByName = 0;
     let skippedWithoutEmail = 0;
     const conflicts: Array<{ email: string; reason: string }> = [];
 
     for (const mapping of mappings || []) {
       const normalizedEmail = normalizeEmail(mapping.ghl_user_email);
-      if (!normalizedEmail) {
+      const normalizedName = normalizeName(mapping.ghl_user_name);
+
+      // Resolution priority:
+      // 1. Existing mapping
+      // 2. Match by email (NER profile or auth user)
+      // 3. Match by normalized name (only within this account's members)
+      let userId: string | null = mapping.mapped_user_id || null;
+      let matchedByName = false;
+
+      if (!userId && normalizedEmail) {
+        userId = accountMemberByEmail.get(normalizedEmail) || authUserByEmail.get(normalizedEmail) || null;
+      }
+
+      if (!userId && normalizedName) {
+        const byName = accountMemberByName.get(normalizedName);
+        if (byName) {
+          userId = byName;
+          matchedByName = true;
+          mappedByName += 1;
+        }
+      }
+
+      // Skip creation if no email AND no name match found
+      if (!userId && !normalizedEmail) {
         skippedWithoutEmail += 1;
         continue;
       }
-
-      let userId = mapping.mapped_user_id || accountMemberByEmail.get(normalizedEmail) || authUserByEmail.get(normalizedEmail) || null;
 
       if (!userId) {
         const randomPassword = `${crypto.randomUUID()}${crypto.randomUUID()}`;
