@@ -274,9 +274,13 @@ Deno.serve(async (req) => {
           }
         }
       } else {
+        // Use upsert to handle race with auth-trigger that may have created a profile already
         const { error: profileInsertError } = await admin
           .from("profiles")
-          .insert({ user_id: userId, full_name: displayName, email: normalizedEmail });
+          .upsert(
+            { user_id: userId, full_name: displayName, email: normalizedEmail },
+            { onConflict: "user_id" }
+          );
 
         if (profileInsertError) {
           console.error("Error creating profile:", normalizedEmail, profileInsertError);
