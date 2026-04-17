@@ -271,6 +271,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       .limit(1)
       .maybeSingle();
     if (!mem?.account_id) return;
+    setAccountIdState(mem.account_id);
     const { data: membersData } = await supabase
       .from("account_members")
       .select("user_id")
