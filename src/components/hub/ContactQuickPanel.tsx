@@ -317,7 +317,9 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       .map((m) => {
         const key = m.baseName!.toLowerCase();
         const isDup = (nameCounts.get(key) || 0) > 1;
-        const display = isDup && m.email ? `${m.baseName} (${m.email})` : m.baseName!;
+        // Para nombres duplicados, mostrar solo el username del email (antes del @) como sufijo discreto
+        const emailUser = m.email ? m.email.split("@")[0] : null;
+        const display = isDup && emailUser ? `${m.baseName} · ${emailUser}` : m.baseName!;
         return { user_id: m.user_id, full_name: display };
       });
 
