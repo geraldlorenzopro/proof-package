@@ -125,6 +125,37 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
         entity_id: clientId,
         entity_label: `${data.first_name} ${data.last_name}`.trim() || undefined,
       });
+
+      // Push new note content to GHL if notes changed
+      const trimmedNew = data.notes.trim();
+      const trimmedOld = originalNotes.trim();
+      if (trimmedNew && trimmedNew !== trimmedOld && ghlContactId && accountId) {
+        // Compute the diff: what was added (most common case = new content appended/prepended)
+        const addedContent = trimmedOld && trimmedNew.includes(trimmedOld)
+          ? trimmedNew.replace(trimmedOld, "").trim()
+          : trimmedNew;
+
+        if (addedContent) {
+          const { data: { session } } = await supabase.auth.getSession();
+          void fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-note-to-ghl`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session?.access_token || ""}`,
+              },
+              body: JSON.stringify({
+                account_id: accountId,
+                ghl_contact_id: ghlContactId,
+                content: addedContent,
+                author_name: "NER",
+              }),
+            }
+          ).catch(() => {});
+        }
+      }
+      setOriginalNotes(trimmedNew);
       onUpdated?.();
     }
     setSaving(false);
