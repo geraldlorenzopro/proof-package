@@ -634,7 +634,25 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 )}
               </div>
 
-              {/* History */}
+              {/* Original Lead Message — prominent block */}
+              {leadMessage && (
+                <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-3 space-y-1.5 shadow-sm">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <p className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">
+                      Mensaje del lead
+                    </p>
+                    {profile.source_channel && (
+                      <span className="text-[10px] text-amber-400/70 ml-auto">
+                        vía {CHANNEL_LABELS[profile.source_channel] || profile.source_channel}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                    "{leadMessage}"
+                  </p>
+                </div>
+              )}
               <div className="space-y-3">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
