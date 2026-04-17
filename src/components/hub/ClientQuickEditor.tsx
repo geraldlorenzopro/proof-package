@@ -57,6 +57,9 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
     source_channel: "",
     notes: "",
   });
+  const [originalNotes, setOriginalNotes] = useState("");
+  const [ghlContactId, setGhlContactId] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -65,7 +68,7 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
       setLoading(true);
       const { data: p } = await supabase
         .from("client_profiles")
-        .select("first_name, middle_name, last_name, phone, email, immigration_status, source_channel, notes")
+        .select("first_name, middle_name, last_name, phone, email, immigration_status, source_channel, notes, ghl_contact_id, account_id")
         .eq("id", clientId)
         .single();
 
@@ -80,6 +83,9 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
           source_channel: (p as any).source_channel || "",
           notes: p.notes || "",
         });
+        setOriginalNotes(p.notes || "");
+        setGhlContactId((p as any).ghl_contact_id || null);
+        setAccountId((p as any).account_id || null);
       }
       setLoading(false);
     })();
