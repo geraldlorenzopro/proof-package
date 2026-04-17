@@ -430,7 +430,9 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 ghl_contact_id: profile.ghl_contact_id,
                 ghl_task_id: (task as any).ghl_task_id || undefined,
                 title: task.title,
+                description: (task as any).description || "",
                 due_date: task.due_date,
+                assigned_to: (task as any).assigned_to || undefined,
                 status: newStatus,
               }),
             }).catch(() => {});
