@@ -233,7 +233,85 @@ async function syncOfficeContacts(
     console.error("task sync error", office.account_id, e);
   }
 
-  return { created, updated, tasksImported, tasksUpdated };
+  // Sync notes GHL → NER for linked contacts of this office
+  let notesImported = 0;
+  try {
+    const noteResult = await syncOfficeNotes(supabase, office);
+    notesImported = noteResult.imported;
+  } catch (e) {
+    console.error("note sync error", office.account_id, e);
+  }
+
+  return { created, updated, tasksImported, tasksUpdated, notesImported };
+}
+
+async function syncOfficeNotes(
+  supabase: ReturnType<typeof createClient>,
+  office: { account_id: string; ghl_api_key: string }
+) {
+  // Only sync notes for contacts that have an active case (notes require case_id)
+  const { data: cases } = await supabase
+    .from("client_cases")
+    .select("id, client_profile_id, client_profiles!inner(ghl_contact_id)")
+    .eq("account_id", office.account_id)
+    .not("client_profiles.ghl_contact_id", "is", null)
+    .limit(200);
+
+  if (!cases || cases.length === 0) return { imported: 0 };
+
+  let imported = 0;
+
+  for (const c of cases as any[]) {
+    const ghlContactId = c.client_profiles?.ghl_contact_id;
+    if (!ghlContactId) continue;
+
+    try {
+      const notesRes = await fetch(
+        `https://services.leadconnectorhq.com/contacts/${ghlContactId}/notes`,
+        {
+          headers: {
+            Authorization: `Bearer ${office.ghl_api_key}`,
+            Version: "2021-07-28",
+          },
+          signal: AbortSignal.timeout(8000),
+        }
+      );
+      if (!notesRes.ok) continue;
+      const data = await notesRes.json();
+      const ghlNotes: any[] = data.notes || [];
+      if (ghlNotes.length === 0) continue;
+
+      // Avoid dupes
+      const { data: existingNotes } = await supabase
+        .from("case_notes")
+        .select("ghl_note_id")
+        .eq("case_id", c.id)
+        .not("ghl_note_id", "is", null);
+
+      const existingIds = new Set((existingNotes || []).map((n: any) => n.ghl_note_id));
+      const newOnes = ghlNotes.filter((n: any) => !existingIds.has(n.id));
+
+      if (newOnes.length > 0) {
+        const inserts = newOnes.map((n: any) => ({
+          account_id: office.account_id,
+          case_id: c.id,
+          author_id: "00000000-0000-0000-0000-000000000000",
+          author_name: "GHL Import",
+          content: n.body || "",
+          note_type: "general",
+          is_pinned: false,
+          ghl_note_id: n.id,
+          created_at: n.dateAdded || new Date().toISOString(),
+        }));
+        await supabase.from("case_notes").insert(inserts);
+        imported += newOnes.length;
+      }
+    } catch (e) {
+      console.error("note contact loop", ghlContactId, e);
+    }
+  }
+
+  return { imported };
 }
 
 async function syncOfficeTasks(
