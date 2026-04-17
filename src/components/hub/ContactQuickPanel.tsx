@@ -65,12 +65,15 @@ interface CaseRecord {
 interface TaskRecord {
   id: string;
   title: string;
+  description?: string | null;
   status: string;
   due_date: string | null;
   priority: string;
   ghl_task_id?: string | null;
   assigned_to?: string | null;
   assigned_to_name?: string | null;
+  is_recurring?: boolean | null;
+  recurring_interval?: string | null;
 }
 
 interface TeamMember {
