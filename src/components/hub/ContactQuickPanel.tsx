@@ -290,38 +290,20 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
         ])
     );
 
-    // Clean GHL suffixes like "(NER)" or "-Mr. Visa" for display
-    const cleanName = (n: string | null): string | null => {
+    // Conservar sufijos diferenciadores como "(NER)" o "- Mr. Visa" — solo normalizar espacios
+    const normalize = (n: string | null): string | null => {
       if (!n) return null;
-      return n.replace(/\s*[\(\-].*$/, "").trim() || n;
+      return n.replace(/\s+/g, " ").trim() || null;
     };
 
-    // Detect duplicate names so we can disambiguate with email
-    const rawBuilt = membersData.map((m) => {
-      const profileName = profMap.get(m.user_id) as string | null;
-      const ghlEntry = ghlMap.get(m.user_id);
-      const baseName = cleanName(profileName) || cleanName(ghlEntry?.name ?? null);
-      return { user_id: m.user_id, baseName, email: ghlEntry?.email ?? null };
-    });
-
-    const nameCounts = new Map<string, number>();
-    rawBuilt.forEach((m) => {
-      if (m.baseName) {
-        const key = m.baseName.toLowerCase();
-        nameCounts.set(key, (nameCounts.get(key) || 0) + 1);
-      }
-    });
-
-    const built = rawBuilt
-      .filter((m) => !!m.baseName)
+    const built = membersData
       .map((m) => {
-        const key = m.baseName!.toLowerCase();
-        const isDup = (nameCounts.get(key) || 0) > 1;
-        // Para nombres duplicados, mostrar solo el username del email (antes del @) como sufijo discreto
-        const emailUser = m.email ? m.email.split("@")[0] : null;
-        const display = isDup && emailUser ? `${m.baseName} · ${emailUser}` : m.baseName!;
+        const profileName = profMap.get(m.user_id) as string | null;
+        const ghlEntry = ghlMap.get(m.user_id);
+        const display = normalize(profileName) || normalize(ghlEntry?.name ?? null);
         return { user_id: m.user_id, full_name: display };
-      });
+      })
+      .filter((m) => !!m.full_name);
 
     built.sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
     setMembers(built);
