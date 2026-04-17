@@ -161,11 +161,12 @@ export default function OfficeSettingsPage() {
       }
       if (oc) setConfig(oc as unknown as OfficeConfig);
 
-      // Load team
+      // Load team (active members only)
       const { data: mems } = await supabase
         .from('account_members')
         .select('id, user_id, role, created_at')
-        .eq('account_id', mem.account_id);
+        .eq('account_id', mem.account_id)
+        .eq('is_active', true);
 
       if (mems) {
         const userIds = mems.map(m => m.user_id);
@@ -1200,7 +1201,7 @@ function GhlTeamSyncSection({ accountId }: { accountId: string | null }) {
     setLoadingMappings(true);
     const [mappingsRes, membersRes] = await Promise.all([
       supabase.from("ghl_user_mappings").select("*").eq("account_id", accountId!),
-      supabase.from("account_members").select("user_id, role").eq("account_id", accountId!),
+      supabase.from("account_members").select("user_id, role").eq("account_id", accountId!).eq("is_active", true),
     ]);
 
     const members = membersRes.data || [];
@@ -1231,19 +1232,26 @@ function GhlTeamSyncSection({ accountId }: { accountId: string | null }) {
     if (!accountId) return;
     setSyncingTeam(true);
     try {
-      const { data, error } = await supabase.functions.invoke("import-ghl-users", {
-        body: { account_id: accountId },
+      const { data, error } = await supabase.functions.invoke("sync-ghl-team", {
+        body: { account_id: accountId, send_magic_links: true },
       });
       if (error) throw error;
       const created = data?.created_ner_users || 0;
-      const reused = data?.reused_ner_users || 0;
-      const byName = data?.mapped_by_name || 0;
-      toast.success(
-        `${data?.imported || 0} importados · ${created} creados · ${reused} vinculados${byName ? ` · ${byName} por nombre` : ""}`
-      );
+      const deact = (data?.deactivated || []).length;
+      const links = data?.magic_links_sent || 0;
+      const parts = [`${data?.ghl_users || 0} en GHL`];
+      if (created) parts.push(`${created} creados`);
+      if (links) parts.push(`${links} invitaciones enviadas`);
+      if (deact) parts.push(`${deact} desactivados`);
+      toast.success(parts.join(" · "));
+      if (deact && data?.deactivated?.length) {
+        toast.info(`Desactivados (ya no están en GHL): ${data.deactivated.join(", ")}`, { duration: 8000 });
+      }
       await loadMappings();
+      // Recarga de la página para refrescar el contador del equipo
+      window.dispatchEvent(new CustomEvent("team:refresh"));
     } catch (err: any) {
-      toast.error("Error al importar usuarios: " + (err.message || ""));
+      toast.error("Error al sincronizar equipo: " + (err.message || ""));
     } finally {
       setSyncingTeam(false);
     }
