@@ -171,16 +171,23 @@ export default function OfficeSettingsPage() {
       if (mems) {
         const userIds = mems.map(m => m.user_id);
         const { data: profiles } = userIds.length > 0
-          ? await supabase.from('profiles').select('user_id, full_name, email').in('user_id', userIds)
+          ? await supabase.from('profiles').select('user_id, full_name').in('user_id', userIds)
+          : { data: [] as any[] };
+
+        // Email vive en ghl_user_mappings (profiles no tiene columna email)
+        const { data: ghlMaps } = userIds.length > 0
+          ? await supabase.from('ghl_user_mappings').select('mapped_user_id, ghl_user_email, ghl_user_name').in('mapped_user_id', userIds)
           : { data: [] as any[] };
 
         const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+        const ghlMap = new Map((ghlMaps || []).map((g: any) => [g.mapped_user_id, g]));
         const enriched: TeamMember[] = mems.map((m: any) => {
           const profile = profileMap.get(m.user_id);
+          const ghl = ghlMap.get(m.user_id);
           return {
             ...m,
-            full_name: profile?.full_name || null,
-            email: profile?.email || null,
+            full_name: profile?.full_name || ghl?.ghl_user_name || null,
+            email: ghl?.ghl_user_email || null,
           };
         });
         setMembers(enriched);
