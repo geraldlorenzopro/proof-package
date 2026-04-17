@@ -275,7 +275,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       supabase.from("profiles").select("user_id, full_name").in("user_id", userIds),
       supabase
         .from("ghl_user_mappings")
-        .select("mapped_user_id, ghl_user_name")
+        .select("mapped_user_id, ghl_user_name, ghl_user_email")
         .eq("account_id", mem.account_id)
         .in("mapped_user_id", userIds),
     ]);
@@ -284,7 +284,10 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     const ghlMap = new Map(
       (ghlMaps || [])
         .filter((g) => g.mapped_user_id)
-        .map((g) => [g.mapped_user_id as string, g.ghl_user_name as string | null])
+        .map((g) => [
+          g.mapped_user_id as string,
+          { name: g.ghl_user_name as string | null, email: g.ghl_user_email as string | null },
+        ])
     );
 
     // Clean GHL suffixes like "(NER)" or "-Mr. Visa" for display
@@ -293,28 +296,33 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       return n.replace(/\s*[\(\-].*$/, "").trim() || n;
     };
 
-    // Build members, preferring profile name, falling back to GHL mapping
-    const built = membersData.map((m) => {
+    // Detect duplicate names so we can disambiguate with email
+    const rawBuilt = membersData.map((m) => {
       const profileName = profMap.get(m.user_id) as string | null;
-      const ghlName = ghlMap.get(m.user_id) ?? null;
-      return {
-        user_id: m.user_id,
-        full_name: cleanName(profileName) || cleanName(ghlName),
-      };
+      const ghlEntry = ghlMap.get(m.user_id);
+      const baseName = cleanName(profileName) || cleanName(ghlEntry?.name ?? null);
+      return { user_id: m.user_id, baseName, email: ghlEntry?.email ?? null };
     });
 
-    // Dedupe by normalized name (keeps first occurrence — handles duplicate Geralds)
-    const seen = new Set<string>();
-    const deduped = built.filter((m) => {
-      if (!m.full_name) return false;
-      const key = m.full_name.toLowerCase().trim();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+    const nameCounts = new Map<string, number>();
+    rawBuilt.forEach((m) => {
+      if (m.baseName) {
+        const key = m.baseName.toLowerCase();
+        nameCounts.set(key, (nameCounts.get(key) || 0) + 1);
+      }
     });
 
-    deduped.sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
-    setMembers(deduped);
+    const built = rawBuilt
+      .filter((m) => !!m.baseName)
+      .map((m) => {
+        const key = m.baseName!.toLowerCase();
+        const isDup = (nameCounts.get(key) || 0) > 1;
+        const display = isDup && m.email ? `${m.baseName} (${m.email})` : m.baseName!;
+        return { user_id: m.user_id, full_name: display };
+      });
+
+    built.sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+    setMembers(built);
   }
 
   const getName = (p: ProfileData) => {
