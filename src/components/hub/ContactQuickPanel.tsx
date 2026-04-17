@@ -838,44 +838,46 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                     </button>
                   </div>
                   {newTaskTitle.trim() && (
-                    <div className="flex items-center gap-2 pl-1 flex-wrap">
+                    <div className="flex items-center gap-2 pl-1 flex-wrap pt-1">
                       {/* Assignee selector */}
                       <Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
                         <PopoverTrigger asChild>
                           <button
                             type="button"
-                            className="flex items-center gap-1 px-2 py-1 rounded-md border border-border bg-background text-[11px] text-foreground hover:bg-muted transition-colors"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-primary/30 bg-primary/5 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:border-primary/50 transition-colors"
                           >
-                            <UserRound className="w-3 h-3" />
-                            <span className="truncate max-w-[100px]">
+                            <UserRound className="w-3 h-3 text-primary" />
+                            <span className="truncate max-w-[110px]">
                               {selectedAssignee?.full_name || "Asignar a"}
                             </span>
                             <ChevronDown className="w-2.5 h-2.5 opacity-60" />
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-56 p-1" align="start">
+                        <PopoverContent className="w-56 p-1 bg-popover border-border z-50" align="start">
                           <button
                             onClick={() => { setNewTaskAssignee(null); setAssigneeOpen(false); }}
-                            className="w-full text-left px-2 py-1.5 text-xs rounded-md hover:bg-accent/10 text-muted-foreground"
+                            className="w-full text-left px-2 py-1.5 text-xs rounded-md hover:bg-accent text-muted-foreground"
                           >
                             Sin asignar
                           </button>
-                          {members.map((m) => (
+                          {members
+                            .filter((m) => m.full_name && m.full_name.trim().length > 0)
+                            .map((m) => (
                             <button
                               key={m.user_id}
                               onClick={() => { setNewTaskAssignee(m.user_id); setAssigneeOpen(false); }}
-                              className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-accent/10 ${
-                                newTaskAssignee === m.user_id ? "bg-accent/10 font-medium" : ""
+                              className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-accent text-foreground ${
+                                newTaskAssignee === m.user_id ? "bg-accent/60 font-medium" : ""
                               }`}
                             >
                               <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold text-primary shrink-0">
                                 {(m.full_name || "?")[0].toUpperCase()}
                               </div>
-                              <span className="truncate flex-1 text-left">{m.full_name || "Sin nombre"}</span>
+                              <span className="truncate flex-1 text-left">{m.full_name}</span>
                               {newTaskAssignee === m.user_id && <Check className="w-3 h-3 text-primary" />}
                             </button>
                           ))}
-                          {members.length === 0 && (
+                          {members.filter((m) => m.full_name && m.full_name.trim().length > 0).length === 0 && (
                             <p className="px-2 py-3 text-xs text-muted-foreground text-center">
                               Cargando equipo...
                             </p>
@@ -883,19 +885,19 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                         </PopoverContent>
                       </Popover>
 
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-border bg-background">
+                        <Clock className="w-3 h-3 text-primary shrink-0" />
                         <input
                           type="date"
                           value={newTaskDueDate}
                           onChange={(e) => setNewTaskDueDate(e.target.value)}
-                          className="px-2 py-1 rounded-md border border-border bg-background text-[11px] text-foreground focus:outline-none focus:border-primary"
+                          className="bg-transparent text-[11px] text-foreground focus:outline-none [color-scheme:dark]"
                         />
                         <input
                           type="time"
                           value={newTaskDueTime}
                           onChange={(e) => setNewTaskDueTime(e.target.value)}
-                          className="px-2 py-1 rounded-md border border-border bg-background text-[11px] text-foreground focus:outline-none focus:border-primary w-[80px]"
+                          className="bg-transparent text-[11px] text-foreground focus:outline-none w-[70px] [color-scheme:dark]"
                         />
                       </div>
                     </div>
