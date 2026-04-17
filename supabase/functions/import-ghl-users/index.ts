@@ -9,6 +9,20 @@ function normalizeEmail(email: string | null | undefined) {
   return email?.trim().toLowerCase() || null;
 }
 
+function normalizeName(name: string | null | undefined) {
+  if (!name) return null;
+  // Lowercase, strip accents, remove parentheticals like "(NER)" or "-Mr. Visa", collapse whitespace
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[-–—].*$/, " ")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim() || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -130,9 +144,12 @@ Deno.serve(async (req) => {
     }
 
     const accountMemberByEmail = new Map<string, string>();
+    const accountMemberByName = new Map<string, string>();
     for (const profile of memberProfiles) {
       const email = normalizeEmail(profile.email);
       if (email) accountMemberByEmail.set(email, profile.user_id);
+      const nameKey = normalizeName(profile.full_name);
+      if (nameKey) accountMemberByName.set(nameKey, profile.user_id);
     }
 
     // Auto-create/reuse NER users by email and map them deterministically
@@ -144,19 +161,46 @@ Deno.serve(async (req) => {
 
     let createdNerUsers = 0;
     let reusedNerUsers = 0;
+    let mappedByName = 0;
     let skippedWithoutEmail = 0;
     const conflicts: Array<{ email: string; reason: string }> = [];
 
     for (const mapping of mappings || []) {
       const normalizedEmail = normalizeEmail(mapping.ghl_user_email);
-      if (!normalizedEmail) {
+      const normalizedName = normalizeName(mapping.ghl_user_name);
+
+      // Resolution priority:
+      // 1. Existing mapping
+      // 2. Match by email (NER profile or auth user)
+      // 3. Match by normalized name (only within this account's members)
+      let userId: string | null = mapping.mapped_user_id || null;
+      let matchedByName = false;
+
+      if (!userId && normalizedEmail) {
+        userId = accountMemberByEmail.get(normalizedEmail) || authUserByEmail.get(normalizedEmail) || null;
+      }
+
+      if (!userId && normalizedName) {
+        const byName = accountMemberByName.get(normalizedName);
+        if (byName) {
+          userId = byName;
+          matchedByName = true;
+          mappedByName += 1;
+        }
+      }
+
+      // Skip creation if no email AND no name match found
+      if (!userId && !normalizedEmail) {
         skippedWithoutEmail += 1;
         continue;
       }
 
-      let userId = mapping.mapped_user_id || accountMemberByEmail.get(normalizedEmail) || authUserByEmail.get(normalizedEmail) || null;
-
       if (!userId) {
+        if (!normalizedEmail) {
+          // Cannot create without an email; skip
+          skippedWithoutEmail += 1;
+          continue;
+        }
         const randomPassword = `${crypto.randomUUID()}${crypto.randomUUID()}`;
         const { data: createdAuth, error: createAuthError } = await admin.auth.admin.createUser({
           email: normalizedEmail,
@@ -179,7 +223,7 @@ Deno.serve(async (req) => {
         userId = createdAuth.user.id;
         authUserByEmail.set(normalizedEmail, userId);
         createdNerUsers += 1;
-      } else {
+      } else if (!matchedByName) {
         reusedNerUsers += 1;
       }
 
@@ -190,7 +234,7 @@ Deno.serve(async (req) => {
 
       const belongsToOtherAccount = (existingMemberships || []).some((membership: any) => membership.account_id !== account_id);
       if (belongsToOtherAccount) {
-        conflicts.push({ email: normalizedEmail, reason: "El usuario ya pertenece a otra cuenta" });
+        conflicts.push({ email: normalizedEmail || mapping.ghl_user_name || "", reason: "El usuario ya pertenece a otra cuenta" });
         continue;
       }
 
@@ -202,7 +246,7 @@ Deno.serve(async (req) => {
 
         if (memberInsertError) {
           console.error("Error linking account member:", normalizedEmail, memberInsertError);
-          conflicts.push({ email: normalizedEmail, reason: memberInsertError.message });
+          conflicts.push({ email: normalizedEmail || mapping.ghl_user_name || "", reason: memberInsertError.message });
           continue;
         }
       }
@@ -230,16 +274,21 @@ Deno.serve(async (req) => {
           }
         }
       } else {
+        // Use upsert to handle race with auth-trigger that may have created a profile already
         const { error: profileInsertError } = await admin
           .from("profiles")
-          .insert({ user_id: userId, full_name: displayName, email: normalizedEmail });
+          .upsert(
+            { user_id: userId, full_name: displayName, email: normalizedEmail },
+            { onConflict: "user_id" }
+          );
 
         if (profileInsertError) {
           console.error("Error creating profile:", normalizedEmail, profileInsertError);
         }
       }
 
-      accountMemberByEmail.set(normalizedEmail, userId);
+      if (normalizedEmail) accountMemberByEmail.set(normalizedEmail, userId);
+      if (normalizedName) accountMemberByName.set(normalizedName, userId);
 
       await admin
         .from("ghl_user_mappings")
@@ -252,6 +301,7 @@ Deno.serve(async (req) => {
         imported: rows.length,
         created_ner_users: createdNerUsers,
         reused_ner_users: reusedNerUsers,
+        mapped_by_name: mappedByName,
         skipped_without_email: skippedWithoutEmail,
         conflicts,
         users: rows.map((r: any) => ({ name: r.ghl_user_name, email: r.ghl_user_email, ghl_id: r.ghl_user_id })),
