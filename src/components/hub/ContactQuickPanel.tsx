@@ -269,17 +269,52 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       .eq("is_active", true);
     if (!membersData) return;
     const userIds = membersData.map((m) => m.user_id);
-    const { data: profs } = await supabase
-      .from("profiles")
-      .select("user_id, full_name")
-      .in("user_id", userIds);
+
+    // Fetch names from BOTH profiles and ghl_user_mappings (fallback)
+    const [{ data: profs }, { data: ghlMaps }] = await Promise.all([
+      supabase.from("profiles").select("user_id, full_name").in("user_id", userIds),
+      supabase
+        .from("ghl_user_mappings")
+        .select("mapped_user_id, ghl_user_name")
+        .eq("account_id", mem.account_id)
+        .in("mapped_user_id", userIds),
+    ]);
+
     const profMap = new Map((profs || []).map((p) => [p.user_id, p.full_name]));
-    setMembers(
-      membersData.map((m) => ({
-        user_id: m.user_id,
-        full_name: (profMap.get(m.user_id) as string | null) || null,
-      }))
+    const ghlMap = new Map(
+      (ghlMaps || [])
+        .filter((g) => g.mapped_user_id)
+        .map((g) => [g.mapped_user_id as string, g.ghl_user_name as string | null])
     );
+
+    // Clean GHL suffixes like "(NER)" or "-Mr. Visa" for display
+    const cleanName = (n: string | null): string | null => {
+      if (!n) return null;
+      return n.replace(/\s*[\(\-].*$/, "").trim() || n;
+    };
+
+    // Build members, preferring profile name, falling back to GHL mapping
+    const built = membersData.map((m) => {
+      const profileName = profMap.get(m.user_id) as string | null;
+      const ghlName = ghlMap.get(m.user_id) ?? null;
+      return {
+        user_id: m.user_id,
+        full_name: cleanName(profileName) || cleanName(ghlName),
+      };
+    });
+
+    // Dedupe by normalized name (keeps first occurrence — handles duplicate Geralds)
+    const seen = new Set<string>();
+    const deduped = built.filter((m) => {
+      if (!m.full_name) return false;
+      const key = m.full_name.toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    deduped.sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+    setMembers(deduped);
   }
 
   const getName = (p: ProfileData) => {
