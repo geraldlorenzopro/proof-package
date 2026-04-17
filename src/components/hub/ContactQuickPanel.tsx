@@ -698,26 +698,27 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
               </div>
 
               {/* Notes — compact timeline style */}
-              <div className="space-y-2">
+              <div className="space-y-2 rounded-xl border border-border/60 bg-muted/30 p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                    💬 Notas {totalNotes > 0 && <span className="text-muted-foreground/50">({totalNotes})</span>}
+                  <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-primary" />
+                    Notas del equipo {timelineNotes.length > 0 && <span className="text-muted-foreground font-normal">({timelineNotes.length})</span>}
                   </p>
                   <div className="flex items-center gap-1.5">
                     {locationId && (
                       <button
                         onClick={handleSyncGhl}
                         disabled={importingNotes}
-                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground/50 hover:text-foreground hover:bg-muted/30 transition-all disabled:opacity-40"
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all disabled:opacity-40"
                         title="Sincronizar notas con GHL"
                       >
                         {importingNotes ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Download className="w-2.5 h-2.5" />}
                       </button>
                     )}
-                    {totalNotes > 1 && (
+                    {timelineNotes.length > 1 && (
                       <button
                         onClick={() => { onClose(); navigate(`/hub/clients/${profile.id}?tab=notas`); }}
-                        className="text-[10px] text-primary hover:text-primary/80 transition-colors"
+                        className="text-[10px] text-primary hover:text-primary/80 transition-colors font-medium"
                       >
                         Ver todas →
                       </button>
@@ -726,17 +727,19 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                 </div>
 
                 {/* Latest note preview */}
-                {noteLines.length > 0 && (
-                  <div className="relative pl-3 border-l-2 border-primary/20">
-                    <p className="text-xs text-foreground/80 leading-relaxed line-clamp-2">
-                      {noteLines[0]}
+                {timelineNotes.length > 0 ? (
+                  <div className="relative pl-3 border-l-2 border-primary/40">
+                    <p className="text-xs text-foreground leading-relaxed line-clamp-2">
+                      {timelineNotes[0]}
                     </p>
-                    {noteLines.length > 1 && (
-                      <p className="text-[10px] text-muted-foreground/40 mt-0.5 line-clamp-1 italic">
-                        {noteLines[1]}
+                    {timelineNotes.length > 1 && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1 italic">
+                        {timelineNotes[1]}
                       </p>
                     )}
                   </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground italic">Sin notas todavía</p>
                 )}
 
                 {/* Inline note input */}
@@ -746,87 +749,155 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                     onChange={(e) => setQuickNote(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleSaveNote(); }}
                     placeholder="Agregar nota rápida..."
-                    className="flex-1 px-3 py-1.5 rounded-xl border border-border/40 bg-muted/20 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40"
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
                   />
                   <button
                     onClick={handleSaveNote}
                     disabled={!quickNote.trim() || savingNote}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-foreground/10 border border-foreground/20 text-xs font-medium text-foreground hover:bg-foreground/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                   >
                     {savingNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                   </button>
                 </div>
               </div>
 
-              {/* Tasks — compact checklist */}
-              <div className="space-y-1.5">
+              {/* Tasks — checklist with assignee */}
+              <div className="space-y-2 rounded-xl border border-border/60 bg-muted/30 p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                    <ListChecks className="w-3.5 h-3.5" />
-                    Tareas {pendingTasks.length > 0 && <span className="text-amber-400/80 text-[10px]">· {pendingTasks.length} pendientes</span>}
+                  <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <ListChecks className="w-3.5 h-3.5 text-primary" />
+                    Tareas
+                    {pendingTasks.length > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold">
+                        {pendingTasks.length} pendientes
+                      </span>
+                    )}
                   </p>
                   {tasks.length > 3 && (
                     <button
                       onClick={() => { onClose(); navigate(`/hub/clients/${profile.id}?tab=tareas`); }}
-                      className="text-[10px] text-primary hover:text-primary/80 transition-colors"
+                      className="text-[10px] text-primary hover:text-primary/80 transition-colors font-medium"
                     >
                       Ver todas →
                     </button>
                   )}
                 </div>
                 {pendingTasks.length > 0 ? (
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     {pendingTasks.slice(0, 3).map((t) => (
-                      <button
+                      <div
                         key={t.id}
-                        onClick={() => handleToggleTask(t.id, t.status)}
-                        className="flex items-center gap-2 text-xs w-full text-left group hover:bg-muted/20 rounded-lg px-2 py-1 transition-colors"
+                        className="flex items-center gap-2 text-xs w-full text-left group hover:bg-background/60 rounded-lg px-2 py-1.5 transition-colors"
                       >
-                        <Square className="w-3 h-3 text-muted-foreground group-hover:text-primary shrink-0" />
-                        <span className="flex-1 truncate text-foreground/80">{t.title}</span>
+                        <button
+                          onClick={() => handleToggleTask(t.id, t.status)}
+                          className="shrink-0"
+                          title="Marcar completada"
+                        >
+                          <Square className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors" />
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate text-foreground">{t.title}</p>
+                          {t.assigned_to_name && (
+                            <p className="text-[10px] text-primary/80 truncate flex items-center gap-1">
+                              <UserRound className="w-2.5 h-2.5" />
+                              {t.assigned_to_name}
+                            </p>
+                          )}
+                        </div>
                         {t.due_date && (
-                          <span className={`text-[10px] shrink-0 ${new Date(t.due_date) < new Date() ? "text-destructive" : "text-muted-foreground/50"}`}>
+                          <span className={`text-[10px] shrink-0 font-medium ${new Date(t.due_date) < new Date() ? "text-destructive" : "text-muted-foreground"}`}>
                             {new Date(t.due_date).toLocaleDateString("es", { day: "numeric", month: "short" })}
                           </span>
                         )}
-                      </button>
+                      </div>
                     ))}
                   </div>
                 ) : tasks.length > 0 ? (
-                  <p className="text-[10px] text-muted-foreground/50 pl-1">✓ Todas completadas</p>
-                ) : null}
-                <div className="space-y-1.5">
+                  <p className="text-[11px] text-muted-foreground italic">✓ Todas completadas</p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground italic">Sin tareas todavía</p>
+                )}
+
+                {/* Inline new task */}
+                <div className="space-y-1.5 pt-1 border-t border-border/40">
                   <div className="flex items-center gap-2">
                     <input
                       value={newTaskTitle}
                       onChange={(e) => setNewTaskTitle(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") handleAddTask(); }}
                       placeholder="Nueva tarea..."
-                      className="flex-1 px-3 py-1.5 rounded-xl border border-border/40 bg-muted/20 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40"
+                      className="flex-1 px-3 py-1.5 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
                     />
                     <button
                       onClick={handleAddTask}
                       disabled={!newTaskTitle.trim() || savingTask}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-foreground/10 border border-foreground/20 text-xs font-medium text-foreground hover:bg-foreground/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                     >
                       {savingTask ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
                     </button>
                   </div>
                   {newTaskTitle.trim() && (
-                    <div className="flex items-center gap-2 pl-1">
-                      <Clock className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-                      <input
-                        type="date"
-                        value={newTaskDueDate}
-                        onChange={(e) => setNewTaskDueDate(e.target.value)}
-                        className="px-2 py-1 rounded-lg border border-border/40 bg-muted/20 text-[11px] text-foreground focus:outline-none focus:border-primary/40"
-                      />
-                      <input
-                        type="time"
-                        value={newTaskDueTime}
-                        onChange={(e) => setNewTaskDueTime(e.target.value)}
-                        className="px-2 py-1 rounded-lg border border-border/40 bg-muted/20 text-[11px] text-foreground focus:outline-none focus:border-primary/40 w-[90px]"
-                      />
+                    <div className="flex items-center gap-2 pl-1 flex-wrap">
+                      {/* Assignee selector */}
+                      <Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className="flex items-center gap-1 px-2 py-1 rounded-md border border-border bg-background text-[11px] text-foreground hover:bg-muted transition-colors"
+                          >
+                            <UserRound className="w-3 h-3" />
+                            <span className="truncate max-w-[100px]">
+                              {selectedAssignee?.full_name || "Asignar a"}
+                            </span>
+                            <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-1" align="start">
+                          <button
+                            onClick={() => { setNewTaskAssignee(null); setAssigneeOpen(false); }}
+                            className="w-full text-left px-2 py-1.5 text-xs rounded-md hover:bg-accent/10 text-muted-foreground"
+                          >
+                            Sin asignar
+                          </button>
+                          {members.map((m) => (
+                            <button
+                              key={m.user_id}
+                              onClick={() => { setNewTaskAssignee(m.user_id); setAssigneeOpen(false); }}
+                              className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-accent/10 ${
+                                newTaskAssignee === m.user_id ? "bg-accent/10 font-medium" : ""
+                              }`}
+                            >
+                              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold text-primary shrink-0">
+                                {(m.full_name || "?")[0].toUpperCase()}
+                              </div>
+                              <span className="truncate flex-1 text-left">{m.full_name || "Sin nombre"}</span>
+                              {newTaskAssignee === m.user_id && <Check className="w-3 h-3 text-primary" />}
+                            </button>
+                          ))}
+                          {members.length === 0 && (
+                            <p className="px-2 py-3 text-xs text-muted-foreground text-center">
+                              Cargando equipo...
+                            </p>
+                          )}
+                        </PopoverContent>
+                      </Popover>
+
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                        <input
+                          type="date"
+                          value={newTaskDueDate}
+                          onChange={(e) => setNewTaskDueDate(e.target.value)}
+                          className="px-2 py-1 rounded-md border border-border bg-background text-[11px] text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <input
+                          type="time"
+                          value={newTaskDueTime}
+                          onChange={(e) => setNewTaskDueTime(e.target.value)}
+                          className="px-2 py-1 rounded-md border border-border bg-background text-[11px] text-foreground focus:outline-none focus:border-primary w-[80px]"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
