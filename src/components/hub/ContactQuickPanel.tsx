@@ -762,20 +762,10 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                     Notas del equipo {timelineNotes.length > 0 && <span className="text-muted-foreground font-normal">({timelineNotes.length})</span>}
                   </p>
                   <div className="flex items-center gap-1.5">
-                    {locationId && (
-                      <button
-                        onClick={handleSyncGhl}
-                        disabled={importingNotes}
-                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all disabled:opacity-40"
-                        title="Sincronizar notas con GHL"
-                      >
-                        {importingNotes ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Download className="w-2.5 h-2.5" />}
-                      </button>
-                    )}
                     {timelineNotes.length > 1 && (
                       <button
                         onClick={() => { onClose(); navigate(`/hub/clients/${profile.id}?tab=notas`); }}
-                        className="text-[10px] text-primary hover:text-primary/80 transition-colors font-medium"
+                        className="text-[10px] text-foreground hover:text-foreground/80 transition-colors font-medium"
                       >
                         Ver todas →
                       </button>
@@ -785,7 +775,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
                 {/* Latest note preview */}
                 {timelineNotes.length > 0 ? (
-                  <div className="relative pl-3 border-l-2 border-primary/40">
+                  <div className="relative pl-3 border-l-2 border-border">
                     <p className="text-xs text-foreground leading-relaxed line-clamp-2">
                       {timelineNotes[0]}
                     </p>
