@@ -232,7 +232,7 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
       .eq("client_profile_id", id)
       .order("created_at", { ascending: false }).limit(3);
     const tasksP = supabase.from("case_tasks")
-      .select("id, title, status, due_date, priority, ghl_task_id")
+      .select("id, title, status, due_date, priority, ghl_task_id, assigned_to, assigned_to_name")
       .eq("client_profile_id", id)
       .is("case_id", null)
       .order("created_at", { ascending: false }).limit(5);
@@ -249,6 +249,37 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
     if (loadedProfile) {
       void ensureValidGhlContactId(loadedProfile, { silent: true });
     }
+    void loadMembers();
+  }
+
+  async function loadMembers() {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
+    const { data: mem } = await supabase
+      .from("account_members")
+      .select("account_id")
+      .eq("user_id", userData.user.id)
+      .limit(1)
+      .maybeSingle();
+    if (!mem?.account_id) return;
+    const { data: membersData } = await supabase
+      .from("account_members")
+      .select("user_id")
+      .eq("account_id", mem.account_id)
+      .eq("is_active", true);
+    if (!membersData) return;
+    const userIds = membersData.map((m) => m.user_id);
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", userIds);
+    const profMap = new Map((profs || []).map((p) => [p.user_id, p.full_name]));
+    setMembers(
+      membersData.map((m) => ({
+        user_id: m.user_id,
+        full_name: (profMap.get(m.user_id) as string | null) || null,
+      }))
+    );
   }
 
   const getName = (p: ProfileData) => {
