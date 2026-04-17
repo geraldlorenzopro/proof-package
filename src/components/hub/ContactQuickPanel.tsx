@@ -401,6 +401,12 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
           ? `${newTaskDueDate}T${newTaskDueTime || "17:00"}:00`
           : undefined;
 
+        // Resolve assignee name
+        const assigneeMember = newTaskAssignee
+          ? members.find((m) => m.user_id === newTaskAssignee)
+          : null;
+        const assigneeName = assigneeMember?.full_name || null;
+
         const { data: newTask, error } = await supabase.from("case_tasks").insert({
           account_id: mem.account_id,
           client_profile_id: profile.id,
@@ -409,14 +415,22 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
           created_by_name: (prof as any)?.full_name || "Usuario",
           priority: "normal",
           ...(dueValue ? { due_date: newTaskDueDate } : {}),
-        }).select("id, title, status, due_date, priority, ghl_task_id").single();
+          ...(newTaskAssignee
+            ? { assigned_to: newTaskAssignee, assigned_to_name: assigneeName }
+            : {}),
+        }).select("id, title, status, due_date, priority, ghl_task_id, assigned_to, assigned_to_name").single();
 
       if (!error && newTask) {
         setTasks(prev => [newTask as any, ...prev]);
         setNewTaskTitle("");
         setNewTaskDueDate("");
         setNewTaskDueTime("17:00");
-        toast.success("Tarea creada ✅");
+        setNewTaskAssignee(null);
+        toast.success(
+          assigneeName
+            ? `Tarea creada y asignada a ${assigneeName} ✅`
+            : "Tarea creada ✅"
+        );
 
         // Push task to GHL if contact is linked
         if (profile.ghl_contact_id) {
@@ -433,7 +447,8 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
                   ghl_contact_id: profile.ghl_contact_id,
                   title: newTaskTitle.trim(),
                   due_date: dueValue || undefined,
-                  assigned_to_name: (prof as any)?.full_name || undefined,
+                  assigned_to: newTaskAssignee || undefined,
+                  assigned_to_name: assigneeName || (prof as any)?.full_name || undefined,
                   status: "pending",
                 }),
               }
