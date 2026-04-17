@@ -1,0 +1,88 @@
+# Memory: index.md
+Updated: now
+
+# Project Memory
+
+## Core
+- **Architecture**: Direct Anthropic API (Haiku/Sonnet). Edge functions via Resend. Hub uses `max-w-6xl px-4`.
+- **Security & Multi-Tenant**: Strict RLS (`authenticated` & `account_id`). Edge functions mandate `supabase.auth.getUser()`. No `public` role access.
+- **Compliance (UPL)**: Use "Equipo/Representante" (not Especialista), "Consulta" (not Intake), "Contactos" (not Leads). AI has strict UPL constraints.
+- **Data Integrity**: Cases created ONLY via "Contrató" at Decision Gate. Unique clients via `(account_id, phone)` and `ghl_contact_id`. Hide `is_test=true`.
+- **Engineering Standards**: Centralized `logger.ts` (no `console.log` in prod). Title case names. Resolve accounts deterministically via `created_at ASC`.
+- **Animation**: No slide-up (y-translate) animations on pages. Use skeleton loading or opacity-only fades.
+- **Team Sync**: GHL is source of truth. `account_members.is_active` soft-delete via `sync-ghl-team`. Owner never deactivated.
+
+## Memories
+- [GHL Team Source of Truth](mem://architecture/ghl-as-source-of-truth-team-sync) — Soft-delete + magic link flow synced from GHL
+- [No Slide-Up Animations](mem://design/no-slide-up-animations) — Prefer skeleton loading over y-translate page animations
+- [Multi-tenant Isolation](mem://security/multi-tenant-isolation) — Strict RLS policies enforcing `account_id` and `authenticated` role
+- [Edge Functions Auth](mem://architecture/edge-functions-auth-standard) — Mandatory `account_id` and user auth validation in backend
+- [Global Route Protection](mem://security/global-route-protection) — Standardized `ProtectedRoute` redirecting to `/auth?redirect=[path]`
+- [RBAC System v2](mem://security/rbac-and-permissions-system-v2) — 7 roles managed via `usePermissions` and `account_members`
+- [PII Protection](mem://security/comprehensive-pii-protection-v2) — `logAccess` helper, strict visibility, session timeouts
+- [Production Logging](mem://security/production-logging-standard) — Use centralized `logger.ts`, no `console.log` in production
+- [Platform Admin](mem://architecture/platform-admin-centralization) — Admin logic via `admin-*` functions using `platform_admin` role
+- [Support Impersonation](mem://architecture/support-impersonation-workflow) — Admin impersonation of firm hubs with amber banner
+- [Routing Standards](mem://architecture/enterprise-routing-standards-v2) — Enterprise route hierarchy (/hub, /case-engine, /tools)
+- [Hybrid Tools Routing](mem://architecture/hybrid-tools-routing-strategy) — `/tools/*` public routes vs `/dashboard/*` protected
+- [Deterministic Auth](mem://architecture/deterministic-account-resolution-v4) — `user_account_id` SQL resolves via `created_at ASC`
+- [Atomic Intake Transaction](mem://architecture/atomic-intake-transaction) — `create_intake_with_profile` RPC for transactional integrity
+- [Inter-Component Chat](mem://architecture/inter-component-chat-trigger) — `camila:open` event for triggering AI chat
+- [Anthropic Provider](mem://architecture/ai-provider-anthropic-integration) — Direct API integration for Claude Haiku and Sonnet
+- [Unified AI Ethics](mem://features/ai/unified-agent-and-voice-intelligence) — AI UPL safeguards and mandatory disclaimers
+- [Camila Persona](mem://features/ai/camila-persona-identity) — Warm, brief Dominican/Latino Spanish, timezone aware
+- [Camila Stack](mem://architecture/camila-voice-ai-stack) — ElevenLabs WebSocket + OpenAI TTS
+- [ElevenLabs Constraint](mem://constraints/elevenlabs-voice-connection) — Prevent connection failures by avoiding 'overrides'
+- [Voice Context](mem://logic/voice-conversation-context-injection) — Inject 3000 chars of history into ElevenLabs sessions
+- [Mic Exclusivity](mem://logic/microphone-mutual-exclusivity) — Prevent conflicts between dictation and Voice Orb
+- [AI Platform Mechanics](mem://architecture/ai-agent-platform-mechanics) — Credit tracking via `check-credits`
+- [News Briefing](mem://features/hub/immigration-news-briefing) — Federal Register API + Haiku + Perplexity
+- [News Analysis](mem://features/ai/camila-news-analysis-logic) — 3-point structure for explaining legal news impact
+- [Felix AI Logic](mem://logic/felix-ai-suggestion-heuristics) — Suggest case types with >=40% confidence
+- [Unified Case Engine](mem://features/case-management/unified-case-engine-architecture) — 7-tab immersive workspace in `/case-engine/:id`
+- [CRM vs Case Engine](mem://architecture/crm-vs-case-engine-philosophy) — CRM profile (individual) vs Case Engine (legal workflow)
+- [Case Workflow](mem://logic/case-stage-and-assignment-workflow) — 11 standard pipeline stages taxonomy
+- [Process Tracking](mem://features/case-management/process-tracking-architecture-v2) — Linear process stepper with terminal states
+- [Smart Tagging](mem://features/case-management/smart-tagging-system-v2) — Semantic tags driving dashboard priority badges
+- [Case Creation Policy](mem://logic/case-creation-policy-delayed-v2) — Cases strictly created via 'Contrató' at Decision Gate
+- [Duplicate Prevention](mem://logic/case-duplication-prevention-policy) — Validation at Decision Gate preventing duplicate cases
+- [File Numbers](mem://logic/file-number-generation-standard) — Auto-generated format `MRVISA-YYYY-SEQ-INITIALS`
+- [Automated Onboarding](mem://features/case-management/automated-onboarding-logic-v2) — Auto tasks and WhatsApp handoff post-contraction
+- [Case Templates](mem://logic/case-template-composition-engine) — Dynamic data mapping to USCIS form combinations
+- [Task Flexibility](mem://features/case-management/task-system-flexibility) — Nullable `case_id` for commercial follow-ups
+- [Firm Visibility](mem://architecture/modelo-equipo-firmas-grandes) — Case access by `account_id`, assignment by `assigned_to`
+- [Hub Visibility Rules](mem://logic/hub-case-visibility-rules) — Filter completed/cancelled; limit non-owner views
+- [SLA Tracker](mem://features/hub/sla-tracker) — RFE 87 days, NOID 33 days deadline tracking
+- [Contact Lifecycle](mem://logic/crm-contact-lifecycle-management) — 5 stages (lead, prospect, client, inactive, former)
+- [Clients CRM](mem://features/hub/clients-management) — Centralized directory with specialized profile tabs
+- [Consultation Tracking](mem://features/hub/consultation-tracking-crm-v2) — Pipeline kanban stages for intake flow
+- [Pre-Intake Flow](mem://features/appointments/pre-intake-architecture) — Token-based public intake form syncing to DB
+- [Consultation Kanban](mem://features/hub/consultation-kanban-pipeline) — `@dnd-kit` implementation for the consultation flow
+- [Consultation Room UI](mem://features/hub/consultation-room-architecture) — 3-zone layout with autosave notes
+- [No Contract Logic](mem://logic/consultation-no-contract-outcome) — Scheduled follow-up tasks for unconverted leads
+- [Intake Prefill](mem://logic/intake-wizard-prefill-integrity) — Prevent duplicate profiles passing `client_profile_id`
+- [GHL Self-Service Auth](mem://architecture/ghl-integration-scaling-strategy) — Custom integration via `external_crm_key`
+- [GHL Scopes](mem://integrations/ghl-api-scope-constraints) — Requires Business API sub-account key
+- [GHL Deduping](mem://data/ghl-import-and-deduplication-logic) — Lead deduplication using `ghl_contact_id`
+- [GHL Import Criteria](mem://architecture/ghl-import-omission-criteria) — Ignore contacts lacking both phone and email
+- [GHL Source Normalizing](mem://logic/ghl-source-normalization) — Map raw GHL sources to canonical internal keys
+- [GHL Appointments](mem://logic/ghl-appointment-discovery-strategy) — Multi-endpoint fallback for calendar sync
+- [Webhook Onboarding](mem://logic/automated-onboarding-engine) — Automated transactional sequence via GHL webhooks
+- [Transactional Emails](mem://features/email/transactional-communication-system) — Resend API infrastructure via edge function
+- [Visa Bulletin](mem://logic/visa-bulletin-sync-architecture) — Edge function web scraping DOS dates
+- [UPL Terminology](mem://compliance/upl-terminology-standards) — Mandated vocabulary for legal compliance
+- [Readable Labels](mem://ui/hub/readable-labels-standards) — Map technical tags to friendly names via `TOPIC_LABELS`
+- [Name Formatting](mem://ui/standards/name-formatting) — Title Case standardization for UI and insertion
+- [Hub Auto-Login](mem://architecture/hub-auto-login-resilience) — Authentication retry logic and parameter cleanup
+- [Timezone Greetings](mem://logic/hub-greeting-timezone-logic) — Resolve greetings via native browser timezone
+- [External Link Checks](mem://features/hub/external-resource-confirmation-modal) — Modal confirmation for official resources
+- [Layout Unification](mem://ui/hub/layout-unification-standard) — Hub standard `max-w-6xl mx-auto px-4 py-6` wrapper
+- [Smart Forms Licensing](mem://security/smart-forms-seat-licensing) — Access checks using `useAppSeat` hook
+- [Efficiency Metrics](mem://business/efficiency-and-complexity-metrics) — Effort points tracking and efficiency clocks
+- [Voice Billing](mem://data/voice-usage-tracking-logic) — Track voice minutes used per account
+- [Onboarding Wizard](mem://features/hub/onboarding-wizard-system) — 4-step wizard generating mock office data
+- [Pagination Strategy](mem://data/clients-directory-pagination) — `range()` 500 batches and `head: true` counters
+- [Alerts Flow](mem://logic/hub-alert-and-metrics-data-flow) — Metrics extracted via `case_deadlines` and `case_stage_history`
+- [Client Integrity V2](mem://data/client-directory-integrity-v2) — Unique `(account_id, phone)`, test data exclusion
+- [Mr Visa Context](mem://context/mr-visa-account-details) — Hardcoded dev reference variables
+- [Unified Forms Architecture](mem://features/case-management/motor-cuestionario-unificado) — Generate a single questionnaire for multiple forms
