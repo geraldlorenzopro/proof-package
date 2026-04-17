@@ -61,6 +61,14 @@ interface TaskRecord {
   status: string;
   due_date: string | null;
   priority: string;
+  ghl_task_id?: string | null;
+  assigned_to?: string | null;
+  assigned_to_name?: string | null;
+}
+
+interface TeamMember {
+  user_id: string;
+  full_name: string | null;
 }
 
 const CHANNEL_LABELS: Record<string, string> = {
