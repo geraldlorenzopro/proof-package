@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { getCaseTypeLabel, normalizeClientName } from "@/lib/caseTypeLabels";
@@ -18,7 +18,6 @@ import { es } from "date-fns/locale";
 import HubLayout from "@/components/hub/HubLayout";
 import CasePipelineTracker, { type PipelineStage } from "@/components/case-engine/CasePipelineTracker";
 import CaseDecisionPanel from "@/components/case-engine/CaseDecisionPanel";
-import CaseNotesPanel from "@/components/case-engine/CaseNotesPanel";
 import CaseTasksPanel from "@/components/case-engine/CaseTasksPanel";
 import SidebarTasksCompact from "@/components/case-engine/SidebarTasksCompact";
 import SidebarNotesCompact from "@/components/case-engine/SidebarNotesCompact";
@@ -27,7 +26,6 @@ import CaseStageHistory from "@/components/case-engine/CaseStageHistory";
 import CaseIntakePanel, { IntakeBadge } from "@/components/case-engine/CaseIntakePanel";
 import ConsultationPanel, { ConsultationLiveBadge } from "@/components/case-engine/ConsultationPanel";
 import CaseEmailHistory from "@/components/case-engine/CaseEmailHistory";
-import CaseEmailSender from "@/components/case-engine/CaseEmailSender";
 import CaseAgentHistory from "@/components/case-engine/CaseAgentHistory";
 import CaseAgentPanel from "@/components/case-engine/CaseAgentPanel";
 import CaseFormsPanel from "@/components/case-engine/CaseFormsPanel";
@@ -63,14 +61,27 @@ function ShareCaseButton({ accessToken }: { accessToken: string }) {
   );
 }
 
-type TabId = "resumen" | "consulta" | "equipo" | "documentos" | "formularios" | "decision" | "historial";
+type TabId = "resumen" | "consulta" | "equipo" | "documentos" | "formularios" | "tareas" | "historial";
+
+const VALID_TABS: TabId[] = ["resumen", "consulta", "equipo", "documentos", "formularios", "tareas", "historial"];
 
 export default function CaseEnginePage() {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>("resumen");
+
+  const tabParam = searchParams.get("tab");
+  const activeTab: TabId = (tabParam && (VALID_TABS as string[]).includes(tabParam)) ? (tabParam as TabId) : "resumen";
+  const setActiveTab = useCallback((tab: TabId) => {
+    setSearchParams((prev: URLSearchParams) => {
+      const next = new URLSearchParams(prev);
+      if (tab === "resumen") next.delete("tab");
+      else next.set("tab", tab);
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   // Data state
   const [caseData, setCaseData] = useState<any>(null);
@@ -247,7 +258,7 @@ export default function CaseEnginePage() {
     { id: "equipo" as const, label: "Equipo", icon: Users },
     { id: "documentos" as const, label: "Documentos", icon: FolderOpen, count: evidenceCount },
     { id: "formularios" as const, label: "Formularios", icon: FileText, count: formsCount },
-    { id: "decision" as const, label: "Decisión", icon: AlertTriangle },
+    { id: "tareas" as const, label: "Tareas", icon: ListTodo, count: openTasks.length },
     { id: "historial" as const, label: "Historial", icon: Clock, count: stageHistory.length },
   ];
 
@@ -595,20 +606,13 @@ export default function CaseEnginePage() {
             />
           )}
 
-          {activeTab === "decision" && (
-            <div className="max-w-xl mx-auto">
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <CaseDecisionPanel
-                  currentStage={currentStage}
-                  stageEnteredAt={stageEnteredAt}
-                  ballInCourt={ballInCourt}
-                  activeTags={tags}
-                  openTaskCount={openTasks.length}
-                  stages={stages}
-                  currentStageSlug={currentStageSlug}
-                />
-              </div>
-            </div>
+          {activeTab === "tareas" && (
+            <CaseTasksPanel
+              tasks={tasks}
+              caseId={caseId!}
+              accountId={caseData.account_id}
+              onTaskChanged={loadCase}
+            />
           )}
 
           {activeTab === "historial" && (
