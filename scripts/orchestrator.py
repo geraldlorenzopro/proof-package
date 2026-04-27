@@ -25,8 +25,8 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 MAX_DEBATE_ROUNDS = int(os.environ.get("MAX_DEBATE_ROUNDS", "5"))
 MIN_DEBATE_ROUNDS = int(os.environ.get("MIN_DEBATE_ROUNDS", "3"))
 MAX_IMPL_ROUNDS = int(os.environ.get("MAX_IMPL_ROUNDS", "2"))
-MODEL_BUILDER = "claude-sonnet-4-5-20251001"
-MODEL_VALIDATOR = "claude-opus-4-5-20251001"
+MODEL_BUILDER = "claude-sonnet-4-6"
+MODEL_VALIDATOR = "claude-opus-4-7"
 
 BUILDER_ID = "🔨 NER BUILDER (Claude Sonnet)"
 VALIDATOR_ID = "🔍 NER VALIDATOR (Claude Opus)"
