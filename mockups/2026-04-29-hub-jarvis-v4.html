@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NER · Command Center v4 (15 agentes vivos)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --background: hsl(220 25% 6%);
+    --background-deep: hsl(220 35% 4%);
+    --foreground: hsl(210 30% 92%);
+    --card: hsla(220, 25%, 10%, 0.6);
+    --border: hsla(220, 30%, 22%, 0.4);
+    --border-strong: hsla(195, 100%, 50%, 0.2);
+    --muted-fg: hsl(210 15% 55%);
+
+    --jarvis: hsl(195 100% 50%);
+    --jarvis-soft: hsla(195, 100%, 50%, 0.1);
+    --jarvis-glow: hsla(195, 100%, 60%, 0.4);
+
+    --accent: hsl(43 85% 52%);
+    --accent-soft: hsla(43, 85%, 52%, 0.1);
+
+    --destructive: hsl(0 72% 55%);
+    --emerald: hsl(158 64% 45%);
+    --violet: hsl(265 70% 65%);
+    --pink: hsl(335 75% 65%);
+  }
+
+  html, body {
+    font-family: 'Inter', sans-serif;
+    background: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse at 50% 50%, hsla(195, 100%, 50%, 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 100%, hsla(43, 85%, 52%, 0.03) 0%, transparent 40%),
+      radial-gradient(ellipse at 80% 0%, hsla(195, 100%, 50%, 0.06) 0%, transparent 40%),
+      var(--background);
+    position: relative;
+  }
+
+  /* SVG icons inline reusables */
+  .ico { width: 14px; height: 14px; stroke-width: 1.75; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .ico-lg { width: 18px; height: 18px; stroke-width: 1.5; }
+
+  /* ═══ Particles ═══ */
+  .particles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .particle {
+    position: absolute;
+    width: 2px; height: 2px;
+    background: var(--jarvis);
+    border-radius: 50%;
+    opacity: 0;
+    animation: float 12s infinite linear;
+    box-shadow: 0 0 6px var(--jarvis);
+  }
+  @keyframes float {
+    0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+    10% { opacity: 0.5; }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(-10vh) translateX(40px); opacity: 0; }
+  }
+
+  /* ═══ TOP BAR ═══ */
+  .topbar {
+    position: relative;
+    z-index: 10;
+    height: 52px;
+    background: linear-gradient(180deg, var(--background) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 20px;
+    backdrop-filter: blur(8px);
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    font-size: 14px;
+    color: var(--jarvis);
+    text-shadow: 0 0 12px hsla(195, 100%, 50%, 0.5);
+  }
+  .logo-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--jarvis);
+    box-shadow: 0 0 12px var(--jarvis);
+    animation: breathing 3s ease-in-out infinite;
+  }
+  @keyframes breathing {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+  .system-status {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; color: var(--emerald);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.12em;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--emerald);
+    box-shadow: 0 0 8px var(--emerald);
+    animation: breathing 2s ease-in-out infinite;
+  }
+  .topbar-center {
+    flex: 1; text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px; color: var(--muted-fg);
+    letter-spacing: 0.18em;
+  }
+  .topbar-time {
+    color: var(--jarvis);
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .agents-count {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px;
+    background: var(--jarvis-soft);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--jarvis);
+  }
+  .agents-count-num { color: var(--emerald); font-weight: 700; }
+
+  /* ═══ MAIN GRID ═══ */
+  .main {
+    position: relative;
+    z-index: 5;
+    height: calc(100vh - 52px);
+    display: grid;
+    grid-template-columns: 260px 1fr 260px;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  /* ═══ PANEL BASE ═══ */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    backdrop-filter: blur(12px);
+  }
+  .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    color: var(--muted-fg);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title::before {
+    content: ""; width: 12px; height: 1px; background: var(--jarvis);
+  }
+  .panel-title .badge {
+    margin-left: auto;
+    background: var(--jarvis-soft);
+    color: var(--jarvis);
+    border: 1px solid var(--border-strong);
+    font-family: inherit;
+    font-size: 8px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* ═══ ARSENAL (left) ═══ */
+  .arsenal { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+  .arsenal-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 3px;
+  }
+  .arsenal-item:hover {
+    background: hsla(195, 100%, 50%, 0.06);
+    transform: translateX(2px);
+  }
+  .arsenal-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--jarvis-soft);
+    color: var(--jarvis);
+    border: 1px solid var(--border-strong);
+    flex-shrink: 0;
+  }
+  .arsenal-item.gold .arsenal-icon {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: hsla(43, 85%, 52%, 0.2);
+  }
+  .arsenal-name {
+    font-size: 11px; font-weight: 500;
+    color: var(--foreground);
+    line-height: 1.2;
+  }
+  .arsenal-sub {
+    font-size: 9px;
+    color: var(--muted-fg);
+    line-height: 1.2;
+    margin-top: 1px;
+  }
+  .arsenal-text { flex: 1; min-width: 0; }
+  .arsenal-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  /* ═══ STAGE — Camila center ═══ */
+  .stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 14px;
+    background:
+      radial-gradient(ellipse at 50% 50%, hsla(195, 100%, 50%, 0.04) 0%, transparent 60%),
+      var(--card);
+    border: 1px solid var(--border);
+  }
+  .constellation {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Connection lines SVG */
+  .connections {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .conn-line {
+    stroke-dasharray: 4 6;
+    stroke-width: 1;
+    fill: none;
+    animation: dash 30s linear infinite;
+  }
+  @keyframes dash {
+    to { stroke-dashoffset: -100; }
+  }
+
+  /* Orbit rings */
+  .orbit {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid hsla(195, 100%, 50%, 0.05);
+    animation: rotate 80s linear infinite;
+    pointer-events: none;
+  }
+  .orbit-2 { animation-duration: 130s; animation-direction: reverse; }
+  .orbit-3 { animation-duration: 60s; }
+  @keyframes rotate { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+  /* ── CAMILA ORBE central ── */
+  .camila-orbe {
+    position: relative;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 30%, hsla(195, 100%, 70%, 0.4) 0%, transparent 50%),
+      radial-gradient(circle, hsla(195, 100%, 50%, 0.3) 0%, hsla(195, 100%, 50%, 0.05) 70%, transparent 100%);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    box-shadow:
+      0 0 60px hsla(195, 100%, 50%, 0.3),
+      inset 0 0 40px hsla(195, 100%, 50%, 0.2);
+    animation: camila-breathe 4s ease-in-out infinite;
+  }
+  @keyframes camila-breathe {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 60px hsla(195, 100%, 50%, 0.3), inset 0 0 40px hsla(195, 100%, 50%, 0.2); }
+    50% { transform: scale(1.04); box-shadow: 0 0 100px hsla(195, 100%, 50%, 0.5), inset 0 0 60px hsla(195, 100%, 50%, 0.3); }
+  }
+  .camila-orbe::before {
+    content: ""; position: absolute; inset: -8px;
+    border-radius: 50%;
+    border: 1px solid hsla(195, 100%, 50%, 0.4);
+    animation: camila-ring 3s ease-out infinite;
+  }
+  @keyframes camila-ring {
+    0% { transform: scale(0.95); opacity: 0.8; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+  .camila-core {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, hsla(195, 100%, 80%, 0.9) 0%, hsla(195, 100%, 50%, 0.6) 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: white;
+    box-shadow: 0 0 40px hsla(195, 100%, 70%, 0.6);
+  }
+  .camila-name {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700; font-size: 16px;
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 12px white;
+  }
+  .camila-status {
+    font-size: 8px;
+    color: hsla(195, 100%, 95%, 0.9);
+    margin-top: 3px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  /* ─── AGENT ORBE ─── */
+  .agent {
+    position: absolute;
+    width: 56px; height: 56px;
+    z-index: 4;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    animation: drift 8s ease-in-out infinite;
+  }
+  .agent:nth-child(odd) { animation-direction: reverse; }
+  .agent:nth-child(3n) { animation-duration: 10s; }
+  .agent:nth-child(5n) { animation-duration: 12s; }
+  @keyframes drift {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(3px, -2px); }
+    50% { transform: translate(-2px, 3px); }
+    75% { transform: translate(2px, 2px); }
+  }
+  .agent:hover { transform: scale(1.15) translate(0,0); z-index: 6; }
+
+  .agent-orbe {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: hsla(220, 25%, 10%, 0.92);
+    border: 1.5px solid hsla(195, 100%, 50%, 0.4);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--jarvis);
+    box-shadow: 0 0 16px hsla(195, 100%, 50%, 0.2);
+    transition: all 0.2s;
+    margin: 0 auto;
+  }
+  .agent.gold .agent-orbe { border-color: hsla(43, 85%, 52%, 0.45); box-shadow: 0 0 16px hsla(43, 85%, 52%, 0.2); color: var(--accent); }
+  .agent.violet .agent-orbe { border-color: hsla(265, 70%, 65%, 0.45); box-shadow: 0 0 16px hsla(265, 70%, 65%, 0.2); color: var(--violet); }
+  .agent.emerald .agent-orbe { border-color: hsla(158, 64%, 45%, 0.45); box-shadow: 0 0 16px hsla(158, 64%, 45%, 0.2); color: var(--emerald); }
+  .agent.pink .agent-orbe { border-color: hsla(335, 75%, 65%, 0.45); box-shadow: 0 0 16px hsla(335, 75%, 65%, 0.2); color: var(--pink); }
+
+  /* Working state — pulse extra + glow más fuerte */
+  .agent.working .agent-orbe {
+    border-color: var(--jarvis);
+    box-shadow:
+      0 0 24px var(--jarvis),
+      0 0 48px hsla(195, 100%, 50%, 0.4);
+    animation: agent-working 1.6s ease-in-out infinite;
+  }
+  .agent.working.gold .agent-orbe {
+    border-color: var(--accent);
+    box-shadow: 0 0 24px var(--accent), 0 0 48px hsla(43, 85%, 52%, 0.4);
+  }
+  @keyframes agent-working {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  .agent.working::after {
+    content: "";
+    position: absolute;
+    top: -2px; left: 50%;
+    width: 8px; height: 8px;
+    background: var(--emerald);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--emerald);
+    transform: translateX(-50%);
+    animation: working-dot 1s ease-in-out infinite;
+    z-index: 5;
+  }
+  @keyframes working-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .agent-label {
+    text-align: center;
+    margin-top: 4px;
+  }
+  .agent-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    color: hsla(210, 30%, 90%, 0.85);
+    letter-spacing: 0.1em;
+    line-height: 1;
+  }
+  .agent.gold .agent-name { color: var(--accent); }
+  .agent.violet .agent-name { color: var(--violet); }
+  .agent.emerald .agent-name { color: var(--emerald); }
+  .agent.pink .agent-name { color: var(--pink); }
+  .agent-spec {
+    font-size: 8px;
+    color: var(--muted-fg);
+    line-height: 1;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  /* Greeting & input */
+  .stage-overlay {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    margin-top: 40px;
+  }
+  .stage-greeting {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: var(--jarvis);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    text-shadow: 0 0 12px hsla(195, 100%, 50%, 0.4);
+  }
+  .stage-name {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+  .stage-name span { color: var(--jarvis); }
+  .stage-subtitle {
+    font-size: 12px;
+    color: var(--muted-fg);
+    margin-bottom: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  .command-input {
+    width: 100%;
+    max-width: 520px;
+    background: hsla(220, 25%, 8%, 0.85);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px hsla(195, 100%, 50%, 0.1);
+    transition: all 0.2s;
+  }
+  .command-input:focus-within {
+    border-color: var(--jarvis);
+    box-shadow: 0 8px 40px hsla(195, 100%, 50%, 0.2);
+  }
+  .command-input input {
+    flex: 1;
+    background: transparent; border: 0;
+    color: var(--foreground);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+  }
+  .command-input input::placeholder { color: hsla(210, 30%, 90%, 0.4); }
+  .command-icon-btn {
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    background: var(--jarvis-soft);
+    border: 1px solid var(--border-strong);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--jarvis);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .command-icon-btn:hover {
+    background: hsla(195, 100%, 50%, 0.2);
+  }
+  .command-icon-btn.primary {
+    background: var(--jarvis); color: white;
+  }
+
+  .quick-prompts {
+    display: flex;
+    gap: 6px;
+    margin-top: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .quick-prompt {
+    background: hsla(220, 25%, 10%, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: var(--muted-fg);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .quick-prompt:hover {
+    color: var(--jarvis);
+    border-color: var(--border-strong);
+    background: var(--jarvis-soft);
+  }
+
+  /* ═══ RIGHT panel ═══ */
+  .right-panel { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .stat-card {
+    background: hsla(220, 25%, 10%, 0.5);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 8px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::after {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--jarvis), transparent);
+    opacity: 0.4;
+  }
+  .stat-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--jarvis);
+    line-height: 1;
+    text-shadow: 0 0 12px hsla(195, 100%, 50%, 0.3);
+  }
+  .stat-num.gold { color: var(--accent); text-shadow: 0 0 12px hsla(43, 85%, 52%, 0.3); }
+  .stat-num.red {
+    color: var(--destructive);
+    text-shadow: 0 0 12px hsla(0, 72%, 51%, 0.3);
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { text-shadow: 0 0 12px hsla(0, 72%, 51%, 0.3); }
+    50% { text-shadow: 0 0 24px hsla(0, 72%, 51%, 0.6); }
+  }
+  .stat-label {
+    font-size: 8px;
+    color: var(--muted-fg);
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* Knowledge */
+  .knowledge-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 3px;
+  }
+  .knowledge-item:hover {
+    background: hsla(43, 85%, 52%, 0.06);
+    transform: translateX(2px);
+  }
+  .knowledge-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid hsla(43, 85%, 52%, 0.2);
+    flex-shrink: 0;
+  }
+  .knowledge-text { flex: 1; min-width: 0; }
+  .knowledge-name { font-size: 11px; font-weight: 500; color: var(--foreground); }
+  .knowledge-sub { font-size: 9px; color: var(--muted-fg); margin-top: 1px; }
+
+  /* Activity feed live */
+  .activity-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+    max-height: 220px;
+  }
+  .activity-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 11px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    animation: activity-in 0.4s ease-out;
+  }
+  @keyframes activity-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .activity-row:last-child { border-bottom: 0; }
+  .activity-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--emerald);
+    box-shadow: 0 0 8px var(--emerald);
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .activity-dot.gold { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .activity-dot.violet { background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+  .activity-dot.pink { background: var(--pink); box-shadow: 0 0 8px var(--pink); }
+  .activity-text { color: var(--muted-fg); flex: 1; line-height: 1.3; }
+  .activity-text strong {
+    color: var(--foreground);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+  }
+  .activity-time {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 8px;
+    color: var(--muted-fg);
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+
+  /* Urgent FAB */
+  .urgent-fab {
+    position: fixed;
+    bottom: 18px; right: 22px;
+    background: linear-gradient(135deg, hsla(0, 72%, 51%, 0.15), hsla(0, 72%, 51%, 0.05));
+    border: 1px solid hsla(0, 72%, 51%, 0.4);
+    border-radius: 14px;
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+    z-index: 20;
+    box-shadow: 0 8px 32px hsla(0, 72%, 51%, 0.2), 0 0 24px hsla(0, 72%, 51%, 0.3);
+    transition: transform 0.2s;
+    backdrop-filter: blur(12px);
+  }
+  .urgent-fab::before {
+    content: ""; position: absolute; inset: -1px;
+    border-radius: inherit;
+    border: 1px solid hsla(0, 72%, 51%, 0.5);
+    animation: pulse-border 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes pulse-border {
+    0%, 100% { opacity: 0; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.04); }
+  }
+  .urgent-fab:hover { transform: translateY(-2px); }
+  .urgent-icon {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    background: var(--destructive);
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    box-shadow: 0 4px 12px hsla(0, 72%, 51%, 0.5);
+  }
+  .urgent-text {
+    font-size: 11px;
+    color: hsl(0 72% 80%);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .urgent-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px; font-weight: 700;
+    color: var(--destructive);
+    line-height: 1;
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsla(195, 100%, 50%, 0.2); border-radius: 4px; }
+
+  @media (max-width: 1280px) {
+    .main { grid-template-columns: 220px 1fr 220px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SVG Icon Sprite (define once, use anywhere) -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
+    <symbol id="i-form" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6"/><path d="M9 13h6"/><path d="M9 17h3"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><path d="M16 16l3-8 3 8c-2 1-4 1-6 0z"/><path d="M2 16l3-8 3 8c-2 1-4 1-6 0z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+    <symbol id="i-brain" viewBox="0 0 24 24"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2z"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M19 14l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/><path d="M5 14l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-hammer" viewBox="0 0 24 24"><path d="M15 12l-8.5 8.5a2.12 2.12 0 1 1-3-3L12 9"/><path d="M17.64 15L22 10.64"/><path d="M20.91 11.7l-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86l-2.42-2.42a1 1 0 0 0-1.41 0l-3 3a1 1 0 0 0 0 1.41l2.42 2.42h.86c.85 0 1.65.33 2.25.93l1.25 1.25a2.12 2.12 0 0 0 3 0l1.25-1.25a2.12 2.12 0 0 0 0-3z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></symbol>
+    <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></symbol>
+    <symbol id="i-language" viewBox="0 0 24 24"><path d="M5 8h14"/><path d="M5 8c0 5 4 9 7 9s7-4 7-9"/><path d="M5 8c0-3 2-5 5-5s5 2 5 5"/><path d="M9 21l3-7 3 7"/></symbol>
+    <symbol id="i-mic2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13 1 .37 1.97.72 2.9a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.18-1.18a2 2 0 0 1 2.11-.45c.93.35 1.9.6 2.9.72A2 2 0 0 1 22 16.92z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></symbol>
+  </defs>
+</svg>
+
+<div class="particles" id="particles"></div>
+
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    NER · COMMAND
+  </div>
+  <div class="system-status">
+    <div class="status-dot"></div>
+    SYSTEM ONLINE
+  </div>
+  <div class="topbar-center">
+    <span>MIÉRCOLES · 29 ABRIL 2026</span>
+    <span class="topbar-time" id="clock">00:00:00</span>
+  </div>
+  <div class="agents-count">
+    <span class="agents-count-num">15</span> · AGENTES IA · <span style="color:var(--emerald)">3 ACTIVOS</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- LEFT — ARSENAL -->
+  <aside class="arsenal">
+    <div class="panel">
+      <div class="panel-title">FORMULARIOS USCIS <span class="badge">12</span></div>
+      <div class="arsenal-item">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">I-130 · Family Petition</div><div class="arsenal-sub">Diego pre-llena</div></div>
+        <span class="arsenal-num">130</span>
+      </div>
+      <div class="arsenal-item">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">I-485 · Adjustment</div><div class="arsenal-sub">Smart form activo</div></div>
+        <span class="arsenal-num">485</span>
+      </div>
+      <div class="arsenal-item">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">I-765 · Work Permit</div><div class="arsenal-sub">Wizard</div></div>
+        <span class="arsenal-num">765</span>
+      </div>
+      <div class="arsenal-item">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">I-589 · Asylum</div><div class="arsenal-sub">Disponible</div></div>
+        <span class="arsenal-num">589</span>
+      </div>
+      <div class="arsenal-item">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">N-400 · Naturalization</div><div class="arsenal-sub">+ Tomás Sim</div></div>
+        <span class="arsenal-num">400</span>
+      </div>
+      <div class="arsenal-item">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">I-129F · Fiancé</div><div class="arsenal-sub">K-1 visa</div></div>
+        <span class="arsenal-num">129F</span>
+      </div>
+      <div class="arsenal-item">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">I-751 · Remove Cond.</div><div class="arsenal-sub">Marriage cases</div></div>
+        <span class="arsenal-num">751</span>
+      </div>
+      <div class="arsenal-item">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">I-918 · U-Visa</div><div class="arsenal-sub">Crime victims</div></div>
+        <span class="arsenal-num">918</span>
+      </div>
+      <div class="arsenal-item">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">G-28 · Notice Entry</div><div class="arsenal-sub">Auto-firma</div></div>
+        <span class="arsenal-num">G28</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">EVALUACIONES IA <span class="badge">5</span></div>
+      <div class="arsenal-item gold">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-target"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">Visa Evaluator</div><div class="arsenal-sub">Max evalúa</div></div>
+      </div>
+      <div class="arsenal-item gold">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-shield"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">VAWA Screener</div><div class="arsenal-sub">Sofia analiza</div></div>
+      </div>
+      <div class="arsenal-item gold">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-clock"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">CSPA Calculator</div><div class="arsenal-sub">Nina calcula</div></div>
+      </div>
+      <div class="arsenal-item gold">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-scale"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">USCIS Analyzer</div><div class="arsenal-sub">Felix audita</div></div>
+      </div>
+      <div class="arsenal-item gold">
+        <div class="arsenal-icon"><svg class="ico"><use href="#i-mic"/></svg></div>
+        <div class="arsenal-text"><div class="arsenal-name">Interview Sim</div><div class="arsenal-sub">Tomás prepara</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER — STAGE -->
+  <main class="stage">
+
+    <div class="constellation">
+      <div class="orbit" style="width:340px;height:340px"></div>
+      <div class="orbit orbit-2" style="width:480px;height:480px"></div>
+      <div class="orbit orbit-3" style="width:620px;height:620px"></div>
+
+      <!-- Connection lines (drawn from Camila to working agents) -->
+      <svg class="connections" id="connections"></svg>
+
+      <!-- Camila -->
+      <div class="camila-orbe" id="camila">
+        <div class="camila-core">
+          <div class="camila-name">CAMILA</div>
+          <div class="camila-status">● Listening</div>
+        </div>
+      </div>
+
+      <!-- 14 agentes alrededor -->
+      <!-- Anillo interno (5) -->
+      <div class="agent working" data-id="felix" style="top: 14%; left: 24%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-doc"/></svg></div>
+        <div class="agent-label"><div class="agent-name">FELIX</div><div class="agent-spec">USCIS Docs</div></div>
+      </div>
+      <div class="agent gold working" data-id="max" style="top: 10%; right: 24%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-target"/></svg></div>
+        <div class="agent-label"><div class="agent-name">MAX</div><div class="agent-spec">Visa Eval</div></div>
+      </div>
+      <div class="agent violet working" data-id="nina" style="top: 36%; right: 8%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-clock"/></svg></div>
+        <div class="agent-label"><div class="agent-name">NINA</div><div class="agent-spec">CSPA</div></div>
+      </div>
+      <div class="agent emerald" data-id="sofia" style="top: 36%; left: 8%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-shield"/></svg></div>
+        <div class="agent-label"><div class="agent-name">SOFIA</div><div class="agent-spec">VAWA</div></div>
+      </div>
+      <div class="agent pink" data-id="lola" style="top: 50%; left: 4%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-mail"/></svg></div>
+        <div class="agent-label"><div class="agent-name">LOLA</div><div class="agent-spec">Email/Comms</div></div>
+      </div>
+
+      <!-- Anillo medio (5) -->
+      <div class="agent gold" data-id="diego" style="top: 56%; right: 4%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-form"/></svg></div>
+        <div class="agent-label"><div class="agent-name">DIEGO</div><div class="agent-spec">Forms I-130</div></div>
+      </div>
+      <div class="agent" data-id="lucia" style="top: 70%; right: 14%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-book"/></svg></div>
+        <div class="agent-label"><div class="agent-name">LUCIA</div><div class="agent-spec">Manuales</div></div>
+      </div>
+      <div class="agent violet" data-id="andrea" style="bottom: 14%; right: 30%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-zap"/></svg></div>
+        <div class="agent-label"><div class="agent-name">ANDREA</div><div class="agent-spec">RFE Resp.</div></div>
+      </div>
+      <div class="agent emerald" data-id="tomas" style="bottom: 14%; left: 30%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-mic2"/></svg></div>
+        <div class="agent-label"><div class="agent-name">TOMÁS</div><div class="agent-spec">Interview</div></div>
+      </div>
+      <div class="agent" data-id="pablo" style="top: 70%; left: 14%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-language"/></svg></div>
+        <div class="agent-label"><div class="agent-name">PABLO</div><div class="agent-spec">Affidavit</div></div>
+      </div>
+
+      <!-- Anillo externo (4 — orquestador + UX) -->
+      <div class="agent pink" data-id="mariana" style="top: 22%; left: 6%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-eye"/></svg></div>
+        <div class="agent-label"><div class="agent-name">MARIANA</div><div class="agent-spec">UX Vibe</div></div>
+      </div>
+      <div class="agent" data-id="gerald" style="top: 22%; right: 6%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-hammer"/></svg></div>
+        <div class="agent-label"><div class="agent-name">GERALD</div><div class="agent-spec">Builder</div></div>
+      </div>
+      <div class="agent emerald" data-id="victoria" style="bottom: 30%; right: 14%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-search"/></svg></div>
+        <div class="agent-label"><div class="agent-name">VICTORIA</div><div class="agent-spec">Auditor</div></div>
+      </div>
+      <div class="agent violet" data-id="vanessa" style="bottom: 30%; left: 14%;">
+        <div class="agent-orbe"><svg class="ico-lg"><use href="#i-eye"/></svg></div>
+        <div class="agent-label"><div class="agent-name">VANESSA</div><div class="agent-spec">UX Voice</div></div>
+      </div>
+    </div>
+
+    <div class="stage-overlay">
+      <div class="stage-greeting">◆ COMMAND CENTER · 15 AGENTES IA</div>
+      <div class="stage-name">Buenas noches, <span>Gerald</span></div>
+      <div class="stage-subtitle">Tu equipo está trabajando. ¿Qué hacemos hoy?</div>
+
+      <div class="command-input">
+        <input type="text" placeholder="Pregúntale a Camila lo que sea sobre tu oficina..." />
+        <div class="command-icon-btn"><svg class="ico"><use href="#i-mic2"/></svg></div>
+        <div class="command-icon-btn"><svg class="ico"><use href="#i-phone"/></svg></div>
+        <div class="command-icon-btn primary"><svg class="ico"><use href="#i-play"/></svg></div>
+      </div>
+
+      <div class="quick-prompts">
+        <div class="quick-prompt">¿Qué tengo urgente hoy?</div>
+        <div class="quick-prompt">Llenar I-130 nuevo</div>
+        <div class="quick-prompt">Buscar en USCIS Manual</div>
+        <div class="quick-prompt">Resumen firma</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- RIGHT — Stats + Knowledge + Activity -->
+  <aside class="right-panel">
+
+    <div class="panel">
+      <div class="panel-title">STATS · LIVE</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Casos</div></div>
+        <div class="stat-card"><div class="stat-num gold">4</div><div class="stat-label">Clientes</div></div>
+        <div class="stat-card"><div class="stat-num">0</div><div class="stat-label">Citas hoy</div></div>
+        <div class="stat-card"><div class="stat-num red">5</div><div class="stat-label">Urgentes</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">MANUALES LEGALES <span class="badge">6</span></div>
+      <div class="knowledge-item"><div class="knowledge-icon"><svg class="ico"><use href="#i-book"/></svg></div><div class="knowledge-text"><div class="knowledge-name">USCIS Policy Manual</div><div class="knowledge-sub">Lucia consulta</div></div></div>
+      <div class="knowledge-item"><div class="knowledge-icon"><svg class="ico"><use href="#i-book"/></svg></div><div class="knowledge-text"><div class="knowledge-name">Foreign Affairs Manual</div><div class="knowledge-sub">FAM · DOS</div></div></div>
+      <div class="knowledge-item"><div class="knowledge-icon"><svg class="ico"><use href="#i-book"/></svg></div><div class="knowledge-text"><div class="knowledge-name">8 CFR · Code of Reg.</div><div class="knowledge-sub">Federal</div></div></div>
+      <div class="knowledge-item"><div class="knowledge-icon"><svg class="ico"><use href="#i-book"/></svg></div><div class="knowledge-text"><div class="knowledge-name">NVC Procedures</div><div class="knowledge-sub">Visa Center</div></div></div>
+      <div class="knowledge-item"><div class="knowledge-icon"><svg class="ico"><use href="#i-list"/></svg></div><div class="knowledge-text"><div class="knowledge-name">Visa Bulletin</div><div class="knowledge-sub">Mensual</div></div></div>
+      <div class="knowledge-item"><div class="knowledge-icon"><svg class="ico"><use href="#i-scale"/></svg></div><div class="knowledge-text"><div class="knowledge-name">EOIR Practice</div><div class="knowledge-sub">Cortes</div></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">ACTIVIDAD VIVA <span class="badge" id="activity-count">●</span></div>
+      <div class="activity-feed" id="activity-feed">
+        <!-- generado dinámicamente -->
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+<div class="urgent-fab">
+  <div class="urgent-icon"><svg class="ico"><use href="#i-alert"/></svg></div>
+  <div>
+    <div class="urgent-num">5</div>
+    <div class="urgent-text">URGENTE HOY</div>
+  </div>
+</div>
+
+<script>
+  // ─── Reloj ───
+  function updateClock() {
+    const n = new Date();
+    document.getElementById('clock').textContent =
+      String(n.getHours()).padStart(2, '0') + ':' +
+      String(n.getMinutes()).padStart(2, '0') + ':' +
+      String(n.getSeconds()).padStart(2, '0');
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ─── Particles ───
+  const pContainer = document.getElementById('particles');
+  function spawnParticle() {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.animationDuration = (8 + Math.random() * 8) + 's';
+    pContainer.appendChild(p);
+    setTimeout(() => p.remove(), 16000);
+  }
+  setInterval(spawnParticle, 400);
+  for (let i = 0; i < 20; i++) setTimeout(spawnParticle, i * 100);
+
+  // ─── Connection lines from Camila to "working" agents ───
+  function drawConnections() {
+    const svg = document.getElementById('connections');
+    const camila = document.getElementById('camila');
+    if (!camila) return;
+    const cb = camila.getBoundingClientRect();
+    const stage = document.querySelector('.stage').getBoundingClientRect();
+    const cx = cb.left + cb.width / 2 - stage.left;
+    const cy = cb.top + cb.height / 2 - stage.top;
+
+    svg.innerHTML = '';
+    svg.setAttribute('width', stage.width);
+    svg.setAttribute('height', stage.height);
+
+    const workingAgents = document.querySelectorAll('.agent.working');
+    workingAgents.forEach(a => {
+      const ab = a.getBoundingClientRect();
+      const ax = ab.left + ab.width / 2 - stage.left;
+      const ay = ab.top + ab.height / 2 - stage.top;
+
+      const colorMap = {
+        'felix': 'hsl(195 100% 50%)',
+        'max': 'hsl(43 85% 52%)',
+        'nina': 'hsl(265 70% 65%)',
+      };
+      const id = a.dataset.id;
+      const color = colorMap[id] || 'hsl(195 100% 50%)';
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', cx);
+      line.setAttribute('y1', cy);
+      line.setAttribute('x2', ax);
+      line.setAttribute('y2', ay);
+      line.setAttribute('stroke', color);
+      line.setAttribute('stroke-opacity', '0.3');
+      line.setAttribute('class', 'conn-line');
+      svg.appendChild(line);
+    });
+  }
+  // redraw on load + window resize
+  window.addEventListener('load', () => setTimeout(drawConnections, 200));
+  window.addEventListener('resize', drawConnections);
+  setInterval(drawConnections, 5000); // recompute periódico (drift cambia posiciones)
+
+  // ─── Activity feed live ───
+  const activities = [
+    { agent: 'Felix', color: '', text: 'analizó 3 documentos de Pérez', sec: 0 },
+    { agent: 'Max', color: 'gold', text: 'evaluó eligibilidad VAWA caso Suárez', sec: 30 },
+    { agent: 'Nina', color: 'violet', text: 'calculó CSPA derivado García', sec: 90 },
+    { agent: 'Diego', color: 'gold', text: 'generó borrador I-130 listo', sec: 180 },
+    { agent: 'Lucia', color: '', text: 'consultó USCIS Manual sec. 7', sec: 240 },
+    { agent: 'Andrea', color: 'violet', text: 'detectó RFE en caso González', sec: 360 },
+    { agent: 'Sofia', color: 'pink', text: 'screening VAWA completo', sec: 420 },
+    { agent: 'Tomás', color: '', text: 'sesión interview N-400 finalizada', sec: 540 },
+    { agent: 'Pablo', color: 'pink', text: 'tradujo affidavit ES→EN', sec: 720 },
+    { agent: 'Lola', color: 'gold', text: 'envió 2 emails de seguimiento', sec: 900 },
+  ];
+  let activityIdx = 0;
+
+  function fmtTime(sec) {
+    if (sec < 60) return 'ahora';
+    if (sec < 3600) return Math.floor(sec / 60) + 'm';
+    return Math.floor(sec / 3600) + 'h';
+  }
+  function renderActivity() {
+    const feed = document.getElementById('activity-feed');
+    feed.innerHTML = '';
+    const items = [];
+    for (let i = 0; i < 5; i++) {
+      const a = activities[(activityIdx + i) % activities.length];
+      items.push(`
+        <div class="activity-row">
+          <div class="activity-dot ${a.color}"></div>
+          <div class="activity-text"><strong>${a.agent}</strong> ${a.text}</div>
+          <div class="activity-time">${fmtTime(a.sec + i * 12)}</div>
+        </div>
+      `);
+    }
+    feed.innerHTML = items.join('');
+  }
+  renderActivity();
+  setInterval(() => {
+    activityIdx = (activityIdx + 1) % activities.length;
+    renderActivity();
+  }, 7000); // rotación cada 7s
+</script>
+
+</body>
+</html>
