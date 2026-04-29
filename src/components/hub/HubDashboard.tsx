@@ -17,6 +17,7 @@ import NewContactModal from "../workspace/NewContactModal";
 
 
 import { Skeleton } from "@/components/ui/skeleton";
+import OperativeFeed from "./OperativeFeed";
 
 const OFFICIAL_RESOURCES = [
   { label: "Visa Bulletin", desc: "Fechas de prioridad del mes actual", url: "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html", source: "DOS", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
@@ -385,8 +386,8 @@ function HubDashboardInner({
 
   return (
     <>
-      {/* ═══ COCKPIT — fixed height, no scroll ═══ */}
-      <div className="h-screen w-full overflow-hidden flex items-center justify-center bg-background relative" style={{ width: "calc(100vw - 60px)" }}>
+      {/* ═══ COCKPIT — scrollable para que entre el Feed Operativo arriba ═══ */}
+      <div className="min-h-screen w-full overflow-y-auto flex items-start justify-center bg-background relative pt-6 pb-12" style={{ width: "calc(100vw - 60px)" }}>
 
         {/* Onboarding banner */}
         {showOnboardingBanner && !bannerDismissed && (
@@ -455,6 +456,11 @@ function HubDashboardInner({
               {greeting}, <span className="text-jarvis">{firstName}</span>
             </h1>
             <p className="text-muted-foreground/50 text-sm">Bienvenido a tu oficina virtual</p>
+          </div>
+
+          {/* ─── FEED OPERATIVO — lo más urgente del día ─── */}
+          <div className="w-full shrink-0">
+            <OperativeFeed accountId={accountId} staffName={staffName} />
           </div>
 
           {/* ─── ZONA B: Camila Input ─── */}
