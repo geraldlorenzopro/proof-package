@@ -21,9 +21,11 @@ CREATE INDEX IF NOT EXISTS idx_case_deadlines_account_date_active
   ON case_deadlines (account_id, deadline_date)
   WHERE status = 'active';
 
-CREATE INDEX IF NOT EXISTS idx_case_deadlines_overdue
-  ON case_deadlines (account_id, deadline_date)
-  WHERE status = 'active' AND deadline_date < CURRENT_DATE;
+-- NOTA: removed idx_case_deadlines_overdue porque CURRENT_DATE no es IMMUTABLE
+-- en Postgres y no se permite en index predicates. El índice de arriba
+-- (idx_case_deadlines_account_date_active) cubre las queries de "overdue"
+-- igual de bien — el query usa: WHERE status='active' AND deadline_date < $today
+-- y el planner usa el índice perfectamente.
 
 -- ═══ Tasks: tareas pendientes asignadas al usuario ═══
 CREATE INDEX IF NOT EXISTS idx_case_tasks_assigned_pending
