@@ -26,3 +26,8 @@ dist-ssr
 # Temporary files and scratch artifacts
 .tmp_*
 tmp/
+
+# Reportes del orquestador — generados por scripts/orchestrator.ts
+# Quedan locales por default (pueden tener decisiones sensibles).
+# Si querés commitear uno específico: git add -f .ai/reportes/<archivo>.md
+.ai/reportes/*.md
