@@ -83,13 +83,133 @@ async function runCodex(prompt: string): Promise<string> {
   }
 }
 
-// ─── Endpoint /task: stream SSE con los dos turnos ───────────────────────────
+// ─── Sistema de debate multi-ronda ───────────────────────────────────────────
+
+const NER_MISSION = `MISIÓN — NER Immigration AI:
+LA PRIMERA OFICINA VIRTUAL DE INMIGRACIÓN para firmas legales hispanas en USA.
+Multi-tenant SaaS, 8 firmas activas, $2,376 MRR creciendo.
+Stack: React + TypeScript + Tailwind + Supabase + GoHighLevel + Claude API.
+Domain: app.nerimmigration.com`;
+
+const NER_RULES = `Reglas NER (ambos respetamos):
+- Nunca hardcodear account_id, location_id o API keys
+- Siempre usar getGHLConfig(accountId) para llamadas a GHL
+- Tablas Supabase nuevas necesitan políticas RLS
+- Todo texto de UI debe estar en español
+- Soft delete: contact_stage = 'inactive' (nunca DELETE)
+- GHL push siempre fire-and-forget
+- toast.success/toast.error — nunca alert()`;
+
+const ROLE_BUILDER = `🔨 ERES BUILDER (Claude Sonnet 4.6).
+JERARQUÍA: igual que Validator (Codex). Ninguno tiene autoridad sobre el otro.
+
+TU PERSPECTIVA: ingeniero senior, pragmático, ship-oriented.
+- Propones soluciones técnicas concretas (cita archivos y líneas)
+- Defiendes decisiones cuando son sólidas — no aceptás ciegamente
+- Si Validator tiene razón → refinás tu propuesta
+- Si Validator exagera/se equivoca → defendés con argumentos técnicos
+- Si Validator levanta opinión válida pero no crítica → discutís, no aceptás por cortesía
+
+MARCADORES (usalos cuando aplique):
+- "ACUERDO: [punto]" — cuando aceptás un punto específico
+- "DESACUERDO: [punto] porque [razón técnica]" — cuando defendés tu posición
+- "PROPUESTA FINAL: [resumen]" — cuando creés que la solución está lista
+
+Sé conciso. No repitas lo que ya dijiste. Avanzá la conversación.`;
+
+const ROLE_VALIDATOR = `🔍 ERES VALIDATOR (Codex GPT-5).
+JERARQUÍA: igual que Builder (Claude). Ninguno tiene autoridad sobre el otro.
+
+TU PERSPECTIVA: arquitecto paranoico, edge-case-focused, security-first.
+- Encontrás bugs, violaciones NER, issues de seguridad/UX, edge cases
+- Sos específico: citás archivos, líneas, escenarios concretos
+- PERO si Builder defiende bien una decisión, lo reconocés (ACUERDO)
+- No criticás por criticar — solo issues legítimos
+- Distinguís blockers de nice-to-haves
+
+MARCADORES:
+- "ACUERDO: [punto]" — cuando concedés un punto al Builder
+- "🚫 BLOCKER: [issue]" — debe arreglarse antes de avanzar
+- "⚠️ WARNING: [issue]" — a considerar pero no bloqueante
+- "APROBADO" — cuando todos los blockers están resueltos
+- "LGTM" — forma corta de APROBADO
+
+Sé conciso. No repitas críticas anteriores ya resueltas.`;
+
+function buildContext(
+  task: string,
+  transcript: { role: string; content: string }[],
+  agent: "builder" | "validator",
+  round: number,
+  maxRounds: number,
+): string {
+  const role = agent === "builder" ? ROLE_BUILDER : ROLE_VALIDATOR;
+  let ctx = `${NER_MISSION}\n\n${role}\n\n${NER_RULES}\n\n`;
+
+  if (transcript.length > 0) {
+    ctx += "═══ CONVERSACIÓN HASTA AHORA ═══\n";
+    for (const turn of transcript) {
+      const tag =
+        turn.role === "user"
+          ? "[USUARIO]"
+          : turn.role === "builder"
+            ? "[🔨 BUILDER]"
+            : "[🔍 VALIDATOR]";
+      ctx += `\n${tag}:\n${turn.content}\n`;
+    }
+    ctx += "\n";
+  }
+
+  ctx += `═══ RONDA ${round} de ${maxRounds} ═══\n\n`;
+  ctx += `TAREA ORIGINAL: ${task}\n\n`;
+
+  if (round === 1) {
+    ctx +=
+      agent === "builder"
+        ? "Es la primera ronda. Propone una solución técnica concreta y específica. Cita archivos y líneas si aplica."
+        : "Builder propuso. Critica de forma específica y constructiva. Si todo está bien, decí LGTM.";
+  } else {
+    ctx +=
+      agent === "builder"
+        ? `Validator respondió en la ronda anterior. Considerá su feedback:\n- Si tiene razón en algo → refinás\n- Si no, defendés con argumentos\n- Si hay acuerdo en todos los puntos críticos → "PROPUESTA FINAL: ..."`
+        : `Builder respondió en la ronda anterior. Evaluá si abordó tus issues previos:\n- Si los blockers están resueltos → APROBADO\n- Si quedan blockers → especificá cuáles y por qué\n- Si solo quedan warnings → señalalos pero no bloquees`;
+  }
+
+  if (round === maxRounds) {
+    ctx +=
+      "\n\n⚠️ ESTA ES LA ÚLTIMA RONDA. Llegá a una conclusión: APROBADO/PROPUESTA FINAL o explicá explícitamente qué bloquea el consenso.";
+  }
+
+  ctx += "\n\nResponde en español. Sé conciso.";
+  return ctx;
+}
+
+// Detecta si el mensaje del Validator indica aprobación final
+function validatorApproves(text: string): boolean {
+  // APROBADO / LGTM al final, sin BLOCKERS nuevos
+  const hasApproval = /\b(APROBADO|LGTM)\b/i.test(text);
+  const hasBlocker = /🚫\s*BLOCKER|^\s*BLOCKER\s*:/im.test(text);
+  return hasApproval && !hasBlocker;
+}
+
+// Detecta si el mensaje del Builder indica propuesta final
+function builderFinal(text: string): boolean {
+  return /PROPUESTA\s+FINAL/i.test(text);
+}
+
+// ─── Endpoint /task: stream SSE multi-ronda ───────────────────────────────────
 
 async function handleTask(req: Request): Promise<Response> {
-  const { prompt, history } = (await req.json()) as {
+  const body = (await req.json()) as {
     prompt: string;
     history?: { role: string; content: string }[];
+    rounds?: number | "auto";
   };
+  const task = body.prompt;
+  const previousHistory = body.history ?? [];
+  const requestedRounds = body.rounds ?? "auto";
+  const maxRounds = typeof requestedRounds === "number" ? requestedRounds : 5;
+  const minRounds = 2;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -97,25 +217,79 @@ async function handleTask(req: Request): Promise<Response> {
       const send = (event: object) =>
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
 
-      try {
-        // Turno Builder (Claude)
-        send({ agent: "builder", status: "thinking" });
-        const builderPrompt = buildContext(prompt, history, "builder");
-        const builderResponse = await runClaude(builderPrompt);
-        send({ agent: "builder", status: "done", content: builderResponse });
+      // Transcript de ESTA debate (separado del history del usuario)
+      const transcript: { role: string; content: string }[] = [
+        ...previousHistory,
+        { role: "user", content: task },
+      ];
 
-        // Turno Validator (Codex)
-        send({ agent: "validator", status: "thinking" });
-        const validatorPrompt = buildContext(
-          prompt,
-          [...(history ?? []), { role: "builder", content: builderResponse }],
-          "validator",
-        );
-        const validatorResponse = await runCodex(validatorPrompt);
+      let consensus = false;
+      let roundsUsed = 0;
+
+      try {
+        for (let round = 1; round <= maxRounds; round++) {
+          roundsUsed = round;
+
+          // ── BUILDER ──
+          send({ agent: "builder", status: "thinking", round, maxRounds });
+          const builderPrompt = buildContext(
+            task,
+            transcript,
+            "builder",
+            round,
+            maxRounds,
+          );
+          const builderResp = await runClaude(builderPrompt);
+          send({
+            agent: "builder",
+            status: "done",
+            content: builderResp,
+            round,
+            maxRounds,
+          });
+          transcript.push({ role: "builder", content: builderResp });
+
+          // Si Builder dice "PROPUESTA FINAL" y ya pasamos el mínimo,
+          // Validator sigue jugando para confirmar
+          // ── VALIDATOR ──
+          send({ agent: "validator", status: "thinking", round, maxRounds });
+          const validatorPrompt = buildContext(
+            task,
+            transcript,
+            "validator",
+            round,
+            maxRounds,
+          );
+          const validatorResp = await runCodex(validatorPrompt);
+          send({
+            agent: "validator",
+            status: "done",
+            content: validatorResp,
+            round,
+            maxRounds,
+          });
+          transcript.push({ role: "validator", content: validatorResp });
+
+          // Detección de consenso (modo auto)
+          if (requestedRounds === "auto" && round >= minRounds) {
+            if (validatorApproves(validatorResp) && builderFinal(builderResp)) {
+              consensus = true;
+              break;
+            }
+            if (validatorApproves(validatorResp)) {
+              consensus = true;
+              break;
+            }
+          }
+        }
+
+        // Evento final de cierre
         send({
-          agent: "validator",
-          status: "done",
-          content: validatorResponse,
+          agent: "system",
+          status: "complete",
+          consensus,
+          roundsUsed,
+          maxRounds,
         });
       } catch (err) {
         send({
@@ -136,39 +310,6 @@ async function handleTask(req: Request): Promise<Response> {
       Connection: "keep-alive",
     },
   });
-}
-
-function buildContext(
-  prompt: string,
-  history: { role: string; content: string }[] | undefined,
-  agent: "builder" | "validator",
-): string {
-  const NER_RULES = `Reglas NER Immigration AI:
-- Nunca hardcodear account_id, location_id o API keys
-- Siempre usar getGHLConfig(accountId) para llamadas a GHL
-- Tablas Supabase nuevas necesitan políticas RLS
-- Todo texto de UI debe estar en español
-- Soft delete: contact_stage = 'inactive' (nunca DELETE)
-- GHL push siempre fire-and-forget
-- toast.success/toast.error — nunca alert()`;
-
-  const role =
-    agent === "builder"
-      ? "🔨 BUILDER — propones soluciones técnicas claras y específicas, citando archivos y líneas. Sé conciso."
-      : "🔍 VALIDATOR — eres paranoico. Encuentra bugs, edge cases, violaciones de reglas NER. Sé específico. Si todo está bien, di 'LGTM' y nada más.";
-
-  let ctx = `${role}\n\n${NER_RULES}\n\n`;
-
-  if (history && history.length > 0) {
-    ctx += "Conversación previa:\n";
-    for (const turn of history) {
-      ctx += `\n[${turn.role}]:\n${turn.content}\n`;
-    }
-    ctx += "\n";
-  }
-
-  ctx += `Tarea actual:\n${prompt}\n\nResponde en español.`;
-  return ctx;
 }
 
 // ─── Frontend: HTML embebido ─────────────────────────────────────────────────
@@ -344,6 +485,60 @@ const HTML = `<!DOCTYPE html>
     gap: 12px;
     align-items: flex-end;
   }
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+  }
+  .rounds-label {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  select:focus { outline: none; border-color: var(--builder); }
+  .round-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.08);
+    color: var(--muted);
+    margin-left: 8px;
+  }
+  .consensus-banner {
+    background: linear-gradient(135deg, rgba(63, 185, 80, 0.15), rgba(63, 185, 80, 0.05));
+    border: 1px solid rgba(63, 185, 80, 0.4);
+    color: var(--validator);
+    padding: 12px 16px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 8px 0;
+  }
+  .max-rounds-banner {
+    background: linear-gradient(135deg, rgba(210, 153, 34, 0.15), rgba(210, 153, 34, 0.05));
+    border: 1px solid rgba(210, 153, 34, 0.4);
+    color: var(--user);
+    padding: 12px 16px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 13px;
+    margin: 8px 0;
+  }
   textarea {
     flex: 1;
     background: var(--bg);
@@ -393,8 +588,11 @@ const HTML = `<!DOCTYPE html>
 <main id="chat">
   <div class="chat-inner" id="chat-inner">
     <div class="hint">
-      Escribe una tarea para que Builder y Validator debatan.<br>
-      Ej: "agregar error states a HubLeadsPage"
+      <strong>NER AI Orchestrator — debate iterativo</strong><br><br>
+      Builder y Validator (igual jerarquía) discuten tu tarea hasta llegar a consenso.<br>
+      Vos sos el filtro final — actuás solo cuando termina el debate.<br><br>
+      Empezá con una tarea, ej:<br>
+      <em>"Propone cómo agregar error states a HubLeadsPage.tsx"</em>
     </div>
   </div>
 </main>
@@ -406,13 +604,25 @@ const HTML = `<!DOCTYPE html>
       rows="2"
       autofocus
     ></textarea>
-    <button id="send">Enviar</button>
+    <div class="controls">
+      <label class="rounds-label">
+        Rondas
+        <select id="rounds">
+          <option value="auto" selected>auto (max 5)</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="5">5</option>
+        </select>
+      </label>
+      <button id="send">Enviar</button>
+    </div>
   </form>
 </footer>
 <script>
 const chatInner = document.getElementById('chat-inner');
 const promptInput = document.getElementById('prompt');
 const sendBtn = document.getElementById('send');
+const roundsSelect = document.getElementById('rounds');
 
 const history = []; // {role: 'user'|'builder'|'validator', content: string}
 
@@ -424,17 +634,24 @@ const META = {
   error:     { who: 'Error',                    avatar: '⚠️' },
 };
 
-function addMessage(agent, content) {
+function addMessage(agent, content, round, maxRounds) {
   const hint = chatInner.querySelector('.hint');
   if (hint) hint.remove();
 
   const m = META[agent] || META.system;
   const msg = document.createElement('div');
   msg.className = 'msg ' + agent;
+  const roundBadge = round
+    ? \`<span class="round-badge">Ronda \${round}\${maxRounds ? '/' + maxRounds : ''}</span>\`
+    : '';
   msg.innerHTML = \`
     <div class="avatar">\${m.avatar}</div>
     <div class="body">
-      <div class="meta"><span class="who">\${m.who}</span><span class="time">\${new Date().toLocaleTimeString('es', {hour: '2-digit', minute: '2-digit'})}</span></div>
+      <div class="meta">
+        <span class="who">\${m.who}</span>
+        <span class="time">\${new Date().toLocaleTimeString('es', {hour: '2-digit', minute: '2-digit'})}</span>
+        \${roundBadge}
+      </div>
       <div class="bubble"></div>
     </div>
   \`;
@@ -444,20 +661,31 @@ function addMessage(agent, content) {
   return msg;
 }
 
-function addTyping(agent) {
+function addTyping(agent, round, maxRounds) {
   const m = META[agent];
   const msg = document.createElement('div');
   msg.className = 'msg ' + agent;
+  const roundBadge = round
+    ? \`<span class="round-badge">Ronda \${round}\${maxRounds ? '/' + maxRounds : ''}</span>\`
+    : '';
   msg.innerHTML = \`
     <div class="avatar">\${m.avatar}</div>
     <div class="body">
-      <div class="meta"><span class="who">\${m.who}</span></div>
+      <div class="meta"><span class="who">\${m.who}</span>\${roundBadge}</div>
       <div class="bubble typing"><span></span><span></span><span></span></div>
     </div>
   \`;
   chatInner.appendChild(msg);
   scrollToBottom();
   return msg;
+}
+
+function addBanner(type, text) {
+  const banner = document.createElement('div');
+  banner.className = type === 'consensus' ? 'consensus-banner' : 'max-rounds-banner';
+  banner.textContent = text;
+  chatInner.appendChild(banner);
+  scrollToBottom();
 }
 
 function scrollToBottom() {
@@ -468,6 +696,9 @@ async function sendTask() {
   const prompt = promptInput.value.trim();
   if (!prompt || sendBtn.disabled) return;
 
+  const roundsVal = roundsSelect.value;
+  const rounds = roundsVal === 'auto' ? 'auto' : parseInt(roundsVal, 10);
+
   addMessage('user', prompt);
   history.push({ role: 'user', content: prompt });
 
@@ -475,14 +706,18 @@ async function sendTask() {
   sendBtn.disabled = true;
   promptInput.disabled = true;
 
-  let builderTyping = addTyping('builder');
-  let validatorTyping = null;
+  let currentTyping = null;
+  const removeTyping = () => { if (currentTyping) { currentTyping.remove(); currentTyping = null; } };
 
   try {
     const resp = await fetch('/task', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, history: history.slice(0, -1) }),
+      body: JSON.stringify({
+        prompt,
+        history: history.slice(0, -1),
+        rounds,
+      }),
     });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
 
@@ -501,28 +736,43 @@ async function sendTask() {
         if (!line.startsWith('data: ')) continue;
         const event = JSON.parse(line.slice(6));
 
+        // Error
         if (event.status === 'error') {
-          if (builderTyping) { builderTyping.remove(); builderTyping = null; }
-          if (validatorTyping) { validatorTyping.remove(); validatorTyping = null; }
+          removeTyping();
           addMessage('error', event.content);
           break;
         }
 
-        if (event.agent === 'builder' && event.status === 'done') {
-          if (builderTyping) { builderTyping.remove(); builderTyping = null; }
-          addMessage('builder', event.content);
-          history.push({ role: 'builder', content: event.content });
-          validatorTyping = addTyping('validator');
-        } else if (event.agent === 'validator' && event.status === 'done') {
-          if (validatorTyping) { validatorTyping.remove(); validatorTyping = null; }
-          addMessage('validator', event.content);
-          history.push({ role: 'validator', content: event.content });
+        // Cierre del debate
+        if (event.agent === 'system' && event.status === 'complete') {
+          removeTyping();
+          if (event.consensus) {
+            addBanner('consensus',
+              \`✅ Consenso alcanzado en ronda \${event.roundsUsed} de \${event.maxRounds}. Tu turno.\`);
+          } else {
+            addBanner('max-rounds',
+              \`⏱  Se agotaron las \${event.maxRounds} rondas sin consenso explícito. Revisá la conversación y decidí el próximo paso.\`);
+          }
+          continue;
+        }
+
+        // Thinking
+        if (event.status === 'thinking') {
+          removeTyping();
+          currentTyping = addTyping(event.agent, event.round, event.maxRounds);
+          continue;
+        }
+
+        // Done — Builder o Validator
+        if (event.status === 'done') {
+          removeTyping();
+          addMessage(event.agent, event.content, event.round, event.maxRounds);
+          history.push({ role: event.agent, content: event.content });
         }
       }
     }
   } catch (err) {
-    if (builderTyping) builderTyping.remove();
-    if (validatorTyping) validatorTyping.remove();
+    removeTyping();
     addMessage('error', err.message || String(err));
   } finally {
     sendBtn.disabled = false;
