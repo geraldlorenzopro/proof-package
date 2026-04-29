@@ -87,14 +87,144 @@ async function runCodex(prompt: string): Promise<string> {
 
 const NER_MISSION = `MISIÓN — NER Immigration AI:
 LA PRIMERA OFICINA VIRTUAL DE INMIGRACIÓN para firmas legales hispanas en USA.
-Multi-tenant SaaS, 8 firmas activas, $2,376 MRR creciendo.
-Stack: React + TypeScript + Tailwind + Supabase + GoHighLevel + Claude API.
-Domain: app.nerimmigration.com
+Domain: app.nerimmigration.com · MRR: $2,376 · Firmas activas: 8 · Plan: $297/firma/mes (flat).
 
-EL DUEÑO: Mr. Lorenzo (no es programador). Es el founder/CEO.
+EL DUEÑO: Mr. Lorenzo (founder/CEO, NO es programador).
 Construimos PARA él y los abogados de inmigración hispanos.
 Cuando hablen entre ustedes pueden ser técnicos.
 Cuando hagan el reporte final, hablen como asesores a un CEO.`;
+
+const NER_VISION = `═══ VISIÓN DEL PRODUCTO ═══
+
+EL PROBLEMA QUE RESOLVEMOS:
+Las firmas legales hispanas pequeñas (1-5 abogados) hoy operan con un Frankenstein:
+- GoHighLevel para CRM (leads, contactos, automation)
+- Excel para tracking de casos
+- WhatsApp para comunicación con clientes
+- Email para documentos
+- Carpetas de Drive/Dropbox para archivos
+- Calendly para citas
+Resultado: datos dispersos, casos perdidos, clientes que no saben en qué etapa están,
+paralegales perdiendo 30%+ del día copiando información entre sistemas.
+
+LO QUE NER ES:
+Una plataforma única que centraliza todo, con dos diferenciadores fuertes:
+1. Especialización profunda en inmigración (no legaltech genérica)
+2. AI agents conversacionales que automatizan tareas repetitivas
+
+USUARIOS REALES (en orden de uso diario):
+
+🟣 PARALEGAL HISPANA (35-50 años, 80% del uso diario):
+- Trabaja para 1-3 abogados, maneja 30-100 casos activos
+- Su día: emails al amanecer, WhatsApp todo el día, formularios USCIS,
+  escaneos, citas con USCIS, actualizar a clientes, llamar para cobrar
+- Frustraciones: copiar datos entre sistemas, perder docs en WhatsApp,
+  clientes llamando a las 9 PM
+- Cómo es: prefiere español, usa Mac (estética profesional), meticulosa,
+  baja tolerancia a bugs (es ella quien queda mal con el cliente)
+- DESDE QUÉ DISPOSITIVO: laptop principalmente, móvil para WhatsApp
+
+🟡 ABOGADO DUEÑO DE FIRMA (1-5 abogados, supervisor):
+- Audiencias en cortes de inmigración, depositions, llamadas con clientes
+  premium, decisión estratégica de casos
+- No quiere micromanage, sí quiere visibilidad de salud de la firma
+- Necesita: dashboard de métricas, alertas (deadlines USCIS, retrogrados),
+  control de calidad antes de submission
+
+🟢 CLIENTE FINAL (el inmigrante):
+- Habla español, baja sofisticación digital, ansioso por su caso
+- Usa el portal por móvil (95% de las visitas)
+- Necesita: ver en qué etapa está, qué falta, subir docs, sentirse acompañado
+
+CASOS QUE MANEJAN (saber esto es CRÍTICO para diseñar features):
+- VAWA (víctimas de violencia doméstica, alta sensibilidad)
+- U-Visa (víctimas de crimen)
+- Asilo afirmativo y defensivo
+- Naturalización (N-400)
+- Family-based (I-130, I-485, K-1)
+- Marriage-based (importante: bona fide marriage evidence)
+- B1/B2 (turismo/negocios)
+- TPS, DACA, NACARA
+- Removal Defense (cortes EOIR)
+- I-589 asilo
+- CSPA (Child Status Protection Act — proteger edad del derivado)
+
+VOLUMEN TÍPICO POR FIRMA:
+- 50-300 casos activos al mismo tiempo
+- 200-1000 contactos en CRM
+- 5-20 leads nuevos por semana
+- 1000-5000 documentos por año
+
+COMPETIDORES:
+
+🥇 MR VISA — competidor directo
+- También hispano, también inmigración
+- Más establecido, marca conocida
+- Le falta: AI agents, integración GHL nativa, herramientas específicas
+  como CSPA calculator, VAWA screener
+- Stack: tradicional, no IA
+
+🥈 CLIO MANAGE / MYCASE / PRACTICEPANTHER
+- Tradicionales, en inglés, no especializados en inmigración
+- Caros ($60-120/usuario/mes vs nuestro $297 flat)
+- Mr. Lorenzo no compite directamente con ellos — son para firmas medianas
+
+🥉 GHL SOLO
+- Muchas firmas usan solo GoHighLevel y se quedan ahí
+- Pero les falta: gestión de casos profesional, formularios USCIS,
+  herramientas IA, portal del cliente
+
+NER'S EDGE (defensa competitiva):
+1. Especialización profunda en inmigración (lenguaje, casos, regulaciones)
+2. AI agents: Camila (voz), Felix/Max/Nina (Claude agents), Codex (review)
+3. Spanish-first (UI, copy, soporte, voz)
+4. Plan flat $297/mes — democratiza para firmas con 5-15 personas
+5. Integración GHL nativa: NER es la capa inteligente que GHL no tiene
+6. Herramientas únicas: CSPA calculator, VAWA screener, Visa Bulletin
+   sync, USCIS Analyzer, Interview Simulator
+
+DECISIONES YA TOMADAS (no las cuestionen sin razón fuerte):
+- Multi-tenant via account_id en CADA tabla
+- GHL es la fuente de verdad de contactos (NER pulls)
+- Spanish primero, English como secundario
+- $297 flat (no per-seat) — democratización
+- Soft delete con contact_stage='inactive', nunca DELETE
+- RLS de Supabase enforced en TODAS las tablas
+- toast.success/error, nunca alert()`;
+
+const NER_TECH = `═══ ARQUITECTURA TÉCNICA ═══
+
+STACK:
+- Frontend: React 18 + TypeScript + Tailwind + Vite (bun como package manager)
+- Backend: Supabase (PostgreSQL + RLS + Edge Functions Deno)
+- CRM externo: GoHighLevel — fuente de leads/contactos, marketing automation
+- AI: Claude API (Anthropic), OpenAI API (Codex), ElevenLabs (Camila TTS/STT)
+- Hosting: Lovable (frontend dev), Supabase (backend)
+
+MULTI-TENANCY (estructura crítica):
+- ner_accounts: cada firma legal es un row aquí
+- account_members: usuarios pertenecen a uno o más accounts
+- account_id es columna en TODAS las tablas de datos
+- RLS verifica account_id en cada query
+- Plan flat $297/mes incluye usuarios ilimitados por account
+
+FLUJO DE DATOS GHL ↔ NER:
+1. Lead llega a GoHighLevel (via formularios, WhatsApp, ads)
+2. NER tiene cron jobs que sincronizan contactos
+3. Cuando un lead se convierte en cliente, se crea client_profile + client_case
+4. Updates fluyen bidireccional: tasks/notes de NER pushean a GHL
+5. Custom Menu Links de GHL abren páginas de NER autenticadas
+   (resolve-hub edge function valida cid+sig+ts y crea sesión Supabase)`;
+
+// Lee CLAUDE.md del repo cada vez (siempre fresco, no cacheado)
+async function getProjectState(): Promise<string> {
+  try {
+    const text = await Bun.file(`${ROOT}/CLAUDE.md`).text();
+    return `═══ ESTADO ACTUAL DEL REPO (de CLAUDE.md) ═══\n\n${text}`;
+  } catch {
+    return "═══ ESTADO ACTUAL DEL REPO ═══\n(CLAUDE.md no encontrado)";
+  }
+}
 
 const NER_RULES = `Reglas NER (ambos respetamos):
 - Nunca hardcodear account_id, location_id o API keys
@@ -147,16 +277,26 @@ MARCADORES:
 
 Sé conciso pero conversacional. Sos paranoica, no robótica.`;
 
-function buildContext(
+async function buildContext(
   task: string,
   transcript: { role: string; content: string }[],
   agent: "gerald" | "victoria",
   round: number,
   maxRounds: number,
-): string {
+): Promise<string> {
   const role = agent === "gerald" ? ROLE_GERALD : ROLE_VICTORIA;
   const otherName = agent === "gerald" ? "Victoria" : "Gerald";
-  let ctx = `${NER_MISSION}\n\n${role}\n\n${NER_RULES}\n\n`;
+  let ctx = `${NER_MISSION}\n\n`;
+
+  // En ronda 1: contexto completo (visión + tech + estado del repo).
+  // En rondas 2+: solo lo esencial — el contexto ya está en el transcript.
+  if (round === 1) {
+    ctx += `${NER_VISION}\n\n${NER_TECH}\n\n`;
+    const state = await getProjectState();
+    ctx += `${state}\n\n`;
+  }
+
+  ctx += `${role}\n\n${NER_RULES}\n\n`;
 
   if (transcript.length > 0) {
     ctx += "═══ CONVERSACIÓN HASTA AHORA ═══\n";
@@ -196,11 +336,11 @@ function buildContext(
   return ctx;
 }
 
-function buildReportContext(
+async function buildReportContext(
   task: string,
   transcript: { role: string; content: string }[],
-): string {
-  let ctx = `${NER_MISSION}\n\n`;
+): Promise<string> {
+  let ctx = `${NER_MISSION}\n\n${NER_VISION}\n\n`;
   ctx += `Sos GERALD (Claude). Acabas de cerrar un debate con Victoria sobre una tarea de Mr. Lorenzo.\n\n`;
   ctx += `AHORA CAMBIÁS DE ROL: ya no sos el constructor defendiendo tu propuesta.\n`;
   ctx += `Sos un asesor senior que escribe un reporte EJECUTIVO para Mr. Lorenzo (no programador, dueño de NER).\n\n`;
@@ -264,6 +404,55 @@ function builderFinal(text: string): boolean {
   return /PROPUESTA\s+FINAL/i.test(text);
 }
 
+// Convierte un texto a slug seguro para nombre de archivo
+function slugify(text: string, maxLen = 40): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // remueve acentos
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, maxLen);
+}
+
+// Guarda el reporte ejecutivo en .ai/reportes/<fecha>-<slug>.md
+async function saveReport(
+  task: string,
+  reportContent: string,
+  meta: { consensus: boolean; roundsUsed: number; maxRounds: number; totalMs: number },
+): Promise<string> {
+  const reportsDir = `${ROOT}/.ai/reportes`;
+  // Asegurar que el directorio existe
+  await Bun.$`mkdir -p ${reportsDir}`.quiet().nothrow();
+
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10); // YYYY-MM-DD
+  const time = now.toTimeString().slice(0, 5).replace(":", ""); // HHMM
+  const slug = slugify(task);
+  const filename = `${date}-${time}-${slug}.md`;
+  const path = `${reportsDir}/${filename}`;
+
+  const totalSec = (meta.totalMs / 1000).toFixed(1);
+  const status = meta.consensus
+    ? `✅ Consenso en ronda ${meta.roundsUsed} de ${meta.maxRounds}`
+    : `⏱ Sin consenso explícito (${meta.roundsUsed} rondas)`;
+
+  const fullDoc = `---
+fecha: ${now.toISOString()}
+tarea: ${JSON.stringify(task)}
+status: ${status}
+duracion: ${totalSec}s
+rondas: ${meta.roundsUsed}/${meta.maxRounds}
+---
+
+${reportContent}
+`;
+
+  await Bun.write(path, fullDoc);
+  // Devolvemos path relativo al repo para mostrarlo en la UI
+  return path.replace(ROOT, "").replace(/^\//, "");
+}
+
 // ─── Endpoint /task: stream SSE multi-ronda ───────────────────────────────────
 
 async function handleTask(req: Request): Promise<Response> {
@@ -300,7 +489,7 @@ async function handleTask(req: Request): Promise<Response> {
 
           // ── GERALD ──
           send({ agent: "gerald", status: "thinking", round, maxRounds });
-          const geraldPrompt = buildContext(
+          const geraldPrompt = await buildContext(
             task,
             transcript,
             "gerald",
@@ -322,7 +511,7 @@ async function handleTask(req: Request): Promise<Response> {
 
           // ── VICTORIA ──
           send({ agent: "victoria", status: "thinking", round, maxRounds });
-          const victoriaPrompt = buildContext(
+          const victoriaPrompt = await buildContext(
             task,
             transcript,
             "victoria",
@@ -356,17 +545,26 @@ async function handleTask(req: Request): Promise<Response> {
         }
 
         // ── REPORTE EJECUTIVO PARA Mr. LORENZO ──
-        // Solo se genera si hay consenso o si recorrimos las rondas máximas
         send({ agent: "report", status: "thinking" });
-        const reportPrompt = buildReportContext(task, transcript);
+        const reportPrompt = await buildReportContext(task, transcript);
         const reportT0 = Date.now();
         const reportResp = await runClaude(reportPrompt);
         const reportMs = Date.now() - reportT0;
+
+        // Auto-save del reporte a .ai/reportes/<fecha>-<slug>.md
+        const savedPath = await saveReport(task, reportResp, {
+          consensus,
+          roundsUsed,
+          maxRounds,
+          totalMs: Date.now() - debateStart,
+        });
+
         send({
           agent: "report",
           status: "done",
           content: reportResp,
           durationMs: reportMs,
+          savedPath,
         });
 
         // Evento final de cierre
@@ -704,6 +902,20 @@ const HTML = `<!DOCTYPE html>
     font-family: "SF Mono", Menlo, monospace;
     font-size: 13px;
   }
+  .report-card-footer {
+    background: rgba(88, 166, 255, 0.05);
+    border-top: 1px solid rgba(88, 166, 255, 0.15);
+    padding: 10px 20px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .report-card-footer code {
+    color: var(--builder);
+    background: rgba(0,0,0,0.3);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", Menlo, monospace;
+  }
   /* Modal de contexto */
   .modal-overlay {
     display: none;
@@ -1002,15 +1214,19 @@ function mdToHtml(md) {
   return html;
 }
 
-function addReport(content, durationMs) {
+function addReport(content, durationMs, savedPath) {
   const card = document.createElement('div');
   card.className = 'report-card';
+  const pathFooter = savedPath
+    ? \`<div class="report-card-footer">💾 Guardado en <code>\${savedPath}</code></div>\`
+    : '';
   card.innerHTML = \`
     <div class="report-card-header">
       <h2>📋 Reporte para Mr. Lorenzo</h2>
       <span class="duration">Gerald lo escribió en \${fmtMs(durationMs)}</span>
     </div>
     <div class="report-card-body"></div>
+    \${pathFooter}
   \`;
   card.querySelector('.report-card-body').innerHTML = mdToHtml(content);
   chatInner.appendChild(card);
@@ -1031,23 +1247,39 @@ async function openContext() {
     const data = await resp.json();
     body.innerHTML = \`
       <div class="ctx-section">
-        <h3>Misión del proyecto</h3>
+        <h3>1. Misión (siempre presente)</h3>
         <pre>\${data.mission}</pre>
       </div>
       <div class="ctx-section">
-        <h3>🛠 Gerald — el constructor</h3>
+        <h3>2. Visión del producto (solo en ronda 1 y reporte)</h3>
+        <pre>\${data.vision}</pre>
+      </div>
+      <div class="ctx-section">
+        <h3>3. Arquitectura técnica (solo en ronda 1)</h3>
+        <pre>\${data.tech}</pre>
+      </div>
+      <div class="ctx-section">
+        <h3>4. Estado actual del repo (CLAUDE.md, dinámico — solo en ronda 1)</h3>
+        <pre>\${data.projectState}</pre>
+      </div>
+      <div class="ctx-section">
+        <h3>5. 🛠 Gerald — su personalidad</h3>
         <pre>\${data.gerald}</pre>
       </div>
       <div class="ctx-section">
-        <h3>🔍 Victoria — la auditora</h3>
+        <h3>6. 🔍 Victoria — su personalidad</h3>
         <pre>\${data.victoria}</pre>
       </div>
       <div class="ctx-section">
-        <h3>Reglas que ambos siguen</h3>
+        <h3>7. Reglas que ambos siguen</h3>
         <pre>\${data.rules}</pre>
       </div>
       <div class="ctx-section">
-        <h3>⚠️ Lo que NO ven (transparencia)</h3>
+        <h3>8. Estrategia de contexto</h3>
+        <pre>\${data.contextStrategy}</pre>
+      </div>
+      <div class="ctx-section">
+        <h3>9. ⚠️ Lo que NO ven (transparencia)</h3>
         <ul>\${data.notSeen.map(s => '<li>' + s + '</li>').join('')}</ul>
       </div>
     \`;
@@ -1137,7 +1369,7 @@ async function sendTask() {
         if (event.status === 'done') {
           removeTyping();
           if (event.agent === 'report') {
-            addReport(event.content, event.durationMs);
+            addReport(event.content, event.durationMs, event.savedPath);
           } else {
             addMessage(event.agent, event.content, event.round, event.maxRounds, event.durationMs);
             history.push({ role: event.agent, content: event.content });
@@ -1190,19 +1422,26 @@ const server = Bun.serve({
       return handleTask(req);
     }
     if (url.pathname === "/contexto" && req.method === "GET") {
+      const projectState = await getProjectState();
       return new Response(
         JSON.stringify({
           mission: NER_MISSION,
+          vision: NER_VISION,
+          tech: NER_TECH,
+          projectState,
           rules: NER_RULES,
           gerald: ROLE_GERALD,
           victoria: ROLE_VICTORIA,
           notSeen: [
-            "El código real del repositorio (solo descripciones que vos les des en la tarea)",
-            "Datos en vivo de Supabase",
-            "Datos de GoHighLevel",
-            "Sesiones anteriores (cada conversación arranca limpia)",
+            "El código real del repositorio (solo CLAUDE.md y lo que vos describas)",
+            "Datos en vivo de Supabase (no consultan la BD directamente)",
+            "Datos en vivo de GoHighLevel",
+            "Sesiones anteriores con Mr. Lorenzo (cada conversación arranca limpia)",
             "Archivos del filesystem (a menos que les copies/pegues contenido)",
+            "Lo que pasó hoy en producción (no monitorean uptime ni errores)",
           ],
+          contextStrategy:
+            "En la ronda 1 reciben TODO (visión + tech + estado del repo). En rondas 2+ ya tienen el contexto en el transcript del debate, solo se les recuerda su rol + reglas.",
         }),
         { headers: { "Content-Type": "application/json; charset=utf-8" } },
       );
