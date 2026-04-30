@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NER Immigration AI · v5 (Linear meets Lexis)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ═══ Paleta NER v5 — sobria, profesional, dark mode ═══ */
+  :root {
+    --bg: hsl(222 18% 8%);              /* navy oscuro calmado */
+    --bg-sidebar: hsl(222 20% 6%);      /* sidebar más oscuro */
+    --bg-elevated: hsl(222 18% 11%);    /* cards/panels */
+    --bg-elevated-hover: hsl(222 18% 14%);
+
+    --border: hsl(222 15% 18%);
+    --border-soft: hsl(222 15% 14%);
+
+    --text: hsl(220 14% 92%);
+    --text-secondary: hsl(220 10% 70%);
+    --text-tertiary: hsl(220 8% 50%);
+    --text-quaternary: hsl(220 8% 38%);
+
+    /* Accents — sobrios, NO eléctricos */
+    --accent: hsl(199 70% 55%);          /* azul calmado tipo Linear */
+    --accent-soft: hsl(199 70% 55% / 0.1);
+    --accent-border: hsl(199 70% 55% / 0.25);
+
+    --gold: hsl(40 75% 55%);             /* dorado para legal accents */
+    --gold-soft: hsl(40 75% 55% / 0.1);
+
+    --success: hsl(142 60% 50%);
+    --warning: hsl(38 90% 55%);
+    --danger: hsl(0 70% 58%);
+
+    --shadow-sm: 0 1px 2px hsla(0, 0%, 0%, 0.3);
+    --shadow-md: 0 2px 8px hsla(0, 0%, 0%, 0.3);
+    --shadow-lg: 0 8px 24px hsla(0, 0%, 0%, 0.4);
+  }
+
+  html, body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    height: 100vh;
+    overflow: hidden;
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+  }
+
+  /* SVG icons — line style, sutil */
+  .ico { width: 14px; height: 14px; stroke-width: 1.75; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .ico-sm { width: 12px; height: 12px; }
+  .ico-lg { width: 16px; height: 16px; }
+
+  /* ═══ Layout principal ═══ */
+  .app {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    height: 100vh;
+  }
+
+  /* ═══ SIDEBAR ═══ */
+  .sidebar {
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-soft);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .sidebar-header {
+    padding: 16px 16px 14px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .sidebar-brand .logo-mark {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 11px;
+  }
+  .sidebar-brand-sub {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 400;
+    margin-top: 1px;
+  }
+  .sidebar-account {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    cursor: pointer;
+  }
+  .sidebar-account:hover { background: var(--bg-elevated-hover); }
+  .account-avatar {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(40 60% 15%);
+    font-weight: 700;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .account-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .account-name {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  .account-role {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    line-height: 1.2;
+  }
+
+  .sidebar-section {
+    padding: 12px 8px;
+  }
+  .sidebar-section + .sidebar-section {
+    border-top: 1px solid var(--border-soft);
+  }
+  .sidebar-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-quaternary);
+    font-weight: 600;
+    padding: 4px 8px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sidebar-label .count {
+    background: var(--bg-elevated);
+    color: var(--text-tertiary);
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 10px;
+    letter-spacing: 0;
+    font-weight: 500;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.12s ease;
+    font-size: 13px;
+    font-weight: 500;
+    position: relative;
+  }
+  .nav-item:hover {
+    background: var(--bg-elevated);
+    color: var(--text);
+  }
+  .nav-item.active {
+    background: var(--bg-elevated);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+  .nav-item.active::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+  }
+  .nav-item .badge {
+    margin-left: auto;
+    background: var(--bg-elevated-hover);
+    color: var(--text-tertiary);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .nav-item .badge.urgent {
+    background: hsl(0 70% 58% / 0.15);
+    color: var(--danger);
+  }
+
+  /* Equipo AI list (NO orbes flotando) */
+  .agent-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .agent-row:hover {
+    background: var(--bg-elevated);
+    color: var(--text);
+  }
+  .agent-row .agent-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-quaternary);
+    flex-shrink: 0;
+  }
+  .agent-row.online .agent-dot {
+    background: var(--success);
+    box-shadow: 0 0 6px hsl(142 60% 50% / 0.4);
+  }
+  .agent-row.working .agent-dot {
+    background: var(--accent);
+    box-shadow: 0 0 6px hsl(199 70% 55% / 0.6);
+    animation: pulse-dot 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .agent-row .agent-spec {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--text-quaternary);
+  }
+
+  /* ═══ CONTENT AREA ═══ */
+  .content {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+  .content-header {
+    padding: 24px 32px 20px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .greeting h1 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 2px;
+  }
+  .greeting p {
+    font-size: 13px;
+    color: var(--text-tertiary);
+  }
+  .header-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-icon {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .btn-icon:hover {
+    background: var(--bg-elevated-hover);
+    color: var(--text);
+  }
+
+  .content-body {
+    padding: 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 1100px;
+    width: 100%;
+  }
+
+  /* ─── Camila como command bar (NO orbe) ─── */
+  .command-bar {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow-md);
+    transition: border-color 0.15s;
+    cursor: text;
+  }
+  .command-bar:focus-within {
+    border-color: var(--accent-border);
+    box-shadow: var(--shadow-md), 0 0 0 3px var(--accent-soft);
+  }
+  .command-bar .camila-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .command-bar .camila-icon::after {
+    content: "";
+    position: absolute;
+    bottom: -2px; right: -2px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    border: 2px solid var(--bg-elevated);
+  }
+  .command-bar input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+  }
+  .command-bar input::placeholder { color: var(--text-quaternary); }
+  .command-bar-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    padding-left: 12px;
+    border-left: 1px solid var(--border-soft);
+  }
+  .kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-tertiary);
+  }
+
+  .quick-suggestions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .suggestion {
+    padding: 5px 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .suggestion:hover {
+    background: var(--bg-elevated-hover);
+    border-color: var(--accent-border);
+    color: var(--text);
+  }
+
+  /* ─── Sección genérica ─── */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title .count-pill {
+    background: var(--bg-elevated);
+    color: var(--text-tertiary);
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    letter-spacing: 0;
+    font-weight: 600;
+  }
+  .section-link {
+    font-size: 12px;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .section-link:hover { text-decoration: underline; }
+
+  /* ─── Activity feed (PROTAGONISTA del v5) ─── */
+  .feed-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+  }
+  .feed-list {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .feed-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .feed-row:last-child { border-bottom: 0; }
+  .feed-row:hover {
+    background: var(--bg-elevated-hover);
+  }
+  .feed-status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .feed-status-dot.success { background: var(--success); box-shadow: 0 0 6px hsl(142 60% 50% / 0.4); }
+  .feed-status-dot.working { background: var(--accent); box-shadow: 0 0 6px hsl(199 70% 55% / 0.5); animation: pulse-dot 1.6s ease-in-out infinite; }
+  .feed-status-dot.warning { background: var(--warning); box-shadow: 0 0 6px hsl(38 90% 55% / 0.4); }
+  .feed-status-dot.danger { background: var(--danger); box-shadow: 0 0 6px hsl(0 70% 58% / 0.4); }
+  .feed-content { flex: 1; min-width: 0; }
+  .feed-title {
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .feed-title strong {
+    font-weight: 600;
+  }
+  .feed-meta {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .feed-agent {
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .feed-agent.felix { color: hsl(199 70% 65%); }
+  .feed-agent.max { color: hsl(40 75% 65%); }
+  .feed-agent.nina { color: hsl(265 65% 70%); }
+  .feed-agent.sofia { color: hsl(335 65% 70%); }
+  .feed-agent.diego { color: hsl(160 50% 60%); }
+  .feed-agent.lucia { color: hsl(220 20% 80%); }
+  .feed-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-quaternary);
+  }
+  .feed-action {
+    font-size: 11px;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .feed-row:hover .feed-action { opacity: 1; }
+
+  /* ─── Stats ─── */
+  .stats-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .stat-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .stat-card .stat-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .stat-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .stat-num {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1;
+    font-feature-settings: "tnum";
+  }
+  .stat-num.urgent { color: var(--danger); }
+  .stat-trend {
+    font-size: 11px;
+    color: var(--success);
+    font-weight: 500;
+  }
+  .stat-trend.danger { color: var(--danger); }
+
+  /* ─── Quick access cards ─── */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .quick-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .quick-card:hover {
+    background: var(--bg-elevated-hover);
+    border-color: var(--accent-border);
+    transform: translateY(-1px);
+  }
+  .quick-card-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .quick-card.gold .quick-card-icon {
+    background: var(--gold-soft);
+    color: var(--gold);
+  }
+  .quick-card-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .quick-card-sub {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    line-height: 1.2;
+  }
+
+  /* ─── Resources strip (manuales) ─── */
+  .resources-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .resource-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .resource-mini:hover {
+    background: var(--bg-elevated-hover);
+    border-color: var(--border);
+  }
+  .resource-mini .source-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--gold-soft);
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+  .resource-mini .source-tag.uscis { background: var(--accent-soft); color: var(--accent); }
+  .resource-mini .resource-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .resource-mini .ext-icon {
+    margin-left: auto;
+    color: var(--text-quaternary);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+  @media (max-width: 1100px) {
+    .feed-grid { grid-template-columns: 1fr; }
+    .quick-grid { grid-template-columns: repeat(2, 1fr); }
+    .resources-strip { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SVG Icon Sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></symbol>
+    <symbol id="i-form" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6"/><path d="M9 13h6"/><path d="M9 17h3"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><path d="M16 16l3-8 3 8c-2 1-4 1-6 0z"/><path d="M2 16l3-8 3 8c-2 1-4 1-6 0z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="logo-mark">N</div>
+        <div>
+          <div>NER Immigration AI</div>
+          <div class="sidebar-brand-sub">Lorenzo & Asociados</div>
+        </div>
+      </div>
+      <div class="sidebar-account">
+        <div class="account-avatar">GL</div>
+        <div class="account-info">
+          <div class="account-name">Gerald Lorenzo</div>
+          <div class="account-role">Owner · Plan Pro</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navegación -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Workspace</div>
+      <div class="nav-item active">
+        <svg class="ico"><use href="#i-home"/></svg>
+        Inicio
+      </div>
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-users"/></svg>
+        Contactos
+        <span class="badge">23</span>
+      </div>
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-users"/></svg>
+        Clientes
+        <span class="badge">4</span>
+      </div>
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-message"/></svg>
+        Consultas
+      </div>
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-folder"/></svg>
+        Casos
+        <span class="badge urgent">5 ⚠</span>
+      </div>
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-calendar"/></svg>
+        Agenda
+      </div>
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-chart"/></svg>
+        Reportes
+      </div>
+    </div>
+
+    <!-- Equipo IA — lista, NO orbes -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">
+        Equipo IA
+        <span class="count">15</span>
+      </div>
+      <div class="agent-row working">
+        <span class="agent-dot"></span>
+        Camila
+        <span class="agent-spec">Voz</span>
+      </div>
+      <div class="agent-row working">
+        <span class="agent-dot"></span>
+        Felix
+        <span class="agent-spec">USCIS Docs</span>
+      </div>
+      <div class="agent-row working">
+        <span class="agent-dot"></span>
+        Max
+        <span class="agent-spec">Visa Eval</span>
+      </div>
+      <div class="agent-row online">
+        <span class="agent-dot"></span>
+        Nina
+        <span class="agent-spec">CSPA</span>
+      </div>
+      <div class="agent-row online">
+        <span class="agent-dot"></span>
+        Sofia
+        <span class="agent-spec">VAWA</span>
+      </div>
+      <div class="agent-row online">
+        <span class="agent-dot"></span>
+        Diego
+        <span class="agent-spec">Forms</span>
+      </div>
+      <div class="agent-row online">
+        <span class="agent-dot"></span>
+        Lucia
+        <span class="agent-spec">Manuales</span>
+      </div>
+      <div class="agent-row">
+        <span class="agent-dot"></span>
+        + 8 agentes más
+      </div>
+    </div>
+
+    <!-- Manuales -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Manuales</div>
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-book"/></svg>
+        USCIS Policy Manual
+      </div>
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-book"/></svg>
+        FAM
+      </div>
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-book"/></svg>
+        8 CFR
+      </div>
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-book"/></svg>
+        NVC Procedures
+      </div>
+    </div>
+
+    <!-- Bottom -->
+    <div class="sidebar-section" style="margin-top: auto">
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-settings"/></svg>
+        Configuración
+      </div>
+      <div class="nav-item">
+        <svg class="ico"><use href="#i-help"/></svg>
+        Ayuda
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ CONTENT ═══ -->
+  <main class="content">
+
+    <header class="content-header">
+      <div class="greeting">
+        <h1>Buenas noches, Gerald</h1>
+        <p>Miércoles, 29 de abril · <span style="color: var(--danger);">5 casos requieren tu atención</span></p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon"><svg class="ico"><use href="#i-search"/></svg></button>
+        <button class="btn-icon"><svg class="ico"><use href="#i-bell"/></svg></button>
+        <button class="btn-icon"><svg class="ico"><use href="#i-help"/></svg></button>
+      </div>
+    </header>
+
+    <div class="content-body">
+
+      <!-- ─── Camila como command bar (NO orbe) ─── -->
+      <section>
+        <div class="command-bar">
+          <div class="camila-icon">
+            <svg class="ico"><use href="#i-sparkles"/></svg>
+          </div>
+          <input type="text" placeholder="Pregúntale a Camila — busca un caso, llena un I-130, consulta el USCIS Manual..." />
+          <div class="command-bar-meta">
+            <svg class="ico-sm"><use href="#i-mic"/></svg>
+            <span class="kbd">⌘K</span>
+          </div>
+        </div>
+
+        <div class="quick-suggestions" style="margin-top: 10px">
+          <div class="suggestion">¿Qué tengo urgente hoy?</div>
+          <div class="suggestion">Llenar I-130 nuevo</div>
+          <div class="suggestion">Buscar en USCIS Manual</div>
+          <div class="suggestion">Resumen de la firma</div>
+        </div>
+      </section>
+
+      <!-- ─── Activity feed (PROTAGONISTA) + Stats ─── -->
+      <section>
+        <div class="feed-grid">
+          <!-- Feed -->
+          <div>
+            <div class="section-header">
+              <div class="section-title">
+                Tu equipo está trabajando
+                <span class="count-pill">en vivo</span>
+              </div>
+              <a class="section-link">Ver historial completo →</a>
+            </div>
+
+            <div class="feed-list">
+              <div class="feed-row">
+                <span class="feed-status-dot working"></span>
+                <div class="feed-content">
+                  <div class="feed-title">Análisis de I-485 García en proceso</div>
+                  <div class="feed-meta">
+                    <span class="feed-agent felix">Felix</span> · USCIS Docs
+                  </div>
+                </div>
+                <span class="feed-time">ahora</span>
+                <span class="feed-action">→</span>
+              </div>
+
+              <div class="feed-row">
+                <span class="feed-status-dot working"></span>
+                <div class="feed-content">
+                  <div class="feed-title">Evaluación VAWA caso Suárez</div>
+                  <div class="feed-meta">
+                    <span class="feed-agent max">Max</span> · Visa Eligibility
+                  </div>
+                </div>
+                <span class="feed-time">2 min</span>
+                <span class="feed-action">→</span>
+              </div>
+
+              <div class="feed-row">
+                <span class="feed-status-dot success"></span>
+                <div class="feed-content">
+                  <div class="feed-title">CSPA derivado García calculado · 19.3 años</div>
+                  <div class="feed-meta">
+                    <span class="feed-agent nina">Nina</span> · CSPA Calculator
+                  </div>
+                </div>
+                <span class="feed-time">12 min</span>
+                <span class="feed-action">→</span>
+              </div>
+
+              <div class="feed-row">
+                <span class="feed-status-dot success"></span>
+                <div class="feed-content">
+                  <div class="feed-title">Borrador I-130 Pérez listo para revisión</div>
+                  <div class="feed-meta">
+                    <span class="feed-agent diego">Diego</span> · Forms · 80% pre-llenado
+                  </div>
+                </div>
+                <span class="feed-time">28 min</span>
+                <span class="feed-action">→</span>
+              </div>
+
+              <div class="feed-row">
+                <span class="feed-status-dot warning"></span>
+                <div class="feed-content">
+                  <div class="feed-title">RFE detectado en caso González · vence viernes</div>
+                  <div class="feed-meta">
+                    <span class="feed-agent felix">Felix</span> · 3 días restantes
+                  </div>
+                </div>
+                <span class="feed-time">42 min</span>
+                <span class="feed-action">→</span>
+              </div>
+
+              <div class="feed-row">
+                <span class="feed-status-dot success"></span>
+                <div class="feed-content">
+                  <div class="feed-title">Screening VAWA Hernández completado · elegible</div>
+                  <div class="feed-meta">
+                    <span class="feed-agent sofia">Sofia</span> · VAWA Screener
+                  </div>
+                </div>
+                <span class="feed-time">1 h</span>
+                <span class="feed-action">→</span>
+              </div>
+
+              <div class="feed-row">
+                <span class="feed-status-dot success"></span>
+                <div class="feed-content">
+                  <div class="feed-title">Consulta USCIS Manual sec. 8 · entregado</div>
+                  <div class="feed-meta">
+                    <span class="feed-agent lucia">Lucia</span> · Knowledge Base
+                  </div>
+                </div>
+                <span class="feed-time">2 h</span>
+                <span class="feed-action">→</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats panel -->
+          <div class="stats-panel">
+            <div class="stat-card">
+              <div class="stat-label">Urgente hoy</div>
+              <div class="stat-row">
+                <span class="stat-num urgent">5</span>
+                <span class="stat-trend danger">+2 vs ayer</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Casos activos</div>
+              <div class="stat-row">
+                <span class="stat-num">4</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Clientes</div>
+              <div class="stat-row">
+                <span class="stat-num">4</span>
+                <span class="stat-trend">+1 esta semana</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Citas hoy</div>
+              <div class="stat-row">
+                <span class="stat-num">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Quick access (formularios + evaluaciones) ─── -->
+      <section>
+        <div class="section-header">
+          <div class="section-title">Acciones rápidas</div>
+        </div>
+        <div class="quick-grid">
+          <div class="quick-card">
+            <div class="quick-card-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+            <div class="quick-card-title">Nuevo I-130</div>
+            <div class="quick-card-sub">Family petition · Diego</div>
+          </div>
+          <div class="quick-card">
+            <div class="quick-card-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+            <div class="quick-card-title">Nuevo I-485</div>
+            <div class="quick-card-sub">Adjustment · Diego</div>
+          </div>
+          <div class="quick-card gold">
+            <div class="quick-card-icon"><svg class="ico"><use href="#i-target"/></svg></div>
+            <div class="quick-card-title">Visa Evaluator</div>
+            <div class="quick-card-sub">Eligibilidad · Max</div>
+          </div>
+          <div class="quick-card gold">
+            <div class="quick-card-icon"><svg class="ico"><use href="#i-shield"/></svg></div>
+            <div class="quick-card-title">VAWA Screener</div>
+            <div class="quick-card-sub">Sofia analiza</div>
+          </div>
+          <div class="quick-card gold">
+            <div class="quick-card-icon"><svg class="ico"><use href="#i-clock"/></svg></div>
+            <div class="quick-card-title">CSPA Calculator</div>
+            <div class="quick-card-sub">Edad derivados · Nina</div>
+          </div>
+          <div class="quick-card gold">
+            <div class="quick-card-icon"><svg class="ico"><use href="#i-scale"/></svg></div>
+            <div class="quick-card-title">USCIS Analyzer</div>
+            <div class="quick-card-sub">Felix audita docs</div>
+          </div>
+          <div class="quick-card gold">
+            <div class="quick-card-icon"><svg class="ico"><use href="#i-mic"/></svg></div>
+            <div class="quick-card-title">Interview Sim</div>
+            <div class="quick-card-sub">N-400 · Tomás</div>
+          </div>
+          <div class="quick-card">
+            <div class="quick-card-icon"><svg class="ico"><use href="#i-form"/></svg></div>
+            <div class="quick-card-title">Más formularios</div>
+            <div class="quick-card-sub">9 disponibles →</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Recursos oficiales ─── -->
+      <section>
+        <div class="section-header">
+          <div class="section-title">Recursos oficiales</div>
+          <a class="section-link">Ver todos →</a>
+        </div>
+        <div class="resources-strip">
+          <div class="resource-mini">
+            <span class="source-tag">DOS</span>
+            <span class="resource-text">Visa Bulletin · Mayo</span>
+            <svg class="ico-sm ext-icon"><use href="#i-arrow-up-right"/></svg>
+          </div>
+          <div class="resource-mini">
+            <span class="source-tag uscis">USCIS</span>
+            <span class="resource-text">Tiempos de Procesamiento</span>
+            <svg class="ico-sm ext-icon"><use href="#i-arrow-up-right"/></svg>
+          </div>
+          <div class="resource-mini">
+            <span class="source-tag uscis">USCIS</span>
+            <span class="resource-text">Alertas urgentes</span>
+            <svg class="ico-sm ext-icon"><use href="#i-arrow-up-right"/></svg>
+          </div>
+          <div class="resource-mini">
+            <span class="source-tag">DOS</span>
+            <span class="resource-text">US Visa News</span>
+            <svg class="ico-sm ext-icon"><use href="#i-arrow-up-right"/></svg>
+          </div>
+          <div class="resource-mini">
+            <span class="source-tag">FR</span>
+            <span class="resource-text">Federal Register</span>
+            <svg class="ico-sm ext-icon"><use href="#i-arrow-up-right"/></svg>
+          </div>
+          <div class="resource-mini">
+            <span class="source-tag">DOS</span>
+            <span class="resource-text">NVC Timeframes</span>
+            <svg class="ico-sm ext-icon"><use href="#i-arrow-up-right"/></svg>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+</div>
+
+<script>
+  // Cmd+K abre command bar
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      document.querySelector('.command-bar input').focus();
+    }
+  });
+
+  // Time tick para los timestamps (mock, no actualiza realmente pero da feel)
+  // En la versión real, esto vendría del feed-builder edge function
+</script>
+
+</body>
+</html>
