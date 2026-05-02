@@ -291,10 +291,11 @@ export default function HubPage() {
     }
   }
 
-  async function resolveHub(contactId: string, signature: string, timestamp: string, staffEmail?: string | null, staffName?: string | null) {
+  async function resolveHub(contactId: string, signature: string, timestamp: string, staffEmail?: string | null, staffName?: string | null, expiration?: string | null) {
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const params = new URLSearchParams({ cid: contactId, sig: signature, ts: timestamp });
+      if (expiration) params.set("exp", expiration);
       if (staffEmail) params.set("uemail", staffEmail);
       if (staffName) params.set("uname", staffName);
       
