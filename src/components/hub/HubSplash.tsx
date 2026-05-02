@@ -64,7 +64,7 @@ export default function HubSplash({
           transform: translate(-50%, -50%) scale(0.9);
           opacity: 0;
           animation:
-            nersplash-firmshow 600ms cubic-bezier(0.4,0.0,0.2,1) 400ms forwards,
+            nersplash-firmshow 500ms cubic-bezier(0.4,0.0,0.2,1) 100ms forwards,
             nersplash-firmfade 250ms cubic-bezier(0.4,0.0,0.2,1) 1100ms forwards;
         }
         @keyframes nersplash-firmshow {
