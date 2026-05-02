@@ -45,16 +45,14 @@ export default function HubSplash({
           position: fixed; inset: 0;
           display: flex; align-items: center; justify-content: center;
           background: linear-gradient(135deg, #1d4ed8 0%, #2563EB 28%, #0f2d52 60%, #0B1F3A 100%);
-          opacity: 0;
-          animation: nersplash-bgin 300ms cubic-bezier(0.4,0.0,0.2,1) forwards;
+          opacity: 1;
           z-index: 9999;
           font-family: 'Sora', -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+          transition: opacity 220ms cubic-bezier(0.4,0.0,0.2,1);
         }
         .ner-splash.out {
-          animation: nersplash-bgout 200ms cubic-bezier(0.4,0.0,0.2,1) forwards !important;
+          opacity: 0;
         }
-        @keyframes nersplash-bgin { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes nersplash-bgout { from { opacity: 1; } to { opacity: 0; } }
 
         /* Firm logo: aparece en centro, vive su momento, hace fade out limpio.
          * NO se mueve a top-left (decisión equipo 2026-05-02 Opción C).
@@ -66,7 +64,7 @@ export default function HubSplash({
           transform: translate(-50%, -50%) scale(0.9);
           opacity: 0;
           animation:
-            nersplash-firmshow 600ms cubic-bezier(0.4,0.0,0.2,1) 400ms forwards,
+            nersplash-firmshow 500ms cubic-bezier(0.4,0.0,0.2,1) 100ms forwards,
             nersplash-firmfade 250ms cubic-bezier(0.4,0.0,0.2,1) 1100ms forwards;
         }
         @keyframes nersplash-firmshow {
