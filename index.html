@@ -30,8 +30,18 @@
   <meta name="twitter:description" content="Suite de herramientas migratorias para profesionales de inmigración.">
 </head>
 
-  <body style="margin:0;background:linear-gradient(135deg,#1d4ed8 0%,#2563EB 28%,#0f2d52 60%,#0B1F3A 100%);min-height:100vh;">
+  <body>
     <div id="root"></div>
+    <script>
+      // Pre-paint navy gradient on /hub to avoid black flash before React mounts
+      if (window.location.pathname.startsWith('/hub')) {
+        var g = 'linear-gradient(135deg,#1d4ed8 0%,#2563EB 28%,#0f2d52 60%,#0B1F3A 100%)';
+        document.documentElement.style.background = g;
+        document.body.style.background = g;
+        document.body.style.margin = '0';
+        document.body.style.minHeight = '100vh';
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
