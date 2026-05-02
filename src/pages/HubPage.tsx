@@ -78,7 +78,7 @@ export default function HubPage() {
 
   useEffect(() => {
     if (cid && sig && ts) {
-      resolveHub(cid, sig, ts, uemail, uname);
+      resolveHub(cid, sig, ts, uemail, uname, exp);
       return;
     }
 
