@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Send, Mic, MicOff, Briefcase, Calendar, Users,
   MessageSquare, ChevronRight,
-  X, AlertCircle, Sparkles, FolderOpen, CalendarCheck,
+  X, AlertCircle, FolderOpen, CalendarCheck,
   BookOpen,
   Phone, PhoneOff, AlertTriangle, BarChart3, ListTodo, ExternalLink
 } from "lucide-react";
@@ -12,12 +12,11 @@ import { useConversation } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
 import IntakeWizard from "../intake/IntakeWizard";
-import NewContactModal from "../workspace/NewContactModal";
-
-
-
-import { Skeleton } from "@/components/ui/skeleton";
 import OperativeFeed from "./OperativeFeed";
+
+const ELEVENLABS_AGENT_ID =
+  import.meta.env.VITE_ELEVENLABS_CAMILA_AGENT_ID ||
+  "agent_6401kntf2pr7fmevaythhpzhys47";
 
 const OFFICIAL_RESOURCES = [
   { label: "Visa Bulletin", desc: "Fechas de prioridad del mes actual", url: "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html", source: "DOS", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
@@ -30,12 +29,10 @@ const OFFICIAL_RESOURCES = [
   { label: "USCIS Noticias", desc: "Comunicados de prensa oficiales", url: "https://www.uscis.gov/newsroom/news-releases", source: "USCIS", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
 ];
 
-const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
-
 async function fetchSignedUrl() {
   const { data, error } = await supabase.functions.invoke(
     "elevenlabs-conversation-token",
-    { body: { agent_id: AGENT_ID } },
+    { body: { agent_id: ELEVENLABS_AGENT_ID } },
   );
   if (error) throw new Error(error.message || "No se pudo iniciar la sesión de voz.");
   if (!data?.signed_url) throw new Error(data?.error || "No se recibió signed_url.");
@@ -109,7 +106,7 @@ function HubDashboardInner({
   const [totalClients, setTotalClients] = useState(0);
   const [todayAppointmentsCount, setTodayAppointmentsCount] = useState(0);
   const [pendingTasks, setPendingTasks] = useState(0);
-  const [kpisLoaded, setKpisLoaded] = useState(false);
+  const [, setKpisLoaded] = useState(false);
 
   // Chat input
   const [input, setInput] = useState("");
@@ -121,7 +118,6 @@ function HubDashboardInner({
 
   // Modals
   const [intakeOpen, setIntakeOpen] = useState(false);
-  const [contactOpen, setContactOpen] = useState(false);
   const [openingResource, setOpeningResource] = useState<{label: string; url: string} | null>(null);
 
   // Voice call (ElevenLabs WebSocket)
@@ -325,21 +321,6 @@ function HubDashboardInner({
     }
   }
 
-  const greeting = (() => {
-    const lh = parseInt(
-      new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        hour12: false,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      }).format(new Date())
-    );
-    if (lh < 12) return "Buenos días";
-    if (lh < 18) return "Buenas tardes";
-    return "Buenas noches";
-  })();
-
-  const firstName = (resolvedName || staffName || "").split(" ")[0] || "Usuario";
-
   function sendMessage(text?: string) {
     const msg = (text || input).trim();
     if (!msg) return;
@@ -382,12 +363,10 @@ function HubDashboardInner({
 
   
 
-  const isReady = kpisLoaded;
-
   return (
     <>
       {/* ═══ COCKPIT — scrollable para que entre el Feed Operativo arriba ═══ */}
-      <div className="min-h-screen w-full overflow-y-auto flex items-start justify-center bg-background relative pt-6 pb-12" style={{ width: "calc(100vw - 60px)" }}>
+      <div className="min-h-screen w-full overflow-y-auto flex items-start justify-center bg-background relative pt-6 pb-12" style={{ width: "calc(100vw - 72px)" }}>
 
         {/* Onboarding banner */}
         {showOnboardingBanner && !bannerDismissed && (
@@ -407,25 +386,12 @@ function HubDashboardInner({
           </div>
         )}
 
-        {/* Main content — centered, no scroll */}
+        {/* Main content — scrollable cockpit */}
         <div className="w-full max-w-4xl flex flex-col gap-4 px-8 py-6">
 
-
-          {/* ─── ZONA A: Header ─── */}
-          <div className="text-center shrink-0 flex-none">
-            <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center mx-auto mb-2 relative">
-              <Sparkles className="w-5 h-5 text-jarvis" />
-              <div className="absolute inset-0 rounded-xl animate-pulse bg-jarvis/5" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              {greeting}, <span className="text-jarvis">{firstName}</span>
-            </h1>
-            <p className="text-muted-foreground/50 text-sm">Bienvenido a tu oficina virtual</p>
-          </div>
-
-          {/* ─── FEED OPERATIVO — lo más urgente del día ─── */}
+          {/* ─── ZONA A: Saludo + Feed Operativo (header unificado) ─── */}
           <div className="w-full shrink-0">
-            <OperativeFeed accountId={accountId} staffName={staffName} />
+            <OperativeFeed accountId={accountId} staffName={resolvedName ?? staffName} />
           </div>
 
           {/* ─── ZONA B: Camila Input ─── */}
@@ -569,7 +535,6 @@ function HubDashboardInner({
       </div>
 
       <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
-      <NewContactModal open={contactOpen} onOpenChange={setContactOpen} accountId={accountId} />
 
       {openingResource && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setOpeningResource(null)}>
