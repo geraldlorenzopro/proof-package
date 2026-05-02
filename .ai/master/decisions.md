@@ -555,6 +555,58 @@ Mejora calidad, reduce riesgo, evita rework.
 
 ---
 
+## 2026-05-02 — Anti-flash 3 capas (lección de Lovable fix)
+
+**Decisión:** En SPAs con splash full-bleed, el flash visual es una cadena
+de 3 capas independientes. Diagnóstico debe cubrir las 3, no solo la
+visible en React DevTools.
+
+**Quién decidió:** Mr. Lorenzo (fix aplicado desde Lovable) + Claude Code
+(audit post-mortem).
+
+**Contexto:** Después de mi push del splash (commits `bdab277` → `357217f`),
+quedaba flash visual en `/hub`. Yo diagnostiqué solo la capa React (skeleton
+del dashboard) y mi fix fue parcial. Mr. Lorenzo tuvo que arreglar desde
+Lovable las otras 2 capas que yo no vi. 22 commits en Lovable después de
+mi último push.
+
+**Las 3 capas:**
+
+1. **HTML pre-React:** browser pinta default blanco/negro antes de que
+   React monte. Splash de fondo navy → flash inicial. Fix: script blocking
+   en `index.html` que pinta bg final ANTES del bundle, gateado por ruta.
+2. **Splash component (React):** si capa 1 ya pintó bg, splash NO debe
+   `opacity: 0` + fade-in. Fix: arrancar `opacity: 1`, solo manejar `out`.
+3. **Componente post-splash (Dashboard):** si padre tiene early-return,
+   skeleton interno es ruido redundante. Fix: eliminar skeleton, render
+   directo con valores reales/0.
+
+**Alternativas consideradas:**
+- ❌ Solo fix de la capa React (mi enfoque inicial — incompleto)
+- ❌ Loading screen único en HTML (rompe SPA pattern)
+- ✅ Fix coordinado de las 3 capas (Mr. Lorenzo desde Lovable)
+
+**Razón:** Las capas son independientes. Cada una tiene su propio momento
+de paint y puede generar flash por su cuenta. Diagnosticar solo una y
+declarar "fixed" lleva a deploys que parecen arreglados pero no lo están.
+
+**Implicación:**
+- Patrón documentado en `CLAUDE.md` sección "Anti-flash en SPAs con
+  splash full-bleed"
+- Memoria persistente cross-session: `feedback_three_layer_flash.md`
+- Próximo bug similar → audit las 3 capas antes de reportar fix
+- Generalizable a cualquier loading/splash full-bleed (no solo `/hub`)
+
+**Archivos tocados por Mr. Lorenzo desde Lovable:**
+- `index.html` (script blocking — capa 1)
+- `src/components/hub/HubSplash.tsx` (opacity 1 inicial — capa 2)
+- `src/components/hub/HubDashboard.tsx` (eliminó skeleton — capa 3)
+- `src/pages/HubPage.tsx` (refactor loading + param `exp`)
+- `supabase/functions/generate-test-hub-link/index.ts` (param `exp` firmado en HMAC)
+- `supabase/functions/resolve-hub/index.ts` (validación `exp` server-side)
+
+---
+
 ## Plantilla para nueva decisión
 
 ```markdown

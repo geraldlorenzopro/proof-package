@@ -420,6 +420,67 @@ sobre side-effects, SIEMPRE lo audito. Después reporto.
 **Frase correcta:** *"Audité X, Y, Z archivos relacionados. Hallazgos: [lista].
 Mi plan integrado: [propuesta]. ¿Vamos así?"*
 
+## Protocolo: Anti-flash en SPAs con splash full-bleed (lección 2026-05-02)
+
+**Contexto:** después del deploy del splash, Mr. Lorenzo tuvo que arreglar
+desde Lovable un flash visual que yo no había diagnosticado completo. Yo
+solo vi una capa del problema; la falla real era una cadena de 3 capas.
+
+**Cuando hay un splash que cubre toda la pantalla (full-bleed) en una SPA,
+el flash visual NO es UN solo punto de falla. Son 3 capas independientes
+y hay que diagnosticar las 3:**
+
+### Capa 1 — HTML inicial (pre-React)
+
+Antes de que React monte, el browser pinta el `<body>` con su default
+(blanco o negro según OS theme). Si el splash de React tiene fondo navy,
+hay un flash blanco/negro entre el HTML inicial y el primer render.
+
+**Solución:** script blocking en `index.html` que pinta el bg final
+ANTES del bundle, condicionado a la ruta:
+
+```html
+<script>
+  if (window.location.pathname.startsWith('/hub')) {
+    var g = 'linear-gradient(135deg,#1d4ed8 0%,#2563EB 28%,#0f2d52 60%,#0B1F3A 100%)';
+    document.documentElement.style.background = g;
+    document.body.style.background = g;
+    document.body.style.margin = '0';
+    document.body.style.minHeight = '100vh';
+  }
+</script>
+```
+
+### Capa 2 — Splash component (React)
+
+Si la capa 1 ya pintó el bg, el splash NO debe arrancar con `opacity: 0`
++ fade-in. Eso re-pinta lo que ya está pintado y crea percepción de delay.
+
+**Solución:** `opacity: 1` desde el primer render, solo manejar el fade-out
+con `transition` cuando `.out` se aplica.
+
+### Capa 3 — Componente post-splash (Dashboard)
+
+Si el padre garantiza que el dashboard NO se monta hasta que el splash
+termina (early-return), el skeleton interno del dashboard es ruido
+redundante que crea un loading state percibido extra.
+
+**Solución:** eliminar el skeleton del dashboard. Renderizar directo con
+valores reales (o 0) — el splash YA cumplió la función de loading visual.
+
+### Cómo aplicar este patrón
+
+Cuando el user reporte "flash" / "parpadeo" / "salta entre pantallas":
+
+1. ¿Ruta pinta full-bleed? → revisar `index.html` para pre-paint script
+2. ¿Splash hace fade-in? → si capa 1 está, eliminar fade-in (arrancar opacity 1)
+3. ¿Componente post-splash tiene skeleton? → si hay early-return en padre, eliminar skeleton
+4. Reportar las 3 capas auditadas, NO solo la que se ve en React DevTools
+
+**Nunca asumir que el flash es UNA sola capa.** Las 3 capas son
+independientes y pueden coexistir. Ver `decisions.md` 2026-05-02 entrada
+"Anti-flash 3 capas" para historia completa.
+
 ## Protocolo: ANTES DE CUALQUIER PUSH que llegue a producción
 
 **OBLIGATORIO ejecutar pre-deploy audit. SIEMPRE. SIN PEDIRLO.**
