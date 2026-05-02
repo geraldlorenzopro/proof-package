@@ -410,41 +410,6 @@ function HubDashboardInner({
         {/* Main content — centered, no scroll */}
         <div className="w-full max-w-4xl flex flex-col gap-4 px-8 py-6">
 
-          {!isReady ? (
-            /* ═══ SKELETON STATE ═══ */
-            <div className="flex flex-col gap-4">
-              {/* Header skeleton */}
-              <div className="flex flex-col items-center gap-2">
-                <Skeleton className="w-10 h-10 rounded-xl" />
-                <Skeleton className="h-7 w-64 rounded-lg" />
-                <Skeleton className="h-4 w-48 rounded-md" />
-              </div>
-              {/* Input skeleton */}
-              <Skeleton className="h-12 w-full rounded-2xl" />
-              {/* Quick actions skeleton */}
-              <div className="grid grid-cols-3 gap-2">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="h-10 rounded-xl" />
-                ))}
-              </div>
-              {/* KPI skeleton */}
-              <div className="grid grid-cols-4 gap-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-24 rounded-xl" />
-                ))}
-              </div>
-              {/* Resources skeleton */}
-              <div className="flex flex-col gap-2">
-                <Skeleton className="h-4 w-40 mx-auto rounded-md" />
-                <div className="grid grid-cols-4 gap-3">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <Skeleton key={i} className="h-16 rounded-lg" />
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-          <>
 
           {/* ─── ZONA A: Header ─── */}
           <div className="text-center shrink-0 flex-none">
@@ -563,13 +528,9 @@ function HubDashboardInner({
                   <div className={`w-7 h-7 rounded-lg ${kpi.bgAccent} border flex items-center justify-center shrink-0`}>
                     <kpi.icon className={`w-3.5 h-3.5 ${kpi.accent}`} />
                   </div>
-                  {!kpisLoaded ? (
-                    <Skeleton className="h-9 w-10 rounded-md mt-0.5" />
-                  ) : (
-                    <div className={`text-4xl font-bold tabular-nums leading-none ${kpi.value === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
-                      {kpi.value}
-                    </div>
-                  )}
+                  <div className={`text-4xl font-bold tabular-nums leading-none ${kpi.value === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
+                    {kpi.value}
+                  </div>
                   <div className="text-[11px] text-muted-foreground/40 font-medium truncate">{kpi.label}</div>
                 </button>
               ))}
@@ -603,9 +564,6 @@ function HubDashboardInner({
               ))}
             </div>
           </div>
-
-          </>
-          )}
 
         </div>
       </div>
