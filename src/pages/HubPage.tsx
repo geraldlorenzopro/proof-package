@@ -336,20 +336,43 @@ export default function HubPage() {
   }
 
   if (loading) {
-    // Sin skeleton: solo el fondo navy continuo. El splash toma el relevo
-    // apenas haya data. Decisión 2026-05-02: minimizar elementos visuales
-    // durante el handshake para experiencia más limpia.
+    // Fondo navy continuo (mismo gradient que splash) + loader "Conectando
+    // con tu firma" con dots animados. La pantalla negra inicial se previene
+    // desde index.html (script blocking que pinta el fondo antes de React).
     return (
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          background:
-            "linear-gradient(135deg, #1d4ed8 0%, #2563EB 28%, #0f2d52 60%, #0B1F3A 100%)",
-          zIndex: 9998,
-        }}
-        aria-label="Conectando con tu firma"
-      />
+      <>
+        <style>{`
+          @keyframes nerhub-dot {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50%      { opacity: 1; transform: scale(1.45); }
+          }
+        `}</style>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background:
+              "linear-gradient(135deg, #1d4ed8 0%, #2563EB 28%, #0f2d52 60%, #0B1F3A 100%)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "16px",
+            fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif",
+            zIndex: 9998,
+          }}
+          aria-label="Conectando con tu firma"
+        >
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#2563EB", animation: "nerhub-dot 600ms cubic-bezier(0.4,0,0.2,1) 0ms infinite" }} />
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22D3EE", animation: "nerhub-dot 600ms cubic-bezier(0.4,0,0.2,1) 200ms infinite" }} />
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#2563EB", animation: "nerhub-dot 600ms cubic-bezier(0.4,0,0.2,1) 400ms infinite" }} />
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 500, color: "rgba(243,244,246,0.7)", letterSpacing: "0.08em" }}>
+            Conectando con tu firma...
+          </div>
+        </div>
+      </>
     );
   }
 
