@@ -72,6 +72,7 @@ export default function HubPage() {
   const cid = searchParams.get("cid");
   const sig = searchParams.get("sig");
   const ts = searchParams.get("ts");
+  const exp = searchParams.get("exp");
   const uemail = searchParams.get("uemail");
   const uname = searchParams.get("uname");
 
