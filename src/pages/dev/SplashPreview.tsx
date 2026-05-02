@@ -7,9 +7,17 @@ import HubSplash from "@/components/hub/HubSplash";
  */
 export default function SplashPreview() {
   const [showSplash, setShowSplash] = useState(false);
+  const [showLoading, setShowLoading] = useState(false);
+  const [showError, setShowError] = useState<string | null>(null);
   const [firmName, setFirmName] = useState("Lexis Hispanic Law");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [runs, setRuns] = useState(0);
+
+  const simulateError = (msg: string) => {
+    setShowSplash(false);
+    setShowLoading(false);
+    setShowError(msg);
+  };
 
   const playSplash = () => {
     setShowSplash(false);
@@ -17,6 +25,17 @@ export default function SplashPreview() {
       setShowSplash(true);
       setRuns((r) => r + 1);
     }, 80);
+  };
+
+  const playFullFlow = () => {
+    // Simula: loading 1.2s → splash 2.7s (flujo completo como producción)
+    setShowSplash(false);
+    setShowLoading(true);
+    setTimeout(() => {
+      setShowLoading(false);
+      setShowSplash(true);
+      setRuns((r) => r + 1);
+    }, 1200);
   };
 
   const initials = (() => {
@@ -57,7 +76,7 @@ export default function SplashPreview() {
   const applyPreset = (preset: typeof presets[number]) => {
     setFirmName(preset.name);
     setLogoUrl(preset.logo);
-    setTimeout(() => playSplash(), 50);
+    setTimeout(() => playFullFlow(), 50);
   };
 
   return (
@@ -70,6 +89,40 @@ export default function SplashPreview() {
         padding: "32px 16px",
       }}
     >
+      {showLoading && (
+        <>
+          <style>{`
+            @keyframes preview-loading-dot {
+              0%, 100% { opacity: 0.3; transform: scale(1); }
+              50%      { opacity: 1; transform: scale(1.45); }
+            }
+          `}</style>
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background:
+                "linear-gradient(135deg, #1d4ed8 0%, #2563EB 28%, #0f2d52 60%, #0B1F3A 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: "'Sora', sans-serif",
+              zIndex: 9998,
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#2563EB", animation: "preview-loading-dot 600ms ease 0ms infinite" }} />
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22D3EE", animation: "preview-loading-dot 600ms ease 200ms infinite" }} />
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#2563EB", animation: "preview-loading-dot 600ms ease 400ms infinite" }} />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(243,244,246,0.7)", letterSpacing: "0.08em" }}>
+                Conectando con tu firma...
+              </span>
+            </div>
+          </div>
+        </>
+      )}
       {showSplash && (
         <HubSplash
           key={runs}
@@ -78,6 +131,100 @@ export default function SplashPreview() {
           firmLogoUrl={logoUrl}
           onComplete={() => setShowSplash(false)}
         />
+      )}
+      {showError && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background:
+              "linear-gradient(135deg, #1d4ed8 0%, #2563EB 28%, #0f2d52 60%, #0B1F3A 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+            fontFamily: "'Sora', sans-serif",
+            zIndex: 9999,
+          }}
+          onClick={() => setShowError(null)}
+        >
+          <div
+            style={{
+              maxWidth: "420px",
+              width: "100%",
+              background: "rgba(11,31,58,0.6)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "16px",
+              padding: "32px 28px",
+              textAlign: "center",
+              backdropFilter: "blur(8px)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                width: "56px",
+                height: "56px",
+                margin: "0 auto 20px",
+                borderRadius: "50%",
+                background: "rgba(217,119,6,0.12)",
+                border: "1px solid rgba(217,119,6,0.30)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "22px",
+              }}
+            >
+              ⚠️
+            </div>
+            <h2
+              style={{
+                fontSize: "18px",
+                fontWeight: 600,
+                color: "#F3F4F6",
+                marginBottom: "8px",
+                letterSpacing: "0.01em",
+              }}
+            >
+              Acceso no disponible
+            </h2>
+            <p
+              style={{
+                fontSize: "14px",
+                color: "rgba(243,244,246,0.7)",
+                lineHeight: 1.55,
+                marginBottom: "20px",
+              }}
+            >
+              {showError}
+            </p>
+            <p
+              style={{
+                fontSize: "11px",
+                color: "rgba(243,244,246,0.45)",
+                letterSpacing: "0.06em",
+                marginBottom: "16px",
+              }}
+            >
+              Si el problema persiste, contactá al administrador de tu firma.
+            </p>
+            <button
+              onClick={() => setShowError(null)}
+              style={{
+                background: "transparent",
+                border: "1px solid rgba(255,255,255,0.20)",
+                color: "rgba(243,244,246,0.7)",
+                padding: "8px 16px",
+                borderRadius: "8px",
+                fontSize: "12px",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Cerrar preview
+            </button>
+          </div>
+        </div>
       )}
 
       <div style={{ maxWidth: "640px", margin: "0 auto" }}>
@@ -90,9 +237,9 @@ export default function SplashPreview() {
           después se cierra solo y volvés acá.
         </p>
 
-        {/* CTA principal — más visible y claro */}
+        {/* CTA principal — flujo completo (simula loading + splash) */}
         <button
-          onClick={playSplash}
+          onClick={playFullFlow}
           style={{
             width: "100%",
             background: "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)",
@@ -105,19 +252,87 @@ export default function SplashPreview() {
             cursor: "pointer",
             fontFamily: "inherit",
             boxShadow: "0 4px 16px rgba(37,99,235,0.35)",
-            marginBottom: "12px",
+            marginBottom: "8px",
             transition: "transform 100ms",
             letterSpacing: "0.02em",
           }}
           onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
           onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
         >
-          {runs === 0 ? "▶ Ver splash ahora" : `▶ Reproducir de nuevo (${runs} ejecuciones)`}
+          ▶ Ver flujo completo (loading → splash) ← REAL
         </button>
 
-        <p style={{ color: "rgba(232,237,245,0.45)", fontSize: "12px", marginBottom: "24px", textAlign: "center" }}>
-          ⚠️ El splash tomará TODA la pantalla por 2.7 segundos
+        <button
+          onClick={playSplash}
+          style={{
+            width: "100%",
+            background: "transparent",
+            color: "#e8edf5",
+            border: "1px solid rgba(255,255,255,0.20)",
+            padding: "12px 24px",
+            borderRadius: "10px",
+            fontSize: "13px",
+            fontWeight: 500,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            marginBottom: "12px",
+          }}
+        >
+          ▶ Solo splash (sin loading) {runs > 0 ? `(${runs} runs)` : ""}
+        </button>
+
+        <p style={{ color: "rgba(232,237,245,0.45)", fontSize: "12px", marginBottom: "16px", textAlign: "center" }}>
+          ⚠️ El flujo completo: loading 1.2s + splash 2.7s = ~4 segundos total
         </p>
+
+        {/* Botones para testear estados de error (acceso denegado) */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "8px",
+            marginBottom: "24px",
+          }}
+        >
+          <button
+            onClick={() =>
+              simulateError(
+                "Enlace inválido o incompleto. Por favor usa el enlace desde tu CRM.",
+              )
+            }
+            style={{
+              background: "rgba(217,119,6,0.08)",
+              border: "1px solid rgba(217,119,6,0.25)",
+              color: "rgba(243,244,246,0.85)",
+              padding: "10px 14px",
+              borderRadius: "8px",
+              fontSize: "12px",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            ⚠️ Error: enlace inválido
+          </button>
+          <button
+            onClick={() =>
+              simulateError(
+                "No se encontró una cuenta asociada a tu usuario.",
+              )
+            }
+            style={{
+              background: "rgba(217,119,6,0.08)",
+              border: "1px solid rgba(217,119,6,0.25)",
+              color: "rgba(243,244,246,0.85)",
+              padding: "10px 14px",
+              borderRadius: "8px",
+              fontSize: "12px",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            ⚠️ Error: sin permisos
+          </button>
+        </div>
 
         {/* Presets — atajos para probar diferentes firmas */}
         <div

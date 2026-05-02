@@ -386,6 +386,40 @@ Respuesta RFE → Aprobado/Negado → Apelación
 construir un sistema de membresías sin ver el ENUM `ner_plan` que ya existía.
 NUNCA MÁS.
 
+## Protocolo: NUNCA PREGUNTAR — SIEMPRE AUDITAR
+
+**Mr. Lorenzo decidió 2026-05-02:** cuando voy a cambiar un archivo, NO debo
+preguntarle "¿querés que revise los archivos relacionados por efectos colaterales?"
+— **DEBO REVISARLOS AUTOMÁTICAMENTE** sin pedir permiso. Es parte del trabajo.
+
+**Antes de cualquier edit, automático:**
+
+1. **Leer el archivo completo** (no en cachos, no skimming)
+2. **Grep referencias del componente/función** que voy a cambiar:
+   ```bash
+   grep -rln "ComponentName\|functionName" src/
+   ```
+3. **Identificar archivos que dependen** del archivo que cambio
+4. **Leer ESOS archivos también** completos
+5. **Identificar patterns relacionados** (ej: si cambio un loading screen,
+   buscar TODOS los loading screens del repo para coherencia visual)
+6. **Reportar findings** con plan integrado, no preguntar
+
+**Patrones que requieren audit completo automático:**
+
+- Cambio en página/route con `if (loading)` → buscar TODOS los loading states
+- Cambio en página con `if (error)` → buscar TODOS los error states relacionados
+- Cambio en hook/util usado por N componentes → leer los N callers
+- Cambio en interface/type → leer todos los lugares donde se importa
+- Cambio en CSS variable / token → leer todos los componentes que lo usan
+- Cambio en tabla DB → leer todas las queries que la tocan (vía code-map)
+
+**Frase prohibida:** *"¿querés que revise X?"* → si tengo dudas razonables
+sobre side-effects, SIEMPRE lo audito. Después reporto.
+
+**Frase correcta:** *"Audité X, Y, Z archivos relacionados. Hallazgos: [lista].
+Mi plan integrado: [propuesta]. ¿Vamos así?"*
+
 ## Protocolo: ANTES DE CUALQUIER PUSH que llegue a producción
 
 **OBLIGATORIO ejecutar pre-deploy audit. SIEMPRE. SIN PEDIRLO.**

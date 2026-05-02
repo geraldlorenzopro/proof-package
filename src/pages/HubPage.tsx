@@ -334,26 +334,156 @@ export default function HubPage() {
   }
 
   if (loading) {
+    // Loading screen visualmente coherente con HubSplash:
+    // mismo gradient navy + dots brandbook. Sin "Preparando tu workspace..."
+    // legacy. Continuidad visual con el splash que viene después.
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-jarvis/10 border border-jarvis/15 flex items-center justify-center mx-auto mb-4 relative">
-            <Loader2 className="w-7 h-7 animate-spin text-jarvis" />
-            <div className="absolute inset-0 rounded-2xl animate-pulse bg-jarvis/5" />
+      <>
+        <style>{`
+          @keyframes hubpage-loading-dot {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50%      { opacity: 1; transform: scale(1.45); }
+          }
+        `}</style>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background:
+              "linear-gradient(135deg, #1d4ed8 0%, #2563EB 28%, #0f2d52 60%, #0B1F3A 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif",
+            zIndex: 9998,
+          }}
+          aria-label="Conectando con tu firma"
+        >
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: "#2563EB",
+                  opacity: 0.3,
+                  animation: "hubpage-loading-dot 600ms cubic-bezier(0.4,0.0,0.2,1) 0ms infinite",
+                }}
+              />
+              <span
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: "#22D3EE",
+                  opacity: 0.3,
+                  animation: "hubpage-loading-dot 600ms cubic-bezier(0.4,0.0,0.2,1) 200ms infinite",
+                }}
+              />
+              <span
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: "#2563EB",
+                  opacity: 0.3,
+                  animation: "hubpage-loading-dot 600ms cubic-bezier(0.4,0.0,0.2,1) 400ms infinite",
+                }}
+              />
+            </div>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 500,
+                color: "rgba(243,244,246,0.7)",
+                letterSpacing: "0.08em",
+              }}
+            >
+              Conectando con tu firma...
+            </span>
           </div>
-          <p className="text-sm text-muted-foreground">Preparando tu workspace...</p>
         </div>
-      </div>
+      </>
     );
   }
 
   if (error) {
+    // Error screen visualmente coherente con HubSplash + loading screen.
+    // Mismo gradient navy. AlertTriangle estilizado en dorado-amber (no rojo
+    // estridente). Mensaje específico (sin permisos / enlace inválido / etc).
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="rounded-2xl border border-destructive/20 bg-card p-8 max-w-md text-center">
-          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-lg font-bold text-foreground mb-2">Acceso no disponible</h2>
-          <p className="text-sm text-muted-foreground">{error}</p>
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background:
+            "linear-gradient(135deg, #1d4ed8 0%, #2563EB 28%, #0f2d52 60%, #0B1F3A 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "16px",
+          fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif",
+          zIndex: 9998,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "420px",
+            width: "100%",
+            background: "rgba(11,31,58,0.6)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "16px",
+            padding: "32px 28px",
+            textAlign: "center",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <div
+            style={{
+              width: "56px",
+              height: "56px",
+              margin: "0 auto 20px",
+              borderRadius: "50%",
+              background: "rgba(217,119,6,0.12)",
+              border: "1px solid rgba(217,119,6,0.30)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <AlertTriangle style={{ width: "24px", height: "24px", color: "#f59e0b" }} />
+          </div>
+          <h2
+            style={{
+              fontSize: "18px",
+              fontWeight: 600,
+              color: "#F3F4F6",
+              marginBottom: "8px",
+              letterSpacing: "0.01em",
+            }}
+          >
+            Acceso no disponible
+          </h2>
+          <p
+            style={{
+              fontSize: "14px",
+              color: "rgba(243,244,246,0.7)",
+              lineHeight: 1.55,
+              marginBottom: "20px",
+            }}
+          >
+            {error}
+          </p>
+          <p
+            style={{
+              fontSize: "11px",
+              color: "rgba(243,244,246,0.45)",
+              letterSpacing: "0.06em",
+            }}
+          >
+            Si el problema persiste, contactá al administrador de tu firma.
+          </p>
         </div>
       </div>
     );

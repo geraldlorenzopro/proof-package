@@ -139,6 +139,31 @@ Antes del push, escribir 2-3 líneas:
 
 **Pass criteria:** Rollback es <5 minutos, sin pérdida de data.
 
+### 11.5. Side-effects audit (AUTOMÁTICO, no preguntar)
+
+Antes de editar cualquier archivo crítico, **auditar archivos relacionados
+sin preguntar al usuario**:
+
+```bash
+# 1. Leer el archivo COMPLETO que voy a cambiar
+# 2. Grep todas las referencias al componente/función:
+grep -rln "ComponentName\|functionName" src/
+# 3. Leer los callers identificados COMPLETOS
+# 4. Identificar patterns visuales/funcionales relacionados
+# 5. Reportar findings + plan integrado
+```
+
+**Patrones que requieren audit automático:**
+- Cambio en `if (loading)` → buscar otros loading states del repo
+- Cambio en `if (error)` → buscar otros error states relacionados
+- Cambio en hook → leer todos los componentes que lo usan
+- Cambio en CSS token → leer componentes que lo aplican
+- Cambio en tabla → leer queries via code-map
+
+**Frase prohibida:** *"¿querés que revise X?"*. Si hay duda → AUDITAR.
+
+**Pass criteria:** todos los callers/dependientes leídos antes de cambiar.
+
 ### 11. Cleanup commit
 
 ```bash
