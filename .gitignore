@@ -31,3 +31,15 @@ tmp/
 # Quedan locales por default (pueden tener decisiones sensibles).
 # Si querés commitear uno específico: git add -f .ai/reportes/<archivo>.md
 .ai/reportes/*.md
+
+# Raw responses de agentes (debug del orquestador, no van a prod)
+.ai/debug-raw/
+
+# Mockups generados automáticamente por Valerie vía orquestador
+mockups/auto-*.html
+
+# Mockups manuales de referencia visual (no son código de producción)
+mockups/2026-*.html
+
+# Logos test de firmas piloto (en prod salen de office_config.logo_url)
+public/brand/firms/

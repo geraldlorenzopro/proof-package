@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import SplashPreview from "./pages/dev/SplashPreview";
 import Dashboard from "./pages/Dashboard";
 import CasesPage from "./pages/CasesPage";
 import EvidenceTool from "./pages/EvidenceTool";
@@ -131,6 +132,10 @@ const App = () => (
           <Route path="/b1b2-dashboard/:accountCid" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
           <Route path="/interview-sim/practice" element={<ProtectedRoute><InterviewSimulatorPage /></ProtectedRoute>} />
           <Route path="/debug/pdf-fields" element={<ProtectedRoute><PdfFieldInspector /></ProtectedRoute>} />
+          {/* Dev-only route — NOT accessible in production (Vite tree-shakes when DEV=false) */}
+          {import.meta.env.DEV && (
+            <Route path="/dev/splash-preview" element={<SplashPreview />} />
+          )}
 
           {/* ═══ ADMIN ROUTES (auth + platform_admin check inside AdminLayout) ═══ */}
           <Route path="/admin" element={<ProtectedRoute><AdminLayout><AdminDashboardPage /></AdminLayout></ProtectedRoute>} />

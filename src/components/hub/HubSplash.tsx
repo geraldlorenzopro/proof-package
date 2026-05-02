@@ -1,0 +1,230 @@
+import { useEffect, useState } from "react";
+
+interface HubSplashProps {
+  firmName: string;
+  firmInitials?: string;
+  firmLogoUrl?: string | null;
+  onComplete: () => void;
+}
+
+const TOTAL_DURATION_MS = 2700;
+
+export default function HubSplash({
+  firmName,
+  firmInitials,
+  firmLogoUrl,
+  onComplete,
+}: HubSplashProps) {
+  const [out, setOut] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setOut(true), TOTAL_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!out) return;
+    const fadeTimer = setTimeout(onComplete, 220);
+    return () => clearTimeout(fadeTimer);
+  }, [out, onComplete]);
+
+  const initials =
+    firmInitials ??
+    firmName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join("") ??
+    "NE";
+
+  return (
+    <>
+      <style>{`
+        .ner-splash {
+          position: fixed; inset: 0;
+          display: flex; align-items: center; justify-content: center;
+          background: linear-gradient(135deg, #1d4ed8 0%, #2563EB 28%, #0f2d52 60%, #0B1F3A 100%);
+          opacity: 0;
+          animation: nersplash-bgin 300ms cubic-bezier(0.4,0.0,0.2,1) forwards;
+          z-index: 9999;
+          font-family: 'Sora', -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+        }
+        .ner-splash.out {
+          animation: nersplash-bgout 200ms cubic-bezier(0.4,0.0,0.2,1) forwards !important;
+        }
+        @keyframes nersplash-bgin { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes nersplash-bgout { from { opacity: 1; } to { opacity: 0; } }
+
+        /* Firm logo: aparece en centro, vive su momento, hace fade out limpio.
+         * NO se mueve a top-left (decisión equipo 2026-05-02 Opción C).
+         * Cross-fade con NER wordmark que aparece a 1100ms. */
+        .ner-splash-firm {
+          position: absolute;
+          top: 50%; left: 50%;
+          display: flex; flex-direction: column; align-items: center; gap: 10px;
+          transform: translate(-50%, -50%) scale(0.9);
+          opacity: 0;
+          animation:
+            nersplash-firmshow 600ms cubic-bezier(0.4,0.0,0.2,1) 400ms forwards,
+            nersplash-firmfade 250ms cubic-bezier(0.4,0.0,0.2,1) 1100ms forwards;
+        }
+        @keyframes nersplash-firmshow {
+          from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+          to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes nersplash-firmfade {
+          from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          to   { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+        }
+        .ner-splash-badge {
+          width: 80px; height: 80px; background: #2563EB; border-radius: 12px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 24px; font-weight: 700; color: #F3F4F6;
+          letter-spacing: 0.03em;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+          overflow: hidden;
+        }
+        .ner-splash-badge img {
+          width: 100%; height: 100%; object-fit: contain;
+        }
+        .ner-splash-firm-name {
+          font-size: 13px; font-weight: 600; color: #F3F4F6;
+          letter-spacing: 0.06em; white-space: nowrap;
+        }
+        .ner-splash-firm-sub {
+          font-size: 11px; font-weight: 400;
+          color: rgba(243,244,246,0.7);
+          letter-spacing: 0.04em; margin-top: -6px;
+        }
+
+        .ner-splash-center {
+          display: flex; flex-direction: column; align-items: center; gap: 18px;
+          opacity: 0;
+          animation: nersplash-reveal 600ms cubic-bezier(0.4,0.0,0.2,1) 1100ms forwards;
+        }
+        @keyframes nersplash-reveal {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .ner-splash-logo { width: 280px; height: auto; display: block; }
+        .ner-splash-logo .ner-fill { fill: #F3F4F6; }
+
+        .ner-splash-sep {
+          width: 36px; height: 1px;
+          background: rgba(243,244,246,0.18);
+          opacity: 0;
+          animation: nersplash-reveal 400ms cubic-bezier(0.4,0.0,0.2,1) 1300ms forwards;
+        }
+        .ner-splash-tagline {
+          font-size: 15px; font-weight: 400;
+          color: rgba(243,244,246,0.78);
+          letter-spacing: 0.07em;
+          opacity: 0;
+          animation: nersplash-reveal 500ms cubic-bezier(0.4,0.0,0.2,1) 1400ms forwards;
+          text-align: center;
+        }
+
+        .ner-splash-loader {
+          position: absolute; bottom: 56px; left: 50%;
+          transform: translateX(-50%) translateY(10px);
+          display: flex; flex-direction: column; align-items: center; gap: 12px;
+          opacity: 0;
+          animation: nersplash-loader-reveal 400ms cubic-bezier(0.4,0.0,0.2,1) 1500ms forwards;
+        }
+        @keyframes nersplash-loader-reveal {
+          from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .ner-splash-dots { display: flex; gap: 8px; align-items: center; }
+        .ner-splash-dot { width: 5px; height: 5px; border-radius: 50%; opacity: 0.3; }
+        .ner-splash-dot-1 { background: #2563EB; animation: nersplash-dp 600ms cubic-bezier(0.4,0.0,0.2,1) 1500ms infinite; }
+        .ner-splash-dot-2 { background: #22D3EE; animation: nersplash-dp 600ms cubic-bezier(0.4,0.0,0.2,1) 1700ms infinite; }
+        .ner-splash-dot-3 { background: #2563EB; animation: nersplash-dp 600ms cubic-bezier(0.4,0.0,0.2,1) 1900ms infinite; }
+        @keyframes nersplash-dp {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50%      { opacity: 1; transform: scale(1.45); }
+        }
+        .ner-splash-loader-text {
+          font-size: 12px; font-weight: 500;
+          color: rgba(243,244,246,0.7);
+          letter-spacing: 0.08em;
+        }
+
+        /* prefers-reduced-motion: ocultar firm completamente, mostrar solo NER
+         * (Bug cazado por Victoria — antes el firm quedaba ilegible los 2.7s
+         * completos en mobile/tablet con esa configuración accesibilidad). */
+        @media (prefers-reduced-motion: reduce) {
+          .ner-splash { opacity: 1; animation: none; }
+          .ner-splash-firm { display: none; }
+          .ner-splash-center,
+          .ner-splash-center > *,
+          .ner-splash-sep,
+          .ner-splash-tagline {
+            opacity: 1; transform: none; animation: none;
+          }
+          .ner-splash-loader {
+            opacity: 1;
+            transform: translateX(-50%);
+            animation: none;
+          }
+          .ner-splash-dot { opacity: 0.6; animation: none; }
+        }
+      `}</style>
+
+      <div className={`ner-splash ${out ? "out" : ""}`} aria-hidden="true" role="presentation">
+        <div className="ner-splash-firm">
+          <div className="ner-splash-badge">
+            {firmLogoUrl ? (
+              <img src={firmLogoUrl} alt={firmName} />
+            ) : (
+              initials
+            )}
+          </div>
+          <div className="ner-splash-firm-name">{firmName}</div>
+          <div className="ner-splash-firm-sub">Tu firma</div>
+        </div>
+
+        <div className="ner-splash-center">
+          <svg
+            className="ner-splash-logo"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 726.05 300.55"
+            aria-label="NER Immigration AI"
+          >
+            <g>
+              <path className="ner-fill" d="M479.04,92.92h-91.7c-5.66,0-9.96-5.09-9.01-10.67l3.61-21.2c.75-4.39,4.55-7.6,9.01-7.6h105.44c4.44,0,8.23-3.19,9-7.56l5.92-33.69c.98-5.59-3.32-10.72-9-10.72h-108.27c-3.35,0-6.44,1.84-8.03,4.78l-85.03,156.92c-.47.87-.79,1.8-.97,2.77l-10.74,61.04c-.98,5.59,3.32,10.72,9,10.72h169.81c4.42,0,8.21-3.17,8.99-7.52l6.19-34.39c1.01-5.6-3.3-10.76-8.99-10.76h-103.08c-5.68,0-9.98-5.13-9-10.72l4.21-23.91c.77-4.37,4.56-7.55,9-7.55h98.06c4.44,0,8.23-3.19,9-7.56l5.57-31.68c.98-5.59-3.32-10.72-9-10.72Z" />
+              <path className="ner-fill" d="M666.55,161.46c-1.67-2.81-.32-6.38,2.74-7.54,36.98-14.01,56.76-42.48,56.76-82.27,0-43.19-31.04-70.17-78.94-70.17h-111.02c-2.54,0-4.71,1.83-5.16,4.33l-9.31,52.97,75.84-4.21c2.5-.14,3.73-3.1,2.06-4.97l-18.26-20.46c-2.16-2.42.55-6.07,3.49-4.69l99.41,46.61c2.29,1.07,2.29,4.33,0,5.41l-99.41,46.61c-2.94,1.38-5.66-2.27-3.49-4.69l18.26-20.46c1.67-1.87.44-4.83-2.06-4.97l-81.05-4.5-25.16,143.11c-.56,3.21,1.9,6.14,5.16,6.14h54.46c2.55,0,4.72-1.83,5.16-4.34l11.34-65.55c.43-2.51,2.61-4.34,5.16-4.34h24.19c1.93,0,3.71,1.07,4.62,2.78l36.52,68.68c.91,1.71,2.68,2.78,4.62,2.78h60.22c4.06,0,6.58-4.42,4.5-7.91l-40.66-68.35Z" />
+              <polygon className="ner-fill" points="0 299.74 5.31 299.74 11.96 261.84 6.66 261.84 0 299.74" />
+              <polygon className="ner-fill" points="59.34 281.28 48.24 261.84 43.37 261.84 36.71 299.74 42.01 299.74 47.16 270.29 57.82 288.96 59.01 288.96 76.17 271.32 71.14 299.74 76.44 299.74 83.1 261.84 78.17 261.84 59.34 281.28" />
+              <polygon className="ner-fill" points="130.52 281.28 119.43 261.84 114.56 261.84 107.9 299.74 113.2 299.74 118.35 270.29 129.01 288.96 130.2 288.96 147.36 271.32 142.32 299.74 147.63 299.74 154.29 261.84 149.36 261.84 130.52 281.28" />
+              <polygon className="ner-fill" points="179.08 299.74 184.39 299.74 191.05 261.84 185.74 261.84 179.08 299.74" />
+              <path className="ner-fill" d="M239.61,266.07c3.84,0,7.47,1.52,9.69,4.22l4.01-3.41c-3.14-3.73-7.79-5.79-13.15-5.79-14.02,0-23.55,9.69-23.55,23.49,0,9.47,6.66,15.92,16.67,15.92,6.01,0,11.04-1.9,15.92-5.84l2.76-15.92h-16.24l-.82,4.76h11.21l-1.52,8.44c-3.3,2.33-6.77,3.57-10.34,3.57-7.96,0-12.45-4.6-12.45-11.8,0-9.96,7.69-17.65,17.81-17.65Z" />
+              <path className="ner-fill" d="M301.92,261.84h-17.37l-6.71,37.89h5.31l2.33-13.32h8.77l9.58,13.32h6.44l-9.85-13.48c6.82-.92,11.69-5.36,12.67-11.75,1.08-7.2-3.79-12.67-11.15-12.67ZM307.88,273.75c-.65,4.76-4.33,7.74-9.31,7.74h-12.24l2.6-14.72h12.34c4.44,0,7.14,2.92,6.6,6.98Z" />
+              <path className="ner-fill" d="M357.9,261.84l-23.66,37.89h6.01l5.09-8.23h21.22l2.27,8.23h5.36l-10.34-37.89h-5.96ZM348.32,286.53l11.91-19.21,5.14,19.21h-17.05Z" />
+              <polygon className="ner-fill" points="399.27 266.77 412.04 266.77 406.19 299.74 411.55 299.74 417.35 266.77 430.12 266.77 430.99 261.84 400.19 261.84 399.27 266.77" />
+              <polygon className="ner-fill" points="451.72 299.74 457.03 299.74 463.68 261.84 458.38 261.84 451.72 299.74" />
+              <path className="ner-fill" d="M511.98,261.03c-11.48,0-20.41,7.74-22.41,19.27-2.11,11.96,4.44,20.24,15.97,20.24s20.46-7.74,22.47-19.27c2.11-11.96-4.5-20.24-16.02-20.24ZM522.75,280.52c-1.57,8.99-8.34,14.99-16.67,14.99s-12.77-5.95-11.26-14.45c1.57-8.99,8.39-15.05,16.73-15.05s12.72,5.95,11.21,14.51Z" />
+              <polygon className="ner-fill" points="583.87 280.09 581.87 291.08 565.14 261.84 560.6 261.84 553.94 299.74 559.24 299.74 562.6 280.63 564.38 270.5 581.11 299.74 585.71 299.74 592.37 261.84 587.01 261.84 583.87 280.09" />
+              <path className="ner-fill" d="M670.49,261.84l-23.66,37.89h6.01l5.09-8.23h21.22l2.27,8.23h5.36l-10.34-37.89h-5.95ZM660.91,286.53l11.91-19.21,5.14,19.21h-17.05Z" />
+              <polygon className="ner-fill" points="713.91 299.74 719.22 299.74 725.87 261.84 720.57 261.84 713.91 299.74" />
+              <path className="ner-fill" d="M78.96,233.44l91.19-168.23,28.28,52.13c3.34,6.19,12.22,6.19,15.56,0l26.12-48.2c1.44-2.65,1.44-5.8,0-8.45l-30.37-56.03c-1.02-1.9-2.65-3.31-4.59-4.03-1.01-.43-2.1-.62-3.21-.62h-63.6c-3.25,0-6.23,1.8-7.8,4.65L11.13,224.99c-3.21,5.9,1.05,13.11,7.77,13.11h52.3c3.25,0,6.23-1.8,7.77-4.65Z" />
+              <path className="ner-fill" d="M238.11,238.09c3.25,0,6.23-1.8,7.8-4.65L365.32,13.11c3.21-5.9-1.05-13.11-7.77-13.11h-52.3c-3.25,0-6.23,1.8-7.77,4.65l-91.19,168.23-28.28-52.13c-3.34-6.19-12.22-6.19-15.56,0l-26.12,48.2c-1.44,2.65-1.44,5.8,0,8.45l30.37,56.03c1.02,1.9,2.65,3.31,4.59,4.03,1.01.43,2.1.62,3.21.62h63.6Z" />
+            </g>
+          </svg>
+          <div className="ner-splash-sep" />
+          <div className="ner-splash-tagline">Cada caso, una estrategia.</div>
+        </div>
+
+        <div className="ner-splash-loader">
+          <div className="ner-splash-dots">
+            <div className="ner-splash-dot ner-splash-dot-1" />
+            <div className="ner-splash-dot ner-splash-dot-2" />
+            <div className="ner-splash-dot ner-splash-dot-3" />
+          </div>
+          <div className="ner-splash-loader-text">Cargando tu sesión...</div>
+        </div>
+      </div>
+    </>
+  );
+}

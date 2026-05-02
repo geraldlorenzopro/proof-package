@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, AlertTriangle } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
 import HubDashboard from "@/components/hub/HubDashboard";
+import HubSplash from "@/components/hub/HubSplash";
 import OnboardingWizard from "@/components/hub/OnboardingWizard";
 import { useAppPermissions } from "@/hooks/useAppPermissions";
 
@@ -58,6 +59,13 @@ export default function HubPage() {
   });
   const [stats, setStats] = useState<HubStats>({ totalClients: 0, activeForms: 0, recentActivity: 0 });
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [showSplash, setShowSplash] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem("ner_splash_seen") !== "1";
+    } catch {
+      return true;
+    }
+  });
   const navigate = useNavigate();
   const { canAccess, userRole, loading: permLoading } = useAppPermissions(data?.account_id ?? null);
 
@@ -356,33 +364,57 @@ export default function HubPage() {
   const availableAppSlugs = data.apps.map(a => a.slug).filter(s => s !== "case-engine");
 
   return (
-    <HubLayout
-      accountName={data.account_name}
-      staffName={data.staff_info?.display_name}
-      plan={data.plan}
-      availableApps={availableAppSlugs}
-    >
-      {/* Onboarding wizard overlay */}
-      {showOnboarding && (
-        <OnboardingWizard
-          accountId={data.account_id}
-          accountName={data.account_name}
-          onComplete={() => setShowOnboarding(false)}
+    <>
+      {showSplash && (
+        <HubSplash
+          firmName={data.account_name}
+          firmInitials={getFirmInitials(data.account_name)}
+          firmLogoUrl={null}
+          onComplete={() => {
+            try {
+              sessionStorage.setItem("ner_splash_seen", "1");
+            } catch {
+              /* ignore storage errors */
+            }
+            setShowSplash(false);
+          }}
         />
       )}
-
-      <HubDashboard
-        accountId={data.account_id}
+      <HubLayout
         accountName={data.account_name}
         staffName={data.staff_info?.display_name}
         plan={data.plan}
-        apps={data.apps}
-        userRole={userRole}
-        canAccessApp={canAccess}
-        stats={stats}
-        showOnboardingBanner={showOnboarding === true}
-        onTriggerOnboarding={() => setShowOnboarding(true)}
-      />
-    </HubLayout>
+        availableApps={availableAppSlugs}
+      >
+        {/* Onboarding wizard overlay */}
+        {showOnboarding && (
+          <OnboardingWizard
+            accountId={data.account_id}
+            accountName={data.account_name}
+            onComplete={() => setShowOnboarding(false)}
+          />
+        )}
+
+        <HubDashboard
+          accountId={data.account_id}
+          accountName={data.account_name}
+          staffName={data.staff_info?.display_name}
+          plan={data.plan}
+          apps={data.apps}
+          userRole={userRole}
+          canAccessApp={canAccess}
+          stats={stats}
+          showOnboardingBanner={showOnboarding === true}
+          onTriggerOnboarding={() => setShowOnboarding(true)}
+        />
+      </HubLayout>
+    </>
   );
+}
+
+function getFirmInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "NE";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
