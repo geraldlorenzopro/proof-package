@@ -410,7 +410,6 @@ function HubDashboardInner({
         {/* Main content — centered, no scroll */}
         <div className="w-full max-w-4xl flex flex-col gap-4 px-8 py-6">
 
-          <>
 
           {/* ─── ZONA A: Header ─── */}
           <div className="text-center shrink-0 flex-none">
