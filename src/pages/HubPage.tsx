@@ -493,53 +493,56 @@ export default function HubPage() {
 
   const availableAppSlugs = data.apps.map(a => a.slug).filter(s => s !== "case-engine");
 
+  // Mientras splash activo: SOLO splash visible (no montar dashboard debajo
+  // para evitar flash de KPIs en 0 antes que arranque la animación). Cuando
+  // splash termina (onComplete), HubLayout + HubDashboard se montan limpio.
+  if (showSplash) {
+    return (
+      <HubSplash
+        firmName={data.account_name}
+        firmInitials={getFirmInitials(data.account_name)}
+        firmLogoUrl={null}
+        onComplete={() => {
+          try {
+            sessionStorage.setItem("ner_splash_seen", "1");
+          } catch {
+            /* ignore storage errors */
+          }
+          setShowSplash(false);
+        }}
+      />
+    );
+  }
+
   return (
-    <>
-      {showSplash && (
-        <HubSplash
-          firmName={data.account_name}
-          firmInitials={getFirmInitials(data.account_name)}
-          firmLogoUrl={null}
-          onComplete={() => {
-            try {
-              sessionStorage.setItem("ner_splash_seen", "1");
-            } catch {
-              /* ignore storage errors */
-            }
-            setShowSplash(false);
-          }}
+    <HubLayout
+      accountName={data.account_name}
+      staffName={data.staff_info?.display_name}
+      plan={data.plan}
+      availableApps={availableAppSlugs}
+    >
+      {/* Onboarding wizard overlay */}
+      {showOnboarding && (
+        <OnboardingWizard
+          accountId={data.account_id}
+          accountName={data.account_name}
+          onComplete={() => setShowOnboarding(false)}
         />
       )}
-      <HubLayout
+
+      <HubDashboard
+        accountId={data.account_id}
         accountName={data.account_name}
         staffName={data.staff_info?.display_name}
         plan={data.plan}
-        availableApps={availableAppSlugs}
-      >
-        {/* Onboarding wizard overlay */}
-        {showOnboarding && (
-          <OnboardingWizard
-            accountId={data.account_id}
-            accountName={data.account_name}
-            onComplete={() => setShowOnboarding(false)}
-          />
-        )}
-
-        <HubDashboard
-          accountId={data.account_id}
-          accountName={data.account_name}
-          staffName={data.staff_info?.display_name}
-          plan={data.plan}
-          apps={data.apps}
-          userRole={userRole}
-          canAccessApp={canAccess}
-          stats={stats}
-          showOnboardingBanner={showOnboarding === true}
-          onTriggerOnboarding={() => setShowOnboarding(true)}
-          splashActive={showSplash}
-        />
-      </HubLayout>
-    </>
+        apps={data.apps}
+        userRole={userRole}
+        canAccessApp={canAccess}
+        stats={stats}
+        showOnboardingBanner={showOnboarding === true}
+        onTriggerOnboarding={() => setShowOnboarding(true)}
+      />
+    </HubLayout>
   );
 }
 
