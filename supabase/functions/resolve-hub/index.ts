@@ -259,6 +259,7 @@ Deno.serve(async (req) => {
     const cid = url.searchParams.get("cid");
     const sig = url.searchParams.get("sig");
     const ts = url.searchParams.get("ts");
+    const exp = url.searchParams.get("exp"); // optional explicit expiration (ms epoch)
     const uemail = url.searchParams.get("uemail");  // GHL user.email (staff identifier)
     const uname = url.searchParams.get("uname");    // GHL user.name
 
@@ -277,7 +278,22 @@ Deno.serve(async (req) => {
     }
 
     const tsNum = parseInt(ts, 10);
-    if (isNaN(tsNum) || Math.abs(Date.now() - tsNum) > 5 * 60 * 1000) {
+    if (isNaN(tsNum)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid timestamp" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (exp) {
+      const expNum = parseInt(exp, 10);
+      if (isNaN(expNum) || Date.now() > expNum) {
+        return new Response(
+          JSON.stringify({ error: "Link expired" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else if (Math.abs(Date.now() - tsNum) > 5 * 60 * 1000) {
       return new Response(
         JSON.stringify({ error: "Expired or invalid timestamp" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -292,10 +308,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // HMAC payload matches what hub-redirect generated
-    const hmacPayload = uemail ? `${cid}:${uemail}:${ts}` : `${cid}:${ts}`;
+    // HMAC payload: include exp when present (tamper-proof expiration)
+    const hmacPayload = exp
+      ? `${cid}:${ts}:${exp}`
+      : (uemail ? `${cid}:${uemail}:${ts}` : `${cid}:${ts}`);
     const valid = await verifyHmac(hmacPayload, sig, hubSecret);
-    console.log("HMAC debug:", { cid, uemail: uemail || "none", ts, sig: sig.substring(0, 8) + "...", valid });
+    console.log("HMAC debug:", { cid, uemail: uemail || "none", ts, exp: exp || "none", sig: sig.substring(0, 8) + "...", valid });
     if (!valid) {
       return new Response(
         JSON.stringify({ error: "Invalid signature" }),
