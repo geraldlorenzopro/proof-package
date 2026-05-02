@@ -536,6 +536,7 @@ export default function HubPage() {
           stats={stats}
           showOnboardingBanner={showOnboarding === true}
           onTriggerOnboarding={() => setShowOnboarding(true)}
+          splashActive={showSplash}
         />
       </HubLayout>
     </>

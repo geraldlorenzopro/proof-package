@@ -95,11 +95,15 @@ interface Props {
   stats?: any;
   showOnboardingBanner?: boolean;
   onTriggerOnboarding?: () => void;
+  /** Si el splash está visible, ocultar skeleton (splash cubre el viewport).
+   *  Evita que el usuario vea Skeleton state cuando salga del splash. */
+  splashActive?: boolean;
 }
 
 
 function HubDashboardInner({
-  accountId, accountName, staffName, showOnboardingBanner, onTriggerOnboarding
+  accountId, accountName, staffName, showOnboardingBanner, onTriggerOnboarding,
+  splashActive = false,
 }: Props) {
   const navigate = useNavigate();
   const [resolvedName, setResolvedName] = useState<string | null>(null);
@@ -382,7 +386,11 @@ function HubDashboardInner({
 
   
 
-  const isReady = kpisLoaded;
+  // Si splash está activo, NO mostrar skeleton (splash cubre el viewport).
+  // Cuando splash desaparece y kpisLoaded es true → renderiza dashboard real
+  // sin flash de skeleton. Esto fixea el bug donde se veía skeleton entre
+  // splash y dashboard cuando KPIs tardaban más que el splash (~2.7s).
+  const isReady = kpisLoaded || splashActive;
 
   return (
     <>
