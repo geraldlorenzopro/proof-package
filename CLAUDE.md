@@ -107,6 +107,66 @@ existe en código (`provision-account`, `useAppPermissions`, `useAppSeat`,
 `ai_credits`) — solo falta verificar mapping de tiers + agregar UI de upgrade
 prompts.
 
+## Hierarchical Visibility — Modelo de roles (decidido 2026-05-03)
+
+Spec completa en [`.ai/master/visibility-model.md`](.ai/master/visibility-model.md).
+
+**Principio UX unificador:** *"Transparencia donde gobierna, silencio donde opera."*
+
+**Tier hierarchy (jerárquico, no flat):**
+
+| Tier | Roles | Acceso |
+|:--:|---|---|
+| 1 | `owner`, `admin` | Todo (incluye revenue, config, audit logs) |
+| 2 | `attorney` | Todo lo del paralegal + memos privados attorney_only |
+| 3 | `paralegal`, `member` | Solo records `visibility='team'` |
+| 4 | `assistant` | Limitado: solo intake + comms |
+| 5 | `readonly` | View-only de team |
+
+**Visibility levels per record:**
+
+| Level | Quién ve | Cuándo usar |
+|---|---|---|
+| `team` (default) | Todos los miembros | 90% de los casos. Notas seguimiento, tareas, docs cliente |
+| `attorney_only` | Tier 1+2 | Memos de estrategia legal, briefs internos, RFE drafts |
+| `admin_only` | Tier 1 | Revenue analysis, disciplinario, audit trail sensible |
+
+**Tablas afectadas:** `case_notes`, `case_documents`, `ai_agent_sessions`,
+`case_tasks`. Otras tablas mantienen RLS por account_id sin discriminación.
+
+**Migration:** [`supabase/migrations/20260503100000_role_visibility_hierarchical.sql`](supabase/migrations/20260503100000_role_visibility_hierarchical.sql)
+
+**Frontend hook:** [`src/hooks/usePermissions.ts`](src/hooks/usePermissions.ts) expone
+`canViewVisibility(level)` y `assignableVisibilityLevels()`.
+
+**UX rules (validadas con paralegal real Vanessa, debate 2026-05-03):**
+
+1. **Transparencia agregada en case detail.** Paralegal ve contador `🔒 N privadas`
+   en header del panel. NO ver row-por-row, solo conteo. Tooltip: *"Sólo los
+   abogados pueden ver el contenido"*.
+2. **Dropdown inline en creación**, siempre visible. 3 radios horizontales con
+   border color-coded (verde/amber/rojo). NO toggle binario, NO collapsed.
+3. **Briefing operativo silencioso.** El briefing de Camila al paralegal NO
+   menciona contenido restringido. Si el attorney quiere que el paralegal
+   accione algo, escala vía task pública (que es team-visible).
+4. **Microcopy oficial:** *"Esta nota queda en el círculo de abogados"* (sobria,
+   no big-brother). NUNCA usar *"X no verá esta nota"* (nombrar al excluido).
+
+**Defaults:**
+- Toda nota/doc/task nuevo: `visibility='team'`. Override explícito.
+- Output de agentes IA (Felix, Camila, Nina): `visibility='team'`. Trabajo del
+  equipo, no del individuo.
+- Override granular por record (NO setting per-user).
+
+**NO hacer (anti-patterns):**
+- ❌ Default `private` (rompe transparencia operativa, fricción innecesaria)
+- ❌ Mostrar row-por-row de notas privadas (invita especulación)
+- ❌ Mencionar contenido restringido en briefing operativo
+- ❌ Setting per-user de "ver privadas" (granularidad por record es la norma)
+
+**Implementation status:** schema migration generada (no pusheada). Hook ya
+extendido. UI controls + queries dashboard pendientes post-aprobación push.
+
 ## Splash de entrada (decidido 2026-05-02)
 
 - **Componente:** `src/components/hub/HubSplash.tsx` (creado)

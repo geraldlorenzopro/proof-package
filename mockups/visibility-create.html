@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NER · Visibility UX — paralegal vs attorney + creación de nota</title>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+  VISIBILITY UX — NER Immigration AI
+  Versión: 2026-05-03-visibility-ux
+  Autor: Orquestador (Valerie + Vanessa + Victoria)
+  Brandbook: AI Blue #2563EB · Deep Navy #0B1F3A · Cyan 22D3EE (20% accent)
+  Tipografía: Sora · Regla 80/20
+
+  ═══ DECISIÓN DEL EQUIPO (consenso) ═════════════════════════════════════
+  Pregunta 1 (¿paralegal sabe que existe nota privada?):
+    → HÍBRIDO con sesgo a transparencia (Opción C+).
+      Mostrar contador agregado "🔒 N privadas" en el header del panel
+      (sin contenido, sin autor). NO mostrar 1-by-1 las notas privadas.
+      Razón: Vanessa (15 años exp) confirmó que "saber que existe" la
+      hace más segura ante el cliente, pero ver cada placeholder es ruido.
+      Threshold: SIEMPRE mostrar el contador si hay >=1 (no esperar a 5).
+      Tooltip explica "Sólo el attorney puede ver el contenido."
+
+  Pregunta 2 (¿cómo expone visibility en creación de nota?):
+    → DROPDOWN INLINE SIEMPRE VISIBLE (Opción A) con default "Equipo".
+      3 opciones: 🟢 Equipo · 🟡 Sólo abogados · 🔴 Sólo administración.
+      Razón: Vanessa pidió fricción AQUÍ — "si me esconden el control,
+      voy a creer que mi nota es privada cuando no lo es". Claridad >
+      cleanness. El control es pequeño pero presente.
+      Microinteracción: el color del border del textarea cambia con el nivel.
+
+  Pregunta 3 (¿briefing menciona contenido restringido?):
+    → SÓLO LO QUE PUEDE VER (Opción B).
+      El briefing de Camila al paralegal NO menciona memos privados del
+      attorney. Razón: el briefing es operativo ("¿qué hago hoy?"), no
+      informativo de gobernanza. Si el attorney quiere que el paralegal
+      sepa de algo, lo escala vía task @assignee (que sí es team-visible).
+      El contador "N privadas" del Pregunta 1 ya cumple la función de
+      transparencia donde corresponde (en el case detail, no en el home).
+
+  ═══ PRINCIPIO UX UNIFICADOR ═══════════════════════════════════════════
+  "Transparencia donde gobierna, silencio donde opera."
+  - En el CASE detail (gobernanza): mostrar contador de privadas.
+  - En el HOME / briefing (operación): sólo lo accionable y visible.
+  - Crear contenido: el control es explícito, no escondido.
+
+═══════════════════════════════════════════════════════════════════════ -->
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        'ai-blue':       '#2563EB',
+        'ai-blue-soft':  '#3B82F6',
+        'ai-blue-deep':  '#1D4ED8',
+        'navy':          '#0B1F3A',
+        'navy-deep':     '#081429',
+        'navy-mid':      '#0F2D52',
+        'cyan-accent':   '#22D3EE',
+        'graphite':      '#1F2937',
+        'soft-gray':     '#F3F4F6',
+        'sev-critical':  '#DC2626',
+        'sev-high':      '#F59E0B',
+        'sev-med':       '#3B82F6',
+        'sev-ok':        '#10B981',
+      },
+      fontFamily: {
+        sora: ['Sora', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+    }
+  }
+}
+</script>
+
+<style>
+  html, body {
+    font-family: 'Sora', system-ui, sans-serif;
+    background: #050B1A;
+    color: #E5E7EB;
+    -webkit-font-smoothing: antialiased;
+  }
+  .accent-data { color: #67E8F9; }
+  .ner-card {
+    background: rgba(11, 31, 58, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+  }
+  .ner-card-elevated {
+    background: linear-gradient(180deg, rgba(15,45,82,.7) 0%, rgba(11,31,58,.65) 100%);
+    border: 1px solid rgba(34, 211, 238, 0.10);
+  }
+  /* Visibility levels — color encoding */
+  .vis-team   { background: rgba(16,185,129,.08);  border-color: rgba(16,185,129,.30); }
+  .vis-att    { background: rgba(245,158,11,.08);  border-color: rgba(245,158,11,.30); }
+  .vis-admin  { background: rgba(220,38,38,.10);   border-color: rgba(220,38,38,.35); }
+  .vis-locked { background: rgba(148,163,184,.06); border-color: rgba(148,163,184,.18); }
+
+  .frame-bg {
+    background: linear-gradient(135deg, #081429 0%, #0B1F3A 40%, #0F2D52 100%);
+  }
+  .frame-grid::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(37,99,235,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,99,235,.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+  }
+  @keyframes pulse-soft { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid #22D3EE; outline-offset: 2px; border-radius: 8px;
+  }
+  .frame-shell {
+    box-shadow: 0 24px 60px -24px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.04) inset;
+  }
+  /* Diagonal stripes pattern para "contenido restringido" — sutil, no decorativo */
+  .restricted-pattern {
+    background-image: repeating-linear-gradient(
+      135deg,
+      rgba(148,163,184,.05),
+      rgba(148,163,184,.05) 6px,
+      transparent 6px,
+      transparent 12px
+    );
+  }
+  /* Tooltip para el contador de privadas */
+  .has-tooltip { position: relative; }
+  .has-tooltip:hover .tooltip { opacity: 1; transform: translateY(-2px); }
+  .tooltip {
+    position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: #0B1F3A; border: 1px solid rgba(34,211,238,.30);
+    padding: 6px 10px; border-radius: 6px; font-size: 11px; color: #E5E7EB;
+    white-space: nowrap; opacity: 0; pointer-events: none; transition: all .18s ease;
+    z-index: 50;
+  }
+  /* Border color del textarea según nivel */
+  .textarea-team   { border-color: rgba(16,185,129,.45); box-shadow: 0 0 0 1px rgba(16,185,129,.18); }
+  .textarea-att    { border-color: rgba(245,158,11,.45); box-shadow: 0 0 0 1px rgba(245,158,11,.18); }
+  .textarea-admin  { border-color: rgba(220,38,38,.50);  box-shadow: 0 0 0 1px rgba(220,38,38,.20); }
+</style>
+</head>
+<body class="font-sora">
+<div class="px-8 py-6 border-b border-white/5 bg-navy-deep/40 backdrop-blur-xl">
+  <p class="text-[10px] uppercase tracking-[0.22em] text-cyan-accent/80 font-semibold">Visibility UX · NER Immigration AI</p>
+  <h1 class="text-xl font-semibold text-white mt-1">Modal · Crear nota</h1>
+  <p class="text-[12px] text-slate-400 mt-1">Dropdown inline siempre visible · default Equipo · border del textarea cambia color con el nivel</p>
+</div>
+<section class="px-8 py-8">
+  <div class="max-w-[720px] mx-auto">
+      <!-- ══════════════════════════════════════════════════════════════
+           FRAME 3 — MODAL DE CREACIÓN DE NOTA
+           DECISIÓN P2: Dropdown inline siempre visible.
+           Default "Equipo" · 3 opciones radio + label corto.
+           Border del textarea cambia color según nivel (microinteracción).
+      ══════════════════════════════════════════════════════════════ -->
+      <article class="frame-shell rounded-xl overflow-hidden border border-emerald-500/30">
+        <div class="bg-navy-deep/80 px-3 py-2 flex items-center justify-between border-b border-white/5">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-red-500/60"></span>
+            <span class="w-2 h-2 rounded-full bg-amber-500/60"></span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500/60"></span>
+            <span class="ml-2 text-[10px] text-slate-500 font-mono">modal · NoteCreate</span>
+          </div>
+          <span class="text-[9px] text-emerald-300">creación</span>
+        </div>
+
+        <div class="frame-bg p-4 min-h-[680px] flex flex-col gap-4">
+
+          <!-- ═══ Estado A — DEFAULT (team) ═══ -->
+          <div>
+            <p class="text-[10px] uppercase tracking-widest text-emerald-300/80 font-semibold mb-2">Estado A · default "Equipo"</p>
+
+            <div class="ner-card-elevated rounded-lg p-4">
+              <div class="flex items-center justify-between mb-3">
+                <p class="text-[12px] font-semibold text-white">Nueva nota · María Rodríguez</p>
+                <button class="text-slate-500 hover:text-white text-[14px]">×</button>
+              </div>
+
+              <!-- Textarea con border verde (team) -->
+              <textarea
+                rows="3"
+                placeholder="Escribe tu nota..."
+                class="w-full bg-navy-deep/40 border textarea-team rounded-md px-3 py-2 text-[12px] text-white placeholder-slate-500 resize-none"
+              >Cliente confirmó que tiene cuenta conjunta desde 2022. Pedirle screenshot del statement.</textarea>
+
+              <!-- DROPDOWN VISIBILITY INLINE — DECISIÓN P2 -->
+              <div class="mt-3">
+                <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1.5">¿Quién puede ver esta nota?</p>
+                <div class="grid grid-cols-3 gap-1.5">
+                  <!-- Team (selected) -->
+                  <label class="cursor-pointer">
+                    <input type="radio" name="vis-a" checked class="sr-only peer" />
+                    <div class="rounded-md border vis-team px-2 py-1.5 peer-checked:ring-2 peer-checked:ring-emerald-400 transition">
+                      <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span class="text-[11px] font-semibold text-emerald-200">Equipo</span>
+                      </div>
+                      <p class="text-[9px] text-slate-400 mt-0.5">Default · todos ven</p>
+                    </div>
+                  </label>
+                  <!-- Attorney only -->
+                  <label class="cursor-pointer">
+                    <input type="radio" name="vis-a" class="sr-only peer" />
+                    <div class="rounded-md border border-white/10 bg-navy-deep/30 px-2 py-1.5 hover:border-amber-500/40 transition">
+                      <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-400/40"></span>
+                        <span class="text-[11px] font-semibold text-slate-300">Sólo abogados</span>
+                      </div>
+                      <p class="text-[9px] text-slate-500 mt-0.5">Tier 1+2</p>
+                    </div>
+                  </label>
+                  <!-- Admin only -->
+                  <label class="cursor-pointer">
+                    <input type="radio" name="vis-a" class="sr-only peer" />
+                    <div class="rounded-md border border-white/10 bg-navy-deep/30 px-2 py-1.5 hover:border-red-500/40 transition">
+                      <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-red-400/40"></span>
+                        <span class="text-[11px] font-semibold text-slate-300">Sólo administración</span>
+                      </div>
+                      <p class="text-[9px] text-slate-500 mt-0.5">Tier 1</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Acciones -->
+              <div class="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
+                <p class="text-[10px] text-emerald-300/80">
+                  <span class="font-semibold">3 personas</span> verán esta nota: Vanessa, Daniel, María (firma).
+                </p>
+                <div class="flex gap-2">
+                  <button class="px-3 py-1.5 rounded text-[11px] text-slate-400 hover:text-white">Cancelar</button>
+                  <button class="px-3 py-1.5 rounded text-[11px] font-semibold bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 hover:bg-emerald-500/30">Guardar nota</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ Estado B — Attorney_only seleccionado ═══ -->
+          <div>
+            <p class="text-[10px] uppercase tracking-widest text-amber-300/80 font-semibold mb-2">Estado B · attorney cambia a "Sólo abogados"</p>
+
+            <div class="ner-card-elevated rounded-lg p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <p class="text-[12px] font-semibold text-white">Nueva nota · María Rodríguez</p>
+                  <!-- Indicador visual cambia -->
+                  <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-amber-500/15 border border-amber-500/40 text-amber-300">Privada</span>
+                </div>
+                <button class="text-slate-500 hover:text-white text-[14px]">×</button>
+              </div>
+
+              <textarea
+                rows="3"
+                class="w-full bg-navy-deep/40 border textarea-att rounded-md px-3 py-2 text-[12px] text-white placeholder-slate-500 resize-none"
+              >Si RFE escala, pivot a I-601A. NO compartir con cliente.</textarea>
+
+              <div class="mt-3">
+                <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1.5">¿Quién puede ver esta nota?</p>
+                <div class="grid grid-cols-3 gap-1.5">
+                  <label class="cursor-pointer">
+                    <input type="radio" name="vis-b" class="sr-only peer" />
+                    <div class="rounded-md border border-white/10 bg-navy-deep/30 px-2 py-1.5 hover:border-emerald-500/40 transition">
+                      <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400/40"></span>
+                        <span class="text-[11px] font-semibold text-slate-300">Equipo</span>
+                      </div>
+                      <p class="text-[9px] text-slate-500 mt-0.5">Default · todos ven</p>
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="vis-b" checked class="sr-only peer" />
+                    <div class="rounded-md border vis-att px-2 py-1.5 peer-checked:ring-2 peer-checked:ring-amber-400 transition">
+                      <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span class="text-[11px] font-semibold text-amber-200">Sólo abogados</span>
+                      </div>
+                      <p class="text-[9px] text-slate-400 mt-0.5">Tier 1+2</p>
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="vis-b" class="sr-only peer" />
+                    <div class="rounded-md border border-white/10 bg-navy-deep/30 px-2 py-1.5 hover:border-red-500/40 transition">
+                      <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-red-400/40"></span>
+                        <span class="text-[11px] font-semibold text-slate-300">Sólo administración</span>
+                      </div>
+                      <p class="text-[9px] text-slate-500 mt-0.5">Tier 1</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Microcopy AVISA al autor explícitamente quiénes NO ven -->
+              <div class="mt-3 rounded-md bg-amber-500/10 border border-amber-500/30 px-3 py-2">
+                <p class="text-[10px] text-amber-200 leading-snug">
+                  <span class="font-bold">Vanessa (paralegal) NO verá esta nota.</span>
+                  En su panel aparecerá como "🔒 1 privada" sin contenido.
+                </p>
+              </div>
+
+              <div class="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
+                <p class="text-[10px] text-amber-300/80">
+                  <span class="font-semibold">2 personas</span> verán esta nota: Daniel, owner de la firma.
+                </p>
+                <div class="flex gap-2">
+                  <button class="px-3 py-1.5 rounded text-[11px] text-slate-400 hover:text-white">Cancelar</button>
+                  <button class="px-3 py-1.5 rounded text-[11px] font-semibold bg-amber-500/20 border border-amber-500/50 text-amber-200 hover:bg-amber-500/30">Guardar privada</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </article>  </div>
+</section>
+</body>
+</html>

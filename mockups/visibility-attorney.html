@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NER · Visibility UX — paralegal vs attorney + creación de nota</title>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+  VISIBILITY UX — NER Immigration AI
+  Versión: 2026-05-03-visibility-ux
+  Autor: Orquestador (Valerie + Vanessa + Victoria)
+  Brandbook: AI Blue #2563EB · Deep Navy #0B1F3A · Cyan 22D3EE (20% accent)
+  Tipografía: Sora · Regla 80/20
+
+  ═══ DECISIÓN DEL EQUIPO (consenso) ═════════════════════════════════════
+  Pregunta 1 (¿paralegal sabe que existe nota privada?):
+    → HÍBRIDO con sesgo a transparencia (Opción C+).
+      Mostrar contador agregado "🔒 N privadas" en el header del panel
+      (sin contenido, sin autor). NO mostrar 1-by-1 las notas privadas.
+      Razón: Vanessa (15 años exp) confirmó que "saber que existe" la
+      hace más segura ante el cliente, pero ver cada placeholder es ruido.
+      Threshold: SIEMPRE mostrar el contador si hay >=1 (no esperar a 5).
+      Tooltip explica "Sólo el attorney puede ver el contenido."
+
+  Pregunta 2 (¿cómo expone visibility en creación de nota?):
+    → DROPDOWN INLINE SIEMPRE VISIBLE (Opción A) con default "Equipo".
+      3 opciones: 🟢 Equipo · 🟡 Sólo abogados · 🔴 Sólo administración.
+      Razón: Vanessa pidió fricción AQUÍ — "si me esconden el control,
+      voy a creer que mi nota es privada cuando no lo es". Claridad >
+      cleanness. El control es pequeño pero presente.
+      Microinteracción: el color del border del textarea cambia con el nivel.
+
+  Pregunta 3 (¿briefing menciona contenido restringido?):
+    → SÓLO LO QUE PUEDE VER (Opción B).
+      El briefing de Camila al paralegal NO menciona memos privados del
+      attorney. Razón: el briefing es operativo ("¿qué hago hoy?"), no
+      informativo de gobernanza. Si el attorney quiere que el paralegal
+      sepa de algo, lo escala vía task @assignee (que sí es team-visible).
+      El contador "N privadas" del Pregunta 1 ya cumple la función de
+      transparencia donde corresponde (en el case detail, no en el home).
+
+  ═══ PRINCIPIO UX UNIFICADOR ═══════════════════════════════════════════
+  "Transparencia donde gobierna, silencio donde opera."
+  - En el CASE detail (gobernanza): mostrar contador de privadas.
+  - En el HOME / briefing (operación): sólo lo accionable y visible.
+  - Crear contenido: el control es explícito, no escondido.
+
+═══════════════════════════════════════════════════════════════════════ -->
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        'ai-blue':       '#2563EB',
+        'ai-blue-soft':  '#3B82F6',
+        'ai-blue-deep':  '#1D4ED8',
+        'navy':          '#0B1F3A',
+        'navy-deep':     '#081429',
+        'navy-mid':      '#0F2D52',
+        'cyan-accent':   '#22D3EE',
+        'graphite':      '#1F2937',
+        'soft-gray':     '#F3F4F6',
+        'sev-critical':  '#DC2626',
+        'sev-high':      '#F59E0B',
+        'sev-med':       '#3B82F6',
+        'sev-ok':        '#10B981',
+      },
+      fontFamily: {
+        sora: ['Sora', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+    }
+  }
+}
+</script>
+
+<style>
+  html, body {
+    font-family: 'Sora', system-ui, sans-serif;
+    background: #050B1A;
+    color: #E5E7EB;
+    -webkit-font-smoothing: antialiased;
+  }
+  .accent-data { color: #67E8F9; }
+  .ner-card {
+    background: rgba(11, 31, 58, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+  }
+  .ner-card-elevated {
+    background: linear-gradient(180deg, rgba(15,45,82,.7) 0%, rgba(11,31,58,.65) 100%);
+    border: 1px solid rgba(34, 211, 238, 0.10);
+  }
+  /* Visibility levels — color encoding */
+  .vis-team   { background: rgba(16,185,129,.08);  border-color: rgba(16,185,129,.30); }
+  .vis-att    { background: rgba(245,158,11,.08);  border-color: rgba(245,158,11,.30); }
+  .vis-admin  { background: rgba(220,38,38,.10);   border-color: rgba(220,38,38,.35); }
+  .vis-locked { background: rgba(148,163,184,.06); border-color: rgba(148,163,184,.18); }
+
+  .frame-bg {
+    background: linear-gradient(135deg, #081429 0%, #0B1F3A 40%, #0F2D52 100%);
+  }
+  .frame-grid::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(37,99,235,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,99,235,.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+  }
+  @keyframes pulse-soft { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid #22D3EE; outline-offset: 2px; border-radius: 8px;
+  }
+  .frame-shell {
+    box-shadow: 0 24px 60px -24px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.04) inset;
+  }
+  /* Diagonal stripes pattern para "contenido restringido" — sutil, no decorativo */
+  .restricted-pattern {
+    background-image: repeating-linear-gradient(
+      135deg,
+      rgba(148,163,184,.05),
+      rgba(148,163,184,.05) 6px,
+      transparent 6px,
+      transparent 12px
+    );
+  }
+  /* Tooltip para el contador de privadas */
+  .has-tooltip { position: relative; }
+  .has-tooltip:hover .tooltip { opacity: 1; transform: translateY(-2px); }
+  .tooltip {
+    position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: #0B1F3A; border: 1px solid rgba(34,211,238,.30);
+    padding: 6px 10px; border-radius: 6px; font-size: 11px; color: #E5E7EB;
+    white-space: nowrap; opacity: 0; pointer-events: none; transition: all .18s ease;
+    z-index: 50;
+  }
+  /* Border color del textarea según nivel */
+  .textarea-team   { border-color: rgba(16,185,129,.45); box-shadow: 0 0 0 1px rgba(16,185,129,.18); }
+  .textarea-att    { border-color: rgba(245,158,11,.45); box-shadow: 0 0 0 1px rgba(245,158,11,.18); }
+  .textarea-admin  { border-color: rgba(220,38,38,.50);  box-shadow: 0 0 0 1px rgba(220,38,38,.20); }
+</style>
+</head>
+<body class="font-sora">
+<div class="px-8 py-6 border-b border-white/5 bg-navy-deep/40 backdrop-blur-xl">
+  <p class="text-[10px] uppercase tracking-[0.22em] text-cyan-accent/80 font-semibold">Visibility UX · NER Immigration AI</p>
+  <h1 class="text-xl font-semibold text-white mt-1">Vista del attorney · Daniel (Tier 2)</h1>
+  <p class="text-[12px] text-slate-400 mt-1">El mismo caso · Daniel ve TODO lo del paralegal + sus memos privados</p>
+</div>
+<section class="px-8 py-8">
+  <div class="max-w-[720px] mx-auto">
+      <!-- ══════════════════════════════════════════════════════════════
+           FRAME 2 — VISTA DEL ATTORNEY (Daniel)
+           Tier 2. Ve TODO de team + attorney_only.
+           Las notas privadas se diferencian visualmente por color amber.
+      ══════════════════════════════════════════════════════════════ -->
+      <article class="frame-shell rounded-xl overflow-hidden border border-amber-500/30">
+        <div class="bg-navy-deep/80 px-3 py-2 flex items-center justify-between border-b border-white/5">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-red-500/60"></span>
+            <span class="w-2 h-2 rounded-full bg-amber-500/60"></span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500/60"></span>
+            <span class="ml-2 text-[10px] text-slate-500 font-mono">/case-engine/maria-rodriguez</span>
+          </div>
+          <span class="text-[9px] text-amber-300">attorney view</span>
+        </div>
+
+        <div class="frame-bg p-4 min-h-[680px]">
+          <!-- Case header -->
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <p class="text-[10px] uppercase tracking-widest text-amber-300/80 font-semibold">Caso · I-130</p>
+              <h2 class="text-base font-bold text-white">María Rodríguez</h2>
+              <p class="text-[11px] text-slate-400">USCIS · stage: Recibo I-797 · A# A123-456-789</p>
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              <span class="px-2 py-0.5 rounded text-[9px] font-semibold bg-amber-500/10 border border-amber-500/40 text-amber-300">Daniel · Attorney</span>
+              <span class="text-[9px] text-slate-500">Tier 2 · ves "Equipo" + tus privadas</span>
+            </div>
+          </div>
+
+          <!-- ═══ PANEL: NOTAS (vista completa) ═══ -->
+          <div class="ner-card rounded-lg p-3 mb-3">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <p class="text-[12px] font-semibold text-white">Notas del caso</p>
+                <span class="text-[10px] text-slate-500 font-mono">5 totales</span>
+              </div>
+              <!-- Daniel ve breakdown explícito -->
+              <div class="flex items-center gap-1.5">
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/15 border border-emerald-500/40 text-emerald-300">3 equipo</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/15 border border-amber-500/40 text-amber-300">2 privadas</span>
+              </div>
+            </div>
+
+            <!-- Notas team (mismas que Vanessa, en mismo orden) -->
+            <div class="rounded-md border vis-team px-3 py-2 mb-1.5">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-semibold text-white leading-tight">Cliente confirmó dirección actual</p>
+                  <p class="text-[10px] text-slate-300/90 leading-snug mt-0.5">María llamó 9:15 AM, mudanza a Brooklyn confirmada.</p>
+                </div>
+                <div class="flex flex-col items-end gap-0.5 shrink-0">
+                  <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/15 border border-emerald-500/40 text-emerald-300">Equipo</span>
+                  <span class="text-[9px] text-slate-500">Vanessa · 09:18</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ★ Nota privada del attorney — visible para Daniel ★ -->
+            <div class="rounded-md border vis-att px-3 py-2 mb-1.5 relative">
+              <span class="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-500/30 border border-amber-500/60 text-amber-200">Sólo abogados</span>
+              <div class="flex items-start justify-between gap-2 pr-12">
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-semibold text-white leading-tight">Estrategia: si RFE pide más bona fide, pivot a Hardship Waiver</p>
+                  <p class="text-[10px] text-slate-200/90 leading-snug mt-0.5">
+                    Carlos tiene I-94 vencido 2024. Si USCIS escala, prep I-601A en paralelo. NO compartir con cliente hasta confirmar.
+                  </p>
+                </div>
+                <span class="text-[9px] text-amber-300/70 shrink-0">Daniel · 28-abr</span>
+              </div>
+            </div>
+
+            <div class="rounded-md border vis-team px-3 py-2 mb-1.5">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-semibold text-white leading-tight">Recibo I-797 ingresó a expediente</p>
+                  <p class="text-[10px] text-slate-300/90 leading-snug mt-0.5">Receipt # WAC2425001234 · prioridad 12-feb-2026.</p>
+                </div>
+                <div class="flex flex-col items-end gap-0.5 shrink-0">
+                  <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/15 border border-emerald-500/40 text-emerald-300">Equipo</span>
+                  <span class="text-[9px] text-slate-500">Felix AI · ayer</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ★ Segunda nota privada ★ -->
+            <div class="rounded-md border vis-att px-3 py-2 mb-1.5 relative">
+              <span class="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-500/30 border border-amber-500/60 text-amber-200">Sólo abogados</span>
+              <div class="flex items-start justify-between gap-2 pr-12">
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-semibold text-white leading-tight">Cliente mencionó arresto 2018 — verificar si fue dismissed</p>
+                  <p class="text-[10px] text-slate-200/90 leading-snug mt-0.5">
+                    Pedir court disposition antes de firmar I-130. Si conviction, abre INA 212. Pendiente solicitar a Vanessa SIN explicar el "por qué".
+                  </p>
+                </div>
+                <span class="text-[9px] text-amber-300/70 shrink-0">Daniel · 25-abr</span>
+              </div>
+            </div>
+
+            <div class="rounded-md border vis-team px-3 py-2 mb-1.5">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-semibold text-white leading-tight">Confirmar evidencia de matrimonio bona fide</p>
+                  <p class="text-[10px] text-slate-300/90 leading-snug mt-0.5">Vanessa, pídele a María: cuenta bancaria conjunta + lease.</p>
+                </div>
+                <div class="flex flex-col items-end gap-0.5 shrink-0">
+                  <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/15 border border-emerald-500/40 text-emerald-300">Equipo</span>
+                  <span class="text-[9px] text-slate-500">Daniel · 28-abr</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="w-full mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-1.5 text-[11px] text-amber-200 font-semibold hover:bg-amber-500/10 transition flex items-center justify-center gap-1.5">
+              <span class="text-[14px] leading-none">+</span> Nueva nota
+            </button>
+          </div>
+
+          <!-- Tareas (mismas team) -->
+          <div class="ner-card rounded-lg p-3 mb-3">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-[12px] font-semibold text-white">Tareas <span class="text-[10px] text-slate-500 font-mono">2 totales</span></p>
+              <span class="text-[9px] text-slate-500">sin tareas privadas</span>
+            </div>
+            <div class="rounded-md border vis-team px-3 py-2 mb-1.5 flex items-center gap-2">
+              <input type="checkbox" class="w-3.5 h-3.5" />
+              <p class="flex-1 text-[11px] font-semibold text-white">Pedir 6 docs evidencia bona fide</p>
+              <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/15 border border-emerald-500/40 text-emerald-300">Equipo</span>
+            </div>
+            <div class="rounded-md border vis-team px-3 py-2 flex items-center gap-2 opacity-70">
+              <input type="checkbox" checked class="w-3.5 h-3.5" />
+              <p class="flex-1 text-[11px] font-semibold text-white line-through">Subir recibo I-797 al expediente</p>
+              <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/15 border border-emerald-500/40 text-emerald-300">Equipo</span>
+            </div>
+          </div>
+
+          <!-- Documentos -->
+          <div class="ner-card rounded-lg p-3">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-[12px] font-semibold text-white">Documentos <span class="text-[10px] text-slate-500 font-mono">13 totales</span></p>
+              <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/15 border border-amber-500/40 text-amber-300">1 privado</span>
+            </div>
+            <p class="text-[10px] text-slate-500 leading-snug">
+              I-130 borrador · I-797 receipt · pasaporte María · pasaporte Carlos · acta matrimonio …
+              <span class="text-amber-300/70">+ memo estrategia 212(a)(2) (privado)</span>
+            </p>
+          </div>
+
+        </div>
+
+        <div class="bg-navy-deep/80 px-3 py-2 border-t border-white/5">
+          <p class="text-[9px] text-slate-500 leading-snug">
+            <span class="text-amber-300">●</span> Tu equipo NO ve las notas con etiqueta "Sólo abogados". Si necesitas escalarlas, conviértelas en tarea pública.
+          </p>
+        </div>
+      </article>  </div>
+</section>
+</body>
+</html>

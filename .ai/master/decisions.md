@@ -607,6 +607,85 @@ declarar "fixed" lleva a deploys que parecen arreglados pero no lo están.
 
 ---
 
+## 2026-05-03 — Modelo Hierarchical Visibility (roles + permisos por contenido)
+
+**Decisión:** Implementar modelo de visibilidad jerárquica por rol antes
+del dashboard wow-factor. Tier superior ve todo de tiers inferiores; tiers
+inferiores NO ven contenido marcado privado por tiers superiores.
+
+**Quién decidió:** Mr. Lorenzo, 2026-05-03 ("SI ARRANCA").
+
+**Contexto:** El audit detectó que el schema DB tiene 3 roles (`owner|admin|member`)
+pero el código maneja 7. Más crítico: las RLS policies actuales NO discriminan
+visibility por autor — todo miembro de la cuenta ve TODO. Esto rompe el modelo
+de práctica legal donde paralegal NO ve memos privados del attorney.
+
+**Las 5 decisiones tomadas (confirmadas en luz verde):**
+
+1. **Jerarquía:** `owner > admin > attorney > paralegal/member > assistant > readonly`.
+   - Owner = dueño firma. Admin = staff oficina (no necesariamente legal).
+   - Attorney = quien firma legalmente. Paralegal = miembro técnico día a día.
+   - Assistant = soporte (intake, comms). Readonly = view-only.
+
+2. **Default visibility:** `team` (transparencia por default).
+   - Override solo cuando es sensible.
+   - Reduce fricción operativa del 90% de los casos.
+
+3. **Override granular:** Por record (dropdown en cada nota/doc/task).
+   - NO setting per-user. La decisión es del autor en el momento.
+   - Niveles: `team` / `attorney_only` / `admin_only`.
+
+4. **Output de agentes IA (Felix, Camila, Nina, etc.):** Default `team`.
+   - El agente ejecuta trabajo del equipo, no del individuo.
+   - Override possible si el invocador lo marca privado.
+
+5. **Sprint priority:** ANTES del dashboard wow.
+   - Dashboard muestra contenido sensible (briefings, RFE memos, estrategia).
+   - Construir queries sin modelo correcto = rework garantizado.
+
+**Alternativas consideradas:**
+- ❌ Author-tier automático (cada record stores autor's role; RLS auto-filtra).
+  Rechazada: menos explícita, sorprende al autor cuando algo se filtra solo.
+- ❌ Visibility por proyecto/caso (todo case sensitivo o todo case público).
+  Rechazada: granularidad insuficiente, hay notas team y memos privados en mismo caso.
+- ✅ **Visibility por record con override explícito.** Más simple, más predecible.
+
+**Razón:** Visibility explícita por record permite:
+- Workflow legal natural (attorney decide qué es privado en el momento)
+- Backwards-compat (records existentes → `visibility='team'`, igual al comportamiento actual)
+- Audit trail (cada cambio de visibility queda en activity log)
+- RLS simple (3 valores, policy fácil de leer y mantener)
+
+**Implicación:**
+
+Schema migration (parallel, no destructiva):
+- `ALTER TYPE account_role ADD VALUE 'attorney', 'paralegal'`
+- `ADD COLUMN visibility TEXT DEFAULT 'team' CHECK (...)` en:
+  - `case_notes`
+  - `case_documents`
+  - `ai_agent_sessions`
+  - `case_tasks`
+- Helper function `get_user_role_in_account(user_id, account_id)`
+- RLS policies actualizadas (con OR clause backwards-compat)
+- Backfill: todos records existentes → `visibility='team'` (= comportamiento actual)
+
+App layer:
+- `usePermissions.ts` extender con `canViewVisibility(level)`
+- UI controls: dropdown visibility en notes/docs/tasks creación
+- Filter automático en queries (RLS hace el trabajo)
+
+Costo estimado: 4 días (migration 1 + RLS+tests 1 + UI 1 + queries dashboard 1)
+
+**Riesgo crítico:** RLS policies son frágiles. Validar en staging antes de prod.
+Plan de rollback: drop column visibility (records vuelven a "todo visible").
+
+**Reforzado en:**
+- `CLAUDE.md` próxima sección "Modelo de visibility por rol"
+- Migration file (path TBD post-generation)
+- Tests RLS automatizados (obligatorio)
+
+---
+
 ## Plantilla para nueva decisión
 
 ```markdown
