@@ -110,12 +110,33 @@ Deno.serve(async (req) => {
           const ghlTaskId = ghlTask.id;
           if (!ghlTaskId) continue;
 
-          // Look up existing NER task by ghl_task_id
-          const { data: existing } = await admin
+          // Look up existing NER task by ghl_task_id (filtered by account_id).
+          //
+          // BUG FIX 2026-05-04: maybeSingle() failed silently when duplicates
+          // already existed (returned null + error que el código ignoraba), lo
+          // que hacía que el código creyera "no existe" y disparara INSERT en
+          // cada corrida del cron — bucle exponencial. Caso real Mr Visa:
+          // 22,746 duplicados de 46 ghl_task_ids únicos en 17 días.
+          //
+          // Cambios:
+          //   1. .limit(1) en vez de .maybeSingle() — no falla con duplicados
+          //   2. .eq("account_id") — evita cross-account collisions
+          //   3. .order created_at asc — mantiene la más vieja como canónica
+          //   4. Log warn si detectamos duplicados existentes (para audit)
+          const { data: existingRows } = await admin
             .from("case_tasks")
             .select("id, status, title, due_date")
             .eq("ghl_task_id", ghlTaskId)
-            .maybeSingle();
+            .eq("account_id", account_id)
+            .order("created_at", { ascending: true })
+            .limit(2); // 2 para detectar dup pero no bajar todos los miles
+
+          const existing = existingRows?.[0];
+          if (existingRows && existingRows.length > 1) {
+            console.warn(
+              `[import-ghl-tasks] Duplicate detected for ghl_task_id=${ghlTaskId} in account=${account_id}. Using oldest (${existing!.id}) as canonical.`
+            );
+          }
 
           // Resolve assignee
           const assignedGhlUserId = ghlTask.assignedTo;

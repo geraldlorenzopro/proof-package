@@ -366,11 +366,24 @@ async function syncOfficeTasks(
         const ghlTaskId = ghlTask.id;
         if (!ghlTaskId) continue;
 
-        const { data: existing } = await supabase
+        // BUG FIX 2026-05-04: maybeSingle() falla silenciosamente con 2+ filas
+        // (mismo ghl_task_id duplicado por bug previo). Usar limit + filter
+        // por account_id para evitar bucle exponencial. Ver fix gemelo en
+        // import-ghl-tasks/index.ts.
+        const { data: existingRows } = await supabase
           .from("case_tasks")
           .select("id, status, title, due_date")
           .eq("ghl_task_id", ghlTaskId)
-          .maybeSingle();
+          .eq("account_id", office.account_id)
+          .order("created_at", { ascending: true })
+          .limit(2);
+
+        const existing = existingRows?.[0];
+        if (existingRows && existingRows.length > 1) {
+          console.warn(
+            `[ghl-sync-cron] Duplicate detected for ghl_task_id=${ghlTaskId} in account=${office.account_id}. Using oldest as canonical.`
+          );
+        }
 
         const mapping: any = ghlTask.assignedTo ? mapByGhlId.get(ghlTask.assignedTo) : null;
         const dueDate = ghlTask.dueDate
