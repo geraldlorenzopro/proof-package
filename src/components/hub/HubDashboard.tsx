@@ -449,17 +449,29 @@ function HubDashboardInner({
     return "Buenas noches";
   }, []);
 
-  // Briefing inteligente — derivado de feed + KPIs
-  // Mientras no exista hub-morning-briefing edge fn, esta es la versión v1.
+  // Briefing inteligente — derivado de feed + KPIs.
+  // Versión v1 sin LLM. Reglas para evitar mensajes ruidosos:
+  //  - Si pendingTasks > 100, NO incluir el conteo en briefing (probablemente
+  //    seed/zombie que no es accionable). Mostrar "tu cola necesita limpieza".
+  //  - Solo mencionar tareas pendientes si el número es operativamente sano.
+  //  - Si feed tiene items críticos, ESOS son lo importante (no el contador).
   const briefingText = useMemo(() => {
     const items = feedData?.items || [];
     const critical = items.filter(i => i.severity === "critical").length;
     const high = items.filter(i => i.severity === "high").length;
+    const tasksAreSane = pendingTasks > 0 && pendingTasks <= 100;
+
+    // Caso: muchas tareas pendientes (zombie) — alerta cultural, no operativa.
+    if (pendingTasks > 100 && critical === 0 && high === 0) {
+      return `Sin urgencias hoy. Tu cola tiene ${pendingTasks} tareas pendientes — considerá archivar las muy viejas para mantenerla limpia.`;
+    }
+
     const parts: string[] = [];
     if (critical > 0) parts.push(`${critical} ${critical === 1 ? "asunto crítico" : "asuntos críticos"}`);
     if (high > 0) parts.push(`${high} ${high === 1 ? "urgente" : "urgentes"}`);
     if (todayAppointmentsCount > 0) parts.push(`${todayAppointmentsCount} ${todayAppointmentsCount === 1 ? "cita hoy" : "citas hoy"}`);
-    if (pendingTasks > 0 && parts.length < 3) parts.push(`${pendingTasks} ${pendingTasks === 1 ? "tarea pendiente" : "tareas pendientes"}`);
+    if (tasksAreSane && parts.length < 3) parts.push(`${pendingTasks} ${pendingTasks === 1 ? "tarea pendiente" : "tareas pendientes"}`);
+
     if (parts.length === 0) {
       return "Todo al día. Sin urgencias por ahora.";
     }
@@ -867,8 +879,10 @@ function HubDashboardInner({
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">casos activos</span>
               </button>
               <div className="w-px h-5 bg-border/30" />
-              <button onClick={() => navigate("/hub/cases")} className="flex items-baseline gap-1.5 hover:opacity-80 transition">
-                <span className="text-base font-semibold text-amber-400 tabular-nums">{pendingTasks}</span>
+              <button onClick={() => navigate("/hub/cases")} className="flex items-baseline gap-1.5 hover:opacity-80 transition" title={pendingTasks > 99 ? `${pendingTasks} tareas pendientes — considerá archivar las viejas` : `${pendingTasks} tareas pendientes`}>
+                <span className="text-base font-semibold text-amber-400 tabular-nums">
+                  {pendingTasks > 99 ? "99+" : pendingTasks}
+                </span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">tareas pend.</span>
               </button>
             </div>

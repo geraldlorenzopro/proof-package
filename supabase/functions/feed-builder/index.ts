@@ -361,9 +361,21 @@ async function fetchPendingTasks(
 
   const todayIso = new Date().toISOString().slice(0, 10);
 
-  return data.map((t: Record<string, unknown>) => {
+  // Deduplication por título: si hay 3+ tareas con MISMO título exacto,
+  // las agrupamos en un solo item con count. Evita que la cola se inunde
+  // de "REVISIÓN DE PAQUETE - PROCESO K1" repetida 4 veces (caso real
+  // 2026-05-03 — tareas plantilla generadas en bulk sin completar).
+  const grouped = new Map<string, { items: typeof data; first: typeof data[0] }>();
+  for (const task of data) {
+    const key = (task.title as string ?? "Tarea").trim().toLowerCase();
+    if (!grouped.has(key)) grouped.set(key, { items: [], first: task });
+    grouped.get(key)!.items.push(task);
+  }
+
+  return Array.from(grouped.values()).map(({ items, first: t }) => {
     const dueDate = t.due_date as string | null;
     const priority = (t.priority as string) ?? "normal";
+    const isGroup = items.length > 1;
 
     let score = SCORE_BASE.task_pending;
     if (priority === "high") score += 100;
@@ -375,9 +387,19 @@ async function fetchPendingTasks(
     if (dueDate) {
       const days = daysBetween(todayIso, dueDate);
       if (days < 0) {
-        score += Math.abs(days) * 8;
-        severity = "critical";
-        subtitle = `Vencida hace ${Math.abs(days)} días`;
+        // Cap de zombies: tareas vencidas hace +30 días NO son críticas.
+        // Probablemente abandonadas, en GHL sin sync, o seed huérfano.
+        // Score se reduce y severity baja para que no inunden la cola.
+        const absDays = Math.abs(days);
+        if (absDays > 30) {
+          score += 40;          // baja prioridad, no top
+          severity = "low";
+          subtitle = `Vencida hace ${absDays} días · revisar si sigue activa`;
+        } else {
+          score += absDays * 8;
+          severity = "critical";
+          subtitle = `Vencida hace ${absDays} días`;
+        }
       } else if (days === 0) {
         score += 50;
         severity = "high";
@@ -392,14 +414,20 @@ async function fetchPendingTasks(
       }
     }
 
+    const groupTitle = isGroup
+      ? `${items.length}× ${(t.title as string) ?? "Tarea"}`
+      : ((t.title as string) ?? "Tarea");
+
     return {
       id: `task_${t.id}`,
       kind: "task_pending" as FeedItemKind,
       score,
       severity,
-      title: (t.title as string) ?? "Tarea",
-      subtitle,
-      actionLabel: "Completar tarea",
+      title: groupTitle,
+      subtitle: isGroup
+        ? `${items.length} tareas con el mismo título · ${subtitle}`
+        : subtitle,
+      actionLabel: isGroup ? "Revisar grupo" : "Completar tarea",
       actionHref: t.case_id
         ? `/case-engine/${t.case_id}?tab=tareas&task=${t.id}`
         : `/dashboard/cases?task=${t.id}`,
