@@ -12,6 +12,7 @@ import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
 import { speakAsCamila } from "@/lib/camilaTTS";
 import { useFeed } from "@/hooks/useFeed";
+import { useMorningBriefing } from "@/hooks/useMorningBriefing";
 import type { FeedItem, FeedItemKind, FeedItemSeverity } from "@/types/feed";
 import IntakeWizard from "../intake/IntakeWizard";
 import { format } from "date-fns";
@@ -171,6 +172,10 @@ function HubDashboardInner({
 
   // Feed (zona 2A)
   const { data: feedData, isLoading: feedLoading, refetch: refetchFeed, isRefetching: feedRefetching } = useFeed(accountId);
+
+  // Morning briefing inteligente (Camila + Claude) — el wow factor.
+  // Si falla o no llega, fallback al briefing v1 derivado de KPIs (más abajo).
+  const { data: morningBriefing } = useMorningBriefing(accountId);
 
   // Chat input
   const [input, setInput] = useState("");
@@ -449,19 +454,21 @@ function HubDashboardInner({
     return "Buenas noches";
   }, []);
 
-  // Briefing inteligente — derivado de feed + KPIs.
-  // Versión v1 sin LLM. Reglas para evitar mensajes ruidosos:
-  //  - Si pendingTasks > 100, NO incluir el conteo en briefing (probablemente
-  //    seed/zombie que no es accionable). Mostrar "tu cola necesita limpieza".
-  //  - Solo mencionar tareas pendientes si el número es operativamente sano.
-  //  - Si feed tiene items críticos, ESOS son lo importante (no el contador).
+  // Briefing inteligente — prioridad 1: Claude/Camila (hub-morning-briefing
+  // edge fn con prosa narrativa que menciona clientes por nombre).
+  // Si la edge fn aún no respondió o falló, fallback al v1 derivado de KPIs.
   const briefingText = useMemo(() => {
+    // Prioridad 1: briefing inteligente Claude (con nombres de clientes)
+    if (morningBriefing?.briefing_text && !morningBriefing.meta.fallback_used) {
+      return morningBriefing.briefing_text;
+    }
+
+    // Fallback v1 — derivado de feed + KPIs sin LLM
     const items = feedData?.items || [];
     const critical = items.filter(i => i.severity === "critical").length;
     const high = items.filter(i => i.severity === "high").length;
     const tasksAreSane = pendingTasks > 0 && pendingTasks <= 100;
 
-    // Caso: muchas tareas pendientes (zombie) — alerta cultural, no operativa.
     if (pendingTasks > 100 && critical === 0 && high === 0) {
       return `Sin urgencias hoy. Tu cola tiene ${pendingTasks} tareas pendientes — considerá archivar las muy viejas para mantenerla limpia.`;
     }
@@ -476,10 +483,29 @@ function HubDashboardInner({
       return "Todo al día. Sin urgencias por ahora.";
     }
     return `Hoy tenés ${parts.join(", ")}.`;
-  }, [feedData, todayAppointmentsCount, pendingTasks]);
+  }, [morningBriefing, feedData, todayAppointmentsCount, pendingTasks]);
 
-  // Top 3 chips de acción contextual = primeros 3 items del feed (con severity high+)
+  // Action chips: prioridad al briefing Claude (chips contextuales con
+  // nombre del cliente). Si no llegó, fallback al feed top-3.
+  const briefingChips = useMemo(() => {
+    if (morningBriefing?.chips && morningBriefing.chips.length > 0) {
+      return morningBriefing.chips.map((c, idx) => ({
+        id: `briefing_${idx}`,
+        label: c.label,
+        sublabel: undefined,
+        severity: c.severity,
+        href: c.href,
+        kind: undefined,
+      }));
+    }
+    return null;
+  }, [morningBriefing]);
+
+  // Top 3 chips de acción contextual.
+  // Prioridad 1: chips del briefing Claude (mencionan cliente por nombre).
+  // Prioridad 2: top 3 items del feed.
   const actionChips = useMemo(() => {
+    if (briefingChips && briefingChips.length > 0) return briefingChips;
     const items = (feedData?.items || []).slice(0, 3);
     return items.map(item => ({
       id: item.id,
@@ -489,7 +515,7 @@ function HubDashboardInner({
       href: item.actionHref,
       kind: item.kind,
     }));
-  }, [feedData]);
+  }, [briefingChips, feedData]);
 
   // Resto del feed (items 4+) para la cola priorizada
   const queueItems = useMemo(() => {
@@ -569,7 +595,16 @@ function HubDashboardInner({
                     </span>
                   </div>
                   <h2 className="text-xl font-bold text-foreground tracking-tight mb-2">
-                    {greeting}{firstName ? <>, <span className="text-jarvis">{firstName}</span></> : ""}.
+                    {morningBriefing?.greeting
+                      ? (() => {
+                          const parts = morningBriefing.greeting.split(",");
+                          if (parts.length >= 2) {
+                            return <>{parts[0]}, <span className="text-jarvis">{parts.slice(1).join(",").trim()}</span>.</>;
+                          }
+                          return <>{morningBriefing.greeting}.</>;
+                        })()
+                      : <>{greeting}{firstName ? <>, <span className="text-jarvis">{firstName}</span></> : ""}.</>
+                    }
                   </h2>
                   <p className="text-[13px] text-foreground/85 leading-relaxed">{briefingText}</p>
                 </div>
