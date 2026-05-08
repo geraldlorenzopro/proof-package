@@ -1,6 +1,6 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-02
+**Última actualización:** 2026-05-08
 **Audit por:** Claude Code (Opus 4.7) + Explore agent
 **Próximo update:** después de cada sprint
 
@@ -10,16 +10,74 @@
 
 ---
 
+## 🚀 Estado actual (post-sprint 2026-05-02 → 2026-05-08)
+
+### LIVE en producción (commits ya pusheados a main)
+
+| Commit | Fecha | Qué hace |
+|---|---|---|
+| `868bb89` | 2026-05-02 | Splash entry full implementado (anti-flash 3 capas + exp param + loader) |
+| `8f67920` | 2026-05-02 | Cleanup HubDashboard + 14 componentes a `_legacy/` |
+| `52bffb8` | 2026-05-02 | Docs: lección anti-flash 3 capas (post-mortem Lovable fix) |
+| `8fa79eb` | 2026-05-03 | Spec del modelo Hierarchical Visibility (pre-migration, docs) |
+| `d88f671` | 2026-05-03 | **Dashboard wow v2** layout estática 60/30/10 + briefing Camila |
+| `ec49f04` | 2026-05-03 | Fix feed-builder cap zombies + dedup tareas + briefing humano |
+| `8805c8a` | 2026-05-04 | **Fix bucle exponencial** en `import-ghl-tasks` + `ghl-sync-cron` (maybeSingle bug) |
+
+### Cleanup ejecutado en BD (2026-05-04)
+
+- **22,700 tareas K1 zombie archivadas** en cuenta Mr Visa via SQL Editor
+- **46 K1 reales mantenidas** (canónicas, una por ghl_task_id)
+- Pendientes pasaron de 21,882 → ~104 (reducción 99.5%)
+
+### Pendiente AHORA mismo
+
+| # | Tarea | Estado | Siguiente acción |
+|---|---|---|---|
+| 1 | Verificar 24h post-fix que cron NO duplica más K1 | ⏳ esperando 2026-05-09 | Query verification |
+| 2 | UNIQUE constraint en `case_tasks(ghl_task_id, account_id)` | ⏳ Sprint 2 | Migration nueva |
+| 3 | Edge fn `hub-morning-briefing` con Claude | ⏳ Sprint 2 | Wow factor real |
+| 4 | Visibility migration (Grupo B) | 🛑 esperando OK push | Schema change crítico |
+| 5 | `/hub/recursos` con Visa Bulletin contextual | ⏳ Sprint 2 | Mockup aprobado |
+| 6 | Smart Forms review (debate orquestador) | 🟡 en debate | Felix invocation desde UI prioridad #1 |
+
+### Decisiones recientes que están vivas (ver `decisions.md`)
+
+- **2026-05-02** — Brand: AI Blue + Cyan 20% acento, Sora typography (anti-Jarvis)
+- **2026-05-02** — Membership tiers cerrados (Essential $197 / Professional $297 / Elite $497 / Enterprise)
+- **2026-05-02** — Anti-flash 3 capas (HTML pre-React + Splash + post-splash)
+- **2026-05-02** — Audit automático sin preguntar (NUNCA preguntar, SIEMPRE auditar)
+- **2026-05-02** — Pre-deploy audit obligatorio (11 checks antes de cualquier push)
+- **2026-05-02** — Layout dashboard 60/30/10 estática (no scroll en home)
+- **2026-05-03** — Hierarchical Visibility model (owner > admin > attorney > paralegal/member > assistant > readonly)
+- **2026-05-03** — Visibility levels (team / attorney_only / admin_only) en case_notes/documents/ai_sessions/case_tasks
+- **2026-05-03** — Principio UX "transparencia donde gobierna, silencio donde opera"
+- **2026-05-04** — Fix bucle exponencial maybeSingle (lección: nunca usar `.maybeSingle()` cuando puede haber duplicados, usar `.limit(N)` + filter por account_id)
+
+---
+
 ## 📊 Resumen ejecutivo en 30 segundos
 
 NER ya es un producto **maduro y vendido** (8 firmas activas, $2,376 MRR).
 Tiene 48 rutas, 51 edge functions, 46 tablas. La paralegal puede operar
 end-to-end del flujo de un caso de inmigración.
 
-**El gap real está en 3 áreas:**
-1. **Orquestación GHL** desde NER (hoy paralegal salta a GHL para pagos/contratos)
+**Recientemente (semana 2026-05-02 → 2026-05-08):**
+- Splash entry full implementado y pulido
+- HubDashboard rediseñado con layout estática 60/30/10 (briefing Camila como hero)
+- Bug crítico de duplicación de tareas resuelto (afectaba a Mr Visa con 22746 zombies)
+- Modelo de visibility por rol diseñado (pendiente push migration)
+
+**Próximas prioridades:**
+1. Visibility migration push (esperando OK Mr. Lorenzo)
+2. Hub-morning-briefing edge fn con Claude (wow factor real)
+3. Smart Forms — Felix invocation desde UI (4h, alto impacto)
+4. `/hub/recursos` con Visa Bulletin contextual
+
+**El gap real que persiste en 3 áreas:**
+1. **Orquestación GHL** desde NER (3 botones GHL: pago consulta + contrato + factura)
 2. **5 pilares de domain inmigración** (case_type tipado, family, USCIS receipts, court, evidence builder)
-3. **Branding contaminado** con tokens Jarvis sci-fi rechazados
+3. **Branding** — token `jarvis` legacy sigue en código (deuda técnica menor)
 
 ---
 
