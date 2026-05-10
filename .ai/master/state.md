@@ -1,8 +1,11 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-08
+**Última actualización:** 2026-05-10
 **Audit por:** Claude Code (Opus 4.7) + Explore agent
-**Próximo update:** después de cada sprint
+**Próximo update:** post-Fase 0 (cuando feature flags estén live)
+
+> 📍 **Para visión estratégica completa, ver [`ROADMAP.md`](ROADMAP.md).**
+> Este doc se enfoca en estado operativo del sprint actual.
 
 > **NOTA:** Para el diagrama completo de arquitectura (auth flow + memberships +
 > source-of-truth split GHL vs NER), ver [`architecture.md`](architecture.md).
@@ -30,16 +33,21 @@
 - **46 K1 reales mantenidas** (canónicas, una por ghl_task_id)
 - Pendientes pasaron de 21,882 → ~104 (reducción 99.5%)
 
-### Pendiente AHORA mismo
+### Pendiente AHORA mismo (post roadmap consolidación 2026-05-10)
+
+**FASE 0 — Foundation Infrastructure (semana 2026-05-10 → 2026-05-17)**
 
 | # | Tarea | Estado | Siguiente acción |
 |---|---|---|---|
-| 1 | Verificar 24h post-fix que cron NO duplica más K1 | ⏳ esperando 2026-05-09 | Query verification |
-| 2 | UNIQUE constraint en `case_tasks(ghl_task_id, account_id)` | ⏳ Sprint 2 | Migration nueva |
-| 3 | Edge fn `hub-morning-briefing` con Claude | ⏳ Sprint 2 | Wow factor real |
-| 4 | Visibility migration (Grupo B) | 🛑 esperando OK push | Schema change crítico |
-| 5 | `/hub/recursos` con Visa Bulletin contextual | ⏳ Sprint 2 | Mockup aprobado |
-| 6 | Smart Forms review (debate orquestador) | 🟡 en debate | Felix invocation desde UI prioridad #1 |
+| 0.1 | Migration feature flags (`feature_flags` + `account_feature_overrides`) | 🛑 Esperando OK Mr. Lorenzo | Schema change |
+| 0.2 | Push visibility migration `20260503100000_role_visibility_hierarchical.sql` | 🛑 Esperando OK Mr. Lorenzo | Schema change |
+| 0.3 | UI `/admin/features` (toggle por firma) | ⚫ Planeada | Después de migration |
+| 0.4 | Componente `<FeatureFlag>` + hook `useFeatureFlag()` | ⚫ Planeada | Después de migration |
+| 0.5 | Verificar 24h post-fix maybeSingle (cron NO duplica) | ✅ Pasivo (~hoy 2026-05-10) | Query a `case_tasks` |
+
+**Después: Fase 1 — Pipeline Dashboard (3 semanas)**
+
+Detalle completo en [`ROADMAP.md`](ROADMAP.md) Fase 1.
 
 ### Decisiones recientes que están vivas (ver `decisions.md`)
 
@@ -53,6 +61,8 @@
 - **2026-05-03** — Visibility levels (team / attorney_only / admin_only) en case_notes/documents/ai_sessions/case_tasks
 - **2026-05-03** — Principio UX "transparencia donde gobierna, silencio donde opera"
 - **2026-05-04** — Fix bucle exponencial maybeSingle (lección: nunca usar `.maybeSingle()` cuando puede haber duplicados, usar `.limit(N)` + filter por account_id)
+- **2026-05-08** — Setup multi-Mac vía iCloud Drive sync de memorias (no de conversaciones). Patrón auto-summary post-sesión obligatorio.
+- **2026-05-10** — **Roadmap consolidado E2E**: 10 fases, 10 decisiones LOCKED, 45 features con flags. Reconciliación de 3 conversaciones previas. Camino C híbrido orquestado. Pricing $197 Essential. Pipeline+Forms primero. Accounting built-in híbrido. OCR/Translation con Claude Vision.
 
 ---
 

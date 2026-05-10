@@ -686,6 +686,126 @@ Plan de rollback: drop column visibility (records vuelven a "todo visible").
 
 ---
 
+## 2026-05-10 — Roadmap consolidado E2E (10 decisiones lock)
+
+**Decisión:** Reconciliar 3 conversaciones previas + audit técnico del repo
++ análisis GHL APIs reales en un único ROADMAP.md de 10 fases con 10
+decisiones estratégicas LOCKED.
+
+**Quién decidió:** Mr. Lorenzo (CEO) tras debate exhaustivo con Claude Code.
+
+**Contexto:** Mr. Lorenzo había trabajado conmigo (Claude Code) en mayo 2026
++ había tenido 2 conversaciones previas en abril + marzo con otros Claudes
+en distintas plataformas. Las 3 conversaciones tenían contradicciones
+(pricing $147 vs $197, agentes 18 vs 4 vs 8, GHL strategy bidir vs unidir).
+Audit del código resolvió la mayoría. Lo que el código no decidía, Mr. Lorenzo
+votó hoy.
+
+### Las 10 decisiones LOCKED
+
+#### 1. Pricing Essential = $197
+
+- **No $147** (de conversación 2 abril)
+- **Razón:** mantener progresión $100 entre tiers ($197→$297→$497).
+  Margen sano para AI costs. Posicionamiento "casi $200 = profesional"
+  vs "menos $150 = entry-level". NER es vertical premium.
+
+#### 2. Visibility migration push (en Fase 0)
+
+- Migration `20260503100000_role_visibility_hierarchical.sql` pendiente
+  desde 2026-05-03. Push HOY.
+- **Razón:** backwards-compatible (DEFAULT 'team'). Plan rollback 5 min.
+  Cada día de demora = más rework cuando agregamos features que muestran
+  contenido sensible. Riesgo 2/10, beneficio 8/10.
+
+#### 3. NerVoiceAI queda en `_legacy/`
+
+- No activar ahora (decisión Mr. Lorenzo confirmada 2026-05-09).
+- **Razón:** WebRTC bug pendiente. Foco en otras prioridades. Si en
+  futuro se quiere voice WebRTC bidireccional, recrear con tech moderna.
+- **NO eliminar del repo** — preservar como referencia.
+
+#### 4. 14 agentes IA total (no 18, no 4)
+
+- **Capa 1 — Producto activos (4):** Camila, Felix, Nina, Max
+- **Capa 2 — Dev internos (4):** Valerie, Gerald, Victoria, Vanessa
+  (orquestador interno, no salen al producto)
+- **Capa 3 — Especialistas legales (6):** Elena (I-485), Sofía
+  (humanitarian), Carmen (consular), Leo (RFE), Beto (CSPA), Marco (N-400)
+- **Razón:** 18 agentes (conv 1) eran sobre-segmentados. 4 (conv 2)
+  insuficiente. 14 = balance correcto. Cada agente cuesta API + maintenance.
+
+#### 5. GHL strategy = Híbrido por dominio
+
+| Domain | Source of truth | Sync |
+|---|---|---|
+| Legal (cases, RFE, evidence, family, forms) | NER | One-way NER→GHL custom field |
+| Marketing (campaigns, ads) | GHL | NER no toca |
+| Comms (SMS/email/WhatsApp inbox) | GHL | NER consume vía conversations API |
+| Billing/Stripe | GHL | NER trigger via API + webhook receiver |
+| Calendar | GHL | Bidireccional |
+| Contacts/Tasks/Notes | GHL ↔ NER | Bidireccional (ya implementado) |
+
+- **Razón:** lo que el código YA hace + audit GHL API confirmó capabilities.
+
+#### 6. Camino producto = Camino C (Híbrido orquestado)
+
+- **NO Camino A** (build everything in NER, eliminar GHL — 18-24 meses suicida)
+- **NO Camino B** (GHL eternamente — limita largo plazo)
+- **Camino C:** NER legal vertical + orquesta GHL invisible. Paralegal
+  nunca abre GHL UI. NER llama GHL API en background.
+- **Razón:** velocidad mercado (3-4 meses vs 18-24). Foco en diferenciador
+  (legal vertical AI). GHL ya pagado por las 8 firmas.
+
+#### 7. Orden roadmap re-priorizado (Pipeline + Forms primero)
+
+- **NO empezamos por GHL Invisible** (3 botones GHL postpone a Fase 4)
+- **Empezamos por Pipeline Dashboard + Smart Forms expansion**
+- **Razón:** input directo de Mr. Lorenzo: clientes esperan FORMULARIOS
+  + DASHBOARD ESTILO MONDAY. Sin esto, churn alto. GHL puede esperar 1 mes
+  más; cliente no.
+
+#### 8. Sistema accounting = Híbrido built-in
+
+- **NO QuickBooks integration ahora** (postpone Fase 10)
+- **NO construir contabilidad completa nativa** (6+ meses, fuera de scope)
+- **SÍ módulo built-in básico**: invoices auto-tracked + gastos manuales +
+  P&L + reports + export CSV (QB-compatible)
+- **Razón:** GHL NO maneja expenses (confirmed feature request pendiente).
+  Cubre 80% firmas boutique. Sin costo extra al cliente. Diferenciador
+  "ingresos por tipo de caso" único en mercado.
+
+#### 9. Feature flags por firma (release gradual)
+
+- Yo construyo features con flag OFF por default
+- Mr. Lorenzo activa por firma desde `/admin/features`
+- Status: planned → in_dev → beta → live → deprecated
+- **Razón:** rollout controlado, validación con Mr Visa antes de release
+  general, cero deploys cuando se activa, audit trail.
+
+#### 10. OCR + Translation = Claude Vision (no Google Cloud)
+
+- **NO Google Cloud Translation + Document AI** (~$1.55/doc)
+- **SÍ Claude Sonnet Vision** (~$0.15/doc, OCR + traducción en 1 llamada)
+- **Razón:** ya pagamos ANTHROPIC_API_KEY. 99% margen vs $25 mercado.
+  Preserva contexto legal mejor. Templates USCIS-certified auto-generados.
+
+### Implicación
+
+Roadmap final: 10 fases, ~33 semanas (~7-8 meses), 1 ingeniero.
+Cliente ve releases cada 3-4 semanas con feature flags graduales.
+
+Documentación creada hoy:
+- `.ai/master/ROADMAP.md` (fuente de verdad estratégica)
+- `.ai/master/features.md` (catálogo 45 features con flags)
+
+Archivos actualizados:
+- `CLAUDE.md` (sprint priority order nuevo + 10 decisiones)
+- `state.md` (estado al 2026-05-10)
+- Memoria persistente: `session_summary_2026-05-10.md` en iCloud
+
+---
+
 ## Plantilla para nueva decisión
 
 ```markdown

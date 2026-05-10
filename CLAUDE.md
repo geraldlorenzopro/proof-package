@@ -349,19 +349,78 @@ fallback location `NgaxlyDdwg93PvQb5KCw` (Mr Visa).
 - Rigor selectivo (estructura completa solo para tareas grandes)
 - Mockup HTML obligatorio para Valerie cuando prompt menciona visual
 
-**Sprint priority order (locked):**
-1. Cleanup (1 sprint): tabs Case Engine, dead imports, kill jarvis tokens, document Nina/Max
-2. case_type → ENUM tipado (1 sprint)
-3. **3 botones GHL** (Sprint 1 priority): Stripe link consulta + Contrato + Factura
-4. Family member relational model + tab en ClientProfile (1 sprint)
-5. Cliente 360 mejorado: extender ClientProfilePage (NO crear nuevo)
-6. Calendar bidireccional GHL ↔ NER
-7. USCIS I-797 receipt parser (OCR)
-8. Court system tracker
-9. Evidence Packet Builder + PDF export
-10. RFE response sub-flow
-11. Splash brand + cleanup index.css
-12. 8 product agents en `ai_agents` table
+**Sprint priority order (LOCKED — re-priorizado 2026-05-10):**
+
+Ver roadmap completo en [`.ai/master/ROADMAP.md`](.ai/master/ROADMAP.md).
+Catálogo de features con flags en [`.ai/master/features.md`](.ai/master/features.md).
+
+```
+Fase 0 — Foundation Infrastructure (1 sem)
+   • Feature flags table + admin UI
+   • Visibility migration push
+   • Verificar 24h post-fix maybeSingle
+
+Fase 1 — Pipeline Dashboard (3 sem) ← LO QUE CLIENTE MÁS ESPERA
+   • /hub/cases estilo Monday vertical inmigración
+   • 7 ubicaciones (USCIS/NVC/Embajada/ICE/Corte/CBP/Aeropuerto)
+   • Vista lista + Kanban + drag-drop
+
+Fase 2 — Smart Forms expansion (4 sem)
+   • Felix invocation desde wizards
+   • I-130 + I-485 + N-400 + DS-260
+   • I-765 schema 100%
+
+Fase 3 — Forms Court/ICE/CBP (4 sem)
+   • EOIR-26, I-352, I-589, I-94 lookup
+
+Fase 4 — GHL Invisible Auto-billing (3 sem)
+   • Validation API real PRIMERO (30 min test)
+   • Tabla firm_fee_schedule
+   • Botón "Generar contrato" → flow auto firma+invoice+pago
+
+Fase 5 — Vertical Depth (4 sem)
+   • case_type ENUM, family relational, I-797 parser
+   • Court tracker, Evidence Builder, RFE workflow
+   • /hub/recursos con Visa Bulletin contextual
+
+Fase 6 — OCR + Translation (3 sem) 🆕
+   • Claude Vision para OCR + traducción certificada
+   • USCIS-compliant certificate auto-gen
+   • Costo $0.15/doc vs $25 mercado externo
+
+Fase 7 — Accounting Module (3 sem) 🆕
+   • Invoices auto-tracked + gastos manuales
+   • P&L + reports anuales
+   • Export CSV (QB-compatible)
+
+Fase 8 — Knowledge Base + 6 agentes (5 sem)
+   • INA + 8 CFR + USCIS Policy Manual cargados
+   • Elena/Sofía/Carmen/Leo/Beto/Marco
+   • Score de aprobación pre-contrato
+
+Fase 9 — Scale + Self-onboarding (3 sem)
+   • Wizard onboarding firma nueva auto
+   • Billing automation
+   • Admin analytics
+
+Fase 10 — POSTPONED — QuickBooks integration
+   • Solo cuando firma específica lo pida
+```
+
+**Tiempo total: ~33 semanas (~7-8 meses) con 1 ingeniero (yo).**
+
+**Decisiones LOCKED (2026-05-10):** ver `decisions.md` entrada del día.
+
+1. Pricing Essential = **$197**
+2. Visibility migration = **push ya** (Fase 0)
+3. NerVoiceAI = **queda en `_legacy/`**
+4. Agentes IA = **14 total** (4 producto + 4 dev + 6 especialistas)
+5. GHL strategy = **Híbrido por dominio** (NER legal, GHL marketing/billing)
+6. Camino producto = **Camino C — Híbrido orquestado**
+7. Orden roadmap = **Pipeline + Forms primero**, GHL Invisible mes 4
+8. Accounting = **Built-in híbrido** (NER + export CSV, QB postponed)
+9. Feature flags = **Por firma**, vos activás de a poco
+10. OCR/Translation = **Claude Vision** (no Google Cloud)
 
 ## How Claude Code (yo) trabaja con Mr. Lorenzo
 
@@ -423,10 +482,12 @@ Respuesta RFE → Aprobado/Negado → Apelación
 **Auto-load obligatorio cada sesión, en este orden:**
 
 1. **`CLAUDE.md`** (este archivo) — strategic context + standing decisions + brand
-2. **`.ai/master/code-map.md`** ⭐ — **2,166 líneas, file-by-file inventory completo del repo.** Lee esto ANTES de proponer construir cualquier cosa. Cubre: 48 pages, 51 edge functions, 35+ components hub, 18 paneles case-engine, 10 hooks críticos, 46 tablas, 6 critical flows (auth, provisioning, subscriptions, GHL, case lifecycle, AI agents), ENUMs Postgres, gaps conocidos.
-3. **`.ai/master/state.md`** — sprint roadmap, lifecycle 22 stages, prioridades
-4. **`.ai/master/architecture.md`** — auth flow + GHL split + memberships placeholder
-5. **`.ai/master/decisions.md`** — log de decisiones estratégicas (append-only)
+2. **`.ai/master/ROADMAP.md`** ⭐ — **fuente de verdad estratégica.** 10 fases, 10 decisiones consolidadas, métricas de éxito, riesgos. Reconcilia 3 conversaciones previas (2026-05-10).
+3. **`.ai/master/features.md`** ⭐ — **catálogo de feature flags.** 45 features mapeadas a fases con status (planned/in_dev/beta/live/deprecated). Sistema de release gradual por firma.
+4. **`.ai/master/code-map.md`** — **2,166 líneas, file-by-file inventory completo del repo.** Lee esto ANTES de proponer construir cualquier cosa. Cubre: 48 pages, 51 edge functions, 35+ components hub, 18 paneles case-engine, 10 hooks críticos, 46 tablas, 6 critical flows (auth, provisioning, subscriptions, GHL, case lifecycle, AI agents), ENUMs Postgres, gaps conocidos.
+5. **`.ai/master/state.md`** — estado actual + pendientes inmediatos del sprint en curso
+6. **`.ai/master/architecture.md`** — auth flow + GHL split + memberships placeholder
+7. **`.ai/master/decisions.md`** — log de decisiones estratégicas (append-only)
 
 **On-demand:**
 - `.ai/master/membership-tiers.md` — TBD, cuando se cierre Fase 1
