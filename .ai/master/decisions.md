@@ -806,6 +806,129 @@ Archivos actualizados:
 
 ---
 
+## 2026-05-10 (tarde) — Lección crítica: deploy gap edge functions + TRIGGER pattern
+
+**Decisión:** Documentar 2 lecciones aprendidas durante incidente del cron K1
+y establecer protocolo para futuras situaciones similares.
+
+**Quién decidió:** Claude Code + Mr. Lorenzo (incidente compartido).
+
+**Contexto:** El bug fix `maybeSingle` (commit `8805c8a` del 2026-05-04) había
+sido escrito y pusheado a GitHub. Sin embargo, 6 días después (2026-05-10),
+verificamos que el cron seguía duplicando tareas a ritmo de ~849/día. Investigación
+reveló:
+
+1. **Las edge functions de Supabase NO se auto-deployan desde GitHub.** El código
+   del repo refleja el código que el editor de Supabase tiene "guardado", pero
+   ese código solo se ejecuta cuando el usuario hace explicit click en
+   "Save and deploy" desde el dashboard. Sin ese click, la función deployada
+   sigue siendo la versión vieja.
+
+2. **Las migrations en `supabase/migrations/` tampoco se auto-aplican** desde
+   GitHub. Lovable Cloud aplica algunas pero no todas. Hay que verificar
+   dashboard de Supabase para confirmar status real.
+
+3. **`UNIQUE INDEX` con cleanup en BEGIN/COMMIT falla por race condition**
+   cuando hay un cron buggeado creando duplicados simultáneamente.
+
+### Lección 1 — Deploy gap: edge functions NO son auto-deployadas
+
+**Why:** Lovable Cloud auto-deploya el frontend (Vite build) pero NO las
+edge functions Deno de Supabase. Esto crea desincronización silenciosa entre
+"código en repo" y "código que ejecuta el cron".
+
+**How to apply:**
+
+1. **Cuando hagas push de cambios a edge functions (carpeta `supabase/functions/`)**:
+   - Avisar EXPLÍCITAMENTE a Mr. Lorenzo: *"Esta función necesita deploy manual
+     en Supabase dashboard. El push a GitHub no es suficiente."*
+   - Incluir en el commit message una nota visible: `REQUIRES MANUAL DEPLOY`
+   - Documentar el proceso en CLAUDE.md sección "Edge function deploy"
+
+2. **Antes de declarar un fix LIVE:**
+   - Verificar el "Last deployed" timestamp en Supabase dashboard
+   - Si la fecha es anterior al fix, el código en producción es viejo
+   - Pedir a Mr. Lorenzo confirmación visual de "Last deployed"
+
+3. **Sprint 0 roadmap (postpone agregar):** GitHub Action que auto-deploya
+   edge functions en cada push a main. Item 0.7 del ROADMAP.md.
+
+4. **Próxima vez que detectemos comportamiento de "función que debería estar
+   arreglada pero sigue mal":** primer paso es verificar deployment status,
+   NO asumir que el problema está en el código.
+
+### Lección 2 — TRIGGER `BEFORE INSERT RETURN NULL` >> UNIQUE INDEX para race conditions
+
+**Why:** Cuando hay un escritor concurrente (cron) creando potenciales duplicados,
+`UNIQUE INDEX` falla con error 23505 (que el cron NO maneja → potencial crash).
+`TRIGGER BEFORE INSERT RETURN NULL` silenciosamente descarta el INSERT duplicado
+sin error, permitiendo que el cron continúe procesando otros registros.
+
+**Comparación:**
+
+| Approach | Pros | Contras |
+|---|---|---|
+| `UNIQUE INDEX` | Estándar SQL, simple | Race condition al crear (necesita 0 duplicados existentes), error 23505 si cron no lo maneja |
+| `TRIGGER BEFORE INSERT RETURN NULL` | Cero race condition, silenciosamente descarta, atomic una query | Menos estándar, requiere comentario explicativo |
+| `INSERT ... ON CONFLICT DO NOTHING` | Postgres-native | Requiere modificar el código del cron (no aplica si no podés deploy) |
+
+**Cuándo usar cada uno:**
+
+- **TRIGGER**: cuando hay escritor concurrente que NO maneja error de UNIQUE
+  violation. Caso típico: bug de código en cron + no podés deploy fix
+  inmediatamente.
+- **UNIQUE INDEX**: cuando controlás todos los escritores y manejan errors.
+  Caso típico: migration normal con downtime planeado.
+- **ON CONFLICT**: cuando podés modificar el código del INSERT.
+
+**Patrón canónico para "stop the bleeding" en producción:**
+
+```sql
+CREATE OR REPLACE FUNCTION public.prevent_duplicate_X()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM tabla WHERE clave_unica = NEW.clave_unica
+             AND status_activo) THEN
+    RAISE NOTICE 'Duplicate skipped: %', NEW.clave_unica;
+    RETURN NULL; -- silently skip, no error
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER prevent_duplicate_X_trigger
+  BEFORE INSERT ON tabla
+  FOR EACH ROW EXECUTE FUNCTION prevent_duplicate_X();
+```
+
+**Costo de mantenimiento:** mínimo. El trigger queda activo aunque después
+arregles el código del escritor. Si en el futuro querés UNIQUE INDEX standard,
+podés hacer cleanup tranquilo + crear INDEX + drop trigger.
+
+### Implicación operacional
+
+- Trigger `prevent_duplicate_ghl_task_trigger` queda activo en BD permanente
+  (capa 1 de defensa)
+- Mañana 2026-05-11: verificar zero duplicados nuevos
+- Esta semana: Mr. Lorenzo fuerza deploy edge functions (capa 2 de defensa)
+- Cuando se confirme deploy correcto: cleanup tranquilo de los ~10,200
+  duplicados existentes
+- Considerar agregar UNIQUE INDEX como capa 3 (overkill pero buena práctica)
+
+### Reforzado en
+
+- Esta entrada de `decisions.md`
+- Memoria persistente cross-Mac: pendiente entrada en feedback memory
+- ROADMAP.md item 0.7: GitHub Action auto-deploy edge functions
+
+### Ítem nuevo para roadmap
+
+- **Fase 0 punto 0.7:** GitHub Action que auto-deploya edge functions de
+  Supabase en cada push a main. Eliminaría el deploy gap permanentemente.
+  Esfuerzo: 4 horas. Prioridad: alta (bloquea otros bug fixes futuros).
+
+---
+
 ## Plantilla para nueva decisión
 
 ```markdown
