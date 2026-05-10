@@ -114,7 +114,7 @@ export function useAllFeatureFlags() {
   return useQuery({
     queryKey: ["feature-flags-all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("feature_flags")
         .select("*")
         .order("phase", { ascending: true });
