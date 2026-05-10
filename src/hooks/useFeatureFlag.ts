@@ -76,7 +76,7 @@ export function useFeatureFlag(slug: string | null | undefined): boolean {
       if (!member?.account_id) return false;
 
       // Llamar a función SQL account_has_feature
-      const { data: result, error } = await supabase.rpc("account_has_feature", {
+      const { data: result, error } = await (supabase.rpc as any)("account_has_feature", {
         p_account_id: member.account_id,
         p_feature_slug: slug,
       });
