@@ -1,8 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 
+<<<<<<< Updated upstream
 const SYNC_THROTTLE_MS = 90_000;
 const MAX_RELATED_CONTACTS_PER_RUN = 25;
+=======
+// Constantes de error tracking
+const PAUSE_DURATION_MS = 60 * 60 * 1000; // 1 hora de pausa tras 401/403
+const DISABLE_AFTER_ERRORS = 24; // 24 errores consecutivos → desactivar (≈ 1 día)
+>>>>>>> Stashed changes
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -15,13 +21,14 @@ Deno.serve(async (req) => {
   );
 
   try {
-    // Get all active offices with GHL configured
+    // ═══════════════════════════════════════════════════════════════════════
+    // 1. Get all offices with GHL configured
+    // ═══════════════════════════════════════════════════════════════════════
     const { data: offices } = await supabase
       .from("office_config")
       .select("account_id, ghl_location_id, ghl_api_key")
       .not("ghl_location_id", "is", null);
 
-    // Resolve API keys: use DB column or fall back to env secrets
     const resolvedOffices = (offices || [])
       .map((o) => ({
         ...o,
@@ -36,14 +43,51 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Syncing ${resolvedOffices.length} offices`);
+    // ═══════════════════════════════════════════════════════════════════════
+    // 2. Filter out paused/disabled offices (token roto, etc.)
+    // ═══════════════════════════════════════════════════════════════════════
+    const accountIds = resolvedOffices.map((o) => o.account_id);
+    const { data: syncLogs } = await supabase
+      .from("ghl_sync_log")
+      .select("account_id, paused_until, disabled, consecutive_errors")
+      .in("account_id", accountIds);
 
+    const logsMap = new Map((syncLogs || []).map((l: any) => [l.account_id, l]));
+    const nowIso = new Date().toISOString();
+
+    const activeOffices = resolvedOffices.filter((o) => {
+      const log = logsMap.get(o.account_id);
+      if (!log) return true; // sin log = primera vez, procesar
+      if (log.disabled) {
+        console.log(`[ghl-sync-cron] SKIP ${o.account_id} — disabled (${log.consecutive_errors} errores acumulados)`);
+        return false;
+      }
+      if (log.paused_until && log.paused_until > nowIso) {
+        console.log(`[ghl-sync-cron] SKIP ${o.account_id} — paused until ${log.paused_until}`);
+        return false;
+      }
+      return true;
+    });
+
+    const skippedCount = resolvedOffices.length - activeOffices.length;
+    console.log(`[ghl-sync-cron] ${activeOffices.length} active offices, ${skippedCount} skipped (paused/disabled)`);
+
+    if (activeOffices.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "All offices paused/disabled", skipped: skippedCount }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 3. Sync active offices in parallel
+    // ═══════════════════════════════════════════════════════════════════════
     const results = await Promise.allSettled(
-      resolvedOffices.map((office) => syncOfficeContacts(supabase, office))
+      activeOffices.map((office) => syncOfficeContacts(supabase, office))
     );
 
     const summary = results.map((r, i) => ({
-      account_id: resolvedOffices[i].account_id,
+      account_id: activeOffices[i].account_id,
       status: r.status,
       value: r.status === "fulfilled" ? r.value : (r as PromiseRejectedResult).reason?.message,
     }));
@@ -51,7 +95,12 @@ Deno.serve(async (req) => {
     console.log("Sync complete:", JSON.stringify(summary));
 
     return new Response(
-      JSON.stringify({ success: true, offices: summary }),
+      JSON.stringify({
+        success: true,
+        processed: activeOffices.length,
+        skipped: skippedCount,
+        offices: summary,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
@@ -62,6 +111,68 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// Marca un error en ghl_sync_log + decide si pausar o disabling
+async function markSyncError(
+  supabase: ReturnType<typeof createClient>,
+  accountId: string,
+  errorCode: number,
+  errorMessage: string
+) {
+  // Lee el contador actual
+  const { data: existing } = await supabase
+    .from("ghl_sync_log")
+    .select("consecutive_errors")
+    .eq("account_id", accountId)
+    .maybeSingle();
+
+  const newCount = (existing?.consecutive_errors || 0) + 1;
+  const shouldDisable = newCount >= DISABLE_AFTER_ERRORS && (errorCode === 401 || errorCode === 403);
+  const shouldPause = errorCode === 401 || errorCode === 403 || errorCode === 429;
+
+  const update: Record<string, unknown> = {
+    account_id: accountId,
+    last_error_code: errorCode,
+    last_error_message: errorMessage.slice(0, 500),
+    last_error_at: new Date().toISOString(),
+    consecutive_errors: newCount,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (shouldDisable) {
+    update.disabled = true;
+    update.disabled_reason = `Auto-disabled after ${newCount} consecutive errors (${errorCode}). Token GHL probablemente expirado. Requiere intervención manual.`;
+    console.warn(`[ghl-sync-cron] DISABLED ${accountId} — ${newCount} errores consecutivos`);
+  } else if (shouldPause) {
+    update.paused_until = new Date(Date.now() + PAUSE_DURATION_MS).toISOString();
+    console.warn(`[ghl-sync-cron] PAUSED ${accountId} until ${update.paused_until} (error ${errorCode})`);
+  }
+
+  await supabase.from("ghl_sync_log").upsert(update, { onConflict: "account_id" });
+}
+
+// Marca un sync exitoso (resetea contador de errores)
+async function markSyncSuccess(
+  supabase: ReturnType<typeof createClient>,
+  accountId: string,
+  contactsCreated: number,
+  contactsUpdated: number
+) {
+  await supabase.from("ghl_sync_log").upsert(
+    {
+      account_id: accountId,
+      last_synced_at: new Date().toISOString(),
+      contacts_created: contactsCreated,
+      contacts_updated: contactsUpdated,
+      consecutive_errors: 0, // reset
+      paused_until: null, // clear pausa si la había
+      last_error_code: null,
+      last_error_message: null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "account_id" }
+  );
+}
 
 async function syncOfficeContacts(
   supabase: ReturnType<typeof createClient>,
@@ -74,6 +185,7 @@ async function syncOfficeContacts(
     .eq("account_id", office.account_id)
     .single();
 
+<<<<<<< Updated upstream
   const lastRunTouchedAt = syncLog?.updated_at ? new Date(syncLog.updated_at).getTime() : 0;
   if (lastRunTouchedAt && Date.now() - lastRunTouchedAt < SYNC_THROTTLE_MS) {
     return { created: 0, updated: 0, tasksImported: 0, tasksUpdated: 0, notesImported: 0, skipped: "throttled" };
@@ -91,12 +203,13 @@ async function syncOfficeContacts(
   );
 
   // If never synced, use 2 minutes ago to avoid importing everything
+=======
+>>>>>>> Stashed changes
   const lastSynced = syncLog?.last_synced_at
     ? new Date(syncLog.last_synced_at)
     : new Date(Date.now() - 2 * 60 * 1000);
 
-  // GHL API uses cursor-based pagination, not date filtering
-  // Fetch first page sorted by dateAdded desc, then filter by lastSynced
+  // GHL API call
   const ghlUrl = new URL("https://services.leadconnectorhq.com/contacts/");
   ghlUrl.searchParams.set("locationId", office.ghl_location_id);
   ghlUrl.searchParams.set("limit", "100");
@@ -114,6 +227,8 @@ async function syncOfficeContacts(
 
   if (!ghlResp.ok) {
     const body = await ghlResp.text().catch(() => "");
+    // Marca error y posiblemente pausa/disable
+    await markSyncError(supabase, office.account_id, ghlResp.status, body.slice(0, 200));
     throw new Error(`GHL API error: ${ghlResp.status} ${body.slice(0, 200)}`);
   }
 
@@ -143,7 +258,6 @@ async function syncOfficeContacts(
     const firstName = c.firstName || c.first_name || "Sin nombre";
     const lastName = c.lastName || c.last_name || "";
 
-    // Check if contact already exists by ghl_contact_id
     const { data: existing } = await supabase
       .from("client_profiles")
       .select("id")
@@ -152,7 +266,6 @@ async function syncOfficeContacts(
       .maybeSingle();
 
     if (existing) {
-      // Update existing
       const updateData: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
       };
@@ -168,7 +281,6 @@ async function syncOfficeContacts(
       touchedClientProfileIds.push(existing.id);
       updated++;
     } else {
-      // Also check by phone or email to avoid duplicates
       let duplicateId: string | null = null;
 
       if (phone) {
@@ -192,7 +304,6 @@ async function syncOfficeContacts(
       }
 
       if (duplicateId) {
-        // Link existing profile to GHL and update
         await supabase
           .from("client_profiles")
           .update({
@@ -203,8 +314,6 @@ async function syncOfficeContacts(
         touchedClientProfileIds.push(duplicateId);
         updated++;
       } else {
-        // Create new profile - use service role, so we need a created_by
-        // Use a system UUID or the first owner of the account
         const { data: owner } = await supabase
           .from("account_members")
           .select("user_id")
@@ -233,17 +342,8 @@ async function syncOfficeContacts(
     }
   }
 
-  // Update sync log
-  await supabase.from("ghl_sync_log").upsert(
-    {
-      account_id: office.account_id,
-      last_synced_at: new Date().toISOString(),
-      contacts_created: created,
-      contacts_updated: updated,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "account_id" }
-  );
+  // Sync exitoso → resetear contador de errores
+  await markSyncSuccess(supabase, office.account_id, created, updated);
 
   const relatedContactIds = Array.from(new Set(touchedClientProfileIds)).slice(0, MAX_RELATED_CONTACTS_PER_RUN);
 
@@ -256,6 +356,7 @@ async function syncOfficeContacts(
     tasksUpdated = taskResult.updated;
   } catch (e) {
     console.error("task sync error", office.account_id, e);
+    // Errores en tasks NO disparan pausa de la cuenta — solo contacts (que es lo crítico para auth)
   }
 
   // Sync notes GHL → NER only for contacts changed in this run.
@@ -275,9 +376,12 @@ async function syncOfficeNotes(
   office: { account_id: string; ghl_api_key: string },
   clientProfileIds: string[]
 ) {
+<<<<<<< Updated upstream
   if (clientProfileIds.length === 0) return { imported: 0 };
 
   // Only sync notes for contacts that have an active case (notes require case_id)
+=======
+>>>>>>> Stashed changes
   const { data: cases } = await supabase
     .from("client_cases")
     .select("id, client_profile_id, client_profiles!inner(ghl_contact_id)")
@@ -310,7 +414,6 @@ async function syncOfficeNotes(
       const ghlNotes: any[] = data.notes || [];
       if (ghlNotes.length === 0) continue;
 
-      // Avoid dupes
       const { data: existingNotes } = await supabase
         .from("case_notes")
         .select("ghl_note_id")
@@ -400,9 +503,6 @@ async function syncOfficeTasks(
         if (!ghlTaskId) continue;
 
         // BUG FIX 2026-05-04: maybeSingle() falla silenciosamente con 2+ filas
-        // (mismo ghl_task_id duplicado por bug previo). Usar limit + filter
-        // por account_id para evitar bucle exponencial. Ver fix gemelo en
-        // import-ghl-tasks/index.ts.
         const { data: existingRows } = await supabase
           .from("case_tasks")
           .select("id, status, title, due_date")
