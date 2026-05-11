@@ -10,7 +10,7 @@ interface Props {
 }
 
 const ACCENT_HEX: Record<string, string> = {
-  uscis: "#3B82F6",
+  uscis: "#2563EB",
   nvc: "#F59E0B",
   embajada: "#F97316",
   "admin-processing": "#A855F7",
@@ -25,22 +25,23 @@ function dayTone(days: number): string {
 }
 
 export default function CaseKanban({ columns, staffNames }: Props) {
+  // Auto-ocultar columnas vacías (Vanessa: "se ven tristes con '—'").
+  // Si TODAS están vacías, mostrar el grid completo igual para que no quede en blanco.
+  const allEmpty = columns.every(c => c.cases.length === 0);
+  const visible = allEmpty ? columns : columns.filter(c => c.cases.length > 0);
+
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        {columns.map(col => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2.5">
+        {visible.map(col => {
           const accent = ACCENT_HEX[col.key] || "#6B7280";
           return (
             <div
               key={col.key}
               className="flex flex-col rounded-lg border border-border/50 bg-card/30 min-h-[140px]"
             >
-              {/* Compact header — single line, no gradient */}
               <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-border/30">
-                <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ backgroundColor: accent }}
-                />
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: accent }} />
                 <span className="text-[10px] font-bold uppercase tracking-wide text-foreground truncate">
                   {col.label}
                 </span>
@@ -49,8 +50,7 @@ export default function CaseKanban({ columns, staffNames }: Props) {
                 </span>
               </div>
 
-              {/* Compact card list */}
-              <div className="flex-1 p-1.5 space-y-1 max-h-[calc(100vh-300px)] overflow-y-auto">
+              <div className="flex-1 p-1.5 space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto">
                 {col.cases.length === 0 ? (
                   <div className="text-[10px] text-muted-foreground/40 text-center py-4 italic">
                     —
@@ -66,7 +66,6 @@ export default function CaseKanban({ columns, staffNames }: Props) {
         })}
       </div>
 
-      {/* Discreet aspirational footer */}
       <p className="text-[10px] text-muted-foreground/40 text-center italic">
         Próximamente: ICE · Corte · CBP · Aeropuerto
       </p>
@@ -85,12 +84,9 @@ function CompactCard({ c, staffNames, accent }: { c: PipelineCase; staffNames?: 
       className="w-full text-left rounded-md border border-border/40 bg-card/80 hover:bg-card hover:border-border transition-colors px-2 py-1.5 group"
     >
       <div className="flex items-start gap-1.5">
-        <span
-          className="w-1 h-8 rounded-full shrink-0 mt-0.5"
-          style={{ backgroundColor: accent }}
-        />
+        <span className="w-1 h-8 rounded-full shrink-0 mt-0.5" style={{ backgroundColor: accent }} />
         <div className="flex-1 min-w-0">
-          <div className="text-[12px] font-semibold text-foreground truncate leading-tight group-hover:text-jarvis transition-colors">
+          <div className="text-[12px] font-semibold text-foreground truncate leading-tight group-hover:underline underline-offset-2 decoration-muted-foreground/30">
             {c.client_name}
           </div>
           <div className="text-[10px] text-muted-foreground/70 truncate leading-tight">

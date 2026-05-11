@@ -1,17 +1,22 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, LayoutGrid, List as ListIcon, Table as TableIcon, Users, AlertCircle } from "lucide-react";
+import { Search, LayoutGrid, Table as TableIcon, AlertCircle, FolderPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import HubLayout from "@/components/hub/HubLayout";
 import CaseTable from "@/components/hub/CaseTable";
 import CaseKanban from "@/components/hub/CaseKanban";
-import CaseCard from "@/components/hub/CaseCard";
 import { useCasePipeline, PIPELINE_COLUMNS } from "@/hooks/useCasePipeline";
 import { cn } from "@/lib/utils";
 
-type ViewMode = "tabla" | "kanban" | "lista";
+type ViewMode = "tabla" | "kanban";
 
 export default function HubCasesPage() {
+  const navigate = useNavigate();
   const accountId = (() => {
     try {
       const raw = sessionStorage.getItem("ner_hub_data");
@@ -22,7 +27,7 @@ export default function HubCasesPage() {
   const { cases, loading, unclassifiedCount } = useCasePipeline(accountId);
   const [view, setView] = useState<ViewMode>(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("ner_cases_view") : null;
-    return (saved as ViewMode) || "tabla";
+    return saved === "kanban" ? "kanban" : "tabla";
   });
   const [search, setSearch] = useState("");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
@@ -53,11 +58,20 @@ export default function HubCasesPage() {
     return cases.filter(c => {
       if (ownerFilter !== "all" && c.assigned_to !== ownerFilter) return false;
       if (!q) return true;
-      return (
-        c.client_name?.toLowerCase().includes(q) ||
-        c.file_number?.toLowerCase().includes(q) ||
-        c.case_type?.toLowerCase().includes(q)
-      );
+      // Búsqueda extendida (Vanessa requirement): A-number, USCIS receipt, NVC case
+      if (c.client_name?.toLowerCase().includes(q)) return true;
+      if (c.file_number?.toLowerCase().includes(q)) return true;
+      if (c.case_type?.toLowerCase().includes(q)) return true;
+      // A-number (alien_number) viene en case_tags_array o se busca en raw — el hook no lo trae
+      // pero podemos buscar en file_number también si el preparador lo guardó ahí.
+      if (c.nvc_case_number?.toLowerCase().includes(q)) return true;
+      // USCIS receipt numbers (array)
+      const receipts = c.uscis_receipt_numbers;
+      if (Array.isArray(receipts) && receipts.some((r: any) => String(r).toLowerCase().includes(q))) return true;
+      if (receipts && typeof receipts === "object") {
+        if (Object.values(receipts).some((r: any) => String(r).toLowerCase().includes(q))) return true;
+      }
+      return false;
     });
   }, [cases, search, ownerFilter]);
 
@@ -68,7 +82,6 @@ export default function HubCasesPage() {
         if (c.process_stage && PIPELINE_COLUMNS.some(pc => pc.key === c.process_stage)) {
           return c.process_stage === col.key;
         }
-        // Fallback heurístico igual al hook (consistencia)
         const tags = c.case_tags_array || [];
         let stage = "uscis";
         if (tags.some(t => /aprobada|aprobado/i.test(t))) stage = "aprobado";
@@ -104,7 +117,7 @@ export default function HubCasesPage() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-foreground">Pipeline de casos</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               {filteredCases.length} {filteredCases.length === 1 ? "caso activo" : "casos activos"}
               {totalOverdue > 0 && (
                 <span className="ml-2 inline-flex items-center gap-1 text-rose-400 font-semibold">
@@ -123,60 +136,78 @@ export default function HubCasesPage() {
           {/* Toolbar */}
           <div className="flex items-center gap-2 flex-wrap">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60 pointer-events-none" />
               <Input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Buscar cliente o expediente…"
-                className="h-8 w-60 pl-8 text-xs bg-card/60"
+                placeholder="Buscar cliente, expediente, recibo USCIS o NVC…"
+                className="h-8 w-80 pl-8 text-[11px] bg-card/60"
               />
             </div>
 
             {uniqueOwners.length > 0 && (
-              <div className="relative">
-                <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
-                <select
-                  value={ownerFilter}
-                  onChange={e => setOwnerFilter(e.target.value)}
-                  className="h-8 pl-8 pr-6 text-xs rounded-md border border-border bg-card/60 text-foreground focus:outline-none focus:ring-1 focus:ring-jarvis appearance-none"
-                >
-                  <option value="all">Todo el equipo</option>
+              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                <SelectTrigger className="h-8 w-40 text-[11px] bg-card/60">
+                  <SelectValue placeholder="Todo el equipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todo el equipo</SelectItem>
                   {uniqueOwners.map(uid => (
-                    <option key={uid} value={uid}>{staffNames[uid] || "Staff"}</option>
+                    <SelectItem key={uid} value={uid}>{staffNames[uid] || "Staff"}</SelectItem>
                   ))}
-                </select>
-              </div>
+                </SelectContent>
+              </Select>
             )}
 
             <div className="flex items-center bg-card/60 border border-border rounded-md p-0.5">
               <ViewButton active={view === "tabla"} onClick={() => changeView("tabla")} icon={<TableIcon className="w-3.5 h-3.5" />} label="Tabla" />
               <ViewButton active={view === "kanban"} onClick={() => changeView("kanban")} icon={<LayoutGrid className="w-3.5 h-3.5" />} label="Kanban" />
-              <ViewButton active={view === "lista"} onClick={() => changeView("lista")} icon={<ListIcon className="w-3.5 h-3.5" />} label="Lista" />
             </div>
           </div>
         </div>
+
+        {/* Search results count */}
+        {search.trim() && !loading && (
+          <p className="text-[10px] text-muted-foreground/60 -mt-1">
+            {filteredCases.length} de {cases.length} casos coinciden con "{search.trim()}"
+          </p>
+        )}
 
         {/* Content */}
         {loading ? (
           <div className="rounded-xl border border-border/40 bg-card/30 h-96 animate-pulse" />
         ) : filteredCases.length === 0 ? (
-          <div className="rounded-xl border border-border/40 bg-card/30 py-16 text-center">
-            <p className="text-sm text-muted-foreground">
-              {search || ownerFilter !== "all"
-                ? "Ningún caso coincide con tus filtros"
-                : "No hay casos activos todavía"}
-            </p>
+          <div className="rounded-xl border border-border/40 bg-card/30 py-16 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-muted/30 mx-auto flex items-center justify-center">
+              <FolderPlus className="w-5 h-5 text-muted-foreground/60" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-1">
+                {search || ownerFilter !== "all"
+                  ? "Ningún caso coincide"
+                  : "No hay casos activos todavía"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {search || ownerFilter !== "all"
+                  ? "Probá ajustar los filtros o limpiar la búsqueda."
+                  : "Empezá por crear el primer caso o sincronizar contactos desde GHL."}
+              </p>
+            </div>
+            {!search && ownerFilter === "all" && (
+              <Button
+                size="sm"
+                onClick={() => navigate("/hub/leads")}
+                className="text-[11px]"
+              >
+                <FolderPlus className="w-3.5 h-3.5 mr-1.5" />
+                Crear caso desde lead
+              </Button>
+            )}
           </div>
         ) : view === "tabla" ? (
           <CaseTable columns={filteredColumns} staffNames={staffNames} />
-        ) : view === "kanban" ? (
-          <CaseKanban columns={filteredColumns} staffNames={staffNames} />
         ) : (
-          <div className="space-y-1.5">
-            {filteredCases.map(c => (
-              <CaseCard key={c.id} case={c} variant="list" staffNames={staffNames} />
-            ))}
-          </div>
+          <CaseKanban columns={filteredColumns} staffNames={staffNames} />
         )}
       </div>
     </HubLayout>
@@ -189,8 +220,9 @@ function ViewButton({ active, onClick, icon, label }: { active: boolean; onClick
       onClick={onClick}
       className={cn(
         "px-2 py-1 rounded text-[11px] font-semibold transition-colors flex items-center gap-1",
-        active ? "bg-jarvis text-white" : "text-muted-foreground hover:text-foreground"
+        active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
       )}
+      title={`Vista ${label}`}
     >
       {icon}
       {label}
