@@ -627,41 +627,43 @@ Si todos ✅ → proceder con confianza.
 **Excepciones:** los checks 1, 4, 8, 9 son no-negociables. Los demás pueden
 documentarse como excepción en `decisions.md` con TODO de resolver en N días.
 
-## Protocolo: Deploy híbrido (decidido 2026-05-11)
+## Protocolo: Deploy en NER (REVISADO 2026-05-11)
 
-Para minimizar Lovable credits sin perder velocidad de UX building, deploys
-se reparten por dominio:
+**Realidad confirmada:** el proyecto Supabase de NER (`dewjhkgnoaepgkhulcbv`)
+fue creado vía Lovable Cloud, lo que significa que **vive bajo la organización
+de Lovable, no bajo la cuenta personal de Mr. Lorenzo**. Personal Access Tokens
+de Supabase generados desde su cuenta NO ven el proyecto.
 
-| Tipo de cambio | Quién | Costo Lovable |
+**Consecuencia operacional:** **Lovable es el ÚNICO camino para deploys de
+edge functions y migrations.** No existe ruta de CLI directo. El plan
+"híbrido" original (Claude CLI backend + Lovable frontend) NO aplica para
+este proyecto.
+
+| Tipo de cambio | Cómo | Costo Lovable |
 |---|---|---|
-| Edge functions (nuevas/modificadas) | Claude Code via `supabase functions deploy` | $0 |
-| Migrations / SQL changes | Claude Code via CLI o SQL editor | $0 |
-| Bug fixes / security en backend | Claude Code via CLI | $0 |
-| Frontend nuevo / UI components | Lovable chat | Credits |
-| Refactor visual / design tweaks | Lovable chat | Credits |
+| Edge functions nuevas/modificadas | Claude commit+push → Mr. Lorenzo le pide a Lovable que pulle y deploye | Credits |
+| Migrations SQL | Mr. Lorenzo aplica manualmente en Supabase SQL editor (acceso vía Lovable), o le pide a Lovable | Credits si vía Lovable, $0 si SQL editor manual |
+| Bug fixes en backend | Igual que edge functions | Credits |
+| Secrets / env vars | Mr. Lorenzo agrega vía Supabase dashboard manualmente | $0 |
+| Frontend / UI | Mr. Lorenzo le pide a Lovable chat | Credits |
 
-**Las 3 reglas anti-conflicto (NO romper):**
+**Workflow estándar para cualquier security fix o backend change:**
 
-1. **Commit ANTES de deploy.** Claude SIEMPRE pushea a GitHub antes de
-   `supabase functions deploy`. Sin esto, Lovable la próxima vez leería
-   código stale y sobreescribiría.
-
-2. **Pull ANTES de tocar.** Antes de modificar una edge function, Claude
-   ejecuta `git pull origin main` para asegurar que tiene los últimos
-   cambios de Lovable (si los hizo).
-
-3. **Edge functions/migrations = territorio Claude, NO Lovable.** Mr.
-   Lorenzo NO le pide a Lovable que modifique edge functions ni que aplique
-   migrations. Si necesita cambio backend, se lo pide a Claude. Lovable
-   solo frontend/UI. Previene que Lovable sobreescriba security logic
-   sin saberlo.
+1. Claude modifica código en repo local
+2. Claude commitea + pushea a `main`
+3. Mr. Lorenzo abre Lovable chat
+4. Mr. Lorenzo pega: *"Pull últimos cambios de main y deploya las edge
+   functions afectadas: [lista]. Aplica migrations: [lista si hay]."*
+5. Lovable confirma deploys
+6. Verificación: Claude testea endpoints contra producción
 
 **Rollback safety net:** Supabase dashboard → Edge Functions → función →
 tab "Deployments" → click "Rollback" en la versión previa. 5 segundos.
+Acceso vía Lovable (Mr. Lorenzo lo abre).
 
-**Setup CLI (pending — install bloqueado por permission system):** ver
-memoria `feedback_deploy_workflow.md` para 3 opciones de install + flujo
-del Personal Access Token.
+**Lección dura aprendida 2026-05-11:** ver `feedback_lovable_owns_supabase.md`
+en memoria. NUNCA proponer setup CLI para proyectos Lovable-managed sin
+verificar primero acceso vía PAT personal.
 
 ## Next concrete action
 
