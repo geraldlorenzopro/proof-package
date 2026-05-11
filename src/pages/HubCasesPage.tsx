@@ -11,6 +11,7 @@ import HubLayout from "@/components/hub/HubLayout";
 import CaseTable from "@/components/hub/CaseTable";
 import CaseKanban from "@/components/hub/CaseKanban";
 import { useCasePipeline, PIPELINE_COLUMNS } from "@/hooks/useCasePipeline";
+import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "tabla" | "kanban";
@@ -25,6 +26,7 @@ export default function HubCasesPage() {
   })();
 
   const { cases, loading, unclassifiedCount } = useCasePipeline(accountId);
+  const demoMode = useDemoMode();
   const [view, setView] = useState<ViewMode>(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("ner_cases_view") : null;
     return saved === "kanban" ? "kanban" : "tabla";
@@ -34,6 +36,15 @@ export default function HubCasesPage() {
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    // Demo mode: inyectar staffNames desde DEMO_CASES (los UUIDs demo no existen en BD)
+    if (demoMode) {
+      const map: Record<string, string> = {};
+      DEMO_CASES.forEach(c => {
+        if (c.assigned_to) map[c.assigned_to] = c.assigned_to_name;
+      });
+      setStaffNames(map);
+      return;
+    }
     if (!accountId) return;
     supabase
       .from("account_members")
@@ -46,7 +57,7 @@ export default function HubCasesPage() {
         });
         setStaffNames(map);
       });
-  }, [accountId]);
+  }, [accountId, demoMode]);
 
   function changeView(next: ViewMode) {
     setView(next);

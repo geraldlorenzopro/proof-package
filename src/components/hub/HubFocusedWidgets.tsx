@@ -560,6 +560,19 @@ export default function HubFocusedWidgets({ accountId }: Props) {
           </div>
         </div>
       )}
+
+      {/* RECURSOS QUICK ACCESS — siempre visibles en demo, link-buttons */}
+      {demoMode && (
+        <div className="flex items-center gap-2 flex-wrap px-3 py-2 bg-card/30 border border-border rounded-lg">
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70 font-semibold mr-1">Recursos:</span>
+          <a href="https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground border border-border hover:border-border-strong bg-transparent transition-colors">Visa Bulletin</a>
+          <a href="https://egov.uscis.gov/casestatus/landing.do" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground border border-border bg-transparent transition-colors">USCIS Case Status</a>
+          <a href="https://egov.uscis.gov/processing-times/" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground border border-border bg-transparent transition-colors">USCIS Processing Times</a>
+          <a href="https://ceac.state.gov/CEAC/" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground border border-border bg-transparent transition-colors">NVC CEAC</a>
+          <a href="https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/wait-times.html" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground border border-border bg-transparent transition-colors">Embajadas wait times</a>
+          <a href="https://www.justice.gov/eoir" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground border border-border bg-transparent transition-colors">EOIR (Corte)</a>
+        </div>
+      )}
     </div>
   );
 }

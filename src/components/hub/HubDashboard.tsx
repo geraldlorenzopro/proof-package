@@ -604,15 +604,17 @@ function HubDashboardInner({
                     </span>
                   </div>
                   <h2 className="text-xl font-bold text-foreground tracking-tight mb-2">
-                    {morningBriefing?.greeting
-                      ? (() => {
-                          const parts = morningBriefing.greeting.split(",");
-                          if (parts.length >= 2) {
-                            return <>{parts[0]}, <span className="text-jarvis">{parts.slice(1).join(",").trim()}</span>.</>;
-                          }
-                          return <>{morningBriefing.greeting}.</>;
-                        })()
-                      : <>{greeting}{firstName ? <>, <span className="text-jarvis">{firstName}</span></> : ""}.</>
+                    {demoMode
+                      ? <>{greeting}, <span className="text-jarvis">Pablo</span>.</>
+                      : (morningBriefing?.greeting
+                          ? (() => {
+                              const parts = morningBriefing.greeting.split(",");
+                              if (parts.length >= 2) {
+                                return <>{parts[0]}, <span className="text-jarvis">{parts.slice(1).join(",").trim()}</span>.</>;
+                              }
+                              return <>{morningBriefing.greeting}.</>;
+                            })()
+                          : <>{greeting}{firstName ? <>, <span className="text-jarvis">{firstName}</span></> : ""}.</>)
                     }
                   </h2>
                   <p className="text-[13px] text-foreground/85 leading-relaxed">{briefingText}</p>
@@ -682,7 +684,7 @@ function HubDashboardInner({
               {feedLoading && (
                 <div className="text-[11px] text-muted-foreground/40">Camila está priorizando tu día...</div>
               )}
-              {!feedLoading && actionChips.length === 0 && (
+              {!demoMode && !feedLoading && actionChips.length === 0 && (
                 <button
                   onClick={() => setIntakeOpen(true)}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-jarvis/30 bg-jarvis/10 text-[11px] font-medium text-jarvis hover:bg-jarvis/15 transition"
