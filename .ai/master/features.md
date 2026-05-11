@@ -1,7 +1,40 @@
 # NER — Catálogo de Features con Flags
 
-**Última actualización:** 2026-05-10
+**Última actualización:** 2026-05-11
 **Owner:** Mr. Lorenzo (admin via `/admin/features`)
+
+## 🆕 Features añadidas/actualizadas 2026-05-11
+
+### Pipeline Dashboard (Fase 1 — MVP entregado)
+- `pipeline-dashboard-mvp` 🟢 LIVE — Tabla Airtable-style + Kanban compacto en `/hub/cases`
+- `pipeline-search-extended` 🟢 LIVE — búsqueda por receipt USCIS, NVC case number, A-number
+- `pipeline-sortable-headers` 🟢 LIVE — click headers para sort asc/desc
+- `pipeline-status-legal-column` 🟡 BETA — pendiente OK Mr. Lorenzo (mockup v3), 7 valores: intake/cliente/armado/firma/enviado/RFE/decisión
+- `pipeline-ball-in-court-badge` 🟡 BETA — iconito 👤/🏢/⚖️/🏛️ en columna asignado (mockup v3)
+- `pipeline-filter-chips` 🟡 BETA — multi-select chips persistentes (Vencidas, Esta semana, Mis casos, RFE pendiente, Sin asignar)
+- `pipeline-export-csv` 🟡 BETA — botón Export → CSV de lo filtrado
+- `pipeline-drag-drop` ⚫ PLANNED — sprint 2
+- `pipeline-saved-views` ⚫ PLANNED — sprint 2
+- `pipeline-bulk-actions` ⚫ PLANNED — sprint 2
+- `pipeline-keyboard-shortcuts` ⚫ PLANNED — sprint 2 (`j/k`, `/`, `Enter`)
+- `pipeline-attorney-view-toggle` ⚫ PLANNED — sprint 2 (vista paralegal vs abogado con defaults distintos)
+
+### Hub Dashboard refactor (Fase 1 — crítico identificado 2026-05-11)
+- `hub-signature-pending-widget` ⚫ PLANNED — widget "Para firmar" con conteo + lista top-3
+- `hub-review-pending-widget` ⚫ PLANNED — widget "Para revisar" (RFEs, memos, packets drafted)
+- `hub-decision-pending-widget` ⚫ PLANNED — widget "Para decidir" (escalaciones, ofertas)
+- `feed-types-extended` ⚫ PLANNED — agregar `signature_pending`, `review_pending`, `decision_pending` al feed-builder edge function
+
+### Security (cerrado 2026-05-10)
+- `webhooks-hmac-verification` 🟢 LIVE — HMAC con constant-time compare en webhooks GHL
+- `account-membership-verification` 🟢 LIVE — `verifyAccountMembership` helper en 10+ edge functions
+- `origin-allowlist-paid-apis` 🟢 LIVE — bloquea curl directo a LOVABLE/ElevenLabs endpoints
+- `email-xss-sanitization` 🟢 LIVE — escapeHtml/safeUrl/sanitizeVars en send-email
+- `platform-admin-gate` 🟢 LIVE — generate-test-hub-link restricted to platform_admins
+
+### Visibility (cerrado 2026-05-10)
+- `hierarchical-visibility-rls` 🟢 LIVE — `user_can_assign_visibility()` helper aplicado a INSERT/UPDATE/DELETE policies
+- `visibility-frontend-hook` 🟢 LIVE — `canViewVisibility()` y `assignableVisibilityLevels()` en `usePermissions`
 
 > Este archivo es el catálogo maestro de features. Cada feature tiene
 > un slug único, status, tier mínimo requerido, y mapping de qué firmas

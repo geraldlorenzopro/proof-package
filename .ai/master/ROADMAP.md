@@ -1,8 +1,29 @@
 # NER Immigration AI — Roadmap End-to-End
 
-**Última actualización:** 2026-05-10
+**Última actualización:** 2026-05-11
 **Owner:** Mr. Lorenzo (Founder/CEO)
-**Próximo update:** post-Fase 0 (cierre infrastructure)
+**Próximo update:** post-demo 2026-05-12 (8 firmas pagantes)
+
+## 🆕 Cambios desde 2026-05-10
+
+**Detour de seguridad (2026-05-10):**
+- Security audit completo del repo: 22 vulnerabilidades encontradas, 12 cerradas (3 CRÍTICOS + 7 ALTOS + 2 MEDIOS)
+- Helpers compartidos creados: `auth-tenant.ts`, `verify-ghl-webhook.ts`, `origin-allowlist.ts`
+- 18 edge functions deployadas vía Lovable. 2 migrations aplicadas.
+- Aprendizaje operacional: Lovable es DUEÑO del Supabase project. CLI workflow imposible — Lovable chat es única ruta deploy.
+
+**Fase 0 completada (Foundation):**
+- ✅ Feature flags system migration deployed
+- ✅ Hierarchical visibility migration deployed
+- ⚫ UI `/admin/features` y hook `useFeatureFlag()` — postponed post-demo
+
+**Fase 1 — Pipeline Dashboard MVP entregado (2026-05-11):**
+- ✅ `/hub/cases` rewrite completo: Tabla Airtable-style (default) + Kanban compacto + filtros + search por receipt USCIS/NVC
+- 🛑 Pendiente OK Mr. Lorenzo (mockup v3): columna Status legal + ball-in-court badge + export CSV
+- ⚫ Sprint 2: drag-drop entre columnas, saved views, bulk actions, keyboard shortcuts, columnas reales ICE/Corte/CBP/Aeropuerto
+
+**🚨 Refactor nuevo identificado (2026-05-11):**
+- **Hub Dashboard (`/hub`)** NO responde la pregunta del abogado principal "¿qué requiere mi firma/revisión?". Refactor crítico antes de demo: 3 widgets explícitos (Para firmar / Para revisar / Consultas hoy). Backend: agregar tipos `signature_pending` y `review_pending` en `feed-builder` edge function.
 
 > **Este documento es la fuente de verdad estratégica del proyecto.**
 > Combina visión, fases, decisiones y métricas. Reconcilia 3 conversaciones

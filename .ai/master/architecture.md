@@ -1,7 +1,61 @@
 # NER — Arquitectura completa
 
-**Última actualización:** 2026-05-02
+**Última actualización:** 2026-05-11
 **Audiencia:** Claude Code en futuras sesiones + revisores técnicos
+
+## 🆕 Adiciones arquitectónicas desde 2026-05-02
+
+### Shared helpers para edge functions (`supabase/functions/_shared/`)
+
+| Helper | Función | Aplicado en |
+|---|---|---|
+| `auth-tenant.ts` | `verifyAccountMembership(admin, userId, accountId)` — valida que user pertenece al account antes de operar | 10+ functions (todos los agents, push-*, import-*, send-email, etc.) |
+| `verify-ghl-webhook.ts` | HMAC validation con constant-time compare contra `GHL_WEBHOOK_SECRET` env var | 3 webhooks (payment-confirmed, contract-signed, appointment-booked) |
+| `origin-allowlist.ts` | Bloquea Origin headers no whitelisteados; permite *.lovable.app + dominios NER + localhost | analyze-uscis-document, translate-evidence, elevenlabs-conversation-token |
+| `cors.ts` | (existente) corsHeaders | Todas las edge functions |
+| `ghl.ts` | (existente) `getGHLConfig(accountId)` | Funciones que llaman GHL API |
+
+### Hierarchical Visibility (live 2026-05-10)
+
+3 niveles de visibility en `case_notes`, `case_documents`, `case_tasks`, `ai_agent_sessions`:
+- `team` (default) — todos los miembros del account ven
+- `attorney_only` — owner/admin/attorney ven; paralegales NO
+- `admin_only` — owner/admin ven; resto NO
+
+**SQL helper:** `user_can_assign_visibility(p_user_id, p_account_id, p_visibility)` aplicado en INSERT/UPDATE/DELETE policies (no solo SELECT — fix del audit 2026-05-10).
+
+**Frontend hook:** `usePermissions()` ahora expone `canViewVisibility(level)` y `assignableVisibilityLevels()` espejando la lógica SQL.
+
+### Feature Flags (live 2026-05-10)
+
+Tablas: `feature_flags` (catálogo) + `account_feature_overrides` (por firma).
+
+Function `account_has_feature(account_id, slug)` con tenancy check (account_members OR platform_admins).
+
+**Frontend:** Hook `useFeatureFlag(slug)` y componente `<FeatureFlag>` — pendientes (Fase 0 cierre).
+
+### Pipeline Dashboard (2026-05-11)
+
+Nueva ruta funcional: `/hub/cases` con 2 vistas (Tabla default, Kanban toggle).
+
+**Data flow:**
+```
+useCasePipeline(accountId)
+  ├─ supabase.client_cases (filtered by account_id, !=completed)
+  ├─ supabase.case_tasks (joined for open_tasks_count, overdue_tasks_count, next_due_date)
+  └─ classify() — derive PipelineStageKey from process_stage OR tags OR receipts
+       └─ PIPELINE_COLUMNS[] grouped by stage
+```
+
+**Componentes:**
+- `CaseTable.tsx` — Airtable-style con sortable headers + collapsible groups
+- `CaseKanban.tsx` — compact cards + auto-ocultar columnas vacías
+
+### Hub Dashboard (refactor pendiente)
+
+**Estado actual:** 60/30/10 layout con Camila briefing + cola priorizada + agenda hoy.
+
+**Gap identificado 2026-05-11:** NO responde "¿qué requiere mi firma/revisión?" para abogado principal. Refactor planificado: 3 widgets explícitos en zona 2 (Para firmar / Para revisar / Consultas hoy) + extender `feed-builder` edge function con tipos `signature_pending`, `review_pending`, `decision_pending`.
 
 ---
 

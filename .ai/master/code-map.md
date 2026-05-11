@@ -1,9 +1,40 @@
 # NER Immigration AI — Code Map
 
 > **Audience:** Claude Code en futuras sesiones + revisores técnicos.
-> **Last updated:** 2026-04-29
-> **Scope:** File-by-file inventory of all 46 tables, 51 edge functions, ~150 pages/components, 10 critical hooks.
+> **Last updated:** 2026-05-11
+> **Scope:** File-by-file inventory of all 46 tables, 51 edge functions, ~150 pages/components, 11+ critical hooks.
 > **Source of truth:** Este documento refleja lo que existe hoy en el repo.
+
+## ⚠️ Changes since 2026-04-29 — quick delta
+
+**New files (security + Pipeline + Visibility sprints):**
+- `supabase/functions/_shared/auth-tenant.ts` — `verifyAccountMembership()` helper (CRÍTICO security fix 2026-05-10)
+- `supabase/functions/_shared/verify-ghl-webhook.ts` — HMAC validator con constant-time compare
+- `supabase/functions/_shared/origin-allowlist.ts` — bloquea curl directo a edge functions que consumen LOVABLE/ElevenLabs credits
+- `src/hooks/useCasePipeline.ts` — query + clasificación de cases por process_stage para Pipeline Dashboard
+- `src/components/hub/CaseTable.tsx` — vista Airtable-style con grupos colapsables + sortable headers
+- `src/components/hub/CaseKanban.tsx` — vista Kanban compacta con auto-ocultar columnas vacías
+- `supabase/migrations/20260503100000_role_visibility_hierarchical.sql` — Hierarchical visibility model
+- `supabase/migrations/20260510120000_feature_flags_system.sql` — Feature flags por firma
+
+**Deleted files:**
+- `src/components/hub/CaseCard.tsx` — huérfano tras remover vista "Lista" del Pipeline (2026-05-11)
+
+**Modified (security fixes — sesión 2026-05-10):**
+- 4 AI agents (`agent-felix`, `agent-nina`, `agent-max`, `check-credits`) — añadido `verifyAccountMembership`
+- 3 webhooks (`payment-confirmed`, `contract-signed`, `appointment-booked`) — HMAC verification
+- 3 import functions (`import-ghl-contacts`, `import-ghl-notes`, `import-ghl-tasks`) — Authorization + membership
+- 3 push functions (`push-contact-to-ghl`, `push-task-to-ghl`, `push-note-to-ghl`) — Authorization + membership
+- `analyze-uscis-document`, `translate-evidence`, `elevenlabs-conversation-token` — Origin allowlist
+- `send-email` — escapeHtml/safeUrl/sanitizeVars (anti-XSS)
+- `generate-test-hub-link` — platform_admin gate
+- `src/lib/i765FormFiller.ts` — PII console.log wrapped in `import.meta.env.DEV`
+
+**Modified (Pipeline Dashboard — sesión 2026-05-11):**
+- `src/pages/HubCasesPage.tsx` — rewrite completo (2-way toggle Tabla/Kanban, Tabla default, búsqueda extendida a receipt USCIS/NVC, custom Select)
+- `src/components/hub/HubDashboard.tsx` — fix "99+" → número real con locale
+- `src/pages/CaseEnginePage.tsx` — scrollbar visible en sidebar derecho
+- `src/hooks/usePermissions.ts` — añade `canViewVisibility()` y `assignableVisibilityLevels()`
 
 ## 0. Quick Navigation
 

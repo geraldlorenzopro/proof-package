@@ -1,8 +1,8 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-10
-**Audit por:** Claude Code (Opus 4.7) + Explore agent
-**Próximo update:** post-Fase 0 (cuando feature flags estén live)
+**Última actualización:** 2026-05-11
+**Audit por:** Claude Code (Opus 4.7) + Explore agent + Vanessa + Valerie + Pablo (orchestrator)
+**Próximo update:** post-demo Pipeline Dashboard (2026-05-12)
 
 > 📍 **Para visión estratégica completa, ver [`ROADMAP.md`](ROADMAP.md).**
 > Este doc se enfoca en estado operativo del sprint actual.
@@ -13,7 +13,7 @@
 
 ---
 
-## 🚀 Estado actual (post-sprint 2026-05-02 → 2026-05-08)
+## 🚀 Estado actual (post-sprint 2026-05-02 → 2026-05-11)
 
 ### LIVE en producción (commits ya pusheados a main)
 
@@ -26,6 +26,13 @@
 | `d88f671` | 2026-05-03 | **Dashboard wow v2** layout estática 60/30/10 + briefing Camila |
 | `ec49f04` | 2026-05-03 | Fix feed-builder cap zombies + dedup tareas + briefing humano |
 | `8805c8a` | 2026-05-04 | **Fix bucle exponencial** en `import-ghl-tasks` + `ghl-sync-cron` (maybeSingle bug) |
+| `1122b52` | 2026-05-10 | **SECURITY CRÍTICO #1** — cross-account exploit fix en 4 AI agents (agent-felix, nina, max, check-credits) |
+| `e9c974d` | 2026-05-10 | **SECURITY CRÍTICOS #2+#3** — HMAC webhooks (payment/contract/appointment) + admin gate + APP_URL hardcoded |
+| `f2ff837` | 2026-05-10 | SECURITY ALTOS — import-ghl-* auth + visibility writes + feature-flags tenancy |
+| `bb6588f` | 2026-05-10 | SECURITY ALTOS — LOVABLE/ElevenLabs origin allowlist + push-* auth + email XSS escape + PII gate |
+| `03bcfb5` | 2026-05-11 | **Pipeline Dashboard MVP** — useCasePipeline hook + CaseTable + CaseKanban + 3-way toggle |
+| `f1c0e6d` | 2026-05-11 | Pipeline iteración 1 — Tabla Airtable-style como default + compact Kanban + collapsible groups |
+| `d5ab864` | 2026-05-11 | Pipeline iteración 2 (post Vanessa+Valerie critique) — kill text-jarvis + sortable headers + custom Select + search receipt/A# + next_due column + typography 13/11/10 + gray avatars + drop Lista view |
 
 ### Cleanup ejecutado en BD (2026-05-04)
 
@@ -33,23 +40,42 @@
 - **46 K1 reales mantenidas** (canónicas, una por ghl_task_id)
 - Pendientes pasaron de 21,882 → ~104 (reducción 99.5%)
 
-### Pendiente AHORA mismo (post roadmap consolidación 2026-05-10)
+### Pendiente AHORA mismo (post-sesión 2026-05-11)
 
-**FASE 0 — Foundation Infrastructure (semana 2026-05-10 → 2026-05-17)**
+**FASE 0 — Foundation Infrastructure**
 
 | # | Tarea | Estado | Siguiente acción |
 |---|---|---|---|
-| 0.1 | Migration feature flags (`feature_flags` + `account_feature_overrides`) | 🛑 Esperando OK Mr. Lorenzo | Schema change |
-| 0.2 | Push visibility migration `20260503100000_role_visibility_hierarchical.sql` | 🛑 Esperando OK Mr. Lorenzo | Schema change |
-| 0.3 | UI `/admin/features` (toggle por firma) | ⚫ Planeada | Después de migration |
-| 0.4 | Componente `<FeatureFlag>` + hook `useFeatureFlag()` | ⚫ Planeada | Después de migration |
-| 0.5 | Verificar 24h post-fix maybeSingle (cron NO duplica) | ✅ Pasivo (~hoy 2026-05-10) | Query a `case_tasks` |
+| 0.1 | Migration feature flags (`feature_flags` + `account_feature_overrides`) | ✅ Deployed via Lovable | — |
+| 0.2 | Visibility migration `20260503100000_role_visibility_hierarchical.sql` | ✅ Deployed via Lovable | — |
+| 0.3 | UI `/admin/features` (toggle por firma) | ⚫ Planeada Fase 0 cierre | Post-demo |
+| 0.4 | Componente `<FeatureFlag>` + hook `useFeatureFlag()` | ⚫ Planeada Fase 0 cierre | Post-demo |
+| 0.5 | Verificar 24h post-fix maybeSingle (cron NO duplica) | ⏳ Pasivo (verificar mañana) | Query a `case_tasks` |
+| 0.6 | **GHL webhook secret** en 3 workflows GHL | 🛑 Esperando Mr. Lorenzo | Pegar header `x-webhook-secret` en payment/contract/appointment workflows GHL |
 
-**Después: Fase 1 — Pipeline Dashboard (3 semanas)**
+**FASE 1 — Pipeline Dashboard (en curso — MVP entregado)**
 
-Detalle completo en [`ROADMAP.md`](ROADMAP.md) Fase 1.
+| # | Tarea | Estado | Notas |
+|---|---|---|---|
+| 1.1 | `/hub/cases` rewrite con Kanban + Tabla + filtros + search | ✅ Live (commits 03bcfb5/f1c0e6d/d5ab864) | Iterado 3 veces post-feedback |
+| 1.2 | Columna Status legal (7 valores: intake/cliente/armado/firma/enviado/RFE/decisión) | 🛑 Pendiente OK Mr. Lorenzo (mockup v3) | Post-debate Vanessa+Valerie+Pablo |
+| 1.3 | Ball-in-court badge (👤/🏢/⚖️/🏛️) en columna asignado | 🛑 Pendiente OK | En mockup v3 |
+| 1.4 | Drag & drop entre columnas Kanban | ⚫ Sprint 2 | Postponed por riesgo bugs |
+| 1.5 | Saved views nombradas + filter chips persistentes | ⚫ Sprint 2 | Post-v1 |
+| 1.6 | Export CSV de lo filtrado | 🛑 En mockup v3, pendiente código | |
+| 1.7 | Hub Dashboard refactor — widgets "Para firmar / Para revisar / Consultas hoy" | 🚨 **NUEVO crítico** | Audit 2026-05-11 reveló gap: dashboard NO responde a "¿qué requiere mi firma?" |
 
-### Decisiones recientes que están vivas (ver `decisions.md`)
+**Demo programado: 2026-05-12** (8 firmas pagantes, Mr Visa + 7 más). Pipeline Dashboard + Hub Dashboard refactor son los entregables visibles.
+
+### Decisiones recientes (post 2026-05-11)
+
+- **2026-05-11** — Security audit completo: 22 vulnerabilidades, 12 fixed (3 CRÍTICOS + 7 ALTOS + 2 MEDIOS). Lovable deployó las 18 edge functions afectadas.
+- **2026-05-11** — Pipeline Dashboard 3 iteraciones en 1 día (kanban-only → tabla-airtable → tabla-corregida-post-feedback). Aprendizaje: SIEMPRE mockup antes de código.
+- **2026-05-11** — Lovable Cloud es DUEÑO del proyecto Supabase de NER. PATs personales no ven el proyecto. CLI workflow imposible — única ruta deploy es Lovable chat. Ver `feedback_lovable_owns_supabase.md` en memoria.
+- **2026-05-11** — Hub Dashboard audit reveló gap crítico: NO responde "¿qué requiere mi firma/revisión?" para abogado principal. Refactor obligatorio antes de demo.
+- **2026-05-11** — Hybrid agents pattern: lanzar 3 agentes en paralelo (Vanessa paralegal real + Valerie UX + Pablo abogado inmigración) ANTES de tocar código grande. No después.
+
+### Decisiones anteriores que están vivas (ver `decisions.md`)
 
 - **2026-05-02** — Brand: AI Blue + Cyan 20% acento, Sora typography (anti-Jarvis)
 - **2026-05-02** — Membership tiers cerrados (Essential $197 / Professional $297 / Elite $497 / Enterprise)
