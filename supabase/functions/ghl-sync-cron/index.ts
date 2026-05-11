@@ -268,15 +268,19 @@ async function syncOfficeContacts(
 
 async function syncOfficeNotes(
   supabase: ReturnType<typeof createClient>,
-  office: { account_id: string; ghl_api_key: string }
+  office: { account_id: string; ghl_api_key: string },
+  clientProfileIds: string[]
 ) {
+  if (clientProfileIds.length === 0) return { imported: 0 };
+
   // Only sync notes for contacts that have an active case (notes require case_id)
   const { data: cases } = await supabase
     .from("client_cases")
     .select("id, client_profile_id, client_profiles!inner(ghl_contact_id)")
     .eq("account_id", office.account_id)
+    .in("client_profile_id", clientProfileIds)
     .not("client_profiles.ghl_contact_id", "is", null)
-    .limit(200);
+    .limit(MAX_RELATED_CONTACTS_PER_RUN);
 
   if (!cases || cases.length === 0) return { imported: 0 };
 
@@ -337,14 +341,18 @@ async function syncOfficeNotes(
 
 async function syncOfficeTasks(
   supabase: ReturnType<typeof createClient>,
-  office: { account_id: string; ghl_api_key: string }
+  office: { account_id: string; ghl_api_key: string },
+  clientProfileIds: string[]
 ) {
+  if (clientProfileIds.length === 0) return { imported: 0, updated: 0 };
+
   const { data: contacts } = await supabase
     .from("client_profiles")
     .select("id, ghl_contact_id")
     .eq("account_id", office.account_id)
+    .in("id", clientProfileIds)
     .not("ghl_contact_id", "is", null)
-    .limit(200);
+    .limit(MAX_RELATED_CONTACTS_PER_RUN);
 
   if (!contacts || contacts.length === 0) return { imported: 0, updated: 0 };
 
