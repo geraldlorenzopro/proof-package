@@ -4,10 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Sparkles, Loader2 } from "lucide-react";
 import I765Wizard from "@/components/smartforms/I765Wizard";
+import I130Wizard from "@/components/smartforms/I130Wizard";
 import { I765Data } from "@/components/smartforms/i765Schema";
+import { I130Data } from "@/components/smartforms/i130Schema";
 import { generateI765Pdf } from "@/lib/i765PdfGenerator";
 import { fillI765Pdf, discoverI765Fields } from "@/lib/i765FormFiller";
 import { mapFelixOutputToI765Data } from "@/lib/i765FelixMapper";
+import { mapFelixOutputToI130Data } from "@/lib/i130FelixMapper";
 import { useSmartFormsContext } from "@/components/smartforms/SmartFormsContext";
 
 export default function SmartFormPage() {
@@ -16,7 +19,6 @@ export default function SmartFormPage() {
   const { id } = useParams<{ id: string }>();
   const isNew = !id || id === "new";
 
-  // Read context from navigation state (from SmartFormsList or CaseEngine)
   const navState = location.state as {
     beneficiaryId?: string | null;
     formType?: string;
@@ -32,7 +34,8 @@ export default function SmartFormPage() {
   const [saving, setSaving] = useState(false);
   const [felixRunning, setFelixRunning] = useState(false);
   const [submissionId, setSubmissionId] = useState<string | null>(isNew ? null : id!);
-  const [initialData, setInitialData] = useState<Partial<I765Data>>({});
+  const [formType, setFormType] = useState<string>(navState?.formType || "i-765");
+  const [initialData, setInitialData] = useState<Partial<I765Data> | Partial<I130Data>>({});
   const [firmName, setFirmName] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -43,7 +46,6 @@ export default function SmartFormPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/auth"); return; }
 
-      // Load firm name for PDF branding
       const { data: profile } = await supabase
         .from("profiles")
         .select("firm_name")
@@ -51,11 +53,10 @@ export default function SmartFormPage() {
         .maybeSingle();
       if (profile?.firm_name) setFirmName(profile.firm_name);
 
-      // If editing existing submission, load it
       if (!isNew && id) {
         const { data: sub, error } = await supabase
           .from("form_submissions")
-          .select("id, form_data, share_token, beneficiary_profile_id, case_id")
+          .select("id, form_type, form_data, share_token, beneficiary_profile_id, case_id")
           .eq("id", id)
           .maybeSingle();
         if (error || !sub) {
@@ -64,22 +65,91 @@ export default function SmartFormPage() {
           return;
         }
         setSubmissionId(sub.id);
-        setInitialData(sub.form_data as Partial<I765Data>);
+        setFormType(sub.form_type || "i-765");
+        setInitialData(sub.form_data as any);
         setShareToken((sub as any).share_token || null);
         setBeneficiaryProfileId((sub as any).beneficiary_profile_id || null);
       }
 
-      // If coming from a case with a beneficiary, pre-fill from client_profile + case data
+      // Pre-fill from case + client_profile (only for new forms)
       if (isNew && fromCase && (navState?.beneficiaryId || linkedCaseId)) {
-        const prefillData: Partial<I765Data> = {};
+        const currentFormType = navState?.formType || "i-765";
+        let cp: any = null;
+        let cc: any = null;
 
-        // Load client profile data
         if (navState?.beneficiaryId) {
-          const { data: cp } = await supabase
+          const { data } = await supabase
             .from("client_profiles")
             .select("*")
             .eq("id", navState.beneficiaryId)
             .maybeSingle();
+          cp = data;
+        }
+
+        if (linkedCaseId) {
+          const { data } = await supabase
+            .from("client_cases")
+            .select("alien_number")
+            .eq("id", linkedCaseId)
+            .maybeSingle();
+          cc = data;
+        }
+
+        const accountId = navState?.accountId || await getAccountId(session.user.id);
+        let oc: any = null;
+        if (accountId) {
+          const { data } = await supabase
+            .from("office_config")
+            .select("attorney_name, bar_number, bar_state, firm_name, firm_address, firm_phone, firm_email")
+            .eq("account_id", accountId)
+            .maybeSingle();
+          oc = data;
+        }
+
+        if (currentFormType === "i-130") {
+          // For I-130, client_profile is the BENEFICIARY (foreign relative)
+          const prefillData: Partial<I130Data> = {};
+          if (cp) {
+            prefillData.beneficiaryFirstName = cp.first_name || "";
+            prefillData.beneficiaryMiddleName = cp.middle_name || "";
+            prefillData.beneficiaryLastName = cp.last_name || "";
+            prefillData.beneficiaryDateOfBirth = cp.dob || "";
+            prefillData.beneficiaryCountryOfBirth = cp.country_of_birth || "";
+            prefillData.beneficiaryCityOfBirth = cp.city_of_birth || "";
+            prefillData.beneficiaryCountryOfCitizenship = cp.country_of_citizenship || "";
+            prefillData.beneficiarySex = cp.gender === "male" ? "male" : cp.gender === "female" ? "female" : "";
+            const ms = cp.marital_status || "";
+            if (["single", "married", "divorced", "widowed", "separated"].includes(ms)) {
+              prefillData.beneficiaryMaritalStatus = ms as any;
+            }
+            prefillData.beneficiaryStreet = cp.address_street || "";
+            prefillData.beneficiaryApt = cp.address_apt || "";
+            prefillData.beneficiaryCity = cp.address_city || "";
+            prefillData.beneficiaryState = cp.address_state || "";
+            prefillData.beneficiaryZip = cp.address_zip || "";
+            prefillData.beneficiaryI94Number = cp.i94_number || "";
+            prefillData.beneficiaryPassportNumber = cp.passport_number || "";
+            prefillData.beneficiaryPassportCountry = cp.passport_country || "";
+            prefillData.beneficiaryPassportExpiration = cp.passport_expiration || "";
+            prefillData.beneficiaryDateOfLastEntry = cp.date_of_last_entry || "";
+            prefillData.beneficiaryStatusAtEntry = cp.class_of_admission || "";
+            prefillData.beneficiaryEverInUS = !!(cp.date_of_last_entry || cp.i94_number);
+          }
+          if (cc) prefillData.beneficiaryANumber = (cc as any).alien_number || "";
+          if (oc) {
+            const nameParts = (oc.attorney_name || "").trim().split(/\s+/);
+            prefillData.preparerLastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+            prefillData.preparerFirstName = nameParts[0] || "";
+            prefillData.preparerOrg = oc.firm_name || "";
+            prefillData.preparerStreet = oc.firm_address || "";
+            prefillData.preparerPhone = oc.firm_phone || "";
+            prefillData.preparerEmail = oc.firm_email || "";
+            prefillData.attorneyBarNumber = oc.bar_number || "";
+          }
+          setInitialData(prefillData);
+        } else {
+          // I-765: client_profile is the APPLICANT
+          const prefillData: Partial<I765Data> = {};
           if (cp) {
             prefillData.firstName = cp.first_name || "";
             prefillData.middleName = cp.middle_name || "";
@@ -107,30 +177,8 @@ export default function SmartFormPage() {
             prefillData.lastArrivalDate = cp.date_of_last_entry || "";
             prefillData.statusAtArrival = cp.class_of_admission || "";
           }
-        }
-
-        // Load case-level data (alien number etc)
-        if (linkedCaseId) {
-          const { data: cc } = await supabase
-            .from("client_cases")
-            .select("alien_number")
-            .eq("id", linkedCaseId)
-            .maybeSingle();
-          if (cc) {
-            prefillData.aNumber = (cc as any).alien_number || "";
-          }
-        }
-
-        // Load office/attorney data
-        const accountId = navState?.accountId || await getAccountId(session.user.id);
-        if (accountId) {
-          const { data: oc } = await supabase
-            .from("office_config")
-            .select("attorney_name, bar_number, bar_state, firm_name, firm_address, firm_phone, firm_email")
-            .eq("account_id", accountId)
-            .maybeSingle();
+          if (cc) prefillData.aNumber = (cc as any).alien_number || "";
           if (oc) {
-            // Split attorney name into first/last
             const nameParts = (oc.attorney_name || "").trim().split(/\s+/);
             prefillData.preparerLastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
             prefillData.preparerFirstName = nameParts[0] || "";
@@ -140,9 +188,8 @@ export default function SmartFormPage() {
             prefillData.preparerEmail = oc.firm_email || "";
             prefillData.attorneyBarNumber = oc.bar_number || "";
           }
+          setInitialData(prefillData);
         }
-
-        setInitialData(prefillData);
       }
 
       setLoaded(true);
@@ -152,12 +199,27 @@ export default function SmartFormPage() {
 
   const getAccountId = async (userId: string): Promise<string | null> => {
     const { data, error } = await supabase.rpc("user_account_id", { _user_id: userId });
-    console.log("[SmartForm] getAccountId result:", { userId, data, error });
     if (error) console.error("[SmartForm] getAccountId error:", error);
     return data as string | null;
   };
 
-  const handleSave = async (formData: I765Data, status: "draft" | "completed") => {
+  // Compute client_name + client_email from form data (differs per form_type)
+  const computeClientFields = (formData: any) => {
+    if (formType === "i-130") {
+      return {
+        client_name: `${formData.beneficiaryLastName || ""}, ${formData.beneficiaryFirstName || ""}`.trim().replace(/^,\s*/, "") || null,
+        client_email: null,
+      };
+    }
+    return {
+      client_name: `${formData.lastName || ""}, ${formData.firstName || ""}`.trim().replace(/^,\s*/, "") || null,
+      client_email: formData.applicantEmail || null,
+    };
+  };
+
+  const formVersion = formType === "i-130" ? "04/01/24" : "08/21/25";
+
+  const handleSave = async (formData: any, status: "draft" | "completed") => {
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -166,24 +228,23 @@ export default function SmartFormPage() {
       const accountId = await getAccountId(session.user.id);
       if (!accountId) { toast({ title: "Error", description: "No account found", variant: "destructive" }); return; }
 
+      const { client_name, client_email } = computeClientFields(formData);
+
       const payload: any = {
         account_id: accountId,
         user_id: session.user.id,
-        form_type: "i-765" as string,
-        form_version: "08/21/25",
+        form_type: formType,
+        form_version: formVersion,
         status,
         form_data: JSON.parse(JSON.stringify(formData)),
-        client_name: `${formData.lastName}, ${formData.firstName}`.trim() || null,
-        client_email: formData.applicantEmail || null,
+        client_name,
+        client_email,
         beneficiary_profile_id: beneficiaryProfileId,
       };
       if (linkedCaseId) payload.case_id = linkedCaseId;
 
       if (submissionId) {
-        const { error } = await supabase
-          .from("form_submissions")
-          .update(payload)
-          .eq("id", submissionId);
+        const { error } = await supabase.from("form_submissions").update(payload).eq("id", submissionId);
         if (error) throw error;
       } else {
         const { data: inserted, error } = await supabase
@@ -200,8 +261,18 @@ export default function SmartFormPage() {
       }
 
       if (status === "completed") {
-        // Use the original formData (with full SSN) for PDF generation
-        generateI765Pdf(formData, firmName || undefined);
+        if (formType === "i-765") {
+          generateI765Pdf(formData, firmName || undefined);
+        } else {
+          // I-130 summary PDF not yet implemented — toast instead
+          toast({
+            title: lang === "es" ? "✅ I-130 guardado como completado" : "✅ I-130 saved as completed",
+            description: lang === "es"
+              ? "El PDF resumen del I-130 estará disponible pronto."
+              : "I-130 summary PDF coming soon.",
+            duration: 4000,
+          });
+        }
       } else {
         toast({ title: lang === "es" ? "💾 Borrador guardado" : "💾 Draft saved", duration: 2000 });
       }
@@ -212,9 +283,6 @@ export default function SmartFormPage() {
     }
   };
 
-  // Invocación de Felix IA para auto-llenar el formulario desde data del caso.
-  // Felix lee client_cases + client_profiles + intake_sessions y genera JSON
-  // con campos sugeridos. Result se merge a initialData del wizard.
   const handleRunFelix = async () => {
     if (!linkedCaseId) {
       toast({
@@ -243,7 +311,7 @@ export default function SmartFormPage() {
           body: JSON.stringify({
             case_id: linkedCaseId,
             account_id: accountId,
-            form_type: "i-765",
+            form_type: formType,
             language: lang,
           }),
         }
@@ -265,17 +333,17 @@ export default function SmartFormPage() {
       const output = result.output || {};
       const completion = output.completion_percentage || 0;
 
-      // Mapper defensivo Felix output → I765Data (acepta variantes de naming,
-      // normaliza enums, ignora placeholders [FALTA]/[VERIFICAR]).
-      const mapped = mapFelixOutputToI765Data(output);
-      const merged: Partial<I765Data> = { ...initialData, ...mapped.data };
+      const mapped = formType === "i-130"
+        ? mapFelixOutputToI130Data(output)
+        : mapFelixOutputToI765Data(output);
+      const merged = { ...initialData, ...mapped.data };
       setInitialData(merged);
 
       const missingCount = mapped.missing.length;
       const warningsCount = mapped.warnings.length;
       const ignoredCount = mapped.ignored.length;
 
-      console.log("[Felix] Applied:", mapped.applied, "Ignored:", mapped.ignored, "Missing:", mapped.missing);
+      console.log("[Felix]", formType, "Applied:", mapped.applied, "Ignored:", mapped.ignored, "Missing:", mapped.missing);
 
       toast({
         title: `✨ Felix completó ${completion}% · ${mapped.applied} campos aplicados`,
@@ -294,23 +362,23 @@ export default function SmartFormPage() {
     }
   };
 
-  const handleFillUSCIS = async (formData: I765Data) => {
-    // Auto-save as completed before generating PDF
+  const handleFillUSCIS = async (formData: any) => {
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const accountId = await getAccountId(session.user.id);
         if (accountId) {
+          const { client_name, client_email } = computeClientFields(formData);
           const payload: any = {
             account_id: accountId,
             user_id: session.user.id,
-            form_type: "i-765" as string,
-            form_version: "08/21/25",
+            form_type: formType,
+            form_version: formVersion,
             status: "completed" as const,
             form_data: JSON.parse(JSON.stringify(formData)),
-            client_name: `${formData.lastName}, ${formData.firstName}`.trim() || null,
-            client_email: formData.applicantEmail || null,
+            client_name,
+            client_email,
             beneficiary_profile_id: beneficiaryProfileId,
           };
           if (linkedCaseId) payload.case_id = linkedCaseId;
@@ -332,8 +400,19 @@ export default function SmartFormPage() {
         }
       }
 
-      await discoverI765Fields();
-      await fillI765Pdf(formData);
+      if (formType === "i-765") {
+        await discoverI765Fields();
+        await fillI765Pdf(formData);
+      } else {
+        // I-130 PDF filler not yet built — needs PDF blank template
+        toast({
+          title: lang === "es" ? "⏳ PDF I-130 oficial próximamente" : "⏳ I-130 official PDF coming soon",
+          description: lang === "es"
+            ? "El template del USCIS I-130 se está integrando. Datos guardados como completado."
+            : "USCIS I-130 template is being integrated. Data saved as completed.",
+          duration: 5000,
+        });
+      }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -342,9 +421,7 @@ export default function SmartFormPage() {
   };
 
   const handleRequestShareToken = async (): Promise<string | null> => {
-    // If already have a token, return it
     if (shareToken) return shareToken;
-    // If already saved, fetch the token
     if (submissionId) {
       const { data: row } = await supabase
         .from("form_submissions")
@@ -366,7 +443,6 @@ export default function SmartFormPage() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Felix IA — auto-llena desde el caso vinculado (sólo si fromCase=true) */}
       {linkedCaseId && (
         <div className="flex items-center justify-between gap-3 px-6 py-3 border-b border-border/40 bg-gradient-to-r from-purple-500/5 via-transparent to-transparent">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -404,17 +480,32 @@ export default function SmartFormPage() {
           </button>
         </div>
       )}
-      <I765Wizard
-        lang={lang}
-        initialData={initialData}
-        onSave={handleSave}
-        onFillUSCIS={handleFillUSCIS}
-        saving={saving}
-        shareToken={shareToken}
-        onRequestShareToken={handleRequestShareToken}
-        onBeneficiarySelect={setBeneficiaryProfileId}
-        initialBeneficiaryId={beneficiaryProfileId}
-      />
+
+      {formType === "i-130" ? (
+        <I130Wizard
+          lang={lang}
+          initialData={initialData as Partial<I130Data>}
+          onSave={handleSave}
+          onFillUSCIS={handleFillUSCIS}
+          saving={saving}
+          shareToken={shareToken}
+          onRequestShareToken={handleRequestShareToken}
+          onBeneficiarySelect={setBeneficiaryProfileId}
+          initialBeneficiaryId={beneficiaryProfileId}
+        />
+      ) : (
+        <I765Wizard
+          lang={lang}
+          initialData={initialData as Partial<I765Data>}
+          onSave={handleSave}
+          onFillUSCIS={handleFillUSCIS}
+          saving={saving}
+          shareToken={shareToken}
+          onRequestShareToken={handleRequestShareToken}
+          onBeneficiarySelect={setBeneficiaryProfileId}
+          initialBeneficiaryId={beneficiaryProfileId}
+        />
+      )}
     </div>
   );
 }

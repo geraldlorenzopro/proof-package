@@ -88,6 +88,59 @@ serve(async (req) => {
     // Schema esperado por form_type. El frontend mapea estos keys → estructura UI.
     // Si el form_type no está aquí, Felix usa keys descriptivos genéricos.
     const FORM_SCHEMAS: Record<string, { keys: string[]; notes: string }> = {
+      "i-130": {
+        keys: [
+          // Relationship
+          "relationshipType",
+          // Petitioner core
+          "petitionerLastName", "petitionerFirstName", "petitionerMiddleName",
+          "petitionerSex", "petitionerDateOfBirth", "petitionerCityOfBirth",
+          "petitionerStateOfBirth", "petitionerCountryOfBirth",
+          "petitionerSsn", "petitionerANumber", "petitionerUscisAccountNumber",
+          "petitionerCitizenshipStatus", "petitionerAcquiredBy",
+          "petitionerCertNumber", "petitionerCertDate", "petitionerCertPlace",
+          "petitionerLprANumber", "petitionerLprClass", "petitionerLprDateAdmitted", "petitionerLprPlaceAdmitted",
+          // Petitioner address
+          "petitionerMailingCareOf", "petitionerMailingStreet", "petitionerMailingApt", "petitionerMailingAptType",
+          "petitionerMailingCity", "petitionerMailingState", "petitionerMailingZip",
+          "petitionerMailingProvince", "petitionerMailingCountry", "petitionerMailingPostalCode",
+          "petitionerPhysicalSameAsMailing",
+          // Petitioner contact
+          "petitionerDaytimePhone", "petitionerMobilePhone", "petitionerEmail",
+          "petitionerMaritalStatus", "petitionerDateOfMarriage", "petitionerPlaceOfMarriage",
+          // Petitioner parents
+          "petitionerFatherLastName", "petitionerFatherFirstName", "petitionerFatherMiddleName",
+          "petitionerFatherDateOfBirth", "petitionerFatherCountryOfBirth",
+          "petitionerMotherLastName", "petitionerMotherFirstName", "petitionerMotherMiddleName",
+          "petitionerMotherDateOfBirth", "petitionerMotherCountryOfBirth",
+          // Beneficiary core
+          "beneficiaryLastName", "beneficiaryFirstName", "beneficiaryMiddleName",
+          "beneficiarySex", "beneficiaryDateOfBirth", "beneficiaryCityOfBirth", "beneficiaryCountryOfBirth",
+          "beneficiaryCountryOfCitizenship", "beneficiarySsn", "beneficiaryANumber", "beneficiaryUscisAccountNumber",
+          // Beneficiary address
+          "beneficiaryAddressInUS",
+          "beneficiaryStreet", "beneficiaryCity", "beneficiaryState", "beneficiaryZip",
+          "beneficiaryProvince", "beneficiaryCountry", "beneficiaryPostalCode",
+          "beneficiaryForeignAddressStreet", "beneficiaryForeignAddressCity", "beneficiaryForeignAddressCountry",
+          // Beneficiary entry to US
+          "beneficiaryMaritalStatus", "beneficiaryEverInUS",
+          "beneficiaryDateOfLastEntry", "beneficiaryStatusAtEntry",
+          "beneficiaryI94Number", "beneficiaryPassportNumber",
+          "beneficiaryPassportCountry", "beneficiaryPassportExpiration",
+          "beneficiaryInRemovalProceedings",
+          // Visa processing
+          "consularProcessing", "consularPostCity", "consularPostCountry",
+          // Statements
+          "petitionerCanReadEnglish", "interpreterUsed", "preparerUsed",
+        ],
+        notes: `relationshipType: solo "spouse", "parent", "child" o "sibling".
+petitionerCitizenshipStatus: "us_citizen" o "lpr".
+petitionerAcquiredBy: "birth_in_us", "naturalization", o "parents".
+consularProcessing: true si va a consulado en el extranjero, false si ajuste de estatus en US.
+Fechas formato YYYY-MM-DD.
+maritalStatus enums: "single", "married", "divorced", "widowed", "separated".
+sex: "male" o "female".`,
+      },
       "i-765": {
         keys: [
           // Personal
