@@ -58,6 +58,7 @@ import ConsultationsPage from "./pages/ConsultationsPage";
 import ClientProfilePage from "./pages/ClientProfilePage";
 import HubClientsPage from "./pages/HubClientsPage";
 import HubCasesPage from "./pages/HubCasesPage";
+import HubFormsPage from "./pages/HubFormsPage";
 import HubAgendaPage from "./pages/HubAgendaPage";
 import HubAiPage from "./pages/HubAiPage";
 import HubChatPage from "./pages/HubChatPage";
@@ -155,6 +156,7 @@ const App = () => (
           {/* ═══ REDIRECT ROUTES ═══ */}
           <Route path="/portfolio" element={<Navigate to="/dashboard/workspace-demo" replace />} />
           <Route path="/hub/cases" element={<ProtectedRoute><HubCasesPage /></ProtectedRoute>} />
+          <Route path="/hub/formularios" element={<ProtectedRoute><HubFormsPage /></ProtectedRoute>} />
           <Route path="/hub/agenda" element={<ProtectedRoute><HubAgendaPage /></ProtectedRoute>} />
           {/* /hub/reports now handled above directly */}
           <Route path="/hub/ai" element={<ProtectedRoute><HubAiPage /></ProtectedRoute>} />

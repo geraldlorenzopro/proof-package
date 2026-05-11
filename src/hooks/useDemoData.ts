@@ -251,6 +251,161 @@ export const DEMO_SIDEBAR_BADGES = {
   cases: 12, // packets+RFEs urgentes
   leads: 9,
   consultations_today: 6,
+  forms: 8, // formularios pendientes attorney review/firma
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// FORMULARIOS USCIS — generados automáticamente por agentes IA + completados
+// manualmente por paralegales. Status journey: borrador → revisión attorney →
+// listo para firma → firmado → enviado a USCIS → recibo → RFE / aprobado
+// ─────────────────────────────────────────────────────────────────────────
+
+export type FormStatus =
+  | "borrador-ia"
+  | "revision-paralegal"
+  | "revision-attorney"
+  | "listo-firma"
+  | "firmado"
+  | "enviado-uscis"
+  | "recibo-uscis"
+  | "rfe"
+  | "aprobado";
+
+export interface DemoForm {
+  id: string;
+  form_code: string; // I-130, I-485, N-400, DS-260, etc.
+  form_name: string;
+  client_name: string;
+  case_id: string;
+  agency: "USCIS" | "NVC" | "Embajada";
+  status: FormStatus;
+  progress_pct: number; // 0-100 (completitud)
+  generated_by: "Felix IA" | "Manual" | "Vanessa R." | "Daniela P." | "Carmen B.";
+  assigned_to: string;
+  next_action: string;
+  next_action_due: string | null; // ISO date
+  pages: number;
+  last_modified: string; // relative
+  receipt_number?: string;
+}
+
+export const DEMO_FORMS: DemoForm[] = [
+  {
+    id: "demo-f-001", form_code: "I-130", form_name: "Petition for Alien Relative",
+    client_name: "Roberto García Suárez", case_id: "demo-c-001",
+    agency: "USCIS", status: "rfe", progress_pct: 100,
+    generated_by: "Felix IA", assigned_to: "Daniela P.",
+    next_action: "Respuesta RFE — armar evidencia", next_action_due: isoOffsetDays(1),
+    pages: 12, last_modified: "hace 9d", receipt_number: "MSC2390123456",
+  },
+  {
+    id: "demo-f-002", form_code: "I-485", form_name: "Application to Register Permanent Residence",
+    client_name: "María Rodríguez Vega", case_id: "demo-c-002",
+    agency: "USCIS", status: "listo-firma", progress_pct: 100,
+    generated_by: "Felix IA", assigned_to: "Vanessa R.",
+    next_action: "Firma del attorney (Pablo)", next_action_due: isoOffsetDays(0),
+    pages: 18, last_modified: "hace 3d",
+  },
+  {
+    id: "demo-f-003", form_code: "N-400", form_name: "Application for Naturalization",
+    client_name: "Luis Hernández Pérez", case_id: "demo-c-003",
+    agency: "USCIS", status: "revision-paralegal", progress_pct: 78,
+    generated_by: "Felix IA", assigned_to: "Carmen B.",
+    next_action: "Cliente debe subir 5 años de residencia", next_action_due: isoOffsetDays(8),
+    pages: 20, last_modified: "hace 1d",
+  },
+  {
+    id: "demo-f-004", form_code: "I-130", form_name: "Petition for Alien Relative",
+    client_name: "Juana Castillo Mora", case_id: "demo-c-004",
+    agency: "USCIS", status: "borrador-ia", progress_pct: 92,
+    generated_by: "Felix IA", assigned_to: "Vanessa R.",
+    next_action: "Revisar campos auto-llenados (Felix marcó 3 dudas)", next_action_due: isoOffsetDays(1),
+    pages: 12, last_modified: "hace 4h",
+  },
+  {
+    id: "demo-f-005", form_code: "DS-260", form_name: "Online Immigrant Visa Application",
+    client_name: "Silvia Vargas Domínguez", case_id: "demo-c-006",
+    agency: "NVC", status: "revision-attorney", progress_pct: 100,
+    generated_by: "Felix IA", assigned_to: "Daniela P.",
+    next_action: "Revisión attorney antes de envío NVC", next_action_due: isoOffsetDays(1),
+    pages: 32, last_modified: "hace 5d",
+  },
+  {
+    id: "demo-f-006", form_code: "I-864", form_name: "Affidavit of Support",
+    client_name: "Rosa Rivas Castro", case_id: "demo-c-007",
+    agency: "NVC", status: "listo-firma", progress_pct: 100,
+    generated_by: "Felix IA", assigned_to: "Vanessa R.",
+    next_action: "Sponsor debe firmar + notarizar", next_action_due: isoOffsetDays(2),
+    pages: 10, last_modified: "hace 2d",
+  },
+  {
+    id: "demo-f-007", form_code: "I-765", form_name: "Application for Employment Authorization",
+    client_name: "Méndez Solis (Marco)", case_id: "demo-c-014",
+    agency: "USCIS", status: "listo-firma", progress_pct: 100,
+    generated_by: "Felix IA", assigned_to: "Vanessa R.",
+    next_action: "Firma attorney + adjuntar al I-485 packet", next_action_due: isoOffsetDays(3),
+    pages: 7, last_modified: "hace 1d",
+  },
+  {
+    id: "demo-f-008", form_code: "I-589", form_name: "Application for Asylum",
+    client_name: "Fernando Acosta Reyes", case_id: "demo-c-005",
+    agency: "USCIS", status: "rfe", progress_pct: 100,
+    generated_by: "Manual", assigned_to: "Carmen B.",
+    next_action: "Apelación I-290B — preparar memo legal", next_action_due: isoOffsetDays(-12),
+    pages: 24, last_modified: "hace 62d", receipt_number: "ZAR2390223344",
+  },
+  {
+    id: "demo-f-009", form_code: "I-130", form_name: "Petition for Alien Relative",
+    client_name: "Ramos Quintana (Patricia)", case_id: "demo-c-023",
+    agency: "USCIS", status: "borrador-ia", progress_pct: 68,
+    generated_by: "Felix IA", assigned_to: "Daniela P.",
+    next_action: "Cliente debe enviar acta nacimiento del peticionario", next_action_due: isoOffsetDays(3),
+    pages: 12, last_modified: "hace 6h",
+  },
+  {
+    id: "demo-f-010", form_code: "N-600", form_name: "Application for Certificate of Citizenship",
+    client_name: "Quintero Pacheco (Eduardo)", case_id: "demo-c-024",
+    agency: "USCIS", status: "revision-attorney", progress_pct: 100,
+    generated_by: "Felix IA", assigned_to: "Carmen B.",
+    next_action: "Pablo revisar evidencia de ciudadanía padre", next_action_due: isoOffsetDays(4),
+    pages: 9, last_modified: "hace 1d",
+  },
+  {
+    id: "demo-f-011", form_code: "I-751", form_name: "Petition to Remove Conditions on Residence",
+    client_name: "Beltrán Ríos (Andrea)", case_id: "demo-c-025",
+    agency: "USCIS", status: "firmado", progress_pct: 100,
+    generated_by: "Felix IA", assigned_to: "Vanessa R.",
+    next_action: "Enviar a USCIS Vermont Service Center", next_action_due: isoOffsetDays(4),
+    pages: 11, last_modified: "hace 12h",
+  },
+  {
+    id: "demo-f-012", form_code: "I-485", form_name: "Application to Register Permanent Residence",
+    client_name: "Navarro Aguilar (Camila)", case_id: "demo-c-027",
+    agency: "USCIS", status: "enviado-uscis", progress_pct: 100,
+    generated_by: "Felix IA", assigned_to: "Vanessa R.",
+    next_action: "Esperando recibo USCIS (5-10 días hábiles)", next_action_due: isoOffsetDays(5),
+    pages: 18, last_modified: "hace 2d",
+  },
+  {
+    id: "demo-f-013", form_code: "I-130", form_name: "Petition for Alien Relative",
+    client_name: "Diego Solano Torres", case_id: "demo-c-010",
+    agency: "USCIS", status: "aprobado", progress_pct: 100,
+    generated_by: "Felix IA", assigned_to: "Vanessa R.",
+    next_action: "Caso resuelto — generar carta de aprobación al cliente", next_action_due: null,
+    pages: 12, last_modified: "hace 1d", receipt_number: "NBC2390111111",
+  },
+];
+
+export const FORM_STATUS_LABELS: Record<FormStatus, { label: string; color: string }> = {
+  "borrador-ia": { label: "Borrador IA", color: "violet" },
+  "revision-paralegal": { label: "Revisión paralegal", color: "amber" },
+  "revision-attorney": { label: "Revisión attorney", color: "amber" },
+  "listo-firma": { label: "Listo p/ firma", color: "purple" },
+  "firmado": { label: "Firmado", color: "blue" },
+  "enviado-uscis": { label: "Enviado USCIS", color: "cyan" },
+  "recibo-uscis": { label: "Recibo recibido", color: "cyan" },
+  "rfe": { label: "RFE pendiente", color: "rose" },
+  "aprobado": { label: "Aprobado", color: "emerald" },
 };
 
 export const DEMO_BRIEFING_TEXT =

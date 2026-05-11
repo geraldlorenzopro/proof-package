@@ -2,7 +2,7 @@ import { ReactNode, useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Shield, Home, LogOut, Users, UserSearch, MessageSquare,
-  FolderOpen, Calendar, BarChart3, Bot, Settings, ClipboardList
+  FolderOpen, Calendar, BarChart3, Bot, Settings, ClipboardList, FileText
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -20,13 +20,14 @@ interface Props {
 const NAV_ITEMS: Array<{
   icon: any; label: string; path: string;
   match: (p: string) => boolean;
-  badgeKey?: "cases" | "leads" | "consultations";
+  badgeKey?: "cases" | "leads" | "consultations" | "forms";
 }> = [
   { icon: Home, label: "Inicio", path: "/hub", match: (p: string) => p === "/hub" },
   { icon: UserSearch, label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads" },
   { icon: Users, label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients") },
   { icon: MessageSquare, label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations" },
   { icon: FolderOpen, label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases" },
+  { icon: FileText, label: "Forms", path: "/hub/formularios", match: (p: string) => p.startsWith("/hub/formularios"), badgeKey: "forms" },
   { icon: Calendar, label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda" },
   { icon: BarChart3, label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence" },
   { icon: Bot, label: "Equipo AI", path: "/hub/ai", match: (p: string) => p === "/hub/ai" },
