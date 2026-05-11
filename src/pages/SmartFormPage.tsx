@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Sparkles, Loader2 } from "lucide-react";
 import I765Wizard from "@/components/smartforms/I765Wizard";
 import { I765Data } from "@/components/smartforms/i765Schema";
 import { generateI765Pdf } from "@/lib/i765PdfGenerator";
@@ -28,6 +29,7 @@ export default function SmartFormPage() {
 
   const { lang } = useSmartFormsContext();
   const [saving, setSaving] = useState(false);
+  const [felixRunning, setFelixRunning] = useState(false);
   const [submissionId, setSubmissionId] = useState<string | null>(isNew ? null : id!);
   const [initialData, setInitialData] = useState<Partial<I765Data>>({});
   const [firmName, setFirmName] = useState<string | null>(null);
@@ -209,6 +211,89 @@ export default function SmartFormPage() {
     }
   };
 
+  // Invocación de Felix IA para auto-llenar el formulario desde data del caso.
+  // Felix lee client_cases + client_profiles + intake_sessions y genera JSON
+  // con campos sugeridos. Result se merge a initialData del wizard.
+  const handleRunFelix = async () => {
+    if (!linkedCaseId) {
+      toast({
+        title: "Sin caso vinculado",
+        description: "Felix necesita un caso para auto-llenar. Abre este formulario desde un caso.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setFelixRunning(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const accountId = await getAccountId(session.user.id);
+      if (!accountId) throw new Error("Account not found");
+
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const resp = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/agent-felix`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            case_id: linkedCaseId,
+            account_id: accountId,
+            form_type: "i-765",
+            language: lang,
+          }),
+        }
+      );
+      const result = await resp.json();
+
+      if (!resp.ok || result.error) {
+        if (result.error === "insufficient_credits") {
+          toast({
+            title: "Créditos insuficientes",
+            description: `Felix necesita ${result.needed} créditos · saldo: ${result.balance}`,
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(result.error || "Error invocando Felix");
+      }
+
+      const output = result.output || {};
+      const completion = output.completion_percentage || 0;
+      const missing = (output.missing_fields || []).length;
+      const warnings = (output.warnings || []).length;
+
+      // Mapping naive Felix → I765Data: por ahora extraemos solo campos top-level
+      // que coinciden por nombre. Sprint próximo: mapping completo parts→sections.
+      const merged: Partial<I765Data> = { ...initialData };
+      Object.values(output.parts || {}).forEach((part: any) => {
+        (part?.fields || []).forEach((f: any) => {
+          if (f.status === "completed" && f.value && f.field) {
+            // Match por nombre exacto en I765Data (camelCase) — best effort
+            const key = f.field as keyof I765Data;
+            if (key in merged || typeof merged === "object") {
+              (merged as any)[key] = f.value;
+            }
+          }
+        });
+      });
+      setInitialData(merged);
+
+      toast({
+        title: `✨ Felix completó ${completion}%`,
+        description: `${missing} campos faltantes · ${warnings} advertencias. Revisa el formulario y completa lo que falta.`,
+        duration: 6000,
+      });
+    } catch (err: any) {
+      toast({ title: "Error con Felix", description: err.message, variant: "destructive" });
+    } finally {
+      setFelixRunning(false);
+    }
+  };
+
   const handleFillUSCIS = async (formData: I765Data) => {
     // Auto-save as completed before generating PDF
     setSaving(true);
@@ -281,6 +366,44 @@ export default function SmartFormPage() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
+      {/* Felix IA — auto-llena desde el caso vinculado (sólo si fromCase=true) */}
+      {linkedCaseId && (
+        <div className="flex items-center justify-between gap-3 px-6 py-3 border-b border-border/40 bg-gradient-to-r from-purple-500/5 via-transparent to-transparent">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/40 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[12px] font-semibold text-foreground">
+                {lang === "es" ? "Felix IA puede llenar este formulario por ti" : "Felix AI can fill this form for you"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {lang === "es"
+                  ? "Lee los datos del caso vinculado y completa los campos automáticamente. Tú revisas antes de firmar."
+                  : "Reads the linked case data and fills fields automatically. You review before signing."}
+                {" "}<span className="text-purple-400">5 créditos · ~30s</span>
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleRunFelix}
+            disabled={felixRunning}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-purple-500 hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[11px] font-semibold transition-colors"
+          >
+            {felixRunning ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                {lang === "es" ? "Felix trabajando..." : "Felix working..."}
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                {lang === "es" ? "Generar con Felix IA" : "Generate with Felix AI"}
+              </>
+            )}
+          </button>
+        </div>
+      )}
       <I765Wizard
         lang={lang}
         initialData={initialData}
