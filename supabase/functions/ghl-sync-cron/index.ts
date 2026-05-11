@@ -132,6 +132,7 @@ async function syncOfficeContacts(
 
   let created = 0;
   let updated = 0;
+  const touchedClientProfileIds: string[] = [];
 
   for (const c of contacts) {
     const ghlId = c.id;
@@ -164,6 +165,7 @@ async function syncOfficeContacts(
         .from("client_profiles")
         .update(updateData)
         .eq("id", existing.id);
+      touchedClientProfileIds.push(existing.id);
       updated++;
     } else {
       // Also check by phone or email to avoid duplicates
@@ -198,6 +200,7 @@ async function syncOfficeContacts(
             updated_at: new Date().toISOString(),
           })
           .eq("id", duplicateId);
+        touchedClientProfileIds.push(duplicateId);
         updated++;
       } else {
         // Create new profile - use service role, so we need a created_by
@@ -212,7 +215,7 @@ async function syncOfficeContacts(
 
         const createdBy = owner?.user_id || office.account_id;
 
-        await supabase.from("client_profiles").insert({
+        const { data: insertedProfile } = await supabase.from("client_profiles").insert({
           account_id: office.account_id,
           created_by: createdBy,
           ghl_contact_id: ghlId,
@@ -223,7 +226,8 @@ async function syncOfficeContacts(
           source_channel: normalizeChannel(c.source || ""),
           contact_stage: "lead",
           is_test: false,
-        });
+        }).select("id").single();
+        if (insertedProfile?.id) touchedClientProfileIds.push(insertedProfile.id);
         created++;
       }
     }
@@ -241,7 +245,7 @@ async function syncOfficeContacts(
     { onConflict: "account_id" }
   );
 
-  const relatedContactIds = contacts.slice(0, MAX_RELATED_CONTACTS_PER_RUN).map((c: any) => c.id);
+  const relatedContactIds = Array.from(new Set(touchedClientProfileIds)).slice(0, MAX_RELATED_CONTACTS_PER_RUN);
 
   // Sync tasks GHL → NER only for contacts changed in this run.
   let tasksImported = 0;
