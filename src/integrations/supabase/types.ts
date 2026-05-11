@@ -2259,29 +2259,50 @@ export type Database = {
       ghl_sync_log: {
         Row: {
           account_id: string
+          consecutive_errors: number
           contacts_created: number | null
           contacts_updated: number | null
           created_at: string | null
+          disabled: boolean
+          disabled_reason: string | null
           id: string
+          last_error_at: string | null
+          last_error_code: number | null
+          last_error_message: string | null
           last_synced_at: string | null
+          paused_until: string | null
           updated_at: string | null
         }
         Insert: {
           account_id: string
+          consecutive_errors?: number
           contacts_created?: number | null
           contacts_updated?: number | null
           created_at?: string | null
+          disabled?: boolean
+          disabled_reason?: string | null
           id?: string
+          last_error_at?: string | null
+          last_error_code?: number | null
+          last_error_message?: string | null
           last_synced_at?: string | null
+          paused_until?: string | null
           updated_at?: string | null
         }
         Update: {
           account_id?: string
+          consecutive_errors?: number
           contacts_created?: number | null
           contacts_updated?: number | null
           created_at?: string | null
+          disabled?: boolean
+          disabled_reason?: string | null
           id?: string
+          last_error_at?: string | null
+          last_error_code?: number | null
+          last_error_message?: string | null
           last_synced_at?: string | null
+          paused_until?: string | null
           updated_at?: string | null
         }
         Relationships: [
