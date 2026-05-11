@@ -16,6 +16,7 @@ import { useMorningBriefing } from "@/hooks/useMorningBriefing";
 import type { FeedItem, FeedItemKind, FeedItemSeverity } from "@/types/feed";
 import IntakeWizard from "../intake/IntakeWizard";
 import HubFocusedWidgets from "./HubFocusedWidgets";
+import HubCrisisBar from "./HubCrisisBar";
 import { useDemoMode, DEMO_BRIEFING_TEXT, exitDemoMode } from "@/hooks/useDemoData";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -583,6 +584,11 @@ function HubDashboardInner({
 
         {/* Main content — 3 zonas verticales */}
         <div className="flex-1 min-h-0 flex flex-col gap-3 px-8 py-4 max-w-[1400px] w-full mx-auto">
+
+          {/* ═══ ZONA 0 — CRISIS BAR (rojo arriba antes que prosa larga) ═══ */}
+          {/* Decisión 2026-05-11 post-debate con Mr. Lorenzo: los ojos del abogado
+              buscan rojo instintivamente. Crisis va PRIMERO, briefing después. */}
+          <HubCrisisBar accountId={accountId} />
 
           {/* ═══ ZONA 1 — BRIEFING HERO (60% del peso visual) ═══ */}
           <section className="shrink-0 rounded-2xl px-7 py-5 border border-jarvis/20 bg-gradient-to-br from-jarvis/5 via-card/60 to-card/40 shadow-lg shadow-jarvis/5 backdrop-blur-sm">

@@ -401,24 +401,7 @@ export default function HubFocusedWidgets({ accountId }: Props) {
 
   return (
     <div className="space-y-3">
-      {/* CRISIS BAR */}
-      {crisis && (
-        <div className="bg-rose-500/8 border border-rose-500/35 border-l-4 border-l-rose-500 rounded-lg px-4 py-2.5 flex items-center gap-3">
-          <div className="w-7 h-7 rounded-full bg-rose-500/20 flex items-center justify-center shrink-0">
-            <AlertCircle className="w-4 h-4 text-rose-400" />
-          </div>
-          <div className="flex-1 text-[12px]">
-            <strong className="text-rose-300">{crisis.title}</strong>
-            <span className="text-muted-foreground"> — {crisis.subtitle}</span>
-          </div>
-          <button
-            onClick={() => openCase(crisis.case_id)}
-            className="text-[10px] font-semibold px-3 py-1.5 rounded bg-rose-500 hover:bg-rose-600 text-white transition-colors"
-          >
-            Ver caso
-          </button>
-        </div>
-      )}
+      {/* Crisis bar movida a HubCrisisBar.tsx — ahora se renderiza ARRIBA del briefing en HubDashboard (decisión 2026-05-11: rojo arriba, contexto narrativo después) */}
 
       {/* 4 WIDGETS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
