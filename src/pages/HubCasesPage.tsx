@@ -1,27 +1,16 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
-import { Briefcase, ChevronRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Search, LayoutGrid, List as ListIcon, Users, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import HubLayout from "@/components/hub/HubLayout";
+import CaseKanban from "@/components/hub/CaseKanban";
+import CaseCard from "@/components/hub/CaseCard";
+import { useCasePipeline, PIPELINE_COLUMNS } from "@/hooks/useCasePipeline";
+import { cn } from "@/lib/utils";
 
-const STAGE_CONFIG: Record<string, { label: string; color: string }> = {
-  "caso-no-iniciado": { label: "Intake", color: "bg-sky-500/15 text-sky-400 border-sky-500/20" },
-  "caso-activado": { label: "Activado", color: "bg-teal-500/15 text-teal-400 border-teal-500/20" },
-  "recopilacion-evidencias": { label: "Evidencias", color: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
-  "preparacion-formularios": { label: "Formularios", color: "bg-orange-500/15 text-orange-400 border-orange-500/20" },
-  "revision-qa": { label: "Revisión QA", color: "bg-purple-500/15 text-purple-400 border-purple-500/20" },
-  filing: { label: "Filing", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
-  "seguimiento-uscis": { label: "En USCIS", color: "bg-blue-600/15 text-blue-400 border-blue-600/20" },
-  aprobado: { label: "Aprobado", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/25" },
-};
+type ViewMode = "kanban" | "list";
 
 export default function HubCasesPage() {
-  const navigate = useNavigate();
-  const [cases, setCases] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
   const accountId = (() => {
     try {
       const raw = sessionStorage.getItem("ner_hub_data");
@@ -29,65 +18,183 @@ export default function HubCasesPage() {
     } catch { return null; }
   })();
 
+  const { cases, columns, loading, unclassifiedCount } = useCasePipeline(accountId);
+  const [view, setView] = useState<ViewMode>("kanban");
+  const [search, setSearch] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [staffNames, setStaffNames] = useState<Record<string, string>>({});
+
+  // Cargar staff del account para filtro de "asignado a"
   useEffect(() => {
     if (!accountId) return;
     supabase
-      .from("client_cases")
-      .select("id, client_name, case_type, pipeline_stage, file_number, status, updated_at, client_profile_id")
+      .from("account_members")
+      .select("user_id, profiles:user_id(full_name)")
       .eq("account_id", accountId)
-      .not("status", "eq", "completed")
-      .order("updated_at", { ascending: false })
       .then(({ data }) => {
-        setCases(data || []);
-        setLoading(false);
+        const map: Record<string, string> = {};
+        (data || []).forEach((m: any) => {
+          if (m.user_id) map[m.user_id] = m.profiles?.full_name || "Staff";
+        });
+        setStaffNames(map);
       });
   }, [accountId]);
 
+  // Apply search + owner filter
+  const filteredCases = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return cases.filter(c => {
+      if (ownerFilter !== "all" && c.assigned_to !== ownerFilter) return false;
+      if (!q) return true;
+      return (
+        c.client_name?.toLowerCase().includes(q) ||
+        c.file_number?.toLowerCase().includes(q) ||
+        c.case_type?.toLowerCase().includes(q)
+      );
+    });
+  }, [cases, search, ownerFilter]);
+
+  const filteredColumns = useMemo(() => {
+    return PIPELINE_COLUMNS.map(col => ({
+      ...col,
+      cases: filteredCases.filter(c => {
+        // Re-clasificar localmente para evitar import circular
+        if (c.process_stage && (PIPELINE_COLUMNS as any).some((pc: any) => pc.key === c.process_stage)) {
+          return c.process_stage === col.key;
+        }
+        // Inferencia fallback igual que en hook (mantener consistente)
+        const tags = c.case_tags_array || [];
+        let stage = "uscis";
+        if (tags.some(t => /aprobada|aprobado/i.test(t))) stage = "aprobado";
+        else if (tags.some(t => /negada|negado/i.test(t))) stage = "negado";
+        else if (tags.some(t => /221g/i.test(t))) stage = "admin-processing";
+        else if (c.emb_interview_date || c.cas_interview_date) stage = "embajada";
+        else if (c.nvc_case_number) stage = "nvc";
+        else {
+          const r = c.uscis_receipt_numbers;
+          const hasReceipts = r && ((Array.isArray(r) && r.length > 0) || (typeof r === "object" && Object.keys(r).length > 0));
+          if (!hasReceipts) return false; // sin clasificar, no entra a ninguna columna activa
+        }
+        return stage === col.key;
+      }),
+    }));
+  }, [filteredCases]);
+
+  const totalOverdue = useMemo(
+    () => filteredCases.reduce((sum, c) => sum + (c.overdue_tasks_count || 0), 0),
+    [filteredCases]
+  );
+
+  const uniqueOwners = useMemo(() => {
+    const ids = new Set<string>();
+    cases.forEach(c => { if (c.assigned_to) ids.add(c.assigned_to); });
+    return Array.from(ids);
+  }, [cases]);
+
   return (
     <HubLayout>
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-5">
-        <div className="flex items-center justify-between mb-6">
+      <div className="max-w-[1600px] mx-auto px-4 py-6 space-y-5">
+        {/* Header */}
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-foreground">Casos</h1>
-            <p className="text-sm text-muted-foreground">{cases.length} casos activos</p>
+            <h1 className="text-2xl font-bold text-foreground">Pipeline de casos</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {filteredCases.length} casos activos
+              {totalOverdue > 0 && (
+                <span className="ml-2 inline-flex items-center gap-1 text-rose-400 font-semibold">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  {totalOverdue} tarea{totalOverdue === 1 ? "" : "s"} vencida{totalOverdue === 1 ? "" : "s"}
+                </span>
+              )}
+              {unclassifiedCount > 0 && (
+                <span className="ml-2 text-muted-foreground/60">
+                  · {unclassifiedCount} sin clasificar
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* Toolbar: search + filter + view toggle */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
+              <Input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar cliente o expediente…"
+                className="h-9 w-64 pl-8 text-sm bg-card/60"
+              />
+            </div>
+
+            {uniqueOwners.length > 0 && (
+              <div className="relative">
+                <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
+                <select
+                  value={ownerFilter}
+                  onChange={e => setOwnerFilter(e.target.value)}
+                  className="h-9 pl-8 pr-8 text-sm rounded-md border border-border bg-card/60 text-foreground focus:outline-none focus:ring-1 focus:ring-jarvis appearance-none"
+                >
+                  <option value="all">Todo el equipo</option>
+                  {uniqueOwners.map(uid => (
+                    <option key={uid} value={uid}>{staffNames[uid] || "Staff"}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex items-center bg-card/60 border border-border rounded-md p-0.5">
+              <button
+                onClick={() => setView("kanban")}
+                className={cn(
+                  "px-2.5 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5",
+                  view === "kanban"
+                    ? "bg-jarvis text-white"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                Kanban
+              </button>
+              <button
+                onClick={() => setView("list")}
+                className={cn(
+                  "px-2.5 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5",
+                  view === "list"
+                    ? "bg-jarvis text-white"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <ListIcon className="w-3.5 h-3.5" />
+                Lista
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          {cases.map(c => {
-            const stage = STAGE_CONFIG[c.pipeline_stage || ""] || { label: c.pipeline_stage || "—", color: "bg-muted/50 text-muted-foreground border-border/30" };
-            return (
-              <button
-                key={c.id}
-                onClick={() => navigate(`/case-engine/${c.id}`)}
-                className="w-full flex items-center gap-3 rounded-xl border border-border/50 bg-card/60 px-4 py-3 hover:bg-card transition-all text-left group"
-              >
-                <div className="w-8 h-8 rounded-lg bg-jarvis/10 flex items-center justify-center shrink-0">
-                  <Briefcase className="w-4 h-4 text-jarvis/60" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    {c.client_profile_id ? (
-                      <span
-                        onClick={(e) => { e.stopPropagation(); navigate(`/hub/clients/${c.client_profile_id}`); }}
-                        className="text-sm font-semibold text-foreground truncate hover:text-jarvis transition-colors cursor-pointer underline decoration-jarvis/30 underline-offset-2"
-                      >{c.client_name}</span>
-                    ) : (
-                      <span className="text-sm font-semibold text-foreground truncate">{c.client_name}</span>
-                    )}
-                    {c.file_number && <span className="text-[10px] font-mono text-muted-foreground/50">{c.file_number}</span>}
-                  </div>
-                  <span className="text-[11px] text-muted-foreground/60">{getCaseTypeLabel(c.case_type)}</span>
-                </div>
-                <Badge variant="outline" className={`${stage.color} text-[8px]`}>{stage.label}</Badge>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-muted-foreground shrink-0" />
-              </button>
-            );
-          })}
-          {!loading && cases.length === 0 && (
-            <p className="text-center text-muted-foreground py-12">No hay casos activos</p>
-          )}
-        </div>
+        {/* Content */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-64 rounded-xl bg-muted/20 animate-pulse" />
+            ))}
+          </div>
+        ) : filteredCases.length === 0 ? (
+          <div className="rounded-xl border border-border/40 bg-card/30 py-16 text-center">
+            <p className="text-muted-foreground">
+              {search || ownerFilter !== "all"
+                ? "Ningún caso coincide con tus filtros"
+                : "No hay casos activos todavía"}
+            </p>
+          </div>
+        ) : view === "kanban" ? (
+          <CaseKanban columns={filteredColumns} staffNames={staffNames} emptyHint="Sin casos en esta etapa" />
+        ) : (
+          <div className="space-y-1.5">
+            {filteredCases.map(c => (
+              <CaseCard key={c.id} case={c} variant="list" staffNames={staffNames} />
+            ))}
+          </div>
+        )}
       </div>
     </HubLayout>
   );

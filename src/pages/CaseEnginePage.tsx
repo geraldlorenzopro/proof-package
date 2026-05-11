@@ -525,8 +525,8 @@ export default function CaseEnginePage() {
                 )}
               </div>
 
-              {/* Right sidebar — STICKY */}
-              <div className="space-y-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto scrollbar-thin">
+              {/* Right sidebar — STICKY (scrollbar visible para descubrir overflow) */}
+              <div className="space-y-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 transition-colors">
                 {/* Panel de Decisión */}
                 <div className="rounded-2xl border border-border bg-card p-4">
                   <CaseDecisionPanel

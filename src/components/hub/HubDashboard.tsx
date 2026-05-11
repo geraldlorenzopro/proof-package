@@ -914,9 +914,9 @@ function HubDashboardInner({
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">casos activos</span>
               </button>
               <div className="w-px h-5 bg-border/30" />
-              <button onClick={() => navigate("/hub/cases")} className="flex items-baseline gap-1.5 hover:opacity-80 transition" title={pendingTasks > 99 ? `${pendingTasks} tareas pendientes — considerá archivar las viejas` : `${pendingTasks} tareas pendientes`}>
+              <button onClick={() => navigate("/hub/cases")} className="flex items-baseline gap-1.5 hover:opacity-80 transition" title={`${pendingTasks} tareas pendientes${pendingTasks > 99 ? " — considerá archivar las muy viejas" : ""}`}>
                 <span className="text-base font-semibold text-amber-400 tabular-nums">
-                  {pendingTasks > 99 ? "99+" : pendingTasks}
+                  {pendingTasks.toLocaleString("es-ES")}
                 </span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">tareas pend.</span>
               </button>
