@@ -1,14 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 
-<<<<<<< Updated upstream
-const SYNC_THROTTLE_MS = 90_000;
-const MAX_RELATED_CONTACTS_PER_RUN = 25;
-=======
-// Constantes de error tracking
+// Throttling y batching para no saturar GHL API
+const SYNC_THROTTLE_MS = 90_000; // mínimo 90s entre runs por cuenta
+const MAX_RELATED_CONTACTS_PER_RUN = 25; // tasks/notes en batches pequeños
+
+// Error tracking — pausa cuentas con token GHL roto
 const PAUSE_DURATION_MS = 60 * 60 * 1000; // 1 hora de pausa tras 401/403
 const DISABLE_AFTER_ERRORS = 24; // 24 errores consecutivos → desactivar (≈ 1 día)
->>>>>>> Stashed changes
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -185,26 +184,22 @@ async function syncOfficeContacts(
     .eq("account_id", office.account_id)
     .single();
 
-<<<<<<< Updated upstream
+  // Per-account throttle: mínimo 90s entre runs (evita martillar GHL)
   const lastRunTouchedAt = syncLog?.updated_at ? new Date(syncLog.updated_at).getTime() : 0;
   if (lastRunTouchedAt && Date.now() - lastRunTouchedAt < SYNC_THROTTLE_MS) {
     return { created: 0, updated: 0, tasksImported: 0, tasksUpdated: 0, notesImported: 0, skipped: "throttled" };
   }
 
+  // Marcar timestamp ahora para que otro run paralelo se throttle
   await supabase.from("ghl_sync_log").upsert(
     {
       account_id: office.account_id,
       last_synced_at: syncLog?.last_synced_at || null,
-      contacts_created: syncLog?.contacts_created || 0,
-      contacts_updated: syncLog?.contacts_updated || 0,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "account_id" }
   );
 
-  // If never synced, use 2 minutes ago to avoid importing everything
-=======
->>>>>>> Stashed changes
   const lastSynced = syncLog?.last_synced_at
     ? new Date(syncLog.last_synced_at)
     : new Date(Date.now() - 2 * 60 * 1000);
@@ -376,12 +371,10 @@ async function syncOfficeNotes(
   office: { account_id: string; ghl_api_key: string },
   clientProfileIds: string[]
 ) {
-<<<<<<< Updated upstream
   if (clientProfileIds.length === 0) return { imported: 0 };
 
-  // Only sync notes for contacts that have an active case (notes require case_id)
-=======
->>>>>>> Stashed changes
+  // Only sync notes for contacts that have an active case (notes require case_id).
+  // Batch limitado a MAX_RELATED_CONTACTS_PER_RUN para no saturar GHL en cada run.
   const { data: cases } = await supabase
     .from("client_cases")
     .select("id, client_profile_id, client_profiles!inner(ghl_contact_id)")
