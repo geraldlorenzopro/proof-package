@@ -166,6 +166,9 @@ export default function HubFocusedWidgets({ accountId }: Props) {
         approvedRes,
         deniedRes,
         leadsRes,
+        zombiesRes,
+        noSupervisorRes,
+        teamRes,
       ] = await Promise.all([
         // Para firmar: tareas críticas pendientes o con título indicando firma/packet
         supabase
@@ -223,6 +226,23 @@ export default function HubFocusedWidgets({ accountId }: Props) {
         // Leads nuevos hoy (client_profiles created today, sin caso)
         supabase.from("client_profiles").select("id", { count: "exact", head: true })
           .eq("account_id", accountId).gte("created_at", todayStart.toISOString()),
+
+        // Zombies +30d (cases sin movimiento 30+ días, no completados)
+        supabase.from("client_cases").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId)
+          .neq("status", "completed")
+          .lt("updated_at", monthAgo),
+
+        // Sin supervisor (cases activos sin attorney/paralegal asignado)
+        supabase.from("client_cases").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId)
+          .neq("status", "completed")
+          .is("assigned_to", null),
+
+        // Team activo (members de la firma con rol non-readonly)
+        supabase.from("account_members").select("user_id", { count: "exact", head: true })
+          .eq("account_id", accountId)
+          .neq("role", "readonly"),
       ]);
 
       // Cargar nombres de clientes para tareas
@@ -373,12 +393,16 @@ export default function HubFocusedWidgets({ accountId }: Props) {
       setReviews(reviewItems);
       setConsultations(consultItems);
       setInterviews(interviewItems.slice(0, 5));
+      const teamCount = teamRes.count || 0;
       setPulse({
         active,
-        zombies: 0, // requires more query, leave 0 for now
-        orphans: 0,
+        zombies: zombiesRes.count || 0,
+        orphans: noSupervisorRes.count || 0,
         newLeads: leadsRes.count || 0,
         approvalRate: rate,
+        teamActive: teamCount > 0 ? `${teamCount}/${teamCount}` : undefined,
+        // NOTA: mrr_firm intencionalmente omitido en modo real — no existe tabla de honorarios
+        // (lo que un abogado cobra a sus clientes). Solo se muestra en demo.
       });
     } catch (err) {
       console.error("HubFocusedWidgets load error", err);
