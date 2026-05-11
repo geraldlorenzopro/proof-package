@@ -5,6 +5,10 @@ import {
   Signature, Eye, Calendar, Landmark, AlertCircle, ArrowRight, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  useDemoMode, DEMO_SIGNATURES, DEMO_REVIEWS, DEMO_CONSULTATIONS, DEMO_INTERVIEWS,
+  DEMO_PULSE, DEMO_CRISIS,
+} from "@/hooks/useDemoData";
 
 // Hub Focused Widgets — responde 4 preguntas del abogado de inmigración:
 // 1. ¿Qué se necesita firmar? — packets USCIS, NVC docs, contratos
@@ -83,6 +87,7 @@ function inferAgencyFromCase(c: any): "USCIS" | "NVC" | "EMB" | null {
 
 export default function HubFocusedWidgets({ accountId }: Props) {
   const navigate = useNavigate();
+  const demoMode = useDemoMode();
   const [signatures, setSignatures] = useState<SignatureItem[]>([]);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [consultations, setConsultations] = useState<ConsultationItem[]>([]);
@@ -94,9 +99,34 @@ export default function HubFocusedWidgets({ accountId }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // DEMO MODE — sustituye queries reales con data mock realista de "Méndez Immigration Law"
+    if (demoMode) {
+      setSignatures(DEMO_SIGNATURES.map(s => ({
+        id: s.id, case_id: s.case_id, client_name: s.client_name,
+        case_type: s.case_type, agency: s.agency, meta: s.meta,
+      })));
+      setReviews(DEMO_REVIEWS.map(r => ({
+        id: r.id, case_id: r.case_id, client_name: r.client_name, title: r.title,
+        agency: r.agency, drafted_by_name: r.drafted_by, is_overdue: r.is_overdue,
+        days_until_due: r.days_until,
+      })));
+      setConsultations(DEMO_CONSULTATIONS);
+      setInterviews(DEMO_INTERVIEWS.map(i => ({
+        case_id: i.case_id, client_name: i.client_name, case_type: i.case_type,
+        agency: i.agency, date: "", date_label: i.date_label, location: i.location,
+      })));
+      setPulse({
+        active: DEMO_PULSE.active_cases, zombies: DEMO_PULSE.zombies_30d,
+        orphans: DEMO_PULSE.no_supervisor, newLeads: DEMO_PULSE.leads_today,
+        approvalRate: DEMO_PULSE.approval_rate_30d,
+      });
+      setCrisis(DEMO_CRISIS);
+      setLoading(false);
+      return;
+    }
     if (!accountId) return;
     loadAll();
-  }, [accountId]);
+  }, [accountId, demoMode]);
 
   async function loadAll() {
     setLoading(true);

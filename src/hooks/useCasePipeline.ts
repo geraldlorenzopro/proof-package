@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 
 export type PipelineStageKey =
   | "uscis"
@@ -116,11 +117,44 @@ function classify(c: PipelineCase): PipelineStageKey {
 }
 
 export function useCasePipeline(accountId: string | null) {
+  const demoMode = useDemoMode();
   const [cases, setCases] = useState<PipelineCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // DEMO MODE — devolver casos mock realistas (Méndez Immigration Law)
+    if (demoMode) {
+      const mockCases: PipelineCase[] = DEMO_CASES.map(c => ({
+        id: c.id,
+        client_name: c.client_name,
+        client_profile_id: c.client_profile_id,
+        case_type: c.case_type,
+        pipeline_stage: c.pipeline_stage,
+        process_stage: c.process_stage,
+        file_number: c.uscis_receipt || c.nvc_case_number || c.file_number,
+        status: c.status,
+        assigned_to: c.assigned_to,
+        updated_at: new Date(Date.now() - c.days_since_activity * 86400000).toISOString(),
+        stage_entered_at: new Date(Date.now() - c.days_since_activity * 86400000).toISOString(),
+        created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+        priority_date: null,
+        uscis_receipt_numbers: c.uscis_receipt ? [c.uscis_receipt] : null,
+        nvc_case_number: c.nvc_case_number,
+        interview_date: c.interview_date,
+        emb_interview_date: c.emb_interview_date,
+        cas_interview_date: null,
+        case_tags_array: null,
+        open_tasks_count: c.open_tasks,
+        overdue_tasks_count: c.overdue_tasks,
+        days_in_stage: c.days_since_activity,
+        next_due_date: c.next_due_iso,
+      }));
+      setCases(mockCases);
+      setLoading(false);
+      return;
+    }
+
     if (!accountId) {
       setLoading(false);
       return;
@@ -188,7 +222,7 @@ export function useCasePipeline(accountId: string | null) {
 
     load();
     return () => { cancelled = true; };
-  }, [accountId]);
+  }, [accountId, demoMode]);
 
   const columns: PipelineColumn[] = useMemo(() => {
     return PIPELINE_COLUMNS.map(col => ({

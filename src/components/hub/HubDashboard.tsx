@@ -16,6 +16,7 @@ import { useMorningBriefing } from "@/hooks/useMorningBriefing";
 import type { FeedItem, FeedItemKind, FeedItemSeverity } from "@/types/feed";
 import IntakeWizard from "../intake/IntakeWizard";
 import HubFocusedWidgets from "./HubFocusedWidgets";
+import { useDemoMode, DEMO_BRIEFING_TEXT, exitDemoMode } from "@/hooks/useDemoData";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -455,10 +456,14 @@ function HubDashboardInner({
     return "Buenas noches";
   }, []);
 
+  const demoMode = useDemoMode();
+
   // Briefing inteligente — prioridad 1: Claude/Camila (hub-morning-briefing
   // edge fn con prosa narrativa que menciona clientes por nombre).
   // Si la edge fn aún no respondió o falló, fallback al v1 derivado de KPIs.
   const briefingText = useMemo(() => {
+    // DEMO MODE: usar briefing fijo realista de Méndez Immigration Law
+    if (demoMode) return DEMO_BRIEFING_TEXT;
     // Prioridad 1: briefing inteligente Claude (con nombres de clientes)
     if (morningBriefing?.briefing_text && !morningBriefing.meta.fallback_used) {
       return morningBriefing.briefing_text;
@@ -484,7 +489,7 @@ function HubDashboardInner({
       return "Todo al día. Sin urgencias por ahora.";
     }
     return `Hoy tienes ${parts.join(", ")}.`;
-  }, [morningBriefing, feedData, todayAppointmentsCount, pendingTasks]);
+  }, [demoMode, morningBriefing, feedData, todayAppointmentsCount, pendingTasks]);
 
   // Action chips: prioridad al briefing Claude (chips contextuales con
   // nombre del cliente). Si no llegó, fallback al feed top-3.

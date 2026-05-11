@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import HubCreditsWidget from "./HubCreditsWidget";
 import CamilaFloatingPanel from "./CamilaFloatingPanel";
+import { useDemoMode, exitDemoMode, DEMO_SIDEBAR_BADGES } from "@/hooks/useDemoData";
 interface Props {
   children: ReactNode;
   accountName?: string;
@@ -16,12 +17,16 @@ interface Props {
   availableApps?: string[];
 }
 
-const NAV_ITEMS = [
+const NAV_ITEMS: Array<{
+  icon: any; label: string; path: string;
+  match: (p: string) => boolean;
+  badgeKey?: "cases" | "leads" | "consultations";
+}> = [
   { icon: Home, label: "Inicio", path: "/hub", match: (p: string) => p === "/hub" },
-  { icon: UserSearch, label: "Contactos", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads") },
+  { icon: UserSearch, label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads" },
   { icon: Users, label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients") },
-  { icon: MessageSquare, label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations" },
-  { icon: FolderOpen, label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases") },
+  { icon: MessageSquare, label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations" },
+  { icon: FolderOpen, label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases" },
   { icon: Calendar, label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda" },
   { icon: BarChart3, label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence" },
   { icon: Bot, label: "Equipo AI", path: "/hub/ai", match: (p: string) => p === "/hub/ai" },
@@ -34,6 +39,7 @@ const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 hours
 export default function HubLayout({ children, accountName, staffName, plan }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
+  const demoMode = useDemoMode();
 
   // ═══ Inactivity timeout ═══
   useEffect(() => {
@@ -132,6 +138,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             <div className="flex flex-col items-center gap-0.5">
               {NAV_ITEMS.map((item) => {
                 const isActive = item.match(currentPath);
+                const badge = item.badgeKey && demoMode ? DEMO_SIDEBAR_BADGES[item.badgeKey] : null;
                 return (
                   <button
                     key={item.path}
@@ -145,12 +152,29 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                     {isActive && (
                       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-jarvis rounded-r" />
                     )}
+                    {badge !== null && badge !== undefined && badge > 0 && (
+                      <span className="absolute top-1 right-2 bg-rose-500 text-white text-[8px] font-bold rounded-full px-1 min-w-[14px] h-[14px] flex items-center justify-center leading-none">
+                        {badge > 99 ? "99+" : badge}
+                      </span>
+                    )}
                     <item.icon className="w-4 h-4" />
                     <span className="text-[9px] font-medium leading-none">{item.label}</span>
                   </button>
                 );
               })}
             </div>
+
+            {/* DEMO MODE BADGE — visible solo cuando ?demo=true */}
+            {demoMode && (
+              <button
+                onClick={exitDemoMode}
+                className="mt-3 w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-all"
+                title="Modo demo activo — click para salir"
+              >
+                <span className="text-[8px] font-bold uppercase tracking-wider">Demo</span>
+                <span className="text-[8px] opacity-70">Salir</span>
+              </button>
+            )}
 
             {/* Spacer */}
             <div className="flex-1" />
