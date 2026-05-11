@@ -1,6 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 
+const SYNC_THROTTLE_MS = 90_000;
+const MAX_RELATED_CONTACTS_PER_RUN = 25;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -64,12 +67,28 @@ async function syncOfficeContacts(
   supabase: ReturnType<typeof createClient>,
   office: { account_id: string; ghl_location_id: string; ghl_api_key: string }
 ) {
-  // Get last sync timestamp
+  // Get last sync timestamp and use updated_at as a lightweight per-account throttle.
   const { data: syncLog } = await supabase
     .from("ghl_sync_log")
-    .select("last_synced_at")
+    .select("last_synced_at, updated_at")
     .eq("account_id", office.account_id)
     .single();
+
+  const lastRunTouchedAt = syncLog?.updated_at ? new Date(syncLog.updated_at).getTime() : 0;
+  if (lastRunTouchedAt && Date.now() - lastRunTouchedAt < SYNC_THROTTLE_MS) {
+    return { created: 0, updated: 0, tasksImported: 0, tasksUpdated: 0, notesImported: 0, skipped: "throttled" };
+  }
+
+  await supabase.from("ghl_sync_log").upsert(
+    {
+      account_id: office.account_id,
+      last_synced_at: syncLog?.last_synced_at || null,
+      contacts_created: syncLog?.contacts_created || 0,
+      contacts_updated: syncLog?.contacts_updated || 0,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "account_id" }
+  );
 
   // If never synced, use 2 minutes ago to avoid importing everything
   const lastSynced = syncLog?.last_synced_at
@@ -222,21 +241,23 @@ async function syncOfficeContacts(
     { onConflict: "account_id" }
   );
 
-  // Sync tasks GHL → NER for linked contacts of this office
+  const relatedContactIds = contacts.slice(0, MAX_RELATED_CONTACTS_PER_RUN).map((c: any) => c.id);
+
+  // Sync tasks GHL → NER only for contacts changed in this run.
   let tasksImported = 0;
   let tasksUpdated = 0;
   try {
-    const taskResult = await syncOfficeTasks(supabase, office);
+    const taskResult = await syncOfficeTasks(supabase, office, relatedContactIds);
     tasksImported = taskResult.imported;
     tasksUpdated = taskResult.updated;
   } catch (e) {
     console.error("task sync error", office.account_id, e);
   }
 
-  // Sync notes GHL → NER for linked contacts of this office
+  // Sync notes GHL → NER only for contacts changed in this run.
   let notesImported = 0;
   try {
-    const noteResult = await syncOfficeNotes(supabase, office);
+    const noteResult = await syncOfficeNotes(supabase, office, relatedContactIds);
     notesImported = noteResult.imported;
   } catch (e) {
     console.error("note sync error", office.account_id, e);
