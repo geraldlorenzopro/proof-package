@@ -1,6 +1,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getGHLConfig } from "../_shared/ghl.ts";
+import { verifyAccountMembership } from "../_shared/auth-tenant.ts";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_API_VERSION = "2021-07-28";
@@ -17,6 +18,35 @@ Deno.serve(async (req) => {
     });
   }
 
+  // SECURITY FIX 2026-05-10 (audit hallazgo alto): requerir auth + membership.
+  // Sin esto, atacante puede disparar miles de POSTs → DoS contra GHL API
+  // + drenar quota del cliente GHL.
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+  const supabaseUser = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const { data: { user } } = await supabaseUser.auth.getUser();
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   try {
     const { locationId: bodyLocationId, accountId, ownerId } = await req.json();
 
@@ -24,6 +54,15 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Missing accountId or ownerId" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // SECURITY: verificar que user pertenece al account
+    const isMember = await verifyAccountMembership(supabaseAdmin, user.id, accountId);
+    if (!isMember) {
+      return new Response(
+        JSON.stringify({ error: "forbidden", reason: "not_member_of_account" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
