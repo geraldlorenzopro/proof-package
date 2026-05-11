@@ -471,7 +471,7 @@ function HubDashboardInner({
     const tasksAreSane = pendingTasks > 0 && pendingTasks <= 100;
 
     if (pendingTasks > 100 && critical === 0 && high === 0) {
-      return `Sin urgencias hoy. Tu cola tiene ${pendingTasks} tareas pendientes — considerá archivar las muy viejas para mantenerla limpia.`;
+      return `Sin urgencias hoy. Tu cola tiene ${pendingTasks} tareas pendientes — considera archivar las muy viejas para mantenerla limpia.`;
     }
 
     const parts: string[] = [];
@@ -483,7 +483,7 @@ function HubDashboardInner({
     if (parts.length === 0) {
       return "Todo al día. Sin urgencias por ahora.";
     }
-    return `Hoy tenés ${parts.join(", ")}.`;
+    return `Hoy tienes ${parts.join(", ")}.`;
   }, [morningBriefing, feedData, todayAppointmentsCount, pendingTasks]);
 
   // Action chips: prioridad al briefing Claude (chips contextuales con

@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2, Phone, Link2, RefreshCw, Webhook, Copy, Eye, EyeOff } from "lucide-react";
+import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2, Phone, Link2, RefreshCw, Webhook, Copy, Eye, EyeOff, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import HubLayout from "@/components/hub/HubLayout";
 import { initializeOfficeConfig, STANDARD_CASE_TYPES, AI_CASE_TYPES, TIMEZONES, US_STATES } from "@/lib/officeSetup";
 
@@ -498,6 +499,10 @@ export default function OfficeSettingsPage() {
                     </button>
                   ))}
                 </div>
+              </FieldRow>
+
+              <FieldRow label="Tema visual">
+                <ThemeSelector />
               </FieldRow>
 
               <FieldRow label="Canal de comunicación preferido">
@@ -1355,6 +1360,43 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
     <div>
       <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{label}</label>
       {children}
+    </div>
+  );
+}
+
+// Tema visual selector — usa next-themes (storageKey="ner-theme")
+function ThemeSelector() {
+  const { theme, setTheme } = useTheme();
+  const current = theme === "light" ? "light" : "dark";
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-3">
+        <button
+          onClick={() => setTheme("dark")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            current === "dark"
+              ? "bg-jarvis/15 text-jarvis border border-jarvis/30"
+              : "bg-secondary/50 text-muted-foreground hover:text-foreground border border-border/20"
+          }`}
+        >
+          <Moon className="w-4 h-4" />
+          Oscuro
+        </button>
+        <button
+          onClick={() => setTheme("light")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            current === "light"
+              ? "bg-jarvis/15 text-jarvis border border-jarvis/30"
+              : "bg-secondary/50 text-muted-foreground hover:text-foreground border border-border/20"
+          }`}
+        >
+          <Sun className="w-4 h-4" />
+          Claro
+        </button>
+      </div>
+      <p className="text-[10px] text-muted-foreground/60 italic">
+        Modo claro en beta — algunas pantallas (dashboard, pipeline) están optimizadas para oscuro. Refinamiento completo en próxima iteración.
+      </p>
     </div>
   );
 }

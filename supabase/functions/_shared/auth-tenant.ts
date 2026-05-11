@@ -64,7 +64,7 @@ export async function verifyAccountMembership(
 
 /**
  * Verifica membership y devuelve el rol del usuario en la account.
- * Útil cuando además del membership necesitás saber qué rol tiene
+ * Útil cuando además del membership necesitas saber qué rol tiene
  * (ej: para gates de tier owner/admin).
  *
  * @returns el rol string si es miembro (owner/admin/attorney/paralegal/etc),
