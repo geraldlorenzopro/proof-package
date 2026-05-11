@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -10,7 +11,8 @@ import {
   Clock, Send, FileCheck, FileSignature, ChevronRight,
 } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
-import { useDemoMode, DEMO_FORMS, FORM_STATUS_LABELS, DemoForm, FormStatus } from "@/hooks/useDemoData";
+import { useDemoMode, FORM_STATUS_LABELS, DemoForm, FormStatus } from "@/hooks/useDemoData";
+import { useFormsList } from "@/hooks/useFormsList";
 import { cn } from "@/lib/utils";
 
 // /hub/formularios — vista enfocada en USCIS forms del firm.
@@ -48,12 +50,24 @@ function formatRelative(iso: string | null): string {
 export default function HubFormsPage() {
   const navigate = useNavigate();
   const demoMode = useDemoMode();
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<FormStatus | "all">("all");
   const [agencyFilter, setAgencyFilter] = useState<"USCIS" | "NVC" | "Embajada" | "all">("all");
 
-  // Sólo data demo por ahora — para integración real necesita query a tabla smart_forms o equivalente
-  const allForms: DemoForm[] = demoMode ? DEMO_FORMS : [];
+  // Resolver accountId del usuario logueado (solo en modo NO demo)
+  useEffect(() => {
+    if (demoMode) return;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data: accId } = await supabase.rpc("user_account_id", { _user_id: session.user.id });
+      if (accId) setAccountId(accId as string);
+    })();
+  }, [demoMode]);
+
+  // useFormsList retorna DEMO_FORMS si demoMode, o form_submissions reales si accountId
+  const { forms: allForms, loading: formsLoading } = useFormsList(accountId);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -178,10 +192,36 @@ export default function HubFormsPage() {
         </div>
 
         {/* Forms table */}
-        {filtered.length === 0 ? (
-          <div className="rounded-xl border border-border/40 bg-card/30 py-16 text-center">
-            <FileText className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No hay formularios que coincidan con tus filtros</p>
+        {formsLoading ? (
+          <div className="rounded-xl border border-border/40 bg-card/30 h-96 animate-pulse" />
+        ) : filtered.length === 0 ? (
+          <div className="rounded-xl border border-border/40 bg-card/30 py-16 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-muted/30 mx-auto flex items-center justify-center">
+              <FileText className="w-5 h-5 text-muted-foreground/60" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-1">
+                {search || statusFilter !== "all" || agencyFilter !== "all"
+                  ? "Ningún formulario coincide con tus filtros"
+                  : allForms.length === 0
+                    ? "Sin formularios generados todavía"
+                    : "Sin formularios para mostrar"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {allForms.length === 0
+                  ? "Generá tu primer formulario USCIS desde un caso o lanzá Felix IA."
+                  : "Probá ajustar los filtros."}
+              </p>
+            </div>
+            {allForms.length === 0 && !demoMode && (
+              <button
+                onClick={() => navigate("/smart-forms")}
+                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3.5 py-1.5 rounded bg-jarvis hover:bg-jarvis/90 text-white"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Crear formulario nuevo
+              </button>
+            )}
           </div>
         ) : (
           <div className="rounded-xl border border-border/50 bg-card/40 overflow-hidden">
@@ -287,10 +327,10 @@ export default function HubFormsPage() {
           </div>
         )}
 
-        {/* Footer info */}
-        {demoMode && (
+        {/* Footer info — solo en demo. En producción mostraría stats reales */}
+        {demoMode && allForms.length > 0 && (
           <p className="text-[10px] text-muted-foreground/60 text-center italic mt-2">
-            Felix IA generó {DEMO_FORMS.filter(f => f.generated_by === "Felix IA").length} de los {DEMO_FORMS.length} formularios overnight ·
+            Felix IA generó {allForms.filter(f => f.generated_by === "Felix IA").length} de los {allForms.length} formularios overnight ·
             Promedio de tiempo de armado: 4.2 min/formulario (vs 45 min manual)
           </p>
         )}
