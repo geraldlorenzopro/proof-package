@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Signature, Eye, Calendar, Landmark, AlertCircle, ArrowRight, ChevronRight,
 } from "lucide-react";
@@ -88,6 +89,18 @@ function inferAgencyFromCase(c: any): "USCIS" | "NVC" | "EMB" | null {
 export default function HubFocusedWidgets({ accountId }: Props) {
   const navigate = useNavigate();
   const demoMode = useDemoMode();
+  // En demo mode: click en cualquier item caso lanza toast en vez de navegar
+  // (los IDs demo no existen en /case-engine, rompería).
+  function openCase(caseId: string) {
+    if (demoMode) {
+      toast.info("Vista demo · navegación a caso desactivada", {
+        description: "En producción, este click abre el case engine completo.",
+        duration: 3000,
+      });
+      return;
+    }
+    navigate(`/case-engine/${caseId}`);
+  }
   const [signatures, setSignatures] = useState<SignatureItem[]>([]);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [consultations, setConsultations] = useState<ConsultationItem[]>([]);
@@ -399,7 +412,7 @@ export default function HubFocusedWidgets({ accountId }: Props) {
             <span className="text-muted-foreground"> — {crisis.subtitle}</span>
           </div>
           <button
-            onClick={() => navigate(`/case-engine/${crisis.case_id}`)}
+            onClick={() => openCase(crisis.case_id)}
             className="text-[10px] font-semibold px-3 py-1.5 rounded bg-rose-500 hover:bg-rose-600 text-white transition-colors"
           >
             Ver caso
@@ -422,7 +435,7 @@ export default function HubFocusedWidgets({ accountId }: Props) {
           {signatures.map(s => (
             <li
               key={s.id}
-              onClick={() => navigate(`/case-engine/${s.case_id}`)}
+              onClick={() => openCase(s.case_id)}
               className="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-muted/40 cursor-pointer"
             >
               {s.agency && (
@@ -452,7 +465,7 @@ export default function HubFocusedWidgets({ accountId }: Props) {
           {reviews.map(r => (
             <li
               key={r.id}
-              onClick={() => navigate(`/case-engine/${r.case_id}`)}
+              onClick={() => openCase(r.case_id)}
               className="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-muted/40 cursor-pointer"
             >
               {r.agency && (
@@ -507,7 +520,7 @@ export default function HubFocusedWidgets({ accountId }: Props) {
           {interviews.map(i => (
             <li
               key={`${i.case_id}-${i.date}`}
-              onClick={() => navigate(`/case-engine/${i.case_id}`)}
+              onClick={() => openCase(i.case_id)}
               className="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-muted/40 cursor-pointer"
             >
               <span className={cn("text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded shrink-0", agencyBadgeClass(i.agency))}>
@@ -523,17 +536,17 @@ export default function HubFocusedWidgets({ accountId }: Props) {
         </Widget>
       </div>
 
-      {/* PULSE — métricas completas del portfolio */}
-      <div className="flex items-center gap-5 px-4 py-2 bg-card/40 border border-border rounded-lg flex-wrap">
-        <PulseMetric value={pulse.active} label="Casos activos" />
-        {pulse.zombies > 0 && <><PulseDivider /><PulseMetric value={pulse.zombies} label="Zombies +30d" valueColor="text-amber-400" /></>}
-        {pulse.orphans > 0 && <><PulseDivider /><PulseMetric value={pulse.orphans} label="Sin supervisor" valueColor="text-rose-400" /></>}
+      {/* PULSE — métricas completas del portfolio. Métricas clickeables navegan a página relevante. */}
+      <div className="flex items-center justify-center gap-5 px-4 py-2 bg-card/40 border border-border rounded-lg flex-wrap">
+        <PulseMetric value={pulse.active} label="Casos activos" onClick={() => navigate("/hub/cases")} />
+        {pulse.zombies > 0 && <><PulseDivider /><PulseMetric value={pulse.zombies} label="Zombies +30d" valueColor="text-amber-400" onClick={() => navigate("/hub/cases?filter=zombies")} /></>}
+        {pulse.orphans > 0 && <><PulseDivider /><PulseMetric value={pulse.orphans} label="Sin supervisor" valueColor="text-rose-400" onClick={() => navigate("/hub/cases?filter=no-supervisor")} /></>}
         <PulseDivider />
-        <PulseMetric value={pulse.newLeads} label="Leads hoy" valueColor="text-blue-400" />
+        <PulseMetric value={pulse.newLeads} label="Leads hoy" valueColor="text-blue-400" onClick={() => navigate("/hub/leads")} />
         <PulseDivider />
-        <PulseMetric value={`${pulse.approvalRate}%`} label="Aprobación 30d" valueColor="text-emerald-400" />
-        {pulse.teamActive && (<><PulseDivider /><PulseMetric value={pulse.teamActive} label="Equipo activo" valueColor="text-emerald-400" /></>)}
-        {pulse.mrr && (<><PulseDivider /><PulseMetric value={pulse.mrr} label="MRR firma" /></>)}
+        <PulseMetric value={`${pulse.approvalRate}%`} label="Aprobación 30d" valueColor="text-emerald-400" onClick={() => navigate("/hub/reports")} />
+        {pulse.teamActive && (<><PulseDivider /><PulseMetric value={pulse.teamActive} label="Equipo activo" valueColor="text-emerald-400" onClick={() => navigate("/hub/settings/office")} /></>)}
+        {pulse.mrr && (<><PulseDivider /><PulseMetric value={pulse.mrr} label="MRR firma" onClick={() => navigate("/admin/billing")} /></>)}
       </div>
 
       {/* NEWS TICKER — solo cuando hay items (demo o news scrape futuro) */}
@@ -561,9 +574,9 @@ export default function HubFocusedWidgets({ accountId }: Props) {
         </div>
       )}
 
-      {/* RECURSOS QUICK ACCESS — siempre visibles en demo, link-buttons */}
+      {/* RECURSOS QUICK ACCESS — centrados (label + buttons) */}
       {demoMode && (
-        <div className="flex items-center gap-2 flex-wrap px-3 py-2 bg-card/30 border border-border rounded-lg">
+        <div className="flex items-center justify-center gap-2 flex-wrap px-3 py-2 bg-card/30 border border-border rounded-lg">
           <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70 font-semibold mr-1">Recursos:</span>
           <a href="https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground border border-border hover:border-border-strong bg-transparent transition-colors">Visa Bulletin</a>
           <a href="https://egov.uscis.gov/casestatus/landing.do" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground border border-border bg-transparent transition-colors">USCIS Case Status</a>
@@ -591,12 +604,13 @@ function Widget({
 }) {
   return (
     <div className="bg-card border border-border rounded-xl p-3 flex flex-col min-h-[200px]">
-      <div className="flex items-center gap-2 pb-2 mb-2 border-b border-border/60">
+      {/* Header centrado — Mr. Lorenzo prefiere headers centrados (acción/label) */}
+      <div className="flex items-center justify-center gap-2 pb-2 mb-2 border-b border-border/60 relative">
         <div className={cn("w-7 h-7 rounded-md flex items-center justify-center shrink-0", iconBg)}>
           {icon}
         </div>
         <div className="text-[12px] font-semibold text-foreground">{title}</div>
-        <div className={cn("ml-auto text-[20px] font-bold tabular-nums leading-none", countColor)}>
+        <div className={cn("absolute right-0 text-[20px] font-bold tabular-nums leading-none", countColor)}>
           {count}
         </div>
       </div>
@@ -622,17 +636,25 @@ function Widget({
   );
 }
 
-function PulseMetric({ value, label, valueColor }: { value: string | number; label: string; valueColor?: string }) {
-  return (
-    <div className="flex flex-col gap-0.5">
+function PulseMetric({ value, label, valueColor, onClick }: { value: string | number; label: string; valueColor?: string; onClick?: () => void }) {
+  const content = (
+    <>
       <div className={cn("text-[15px] font-bold tabular-nums leading-none", valueColor || "text-foreground")}>
         {value}
       </div>
       <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
         {label}
       </div>
-    </div>
+    </>
   );
+  if (onClick) {
+    return (
+      <button onClick={onClick} className="flex flex-col gap-0.5 hover:opacity-80 transition-opacity cursor-pointer text-left" title={`Ver ${label}`}>
+        {content}
+      </button>
+    );
+  }
+  return <div className="flex flex-col gap-0.5">{content}</div>;
 }
 
 function PulseDivider() {
