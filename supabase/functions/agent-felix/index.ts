@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyAccountMembership } from "../_shared/auth-tenant.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,6 +31,17 @@ serve(async (req) => {
     const { case_id, account_id, form_type, language } = await req.json();
     if (!case_id || !account_id || !form_type) {
       return new Response(JSON.stringify({ error: "missing_params" }), { status: 400, headers: corsHeaders });
+    }
+
+    // SECURITY FIX 2026-05-10: verificar que el user pertenece al account_id.
+    // Sin esto, paralegal de firma A puede pasar account_id de firma B y
+    // drenar créditos AI + leer datos de firma B. Audit hallazgo crítico #1.
+    const isMember = await verifyAccountMembership(supabaseAdmin, user.id, account_id);
+    if (!isMember) {
+      return new Response(
+        JSON.stringify({ error: "forbidden", reason: "not_member_of_account" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Check credits
