@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  Signature, Eye, Calendar, Landmark, AlertCircle, ArrowRight, ChevronRight,
+  Signature, Eye, Calendar, Landmark, AlertCircle, ArrowRight, ChevronRight, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -437,7 +437,8 @@ export default function HubFocusedWidgets({ accountId }: Props) {
           count={signatures.length}
           countColor="text-purple-400"
           onSeeAll={() => navigate("/hub/cases")}
-          emptyText="Nada pendiente de firma"
+          emptyText="Nada esperando tu firma"
+          emptyHint="Cuando tu equipo termine un packet, aparecerá aquí"
         >
           {signatures.map(s => (
             <li
@@ -467,7 +468,8 @@ export default function HubFocusedWidgets({ accountId }: Props) {
           count={reviews.length}
           countColor="text-amber-400"
           onSeeAll={() => navigate("/hub/cases")}
-          emptyText="Nada pendiente revisión"
+          emptyText="Sin RFEs ni revisiones pendientes"
+          emptyHint="RFEs drafted por tu equipo aparecerán aquí"
         >
           {reviews.map(r => (
             <li
@@ -498,7 +500,8 @@ export default function HubFocusedWidgets({ accountId }: Props) {
           count={consultations.length}
           countColor="text-blue-400"
           onSeeAll={() => navigate("/hub/agenda")}
-          emptyText="Sin consultas hoy"
+          emptyText="Sin consultas agendadas"
+          emptyHint="Tus citas del día aparecerán aquí"
         >
           {consultations.map(c => (
             <li
@@ -522,7 +525,8 @@ export default function HubFocusedWidgets({ accountId }: Props) {
           count={interviews.length}
           countColor="text-orange-400"
           onSeeAll={() => navigate("/hub/cases")}
-          emptyText="Sin entrevistas próximas"
+          emptyText="Sin entrevistas esta semana"
+          emptyHint="USCIS biometrics, NVC y Embajadas aparecerán aquí"
         >
           {interviews.map(i => (
             <li
@@ -544,17 +548,30 @@ export default function HubFocusedWidgets({ accountId }: Props) {
       </div>
 
       {/* PULSE — métricas completas del portfolio. Métricas clickeables navegan a página relevante. */}
-      <div className="flex items-center justify-center gap-5 px-4 py-2 bg-card/40 border border-border rounded-lg flex-wrap">
-        <PulseMetric value={pulse.active} label="Casos activos" onClick={() => navigate("/hub/cases")} />
-        {pulse.zombies > 0 && <><PulseDivider /><PulseMetric value={pulse.zombies} label="Zombies +30d" valueColor="text-amber-400" onClick={() => navigate("/hub/cases?filter=zombies")} /></>}
-        {pulse.orphans > 0 && <><PulseDivider /><PulseMetric value={pulse.orphans} label="Sin supervisor" valueColor="text-rose-400" onClick={() => navigate("/hub/cases?filter=no-supervisor")} /></>}
-        <PulseDivider />
-        <PulseMetric value={pulse.newLeads} label="Leads hoy" valueColor="text-blue-400" onClick={() => navigate("/hub/leads")} />
-        <PulseDivider />
-        <PulseMetric value={`${pulse.approvalRate}%`} label="Aprobación 30d" valueColor="text-emerald-400" onClick={() => navigate("/hub/reports")} />
-        {pulse.teamActive && (<><PulseDivider /><PulseMetric value={pulse.teamActive} label="Equipo activo" valueColor="text-emerald-400" onClick={() => navigate("/hub/settings/office")} /></>)}
-        {pulse.mrr && (<><PulseDivider /><PulseMetric value={pulse.mrr} label="MRR firma" onClick={() => navigate("/admin/billing")} /></>)}
-      </div>
+      {pulse.active === 0 && pulse.newLeads === 0 ? (
+        // Empty state global del pulse: firma sin actividad todavía
+        <div className="flex items-center justify-center gap-3 px-4 py-3 bg-card/40 border border-border rounded-lg">
+          <Sparkles className="w-4 h-4 text-emerald-400/60" />
+          <div className="text-center">
+            <p className="text-[12px] font-medium text-foreground">Tu firma está lista para empezar</p>
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+              Las métricas aparecerán cuando crees tu primer caso o conectes GHL.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center gap-5 px-4 py-2 bg-card/40 border border-border rounded-lg flex-wrap">
+          <PulseMetric value={pulse.active} label="Casos activos" onClick={() => navigate("/hub/cases")} />
+          {pulse.zombies > 0 && <><PulseDivider /><PulseMetric value={pulse.zombies} label="Zombies +30d" valueColor="text-amber-400" onClick={() => navigate("/hub/cases?filter=zombies")} /></>}
+          {pulse.orphans > 0 && <><PulseDivider /><PulseMetric value={pulse.orphans} label="Sin supervisor" valueColor="text-rose-400" onClick={() => navigate("/hub/cases?filter=no-supervisor")} /></>}
+          <PulseDivider />
+          <PulseMetric value={pulse.newLeads} label="Leads hoy" valueColor="text-blue-400" onClick={() => navigate("/hub/leads")} />
+          <PulseDivider />
+          <PulseMetric value={`${pulse.approvalRate}%`} label="Aprobación 30d" valueColor="text-emerald-400" onClick={() => navigate("/hub/reports")} />
+          {pulse.teamActive && (<><PulseDivider /><PulseMetric value={pulse.teamActive} label="Equipo activo" valueColor="text-emerald-400" onClick={() => navigate("/hub/settings/office")} /></>)}
+          {pulse.mrr && (<><PulseDivider /><PulseMetric value={pulse.mrr} label="MRR firma" onClick={() => navigate("/admin/billing")} /></>)}
+        </div>
+      )}
 
       {/* NEWS TICKER — solo cuando hay items (demo o news scrape futuro) */}
       {news.length > 0 && (
@@ -598,7 +615,7 @@ export default function HubFocusedWidgets({ accountId }: Props) {
 }
 
 function Widget({
-  icon, iconBg, title, count, countColor, onSeeAll, emptyText, children,
+  icon, iconBg, title, count, countColor, onSeeAll, emptyText, emptyHint, children,
 }: {
   icon: React.ReactNode;
   iconBg: string;
@@ -607,6 +624,7 @@ function Widget({
   countColor: string;
   onSeeAll: () => void;
   emptyText: string;
+  emptyHint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -622,8 +640,14 @@ function Widget({
         </div>
       </div>
       {count === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-[10px] text-muted-foreground/60 italic">
-          {emptyText}
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-2 gap-1.5">
+          <div className={cn("w-9 h-9 rounded-full flex items-center justify-center opacity-50", iconBg)}>
+            {icon}
+          </div>
+          <div className="text-[11px] font-medium text-muted-foreground">{emptyText}</div>
+          {emptyHint && (
+            <div className="text-[10px] text-muted-foreground/60 italic leading-tight">{emptyHint}</div>
+          )}
         </div>
       ) : (
         <ul className="flex-1 space-y-0.5 overflow-hidden">
