@@ -7,6 +7,18 @@ import HubDashboard from "@/components/hub/HubDashboard";
 import HubSplash from "@/components/hub/HubSplash";
 import OnboardingWizard from "@/components/hub/OnboardingWizard";
 import { useAppPermissions } from "@/hooks/useAppPermissions";
+import { useDemoMode, DEMO_FIRM_NAME, DEMO_ATTORNEY } from "@/hooks/useDemoData";
+
+// Datos sintéticos para demo mode — bypassa auth completo, permite mostrar
+// el hub a prospectos sin cuenta. SIN tocar BD: los hooks (HubFocusedWidgets,
+// useCasePipeline) detectan demoMode y retornan mock data realista.
+const DEMO_HUB_DATA: HubData = {
+  account_id: "demo-account-mendez",
+  account_name: DEMO_FIRM_NAME,
+  plan: "elite",
+  apps: [],
+  staff_info: { ghl_user_email: "demo@nerimmigration.ai", display_name: DEMO_ATTORNEY },
+};
 
 interface HubApp {
   id: string;
@@ -50,10 +62,16 @@ function getCachedHubData() {
 
 export default function HubPage() {
   const [searchParams] = useSearchParams();
-  const [data, setData] = useState<HubData | null>(() => getCachedHubData());
+  const demoMode = useDemoMode();
+  // En demo mode: bypassa cache + auth, usa data sintética de Méndez Immigration Law
+  const [data, setData] = useState<HubData | null>(() => demoMode ? DEMO_HUB_DATA : getCachedHubData());
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(() => !getCachedHubData());
+  const [loading, setLoading] = useState(() => {
+    if (demoMode) return false;
+    return !getCachedHubData();
+  });
   const [authReady, setAuthReady] = useState(() => {
+    if (demoMode) return true;
     const cached = getCachedHubData();
     return cached ? !cached.auth_token : false;
   });
@@ -77,6 +95,16 @@ export default function HubPage() {
   const uname = searchParams.get("uname");
 
   useEffect(() => {
+    // DEMO MODE: bypassa toda la lógica de auth/cache/GHL handshake.
+    // Permite presentar el hub a prospectos sin cuenta vía link público.
+    if (demoMode) {
+      setData(DEMO_HUB_DATA);
+      setLoading(false);
+      setAuthReady(true);
+      setShowOnboarding(false);
+      return;
+    }
+
     if (cid && sig && ts) {
       resolveHub(cid, sig, ts, uemail, uname, exp);
       return;
@@ -95,13 +123,14 @@ export default function HubPage() {
     }
 
     recoverFromSession();
-  }, [cid, sig, ts]);
+  }, [cid, sig, ts, demoMode]);
 
   // Check onboarding status once we have an account
   useEffect(() => {
+    if (demoMode) return; // demo mode: skip onboarding check
     if (!data?.account_id || !authReady) return;
     checkOnboarding(data.account_id);
-  }, [data?.account_id, authReady]);
+  }, [data?.account_id, authReady, demoMode]);
 
   async function checkOnboarding(accountId: string) {
     try {
@@ -246,8 +275,13 @@ export default function HubPage() {
 
   useEffect(() => {
     if (!authReady) return;
+    if (demoMode) {
+      // demo mode: stats sintéticas (no toques BD)
+      setStats({ totalClients: 147, activeForms: 22, recentActivity: 9 });
+      return;
+    }
     loadStats();
-  }, [authReady]);
+  }, [authReady, demoMode]);
 
   async function loadStats() {
     const [clientsRes, formsRes, activityRes] = await Promise.all([
