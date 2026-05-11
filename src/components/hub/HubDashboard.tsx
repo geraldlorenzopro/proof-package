@@ -448,15 +448,17 @@ function HubDashboardInner({
     }
   }
 
-  const firstName = (resolvedName || staffName || "").split(" ")[0] || "";
+  const demoMode = useDemoMode();
+  // En demo mode: fuerza nombre del attorney del demo, ignora session real
+  const firstName = demoMode
+    ? "Pablo"
+    : ((resolvedName || staffName || "").split(" ")[0] || "");
   const greeting = useMemo(() => {
     const lh = parseInt(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false }).format(new Date()));
     if (lh < 12) return "Buenos días";
     if (lh < 18) return "Buenas tardes";
     return "Buenas noches";
   }, []);
-
-  const demoMode = useDemoMode();
 
   // Briefing inteligente — prioridad 1: Claude/Camila (hub-morning-briefing
   // edge fn con prosa narrativa que menciona clientes por nombre).
@@ -511,6 +513,7 @@ function HubDashboardInner({
   // Prioridad 1: chips del briefing Claude (mencionan cliente por nombre).
   // Prioridad 2: top 3 items del feed.
   const actionChips = useMemo(() => {
+    if (demoMode) return []; // demo: suprime chips (action contextual va vía HubFocusedWidgets)
     if (briefingChips && briefingChips.length > 0) return briefingChips;
     const items = (feedData?.items || []).slice(0, 3);
     return items.map(item => ({
@@ -521,7 +524,7 @@ function HubDashboardInner({
       href: item.actionHref,
       kind: item.kind,
     }));
-  }, [briefingChips, feedData]);
+  }, [demoMode, briefingChips, feedData]);
 
   // Resto del feed (items 4+) para la cola priorizada
   const queueItems = useMemo(() => {
@@ -731,7 +734,8 @@ function HubDashboardInner({
             <HubFocusedWidgets accountId={accountId} attorneyName={resolvedName || staffName || undefined} />
           </section>
 
-          {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ */}
+          {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}
+          {!demoMode && (
           <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-4 py-2.5 flex items-center gap-5 flex-wrap">
             {/* Pulse mini KPIs */}
             <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -831,6 +835,7 @@ function HubDashboardInner({
               )}
             </div>
           </section>
+          )}
 
         </div>
       </div>

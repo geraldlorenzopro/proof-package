@@ -191,6 +191,7 @@ export const DEMO_CASES: DemoCase[] = [
 ];
 
 // Items específicos para los 4 widgets del HubDashboard
+// 12 firmas pendientes (matchea briefing "12 packets esperando")
 export const DEMO_SIGNATURES = [
   { id: "s-1", case_id: "demo-c-001", client_name: "García", case_type: "I-130 cónyuge", agency: "USCIS" as const, meta: "hoy" },
   { id: "s-2", case_id: "demo-c-002", client_name: "Hernández", case_type: "I-485 ajuste", agency: "USCIS" as const, meta: "hoy" },
@@ -198,7 +199,12 @@ export const DEMO_SIGNATURES = [
   { id: "s-4", case_id: "demo-c-006", client_name: "Vargas", case_type: "DS-260", agency: "NVC" as const, meta: "mañana" },
   { id: "s-5", case_id: "demo-c-012", client_name: "Pineda", case_type: "I-130 padre", agency: "USCIS" as const, meta: "en 2d" },
   { id: "s-6", case_id: "demo-c-013", client_name: "Salazar", case_type: "I-864 affidavit", agency: "NVC" as const, meta: "en 2d" },
-  { id: "s-7", case_id: "demo-c-014", client_name: "Méndez", case_type: "I-765", agency: "USCIS" as const, meta: "en 3d" },
+  { id: "s-7", case_id: "demo-c-014", client_name: "Méndez", case_type: "I-765 EAD", agency: "USCIS" as const, meta: "en 3d" },
+  { id: "s-8", case_id: "demo-c-023", client_name: "Ramos", case_type: "I-130 hermano", agency: "USCIS" as const, meta: "en 3d" },
+  { id: "s-9", case_id: "demo-c-024", client_name: "Quintero", case_type: "N-600 ciudadanía", agency: "USCIS" as const, meta: "en 4d" },
+  { id: "s-10", case_id: "demo-c-025", client_name: "Beltrán", case_type: "I-751 removal cond.", agency: "USCIS" as const, meta: "en 4d" },
+  { id: "s-11", case_id: "demo-c-026", client_name: "Fonseca", case_type: "DS-260", agency: "NVC" as const, meta: "en 5d" },
+  { id: "s-12", case_id: "demo-c-027", client_name: "Navarro", case_type: "I-130 + I-485 concur.", agency: "USCIS" as const, meta: "en 5d" },
 ];
 
 export const DEMO_REVIEWS = [
@@ -220,14 +226,16 @@ export const DEMO_CONSULTATIONS = [
   { id: "co-6", time: "17:00", client_name: "Soto", title: "estrategia EB-2" },
 ];
 
+// 8 entrevistas próximas (matchea briefing "8 entrevistas próximas")
 export const DEMO_INTERVIEWS = [
-  { case_id: "demo-c-008", client_name: "Cabrera", case_type: "CR-1", agency: "EMB" as const, date_label: "mié 14", location: "CDMX" },
-  { case_id: "demo-c-019", client_name: "Rivera", case_type: "biometrics", agency: "USCIS" as const, date_label: "jue 15", location: null },
-  { case_id: "demo-c-009", client_name: "Aguilar", case_type: "IR-2", agency: "EMB" as const, date_label: "jue 15", location: "Bogotá" },
-  { case_id: "demo-c-020", client_name: "Mora", case_type: "entrevista N-400", agency: "USCIS" as const, date_label: "vie 16", location: null },
-  { case_id: "demo-c-006", client_name: "Domínguez", case_type: "DS-260 review", agency: "NVC" as const, date_label: "vie 16", location: null },
-  { case_id: "demo-c-021", client_name: "Castro", case_type: "F2A", agency: "EMB" as const, date_label: "lun 19", location: "Guatemala" },
-  { case_id: "demo-c-022", client_name: "Solano", case_type: "I-485 interview", agency: "USCIS" as const, date_label: "mar 20", location: null },
+  { case_id: "demo-c-008", client_name: "Cabrera", case_type: "CR-1", agency: "EMB" as const, date_label: "mié 13", location: "CDMX" },
+  { case_id: "demo-c-019", client_name: "Rivera", case_type: "biometrics", agency: "USCIS" as const, date_label: "jue 14", location: null },
+  { case_id: "demo-c-009", client_name: "Aguilar", case_type: "IR-2", agency: "EMB" as const, date_label: "jue 14", location: "Bogotá" },
+  { case_id: "demo-c-020", client_name: "Mora", case_type: "entrevista N-400", agency: "USCIS" as const, date_label: "vie 15", location: null },
+  { case_id: "demo-c-006", client_name: "Domínguez", case_type: "DS-260 review", agency: "NVC" as const, date_label: "vie 15", location: null },
+  { case_id: "demo-c-021", client_name: "Castro", case_type: "F2A", agency: "EMB" as const, date_label: "lun 18", location: "Guatemala" },
+  { case_id: "demo-c-022", client_name: "Solano", case_type: "I-485 interview", agency: "USCIS" as const, date_label: "mar 19", location: null },
+  { case_id: "demo-c-028", client_name: "Páez", case_type: "asilo entrevista", agency: "USCIS" as const, date_label: "mié 20", location: null },
 ];
 
 export const DEMO_PULSE = {

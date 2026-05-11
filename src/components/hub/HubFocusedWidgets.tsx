@@ -7,7 +7,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   useDemoMode, DEMO_SIGNATURES, DEMO_REVIEWS, DEMO_CONSULTATIONS, DEMO_INTERVIEWS,
-  DEMO_PULSE, DEMO_CRISIS,
+  DEMO_PULSE, DEMO_CRISIS, DEMO_NEWS,
 } from "@/hooks/useDemoData";
 
 // Hub Focused Widgets — responde 4 preguntas del abogado de inmigración:
@@ -92,10 +92,14 @@ export default function HubFocusedWidgets({ accountId }: Props) {
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [consultations, setConsultations] = useState<ConsultationItem[]>([]);
   const [interviews, setInterviews] = useState<InterviewItem[]>([]);
-  const [pulse, setPulse] = useState({
+  const [pulse, setPulse] = useState<{
+    active: number; zombies: number; orphans: number; newLeads: number;
+    approvalRate: number; teamActive?: string; mrr?: string;
+  }>({
     active: 0, zombies: 0, orphans: 0, newLeads: 0, approvalRate: 0,
   });
   const [crisis, setCrisis] = useState<{ case_id: string; title: string; subtitle: string } | null>(null);
+  const [news, setNews] = useState<Array<{ source: "USCIS" | "NVC" | "Embajada" | "AI"; text: string }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -119,8 +123,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
         active: DEMO_PULSE.active_cases, zombies: DEMO_PULSE.zombies_30d,
         orphans: DEMO_PULSE.no_supervisor, newLeads: DEMO_PULSE.leads_today,
         approvalRate: DEMO_PULSE.approval_rate_30d,
+        teamActive: DEMO_PULSE.team_active,
+        mrr: "$48K",
       });
       setCrisis(DEMO_CRISIS);
+      setNews(DEMO_NEWS);
       setLoading(false);
       return;
     }
@@ -516,14 +523,43 @@ export default function HubFocusedWidgets({ accountId }: Props) {
         </Widget>
       </div>
 
-      {/* PULSE */}
-      <div className="flex items-center gap-6 px-4 py-2 bg-card/40 border border-border rounded-lg flex-wrap">
+      {/* PULSE — métricas completas del portfolio */}
+      <div className="flex items-center gap-5 px-4 py-2 bg-card/40 border border-border rounded-lg flex-wrap">
         <PulseMetric value={pulse.active} label="Casos activos" />
+        {pulse.zombies > 0 && <><PulseDivider /><PulseMetric value={pulse.zombies} label="Zombies +30d" valueColor="text-amber-400" /></>}
+        {pulse.orphans > 0 && <><PulseDivider /><PulseMetric value={pulse.orphans} label="Sin supervisor" valueColor="text-rose-400" /></>}
         <PulseDivider />
-        <PulseMetric value={pulse.newLeads} label="Leads nuevos hoy" valueColor="text-blue-400" />
+        <PulseMetric value={pulse.newLeads} label="Leads hoy" valueColor="text-blue-400" />
         <PulseDivider />
         <PulseMetric value={`${pulse.approvalRate}%`} label="Aprobación 30d" valueColor="text-emerald-400" />
+        {pulse.teamActive && (<><PulseDivider /><PulseMetric value={pulse.teamActive} label="Equipo activo" valueColor="text-emerald-400" /></>)}
+        {pulse.mrr && (<><PulseDivider /><PulseMetric value={pulse.mrr} label="MRR firma" /></>)}
       </div>
+
+      {/* NEWS TICKER — solo cuando hay items (demo o news scrape futuro) */}
+      {news.length > 0 && (
+        <div className="bg-card/40 border border-border rounded-lg px-4 py-2.5">
+          <div className="text-[9px] uppercase tracking-wider text-muted-foreground/70 font-semibold mb-1.5">
+            Novedades del día (últimas 24h)
+          </div>
+          <div className="space-y-1">
+            {news.map((n, i) => (
+              <div key={i} className="flex items-center gap-2 text-[11px]">
+                <span className={cn(
+                  "inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider min-w-[56px] text-center shrink-0",
+                  n.source === "USCIS" && "bg-blue-500/20 text-blue-300",
+                  n.source === "NVC" && "bg-amber-500/20 text-amber-300",
+                  n.source === "Embajada" && "bg-orange-500/20 text-orange-300",
+                  n.source === "AI" && "bg-purple-500/20 text-purple-300",
+                )}>
+                  {n.source === "AI" ? "Equipo IA" : n.source}
+                </span>
+                <span className="text-muted-foreground">{n.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
