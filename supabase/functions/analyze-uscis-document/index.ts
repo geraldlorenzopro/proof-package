@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkOrigin } from "../_shared/origin-allowlist.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -197,6 +198,17 @@ Si es Notice of Approval, I-797 o Transfer Notice:
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // SECURITY FIX 2026-05-10: bloquear abuso directo de LOVABLE_API_KEY
+  // por requests fuera de nuestros dominios (drena créditos pagados).
+  const originCheck = checkOrigin(req);
+  if (originCheck.blocked) {
+    console.warn("analyze-uscis-document: origin blocked", originCheck.origin);
+    return new Response(
+      JSON.stringify({ error: "forbidden", reason: originCheck.reason }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
   try {

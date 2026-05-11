@@ -556,13 +556,16 @@ export async function fillI765Pdf(data: I765Data) {
 
   // ── Part 5: Preparer ──
   if (data.preparerUsed) {
-    console.log("[i765] Part 5 preparer data:", {
-      street: data.preparerStreet,
-      city: data.preparerCity,
-      state: data.preparerState,
-      zip: data.preparerZip,
-      name: `${data.preparerFirstName} ${data.preparerLastName}`,
-    });
+    // SECURITY 2026-05-10: PII logging gated to DEV only (preparer name + address).
+    if (import.meta.env.DEV) {
+      console.log("[i765] Part 5 preparer data:", {
+        street: data.preparerStreet,
+        city: data.preparerCity,
+        state: data.preparerState,
+        zip: data.preparerZip,
+        name: `${data.preparerFirstName} ${data.preparerLastName}`,
+      });
+    }
     setText(form, P.pt5_family, data.preparerLastName);
     setText(form, P.pt5_given, data.preparerFirstName);
     setText(form, P.pt5_org, data.preparerOrg);
@@ -593,15 +596,14 @@ export async function fillI765Pdf(data: I765Data) {
   // ── Generate PDF417 barcode IMAGES and embed them on each page ──
   const allFields = form.getFields();
   const barcodeFields = allFields.filter(f => f.getName().toLowerCase().includes("barcode") || f.getName().includes("PDF417"));
-  console.log("[i765] Barcode fields found:", barcodeFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
 
-  // Also log Unit checkbox fields for debugging
-  const unitFields = allFields.filter(f => f.getName().includes("Unit"));
-  console.log("[i765] Unit fields found:", unitFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
-
-  // Also log SSN fields
-  const ssnFields = allFields.filter(f => f.getName().toLowerCase().includes("ssn") || f.getName().includes("12b"));
-  console.log("[i765] SSN fields found:", ssnFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
+  if (import.meta.env.DEV) {
+    console.log("[i765] Barcode fields found:", barcodeFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
+    const unitFields = allFields.filter(f => f.getName().includes("Unit"));
+    console.log("[i765] Unit fields found:", unitFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
+    const ssnFields = allFields.filter(f => f.getName().toLowerCase().includes("ssn") || f.getName().includes("12b"));
+    console.log("[i765] SSN fields found:", ssnFields.map(f => ({ name: f.getName(), type: f.constructor.name })));
+  }
 
 
   try {

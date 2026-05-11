@@ -929,6 +929,121 @@ podés hacer cleanup tranquilo + crear INDEX + drop trigger.
 
 ---
 
+## 2026-05-10 (noche) — Security audit completo: 3 CRÍTICOS + 8 ALTOS cerrados
+
+**Decisión:** ejecutar audit de seguridad full-repo y cerrar todos los hallazgos
+CRÍTICO + ALTO antes de seguir con features. Mr. Lorenzo: *"podrias ver si hay
+algun riesgo de seguridad en los codigos y documentos de este repo?"* → audit
+encontró 22 vulnerabilidades. Cerradas en sesión single-shot.
+
+**Quién decidió:** Mr. Lorenzo (instrucción autonomous: *"Hazlo todo tu y solo
+cuando me necsitres avisame, porque no puedas hscerlo pero tood tu continua"*).
+
+**Hallazgos y cierre:**
+
+**CRÍTICO #1 — Cross-account exploit en AI agents (commit 1122b52)**
+- `agent-felix`, `agent-nina`, `agent-max`, `check-credits` aceptaban `account_id`
+  desde body SIN verificar que el user logueado pertenezca a ese account.
+- Cualquier user autenticado podía drenar AI credits de OTRA firma o leer datos
+  de cualquier caso.
+- Fix: shared helper `_shared/auth-tenant.ts` con `verifyAccountMembership()`
+  aplicado a las 4 funciones.
+
+**CRÍTICO #2 — Webhooks GHL sin firma HMAC (commit e9c974d)**
+- `payment-confirmed`, `contract-signed`, `appointment-booked` aceptaban
+  cualquier POST público y mutaban DB (crear casos, asignar pagos, mandar emails).
+- Atacante con la URL podía simular "pago confirmado" o falsificar contratos.
+- Fix: shared helper `_shared/verify-ghl-webhook.ts` con constant-time HMAC
+  vs `GHL_WEBHOOK_SECRET`. Configurar en GHL workflows como header `x-webhook-secret`.
+
+**CRÍTICO #3 — Auto-login bypass en `generate-test-hub-link` (commit e9c974d)**
+- Cualquier user autenticado podía generar magic link de auto-login para
+  CUALQUIER firma (target dropdown sin gate).
+- Fix: requiere `platform_admins` membership.
+
+**MEDIO — Origin header phishing en `payment-confirmed` (commit e9c974d)**
+- Email "pago recibido" usaba `req.headers.get("origin")` como base del
+  portal link → phishing vector.
+- Fix: hardcoded `APP_URL` env var, default `https://ner.recursosmigratorios.com`.
+
+**MEDIO — Cross-tenant contamination en `appointment-booked` (commit e9c974d)**
+- Fallback "first active account" cuando no encontraba location_id match →
+  Mr Visa recibía citas de otras firmas.
+- Fix: returna 404 explícito en lugar de fallback.
+
+**ALTO #1 — `import-ghl-*` sin auth (commit f2ff837)**
+- `import-ghl-contacts`, `import-ghl-notes`, `import-ghl-tasks` aceptaban
+  POST anónimo → DoS contra GHL API + drena quota cliente.
+- Fix: Authorization + `verifyAccountMembership` aplicado.
+
+**ALTO #2 — Visibility writes sin gate (commit f2ff837)**
+- Migration `role_visibility_hierarchical` solo gateaba SELECT.
+- Paralegal podía INSERT/UPDATE record con `visibility='attorney_only'`
+  (técnicamente bypass de jerarquía).
+- Fix: helper `user_can_assign_visibility()` aplicado a INSERT/UPDATE/DELETE
+  policies de `case_notes`, `case_documents`, `case_tasks`, `ai_agent_sessions`.
+
+**ALTO #3 — `account_has_feature` sin tenancy (commit f2ff837)**
+- Function permitía consultar features de cualquier account_id.
+- Fix: tenancy check vía `account_members` OR `platform_admins`.
+
+**ALTO #4 — Abuso LOVABLE/ElevenLabs (commit pendiente)**
+- `analyze-uscis-document`, `translate-evidence`, `elevenlabs-conversation-token`
+  expuestos sin auth → drena créditos pagados.
+- Fix: shared `_shared/origin-allowlist.ts` (bloquea curl directo).
+  `elevenlabs-conversation-token` además requiere user auth (es para hub
+  autenticado, no público).
+
+**ALTO #5 — `push-*-to-ghl` sin auth (commit pendiente)**
+- `push-contact-to-ghl`, `push-task-to-ghl`, `push-note-to-ghl` permitían
+  pushear data spam al GHL de cualquier firma.
+- Fix: Authorization + `verifyAccountMembership`.
+
+**ALTO #6 — XSS en email templates (commit pendiente)**
+- Templates en `send-email/index.ts` interpolaban `firm_name`, `client_name`,
+  `attorney_name`, etc. en HTML sin escape.
+- Fix: helpers `escapeHtml()` + `safeUrl()` + `sanitizeVars()` aplicados al
+  pipeline `templateFn(sanitizeVars(vars))`. Documents array también escapado.
+
+**MEDIO — PII en console.log (`i765FormFiller.ts`) (commit pendiente)**
+- Logs de preparer name + address visibles en browser console en producción.
+- Fix: wrapped en `if (import.meta.env.DEV)`.
+
+**Quedó como TODO operacional (NO código):**
+- `.env` está tracked en git (Mr. Lorenzo rotó las API keys → secrets ya inválidos).
+  Acción pendiente: `git rm --cached .env` + agregar a `.gitignore`. Ejecutará
+  Mr. Lorenzo cuando confirme que no rompe Lovable.
+- Hardcoded admin email en migration histórica: dejar como está (es el seed
+  inicial, no se ejecuta de nuevo).
+
+**Lecciones operacionales:**
+
+1. **Shared helpers son la diferencia.** Crear `_shared/auth-tenant.ts`,
+   `_shared/verify-ghl-webhook.ts`, `_shared/origin-allowlist.ts` ahorró
+   ~300 líneas de código duplicado y garantiza que el patrón sea consistente.
+   Cualquier edge function nueva DEBE usar estos helpers.
+
+2. **`verify_jwt = false` en `config.toml` requiere validación manual en
+   función.** Supabase NO valida el JWT, hay que hacer `supabaseUser.auth.getUser()`
+   adentro. La ausencia de este check fue la causa raíz de TODOS los CRÍTICOS.
+
+3. **Webhooks públicos requieren HMAC con constant-time compare.** Header
+   secret + `crypto.timingSafeEqual` es el patrón mínimo. Sin esto, cualquier
+   POST público es exploitable.
+
+4. **Multi-tenant requiere doble check.** Auth (¿es user válido?) + Tenancy
+   (¿pertenece al account que está pidiendo?). Olvidar el segundo es lo que
+   convirtió varios "ALTOS" en "CRÍTICOS".
+
+5. **Deploy gap aplica también a security fixes.** Los fixes están en repo
+   pero NO en producción hasta que Mr. Lorenzo haga "Save and deploy" en
+   Supabase dashboard por cada función. **Esto es bloqueante.**
+
+**Implicación inmediata:** Mr. Lorenzo debe deployar manualmente ~12 edge
+functions. Documentado en `session_summary_2026-05-10.md` (memory iCloud).
+
+---
+
 ## Plantilla para nueva decisión
 
 ```markdown

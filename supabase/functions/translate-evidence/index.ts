@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { checkOrigin } from "../_shared/origin-allowlist.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +14,16 @@ const MAX_TOTAL_LENGTH = 10000;
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // SECURITY FIX 2026-05-10: Origin allowlist contra abuso LOVABLE_API_KEY.
+  const originCheck = checkOrigin(req);
+  if (originCheck.blocked) {
+    console.warn("translate-evidence: origin blocked", originCheck.origin);
+    return new Response(
+      JSON.stringify({ translated: {}, error: 'forbidden', reason: originCheck.reason }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {

@@ -182,7 +182,44 @@ export function usePermissions(accountIdOverride?: string | null) {
 
   const isOwner = role === "owner" || role === "admin";
 
-  return { role, permissions, can, isOwner, isLoading, accountId };
+  // Hierarchical visibility — espejo de user_can_view_visibility() en SQL.
+  // Útil cuando el frontend necesita saber si mostrar UI controls (ej:
+  // dropdown visibility en creación de notas) sin esperar al RLS check.
+  function canViewVisibility(visibility: VisibilityLevel | string | null): boolean {
+    if (!visibility || visibility === "team") return true;
+    if (visibility === "attorney_only") {
+      return role === "owner" || role === "admin" || role === "attorney";
+    }
+    if (visibility === "admin_only") {
+      return role === "owner" || role === "admin";
+    }
+    return false;
+  }
+
+  // Niveles de visibility que el user puede ASIGNAR al crear contenido.
+  // Un paralegal puede crear notas team (no las propias attorney_only).
+  function assignableVisibilityLevels(): VisibilityLevel[] {
+    if (role === "owner" || role === "admin") {
+      return ["team", "attorney_only", "admin_only"];
+    }
+    if (role === "attorney") {
+      return ["team", "attorney_only"];
+    }
+    return ["team"];
+  }
+
+  return {
+    role,
+    permissions,
+    can,
+    canViewVisibility,
+    assignableVisibilityLevels,
+    isOwner,
+    isLoading,
+    accountId,
+  };
 }
+
+export type VisibilityLevel = "team" | "attorney_only" | "admin_only";
 
 export { DEFAULT_PERMISSIONS };

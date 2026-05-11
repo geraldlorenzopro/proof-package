@@ -1,6 +1,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getGHLConfig } from "../_shared/ghl.ts";
+import { verifyAccountMembership } from "../_shared/auth-tenant.ts";
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_VERSION = "2021-07-28";
@@ -14,6 +15,33 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ error: "Method not allowed" }),
       { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  // SECURITY FIX 2026-05-10: requerir auth + membership. Sin esto, atacante
+  // puede pushear contactos spam al GHL de cualquier firma (drena quota +
+  // contamina CRM cliente).
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+  const supabaseUser = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: { user } } = await supabaseUser.auth.getUser();
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -32,6 +60,21 @@ Deno.serve(async (req) => {
       intake_session_id,
       account_id,
     } = body;
+
+    if (!account_id) {
+      return new Response(
+        JSON.stringify({ error: "account_id required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const isMember = await verifyAccountMembership(supabaseAdmin, user.id, account_id);
+    if (!isMember) {
+      return new Response(
+        JSON.stringify({ error: "forbidden", reason: "not_member_of_account" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Auto-fetch profile data if only client_profile_id is provided (sync-on-edit flow)
     if (client_profile_id && !first_name && !last_name && !email && !phone) {

@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://esm.sh/zod@3.25.76";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { checkOrigin } from "../_shared/origin-allowlist.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,6 +66,29 @@ async function callElevenLabs(url: string, apiKey: string) {
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // SECURITY FIX 2026-05-10: Camila voice token consume créditos ElevenLabs.
+  // Capa 1: Origin allowlist (bloquea curl directo).
+  const originCheck = checkOrigin(req);
+  if (originCheck.blocked) {
+    console.warn("elevenlabs-conversation-token: origin blocked", originCheck.origin);
+    return jsonResponse({ ok: false, error: "forbidden", reason: originCheck.reason }, 403);
+  }
+
+  // Capa 2: requerir usuario autenticado (Camila es para paralegales en /hub).
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return jsonResponse({ ok: false, error: "unauthorized" }, 401);
+  }
+  const supabaseUser = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: { user } } = await supabaseUser.auth.getUser();
+  if (!user) {
+    return jsonResponse({ ok: false, error: "unauthorized" }, 401);
   }
 
   try {

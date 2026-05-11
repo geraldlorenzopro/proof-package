@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getGHLConfig } from "../_shared/ghl.ts";
+import { verifyAccountMembership } from "../_shared/auth-tenant.ts";
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_VERSION = "2021-07-28";
@@ -8,6 +9,32 @@ const GHL_VERSION = "2021-07-28";
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // SECURITY FIX 2026-05-10: requerir auth + membership (sin esto atacante
+  // puede pushear tasks spam a GHL de cualquier firma).
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+  const supabaseUser = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: { user } } = await supabaseUser.auth.getUser();
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
   try {
@@ -21,6 +48,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    const isMember = await verifyAccountMembership(admin, user.id, account_id);
+    if (!isMember) {
+      return new Response(
+        JSON.stringify({ error: "forbidden", reason: "not_member_of_account" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const ghlConfig = await getGHLConfig(account_id);
     if (!ghlConfig) {
       return new Response(
@@ -30,11 +65,6 @@ Deno.serve(async (req) => {
     }
 
     const { apiKey } = ghlConfig;
-
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // GHL expects dueDate as full ISO-8601 datetime string
     let dueDateISO: string;

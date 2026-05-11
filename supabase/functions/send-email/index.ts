@@ -7,6 +7,60 @@ const ghlApiKey = Deno.env.get("GHL_API_KEY");
 
 const supabase = createClient(supabaseUrl, serviceKey);
 
+// SECURITY FIX 2026-05-10: escape HTML en TODAS las interpolaciones de variables
+// hacia templates (firm_name, client_name, attorney_name, update_message, etc.)
+// para evitar XSS persistente vía email — attorney malicioso o cliente con HTML
+// inyectado en su nombre podría triggerear scripts en clientes del bufete.
+function escapeHtml(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  const str = String(value);
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// SECURITY: sanitize URLs — solo permitir https:, http:, mailto:, tel:, # (placeholder).
+// Bloquea javascript:, data:, vbscript: que ejecutan código en clients que renderizan emails.
+function safeUrl(value: unknown): string {
+  if (!value) return "#";
+  const str = String(value).trim();
+  if (str === "#") return "#";
+  const lower = str.toLowerCase();
+  if (
+    lower.startsWith("https://") ||
+    lower.startsWith("http://") ||
+    lower.startsWith("mailto:") ||
+    lower.startsWith("tel:") ||
+    lower.startsWith("/")
+  ) {
+    return escapeHtml(str);
+  }
+  return "#";
+}
+
+// Sanitizer de objeto: aplica escapeHtml a todos los strings (no profundo).
+// Mantiene arrays/objects intactos para handling especial en cada template.
+function sanitizeVars(v: any): any {
+  if (!v || typeof v !== "object") return v;
+  const out: Record<string, any> = {};
+  for (const [k, val] of Object.entries(v)) {
+    if (typeof val === "string") {
+      // URLs reciben safeUrl; resto escapeHtml
+      if (/_(link|url)$/i.test(k)) {
+        out[k] = safeUrl(val);
+      } else {
+        out[k] = escapeHtml(val);
+      }
+    } else {
+      out[k] = val;
+    }
+  }
+  return out;
+}
+
 // ── Template definitions ──
 interface TemplateResult { subject: string; html: string; }
 
@@ -87,7 +141,7 @@ function questionnaireES(v: any): TemplateResult {
 
 function documentChecklistES(v: any): TemplateResult {
   const docs = (v.documents || []) as string[];
-  const docList = docs.map((d: string) => `<li style="margin:4px 0;font-size:14px;color:#475569">${d}</li>`).join("");
+  const docList = docs.map((d: string) => `<li style="margin:4px 0;font-size:14px;color:#475569">${escapeHtml(d)}</li>`).join("");
   return {
     subject: `Documentos requeridos — Exp. ${v.file_number || ""}`,
     html: baseLayout(v, `
@@ -211,7 +265,7 @@ function questionnaireEN(v: any): TemplateResult {
 
 function documentChecklistEN(v: any): TemplateResult {
   const docs = (v.documents || []) as string[];
-  const docList = docs.map((d: string) => `<li style="margin:4px 0;font-size:14px;color:#475569">${d}</li>`).join("");
+  const docList = docs.map((d: string) => `<li style="margin:4px 0;font-size:14px;color:#475569">${escapeHtml(d)}</li>`).join("");
   return {
     subject: `Documents required — Case ${v.file_number || ""}`,
     html: baseLayout(v, `
@@ -381,7 +435,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: `Unknown template: ${template_type}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { subject, html } = templateFn(vars);
+    // SECURITY 2026-05-10: sanitize ALL string vars antes de pasarlas al template.
+    // documents (array) se sanitiza dentro de cada template ES/EN.
+    const { subject, html } = templateFn(sanitizeVars(vars));
 
     // 3. Get case file_number if case_id provided
     let fileNumber = variables.file_number || null;
