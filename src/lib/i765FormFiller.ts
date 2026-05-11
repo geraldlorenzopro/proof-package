@@ -9,7 +9,10 @@ import { buildPageData } from "@/lib/i765Barcode";
  * Field names follow the pattern: form1[0].PageN[0].SemanticName[idx]<random_hash>
  * We match fields using regex on the semantic prefix, ignoring the hash suffix.
  */
-const TEMPLATE_PDF_URL = "/forms/Gerald_L_s_I-765.pdf";
+// PDF blank oficial USCIS Form I-765 edition 08/21/25, con AcroForm intacto.
+// Descargado de uscis.gov. Si USCIS publica nueva edition, reemplazar este file
+// y actualizar form_version en SmartFormPage.tsx + agent-felix prompt.
+const TEMPLATE_PDF_URL = "/forms/i-765-template.pdf";
 
 // ─── Helpers ──────────────────────────────────────────────────────
 

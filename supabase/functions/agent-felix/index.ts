@@ -85,8 +85,57 @@ serve(async (req) => {
     const lang = language || officeConfig?.preferred_language || "es";
     const firmName = officeConfig?.firm_name || "La firma";
 
+    // Schema esperado por form_type. El frontend mapea estos keys → estructura UI.
+    // Si el form_type no está aquí, Felix usa keys descriptivos genéricos.
+    const FORM_SCHEMAS: Record<string, { keys: string[]; notes: string }> = {
+      "i-765": {
+        keys: [
+          // Personal
+          "lastName", "firstName", "middleName",
+          "aNumber", "uscisAccountNumber", "ssn",
+          "sex", "maritalStatus", "previouslyFiled",
+          "dateOfBirth", "cityOfBirth", "stateOfBirth", "countryOfBirth",
+          "countryOfCitizenship1", "countryOfCitizenship2",
+          // Mailing address
+          "mailingCareOf", "mailingStreet", "mailingApt", "mailingAptType",
+          "mailingCity", "mailingState", "mailingZip",
+          // Physical
+          "sameAddress", "physicalStreet", "physicalApt", "physicalAptType",
+          "physicalCity", "physicalState", "physicalZip",
+          // Arrival
+          "i94Number", "passportNumber", "travelDocNumber",
+          "passportCountry", "passportExpiration",
+          "lastArrivalDate", "lastArrivalPlace", "statusAtArrival", "currentStatus", "sevisNumber",
+          // Eligibility
+          "eligibilityCategory", "eligibilityCategorySpecific",
+          "h1bReceiptNumber", "c8EverArrested", "i140ReceiptNumber", "c35EverArrested",
+          // Reason
+          "reasonForApplying",
+          // Contact
+          "applicantPhone", "applicantMobile", "applicantEmail",
+          // Statements
+          "applicantCanReadEnglish", "interpreterUsed", "preparerUsed",
+        ],
+        notes: `eligibilityCategory: usar codes oficiales como "(c)(9)" para pending adjustment, "(a)(5)" para asylee, etc.
+reasonForApplying: solo "initial", "replacement" o "renewal".
+sex: solo "male" o "female".
+maritalStatus: "single", "married", "divorced" o "widowed".
+dateOfBirth y passportExpiration: formato YYYY-MM-DD.
+sameAddress: boolean true si physical = mailing.`,
+      },
+    };
+
+    const formSchema = FORM_SCHEMAS[form_type.toLowerCase()] || { keys: [], notes: "" };
+
     const systemPrompt = `Eres Felix, especialista en formularios de inmigración de Estados Unidos que trabaja para ${firmName}.
 Tu trabajo es extraer datos del expediente y mapearlos a los campos del formulario ${form_type}.
+
+ESQUEMA EXACTO DEL FORMULARIO ${form_type.toUpperCase()}:
+Usa EXACTAMENTE estos keys en camelCase cuando llenes "field" en el JSON:
+${formSchema.keys.length > 0 ? formSchema.keys.join(", ") : "(usar keys descriptivos)"}
+
+REGLAS DE VALORES:
+${formSchema.notes || "(sin reglas específicas)"}
 
 REGLAS CRÍTICAS:
 - Solo llena campos con datos que EXISTEN en el expediente

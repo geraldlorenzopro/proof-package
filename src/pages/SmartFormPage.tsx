@@ -7,6 +7,7 @@ import I765Wizard from "@/components/smartforms/I765Wizard";
 import { I765Data } from "@/components/smartforms/i765Schema";
 import { generateI765Pdf } from "@/lib/i765PdfGenerator";
 import { fillI765Pdf, discoverI765Fields } from "@/lib/i765FormFiller";
+import { mapFelixOutputToI765Data } from "@/lib/i765FelixMapper";
 import { useSmartFormsContext } from "@/components/smartforms/SmartFormsContext";
 
 export default function SmartFormPage() {
@@ -263,29 +264,28 @@ export default function SmartFormPage() {
 
       const output = result.output || {};
       const completion = output.completion_percentage || 0;
-      const missing = (output.missing_fields || []).length;
-      const warnings = (output.warnings || []).length;
 
-      // Mapping naive Felix → I765Data: por ahora extraemos solo campos top-level
-      // que coinciden por nombre. Sprint próximo: mapping completo parts→sections.
-      const merged: Partial<I765Data> = { ...initialData };
-      Object.values(output.parts || {}).forEach((part: any) => {
-        (part?.fields || []).forEach((f: any) => {
-          if (f.status === "completed" && f.value && f.field) {
-            // Match por nombre exacto en I765Data (camelCase) — best effort
-            const key = f.field as keyof I765Data;
-            if (key in merged || typeof merged === "object") {
-              (merged as any)[key] = f.value;
-            }
-          }
-        });
-      });
+      // Mapper defensivo Felix output → I765Data (acepta variantes de naming,
+      // normaliza enums, ignora placeholders [FALTA]/[VERIFICAR]).
+      const mapped = mapFelixOutputToI765Data(output);
+      const merged: Partial<I765Data> = { ...initialData, ...mapped.data };
       setInitialData(merged);
 
+      const missingCount = mapped.missing.length;
+      const warningsCount = mapped.warnings.length;
+      const ignoredCount = mapped.ignored.length;
+
+      console.log("[Felix] Applied:", mapped.applied, "Ignored:", mapped.ignored, "Missing:", mapped.missing);
+
       toast({
-        title: `✨ Felix completó ${completion}%`,
-        description: `${missing} campos faltantes · ${warnings} advertencias. Revisa el formulario y completa lo que falta.`,
-        duration: 6000,
+        title: `✨ Felix completó ${completion}% · ${mapped.applied} campos aplicados`,
+        description: [
+          missingCount > 0 ? `${missingCount} faltantes` : null,
+          warningsCount > 0 ? `${warningsCount} advertencias` : null,
+          ignoredCount > 0 ? `${ignoredCount} fields no reconocidos (revisar consola)` : null,
+          mapped.felix_note || "Revisa el formulario y completa lo que falta.",
+        ].filter(Boolean).join(" · "),
+        duration: 7000,
       });
     } catch (err: any) {
       toast({ title: "Error con Felix", description: err.message, variant: "destructive" });
