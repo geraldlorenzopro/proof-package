@@ -21,18 +21,21 @@ const NAV_ITEMS: Array<{
   icon: any; label: string; path: string;
   match: (p: string) => boolean;
   badgeKey?: "cases" | "leads" | "consultations" | "forms";
+  // demoSupported = item tiene data demo. Si false, se oculta del sidebar
+  // cuando demoMode=true (evita pantallas vacías). En modo real, todos visibles.
+  demoSupported?: boolean;
 }> = [
-  { icon: Home, label: "Inicio", path: "/hub", match: (p: string) => p === "/hub" },
-  { icon: UserSearch, label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads" },
-  { icon: Users, label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients") },
-  { icon: MessageSquare, label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations" },
-  { icon: FolderOpen, label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases" },
-  { icon: FileText, label: "Forms", path: "/hub/formularios", match: (p: string) => p.startsWith("/hub/formularios"), badgeKey: "forms" },
-  { icon: Calendar, label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda" },
-  { icon: BarChart3, label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence" },
-  { icon: Bot, label: "Equipo AI", path: "/hub/ai", match: (p: string) => p === "/hub/ai" },
-  { icon: Settings, label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings") },
-  { icon: ClipboardList, label: "Audit Logs", path: "/hub/audit", match: (p: string) => p === "/hub/audit" },
+  { icon: Home, label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", demoSupported: true },
+  { icon: UserSearch, label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", demoSupported: false },
+  { icon: Users, label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), demoSupported: false },
+  { icon: MessageSquare, label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", demoSupported: false },
+  { icon: FolderOpen, label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", demoSupported: true },
+  { icon: FileText, label: "Forms", path: "/hub/formularios", match: (p: string) => p.startsWith("/hub/formularios"), badgeKey: "forms", demoSupported: true },
+  { icon: Calendar, label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", demoSupported: false },
+  { icon: BarChart3, label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", demoSupported: false },
+  { icon: Bot, label: "Equipo AI", path: "/hub/ai", match: (p: string) => p === "/hub/ai", demoSupported: false },
+  { icon: Settings, label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings"), demoSupported: true },
+  { icon: ClipboardList, label: "Audit Logs", path: "/hub/audit", match: (p: string) => p === "/hub/audit", demoSupported: false },
 ];
 
 const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 hours
@@ -135,9 +138,9 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
               <span className="text-jarvis font-display font-extrabold text-sm">N</span>
             </div>
 
-            {/* Nav items */}
+            {/* Nav items — en demo, solo los items con demoSupported=true (evita pantallas vacías) */}
             <div className="flex flex-col items-center gap-0.5">
-              {NAV_ITEMS.map((item) => {
+              {NAV_ITEMS.filter(item => !demoMode || item.demoSupported).map((item) => {
                 const isActive = item.match(currentPath);
                 const badge = item.badgeKey && demoMode ? DEMO_SIDEBAR_BADGES[item.badgeKey] : null;
                 return (

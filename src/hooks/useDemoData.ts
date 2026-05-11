@@ -25,13 +25,16 @@ export function useDemoMode(): boolean {
   const location = useLocation();
   return useMemo(() => {
     if (typeof window === "undefined") return false;
-    // 1. Query param
+    // 1. Query param activo en URL — fuente de verdad principal
     const params = new URLSearchParams(location.search);
     if (params.get("demo") === "true") {
       try { sessionStorage.setItem("ner_demo_mode", "1"); } catch {}
       return true;
     }
-    // 2. Persistido en sessionStorage para que sobreviva navegación dentro del hub
+    // 2. Persistido en sessionStorage SOLO si NO hay query param explícito en otra parte.
+    //    Permite navegación dentro del hub (ej: /hub → /hub/cases) sin perder demo,
+    //    pero NO contamina si el user abre `/hub` limpio en nueva pestaña.
+    //    SessionStorage es per-tab por diseño, así que esto es safe.
     try {
       return sessionStorage.getItem("ner_demo_mode") === "1";
     } catch { return false; }
@@ -39,7 +42,19 @@ export function useDemoMode(): boolean {
 }
 
 export function exitDemoMode() {
-  try { sessionStorage.removeItem("ner_demo_mode"); } catch {}
+  // Limpieza COMPLETA — evita que demo contamine sesión real del usuario.
+  // Cualquier cache que tenga `account_id="demo-account-mendez"` o estado
+  // visual del demo (vista kanban/tabla guardada) debe borrarse.
+  try {
+    sessionStorage.removeItem("ner_demo_mode");
+    sessionStorage.removeItem("ner_hub_data");        // HubData cached con account_id fake
+    sessionStorage.removeItem("ner_active_account_id"); // pinning de account
+    sessionStorage.removeItem("ner_splash_seen");     // demo no debería marcar splash visto
+    // localStorage — preferencias del demo no contaminan real
+    localStorage.removeItem("ner_cases_view");        // toggle Tabla/Kanban guardado
+    localStorage.removeItem("camila_voice_modal_seen"); // onboarding voice
+  } catch {}
+  // Navegación dura (no SPA) para garantizar reset de TODO state in-memory
   window.location.href = "/hub";
 }
 
