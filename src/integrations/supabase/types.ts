@@ -53,6 +53,48 @@ export type Database = {
           },
         ]
       }
+      account_feature_overrides: {
+        Row: {
+          account_id: string
+          enabled: boolean
+          enabled_at: string | null
+          enabled_by: string | null
+          feature_slug: string
+          notes: string | null
+        }
+        Insert: {
+          account_id: string
+          enabled: boolean
+          enabled_at?: string | null
+          enabled_by?: string | null
+          feature_slug: string
+          notes?: string | null
+        }
+        Update: {
+          account_id?: string
+          enabled?: boolean
+          enabled_at?: string | null
+          enabled_by?: string | null
+          feature_slug?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_feature_overrides_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_feature_overrides_feature_slug_fkey"
+            columns: ["feature_slug"]
+            isOneToOne: false
+            referencedRelation: "feature_flags"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       account_members: {
         Row: {
           account_id: string
@@ -168,6 +210,7 @@ export type Database = {
           status: string | null
           tokens_used: number | null
           triggered_by: string
+          visibility: string
         }
         Insert: {
           account_id: string
@@ -186,6 +229,7 @@ export type Database = {
           status?: string | null
           tokens_used?: number | null
           triggered_by: string
+          visibility?: string
         }
         Update: {
           account_id?: string
@@ -204,6 +248,7 @@ export type Database = {
           status?: string | null
           tokens_used?: number | null
           triggered_by?: string
+          visibility?: string
         }
         Relationships: [
           {
@@ -805,6 +850,7 @@ export type Database = {
           id: string
           uploaded_by: string
           uploaded_by_name: string | null
+          visibility: string
         }
         Insert: {
           account_id: string
@@ -818,6 +864,7 @@ export type Database = {
           id?: string
           uploaded_by: string
           uploaded_by_name?: string | null
+          visibility?: string
         }
         Update: {
           account_id?: string
@@ -831,6 +878,7 @@ export type Database = {
           id?: string
           uploaded_by?: string
           uploaded_by_name?: string | null
+          visibility?: string
         }
         Relationships: [
           {
@@ -927,6 +975,7 @@ export type Database = {
           id: string
           is_pinned: boolean
           note_type: string
+          visibility: string
         }
         Insert: {
           account_id: string
@@ -939,6 +988,7 @@ export type Database = {
           id?: string
           is_pinned?: boolean
           note_type?: string
+          visibility?: string
         }
         Update: {
           account_id?: string
@@ -951,6 +1001,7 @@ export type Database = {
           id?: string
           is_pinned?: boolean
           note_type?: string
+          visibility?: string
         }
         Relationships: [
           {
@@ -1192,6 +1243,7 @@ export type Database = {
           status: string
           title: string
           updated_at: string
+          visibility: string
         }
         Insert: {
           account_id: string
@@ -1213,6 +1265,7 @@ export type Database = {
           status?: string
           title: string
           updated_at?: string
+          visibility?: string
         }
         Update: {
           account_id?: string
@@ -1234,6 +1287,7 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
@@ -1987,6 +2041,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feature_flags: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          default_for_new_firms: boolean | null
+          description: string | null
+          name: string
+          phase: number | null
+          required_tier: string
+          slug: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          default_for_new_firms?: boolean | null
+          description?: string | null
+          name: string
+          phase?: number | null
+          required_tier?: string
+          slug: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          default_for_new_firms?: boolean | null
+          description?: string | null
+          name?: string
+          phase?: number | null
+          required_tier?: string
+          slug?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       form_field_mappings: {
         Row: {
@@ -2982,6 +3075,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      account_has_feature: {
+        Args: { p_account_id: string; p_feature_slug: string }
+        Returns: boolean
+      }
       acquire_app_seat: {
         Args: { _app_slug: string; _user_id: string }
         Returns: Json
@@ -3116,6 +3213,10 @@ export type Database = {
       }
       get_usage_stats: { Args: { _days?: number }; Returns: Json }
       get_user_role: { Args: { p_account_id: string }; Returns: string }
+      get_user_role_in_account: {
+        Args: { p_account_id: string; p_user_id: string }
+        Returns: string
+      }
       get_visa_eval_by_token: {
         Args: { _token: string }
         Returns: {
@@ -3192,6 +3293,14 @@ export type Database = {
         Returns: undefined
       }
       user_account_id: { Args: { _user_id: string }; Returns: string }
+      user_can_assign_visibility: {
+        Args: { p_account_id: string; p_user_id: string; p_visibility: string }
+        Returns: boolean
+      }
+      user_can_view_visibility: {
+        Args: { p_account_id: string; p_user_id: string; p_visibility: string }
+        Returns: boolean
+      }
     }
     Enums: {
       account_role:
