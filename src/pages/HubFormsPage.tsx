@@ -215,7 +215,7 @@ export default function HubFormsPage() {
             </div>
             {allForms.length === 0 && !demoMode && (
               <button
-                onClick={() => navigate("/smart-forms")}
+                onClick={() => navigate("/dashboard/smart-forms")}
                 className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3.5 py-1.5 rounded bg-jarvis hover:bg-jarvis/90 text-white"
               >
                 <Sparkles className="w-3.5 h-3.5" />
