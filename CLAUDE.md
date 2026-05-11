@@ -627,6 +627,42 @@ Si todos ✅ → proceder con confianza.
 **Excepciones:** los checks 1, 4, 8, 9 son no-negociables. Los demás pueden
 documentarse como excepción en `decisions.md` con TODO de resolver en N días.
 
+## Protocolo: Deploy híbrido (decidido 2026-05-11)
+
+Para minimizar Lovable credits sin perder velocidad de UX building, deploys
+se reparten por dominio:
+
+| Tipo de cambio | Quién | Costo Lovable |
+|---|---|---|
+| Edge functions (nuevas/modificadas) | Claude Code via `supabase functions deploy` | $0 |
+| Migrations / SQL changes | Claude Code via CLI o SQL editor | $0 |
+| Bug fixes / security en backend | Claude Code via CLI | $0 |
+| Frontend nuevo / UI components | Lovable chat | Credits |
+| Refactor visual / design tweaks | Lovable chat | Credits |
+
+**Las 3 reglas anti-conflicto (NO romper):**
+
+1. **Commit ANTES de deploy.** Claude SIEMPRE pushea a GitHub antes de
+   `supabase functions deploy`. Sin esto, Lovable la próxima vez leería
+   código stale y sobreescribiría.
+
+2. **Pull ANTES de tocar.** Antes de modificar una edge function, Claude
+   ejecuta `git pull origin main` para asegurar que tiene los últimos
+   cambios de Lovable (si los hizo).
+
+3. **Edge functions/migrations = territorio Claude, NO Lovable.** Mr.
+   Lorenzo NO le pide a Lovable que modifique edge functions ni que aplique
+   migrations. Si necesita cambio backend, se lo pide a Claude. Lovable
+   solo frontend/UI. Previene que Lovable sobreescriba security logic
+   sin saberlo.
+
+**Rollback safety net:** Supabase dashboard → Edge Functions → función →
+tab "Deployments" → click "Rollback" en la versión previa. 5 segundos.
+
+**Setup CLI (pending — install bloqueado por permission system):** ver
+memoria `feedback_deploy_workflow.md` para 3 opciones de install + flujo
+del Personal Access Token.
+
 ## Next concrete action
 
 Ver `.ai/master/state.md` sección "Sprint 1" para los 3 botones GHL —
