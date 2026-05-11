@@ -66,9 +66,6 @@ export default function CaseKanban({ columns, staffNames }: Props) {
         })}
       </div>
 
-      <p className="text-[10px] text-muted-foreground/40 text-center italic">
-        Próximamente: ICE · Corte · CBP · Aeropuerto
-      </p>
     </div>
   );
 }
