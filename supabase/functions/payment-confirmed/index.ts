@@ -1,4 +1,5 @@
 import { corsHeaders } from "../_shared/cors.ts";
+import { verifyGhlWebhook } from "../_shared/verify-ghl-webhook.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -15,6 +16,18 @@ const DEFAULT_DOCS = ["Pasaporte", "Acta de nacimiento", "Evidencia de estatus m
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // SECURITY FIX 2026-05-10: webhook GHL debe llevar x-webhook-secret válido.
+  // Sin esto, atacante con location_id (semi-público) podía disparar payment-confirmed
+  // contra cualquier firma y activar casos falsos + emails a clientes reales.
+  // Audit hallazgo crítico #2.
+  const webhookCheck = verifyGhlWebhook(req);
+  if (!webhookCheck.valid) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized_webhook", reason: webhookCheck.reason }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 
   try {
     const body = await req.json();
@@ -106,7 +119,10 @@ Deno.serve(async (req) => {
     const fileNumber = caseData?.file_number;
     const caseType = caseData?.case_type || "general";
     const documents = DOCS_BY_TYPE[caseType] || DEFAULT_DOCS;
-    const portalLink = caseData?.access_token ? `${req.headers.get("origin") || "https://proof-package.lovable.app"}/case-track/${caseData.access_token}` : "#";
+    // SECURITY FIX 2026-05-10: hardcoded app URL en lugar de req.headers.get("origin")
+    // (controlable por atacante para phishing vector en emails). Audit hallazgo medio.
+    const APP_URL = Deno.env.get("APP_URL") || "https://ner.recursosmigratorios.com";
+    const portalLink = caseData?.access_token ? `${APP_URL}/case-track/${caseData.access_token}` : "#";
 
     // 6. Send emails in parallel
     const sendEmail = (template_type: string, variables: any) =>

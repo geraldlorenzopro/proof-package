@@ -1,19 +1,30 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { verifyGhlWebhook } from "../_shared/verify-ghl-webhook.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-webhook-secret",
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  // Health check
+  // Health check (sin auth — solo lectura de status)
   if (req.method === "GET") {
     return new Response(JSON.stringify({ status: "ok", function: "appointment-booked" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  }
+
+  // SECURITY FIX 2026-05-10: webhook GHL debe llevar x-webhook-secret válido.
+  // Audit hallazgo crítico #2.
+  const webhookCheck = verifyGhlWebhook(req);
+  if (!webhookCheck.valid) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized_webhook", reason: webhookCheck.reason }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
   try {
@@ -49,22 +60,14 @@ serve(async (req) => {
       accountId = account?.id || null;
     }
 
-    // Fallback: first active account
+    // SECURITY FIX 2026-05-10: removed "fallback a primera cuenta activa"
+    // que contaminaba Mr Visa con citas de webhooks sin location_id válido.
+    // Audit hallazgo medio. Si no se resuelve account, 404 explícito.
     if (!accountId) {
-      const { data: fallback } = await adminClient
-        .from("ner_accounts")
-        .select("id")
-        .eq("is_active", true)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .single();
-      accountId = fallback?.id || null;
-    }
-
-    if (!accountId) {
-      return new Response(JSON.stringify({ error: "No active account found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "account_not_found", reason: "no_matching_location_id" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Parse name into first/last

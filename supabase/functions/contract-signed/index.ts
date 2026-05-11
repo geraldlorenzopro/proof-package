@@ -1,4 +1,5 @@
 import { corsHeaders } from "../_shared/cors.ts";
+import { verifyGhlWebhook } from "../_shared/verify-ghl-webhook.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -7,6 +8,16 @@ const supabase = createClient(supabaseUrl, serviceKey);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // SECURITY FIX 2026-05-10: webhook GHL debe llevar x-webhook-secret válido.
+  // Audit hallazgo crítico #2.
+  const webhookCheck = verifyGhlWebhook(req);
+  if (!webhookCheck.valid) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized_webhook", reason: webhookCheck.reason }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 
   try {
     const body = await req.json();
