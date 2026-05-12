@@ -1,8 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import type { I765Step } from "./i765Schema";
-
 interface WizardNav {
-  steps: I765Step[];
+  steps: string[];
   currentStep: number;
   setStep: (idx: number) => void;
 }
