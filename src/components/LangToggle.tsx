@@ -14,7 +14,7 @@ export const LangToggle = forwardRef<HTMLDivElement, { lang: Lang; setLang: (l: 
           onClick={() => setLang(l)}
           className={cn(
             "text-xs font-semibold px-2 py-0.5 rounded-full transition-all",
-            lang === l ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
+            lang === l ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
           )}
         >
           {l.toUpperCase()}

@@ -226,7 +226,17 @@ export default function SmartFormPage() {
       if (!session) { toast({ title: "Error", description: "Not authenticated", variant: "destructive" }); return; }
 
       const accountId = await getAccountId(session.user.id);
-      if (!accountId) { toast({ title: "Error", description: "No account found", variant: "destructive" }); return; }
+      if (!accountId) {
+        toast({
+          title: lang === "es" ? "Cuenta no vinculada" : "Account not linked",
+          description: lang === "es"
+            ? "Tu usuario no está asociado a una firma. Contacta al admin para que te active."
+            : "Your user is not linked to a firm. Contact your admin to activate access.",
+          variant: "destructive",
+          duration: 6000,
+        });
+        return;
+      }
 
       const { client_name, client_email } = computeClientFields(formData);
 

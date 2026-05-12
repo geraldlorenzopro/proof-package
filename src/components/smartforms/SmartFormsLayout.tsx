@@ -10,7 +10,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { SmartFormsProvider, useSmartFormsContext } from "./SmartFormsContext";
 import { I765_STEP_LABELS } from "./i765Schema";
 import { useAppSeat } from "@/hooks/useAppSeat";
-import ToolSplash from "@/components/ToolSplash";
 import {
   Dialog,
   DialogContent,
@@ -251,38 +250,9 @@ function SeatGuardedContent() {
   const navigate = useNavigate();
   const seat = useAppSeat("smart-forms");
   const { destination: backDest } = useBackDestination();
-  // Splash gated por sessionStorage — se muestra 1 vez por sesión.
-  // Eliminamos la fricción de re-disparar el splash en cada navegación interna.
-  const [splashDone, setSplashDone] = useState(() => {
-    try {
-      return sessionStorage.getItem("ner_splash_smart-forms_seen") === "true";
-    } catch { return false; }
-  });
-  const [splashLang, setSplashLang] = useState<"es" | "en">("es");
-
-  const handleSplashContinue = () => {
-    try { sessionStorage.setItem("ner_splash_smart-forms_seen", "true"); } catch {}
-    setSplashDone(true);
-  };
-
-  if (!splashDone) {
-    return (
-      <ToolSplash
-        slug="smart-forms"
-        icon={FileText}
-        heroTitle="Smart"
-        heroSubtitle="Forms"
-        accentVariant="cyan"
-        tagline={{
-          es: "Formularios inteligentes para inmigración",
-          en: "Intelligent immigration forms",
-        }}
-        onContinue={handleSplashContinue}
-        lang={splashLang}
-        setLang={setSplashLang}
-      />
-    );
-  }
+  // Splash propio del módulo ELIMINADO 2026-05-12 (decisión Lovable+UX).
+  // El HubSplash al entrar a la oficina ya cumple identidad de módulo.
+  // Doble splash + 1 click extra = friction sin valor para paralegal 8h/día.
 
   // Show confirmation dialog when seats are full
   if (seat.pendingKick) {

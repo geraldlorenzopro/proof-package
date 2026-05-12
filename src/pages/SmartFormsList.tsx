@@ -491,7 +491,7 @@ export default function SmartFormsList() {
                             <p className="text-xs text-muted-foreground truncate">{form.description}</p>
                           </div>
                           {isBeta && (
-                            <span className="text-[9px] font-bold text-amber-500 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded shrink-0">BETA</span>
+                            <span className="text-[9px] font-bold text-cyan-400 bg-cyan-400/10 border border-cyan-400/30 px-1.5 py-0.5 rounded shrink-0">BETA</span>
                           )}
                           <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                         </button>

@@ -156,7 +156,8 @@ const App = () => (
           {/* ═══ REDIRECT ROUTES ═══ */}
           <Route path="/portfolio" element={<Navigate to="/dashboard/workspace-demo" replace />} />
           <Route path="/hub/cases" element={<ProtectedRoute><HubCasesPage /></ProtectedRoute>} />
-          <Route path="/hub/formularios" element={<ProtectedRoute><HubFormsPage /></ProtectedRoute>} />
+          {/* /hub/formularios DEPRECATED 2026-05-12 — fuente de verdad única en /dashboard/smart-forms */}
+          <Route path="/hub/formularios" element={<Navigate to="/dashboard/smart-forms" replace />} />
           <Route path="/hub/agenda" element={<ProtectedRoute><HubAgendaPage /></ProtectedRoute>} />
           {/* /hub/reports now handled above directly */}
           <Route path="/hub/ai" element={<ProtectedRoute><HubAiPage /></ProtectedRoute>} />
