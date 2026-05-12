@@ -62,7 +62,7 @@ function reportArray(patternRegex, label, visualOrder) {
   // Mapping idx → visualPos
   console.log("\nMapping idx → visualPos (para hardcodear):");
   const map = {};
-  withY.forEach((f, visualPos) => {
+  withRect.forEach((f, visualPos) => {
     map[visualOrder[visualPos]] = f.idx;
   });
   console.log(JSON.stringify(map, null, 2));
