@@ -212,6 +212,29 @@ del orquestador): Maya (intake), Felix (forms), Lucía (evidence), Sofía
 (courts), Rosa (comms), Diego (payments), Pablo (legal), Elena (QA).
 Camila ya existe (voice AI master, Eleven Labs TTS).
 
+**ACLARACIÓN IMPORTANTE — scope de Felix (locked 2026-05-11, ver `decisions.md`):**
+Felix es **una sola cosa muy específica**: AI que llena formularios USCIS
+automáticamente leyendo el expediente del caso. NO escribe cartas (eso es
+Pablo, no existe), NO construye evidence checklist (Lucía, no existe), NO
+clasifica documentos a carpetas (Elena, no existe). Cuando Mr. Lorenzo pida
+features de cartas/affidavits/evidence/clasificación, NO asumir que Felix lo
+cubre — esos requieren agentes nuevos. Estado actual:
+
+| Agente | Estado | Función |
+|---|---|---|
+| Camila | ✅ Live | Voice AI master (Eleven Labs TTS) |
+| Felix | ✅ Live | Llena formularios USCIS (scope estricto) |
+| Nina | ✅ Live | Ensamble de packets |
+| Max | ✅ Live | QA del paquete |
+| Pablo | ⚫ Planned (bloquea Fase 11 Document Studio) | Legal writer — cartas/affidavits |
+| Lucía | ⚫ Planned (bloquea Fase 5 Evidence Builder extendido) | Evidence specialist — checklist contextual |
+| Maya, Sofía, Rosa, Diego, Elena | ⚫ Planned | Roadmap futuro |
+
+**Patrón fallback orquestador (locked 2026-05-11):** cuando `bun run scripts/orchestrator.ts`
+falla por rate limits (Codex caído, Claude CLI colgado >5min con prompt grande),
+hacer fallback inmediato a **3 Agents paralelos** desde Claude Code con prompts
+enfocados por rol. NO esperar. Documentado en `decisions.md`.
+
 ## Pages and Routes (verified)
 
 **Hub (paralegal daily):**
@@ -296,6 +319,13 @@ fallback location `NgaxlyDdwg93PvQb5KCw` (Mr Visa).
 | **Graphite** | `#1F2937` | Texto principal |
 
 ⚠️ Cyan NO está prohibido. Está permitido como **acento controlado al 20%**. Lo prohibido es estilo Jarvis sci-fi (cyan dominante con glow/scan-lines/particles).
+
+**Estado actual del design system (2026-05-11):**
+- `--primary` reasignado en `index.css` a AI Blue (`220 83% 53%`) — antes era navy legacy
+- Tokens nuevos agregados: `--ai-blue`, `--deep-navy`, `--cyan-accent`, `--soft-gray`, `--graphite`
+- Módulo Smart Forms (9 archivos, 218 usos) migrado a Variante A cyan 18%
+- **Deuda técnica:** 60+ archivos del repo siguen con `--accent` gold legacy + `--jarvis` cyan glow legacy (CSPACalculator, AffidavitCalculator, Auth, Settings, Dashboard, Index, etc.). Sprint dedicado "Brandbook Compliance Global" pendiente (~10-12h).
+- `index.css` línea 7 todavía dice "JARVIS Design System" — actualizar cuando se haga el cleanup global.
 
 **Tipografía oficial:**
 - **Sora** (primary) — moderna, digital-first
@@ -488,9 +518,12 @@ Respuesta RFE → Aprobado/Negado → Apelación
 5. **`.ai/master/state.md`** — estado actual + pendientes inmediatos del sprint en curso
 6. **`.ai/master/architecture.md`** — auth flow + GHL split + memberships placeholder
 7. **`.ai/master/decisions.md`** — log de decisiones estratégicas (append-only)
+8. **`.ai/master/oficina-virtual-vision-2026-05-11.md`** ⭐ — **visión completa "oficina virtual" articulada por Mr. Lorenzo.** 4 temas estratégicos (evidence checklist reusable + journey integrado + folders por persona + editor cartas con AI) mapeados al roadmap. Leer ANTES de proponer features que toquen el flow de un caso.
 
 **On-demand:**
 - `.ai/master/membership-tiers.md` — TBD, cuando se cierre Fase 1
+- `.ai/master/smart-forms-redesign-plan.md` — plan migración tokens (Victoria, 2026-05-11)
+- `.ai/master/prompt-smart-forms-redesign.md` — prompt original orquestador (referencia histórica)
 - `.ai/reportes/*.md` — debates del orquestador (referencia histórica)
 - `.ai/debug-raw/*.txt` — raw responses de agentes (debug)
 - `mockups/auto-*.html` — generados por Valerie

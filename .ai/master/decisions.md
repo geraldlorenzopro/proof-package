@@ -1044,6 +1044,155 @@ functions. Documentado en `session_summary_2026-05-10.md` (memory iCloud).
 
 ---
 
+## 2026-05-11 — Sprint Smart Forms (I-130 wizard + brandbook migration)
+
+**Decisión:** cerrar el sprint Smart Forms con 3 entregables:
+(1) I-130 wizard E2E completo (schema + mapper + 13-step UI + integración Felix),
+(2) migración del módulo Smart Forms al brandbook NER oficial (Variante A cyan 18%),
+(3) reasignación de `--primary` global de navy legacy (`220 50% 32%`) a AI Blue (`220 83% 53%`).
+
+**Quién decidió:** Mr. Lorenzo, después de debate con orquestador 4-agentes
+(Valerie/Gerald/Victoria/Vanessa) que falló por rate limits del CLI Claude — se
+ejecutó fallback con 3 agents paralelos (Valerie/Victoria/Vanessa). Mockup
+firmado: `mockups/2026-05-11-smart-forms-redesign.html` (Variante A, 1145 líneas).
+
+**Contexto:** Mr. Lorenzo reportó que tras los fixes parciales previos (commit
+fdead24), el módulo Smart Forms "sigue manteniendo colores amarillo y negro".
+Auditoría reveló que `index.css` línea 7 todavía decía "JARVIS Design System",
+con dos paletas legacy: `--accent` (gold `43 85% 52%`) y `--jarvis` (cyan glow
+`195 100% 50%`). El módulo usaba `--accent` 134 veces (no `--jarvis`).
+
+**Alternativas consideradas:**
+1. Tokens semánticos paralelos `--brand-primary` sin tocar shadcn — más seguro pero crea 2 sistemas (rechazado por complejidad).
+2. Big bang migrate 118 archivos del repo — riesgo alto regresiones visuales en CSPA/Affidavit/Auth/Settings (rechazado por scope).
+3. **Reasignar `--primary` global a AI Blue + migrar solo 9 archivos del módulo** — coherencia inmediata, deuda gestionada (elegido).
+
+**Razón:** AI Blue es el primary oficial del brandbook; reasignar el token shadcn
+es semánticamente correcto. Los 118 archivos legacy con `bg-accent` (gold) seguirán
+funcionando hasta sprint dedicado de cleanup.
+
+**Implicación:**
+- 9 archivos del módulo migrados (218 usos `*-accent` → `*-primary`): I765Wizard,
+  I130Wizard, SmartFormsLayout, SmartFormsList, SmartFormsSettings, SmartFormPage,
+  CaseFormsPanel, QuickFormLauncher, HubFormsPage.
+- Commits: `55846d8` (I-130 wizard E2E), `ff0e574` (fix 404 entry points),
+  `fdead24` (splash gateado + ToolSplash cyan fix), `ab56b4f` (brandbook migration),
+  `3cc8131` (docs strategy).
+- Pendiente: sprint dedicado "Brandbook Compliance Global" para los 60+ archivos
+  legacy del repo. Estimado ~10-12h.
+
+---
+
+## 2026-05-11 — Visión oficina virtual (4 temas estratégicos)
+
+**Decisión:** capturar y mapear al roadmap 4 requisitos estratégicos que Mr. Lorenzo
+articuló durante la revisión del mockup Smart Forms. NO implementar todo ahora —
+incorporar al roadmap por fases.
+
+**Quién decidió:** Mr. Lorenzo (visión), Claude Code (mapeo al roadmap existente).
+
+**Contexto:** Mr. Lorenzo aclaró: "trabajamos pensando en una oficina de inmigración
+virtual la primera que exista... la idea es que todo el journey de un caso quede
+todo en uno integrado". Esto reframea el producto: NER NO es módulos separados,
+es un solo espacio de trabajo del caso.
+
+**Los 4 temas (captura completa en `.ai/master/oficina-virtual-vision-2026-05-11.md`):**
+
+1. **Evidence checklist por categoría, reusable, enviable al cliente** — plantillas
+   pre-hechas (I-130 matrimonio, I-485, N-400, etc.) que el paralegal customiza y
+   envía al cliente vía portal. Status visible (pending/received/approved). Roadmap fit:
+   Fase 5 "Evidence Packet Builder" — extender con templates + agente Lucía (nuevo).
+
+2. **Journey integrado** — todo dentro de `/case-engine/:id`, no saltar a
+   `/dashboard/smart-forms`. Wizard embedded como sub-tab del caso. **NUEVA fase**
+   "Case Engine Unification" (entre Fase 5 y Fase 6).
+
+3. **Datos a carpetas correctas (petitioner/beneficiary/aplicante)** — modelo
+   `case_persons` table con roles tipados. Cada doc + campo asociado a persona
+   correcta. Roadmap fit: Fase 5 "Family relational model" — concretar.
+
+4. **Editor in-line de cartas/affidavits con AI assist** — Tiptap/Lexical editor
+   dentro del caso, templates (cover letter, I-134 affidavit, hardship letter),
+   AI agente Pablo (legal writer, NUEVO) para drafts + reescritura. **NUEVA fase**
+   "Document Studio" (Fase 11).
+
+**Alternativas consideradas:**
+1. Implementar todo ahora — rechazado por scope (~14 semanas distribuidas).
+2. Tratar como "nice to have" — rechazado, son visión central no opcional.
+3. **Capturar + mapear al roadmap por fases** — elegido.
+
+**Razón:** Mr. Lorenzo explicitamente dijo "no tienes que hacer todo ahora pero te
+doy el contexto para que sepas". El roadmap necesita incorporar la visión sin
+arrancar implementación hasta que se priorice una fase.
+
+**Implicación:**
+- ROADMAP.md actualizado con 2 nuevas fases (Case Engine Unification + Document Studio)
+- Fase 5 (Vertical Depth) extendida con evidence templates + case_persons table
+- features.md actualizado con 4 features planned (`evidence-checklist-templates`,
+  `case-persons-folders`, `case-engine-unification`, `document-studio-editor`)
+- Agentes pendientes documentados: Pablo (legal writer) + Lucía (evidence) — además
+  de los 9 ya previstos en CLAUDE.md
+- Memoria cross-Mac: `project_oficina_virtual_vision.md` agregada al MEMORY.md
+
+---
+
+## 2026-05-11 — Aclaración del rol de Felix
+
+**Decisión:** documentar explícitamente que Felix es UNA AI específica (no "la AI"
+de NER), y que faltan otros agentes para cartas/evidence/clasificación.
+
+**Quién decidió:** Mr. Lorenzo (pregunta), Claude Code (aclaración).
+
+**Contexto:** Mr. Lorenzo preguntó "qué es lo que hace Felix porque no lo entiendo"
+y agregó "la idea es que todo esté respaldado por la AI". La confusión es real
+porque NER tiene 1 sola AI implementada (Felix) + Camila (voice) — los demás 7
+agentes previstos no existen todavía.
+
+**Lo que Felix SÍ hace:**
+- AI especializada en LLENAR FORMULARIOS USCIS automáticamente
+- Lee `client_cases` + `client_profiles` + `intake_sessions` del caso
+- Pre-llena los 200+ campos del I-130 o I-765 en JSON
+- Marca campos como `completed`/`missing`/`verify`
+- Costo: 5 créditos · ~30s · paralegal review obligatorio
+
+**Lo que Felix NO hace:**
+- Escribir cartas legales → futuro agente **Pablo** (no existe)
+- Escribir affidavits → futuro agente **Pablo**
+- Construir evidence checklist → futuro agente **Lucía** (no existe)
+- Clasificar documentos a carpetas → futuro agente **Elena**
+- Comunicarse con el cliente → ya existe **Camila** (voice/TTS)
+
+**Implicación:** cuando Mr. Lorenzo pide features de cartas/evidence/docs, NO
+asumir que Felix lo cubre. Crear roadmap items para Pablo + Lucía + Elena cuando
+se priorice cada fase.
+
+---
+
+## 2026-05-11 — Orquestador CLI inestable, fallback a Agents paralelos
+
+**Decisión:** cuando el orquestador local (`bun run scripts/orchestrator.ts`)
+falle por rate limits o cuelgues del CLI Claude, hacer fallback inmediato a 3
+Agents paralelos desde Claude Code con prompts enfocados por rol (Valerie/Victoria/Vanessa).
+
+**Quién decidió:** Mr. Lorenzo (eligió "3 Agents en paralelo" sobre "esperar"
+cuando el orquestador colgó 10+ min).
+
+**Contexto:** El orquestador hizo POST exitoso de prompt 6KB pero el proceso
+`claude -p` interno se quedó colgado >10 min sin responder. Combinación de:
+(1) Codex GPT-5.5 caído hasta 2026-05-06 (Victoria hizo fallback a Claude),
+(2) Claude CLI saturado con prompt enorme.
+
+**Razón:** Los Agents paralelos desde Claude Code son más robustos: cada uno
+con prompt enfocado (~2KB), terminan en ~5 min, sintetizan al main thread.
+NO dependen de Bun server local ni de Codex.
+
+**Implicación:** patrón nuevo de coordinación de equipo cuando se requiere
+mockup + audit + UX validation. Documentado en `feedback_session_summary` —
+"3 agents paralelos" es la primera opción si el sprint requiere ≤2 rounds.
+El orquestador local sigue siendo válido para debates >3 rounds con UI visual.
+
+---
+
 ## Plantilla para nueva decisión
 
 ```markdown

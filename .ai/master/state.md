@@ -33,6 +33,11 @@
 | `03bcfb5` | 2026-05-11 | **Pipeline Dashboard MVP** — useCasePipeline hook + CaseTable + CaseKanban + 3-way toggle |
 | `f1c0e6d` | 2026-05-11 | Pipeline iteración 1 — Tabla Airtable-style como default + compact Kanban + collapsible groups |
 | `d5ab864` | 2026-05-11 | Pipeline iteración 2 (post Vanessa+Valerie critique) — kill text-jarvis + sortable headers + custom Select + search receipt/A# + next_due column + typography 13/11/10 + gray avatars + drop Lista view |
+| `55846d8` | 2026-05-11 | **I-130 wizard E2E** — i130Schema (200+ campos) + i130FelixMapper (defensive) + I130Wizard (13 pasos) + SmartFormPage dispatcher por form_type + Felix prompt extendido con i-130 |
+| `ff0e574` | 2026-05-11 | Fix 404 "Crear formulario nuevo" — HubFormsPage + HubAiPage apuntaban a rutas inexistentes |
+| `fdead24` | 2026-05-11 | Brandbook fix flow smart-forms — splash gateado por sessionStorage + ToolSplash variant cyan limpio + 6 archivos jarvis→cyan-400/accent |
+| `ab56b4f` | 2026-05-11 | **Brandbook migration Variante A** — --primary reasignado a AI Blue (#2563EB) + 218 usos *-accent→*-primary en 9 archivos del módulo Smart Forms |
+| `3cc8131` | 2026-05-11 | Docs strategy: visión oficina virtual (4 temas) + plan migración tokens Victoria + prompt orquestador (referencia histórica) |
 
 ### Cleanup ejecutado en BD (2026-05-04)
 
@@ -74,6 +79,10 @@
 - **2026-05-11** — Lovable Cloud es DUEÑO del proyecto Supabase de NER. PATs personales no ven el proyecto. CLI workflow imposible — única ruta deploy es Lovable chat. Ver `feedback_lovable_owns_supabase.md` en memoria.
 - **2026-05-11** — Hub Dashboard audit reveló gap crítico: NO responde "¿qué requiere mi firma/revisión?" para abogado principal. Refactor obligatorio antes de demo.
 - **2026-05-11** — Hybrid agents pattern: lanzar 3 agentes en paralelo (Vanessa paralegal real + Valerie UX + Pablo abogado inmigración) ANTES de tocar código grande. No después.
+- **2026-05-11** — **Sprint Smart Forms cerrado**: I-130 wizard E2E completo (13 pasos, schema + mapper + felix integration, commits 55846d8 + ff0e574) + brandbook migration Variante A (cyan 18%, --primary reasignado a AI Blue, commits fdead24 + ab56b4f + 3cc8131). 9 archivos migrados, 218 usos accent→primary. Mockup firmado en `mockups/2026-05-11-smart-forms-redesign.html`.
+- **2026-05-11** — **Visión oficina virtual articulada** (4 temas estratégicos): evidence checklist reusable + journey integrado + folders por persona + editor cartas con AI. Captura en `.ai/master/oficina-virtual-vision-2026-05-11.md`. NO implementar todo ahora — mapeado al roadmap por fases.
+- **2026-05-11** — **Felix scope clarification**: Felix solo llena formularios USCIS. Cartas/affidavits = agente Pablo (NO existe). Evidence checklist = agente Lucía (NO existe). Doc classification = agente Elena (NO existe). Confusión documentada en `decisions.md` para no asumir Felix cubre todo.
+- **2026-05-11** — **Orquestador inestable, fallback 3 agents paralelos**: cuando CLI Claude se cuelga >10min con prompt grande, fallback inmediato a 3 Agents paralelos desde Claude Code (no esperar). Patrón documentado.
 
 ### Decisiones anteriores que están vivas (ver `decisions.md`)
 
@@ -104,16 +113,18 @@ end-to-end del flujo de un caso de inmigración.
 - Bug crítico de duplicación de tareas resuelto (afectaba a Mr Visa con 22746 zombies)
 - Modelo de visibility por rol diseñado (pendiente push migration)
 
-**Próximas prioridades:**
-1. Visibility migration push (esperando OK Mr. Lorenzo)
-2. Hub-morning-briefing edge fn con Claude (wow factor real)
-3. Smart Forms — Felix invocation desde UI (4h, alto impacto)
-4. `/hub/recursos` con Visa Bulletin contextual
+**Próximas prioridades (post 2026-05-11):**
+1. **Mr. Lorenzo sube PDF blank I-130** → cierro i130Barcode.ts + i130FormFiller.ts (~2h)
+2. **Decidir cuál de los 4 temas estratégicos arrancar primero** (evidence checklist / journey integrado / folders por persona / editor cartas)
+3. Sprint dedicado "Brandbook Compliance Global" para los 60+ archivos legacy con `--accent` gold (~10-12h)
+4. Visibility migration push (esperando OK Mr. Lorenzo)
+5. Hub-morning-briefing edge fn con Claude (wow factor real)
 
 **El gap real que persiste en 3 áreas:**
 1. **Orquestación GHL** desde NER (3 botones GHL: pago consulta + contrato + factura)
 2. **5 pilares de domain inmigración** (case_type tipado, family, USCIS receipts, court, evidence builder)
-3. **Branding** — token `jarvis` legacy sigue en código (deuda técnica menor)
+3. **Branding global** — Smart Forms ya migrado a AI Blue, pero 60+ archivos del repo siguen con `--accent` gold legacy (CSPACalculator, AffidavitCalculator, Auth, Settings, Dashboard, etc.). Sprint dedicado pendiente.
+4. **Agentes IA faltantes** — Mr. Lorenzo aclaró que Felix solo llena forms. Faltan Pablo (cartas/affidavits), Lucía (evidence), Elena (doc QA). Roadmap actualizado con fases nuevas.
 
 ---
 

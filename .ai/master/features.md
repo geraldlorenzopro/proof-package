@@ -83,8 +83,9 @@
 | Slug | Status | Tier mínimo | Descripción |
 |---|---|---|---|
 | `smart-forms-i765` | 🟢 LIVE | essential | EAD - permiso de trabajo (existente) |
-| `smart-forms-felix-autofill` | ⚫ PLANNED | professional | Botón "Auto-fill con IA" en wizard |
-| `smart-forms-i130` | ⚫ PLANNED | professional | Petición familiar |
+| `smart-forms-felix-autofill` | 🟢 LIVE | professional | Botón "Auto-fill con IA" en wizard (commit 4b720e8) |
+| `smart-forms-i130` | 🟡 BETA | professional | Petición familiar — wizard 13 pasos + Felix integration (commit 55846d8, 2026-05-11). Pendiente: PDF filler (espera blank USCIS) |
+| `smart-forms-brandbook-migration` | 🟢 LIVE | essential | Variante A cyan 18% + --primary AI Blue. 218 usos accent→primary (commit ab56b4f, 2026-05-11) |
 | `smart-forms-i485` | ⚫ PLANNED | professional | Adjustment of status |
 | `smart-forms-n400` | ⚫ PLANNED | professional | Naturalización |
 | `smart-forms-ds260` | ⚫ PLANNED | professional | NVC consular |
@@ -106,16 +107,35 @@
 | `ghl-templates-setup-wizard` | ⚫ PLANNED | professional | Wizard onboarding GHL templates |
 | `ghl-cbp-i94-lookup` | ⚫ PLANNED | elite | I-94 lookup automático |
 
-### Vertical Depth (Fase 5)
+### Vertical Depth (Fase 5 — extendida 2026-05-11)
 
 | Slug | Status | Tier mínimo | Descripción |
 |---|---|---|---|
 | `family-relational-tree` | ⚫ PLANNED | professional | Modelo familiar petitioner/beneficiary |
+| `case-persons-folders` | ⚫ PLANNED | professional | 🆕 Tabla `case_persons` (petitioner/primary_beneficiary/derivative/joint_sponsor/witness) + folders por persona. Visión oficina virtual Tema 3 |
 | `i797-receipt-parser` | ⚫ PLANNED | professional | OCR auto-extract de I-797 |
 | `court-system-tracker` | ⚫ PLANNED | elite | Audiencias EOIR + dockets |
 | `evidence-packet-builder` | ⚫ PLANNED | professional | Armar packet PDF USCIS-ready |
+| `evidence-checklist-templates` | ⚫ PLANNED | professional | 🆕 Templates pre-hechas por categoría (I-130 matrimonio/padre/hijo, I-485, N-400, etc.) + reusable + enviable al cliente con status. Visión oficina virtual Tema 1 |
 | `rfe-response-workflow` | ⚫ PLANNED | professional | Sub-flow para responder RFE |
 | `recursos-visa-bulletin-contextual` | ⚫ PLANNED | essential | Bulletin contextual a clientes |
+
+### Case Engine Unification (Fase 5B 🆕 2026-05-11)
+
+| Slug | Status | Tier mínimo | Descripción |
+|---|---|---|---|
+| `case-engine-unification` | ⚫ PLANNED | essential | 🆕 Wizard Smart Forms embedded como sub-tab del case-engine. Eliminar saltos entre módulos. Visión oficina virtual Tema 2 |
+| `case-engine-tabs-multiple` | ⚫ PLANNED | professional | Tabs propias para múltiples casos abiertos en paralelo |
+| `case-engine-breadcrumb-persistent` | ⚫ PLANNED | essential | Breadcrumb "Caso [Cliente] > [Sección]" persistente |
+
+### Document Studio (Fase 11 🆕 2026-05-11)
+
+| Slug | Status | Tier mínimo | Descripción |
+|---|---|---|---|
+| `document-studio` | ⚫ PLANNED | professional | 🆕 Editor rich-text in-line (Tiptap) dentro del case-engine. Visión oficina virtual Tema 4 |
+| `document-templates` | ⚫ PLANNED | professional | 🆕 Templates: cover letter, I-134 affidavit, hardship letter, employment verification, affidavit testigos matrimonio |
+| `document-version-history` | ⚫ PLANNED | professional | Audit trail por edición + diff viewer |
+| `document-ghl-sign` | ⚫ PLANNED | professional | Integración GHL Documents API para firma digital del cliente |
 
 ### OCR + Translation (Fase 6)
 
@@ -135,14 +155,18 @@
 | `accounting-yearend-summary` | ⚫ PLANNED | elite | PDF para CPA |
 | `accounting-revenue-by-case-type` | ⚫ PLANNED | professional | Análisis qué tipo de caso es rentable |
 
-### AI Specialists (Fase 8)
+### AI Specialists (Fase 8 + agentes nuevos 2026-05-11)
+
+**Aclaración 2026-05-11 (Mr. Lorenzo):** Felix solo llena formularios USCIS. NO escribe cartas/affidavits (eso es Pablo) ni construye evidence checklist (Lucía). Por eso se agregaron Pablo + Lucía abajo.
 
 | Slug | Status | Tier mínimo | Descripción |
 |---|---|---|---|
 | `ai-camila-master` | 🟢 LIVE | essential | Coordinadora chat + voz |
-| `ai-felix-forms` | 🟢 LIVE | professional | Llenado de formularios |
+| `ai-felix-forms` | 🟢 LIVE | professional | Llenado de formularios USCIS (scope: SOLO forms) |
 | `ai-nina-packets` | 🟢 LIVE | professional | Ensamble de paquetes |
 | `ai-max-qa` | 🟢 LIVE | professional | QA del paquete |
+| `agent-pablo` | ⚫ PLANNED | professional | 🆕 Legal writer — genera drafts de cartas/affidavits, reescribe en tono USCIS, consistency check vs form_data. Bloquea Fase 11 Document Studio |
+| `agent-lucia` | ⚫ PLANNED | professional | 🆕 Evidence specialist — sugiere checklist contextual al form_type + relationship, valida docs subidos con vision API. Bloquea Fase 5 Evidence Builder extendido |
 | `ai-elena-i485` | ⚫ PLANNED | elite | Especialista Adjustment |
 | `ai-sofia-humanitarian` | ⚫ PLANNED | elite | VAWA/U/T/Asylum |
 | `ai-carmen-consular` | ⚫ PLANNED | elite | NVC/B1B2/Embajada |

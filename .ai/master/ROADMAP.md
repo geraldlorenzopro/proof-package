@@ -157,18 +157,19 @@ Ana López           │ B1/B2  │ 🟪 CBP      │ I-94 query
 
 **Objetivo:** Lo segundo que más esperan. Cobertura de los 5 formularios USCIS más usados + DS-260 (NVC) + Felix invocation real.
 
-| # | Item | Esfuerzo |
-|---|---|---|
-| 2.1 | Felix invocation desde `I765Wizard.tsx` (botón "Auto-fill con IA") | 4h |
-| 2.2 | I-765 schema completo (40% → 100% campos) | 8h |
-| 2.3 | I-130 wizard (residencia familiar) — Felix-powered | 1 sprint |
-| 2.4 | I-485 wizard (adjustment of status) — Felix-powered | 1 sprint |
-| 2.5 | N-400 wizard (naturalización) — Felix-powered | 1 sprint |
-| 2.6 | DS-260 wizard (NVC consular) — Felix-powered | 1 sprint |
-| 2.7 | Documentos editables post-Felix (review + manual edit antes de PDF) | 4h |
-| 2.8 | Share token público `/forms/:token` para que cliente revise/firme | 6h |
+| # | Item | Esfuerzo | Status |
+|---|---|---|:--:|
+| 2.1 | Felix invocation desde `I765Wizard.tsx` (botón "Auto-fill con IA") | 4h | ✅ Done (commit 4b720e8) |
+| 2.2 | I-765 schema completo (40% → 100% campos) | 8h | ⚫ Pendiente |
+| 2.3 | I-130 wizard (residencia familiar) — Felix-powered | 1 sprint | ✅ Done (commit 55846d8, 2026-05-11). Falta i130FormFiller (espera PDF blank) |
+| 2.4 | I-485 wizard (adjustment of status) — Felix-powered | 1 sprint | ⚫ Pendiente |
+| 2.5 | N-400 wizard (naturalización) — Felix-powered | 1 sprint | ⚫ Pendiente |
+| 2.6 | DS-260 wizard (NVC consular) — Felix-powered | 1 sprint | ⚫ Pendiente |
+| 2.7 | Documentos editables post-Felix (review + manual edit antes de PDF) | 4h | 🔄 Solapa con Fase 11 Document Studio |
+| 2.8 | Share token público `/forms/:token` para que cliente revise/firme | 6h | ⚫ Pendiente |
+| 2.9 | **Brandbook migration del módulo Smart Forms** (Variante A cyan 18%, --primary AI Blue) | 4h | ✅ Done (commits fdead24 + ab56b4f + 3cc8131, 2026-05-11) |
 
-**Feature flags:** `smart-forms-i130`, `smart-forms-i485`, `smart-forms-n400`, `smart-forms-ds260`
+**Feature flags:** `smart-forms-i130` ✅ live, `smart-forms-i485`, `smart-forms-n400`, `smart-forms-ds260`, `smart-forms-brandbook` ✅ live
 
 **Métrica de éxito:** Vanessa llena un I-130 completo en 5 minutos (vs 30 manual).
 
@@ -223,23 +224,44 @@ Ana López           │ B1/B2  │ 🟪 CBP      │ I-94 query
 
 ---
 
-### Fase 5 · Vertical Depth (4 semanas)
+### Fase 5 · Vertical Depth (4 semanas) — EXTENDIDA 2026-05-11
 
-**Objetivo:** Los 5 pilares de inmigración que NER debe tener para ser realmente "vertical".
+**Objetivo:** Los 5 pilares de inmigración que NER debe tener para ser realmente "vertical". Extendida con los 4 temas de la visión "oficina virtual" (2026-05-11).
 
 | # | Item | Esfuerzo |
 |---|---|---|
 | 5.1 | `case_type` → ENUM tipado | 2 días |
-| 5.2 | Family relational model + tab `ClientProfile` | 1 sprint |
+| 5.2 | Family relational model — tabla `case_persons` (roles: petitioner / primary_beneficiary / derivative_beneficiary / joint_sponsor / witness) + FK a `case_documents` para folders por persona 🆕 | 1 sprint |
 | 5.3 | USCIS I-797 receipt parser (OCR auto-extract) | 1 sprint |
 | 5.4 | Court system tracker (audiencias EOIR) | 1 sprint |
-| 5.5 | Evidence Packet Builder + PDF export USCIS-ready | 1 sprint |
+| 5.5 | Evidence Packet Builder + PDF export USCIS-ready — **EXTENDIDO 2026-05-11** con templates pre-hechas por categoría (I-130 matrimonio / I-130 padre / I-485 / N-400 / etc.) + status visible (`pending` / `received` / `approved` / `rejected_redo`) + enviable al cliente vía portal + **agente Lucía** (evidence) para sugerir checklist contextual | 1.5 sprint |
 | 5.6 | RFE response sub-flow | 1 sprint |
 | 5.7 | `/hub/recursos` con Visa Bulletin contextual a clientes | 3 días |
 
-**Feature flags:** `family-tree`, `i797-parser`, `evidence-builder`, `court-tracker`, `rfe-workflow`
+**Feature flags:** `family-tree`, `case-persons-folders` 🆕, `i797-parser`, `evidence-builder`, `evidence-checklist-templates` 🆕, `court-tracker`, `rfe-workflow`, `agent-lucia` 🆕
 
-**Diferenciador único**: ningún competidor (Clio/Monday/Docketwise) tiene los 5 pilares juntos para inmigración.
+**Diferenciador único**: ningún competidor (Clio/Monday/Docketwise) tiene los 5 pilares juntos para inmigración + evidence templates reusable + folders por persona.
+
+---
+
+### Fase 5B · Case Engine Unification (3-4 semanas) 🆕 2026-05-11
+
+**Objetivo:** Eliminar el salto entre módulos. Todo el journey del caso vive dentro de `/case-engine/:id`. NER debe sentirse como "una oficina virtual integrada" en palabras de Mr. Lorenzo, no como app separadas.
+
+**Contexto:** Hoy el paralegal salta entre `/hub/cases` → `/case-engine/:id` → `/dashboard/smart-forms/:id` → `/upload/:token`. La visión de Mr. Lorenzo (2026-05-11): todo dentro del caso. Captura completa en `.ai/master/oficina-virtual-vision-2026-05-11.md` Tema 2.
+
+| # | Item | Esfuerzo |
+|---|---|---|
+| 5B.1 | Embedding del Smart Forms Wizard como sub-tab del case-engine (no redirección a `/dashboard/smart-forms`) | 1 sprint |
+| 5B.2 | Embedding de Client Portal `/q/:token` como vista del caso (paralegal preview) | 0.5 sprint |
+| 5B.3 | Felix accesible desde cualquier sub-tab del caso (banner persistente cuando aplica) | 3 días |
+| 5B.4 | Breadcrumb persistente "Caso [Cliente] > [Sección]" en todas las sub-vistas | 2 días |
+| 5B.5 | Tabs propias para múltiples casos abiertos en paralelo | 1 sprint |
+| 5B.6 | Migración de `/dashboard/smart-forms/*` a feature flag (compatible legacy mientras se cierra) | 3 días |
+
+**Feature flag:** `case-engine-unification`
+
+**Métrica de éxito:** Vanessa puede operar un caso end-to-end sin abrir más de 1 ruta. Tiempo de tarea baja >30%.
 
 ---
 
@@ -337,6 +359,29 @@ Build no-trivial (2 sprints) con valor solo para firmas grandes que ya usan QB.
 
 ---
 
+### Fase 11 · Document Studio (4-5 semanas) 🆕 2026-05-11
+
+**Objetivo:** Editor in-line de cartas, affidavits y declaraciones dentro del caso, con AI assist (agente Pablo). Hoy NER NO tiene esto — paralegales hacen cartas en Google Docs/Word externos.
+
+**Contexto:** Mr. Lorenzo (2026-05-11): "quiero que cada documento se pueda ver y editar en vivo y que si hay que hacer cartas o affidavit necesito que todo se pueda hacer dentro del caso y editar ahí mismo pero apoyado por la AI". Captura completa en `.ai/master/oficina-virtual-vision-2026-05-11.md` Tema 4.
+
+| # | Item | Esfuerzo |
+|---|---|---|
+| 11.1 | Editor rich-text in-line (Tiptap o Lexical) integrado en `case-engine/:id` | 1.5 sprint |
+| 11.2 | Templates pre-hechas: cover letter USCIS, cover letter consulate, I-134 affidavit, hardship letter, employment verification, affidavit de testigos del matrimonio | 1 sprint |
+| 11.3 | Agente **Pablo** (legal writer) — generación de drafts contextuales basado en form_data del caso + reescritura tonalidad USCIS + consistency check vs form_submissions | 1.5 sprint |
+| 11.4 | Version history (audit trail por edición) + diff viewer entre versiones | 4 días |
+| 11.5 | Export: PDF firmable + integración GHL Documents API para firma digital del cliente | 1 sprint |
+| 11.6 | Storage: `case_documents` extendido con tipo `letter` / `affidavit` / `cover_letter`, content = JSON Tiptap | 3 días |
+
+**Feature flags:** `document-studio` 🆕, `agent-pablo` 🆕, `document-templates`
+
+**Métrica de éxito:** Paralegal completa una cover letter + I-134 affidavit en 10 min (vs 45 min en Word externo).
+
+**Diferenciador único:** ningún competidor tiene editor de cartas con AI específico para inmigración USCIS.
+
+---
+
 ## 📊 Tabla resumen del roadmap
 
 | Fase | Nombre | Duración | Bloqueante para |
@@ -346,14 +391,16 @@ Build no-trivial (2 sprints) con valor solo para firmas grandes que ya usan QB.
 | 2 | Smart Forms expansion | 4 sem | Fase 6 (Translation usa Felix pattern) |
 | 3 | Forms Court/ICE/CBP | 4 sem | — |
 | 4 | GHL Invisible Auto-billing | 3 sem | Fase 7 (Accounting depende de invoices) |
-| 5 | Vertical Depth | 4 sem | Fase 8 (Knowledge Base) |
+| 5 | Vertical Depth (extendida 2026-05-11) | 4 sem | Fase 8 (Knowledge Base) |
+| 5B | Case Engine Unification 🆕 | 3-4 sem | Fase 11 (Document Studio embedded) |
 | 6 | OCR + Translation | 3 sem | — |
 | 7 | Accounting Module | 3 sem | — |
 | 8 | Knowledge Base + 6 agentes | 5 sem | — |
 | 9 | Scale + Self-onboarding | 3 sem | — |
 | 10 | QuickBooks integration | 2 sem | (cuando se pida) |
+| 11 | Document Studio 🆕 | 4-5 sem | Cierre de visión oficina virtual |
 
-**Tiempo total estimado a producto completo**: 33 semanas (~7-8 meses)
+**Tiempo total estimado a producto completo**: 40-42 semanas (~9-10 meses) — incluye las 2 fases nuevas de la visión oficina virtual articulada por Mr. Lorenzo 2026-05-11.
 
 ---
 

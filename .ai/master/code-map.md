@@ -346,7 +346,37 @@ Total: 48 archivos .tsx
 - `AdminTestSuite.tsx` — development only
 - `B1B2Dashboard.tsx` — visa B1/B2 cases
 - `B1B2AdminLite.tsx` — admin para B1/B2
-- `SmartFormPage.tsx`, `SmartFormsList.tsx`, `SmartFormsSettings.tsx` — formularios dinámicos I-765
+- `SmartFormPage.tsx` — dispatcher por `form_type`. Branches a I765Wizard o I130Wizard. Handler genérico para save/Felix/FillUSCIS. Banner Felix IA cuando hay caso vinculado.
+- `SmartFormsList.tsx` — catálogo de 15 formularios USCIS + lista de submissions. Modal selector de beneficiary. I-130 e I-765 marcados `available`, resto `coming_soon`.
+- `SmartFormsSettings.tsx` — config attorney/preparer data (afecta auto-fill del wizard).
+
+### Smart Forms Module (src/components/smartforms/, src/lib/, completo 2026-05-11)
+
+| Archivo | Líneas | Propósito |
+|---|---:|---|
+| `components/smartforms/SmartFormsLayout.tsx` | ~280 | Shell del módulo, splash gateado por sessionStorage (1x/sesión), TopNavBar |
+| `components/smartforms/SmartFormsContext.tsx` | ~50 | Context con `lang` (es/en) + wizardNav (steps progress) |
+| `components/smartforms/I765Wizard.tsx` | 1063 | Wizard I-765 EAD — 9 pasos, beneficiary picker, share token, auto-save |
+| `components/smartforms/I130Wizard.tsx` | 1610 | Wizard I-130 petición familiar — 13 pasos, petitioner+beneficiary separados, relación 4 tipos (spouse/parent/child/sibling). Live 2026-05-11. |
+| `components/smartforms/i765Schema.ts` | 227 | TS types + defaults + ELIGIBILITY_CATEGORIES + US_STATES |
+| `components/smartforms/i130Schema.ts` | 439 | TS types I-130 (200+ campos petitioner + beneficiary) + I130_STEPS + I130_RELATIONSHIPS. 2026-05-11. |
+| `lib/i765FormFiller.ts` | 733 | PDF AcroForm filler + barcode PDF417 embed con bwip-js |
+| `lib/i765PdfGenerator.ts` | 148 | Summary PDF branded (review interno, NO USCIS oficial) |
+| `lib/i765Barcode.ts` | 17 | PDF417 header builder (FormType\|Revision\|Page) |
+| `lib/i765FelixMapper.ts` | 250+ | Mapper defensivo Felix output → I765Data + FIELD_ALIASES |
+| `lib/i130FelixMapper.ts` | 276 | Mapper defensivo Felix output → I130Data. 2026-05-11. |
+| `lib/i130Barcode.ts` | ⏳ TBD | PENDIENTE — espera PDF blank I-130 |
+| `lib/i130FormFiller.ts` | ⏳ TBD | PENDIENTE — espera PDF blank I-130 |
+| `public/forms/i-765-template.pdf` | binary | PDF blank USCIS I-765 edition 08/21/25 |
+| `public/forms/i-130-template.pdf` | ⏳ TBD | PENDIENTE — Mr. Lorenzo debe subir |
+
+**Visual:** Módulo migrado al brandbook NER oficial (2026-05-11, commit ab56b4f). Variante A cyan 18%. Tokens: `--primary` reasignado a AI Blue (#2563EB) en index.css. 218 usos `*-accent`→`*-primary` en 9 archivos del flow.
+
+**Documentación viva:**
+- `src/components/smartforms/README.md` — contrato E2E del módulo
+- `mockups/2026-05-11-smart-forms-redesign.html` — mockup firmado (gitignored, no en repo)
+- `.ai/master/smart-forms-redesign-plan.md` — plan migración tokens (Victoria)
+- `.ai/master/oficina-virtual-vision-2026-05-11.md` — 4 temas estratégicos de Mr. Lorenzo
 
 ---
 
