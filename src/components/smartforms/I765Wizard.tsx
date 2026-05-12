@@ -251,7 +251,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   // Register wizard nav in layout context
   useEffect(() => {
-    setWizardNav({ steps: visibleSteps, currentStep: stepIdx, setStep: setStepIdx });
+    setWizardNav({ steps: visibleSteps, currentStep: stepIdx, setStep: setStepIdx, stepLabels: I765_STEP_LABELS });
     return () => setWizardNav(null);
   }, [stepIdx, setWizardNav, visibleSteps]);
 

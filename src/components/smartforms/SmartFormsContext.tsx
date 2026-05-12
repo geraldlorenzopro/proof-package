@@ -3,6 +3,10 @@ interface WizardNav {
   steps: string[];
   currentStep: number;
   setStep: (idx: number) => void;
+  /** Labels para cada step key. Si no se pasa, se muestra el key crudo.
+   *  Permite que SmartFormsLayout funcione con cualquier wizard (I-765, I-130, etc.)
+   *  sin necesidad de importar todos los STEP_LABELS. */
+  stepLabels?: Record<string, { en: string; es: string }>;
 }
 
 interface SmartFormsContextType {

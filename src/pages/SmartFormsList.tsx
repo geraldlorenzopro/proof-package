@@ -646,17 +646,24 @@ export default function SmartFormsList() {
             </div>
 
             {/* Footer actions */}
-            <div className="flex items-center justify-between px-5 py-4 border-t border-border/20">
-              <Button variant="ghost" size="sm" onClick={handleSkipBeneficiary} className="text-muted-foreground">
-                No está en mi lista — empezar en blanco
-              </Button>
-              <Button
-                onClick={handleProceedToForm}
-                disabled={!selectedBeneficiaryId}
-                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                Continuar <ChevronRight className="w-4 h-4" />
-              </Button>
+            <div className="border-t border-border/20">
+              {!selectedBeneficiaryId && (
+                <p className="px-5 pt-3 pb-1 text-[11px] text-muted-foreground text-center">
+                  Selecciona un contacto para continuar, o usa <span className="font-medium text-foreground">"empezar en blanco"</span> si no está en tu lista.
+                </p>
+              )}
+              <div className="flex items-center justify-between px-5 py-4">
+                <Button variant="ghost" size="sm" onClick={handleSkipBeneficiary} className="text-muted-foreground">
+                  No está en mi lista — empezar en blanco
+                </Button>
+                <Button
+                  onClick={handleProceedToForm}
+                  disabled={!selectedBeneficiaryId}
+                  className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Continuar <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

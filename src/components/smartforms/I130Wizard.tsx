@@ -231,7 +231,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   }, [data.formPreparedBy, profileData]);
 
   useEffect(() => {
-    setWizardNav({ steps: visibleSteps, currentStep: stepIdx, setStep: setStepIdx });
+    setWizardNav({ steps: visibleSteps, currentStep: stepIdx, setStep: setStepIdx, stepLabels: I130_STEP_LABELS });
     return () => setWizardNav(null);
   }, [stepIdx, setWizardNav, visibleSteps]);
 

@@ -8,8 +8,19 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SmartFormsProvider, useSmartFormsContext } from "./SmartFormsContext";
-import { I765_STEP_LABELS } from "./i765Schema";
 import { useAppSeat } from "@/hooks/useAppSeat";
+
+/* Fallback label si el wizard no inyectó stepLabels en el context.
+   Defensivo: devuelve el step key crudo en vez de crashear. */
+function labelFor(
+  step: string,
+  lang: "en" | "es",
+  labels?: Record<string, { en: string; es: string }>,
+): string {
+  const entry = labels?.[step];
+  if (!entry) return step;
+  return entry[lang] || entry.en || step;
+}
 import {
   Dialog,
   DialogContent,
@@ -27,11 +38,11 @@ import {
 
 /* ── Mobile step drawer (shown only on small screens when wizard is active) ── */
 function MobileStepDrawer() {
-  const { wizardNav } = useSmartFormsContext();
+  // Una sola llamada al context, ANTES del early return (regla de hooks de React).
+  const { wizardNav, lang } = useSmartFormsContext();
   if (!wizardNav) return null;
 
-  const { steps, currentStep, setStep } = wizardNav;
-  const { lang } = useSmartFormsContext();
+  const { steps, currentStep, setStep, stepLabels } = wizardNav;
   const progress = ((currentStep + 1) / steps.length) * 100;
 
   return (
@@ -41,7 +52,7 @@ function MobileStepDrawer() {
           <SheetTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2 text-xs shrink-0">
               <span className="font-bold text-primary">{currentStep + 1}/{steps.length}</span>
-              <span className="truncate max-w-[120px]">{I765_STEP_LABELS[steps[currentStep]][lang]}</span>
+              <span className="truncate max-w-[120px]">{labelFor(steps[currentStep], lang, stepLabels)}</span>
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0">
@@ -75,7 +86,7 @@ function MobileStepDrawer() {
                         {i + 1}
                       </span>
                     )}
-                    <span className="truncate">{I765_STEP_LABELS[s][lang]}</span>
+                    <span className="truncate">{labelFor(s, lang, stepLabels)}</span>
                   </button>
                 </SheetTrigger>
               ))}
@@ -213,7 +224,7 @@ function TopNavBar() {
                       ? "text-primary/70 hover:bg-primary/10 cursor-pointer"
                       : "text-muted-foreground hover:bg-muted/60 cursor-pointer"
                   )}
-                  title={I765_STEP_LABELS[s][lang]}
+                  title={labelFor(s, lang, wizardNav.stepLabels)}
                 >
                   {isCompleted ? (
                     <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
@@ -225,7 +236,7 @@ function TopNavBar() {
                       {i + 1}
                     </span>
                   )}
-                  <span className="hidden md:inline">{I765_STEP_LABELS[s][lang]}</span>
+                  <span className="hidden md:inline">{labelFor(s, lang, wizardNav.stepLabels)}</span>
                 </button>
               );
             })}

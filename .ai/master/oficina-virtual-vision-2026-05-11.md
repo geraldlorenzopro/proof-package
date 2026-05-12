@@ -111,12 +111,40 @@ Implicación: NER NO es "Smart Forms + Evidence Builder + Case Engine" como mód
 
 ---
 
-## Tema 4 — Editor in-line de cartas/affidavits con AI assist
+## Tema 4 — Editor in-line de cartas/affidavits + PDF Tools con AI assist
 
-**Lo que Mr. Lorenzo describió:**
+**Lo que Mr. Lorenzo describió (2026-05-11):**
 > "Quiero que cada documento se pueda ver y editar en vivo y que si hay que hacer cartas o affidavit necesito que todo se pueda hacer dentro del caso y editar ahí mismo pero apoyado por la AI"
 
-**Estado actual:** NO existe. Cartas/affidavits hoy se hacen fuera de NER (Google Docs, Word). Se suben como PDF firmado al caso.
+**Expandido (2026-05-12):**
+> "Tengo muchos clientes que usan PDF y necesitan editar y creo que eso podría ser un buen feature en NER"
+
+**Estado actual:** NO existe. Cartas/affidavits hoy se hacen fuera de NER (Google Docs, Word). PDFs flat se llenan con iLovePDF / Adobe Acrobat (firmas pagan licencias).
+
+**SCOPE EXPANDIDO 2026-05-12 — 3 sub-capacidades:**
+
+### 4A. Editor cartas/affidavits desde scratch (visión original)
+- Tiptap/Lexical editor in-line en `/case-engine/:id`
+- Templates: cover letter USCIS, I-134 affidavit, hardship letter, etc.
+- Agente Pablo para drafts
+
+### 4B. PDF Form Builder backend (NUEVO 2026-05-12)
+- Edge function `pdf-form-builder`
+- Input: PDF flat (cualquier USCIS form sin AcroForm) + schema JSON opcional
+- Procesa con Claude Vision: detecta fields → coords → tipos
+- Output: PDF con AcroForm editable + JSON mapping
+- Reusable internamente para acelerar adición de nuevos forms USCIS (I-485, N-400, DS-260, etc.)
+- Tiempo construcción: 6-8h
+
+### 4C. PDF Tools UI público (NUEVO 2026-05-12)
+- Mini app dentro de NER `/dashboard/pdf-tools` para que las paralegales:
+  - Suban CUALQUIER PDF (no solo USCIS)
+  - Rellenen campos online sin Acrobat
+  - Agreguen texto, firmas, anotaciones
+  - Descarguen PDF final
+- Reemplaza iLovePDF / Smallpdf / Acrobat externo
+- Justifica tier Professional+ ($297+)
+- Diferenciador: ningún competidor de inmigración tiene esto integrado
 
 **Requisitos:**
 - Editor rich-text in-line dentro del caso (Tiptap / Lexical / similar)
