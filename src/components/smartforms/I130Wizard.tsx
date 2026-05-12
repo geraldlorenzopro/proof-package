@@ -351,22 +351,6 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
     return (
       <div className="space-y-6">
-        {/* Banner BETA — I-130 PDF filler aún en construcción */}
-        <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-3 flex items-start gap-2.5">
-          <AlertCircle className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-          <div className="space-y-0.5">
-            <p className="text-xs font-semibold text-cyan-100">
-              {t("I-130 is in BETA", "I-130 está en BETA")}
-            </p>
-            <p className="text-[11px] text-cyan-100/80 leading-relaxed">
-              {t(
-                "You can fill all 13 steps and save the draft. The official USCIS PDF will be available in the coming days when we upload the template.",
-                "Puedes llenar los 13 pasos y guardar el borrador. El PDF oficial USCIS llega en próximos días, cuando subamos la plantilla."
-              )}
-            </p>
-          </div>
-        </div>
-
         <div className="text-center space-y-1.5">
           <h3 className="text-xl font-bold text-primary">{t("Set up this petition", "Configura esta petición")}</h3>
           <p className="text-sm text-muted-foreground">{t("I-130: Petition for Alien Relative", "I-130: Petición para Pariente Extranjero")}</p>
