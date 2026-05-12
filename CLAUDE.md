@@ -698,6 +698,83 @@ Acceso vía Lovable (Mr. Lorenzo lo abre).
 en memoria. NUNCA proponer setup CLI para proyectos Lovable-managed sin
 verificar primero acceso vía PAT personal.
 
+## Protocolo: Coordinación Lovable ↔ Claude Code (LOCKED 2026-05-12)
+
+**Problema raíz:** Mr. Lorenzo trabaja en paralelo con Lovable (chat) y
+Claude Code (CLI). Ambos pushean a `main`. Síntomas observados:
+
+- Lovable reporta bugs basado en preview con cache stale (no había hecho pull)
+- Mr. Lorenzo pega screenshots de problemas que YA arregamos pero Lovable
+  aún no deployó
+- Yo metí regresiones porque tsc local no detectó imports faltantes que sí
+  detecta el runtime de Lovable preview
+- Mr. Lorenzo termina como "pegamento" entre las 2 IAs, gastando energía
+
+**Protocolo obligatorio:**
+
+### Cuando Yo (Claude Code) termino una serie de fixes
+
+Mi mensaje final a Mr. Lorenzo SIEMPRE incluye:
+
+1. **Commit SHA** del último push (ej. `5f6c3c1`)
+2. **Prompt copy-paste para Lovable** que arranca con:
+   ```
+   Pull main commit <SHA>. <Lista de cambios>.
+   DESPUÉS DEL PULL hard refresh del preview (Cmd+Shift+R).
+   <Acción específica pedida>.
+   ```
+3. **NO acepto que Lovable reporte sin haber pulleado primero**
+
+### Cuando Lovable reporta hallazgos
+
+Antes de tomar acción, verifico:
+
+1. **¿Lovable está en el commit más reciente?** `git log --oneline -5` y
+   compararlo con lo que dice Lovable
+2. **Si Lovable está atrás:** decirle a Mr. Lorenzo "Lovable necesita pull
+   primero" — el reporte puede ser falso positivo
+3. **Si Lovable está al día:** el bug es real, lo arreglo
+
+### Mensaje de commit DEBE incluir guía para Lovable
+
+Cuando el commit tiene cambios que Lovable debe ver, agregar al final del
+mensaje de commit:
+
+```
+Lovable: pull main <sha> antes de tocar nada. Hard refresh del preview.
+```
+
+Esto queda en git log permanentemente, sirve de auditoría si vuelve a pasar.
+
+### TypeScript local NO es la verdad absoluta
+
+**Lección 2026-05-12:** `tsc --noEmit` me dijo EXIT=0 pero Lovable detectó
+`ReferenceError: I130_STEP_LABELS is not defined` en runtime. Probablemente
+cache `.tsbuildinfo` stale.
+
+**Antes de commits que tocan imports:** correr build completo
+(`bun run build`) si tsc local pasa muy fácil. Build verifica imports
+con módulos resueltos. Si build falla por causa NO relacionada
+(ej. `@lovable.dev/cloud-auth-js` que no está local), al menos los
+errores de imports propios aparecen ANTES del crash de Lovable.
+
+### Cuando NO necesito al equipo orquestador
+
+Estos NO requieren Valerie/Victoria/Vanessa:
+
+- CSS/Tailwind fixes (cambiar tokens, hover states, layouts)
+- Bugs runtime (imports faltantes, type errors)
+- Microcopy minor
+- Renombrar archivos
+- Cleanup imports unused
+
+Estos SÍ requieren equipo:
+
+- Decisiones de diseño nuevas (NO solo aplicar brandbook existente)
+- Trade-offs UX no obvios
+- Refactor de arquitectura
+- Nuevas features de scope grande (>1 día)
+
 ## Next concrete action
 
 Ver `.ai/master/state.md` sección "Sprint 1" para los 3 botones GHL —

@@ -1193,6 +1193,83 @@ El orquestador local sigue siendo válido para debates >3 rounds con UI visual.
 
 ---
 
+## 2026-05-12 — Protocolo Lovable ↔ Claude Code para evitar ping-pong
+
+**Decisión:** Establecer protocolo formal de coordinación entre Lovable (agente
+externo que Mr. Lorenzo invoca desde chat) y Claude Code (yo, vía CLI). Cada
+push de mi lado debe incluir prompt copy-paste para Lovable que arranque con
+"Pull main commit <SHA>". Documentado en CLAUDE.md sección "Protocolo:
+Coordinación Lovable ↔ Claude Code".
+
+**Quién decidió:** Mr. Lorenzo (cansado del ping-pong) + Claude Code (propuso
+estructura).
+
+**Contexto:** Durante el sprint Smart Forms / I-130, Mr. Lorenzo terminó como
+"pegamento humano" entre Lovable y yo. Síntomas observados:
+
+1. Lovable reporta bugs basado en preview cacheado (no había hecho pull)
+2. Mr. Lorenzo me pega screenshots de problemas que YA arreglé pero Lovable
+   no había deployado todavía
+3. Yo metí 1 regresión (import I130_STEP_LABELS faltante en commit 9035241)
+   porque tsc local pasó EXIT=0 pero Lovable detectó ReferenceError runtime
+4. 4 commits en cadena (5f6c3c1 ← 827a599 ← 9035241 ← 1c1c414) que pudieron
+   ser 1 commit si hubiéramos sincronizado mejor
+
+**Bugs específicos que el protocolo prevenía si hubiera existido:**
+
+- 5f6c3c1: fondo azul saturado, hover gold, stepper comprimido — los 3 son
+  problemas que Mr. Lorenzo veía en producción pero Lovable no porque su
+  preview tenía cache vieja. Si Lovable hubiera hecho pull primero,
+  habríamos detectado/arreglado en el mismo turno.
+
+**Alternativas consideradas:**
+
+1. Webhook automation que avisa a Lovable cada vez que yo push — complejo,
+   requiere infra de Lovable (rechazado).
+2. Dejar que Mr. Lorenzo gestione manualmente — lo que está pasando, no
+   escala (rechazado).
+3. **Protocolo formal documentado** con responsabilidades claras (elegido).
+
+**Razón:** Cada parte tiene una responsabilidad concreta:
+- YO: doy SHA + prompt copy-paste claro
+- Mr. Lorenzo: pega el prompt sin modificar
+- Lovable: hace PULL FIRST como primera acción
+
+**Implicación inmediata:** todos mis commits relevantes para Lovable deben
+incluir línea final "Lovable: pull main <sha> antes de tocar nada" en el
+mensaje. Esto queda permanentemente en git log para auditoría.
+
+**Implicación largo plazo:** cuando construyamos pdf-form-builder (Fase 11),
+agente Pablo (legal writer) o cualquier feature que toque varios módulos,
+el protocolo previene ping-pong y reduce 50%+ del tiempo de coordinación.
+
+---
+
+## 2026-05-12 — tsc local no detecta todos los errores de import
+
+**Decisión:** Antes de pushes que tocan imports o nuevos archivos, correr
+`bun run build` completo además de `tsc --noEmit`. Si build falla solo
+por `@lovable.dev/cloud-auth-js` (no instalado local), al menos los errores
+de imports propios aparecen ANTES de que crashee en preview de Lovable.
+
+**Quién decidió:** Claude Code (después de regresión real).
+
+**Contexto:** En commit 9035241 agregué `setWizardNav({ ..., stepLabels:
+I130_STEP_LABELS })` en I130Wizard.tsx pero olvidé el import. `tsc --noEmit`
+pasó EXIT=0. Lovable detectó `ReferenceError: I130_STEP_LABELS is not defined`
+en runtime. Pantalla negra completa del wizard I-130.
+
+Probablemente cache `.tsbuildinfo` stale. tsc no re-validó imports.
+
+**Implicación:** mi nuevo flujo pre-commit:
+1. `bunx tsc --noEmit` (rápido, detecta types pero no resolve imports
+   con cache)
+2. `bun run build` (slow pero detecta TODO, ignorar error específico
+   de @lovable.dev/cloud-auth-js que es pre-existente)
+3. Solo push si AMBOS pasan
+
+---
+
 ## Plantilla para nueva decisión
 
 ```markdown
