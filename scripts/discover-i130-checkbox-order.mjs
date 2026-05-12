@@ -19,7 +19,7 @@ const bytes = readFileSync("public/forms/i-130-template.pdf");
 const pdf = await PDFDocument.load(bytes, { ignoreEncryption: true });
 const form = pdf.getForm();
 
-function getY(field) {
+function getRect(field) {
   try {
     const acroField = field.acroField;
     if (!acroField) return null;
@@ -29,15 +29,9 @@ function getY(field) {
       widget.dict?.lookup?.(PDFName.of("Rect")) ||
       widget.dict?.get?.(PDFName.of("Rect"));
     if (!(rectObj instanceof PDFArray)) return null;
-    const y1 = rectObj.get(1);
-    const y2 = rectObj.get(3);
-    return Math.max(
-      y1 instanceof PDFNumber ? y1.asNumber() : 0,
-      y2 instanceof PDFNumber ? y2.asNumber() : 0
-    );
-  } catch {
-    return null;
-  }
+    const n = (i) => { const v = rectObj.get(i); return v instanceof PDFNumber ? v.asNumber() : 0; };
+    return { x: Math.min(n(0), n(2)), y: Math.max(n(1), n(3)) };
+  } catch { return null; }
 }
 
 function reportArray(patternRegex, label, visualOrder) {
@@ -45,26 +39,30 @@ function reportArray(patternRegex, label, visualOrder) {
   console.log(`\n=== ${label} (${fields.length} fields) ===`);
   console.log(`Visual order esperado: ${visualOrder.join(", ")}`);
 
-  const withY = fields.map((f) => {
+  const withRect = fields.map((f) => {
     const name = f.getName();
     const idxMatch = name.match(/\[(\d+)\]$/);
     const idx = idxMatch ? parseInt(idxMatch[1]) : -1;
-    return { name, idx, y: getY(f) };
+    const r = getRect(f) || { x: 0, y: 0 };
+    return { name, idx, x: r.x, y: r.y };
   });
 
-  // Sort descending Y (top-first)
-  withY.sort((a, b) => (b.y ?? -Infinity) - (a.y ?? -Infinity));
+  // Sort: Y desc (top first); within same row (Y diff < 5pt), X asc (left first)
+  withRect.sort((a, b) => {
+    if (Math.abs(a.y - b.y) < 5) return a.x - b.x;
+    return b.y - a.y;
+  });
 
-  console.log("Orden visual (top→bottom):");
-  withY.forEach((f, visualPos) => {
+  console.log("Orden visual (top→bottom, left→right):");
+  withRect.forEach((f, visualPos) => {
     const expectedColor = visualOrder[visualPos] ?? "?";
-    console.log(`  visual[${visualPos}] = idx[${f.idx}] · y=${f.y?.toFixed(1)} → ${expectedColor}`);
+    console.log(`  visual[${visualPos}] = idx[${f.idx}] · y=${f.y.toFixed(1)} x=${f.x.toFixed(1)} → ${expectedColor}`);
   });
 
   // Mapping idx → visualPos
   console.log("\nMapping idx → visualPos (para hardcodear):");
   const map = {};
-  withY.forEach((f, visualPos) => {
+  withRect.forEach((f, visualPos) => {
     map[visualOrder[visualPos]] = f.idx;
   });
   console.log(JSON.stringify(map, null, 2));

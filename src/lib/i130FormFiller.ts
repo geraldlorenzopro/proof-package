@@ -453,15 +453,18 @@ const P = {
   pt4_fam5_dob: /\.Pt4Line48_DateOfBirth\[0\]/,
   pt4_fam5_country: /\.Pt4Line49_CountryOfBirth\[0\]/, // posible colisión con Person 1 — duplicado en PDF
 
-  // Beneficiary Spouse 1 + 2 names (PDF reusa numbering 17-19 que también es Items 17-19 marital info)
-  // Pt4Line17_DateMarriageEnded[0] = Spouse 1 date ended (Item 22 visual)
-  // Pt4Line17_DateMarriageEnded[1] = Spouse 2 date ended (Item 24 visual)
-  // Pt4Line18a_FamilyName etc = Spouse 1 name (Items 21.a-c visual)
-  pt4_l21a_family: /\.Pt4Line18a_FamilyName\[0\]/,
-  pt4_l21b_given: /\.Pt4Line18b_GivenName\[0\]/,
-  pt4_l21c_middle: /\.Pt4Line18c_MiddleName\[0\]/,
+  // Beneficiary Spouse 1 + 2 names — VERIFIED via Y-coord probe en PDF blank.
+  // Pt4Line16a/b/c (y=234..186) = Spouse 1 / Item 21.a-c visual (current spouse)
+  // Pt4Line18a/b/c (y=108..60)  = Spouse 2 / Item 23.a-c visual (prior spouse)
+  // Pt4Line17_DateMarriageEnded[0] (y=162) = Spouse 1 / Item 22
+  // Pt4Line17_DateMarriageEnded[1] (y=738 col derecha) = Spouse 2 / Item 24
+  pt4_l21a_family: /\.Pt4Line16a_FamilyName\[0\]/,
+  pt4_l21b_given: /\.Pt4Line16b_GivenName\[0\]/,
+  pt4_l21c_middle: /\.Pt4Line16c_MiddleName\[0\]/,
   pt4_l22_dateEnded: /\.Pt4Line17_DateMarriageEnded\[0\]/,
-  // Spouse 2 name no tiene mapping descubierto en este PDF — overflow al Part 9
+  pt4_l23a_family: /\.Pt4Line18a_FamilyName\[0\]/,
+  pt4_l23b_given: /\.Pt4Line18b_GivenName\[0\]/,
+  pt4_l23c_middle: /\.Pt4Line18c_MiddleName\[0\]/,
   pt4_l24_dateEnded: /\.Pt4Line17_DateMarriageEnded\[1\]/,
 
   // Beneficiary Native Script (Items 57-58 visual = Pt4Line16a-c en PDF)
@@ -620,18 +623,17 @@ const P = {
 // Los índices internos del PDF NO siguen el orden visual; hardcodeo cada uno
 // según el Y-coord descubierto.
 // Eye color visual order: black, blue, brown, gray, green, hazel, maroon, pink, unknown
+// Discovery con sort Y desc + X asc (los row-ties no eran determinísticos antes).
 const EYE_COLOR_INDEX: Record<string, number> = {
-  black: 0, blue: 1, brown: 7, gray: 2, green: 5, hazel: 6, maroon: 3, pink: 4, unknown: 8,
+  black: 7, blue: 0, brown: 1, gray: 6, green: 5, hazel: 2, maroon: 4, pink: 3, unknown: 8,
 };
 // Hair color visual order: bald, black, blond, brown, gray, red, sandy, white, unknown
-// (HAIR conserva orden idx==visualPos según discovery — no requiere remap)
 const HAIR_COLOR_INDEX: Record<string, number> = {
   bald: 0, black: 1, blond: 2, brown: 3, gray: 4, red: 5, sandy: 6, white: 7, unknown: 8,
 };
-// Beneficiary marital status: índices DISPERSOS en el PDF (no secuenciales con visual).
-// Discovery: single=3, married=4, divorced=5, widowed=0, separated=1, annulled=2
+// Beneficiary marital status: índices DISPERSOS verificados con Y+X discovery.
 const BENE_MARITAL_INDEX: Record<string, number> = {
-  single: 3, married: 4, divorced: 5, widowed: 0, separated: 1, annulled: 2,
+  single: 3, married: 4, divorced: 5, widowed: 0, separated: 2, annulled: 1,
 };
 
 // ─── MAIN ───────────────────────────────────────────────────────
@@ -984,8 +986,9 @@ export async function fillI130Pdf(data: I130Data) {
   const benePriorIdx = data.relationshipType === "spouse" ? 0 : 1;
   const benePrior = data.beneficiaryPriorMarriages?.[benePriorIdx];
   if (benePrior) {
-    // NOTE: PDF NO tiene field para Spouse 2 name (solo date ended).
-    // El name va a Part 9 Addendum.
+    setText(form, P.pt4_l23a_family, benePrior.spouseLastName);
+    setText(form, P.pt4_l23b_given, benePrior.spouseFirstName);
+    setText(form, P.pt4_l23c_middle, benePrior.spouseMiddleName);
     setText(form, P.pt4_l24_dateEnded, fmtDate(benePrior.dateMarriageEnded));
   }
 
@@ -1213,15 +1216,7 @@ export async function fillI130Pdf(data: I130Data) {
       });
     }
   }
-  // Beneficiary Spouse 2 NAME (PDF solo guarda date ended de Spouse 2, no nombre):
-  const benePriorNameIdx = data.relationshipType === "spouse" ? 0 : 1;
-  const benePriorName = data.beneficiaryPriorMarriages?.[benePriorNameIdx];
-  if (benePriorName && (benePriorName.spouseLastName || benePriorName.spouseFirstName)) {
-    overflow.push({
-      page: "6", part: "4", item: "23",
-      content: `Beneficiary Spouse 2 (Item 23 — Prior): ${benePriorName.spouseLastName}, ${benePriorName.spouseFirstName} ${benePriorName.spouseMiddleName} · Ended ${fmtDate(benePriorName.dateMarriageEnded)} (${benePriorName.howEnded})`.trim(),
-    });
-  }
+  // Beneficiary Spouse 2 name ya se llena en Items 23.a-c (Pt4Line18a/b/c) — sin overflow.
   // Beneficiary occupation — PDF NO tiene field, va a Part 9:
   if (data.beneficiaryCurrentEmployment?.occupation) {
     overflow.push({
