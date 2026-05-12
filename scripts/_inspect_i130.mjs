@@ -1,6 +1,6 @@
 import { PDFDocument } from 'pdf-lib';
 import { readFileSync } from 'fs';
-const bytes = readFileSync('public/forms/i-130.pdf');
+const bytes = readFileSync('public/forms/i-130-decrypted.pdf');
 let pdf;
 try { pdf = await PDFDocument.load(bytes, { ignoreEncryption: true }); }
 catch { pdf = await PDFDocument.load(bytes); }
