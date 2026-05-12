@@ -67,9 +67,9 @@ const CATEGORY_ICONS: Record<string, typeof Briefcase> = {
 };
 
 const FORMS_CATALOG: FormCatalogItem[] = [
-  { slug: "i-765", name: "I-765", fullName: "Application for Employment Authorization", description: "Permiso de trabajo (EAD)", category: "Empleo", status: "available" },
+  { slug: "i-765", name: "I-765", fullName: "I-765 · Permiso de Trabajo (EAD)", description: "Autorización de empleo", category: "Empleo", status: "available" },
   { slug: "i-140", name: "I-140", fullName: "Immigrant Petition for Alien Workers", description: "Petición de inmigrante trabajador", category: "Empleo", status: "coming_soon" },
-  { slug: "i-130", name: "I-130", fullName: "Petition for Alien Relative", description: "Petición de familiar extranjero", category: "Familia", status: "available" },
+  { slug: "i-130", name: "I-130", fullName: "I-130 · Petición Familiar (matrimonio, padres, hijos)", description: "Petición de familiar extranjero · BETA (sin PDF oficial aún)", category: "Familia", status: "beta" },
   { slug: "i-130a", name: "I-130A", fullName: "Supplemental Information for Spouse Beneficiary", description: "Suplemento para cónyuge beneficiario", category: "Familia", status: "coming_soon" },
   { slug: "i-129f", name: "I-129F", fullName: "Petition for Alien Fiancé(e)", description: "Visa K-1 para prometido(a)", category: "Familia", status: "coming_soon" },
   { slug: "i-751", name: "I-751", fullName: "Petition to Remove Conditions on Residence", description: "Remover condiciones de residencia", category: "Familia", status: "coming_soon" },
@@ -96,6 +96,7 @@ export default function SmartFormsList() {
   const [firmName, setFirmName] = useState<string | null>(null);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState("");
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   // Beneficiary selection modal
   const [selectedForm, setSelectedForm] = useState<FormCatalogItem | null>(null);
@@ -214,7 +215,7 @@ export default function SmartFormsList() {
   };
 
   const handleFormClick = (form: FormCatalogItem) => {
-    if (form.status === "available") {
+    if (form.status === "available" || form.status === "beta") {
       setCatalogOpen(false);
       setSelectedForm(form);
       setSelectedBeneficiaryId(null);
@@ -269,9 +270,13 @@ export default function SmartFormsList() {
     f.fullName.toLowerCase().includes(catalogSearch.toLowerCase()) ||
     f.description.toLowerCase().includes(catalogSearch.toLowerCase())
   );
-  const groupedCatalog = CATEGORIES.map(cat => ({
+  // Separamos los disponibles (incluye beta) de los próximamente.
+  // Los disponibles van arriba sin agrupar por categoría — son pocos y queremos foco.
+  // Los "próximamente" van debajo en accordion colapsado por categoría.
+  const availableForms = filteredCatalog.filter(f => f.status === "available" || f.status === "beta");
+  const comingSoonByCategory = CATEGORIES.map(cat => ({
     category: cat,
-    forms: filteredCatalog.filter(f => f.category === cat),
+    forms: filteredCatalog.filter(f => f.category === cat && f.status === "coming_soon"),
   })).filter(g => g.forms.length > 0);
 
   if (loading) return (
@@ -301,7 +306,7 @@ export default function SmartFormsList() {
               <h1 className="text-xl font-bold tracking-tight">Formularios</h1>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5 ml-7.5">
-              Formularios inteligentes para USCIS
+              Llena, guarda y envía formularios USCIS desde acá
             </p>
           </div>
           <Button
@@ -360,7 +365,7 @@ export default function SmartFormsList() {
               {submissions.length === 0 ? "No hay formularios aún" : "Sin resultados para tu búsqueda"}
             </p>
             <p className="text-xs text-muted-foreground/60 mb-4">
-              {submissions.length === 0 ? "Comienza creando tu primer formulario inteligente" : "Intenta con otro término"}
+              {submissions.length === 0 ? "Cuando armes un I-130 o I-765 va a aparecer acá" : "Intenta con otro término"}
             </p>
             {submissions.length === 0 && (
               <Button onClick={() => setCatalogOpen(true)} variant="outline" size="sm" className="gap-1.5">
@@ -424,7 +429,7 @@ export default function SmartFormsList() {
                         <DropdownMenuItem onClick={() => handleDuplicate(sub)} className="gap-2">
                           <Copy className="w-3.5 h-3.5" /> Duplicar
                         </DropdownMenuItem>
-                        {sub.status === "completed" && (
+                        {sub.status === "completed" && sub.form_type === "i-765" && (
                           <DropdownMenuItem onClick={() => handleDownloadPdf(sub)} className="gap-2">
                             <Download className="w-3.5 h-3.5" /> Descargar PDF
                           </DropdownMenuItem>
@@ -462,49 +467,90 @@ export default function SmartFormsList() {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4">
-              {groupedCatalog.map(group => {
-                const CatIcon = CATEGORY_ICONS[group.category] || FileText;
-                return (
-                  <div key={group.category}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <CatIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{group.category}</span>
-                    </div>
-                    <div className="space-y-1">
-                      {group.forms.map(form => {
-                        const isAvailable = form.status === "available";
+              {/* DISPONIBLES (incluye beta) — arriba, sin agrupar */}
+              {availableForms.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">Disponibles ahora</span>
+                  </div>
+                  <div className="space-y-1">
+                    {availableForms.map(form => {
+                      const isBeta = form.status === "beta";
+                      return (
+                        <button
+                          key={form.slug}
+                          onClick={() => handleFormClick(form)}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all hover:bg-primary/10 cursor-pointer group"
+                        >
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 bg-primary/15 text-primary">
+                            {form.name}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{form.fullName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{form.description}</p>
+                          </div>
+                          {isBeta && (
+                            <span className="text-[9px] font-bold text-amber-500 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded shrink-0">BETA</span>
+                          )}
+                          <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* PRÓXIMAMENTE — colapsado por defecto, accordion al fondo */}
+              {comingSoonByCategory.length > 0 && (
+                <div className="border-t border-border/30 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowComingSoon(s => !s)}
+                    className="w-full flex items-center justify-between gap-2 text-left hover:opacity-80 transition-opacity"
+                  >
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Próximamente · {comingSoonByCategory.reduce((sum, g) => sum + g.forms.length, 0)} formularios
+                    </span>
+                    <ChevronRight className={cn("w-4 h-4 text-muted-foreground transition-transform", showComingSoon && "rotate-90")} />
+                  </button>
+                  {showComingSoon && (
+                    <div className="mt-3 space-y-3">
+                      {comingSoonByCategory.map(group => {
+                        const CatIcon = CATEGORY_ICONS[group.category] || FileText;
                         return (
-                          <button
-                            key={form.slug}
-                            onClick={() => handleFormClick(form)}
-                            className={cn(
-                              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
-                              isAvailable ? "hover:bg-primary/10 cursor-pointer group" : "opacity-50 cursor-default"
-                            )}
-                          >
-                            <div className={cn(
-                              "w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
-                              isAvailable ? "bg-primary/15 text-primary" : "bg-muted/50 text-muted-foreground"
-                            )}>
-                              {form.name}
+                          <div key={group.category}>
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <CatIcon className="w-3 h-3 text-muted-foreground" />
+                              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{group.category}</span>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{form.fullName}</p>
-                              <p className="text-xs text-muted-foreground truncate">{form.description}</p>
+                            <div className="space-y-0.5">
+                              {group.forms.map(form => (
+                                <button
+                                  key={form.slug}
+                                  onClick={() => handleFormClick(form)}
+                                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left opacity-60 cursor-default"
+                                >
+                                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 bg-muted/50 text-muted-foreground">
+                                    {form.name}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{form.fullName}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{form.description}</p>
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground/60 bg-muted/40 px-2 py-0.5 rounded-full shrink-0">Próximo</span>
+                                </button>
+                              ))}
                             </div>
-                            {isAvailable ? (
-                              <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground/60 bg-muted/40 px-2 py-0.5 rounded-full shrink-0">Próximo</span>
-                            )}
-                          </button>
+                          </div>
                         );
                       })}
                     </div>
-                  </div>
-                );
-              })}
-              {groupedCatalog.length === 0 && (
+                  )}
+                </div>
+              )}
+
+              {availableForms.length === 0 && comingSoonByCategory.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground text-sm">No se encontraron formularios</div>
               )}
             </div>
@@ -522,9 +568,9 @@ export default function SmartFormsList() {
                   </span>
                 )}
               </div>
-              <DialogTitle className="text-lg font-bold">Selecciona el Beneficiario</DialogTitle>
+              <DialogTitle className="text-lg font-bold">¿Para quién es este formulario?</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Elige el contacto que será el aplicante principal de este formulario
+                Busca al cliente en tu base de datos o llena los datos desde cero
               </DialogDescription>
             </DialogHeader>
 
@@ -541,7 +587,7 @@ export default function SmartFormsList() {
                 />
                 {searchLoading && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="w-3.5 h-3.5 border-2 border-primary/30 border-t-accent rounded-full animate-spin" />
+                    <div className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                   </div>
                 )}
               </div>
@@ -602,7 +648,7 @@ export default function SmartFormsList() {
             {/* Footer actions */}
             <div className="flex items-center justify-between px-5 py-4 border-t border-border/20">
               <Button variant="ghost" size="sm" onClick={handleSkipBeneficiary} className="text-muted-foreground">
-                Llenar manualmente
+                No está en mi lista — empezar en blanco
               </Button>
               <Button
                 onClick={handleProceedToForm}

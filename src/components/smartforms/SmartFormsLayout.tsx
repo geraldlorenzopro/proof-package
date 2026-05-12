@@ -291,7 +291,7 @@ function SeatGuardedContent() {
       <Dialog open>
         <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-yellow-500">
+            <DialogTitle className="flex items-center gap-2 text-amber-500">
               <AlertTriangle className="w-5 h-5" />
               Asientos ocupados
             </DialogTitle>
@@ -317,7 +317,7 @@ function SeatGuardedContent() {
             <Button variant="outline" onClick={() => { seat.cancelKick(); navigate(backDest); }} className="flex-1">
               Cancelar
             </Button>
-            <Button onClick={seat.confirmKick} className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white">
+            <Button onClick={seat.confirmKick} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
               Sí, tomar asiento
             </Button>
           </div>

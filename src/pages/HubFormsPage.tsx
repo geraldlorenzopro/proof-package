@@ -129,6 +129,14 @@ export default function HubFormsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {/* CTA persistente — siempre visible, no solo en empty state */}
+            <button
+              onClick={() => navigate("/dashboard/smart-forms")}
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Nuevo formulario
+            </button>
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60 pointer-events-none" />
               <Input

@@ -264,12 +264,12 @@ export default function SmartFormPage() {
         if (formType === "i-765") {
           generateI765Pdf(formData, firmName || undefined);
         } else {
-          // I-130 summary PDF not yet implemented — toast instead
+          // I-130 PDF filler aún en construcción — esperando blank USCIS para implementar i130FormFiller
           toast({
-            title: lang === "es" ? "✅ I-130 guardado como completado" : "✅ I-130 saved as completed",
+            title: lang === "es" ? "✅ Guardado" : "✅ Saved",
             description: lang === "es"
-              ? "El PDF resumen del I-130 estará disponible pronto."
-              : "I-130 summary PDF coming soon.",
+              ? "El PDF oficial USCIS llega en próximos días — por ahora los datos están guardados."
+              : "Official USCIS PDF arriving in coming days — data is saved.",
             duration: 4000,
           });
         }
@@ -451,7 +451,7 @@ export default function SmartFormPage() {
             </div>
             <div className="min-w-0">
               <p className="text-[12px] font-semibold text-foreground">
-                {lang === "es" ? "Felix IA puede llenar este formulario por ti" : "Felix AI can fill this form for you"}
+                {lang === "es" ? "Felix lo arma con los datos del caso. Tú lo revisas." : "Felix builds it from case data. You review it."}
               </p>
               <p className="text-[10px] text-muted-foreground">
                 {lang === "es"
