@@ -9,6 +9,7 @@ import { I765Data } from "@/components/smartforms/i765Schema";
 import { I130Data } from "@/components/smartforms/i130Schema";
 import { generateI765Pdf } from "@/lib/i765PdfGenerator";
 import { fillI765Pdf, discoverI765Fields } from "@/lib/i765FormFiller";
+import { fillI130Pdf } from "@/lib/i130FormFiller";
 import { mapFelixOutputToI765Data } from "@/lib/i765FelixMapper";
 import { mapFelixOutputToI130Data } from "@/lib/i130FelixMapper";
 import { useSmartFormsContext } from "@/components/smartforms/SmartFormsContext";
@@ -273,15 +274,8 @@ export default function SmartFormPage() {
       if (status === "completed") {
         if (formType === "i-765") {
           generateI765Pdf(formData, firmName || undefined);
-        } else {
-          // I-130 PDF filler aún en construcción — esperando blank USCIS para implementar i130FormFiller
-          toast({
-            title: lang === "es" ? "✅ Guardado" : "✅ Saved",
-            description: lang === "es"
-              ? "El PDF oficial USCIS llega en próximos días — por ahora los datos están guardados."
-              : "Official USCIS PDF arriving in coming days — data is saved.",
-            duration: 4000,
-          });
+        } else if (formType === "i-130") {
+          await fillI130Pdf(formData);
         }
       } else {
         toast({ title: lang === "es" ? "💾 Borrador guardado" : "💾 Draft saved", duration: 2000 });
@@ -413,15 +407,8 @@ export default function SmartFormPage() {
       if (formType === "i-765") {
         await discoverI765Fields();
         await fillI765Pdf(formData);
-      } else {
-        // I-130 PDF filler not yet built — needs PDF blank template
-        toast({
-          title: lang === "es" ? "⏳ PDF I-130 oficial próximamente" : "⏳ I-130 official PDF coming soon",
-          description: lang === "es"
-            ? "El template del USCIS I-130 se está integrando. Datos guardados como completado."
-            : "USCIS I-130 template is being integrated. Data saved as completed.",
-          duration: 5000,
-        });
+      } else if (formType === "i-130") {
+        await fillI130Pdf(formData);
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

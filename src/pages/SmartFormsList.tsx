@@ -69,7 +69,7 @@ const CATEGORY_ICONS: Record<string, typeof Briefcase> = {
 const FORMS_CATALOG: FormCatalogItem[] = [
   { slug: "i-765", name: "I-765", fullName: "I-765 · Permiso de Trabajo (EAD)", description: "Autorización de empleo", category: "Empleo", status: "available" },
   { slug: "i-140", name: "I-140", fullName: "Immigrant Petition for Alien Workers", description: "Petición de inmigrante trabajador", category: "Empleo", status: "coming_soon" },
-  { slug: "i-130", name: "I-130", fullName: "I-130 · Petición Familiar (matrimonio, padres, hijos)", description: "Petición de familiar extranjero · BETA (sin PDF oficial aún)", category: "Familia", status: "beta" },
+  { slug: "i-130", name: "I-130", fullName: "I-130 · Petición Familiar (matrimonio, padres, hijos)", description: "Petición de familiar extranjero · llena PDF oficial USCIS", category: "Familia", status: "available" },
   { slug: "i-130a", name: "I-130A", fullName: "Supplemental Information for Spouse Beneficiary", description: "Suplemento para cónyuge beneficiario", category: "Familia", status: "coming_soon" },
   { slug: "i-129f", name: "I-129F", fullName: "Petition for Alien Fiancé(e)", description: "Visa K-1 para prometido(a)", category: "Familia", status: "coming_soon" },
   { slug: "i-751", name: "I-751", fullName: "Petition to Remove Conditions on Residence", description: "Remover condiciones de residencia", category: "Familia", status: "coming_soon" },
