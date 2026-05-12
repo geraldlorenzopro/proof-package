@@ -623,18 +623,17 @@ const P = {
 // Los índices internos del PDF NO siguen el orden visual; hardcodeo cada uno
 // según el Y-coord descubierto.
 // Eye color visual order: black, blue, brown, gray, green, hazel, maroon, pink, unknown
+// Discovery con sort Y desc + X asc (los row-ties no eran determinísticos antes).
 const EYE_COLOR_INDEX: Record<string, number> = {
-  black: 0, blue: 1, brown: 7, gray: 2, green: 5, hazel: 6, maroon: 3, pink: 4, unknown: 8,
+  black: 7, blue: 0, brown: 1, gray: 6, green: 5, hazel: 2, maroon: 4, pink: 3, unknown: 8,
 };
 // Hair color visual order: bald, black, blond, brown, gray, red, sandy, white, unknown
-// (HAIR conserva orden idx==visualPos según discovery — no requiere remap)
 const HAIR_COLOR_INDEX: Record<string, number> = {
   bald: 0, black: 1, blond: 2, brown: 3, gray: 4, red: 5, sandy: 6, white: 7, unknown: 8,
 };
-// Beneficiary marital status: índices DISPERSOS en el PDF (no secuenciales con visual).
-// Discovery: single=3, married=4, divorced=5, widowed=0, separated=1, annulled=2
+// Beneficiary marital status: índices DISPERSOS verificados con Y+X discovery.
 const BENE_MARITAL_INDEX: Record<string, number> = {
-  single: 3, married: 4, divorced: 5, widowed: 0, separated: 1, annulled: 2,
+  single: 3, married: 4, divorced: 5, widowed: 0, separated: 2, annulled: 1,
 };
 
 // ─── MAIN ───────────────────────────────────────────────────────
