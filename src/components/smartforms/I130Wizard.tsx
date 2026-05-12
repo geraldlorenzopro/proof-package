@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useSmartFormsContext } from "./SmartFormsContext";
 import {
-  I130Data, defaultI130Data, I130Step, I130_STEPS,
+  I130Data, defaultI130Data, I130Step, I130_STEPS, I130_STEP_LABELS,
   I130_RELATIONSHIPS, RACES,
 } from "./i130Schema";
 import { US_STATES } from "./i765Schema";
