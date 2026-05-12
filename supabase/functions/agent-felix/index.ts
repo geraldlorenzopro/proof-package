@@ -100,6 +100,7 @@ serve(async (req) => {
           "petitionerCitizenshipStatus", "petitionerAcquiredBy",
           "petitionerCertNumber", "petitionerCertDate", "petitionerCertPlace",
           "petitionerLprANumber", "petitionerLprClass", "petitionerLprDateAdmitted", "petitionerLprPlaceAdmitted",
+          "petitionerLprThroughMarriage",
           // Petitioner address
           "petitionerMailingCareOf", "petitionerMailingStreet", "petitionerMailingApt", "petitionerMailingAptType",
           "petitionerMailingCity", "petitionerMailingState", "petitionerMailingZip",
@@ -108,28 +109,58 @@ serve(async (req) => {
           // Petitioner contact
           "petitionerDaytimePhone", "petitionerMobilePhone", "petitionerEmail",
           "petitionerMaritalStatus", "petitionerDateOfMarriage", "petitionerPlaceOfMarriage",
+          "petitionerPlaceMarriageCity", "petitionerPlaceMarriageState",
+          "petitionerPlaceMarriageProvince", "petitionerPlaceMarriageCountry",
           // Petitioner parents
           "petitionerFatherLastName", "petitionerFatherFirstName", "petitionerFatherMiddleName",
           "petitionerFatherDateOfBirth", "petitionerFatherCountryOfBirth",
           "petitionerMotherLastName", "petitionerMotherFirstName", "petitionerMotherMiddleName",
           "petitionerMotherDateOfBirth", "petitionerMotherCountryOfBirth",
+          // Petitioner biographic
+          "petitionerEthnicity", "petitionerHeightFeet", "petitionerHeightInches",
+          "petitionerWeightLbs", "petitionerEyeColor", "petitionerHairColor",
           // Beneficiary core
           "beneficiaryLastName", "beneficiaryFirstName", "beneficiaryMiddleName",
           "beneficiarySex", "beneficiaryDateOfBirth", "beneficiaryCityOfBirth", "beneficiaryCountryOfBirth",
           "beneficiaryCountryOfCitizenship", "beneficiarySsn", "beneficiaryANumber", "beneficiaryUscisAccountNumber",
+          // Beneficiary contact (PDF I-130 Items 14-16)
+          "beneficiaryDaytimePhone", "beneficiaryMobilePhone", "beneficiaryEmail",
           // Beneficiary address
           "beneficiaryAddressInUS",
           "beneficiaryStreet", "beneficiaryCity", "beneficiaryState", "beneficiaryZip",
           "beneficiaryProvince", "beneficiaryCountry", "beneficiaryPostalCode",
           "beneficiaryForeignAddressStreet", "beneficiaryForeignAddressCity", "beneficiaryForeignAddressCountry",
+          // Beneficiary native script name + foreign address (PDF Items 57-58)
+          "beneficiaryNativeLastName", "beneficiaryNativeFirstName", "beneficiaryNativeMiddleName",
+          "beneficiaryNativeAddressStreet", "beneficiaryNativeAddressCity",
+          "beneficiaryNativeAddressProvince", "beneficiaryNativeAddressPostalCode",
+          "beneficiaryNativeAddressCountry",
+          // Last lived together if spouse (PDF Items 59-60)
+          "livedTogetherStreet", "livedTogetherCity", "livedTogetherState", "livedTogetherZip",
+          "livedTogetherFromDate", "livedTogetherToDate", "neverLivedTogether",
+          // Beneficiary marriage
+          "beneficiaryMaritalStatus", "beneficiaryDateOfMarriage",
+          "beneficiaryPlaceMarriageCity", "beneficiaryPlaceMarriageCountry",
           // Beneficiary entry to US
-          "beneficiaryMaritalStatus", "beneficiaryEverInUS",
+          "beneficiaryEverInUS",
           "beneficiaryDateOfLastEntry", "beneficiaryStatusAtEntry",
           "beneficiaryI94Number", "beneficiaryPassportNumber",
+          "beneficiaryTravelDocNumber",
           "beneficiaryPassportCountry", "beneficiaryPassportExpiration",
-          "beneficiaryInRemovalProceedings",
+          "beneficiaryDateAuthStayExpires",
+          // Beneficiary removal proceedings
+          "beneficiaryInRemovalProceedings", "beneficiaryRemovalType",
+          "beneficiaryRemovalCity", "beneficiaryRemovalState", "beneficiaryRemovalDate",
           // Visa processing
-          "consularProcessing", "consularPostCity", "consularPostCountry",
+          "consularProcessing",
+          "adjustmentOfStatusCity", "adjustmentOfStatusState",
+          "consularPostCity", "consularPostProvince", "consularPostCountry",
+          // Other info (prior petitions)
+          "hasFiledPriorPetition", "priorPetitionsCount",
+          "priorPetitionBeneficiaryLastName", "priorPetitionBeneficiaryFirstName",
+          "priorPetitionFilingCity", "priorPetitionFilingState",
+          "priorPetitionFilingDate", "priorPetitionResult",
+          "hasBeneficiaryFiledPetition",
           // Statements
           "petitionerCanReadEnglish", "interpreterUsed", "preparerUsed",
         ],
@@ -137,9 +168,20 @@ serve(async (req) => {
 petitionerCitizenshipStatus: "us_citizen" o "lpr".
 petitionerAcquiredBy: "birth_in_us", "naturalization", o "parents".
 consularProcessing: true si va a consulado en el extranjero, false si ajuste de estatus en US.
+adjustmentOfStatusCity/State: solo si consularProcessing=false.
+consularPostCity/Province/Country: solo si consularProcessing=true.
 Fechas formato YYYY-MM-DD.
-maritalStatus enums: "single", "married", "divorced", "widowed", "separated".
-sex: "male" o "female".`,
+maritalStatus enums: "single", "married", "divorced", "widowed", "separated", "annulled".
+sex: "male" o "female".
+petitionerEthnicity: "hispanic_latino" o "not_hispanic_latino".
+petitionerEyeColor: black/blue/brown/gray/green/hazel/maroon/pink/unknown.
+petitionerHairColor: bald/black/blond/brown/gray/red/sandy/white/unknown.
+beneficiaryRemovalType: "removal", "exclusion_deportation", "rescission", "other_judicial".
+beneficiaryNative* fields: solo llenar si beneficiario tiene nombre/dirección en script no-latino (chino, árabe, ruso, etc.). Si script latino, dejar vacíos.
+livedTogether*: solo si relationshipType="spouse" y vivieron juntos. Si nunca vivieron juntos, neverLivedTogether=true.
+beneficiaryTravelDocNumber: solo si NO tiene pasaporte (refugiado, apátrida, etc.). Alternativa a beneficiaryPassportNumber.
+priorPetition* fields: solo si hasFiledPriorPetition=true. Una sola entrada estructurada (la más reciente). Si hay más, descripción en priorPetitionsDetails.
+simultaneousRelatives: parientes adicionales peticionados al mismo tiempo (cuando es batch filing).`,
       },
       "i-765": {
         keys: [

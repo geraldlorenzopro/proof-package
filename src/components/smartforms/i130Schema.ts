@@ -98,9 +98,14 @@ export interface I130Data {
   petitionerUscisAccountNumber: string;
 
   // Marital info
-  petitionerMaritalStatus: "single" | "married" | "divorced" | "widowed" | "separated" | "";
+  petitionerMaritalStatus: "single" | "married" | "divorced" | "widowed" | "separated" | "annulled" | "";
   petitionerDateOfMarriage: string;
-  petitionerPlaceOfMarriage: string;
+  petitionerPlaceOfMarriage: string; // legacy combined string — kept for retrocompatibility
+  // Place of current marriage (Items 19.a-19.d del PDF I-130)
+  petitionerPlaceMarriageCity: string;
+  petitionerPlaceMarriageState: string;
+  petitionerPlaceMarriageProvince: string;
+  petitionerPlaceMarriageCountry: string;
   petitionerPriorMarriages: Array<{
     spouseLastName: string;
     spouseFirstName: string;
@@ -133,6 +138,9 @@ export interface I130Data {
   petitionerMobilePhone: string;
   petitionerEmail: string;
 
+  // Did petitioner gain LPR through marriage to USC/LPR? (Item 41)
+  petitionerLprThroughMarriage: boolean;
+
   // ─── Part 3: Biographic Info (for petitioner) ───
   petitionerEthnicity: "hispanic_latino" | "not_hispanic_latino" | "";
   petitionerRace: string[]; // can be multiple (white, black, asian, native, pacific)
@@ -140,7 +148,7 @@ export interface I130Data {
   petitionerHeightInches: string;
   petitionerWeightLbs: string;
   petitionerEyeColor: string;
-  petitionerHairColor: string;
+  petitionerHairColor: string; // bald/black/blond/brown/gray/red/sandy/white/unknown
 
   // ─── Part 4: Information About Beneficiary ───
   beneficiaryLastName: string;
@@ -178,10 +186,20 @@ export interface I130Data {
   beneficiaryForeignAddressCountry: string;
   beneficiaryForeignAddressPostalCode: string;
 
+  // Beneficiary contact (Items 14-16 del PDF I-130 — faltaban!)
+  beneficiaryDaytimePhone: string;
+  beneficiaryMobilePhone: string;
+  beneficiaryEmail: string;
+
   // Beneficiary marital info
-  beneficiaryMaritalStatus: "single" | "married" | "divorced" | "widowed" | "separated" | "";
+  beneficiaryMaritalStatus: "single" | "married" | "divorced" | "widowed" | "separated" | "annulled" | "";
   beneficiaryDateOfMarriage: string;
-  beneficiaryPlaceOfMarriage: string;
+  beneficiaryPlaceOfMarriage: string; // legacy combined
+  // Place of beneficiary current marriage (Items 20.a-20.d del PDF)
+  beneficiaryPlaceMarriageCity: string;
+  beneficiaryPlaceMarriageState: string;
+  beneficiaryPlaceMarriageProvince: string;
+  beneficiaryPlaceMarriageCountry: string;
   beneficiaryPriorMarriages: Array<{
     spouseLastName: string;
     spouseFirstName: string;
@@ -198,15 +216,43 @@ export interface I130Data {
   beneficiaryStatusAtEntry: string;
   beneficiaryI94Number: string;
   beneficiaryPassportNumber: string;
+  beneficiaryTravelDocNumber: string; // Item 48 — alternativa al pasaporte
   beneficiaryPassportCountry: string;
   beneficiaryPassportExpiration: string;
   beneficiaryDateAuthStayExpires: string;
 
-  // Removal proceedings
+  // Removal proceedings (Items 53-56 del PDF)
   beneficiaryInRemovalProceedings: boolean;
+  beneficiaryRemovalType: "removal" | "exclusion_deportation" | "rescission" | "other_judicial" | ""; // Item 54
   beneficiaryRemovalCity: string;
   beneficiaryRemovalState: string;
   beneficiaryRemovalDate: string;
+
+  // Beneficiary native-script name + foreign address (Items 57-58 del PDF)
+  beneficiaryNativeLastName: string;
+  beneficiaryNativeFirstName: string;
+  beneficiaryNativeMiddleName: string;
+  beneficiaryNativeAddressStreet: string;
+  beneficiaryNativeAddressApt: string;
+  beneficiaryNativeAddressAptType: "apt" | "ste" | "flr" | "";
+  beneficiaryNativeAddressCity: string;
+  beneficiaryNativeAddressProvince: string;
+  beneficiaryNativeAddressPostalCode: string;
+  beneficiaryNativeAddressCountry: string;
+
+  // Last address petitioner+beneficiary lived together (Items 59-60 — solo si spouse)
+  livedTogetherStreet: string;
+  livedTogetherApt: string;
+  livedTogetherAptType: "apt" | "ste" | "flr" | "";
+  livedTogetherCity: string;
+  livedTogetherState: string;
+  livedTogetherZip: string;
+  livedTogetherProvince: string;
+  livedTogetherPostalCode: string;
+  livedTogetherCountry: string;
+  livedTogetherFromDate: string;
+  livedTogetherToDate: string;
+  neverLivedTogether: boolean; // checkbox alternativo
 
   // Beneficiary employment
   beneficiaryCurrentEmployment: {
@@ -232,14 +278,35 @@ export interface I130Data {
 
   // Spouse/Parent visa processing
   consularProcessing: boolean; // true = consulate abroad, false = adjustment of status in US
+  // Adjustment of Status office in US (Items 61.a-b — solo si consularProcessing=false)
+  adjustmentOfStatusCity: string;
+  adjustmentOfStatusState: string;
+  // Consular Post location (Items 62.a-c — solo si consularProcessing=true)
   consularPostCity: string;
+  consularPostProvince: string;
   consularPostCountry: string;
 
   // ─── Part 5: Other Information ───
   hasFiledPriorPetition: boolean;
   priorPetitionsCount: number;
-  priorPetitionsDetails: string;
+  priorPetitionsDetails: string; // texto libre (Felix lo llena)
+  // Prior petition structured fields (Items 2.a-5 del PDF) — para el más reciente
+  priorPetitionBeneficiaryLastName: string;
+  priorPetitionBeneficiaryFirstName: string;
+  priorPetitionBeneficiaryMiddleName: string;
+  priorPetitionFilingCity: string;
+  priorPetitionFilingState: string;
+  priorPetitionFilingDate: string;
+  priorPetitionResult: string; // approved, denied, withdrawn, etc.
   hasBeneficiaryFiledPetition: boolean;
+
+  // Otros parientes peticionados simultáneamente (Items 6.a-9 del PDF)
+  simultaneousRelatives: Array<{
+    lastName: string;
+    firstName: string;
+    middleName: string;
+    relationship: string;
+  }>;
 
   // ─── Part 6: Petitioner Statement ───
   petitionerCanReadEnglish: boolean;
@@ -313,7 +380,10 @@ export const defaultI130Data: I130Data = {
   petitionerSsn: "", petitionerANumber: "", petitionerUscisAccountNumber: "",
 
   petitionerMaritalStatus: "", petitionerDateOfMarriage: "", petitionerPlaceOfMarriage: "",
+  petitionerPlaceMarriageCity: "", petitionerPlaceMarriageState: "",
+  petitionerPlaceMarriageProvince: "", petitionerPlaceMarriageCountry: "",
   petitionerPriorMarriages: [],
+  petitionerLprThroughMarriage: false,
 
   petitionerFatherLastName: "", petitionerFatherFirstName: "", petitionerFatherMiddleName: "",
   petitionerFatherDateOfBirth: "", petitionerFatherCountryOfBirth: "",
@@ -345,16 +415,34 @@ export const defaultI130Data: I130Data = {
   beneficiaryForeignAddressProvince: "", beneficiaryForeignAddressCountry: "",
   beneficiaryForeignAddressPostalCode: "",
 
+  beneficiaryDaytimePhone: "", beneficiaryMobilePhone: "", beneficiaryEmail: "",
+
   beneficiaryMaritalStatus: "", beneficiaryDateOfMarriage: "", beneficiaryPlaceOfMarriage: "",
+  beneficiaryPlaceMarriageCity: "", beneficiaryPlaceMarriageState: "",
+  beneficiaryPlaceMarriageProvince: "", beneficiaryPlaceMarriageCountry: "",
   beneficiaryPriorMarriages: [],
   beneficiaryEverInUS: false,
   beneficiaryDateOfLastEntry: "", beneficiaryStatusAtEntry: "",
   beneficiaryI94Number: "", beneficiaryPassportNumber: "",
+  beneficiaryTravelDocNumber: "",
   beneficiaryPassportCountry: "", beneficiaryPassportExpiration: "",
   beneficiaryDateAuthStayExpires: "",
 
   beneficiaryInRemovalProceedings: false,
+  beneficiaryRemovalType: "",
   beneficiaryRemovalCity: "", beneficiaryRemovalState: "", beneficiaryRemovalDate: "",
+
+  beneficiaryNativeLastName: "", beneficiaryNativeFirstName: "", beneficiaryNativeMiddleName: "",
+  beneficiaryNativeAddressStreet: "", beneficiaryNativeAddressApt: "",
+  beneficiaryNativeAddressAptType: "",
+  beneficiaryNativeAddressCity: "", beneficiaryNativeAddressProvince: "",
+  beneficiaryNativeAddressPostalCode: "", beneficiaryNativeAddressCountry: "",
+
+  livedTogetherStreet: "", livedTogetherApt: "", livedTogetherAptType: "",
+  livedTogetherCity: "", livedTogetherState: "", livedTogetherZip: "",
+  livedTogetherProvince: "", livedTogetherPostalCode: "", livedTogetherCountry: "",
+  livedTogetherFromDate: "", livedTogetherToDate: "",
+  neverLivedTogether: false,
 
   beneficiaryCurrentEmployment: {
     employerName: "", street: "", city: "", state: "", zip: "",
@@ -364,12 +452,18 @@ export const defaultI130Data: I130Data = {
   beneficiaryChildren: [],
 
   consularProcessing: false,
-  consularPostCity: "", consularPostCountry: "",
+  adjustmentOfStatusCity: "", adjustmentOfStatusState: "",
+  consularPostCity: "", consularPostProvince: "", consularPostCountry: "",
 
   hasFiledPriorPetition: false,
   priorPetitionsCount: 0,
   priorPetitionsDetails: "",
+  priorPetitionBeneficiaryLastName: "", priorPetitionBeneficiaryFirstName: "",
+  priorPetitionBeneficiaryMiddleName: "",
+  priorPetitionFilingCity: "", priorPetitionFilingState: "",
+  priorPetitionFilingDate: "", priorPetitionResult: "",
   hasBeneficiaryFiledPetition: false,
+  simultaneousRelatives: [],
 
   petitionerCanReadEnglish: true, interpreterUsed: false, preparerUsed: false,
 
