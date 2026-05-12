@@ -272,7 +272,7 @@ function SeatGuardedContent() {
         icon={FileText}
         heroTitle="Smart"
         heroSubtitle="Forms"
-        accentVariant="gold"
+        accentVariant="cyan"
         tagline={{
           es: "Formularios inteligentes para inmigración",
           en: "Intelligent immigration forms",

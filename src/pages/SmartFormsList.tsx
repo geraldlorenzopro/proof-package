@@ -306,7 +306,7 @@ export default function SmartFormsList() {
           </div>
           <Button
             onClick={() => setCatalogOpen(true)}
-            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-accent/10"
+            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/10"
           >
             <Plus className="w-4 h-4" /> Nuevo Formulario
           </Button>
@@ -326,7 +326,7 @@ export default function SmartFormsList() {
               className={cn(
                 "rounded-xl border px-4 py-3 text-left transition-all cursor-pointer",
                 filterStatus === key
-                  ? "border-primary bg-primary/10 shadow-sm shadow-accent/10"
+                  ? "border-primary bg-primary/10 shadow-sm shadow-primary/10"
                   : "border-border/30 bg-card/50 hover:border-border/60"
               )}
             >

@@ -365,7 +365,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               className={cn(
                 "flex flex-col items-center gap-2 p-4 rounded-xl border text-center transition-all cursor-pointer",
                 data.formPreparedBy === r.value
-                  ? "border-primary bg-primary/10 ring-1 ring-primary/30 shadow-md shadow-accent/10"
+                  ? "border-primary bg-primary/10 ring-1 ring-primary/30 shadow-md shadow-primary/10"
                   : "border-border/30 hover:border-border/60 hover:bg-secondary/40"
               )}
             >

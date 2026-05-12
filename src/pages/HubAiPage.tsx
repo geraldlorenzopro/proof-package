@@ -86,15 +86,15 @@ export default function HubAiPage() {
         <Tabs defaultValue="voice" className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
           <div className="shrink-0 px-5 pb-0 pt-4">
             <TabsList className="h-11 gap-1 border border-border/20 bg-card/50 p-1">
-              <TabsTrigger value="voice" className="gap-2 px-4 data-[state=active]:bg-accent/15 data-[state=active]:text-accent data-[state=active]:shadow-none">
+              <TabsTrigger value="voice" className="gap-2 px-4 data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none">
                 <Mic className="h-3.5 w-3.5" />
                 <span className="text-xs font-bold">Voice AI</span>
               </TabsTrigger>
-              <TabsTrigger value="agents" className="gap-2 px-4 data-[state=active]:bg-accent/15 data-[state=active]:text-accent data-[state=active]:shadow-none">
+              <TabsTrigger value="agents" className="gap-2 px-4 data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none">
                 <Bot className="h-3.5 w-3.5" />
                 <span className="text-xs font-bold">Agentes</span>
               </TabsTrigger>
-              <TabsTrigger value="tools" className="gap-2 px-4 data-[state=active]:bg-accent/15 data-[state=active]:text-accent data-[state=active]:shadow-none">
+              <TabsTrigger value="tools" className="gap-2 px-4 data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none">
                 <Wrench className="h-3.5 w-3.5" />
                 <span className="text-xs font-bold">Herramientas</span>
               </TabsTrigger>

@@ -209,7 +209,7 @@ export default function SmartFormsSettings() {
       </div>
 
       <div className="mt-5">
-        <button onClick={handleSave} disabled={saving} className="gradient-gold text-primary-foreground font-semibold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Guardar cambios
         </button>
