@@ -39,20 +39,24 @@ function reportArray(patternRegex, label, visualOrder) {
   console.log(`\n=== ${label} (${fields.length} fields) ===`);
   console.log(`Visual order esperado: ${visualOrder.join(", ")}`);
 
-  const withY = fields.map((f) => {
+  const withRect = fields.map((f) => {
     const name = f.getName();
     const idxMatch = name.match(/\[(\d+)\]$/);
     const idx = idxMatch ? parseInt(idxMatch[1]) : -1;
-    return { name, idx, y: getY(f) };
+    const r = getRect(f) || { x: 0, y: 0 };
+    return { name, idx, x: r.x, y: r.y };
   });
 
-  // Sort descending Y (top-first)
-  withY.sort((a, b) => (b.y ?? -Infinity) - (a.y ?? -Infinity));
+  // Sort: Y desc (top first); within same row (Y diff < 5pt), X asc (left first)
+  withRect.sort((a, b) => {
+    if (Math.abs(a.y - b.y) < 5) return a.x - b.x;
+    return b.y - a.y;
+  });
 
-  console.log("Orden visual (top→bottom):");
-  withY.forEach((f, visualPos) => {
+  console.log("Orden visual (top→bottom, left→right):");
+  withRect.forEach((f, visualPos) => {
     const expectedColor = visualOrder[visualPos] ?? "?";
-    console.log(`  visual[${visualPos}] = idx[${f.idx}] · y=${f.y?.toFixed(1)} → ${expectedColor}`);
+    console.log(`  visual[${visualPos}] = idx[${f.idx}] · y=${f.y.toFixed(1)} x=${f.x.toFixed(1)} → ${expectedColor}`);
   });
 
   // Mapping idx → visualPos
