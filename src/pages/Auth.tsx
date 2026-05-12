@@ -71,10 +71,7 @@ export default function Auth() {
 
   async function resolvePostLoginDestination(userId: string): Promise<string> {
     try {
-      // Check if platform admin first
-      const { data: isAdmin } = await supabase.rpc("is_platform_admin" as any);
-      if (isAdmin) return "/admin";
-
+      // Prioritize firm Hub if user has membership (admins can navigate to /admin manually)
       const { data: membership } = await supabase
         .from("account_members")
         .select("account_id, role")
@@ -85,6 +82,10 @@ export default function Auth() {
         sessionStorage.setItem("ner_active_account_id", membership.account_id);
         return "/hub";
       }
+
+      // Fallback: platform admin without firm membership goes to admin console
+      const { data: isAdmin } = await supabase.rpc("is_platform_admin" as any);
+      if (isAdmin) return "/admin";
     } catch { /* fall through */ }
     return "/dashboard";
   }
