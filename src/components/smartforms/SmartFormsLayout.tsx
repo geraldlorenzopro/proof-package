@@ -134,12 +134,12 @@ function TopNavBar() {
     <header className="sticky top-0 z-30">
       {/* Top nav row */}
       <div className="relative flex items-center justify-center h-12 px-3 gap-2 border-b border-border/40 bg-card/80 backdrop-blur-sm">
-        {/* Back button */}
+        {/* Back button — override ghost hover (era gold legacy) */}
         <Button
           variant="ghost"
           size="sm"
           onClick={handleBack}
-          className="gap-1.5 text-muted-foreground hover:text-foreground shrink-0 px-2 absolute left-3"
+          className="gap-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary shrink-0 px-2 absolute left-3"
         >
           <ArrowLeft className="w-4 h-4" />
           {fromCase && caseId ? (
@@ -172,8 +172,8 @@ function TopNavBar() {
                 className={cn(
                   "gap-1.5 text-xs px-3 h-8 rounded-lg transition-all",
                   isActive(item.path, item.end)
-                    ? "bg-primary/15 text-primary font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-primary/15 text-primary font-semibold hover:bg-primary/20"
+                    : "text-muted-foreground hover:bg-primary/10 hover:text-primary"
                 )}
               >
                 <item.icon className="w-3.5 h-3.5" />
@@ -194,8 +194,8 @@ function TopNavBar() {
             size="icon"
             onClick={() => navigate("/dashboard/smart-forms/settings")}
             className={cn(
-              "w-8 h-8 shrink-0",
-              isSettingsActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              "w-8 h-8 shrink-0 hover:bg-primary/10",
+              isSettingsActive ? "text-primary" : "text-muted-foreground hover:text-primary"
             )}
             title="Configuración"
           >
@@ -207,8 +207,9 @@ function TopNavBar() {
       {/* Wizard progress — clickable step navigator */}
       {wizardNav && (
         <div className="px-4 py-3 bg-secondary/40 border-b border-border/30 space-y-2.5">
-          {/* Step pills — click to jump */}
-          <div className="flex items-center justify-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
+          {/* Step pills — w-max mx-auto: si cabe, centra; si no, scroll desde izquierda */}
+          <div className="overflow-x-auto scrollbar-none pb-0.5">
+            <div className="flex items-center gap-1 w-max mx-auto">
             {wizardNav.steps.map((s, i) => {
               const isCurrent = i === wizardNav.currentStep;
               const isCompleted = i < wizardNav.currentStep;
@@ -240,6 +241,7 @@ function TopNavBar() {
                 </button>
               );
             })}
+            </div>
           </div>
           {/* Progress bar */}
           <div className="flex items-center gap-3">
@@ -360,7 +362,10 @@ function SeatGuardedContent() {
 export default function SmartFormsLayout() {
   return (
     <SmartFormsProvider>
-      <div className="min-h-screen flex flex-col w-full">
+      {/* bg-background sobrescribe el gradient pre-paint del body que viene
+          desde /hub (ver index.html). Sin esto se filtra el azul saturado
+          de Hub al wizard, violando el brandbook 80/20. */}
+      <div className="min-h-screen flex flex-col w-full bg-background">
         <SeatGuardedContent />
       </div>
     </SmartFormsProvider>
