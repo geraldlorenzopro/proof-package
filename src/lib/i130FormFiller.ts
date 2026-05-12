@@ -616,13 +616,22 @@ const P = {
 };
 
 // ─── Eye / Hair color: el PDF tiene 9 checkboxes para cada uno ──
-// Order USCIS estándar (verificado contra blank): black, blue, brown, gray, green, hazel, maroon, pink, unknown
+// Mapping VISUAL → REAL discovered via scripts/discover-i130-checkbox-order.mjs.
+// Los índices internos del PDF NO siguen el orden visual; hardcodeo cada uno
+// según el Y-coord descubierto.
+// Eye color visual order: black, blue, brown, gray, green, hazel, maroon, pink, unknown
 const EYE_COLOR_INDEX: Record<string, number> = {
-  black: 0, blue: 1, brown: 2, gray: 3, green: 4, hazel: 5, maroon: 6, pink: 7, unknown: 8,
+  black: 0, blue: 1, brown: 7, gray: 2, green: 5, hazel: 6, maroon: 3, pink: 4, unknown: 8,
 };
-// hair: bald, black, blond, brown, gray, red, sandy, white, unknown
+// Hair color visual order: bald, black, blond, brown, gray, red, sandy, white, unknown
+// (HAIR conserva orden idx==visualPos según discovery — no requiere remap)
 const HAIR_COLOR_INDEX: Record<string, number> = {
   bald: 0, black: 1, blond: 2, brown: 3, gray: 4, red: 5, sandy: 6, white: 7, unknown: 8,
+};
+// Beneficiary marital status: índices DISPERSOS en el PDF (no secuenciales con visual).
+// Discovery: single=3, married=4, divorced=5, widowed=0, separated=1, annulled=2
+const BENE_MARITAL_INDEX: Record<string, number> = {
+  single: 3, married: 4, divorced: 5, widowed: 0, separated: 1, annulled: 2,
 };
 
 // ─── MAIN ───────────────────────────────────────────────────────
@@ -854,21 +863,18 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt3_pound2, w[1]);
     setText(form, P.pt3_pound3, w[2]);
   }
-  // Eye + hair color: 9 checkboxes c/u, prender el índice correspondiente
+  // Eye + hair color: 9 checkboxes c/u. Usar regex específico al índice del PDF
+  // (NO findAllFields[idx] que depende del orden retornado por pdf-lib).
   if (data.petitionerEyeColor) {
     const idx = EYE_COLOR_INDEX[data.petitionerEyeColor.toLowerCase()];
     if (idx !== undefined) {
-      const fields = findAllFields(form, /\.Pt3Line5_EyeColor\[\d+\]/);
-      const target = fields[idx];
-      if (target) setCheck(form, new RegExp(target.getName().replace(/[.[\]]/g, "\\$&")), true);
+      setCheck(form, new RegExp(`\\.Pt3Line5_EyeColor\\[${idx}\\]`), true);
     }
   }
   if (data.petitionerHairColor) {
     const idx = HAIR_COLOR_INDEX[data.petitionerHairColor.toLowerCase()];
     if (idx !== undefined) {
-      const fields = findAllFields(form, /\.Pt3Line6_HairColor\[\d+\]/);
-      const target = fields[idx];
-      if (target) setCheck(form, new RegExp(target.getName().replace(/[.[\]]/g, "\\$&")), true);
+      setCheck(form, new RegExp(`\\.Pt3Line6_HairColor\\[${idx}\\]`), true);
     }
   }
 
@@ -943,12 +949,14 @@ export async function fillI130Pdf(data: I130Data) {
     (data.beneficiaryMaritalStatus && data.beneficiaryMaritalStatus !== "single" ? 1 : 0) +
     (data.beneficiaryPriorMarriages?.length || 0);
   setText(form, P.pt4_numMarriages, String(beneNumMarriages));
-  setCheck(form, P.pt4_status_single, data.beneficiaryMaritalStatus === "single");
-  setCheck(form, P.pt4_status_married, data.beneficiaryMaritalStatus === "married");
-  setCheck(form, P.pt4_status_divorced, data.beneficiaryMaritalStatus === "divorced");
-  setCheck(form, P.pt4_status_widowed, data.beneficiaryMaritalStatus === "widowed");
-  setCheck(form, P.pt4_status_separated, data.beneficiaryMaritalStatus === "separated");
-  setCheck(form, P.pt4_status_annulled, data.beneficiaryMaritalStatus === "annulled");
+  // Beneficiary marital status: índices DISPERSOS según discovery.
+  // Marcar el índice correcto del PDF usando regex específico.
+  if (data.beneficiaryMaritalStatus) {
+    const idx = BENE_MARITAL_INDEX[data.beneficiaryMaritalStatus];
+    if (idx !== undefined) {
+      setCheck(form, new RegExp(`\\.Pt4Line18_MaritalStatus\\[${idx}\\]`), true);
+    }
+  }
   setText(form, P.pt4_marriageDate, fmtDate(data.beneficiaryDateOfMarriage));
   setText(form, P.pt4_marriagePlace_city, data.beneficiaryPlaceMarriageCity);
   setText(form, P.pt4_marriagePlace_state, data.beneficiaryPlaceMarriageState);
