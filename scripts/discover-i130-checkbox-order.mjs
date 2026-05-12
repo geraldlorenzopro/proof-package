@@ -19,7 +19,7 @@ const bytes = readFileSync("public/forms/i-130-template.pdf");
 const pdf = await PDFDocument.load(bytes, { ignoreEncryption: true });
 const form = pdf.getForm();
 
-function getY(field) {
+function getRect(field) {
   try {
     const acroField = field.acroField;
     if (!acroField) return null;
@@ -29,15 +29,9 @@ function getY(field) {
       widget.dict?.lookup?.(PDFName.of("Rect")) ||
       widget.dict?.get?.(PDFName.of("Rect"));
     if (!(rectObj instanceof PDFArray)) return null;
-    const y1 = rectObj.get(1);
-    const y2 = rectObj.get(3);
-    return Math.max(
-      y1 instanceof PDFNumber ? y1.asNumber() : 0,
-      y2 instanceof PDFNumber ? y2.asNumber() : 0
-    );
-  } catch {
-    return null;
-  }
+    const n = (i) => { const v = rectObj.get(i); return v instanceof PDFNumber ? v.asNumber() : 0; };
+    return { x: Math.min(n(0), n(2)), y: Math.max(n(1), n(3)) };
+  } catch { return null; }
 }
 
 function reportArray(patternRegex, label, visualOrder) {
