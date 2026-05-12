@@ -1216,15 +1216,7 @@ export async function fillI130Pdf(data: I130Data) {
       });
     }
   }
-  // Beneficiary Spouse 2 NAME (PDF solo guarda date ended de Spouse 2, no nombre):
-  const benePriorNameIdx = data.relationshipType === "spouse" ? 0 : 1;
-  const benePriorName = data.beneficiaryPriorMarriages?.[benePriorNameIdx];
-  if (benePriorName && (benePriorName.spouseLastName || benePriorName.spouseFirstName)) {
-    overflow.push({
-      page: "6", part: "4", item: "23",
-      content: `Beneficiary Spouse 2 (Item 23 — Prior): ${benePriorName.spouseLastName}, ${benePriorName.spouseFirstName} ${benePriorName.spouseMiddleName} · Ended ${fmtDate(benePriorName.dateMarriageEnded)} (${benePriorName.howEnded})`.trim(),
-    });
-  }
+  // Beneficiary Spouse 2 name ya se llena en Items 23.a-c (Pt4Line18a/b/c) — sin overflow.
   // Beneficiary occupation — PDF NO tiene field, va a Part 9:
   if (data.beneficiaryCurrentEmployment?.occupation) {
     overflow.push({
