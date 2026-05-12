@@ -239,6 +239,12 @@ const P = {
   pt2_l19d_country: /\.Pt2Line19d_Country\[0\]/,
 
   // Prior spouse (line 22 + 23)
+  // Spouse 1 (Pt2Line20) — current spouse cuando relationshipType="spouse", o prior más reciente
+  pt2_l20_family: /\.Pt2Line20a_FamilyName\[0\]/,
+  pt2_l20_given: /\.Pt2Line20b_GivenName\[0\]/,
+  pt2_l20_middle: /\.Pt2Line20c_MiddleName\[0\]/,
+  pt2_l21_dateEnded: /\.Pt2Line21_DateMarriageEnded\[0\]/,
+  // Spouse 2 (Pt2Line22) — prior marriage
   pt2_l22_family: /\.Pt2Line22a_FamilyName\[0\]/,
   pt2_l22_given: /\.Pt2Line22b_GivenName\[0\]/,
   pt2_l22_middle: /\.Pt2Line22c_MiddleName\[0\]/,
@@ -401,6 +407,87 @@ const P = {
   pt4_l23_travelDoc: /\.Pt4Line23_TravelDocNumber\[0\]/,
   pt4_l24_country: /\.Pt4Line24_CountryOfIssuance\[0\]/,
   pt4_l25_exp: /\.Pt4Line25_ExpDate\[0\]/,
+
+  // Beneficiary's Family (Person 1-5) — Pt4Line25-44 según PDF Edition 04/01/24
+  // Order USCIS: Spouse first (si married), después hijos.
+  // Person 1: 25a/b/c name + 26 relationship + 27 DOB + 28 country
+  pt4_fam1_family: /\.Pt4Line25a_FamilyName\[0\]/,
+  pt4_fam1_given: /\.Pt4Line25b_GivenName\[0\]/,
+  pt4_fam1_middle: /\.Pt4Line25c_MiddleName\[0\]/,
+  pt4_fam1_relationship: /\.Pt4Line26_Relationship\[0\]/,
+  pt4_fam1_dob: /\.Pt4Line27_DateOfBirth\[0\]/,
+  pt4_fam1_country: /\.Pt4Line28_CountryOfBirth\[0\]/,
+  // Person 2: 29-32
+  pt4_fam2_family: /\.Pt4Line29a_FamilyName\[0\]/,
+  pt4_fam2_given: /\.Pt4Line29b_GivenName\[0\]/,
+  pt4_fam2_middle: /\.Pt4Line29c_MiddleName\[0\]/,
+  pt4_fam2_relationship: /\.Pt4Line30_Relationship\[0\]/,
+  pt4_fam2_dob: /\.Pt4Line31_DateOfBirth\[0\]/,
+  pt4_fam2_country: /\.Pt4Line32_CountryOfBirth\[0\]/,
+  // Person 3: 33-36
+  pt4_fam3_family: /\.Pt4Line33a_FamilyName\[0\]/,
+  pt4_fam3_given: /\.Pt4Line33b_GivenName\[0\]/,
+  pt4_fam3_middle: /\.Pt4Line33c_MiddleName\[0\]/,
+  pt4_fam3_relationship: /\.Pt4Line34_Relationship\[0\]/,
+  pt4_fam3_dob: /\.Pt4Line35_DateOfBirth\[0\]/,
+  pt4_fam3_country: /\.Pt4Line36_CountryOfBirth\[0\]/,
+  // Person 4: 37-40
+  pt4_fam4_family: /\.Pt4Line37a_FamilyName\[0\]/,
+  pt4_fam4_given: /\.Pt4Line37b_GivenName\[0\]/,
+  pt4_fam4_middle: /\.Pt4Line37c_MiddleName\[0\]/,
+  pt4_fam4_relationship: /\.Pt4Line38_Relationship\[0\]/,
+  pt4_fam4_dob: /\.Pt4Line39_DateOfBirth\[0\]/,
+  pt4_fam4_country: /\.Pt4Line40_CountryOfBirth\[0\]/,
+  // Person 5: 41-44
+  pt4_fam5_family: /\.Pt4Line41a_FamilyName\[0\]/,
+  pt4_fam5_given: /\.Pt4Line41b_GivenName\[0\]/,
+  pt4_fam5_middle: /\.Pt4Line41c_MiddleName\[0\]/,
+  pt4_fam5_relationship: /\.Pt4Line42_Relationship\[0\]/,
+  pt4_fam5_dob: /\.Pt4Line43_DateOfBirth\[0\]/,
+  pt4_fam5_country: /\.Pt4Line44_CountryOfBirth\[0\]/,
+
+  // Beneficiary occupation (Item 48 según prompt, en PDF Pt4Line48 o similar)
+  pt4_l48_occupation: /\.Pt4Line48_Occupation\[0\]/,
+
+  // Part 5 — Simultaneous Relatives (Items 6.a-9 del PDF)
+  // Relative 1: 6.a/b/c name + 7 relationship
+  pt5_rel1_family: /\.Pt5Line6a_FamilyName\[0\]/,
+  pt5_rel1_given: /\.Pt5Line6b_GivenName\[0\]/,
+  pt5_rel1_middle: /\.Pt5Line6c_MiddleName\[0\]/,
+  pt5_rel1_relationship: /\.Pt5Line7_Relationship\[0\]/,
+  // Relative 2: 8.a/b/c name + 9 relationship
+  pt5_rel2_family: /\.Pt5Line8a_FamilyName\[0\]/,
+  pt5_rel2_given: /\.Pt5Line8b_GivenName\[0\]/,
+  pt5_rel2_middle: /\.Pt5Line8c_MiddleName\[0\]/,
+  pt5_rel2_relationship: /\.Pt5Line9_Relationship\[0\]/,
+
+  // ── Part 9: Additional Information (Addendum) ──
+  // Item 1: petitioner name (siempre llenar para identificación)
+  pt9_l1_family: /\.Pt9Line1a_FamilyName\[0\]/,
+  pt9_l1_given: /\.Pt9Line1b_GivenName\[0\]/,
+  pt9_l1_middle: /\.Pt9Line1c_MiddleName\[0\]/,
+  pt9_l2_aNumber: /\.Pt9Line2_AlienNumber\[0\]/,
+  // 5 slots de overflow (items 3-7)
+  pt9_l3_page: /\.Pt9Line3a_PageNumber\[0\]/,
+  pt9_l3_part: /\.Pt9Line3b_PartNumber\[0\]/,
+  pt9_l3_item: /\.Pt9Line3c_ItemNumber\[0\]/,
+  pt9_l3_content: /\.Pt9Line3d_AdditionalInfo\[0\]/,
+  pt9_l4_page: /\.Pt9Line4a_PageNumber\[0\]/,
+  pt9_l4_part: /\.Pt9Line4b_PartNumber\[0\]/,
+  pt9_l4_item: /\.Pt9Line4c_ItemNumber\[0\]/,
+  pt9_l4_content: /\.Pt9Line4d_AdditionalInfo\[0\]/,
+  pt9_l5_page: /\.Pt9Line5a_PageNumber\[0\]/,
+  pt9_l5_part: /\.Pt9Line5b_PartNumber\[0\]/,
+  pt9_l5_item: /\.Pt9Line5c_ItemNumber\[0\]/,
+  pt9_l5_content: /\.Pt9Line5d_AdditionalInfo\[0\]/,
+  pt9_l6_page: /\.Pt9Line6a_PageNumber\[0\]/,
+  pt9_l6_part: /\.Pt9Line6b_PartNumber\[0\]/,
+  pt9_l6_item: /\.Pt9Line6c_ItemNumber\[0\]/,
+  pt9_l6_content: /\.Pt9Line6d_AdditionalInfo\[0\]/,
+  pt9_l7_page: /\.Pt9Line7a_PageNumber\[0\]/,
+  pt9_l7_part: /\.Pt9Line7b_PartNumber\[0\]/,
+  pt9_l7_item: /\.Pt9Line7c_ItemNumber\[0\]/,
+  pt9_l7_content: /\.Pt9Line7d_AdditionalInfo\[0\]/,
 
   // Beneficiary current employment (line 26-27)
   pt4_l26_employer: /\.Pt4Line26_NameOfCompany\[0\]/,
@@ -627,16 +714,37 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt2_l19c_province, data.petitionerPlaceMarriageProvince);
   setText(form, P.pt2_l19d_country, data.petitionerPlaceMarriageCountry);
 
-  // Prior spouse
-  const priorSp0 = data.petitionerPriorMarriages?.[0];
-  if (priorSp0) {
-    setText(form, P.pt2_l22_family, priorSp0.spouseLastName);
-    setText(form, P.pt2_l22_given, priorSp0.spouseFirstName);
-    setText(form, P.pt2_l22_middle, priorSp0.spouseMiddleName);
-    setText(form, P.pt2_l23_dateEnded, fmtDate(priorSp0.dateMarriageEnded));
-    setCheck(form, P.pt2_l23_divorce, priorSp0.howEnded === "divorce");
-    setCheck(form, P.pt2_l23_death, priorSp0.howEnded === "death");
-    setCheck(form, P.pt2_l23_annul, priorSp0.howEnded === "annulment");
+  // ── Spouses del Petitioner (current + prior) ──
+  // PDF I-130 Item 19: "list current spouse FIRST then prior spouses".
+  // Spouse 1 (Pt2Line20) = current spouse (la beneficiary cuando relationshipType="spouse")
+  // Spouse 2 (Pt2Line22) = prior spouse más reciente
+  if (data.relationshipType === "spouse" && data.petitionerMaritalStatus === "married") {
+    // Current spouse = beneficiary
+    setText(form, P.pt2_l20_family, data.beneficiaryLastName);
+    setText(form, P.pt2_l20_given, data.beneficiaryFirstName);
+    setText(form, P.pt2_l20_middle, data.beneficiaryMiddleName);
+    // Spouse 1 NO se cierra con "date marriage ended" porque sigue activo
+  } else if (data.petitionerPriorMarriages?.[0]) {
+    // Si NO es spouse case pero hay prior marriages, Spouse 1 = más reciente
+    const sp0 = data.petitionerPriorMarriages[0];
+    setText(form, P.pt2_l20_family, sp0.spouseLastName);
+    setText(form, P.pt2_l20_given, sp0.spouseFirstName);
+    setText(form, P.pt2_l20_middle, sp0.spouseMiddleName);
+    setText(form, P.pt2_l21_dateEnded, fmtDate(sp0.dateMarriageEnded));
+  }
+
+  // Spouse 2 = primer prior marriage (cuando spouse 1 es current),
+  // o segundo prior marriage (cuando spouse 1 es el primer prior)
+  const priorSpouseIdx = data.relationshipType === "spouse" ? 0 : 1;
+  const priorSp = data.petitionerPriorMarriages?.[priorSpouseIdx];
+  if (priorSp) {
+    setText(form, P.pt2_l22_family, priorSp.spouseLastName);
+    setText(form, P.pt2_l22_given, priorSp.spouseFirstName);
+    setText(form, P.pt2_l22_middle, priorSp.spouseMiddleName);
+    setText(form, P.pt2_l23_dateEnded, fmtDate(priorSp.dateMarriageEnded));
+    setCheck(form, P.pt2_l23_divorce, priorSp.howEnded === "divorce");
+    setCheck(form, P.pt2_l23_death, priorSp.howEnded === "death");
+    setCheck(form, P.pt2_l23_annul, priorSp.howEnded === "annulment");
   }
 
   // Father
@@ -659,14 +767,24 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt2_mother_city_res, data.petitionerMotherCityOfResidence);
   setText(form, P.pt2_mother_country_res, data.petitionerMotherCountryOfResidence);
 
-  // Citizenship
+  // ── Citizenship status + Certificate (Items 36-39) ──
+  // PDF I-130: Item 36 (USC/LPR) + Item 37 (how acquired) + Item 38 (Yes/No tiene cert)
+  // Cert details (39.a-c) SOLO se llenan si Item 38 = Yes (tiene certificate).
+  // Birth in US NO requiere certificate (es birth certificate, no USCIS cert),
+  // entonces Item 38 debe ser No y NO llenar cert fields.
   setCheck(form, P.pt2_l36_usc, data.petitionerCitizenshipStatus === "us_citizen");
   setCheck(form, P.pt2_l36_lpr, data.petitionerCitizenshipStatus === "lpr");
-  setCheck(form, P.pt2_l36_yes, data.petitionerAcquiredBy === "naturalization");
-  setCheck(form, P.pt2_l36_no, data.petitionerAcquiredBy === "birth_in_us" || data.petitionerAcquiredBy === "parents");
-  setText(form, P.pt2_l37a_certNum, data.petitionerCertNumber);
-  setText(form, P.pt2_l37b_place, data.petitionerCertPlace);
-  setText(form, P.pt2_l37c_date, fmtDate(data.petitionerCertDate));
+
+  const hasCert = data.petitionerAcquiredBy === "naturalization" || data.petitionerAcquiredBy === "parents";
+  setCheck(form, P.pt2_l36_yes, hasCert);
+  setCheck(form, P.pt2_l36_no, data.petitionerAcquiredBy === "birth_in_us");
+
+  // Solo llenar cert details si tiene certificate (no si nació en US)
+  if (hasCert) {
+    setText(form, P.pt2_l37a_certNum, data.petitionerCertNumber);
+    setText(form, P.pt2_l37b_place, data.petitionerCertPlace);
+    setText(form, P.pt2_l37c_date, fmtDate(data.petitionerCertDate));
+  }
 
   // Current employment
   const job0 = data.petitionerEmployment?.[0];
@@ -802,7 +920,12 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt4_native_middle, data.beneficiaryNativeMiddleName);
 
   // Marital
-  setText(form, P.pt4_numMarriages, String(data.beneficiaryPriorMarriages?.length || 0));
+  // ── Beneficiary marital ──
+  // Number of marriages = current (si NO single) + prior marriages array
+  const beneNumMarriages =
+    (data.beneficiaryMaritalStatus && data.beneficiaryMaritalStatus !== "single" ? 1 : 0) +
+    (data.beneficiaryPriorMarriages?.length || 0);
+  setText(form, P.pt4_numMarriages, String(beneNumMarriages));
   setCheck(form, P.pt4_status_single, data.beneficiaryMaritalStatus === "single");
   setCheck(form, P.pt4_status_married, data.beneficiaryMaritalStatus === "married");
   setCheck(form, P.pt4_status_divorced, data.beneficiaryMaritalStatus === "divorced");
@@ -814,6 +937,53 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt4_marriagePlace_state, data.beneficiaryPlaceMarriageState);
   setText(form, P.pt4_marriagePlace_province, data.beneficiaryPlaceMarriageProvince);
   setText(form, P.pt4_marriagePlace_country, data.beneficiaryPlaceMarriageCountry);
+
+  // ── Beneficiary's Family (Items 25-44 del PDF: 5 Persons) ──
+  // Order USCIS: current spouse FIRST (si married), después hijos.
+  // Cuando relationshipType="spouse", el petitioner ES el current spouse, así que
+  // NO se incluye en esta lista. Solo hijos del beneficiary aquí.
+  // Cuando relationshipType="parent"/"child"/"sibling", current spouse va Person 1.
+  const familyList: Array<{ lastName: string; firstName: string; middleName: string; relationship: string; dateOfBirth: string; countryOfBirth: string }> = [];
+
+  // Si beneficiary married Y NO es spouse case, agregar current spouse como Person 1
+  if (data.beneficiaryMaritalStatus === "married" && data.relationshipType !== "spouse" && data.beneficiaryPriorMarriages?.[0]) {
+    const sp = data.beneficiaryPriorMarriages[0];
+    familyList.push({
+      lastName: sp.spouseLastName,
+      firstName: sp.spouseFirstName,
+      middleName: sp.spouseMiddleName,
+      relationship: "Spouse",
+      dateOfBirth: "",
+      countryOfBirth: "",
+    });
+  }
+
+  // Agregar todos los children
+  if (data.beneficiaryChildren?.length) {
+    for (const child of data.beneficiaryChildren) {
+      if (familyList.length >= 5) break;
+      familyList.push(child);
+    }
+  }
+
+  // Llenar Person 1-5 según familyList
+  const familyPatterns = [
+    [P.pt4_fam1_family, P.pt4_fam1_given, P.pt4_fam1_middle, P.pt4_fam1_relationship, P.pt4_fam1_dob, P.pt4_fam1_country],
+    [P.pt4_fam2_family, P.pt4_fam2_given, P.pt4_fam2_middle, P.pt4_fam2_relationship, P.pt4_fam2_dob, P.pt4_fam2_country],
+    [P.pt4_fam3_family, P.pt4_fam3_given, P.pt4_fam3_middle, P.pt4_fam3_relationship, P.pt4_fam3_dob, P.pt4_fam3_country],
+    [P.pt4_fam4_family, P.pt4_fam4_given, P.pt4_fam4_middle, P.pt4_fam4_relationship, P.pt4_fam4_dob, P.pt4_fam4_country],
+    [P.pt4_fam5_family, P.pt4_fam5_given, P.pt4_fam5_middle, P.pt4_fam5_relationship, P.pt4_fam5_dob, P.pt4_fam5_country],
+  ];
+  for (let i = 0; i < Math.min(familyList.length, 5); i++) {
+    const fam = familyList[i];
+    const [fp, gp, mp, rp, dp, cp] = familyPatterns[i];
+    setText(form, fp, fam.lastName);
+    setText(form, gp, fam.firstName);
+    setText(form, mp, fam.middleName);
+    setText(form, rp, fam.relationship);
+    setText(form, dp, fmtDate(fam.dateOfBirth));
+    setText(form, cp, fam.countryOfBirth);
+  }
 
   // Entry to US
   if (data.beneficiaryEverInUS) {
@@ -837,6 +1007,8 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt4_l26_zip, beJob.zip);
     setText(form, P.pt4_l26_country, beJob.country);
     setText(form, P.pt4_l27_began, fmtDate(beJob.fromDate));
+    // Item 48 (occupation) — campo faltante en filler anterior
+    setText(form, P.pt4_l48_occupation, beJob.occupation);
   }
 
   // Removal proceedings
@@ -875,7 +1047,9 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt4_l61_country, data.consularPostCountry);
   }
 
-  // ── Part 5: Prior petitions ──
+  // ── Part 5: Prior petitions (Items 1-5) ──
+  // Solo llenar si hasFiledPriorPetition=true. Si false, NO marcar nada
+  // (queda Item 1 sin Yes/No marked → paralegal decide al revisar).
   if (data.hasFiledPriorPetition) {
     setText(form, P.pt5_prior_family, data.priorPetitionBeneficiaryLastName);
     setText(form, P.pt5_prior_given, data.priorPetitionBeneficiaryFirstName);
@@ -886,11 +1060,33 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt5_prior_result, data.priorPetitionResult);
   }
 
+  // ── Part 5: Simultaneous Relatives (Items 6.a-9 del PDF) ──
+  // Otros parientes peticionados al mismo tiempo (batch filing).
+  const rel0 = data.simultaneousRelatives?.[0];
+  if (rel0) {
+    setText(form, P.pt5_rel1_family, rel0.lastName);
+    setText(form, P.pt5_rel1_given, rel0.firstName);
+    setText(form, P.pt5_rel1_middle, rel0.middleName);
+    setText(form, P.pt5_rel1_relationship, rel0.relationship);
+  }
+  const rel1 = data.simultaneousRelatives?.[1];
+  if (rel1) {
+    setText(form, P.pt5_rel2_family, rel1.lastName);
+    setText(form, P.pt5_rel2_given, rel1.firstName);
+    setText(form, P.pt5_rel2_middle, rel1.middleName);
+    setText(form, P.pt5_rel2_relationship, rel1.relationship);
+  }
+  // Relatives 3+ van al Part 9 addendum (más abajo).
+
   // ── Part 6: Petitioner Statement ──
-  setCheck(form, P.pt6_reads_english, data.petitionerCanReadEnglish && !data.interpreterUsed);
-  setCheck(form, P.pt6_interpreter, data.interpreterUsed);
-  if (data.interpreterUsed) setText(form, P.pt6_language, data.interpreterLanguage);
-  setCheck(form, P.pt6_preparer, data.preparerUsed);
+  // PDF Items 1.a y 1.b son EXCLUYENTES: lee inglés O usa intérprete.
+  // Item 2 (used preparer) es independiente — puede marcarse junto con 1.a o 1.b.
+  // Si interpreterUsed=true, NO marcar reads_english (independientemente del flag).
+  const usesInterpreter = !!data.interpreterUsed;
+  setCheck(form, P.pt6_reads_english, !usesInterpreter && !!data.petitionerCanReadEnglish);
+  setCheck(form, P.pt6_interpreter, usesInterpreter);
+  if (usesInterpreter) setText(form, P.pt6_language, data.interpreterLanguage);
+  setCheck(form, P.pt6_preparer, !!data.preparerUsed);
   setText(form, P.pt6_phone, data.petitionerDaytimePhone);
   setText(form, P.pt6_mobile, data.petitionerMobilePhone);
   setText(form, P.pt6_email, data.petitionerEmail);
@@ -931,6 +1127,134 @@ export async function fillI130Pdf(data: I130Data) {
     setCheck(form, P.pt8_notAttorney, !data.preparerIsAttorney);
     setCheck(form, P.pt8_repExtends, data.preparerRepExtends);
     setCheck(form, P.pt8_repNo, !data.preparerRepExtends);
+  }
+
+  // ── Part 9: Additional Information (auto-addendum para overflow) ──
+  // PDF I-130 limita ciertos arrays a N entries. Lo que excede va a Part 9.
+  // Item 1 = petitioner name (siempre para identificación).
+  // Items 3-7 = 5 slots de overflow con (Page/Part/Item ref + content).
+  setText(form, P.pt9_l1_family, data.petitionerLastName);
+  setText(form, P.pt9_l1_given, data.petitionerFirstName);
+  setText(form, P.pt9_l1_middle, data.petitionerMiddleName);
+  setText(form, P.pt9_l2_aNumber, data.petitionerANumber?.replace(/^A-?/i, ""));
+
+  // Recolectar overflow entries con referencias al item original del PDF
+  type Overflow = { page: string; part: string; item: string; content: string };
+  const overflow: Overflow[] = [];
+
+  // Other Names petitioner — slots para 2 (Item 5 + Item 4 alt). Overflow = idx >= 2.
+  if (data.petitionerOtherNames && data.petitionerOtherNames.length > 2) {
+    for (let i = 2; i < data.petitionerOtherNames.length; i++) {
+      const n = data.petitionerOtherNames[i];
+      overflow.push({
+        page: "2", part: "2", item: "5",
+        content: `Additional Other Name (Petitioner) #${i + 1}: ${n.lastName}, ${n.firstName} ${n.middleName}`.trim(),
+      });
+    }
+  }
+  // Other Names beneficiary — slots para 2. Overflow = idx >= 2.
+  if (data.beneficiaryOtherNames && data.beneficiaryOtherNames.length > 2) {
+    for (let i = 2; i < data.beneficiaryOtherNames.length; i++) {
+      const n = data.beneficiaryOtherNames[i];
+      overflow.push({
+        page: "5", part: "4", item: "5",
+        content: `Additional Other Name (Beneficiary) #${i + 1}: ${n.lastName}, ${n.firstName} ${n.middleName}`.trim(),
+      });
+    }
+  }
+  // Prior marriages petitioner — slot Spouse 2 = 1 prior (cuando spouse case) o 2 priors (otros).
+  // Overflow cuando excede esos slots.
+  const petPriorSlots = data.relationshipType === "spouse" ? 1 : 2;
+  if (data.petitionerPriorMarriages && data.petitionerPriorMarriages.length > petPriorSlots) {
+    for (let i = petPriorSlots; i < data.petitionerPriorMarriages.length; i++) {
+      const m = data.petitionerPriorMarriages[i];
+      overflow.push({
+        page: "3", part: "2", item: "22",
+        content: `Additional Prior Spouse (Petitioner) #${i + 1}: ${m.spouseLastName}, ${m.spouseFirstName} ${m.spouseMiddleName} · Married ${fmtDate(m.dateOfMarriage)} · Ended ${fmtDate(m.dateMarriageEnded)} (${m.howEnded})`.trim(),
+      });
+    }
+  }
+  // Prior addresses petitioner — slot 1 prior (Pt2Line14). Overflow = idx >= 1.
+  if (data.petitionerPriorAddresses && data.petitionerPriorAddresses.length > 1) {
+    for (let i = 1; i < data.petitionerPriorAddresses.length; i++) {
+      const a = data.petitionerPriorAddresses[i];
+      overflow.push({
+        page: "2", part: "2", item: "14",
+        content: `Additional Prior Address #${i + 1}: ${a.street}, ${a.apt} ${a.city}, ${a.state} ${a.zip} ${a.country} · From ${fmtDate(a.fromDate)} to ${fmtDate(a.toDate)}`.trim(),
+      });
+    }
+  }
+  // Employment petitioner — slots para 2 (Pt2Line40 + 44). Overflow = idx >= 2.
+  if (data.petitionerEmployment && data.petitionerEmployment.length > 2) {
+    for (let i = 2; i < data.petitionerEmployment.length; i++) {
+      const e = data.petitionerEmployment[i];
+      overflow.push({
+        page: "4", part: "2", item: "44",
+        content: `Additional Employment #${i + 1}: ${e.employerName} · ${e.occupation} · ${e.city}, ${e.state} ${e.country} · ${fmtDate(e.fromDate)} - ${fmtDate(e.toDate)}`.trim(),
+      });
+    }
+  }
+  // Prior marriages beneficiary — slots para 2. Overflow = idx >= 2.
+  if (data.beneficiaryPriorMarriages && data.beneficiaryPriorMarriages.length > 2) {
+    for (let i = 2; i < data.beneficiaryPriorMarriages.length; i++) {
+      const m = data.beneficiaryPriorMarriages[i];
+      overflow.push({
+        page: "6", part: "4", item: "23",
+        content: `Additional Prior Spouse (Beneficiary) #${i + 1}: ${m.spouseLastName}, ${m.spouseFirstName} ${m.spouseMiddleName} · Ended ${fmtDate(m.dateMarriageEnded)} (${m.howEnded})`.trim(),
+      });
+    }
+  }
+  // Beneficiary children/family — slots para 5 Persons. Overflow = idx >= 5.
+  if (data.beneficiaryChildren && data.beneficiaryChildren.length > 5) {
+    for (let i = 5; i < data.beneficiaryChildren.length; i++) {
+      const c = data.beneficiaryChildren[i];
+      overflow.push({
+        page: "7", part: "4", item: "41",
+        content: `Additional Family Member #${i + 1}: ${c.lastName}, ${c.firstName} ${c.middleName} · ${c.relationship} · DOB ${fmtDate(c.dateOfBirth)} · ${c.countryOfBirth}`.trim(),
+      });
+    }
+  }
+  // Simultaneous Relatives — slots para 2. Overflow = idx >= 2.
+  if (data.simultaneousRelatives && data.simultaneousRelatives.length > 2) {
+    for (let i = 2; i < data.simultaneousRelatives.length; i++) {
+      const r = data.simultaneousRelatives[i];
+      overflow.push({
+        page: "9", part: "5", item: "8",
+        content: `Additional Simultaneous Relative #${i + 1}: ${r.lastName}, ${r.firstName} ${r.middleName} · ${r.relationship}`.trim(),
+      });
+    }
+  }
+  // Prior petitions filed before — slots para 1 (Items 2-5). Overflow va a Part 9.
+  // Más prior petitions van vía priorPetitionsDetails string libre.
+  if (data.hasFiledPriorPetition && data.priorPetitionsDetails) {
+    overflow.push({
+      page: "8", part: "5", item: "1",
+      content: `Additional Prior Petitions: ${data.priorPetitionsDetails}`,
+    });
+  }
+
+  // Llenar los 5 slots del Part 9 (items 3-7)
+  const addendaPatterns = [
+    [P.pt9_l3_page, P.pt9_l3_part, P.pt9_l3_item, P.pt9_l3_content],
+    [P.pt9_l4_page, P.pt9_l4_part, P.pt9_l4_item, P.pt9_l4_content],
+    [P.pt9_l5_page, P.pt9_l5_part, P.pt9_l5_item, P.pt9_l5_content],
+    [P.pt9_l6_page, P.pt9_l6_part, P.pt9_l6_item, P.pt9_l6_content],
+    [P.pt9_l7_page, P.pt9_l7_part, P.pt9_l7_item, P.pt9_l7_content],
+  ];
+  for (let i = 0; i < Math.min(overflow.length, 5); i++) {
+    const o = overflow[i];
+    const [pp, partp, itemp, contentp] = addendaPatterns[i];
+    setText(form, pp, o.page);
+    setText(form, partp, o.part);
+    setText(form, itemp, o.item);
+    setText(form, contentp, o.content);
+  }
+  // Si hay >5 overflow, agregar nota al último slot (item 7) — el resto requiere
+  // página adicional según instructions de USCIS (limitación del PDF, no del filler).
+  if (overflow.length > 5) {
+    const lastPattern = addendaPatterns[4];
+    const extraCount = overflow.length - 4;
+    setText(form, lastPattern[3], overflow[4].content + ` [+ ${extraCount - 1} additional entries — attach extra Part 9 pages per USCIS instructions]`);
   }
 
   // ── Generate PDF417 barcode IMAGES and embed them on each page (12 páginas) ──
