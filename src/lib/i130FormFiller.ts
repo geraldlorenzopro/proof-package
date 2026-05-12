@@ -932,7 +932,7 @@ export async function fillI130Pdf(data: I130Data) {
 
   // ── Save & download ──
   const filledBytes = await pdf.save();
-  const blob = new Blob([filledBytes], { type: "application/pdf" });
+  const blob = new Blob([filledBytes as BlobPart], { type: "application/pdf" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
