@@ -453,15 +453,18 @@ const P = {
   pt4_fam5_dob: /\.Pt4Line48_DateOfBirth\[0\]/,
   pt4_fam5_country: /\.Pt4Line49_CountryOfBirth\[0\]/, // posible colisión con Person 1 — duplicado en PDF
 
-  // Beneficiary Spouse 1 + 2 names (PDF reusa numbering 17-19 que también es Items 17-19 marital info)
-  // Pt4Line17_DateMarriageEnded[0] = Spouse 1 date ended (Item 22 visual)
-  // Pt4Line17_DateMarriageEnded[1] = Spouse 2 date ended (Item 24 visual)
-  // Pt4Line18a_FamilyName etc = Spouse 1 name (Items 21.a-c visual)
-  pt4_l21a_family: /\.Pt4Line18a_FamilyName\[0\]/,
-  pt4_l21b_given: /\.Pt4Line18b_GivenName\[0\]/,
-  pt4_l21c_middle: /\.Pt4Line18c_MiddleName\[0\]/,
+  // Beneficiary Spouse 1 + 2 names — VERIFIED via Y-coord probe en PDF blank.
+  // Pt4Line16a/b/c (y=234..186) = Spouse 1 / Item 21.a-c visual (current spouse)
+  // Pt4Line18a/b/c (y=108..60)  = Spouse 2 / Item 23.a-c visual (prior spouse)
+  // Pt4Line17_DateMarriageEnded[0] (y=162) = Spouse 1 / Item 22
+  // Pt4Line17_DateMarriageEnded[1] (y=738 col derecha) = Spouse 2 / Item 24
+  pt4_l21a_family: /\.Pt4Line16a_FamilyName\[0\]/,
+  pt4_l21b_given: /\.Pt4Line16b_GivenName\[0\]/,
+  pt4_l21c_middle: /\.Pt4Line16c_MiddleName\[0\]/,
   pt4_l22_dateEnded: /\.Pt4Line17_DateMarriageEnded\[0\]/,
-  // Spouse 2 name no tiene mapping descubierto en este PDF — overflow al Part 9
+  pt4_l23a_family: /\.Pt4Line18a_FamilyName\[0\]/,
+  pt4_l23b_given: /\.Pt4Line18b_GivenName\[0\]/,
+  pt4_l23c_middle: /\.Pt4Line18c_MiddleName\[0\]/,
   pt4_l24_dateEnded: /\.Pt4Line17_DateMarriageEnded\[1\]/,
 
   // Beneficiary Native Script (Items 57-58 visual = Pt4Line16a-c en PDF)
