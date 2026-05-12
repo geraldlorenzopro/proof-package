@@ -107,7 +107,7 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 text-jarvis animate-spin" />
+        <Loader2 className="w-6 h-6 text-accent animate-spin" />
       </div>
     );
   }

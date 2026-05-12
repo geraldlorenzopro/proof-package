@@ -251,10 +251,20 @@ function SeatGuardedContent() {
   const navigate = useNavigate();
   const seat = useAppSeat("smart-forms");
   const { destination: backDest } = useBackDestination();
-  const [splashDone, setSplashDone] = useState(false);
+  // Splash gated por sessionStorage — se muestra 1 vez por sesión.
+  // Eliminamos la fricción de re-disparar el splash en cada navegación interna.
+  const [splashDone, setSplashDone] = useState(() => {
+    try {
+      return sessionStorage.getItem("ner_splash_smart-forms_seen") === "true";
+    } catch { return false; }
+  });
   const [splashLang, setSplashLang] = useState<"es" | "en">("es");
 
-  // ── SPLASH ──
+  const handleSplashContinue = () => {
+    try { sessionStorage.setItem("ner_splash_smart-forms_seen", "true"); } catch {}
+    setSplashDone(true);
+  };
+
   if (!splashDone) {
     return (
       <ToolSplash
@@ -267,7 +277,7 @@ function SeatGuardedContent() {
           es: "Formularios inteligentes para inmigración",
           en: "Intelligent immigration forms",
         }}
-        onContinue={() => setSplashDone(true)}
+        onContinue={handleSplashContinue}
         lang={splashLang}
         setLang={setSplashLang}
       />

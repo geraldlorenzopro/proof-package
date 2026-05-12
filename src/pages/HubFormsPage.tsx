@@ -216,7 +216,7 @@ export default function HubFormsPage() {
             {allForms.length === 0 && !demoMode && (
               <button
                 onClick={() => navigate("/dashboard/smart-forms")}
-                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3.5 py-1.5 rounded bg-jarvis hover:bg-jarvis/90 text-white"
+                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3.5 py-1.5 rounded bg-accent hover:bg-accent/90 text-accent-foreground"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 Crear formulario nuevo
