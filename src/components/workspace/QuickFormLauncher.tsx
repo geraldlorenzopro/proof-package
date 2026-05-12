@@ -32,7 +32,7 @@ const availableForms = [
     type: "i-765",
     name: "I-765",
     description: "Solicitud de Autorización de Empleo",
-    color: "from-cyan-400/15 to-accent/10",
+    color: "from-cyan-400/15 to-primary/10",
   },
 ];
 
@@ -147,7 +147,7 @@ export default function QuickFormLauncher({ clientId, clientName, existingForms,
   }
 
   const statusConfig = {
-    draft: { label: "Borrador", color: "bg-accent/10 text-accent border-accent/20", icon: Clock },
+    draft: { label: "Borrador", color: "bg-primary/10 text-primary border-primary/20", icon: Clock },
     completed: { label: "Completado", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", icon: CheckCircle2 },
   };
 
@@ -169,10 +169,10 @@ export default function QuickFormLauncher({ clientId, clientName, existingForms,
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={() => navigate(`/dashboard/smart-forms/${form.id}`)}
-                  className="w-full flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left hover:border-accent/30 transition-all group"
+                  className="w-full flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left hover:border-primary/30 transition-all group"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400/15 to-accent/10 flex items-center justify-center shrink-0">
-                    <FileText className="w-5 h-5 text-accent" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400/15 to-primary/10 flex items-center justify-center shrink-0">
+                    <FileText className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground">{form.form_type.toUpperCase()}</p>
@@ -205,20 +205,20 @@ export default function QuickFormLauncher({ clientId, clientName, existingForms,
               whileTap={{ scale: 0.98 }}
               onClick={() => handleCreateForm(form.type)}
               disabled={creating !== null}
-              className="relative flex flex-col items-center gap-3 rounded-xl border border-dashed border-accent/30 bg-accent/5 hover:bg-accent/10 p-6 transition-all group disabled:opacity-50"
+              className="relative flex flex-col items-center gap-3 rounded-xl border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 p-6 transition-all group disabled:opacity-50"
             >
               {creating === form.type ? (
-                <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
               ) : (
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${form.color} flex items-center justify-center`}>
-                  <Plus className="w-6 h-6 text-accent" />
+                  <Plus className="w-6 h-6 text-primary" />
                 </div>
               )}
               <div className="text-center">
                 <p className="text-sm font-bold text-foreground">{form.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{form.description}</p>
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-accent font-semibold">
+              <div className="flex items-center gap-1.5 text-[10px] text-primary font-semibold">
                 <Sparkles className="w-3 h-3" />
                 Pre-llenado automático
               </div>

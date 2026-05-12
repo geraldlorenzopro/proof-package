@@ -18,9 +18,18 @@
     --popover: 220 25% 10%;
     --popover-foreground: 210 30% 90%;
 
-    /* Deep navy primary */
-    --primary: 220 50% 32%;
-    --primary-foreground: 48 80% 95%;
+    /* Primary — Brandbook oficial 2026-05-02: AI Blue (#2563EB).
+       Legacy navy guardado en --primary-legacy-navy para rollback. */
+    --primary: 220 83% 53%;             /* AI Blue */
+    --primary-foreground: 0 0% 100%;    /* texto blanco sobre AI Blue */
+    --primary-legacy-navy: 220 50% 32%; /* deprecated, rollback only */
+
+    /* Brandbook tokens oficiales (2026-05-02) */
+    --ai-blue: 220 83% 53%;       /* #2563EB — primary tech */
+    --deep-navy: 220 70% 14%;     /* #0B1F3A — autoridad legal, backgrounds */
+    --cyan-accent: 188 86% 53%;   /* #22D3EE — accent 20% only */
+    --soft-gray: 220 14% 96%;     /* #F3F4F6 — interfaces light */
+    --graphite: 220 26% 14%;      /* #1F2937 — texto principal */
 
     --secondary: 220 25% 14%;
     --secondary-foreground: 210 30% 80%;

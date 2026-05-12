@@ -107,7 +107,7 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 text-accent animate-spin" />
+        <Loader2 className="w-6 h-6 text-primary animate-spin" />
       </div>
     );
   }
@@ -124,7 +124,7 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
           </p>
           <Button
             onClick={() => setShowSelector(true)}
-            className="gap-2 bg-accent hover:bg-accent/90"
+            className="gap-2 bg-primary hover:bg-primary/90"
           >
             <Plus className="w-4 h-4" />
             Crear formulario USCIS
@@ -140,7 +140,7 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
                   key={f.type}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border ${
                     f.available
-                      ? "border-accent/20 bg-accent/5 cursor-pointer hover:bg-accent/10"
+                      ? "border-primary/20 bg-primary/5 cursor-pointer hover:bg-primary/10"
                       : "border-border/30 bg-muted/20 opacity-50"
                   }`}
                   onClick={() => f.available && handleCreateForm(f.type)}
@@ -150,7 +150,7 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
                     {f.label}
                   </span>
                   {f.available ? (
-                    <CheckCircle2 className="w-4 h-4 text-accent" />
+                    <CheckCircle2 className="w-4 h-4 text-primary" />
                   ) : (
                     <Badge variant="outline" className="text-[8px]">
                       <Lock className="w-2.5 h-2.5 mr-1" />
@@ -177,7 +177,7 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-accent" />
+          <FileText className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-bold text-foreground">Formularios del Caso</h3>
           <Badge variant="outline" className="text-[9px]">{forms.length}</Badge>
         </div>
@@ -199,10 +199,10 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="rounded-xl border border-border bg-card p-4 hover:border-accent/20 transition-all"
+            className="rounded-xl border border-border bg-card p-4 hover:border-primary/20 transition-all"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-lg shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg shrink-0">
                 📋
               </div>
               <div className="flex-1 min-w-0">
@@ -288,7 +288,7 @@ function FormSelectorModal({
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-accent" />
+            <FileText className="w-5 h-5 text-primary" />
             Crear formulario USCIS
           </DialogTitle>
           <DialogDescription>
@@ -303,7 +303,7 @@ function FormSelectorModal({
               onClick={() => f.available && onSelect(f.type)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${
                 f.available
-                  ? "border-accent/20 bg-accent/5 hover:bg-accent/10 hover:border-accent/40 cursor-pointer"
+                  ? "border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 cursor-pointer"
                   : "border-border/30 bg-muted/20 opacity-40 cursor-not-allowed"
               }`}
             >

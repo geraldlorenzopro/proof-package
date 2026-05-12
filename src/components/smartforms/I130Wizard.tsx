@@ -37,7 +37,7 @@ const Field = ({ label, children, className }: { label: string; children: React.
   </div>
 );
 
-const inputCls = "bg-secondary/60 border-border/50 focus:border-accent/60";
+const inputCls = "bg-secondary/60 border-border/50 focus:border-primary/60";
 
 const StateSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
   <Select value={value} onValueChange={onChange}>
@@ -103,7 +103,7 @@ function ClientLinkSection({ lang, shareToken, onRequestShareToken, t }: {
         <div className="flex items-center gap-2 max-w-md mx-auto">
           <Input readOnly value={clientUrl} className={cn(inputCls, "text-xs font-mono flex-1")} onClick={handleCopy} />
           <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5 shrink-0">
-            {copied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? t("Copied!", "¡Copiado!") : t("Copy", "Copiar")}
           </Button>
         </div>
@@ -352,7 +352,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     return (
       <div className="space-y-6">
         <div className="text-center space-y-1.5">
-          <h3 className="text-xl font-bold text-accent">{t("Set up this petition", "Configura esta petición")}</h3>
+          <h3 className="text-xl font-bold text-primary">{t("Set up this petition", "Configura esta petición")}</h3>
           <p className="text-sm text-muted-foreground">{t("I-130: Petition for Alien Relative", "I-130: Petición para Pariente Extranjero")}</p>
         </div>
 
@@ -365,14 +365,14 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               className={cn(
                 "flex flex-col items-center gap-2 p-4 rounded-xl border text-center transition-all cursor-pointer",
                 data.formPreparedBy === r.value
-                  ? "border-accent bg-accent/10 ring-1 ring-accent/30 shadow-md shadow-accent/10"
+                  ? "border-primary bg-primary/10 ring-1 ring-primary/30 shadow-md shadow-accent/10"
                   : "border-border/30 hover:border-border/60 hover:bg-secondary/40"
               )}
             >
-              <r.icon className={cn("w-6 h-6", data.formPreparedBy === r.value ? "text-accent" : "text-muted-foreground")} />
+              <r.icon className={cn("w-6 h-6", data.formPreparedBy === r.value ? "text-primary" : "text-muted-foreground")} />
               <span className="text-sm font-bold">{r.label}</span>
               <span className="text-xs text-muted-foreground leading-tight">{r.desc}</span>
-              {r.name && r.ok && <span className="text-xs text-accent truncate max-w-full">✓ {r.name}</span>}
+              {r.name && r.ok && <span className="text-xs text-primary truncate max-w-full">✓ {r.name}</span>}
               {!r.ok && r.value !== "applicant" && (
                 <span className="text-xs text-destructive flex items-center gap-0.5"><AlertCircle className="w-3 h-3" />{t("Not set", "Sin datos")}</span>
               )}
@@ -402,12 +402,12 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                   type="button"
                   onClick={() => selectBeneficiary(c.id)}
                   className={cn(
-                    "w-full text-left px-3 py-2 hover:bg-accent/10 transition-colors text-sm flex items-center justify-between",
-                    selectedBeneficiaryId === c.id && "bg-accent/15"
+                    "w-full text-left px-3 py-2 hover:bg-primary/10 transition-colors text-sm flex items-center justify-between",
+                    selectedBeneficiaryId === c.id && "bg-primary/15"
                   )}
                 >
                   <span>{c.last_name}, {c.first_name} {c.middle_name}</span>
-                  {selectedBeneficiaryId === c.id && <Check className="w-4 h-4 text-accent" />}
+                  {selectedBeneficiaryId === c.id && <Check className="w-4 h-4 text-primary" />}
                 </button>
               ))}
             </div>
@@ -417,7 +417,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         {isProfessional && (
           <div className="rounded-xl border border-border/30 p-4 space-y-3 text-center">
             <p className="text-sm font-bold text-foreground flex items-center justify-center gap-2">
-              <Link2 className="w-4 h-4 text-accent" />
+              <Link2 className="w-4 h-4 text-primary" />
               {t("Client Questionnaire", "Cuestionario del Cliente")}
             </p>
             {sendToClient ? (
@@ -445,7 +445,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderRelationship = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("What is your relationship to the beneficiary?", "¿Cuál es tu relación con el beneficiario?")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("What is your relationship to the beneficiary?", "¿Cuál es tu relación con el beneficiario?")}</h3>
       <p className="text-xs text-muted-foreground text-center">{t("Select the family relationship that applies", "Selecciona la relación familiar que aplica")}</p>
       <div className="grid grid-cols-2 gap-3">
         {I130_RELATIONSHIPS.map(r => (
@@ -456,7 +456,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             className={cn(
               "p-4 rounded-xl border text-center transition-all cursor-pointer",
               data.relationshipType === r.value
-                ? "border-accent bg-accent/10 ring-1 ring-accent/30"
+                ? "border-primary bg-primary/10 ring-1 ring-primary/30"
                 : "border-border/30 hover:border-border/60"
             )}
           >
@@ -514,7 +514,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderPetitionerInfo = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("About You (Petitioner)", "Sobre Ti (Peticionario)")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("About You (Petitioner)", "Sobre Ti (Peticionario)")}</h3>
       <p className="text-xs text-muted-foreground text-center">{t("You must be a US citizen or Lawful Permanent Resident", "Debes ser ciudadano de EE.UU. o Residente Permanente")}</p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -564,14 +564,14 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         <RadioGroup value={data.petitionerCitizenshipStatus} onValueChange={v => set("petitionerCitizenshipStatus", v as I130Data["petitionerCitizenshipStatus"])} className="grid grid-cols-2 gap-3">
           <label className={cn(
             "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
-            data.petitionerCitizenshipStatus === "us_citizen" ? "border-accent bg-accent/10" : "border-border/30 hover:border-border/60"
+            data.petitionerCitizenshipStatus === "us_citizen" ? "border-primary bg-primary/10" : "border-border/30 hover:border-border/60"
           )}>
             <RadioGroupItem value="us_citizen" />
             <span className="text-sm font-medium">{t("U.S. Citizen", "Ciudadano de EE.UU.")}</span>
           </label>
           <label className={cn(
             "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
-            data.petitionerCitizenshipStatus === "lpr" ? "border-accent bg-accent/10" : "border-border/30 hover:border-border/60"
+            data.petitionerCitizenshipStatus === "lpr" ? "border-primary bg-primary/10" : "border-border/30 hover:border-border/60"
           )}>
             <RadioGroupItem value="lpr" />
             <span className="text-sm font-medium">{t("Lawful Permanent Resident", "Residente Permanente")}</span>
@@ -622,7 +622,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderPetitionerAddress = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("Your Address", "Tu Dirección")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("Your Address", "Tu Dirección")}</h3>
       <p className="text-xs text-muted-foreground text-center">{t("Mailing address where USCIS can reach you", "Dirección postal donde USCIS pueda contactarte")}</p>
 
       <Field label={t("In Care Of", "A/C de")}><Input className={inputCls} value={data.petitionerMailingCareOf} onChange={e => set("petitionerMailingCareOf", e.target.value)} /></Field>
@@ -691,7 +691,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
     return (
       <div className="space-y-5">
-        <h3 className="text-lg font-semibold text-accent text-center">{t("Your History (last 5 years)", "Tu Historia (últimos 5 años)")}</h3>
+        <h3 className="text-lg font-semibold text-primary text-center">{t("Your History (last 5 years)", "Tu Historia (últimos 5 años)")}</h3>
 
         {/* Current marriage */}
         {data.petitionerMaritalStatus === "married" && (
@@ -889,7 +889,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
     return (
       <div className="space-y-5">
-        <h3 className="text-lg font-semibold text-accent text-center">{t("Biographic Information", "Información Biográfica")}</h3>
+        <h3 className="text-lg font-semibold text-primary text-center">{t("Biographic Information", "Información Biográfica")}</h3>
         <p className="text-xs text-muted-foreground text-center">{t("Required by USCIS for identification purposes", "Requerida por USCIS para identificación")}</p>
 
         <Field label={t("Ethnicity", "Etnia")}>
@@ -948,7 +948,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderBeneficiaryInfo = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("About the Beneficiary", "Sobre el Beneficiario")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("About the Beneficiary", "Sobre el Beneficiario")}</h3>
       <p className="text-xs text-muted-foreground text-center">{t("The foreign relative you are petitioning for", "El pariente extranjero por quien peticionas")}</p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -997,7 +997,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderBeneficiaryAddress = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("Beneficiary Address", "Dirección del Beneficiario")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("Beneficiary Address", "Dirección del Beneficiario")}</h3>
 
       <div className="flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-secondary/20">
         <Checkbox checked={data.beneficiaryAddressInUS} onCheckedChange={v => set("beneficiaryAddressInUS", !!v)} id="ben-in-us" />
@@ -1063,7 +1063,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
     return (
       <div className="space-y-5">
-        <h3 className="text-lg font-semibold text-accent text-center">{t("Beneficiary History", "Historia del Beneficiario")}</h3>
+        <h3 className="text-lg font-semibold text-primary text-center">{t("Beneficiary History", "Historia del Beneficiario")}</h3>
 
         {/* Marriage info */}
         {data.beneficiaryMaritalStatus === "married" && (
@@ -1187,7 +1187,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
     return (
       <div className="space-y-5">
-        <h3 className="text-lg font-semibold text-accent text-center">{t("Beneficiary's Children", "Hijos del Beneficiario")}</h3>
+        <h3 className="text-lg font-semibold text-primary text-center">{t("Beneficiary's Children", "Hijos del Beneficiario")}</h3>
         <p className="text-xs text-muted-foreground text-center">{t("List ALL children, even if not coming to U.S. (max 8)", "Lista TODOS los hijos, aunque no vengan a EE.UU. (máx 8)")}</p>
 
         <div className="flex items-center justify-between">
@@ -1242,13 +1242,13 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderConsular = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("Visa Processing", "Procesamiento de Visa")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("Visa Processing", "Procesamiento de Visa")}</h3>
       <p className="text-xs text-muted-foreground text-center">{t("Where will the beneficiary apply for the visa?", "¿Dónde aplicará el beneficiario para la visa?")}</p>
 
       <RadioGroup value={data.consularProcessing ? "consular" : "adjustment"} onValueChange={v => set("consularProcessing", v === "consular")} className="space-y-3">
         <label className={cn(
           "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all",
-          !data.consularProcessing ? "border-accent bg-accent/10" : "border-border/30 hover:border-border/60"
+          !data.consularProcessing ? "border-primary bg-primary/10" : "border-border/30 hover:border-border/60"
         )}>
           <RadioGroupItem value="adjustment" className="mt-0.5" />
           <div>
@@ -1258,7 +1258,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         </label>
         <label className={cn(
           "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all",
-          data.consularProcessing ? "border-accent bg-accent/10" : "border-border/30 hover:border-border/60"
+          data.consularProcessing ? "border-primary bg-primary/10" : "border-border/30 hover:border-border/60"
         )}>
           <RadioGroupItem value="consular" className="mt-0.5" />
           <div>
@@ -1308,9 +1308,9 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderStatement = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("Your Statement", "Tu Declaración")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("Your Statement", "Tu Declaración")}</h3>
       {!isProfessional && (
-        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3">
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
           <p className="text-xs text-muted-foreground">
             📋 {t(
               "This questionnaire is a data collection tool. Your attorney will review before filing.",
@@ -1329,7 +1329,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             className={cn(
               "flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-all flex-1",
               data.petitionerCanReadEnglish
-                ? "border-accent bg-accent/10 text-accent font-medium"
+                ? "border-primary bg-primary/10 text-primary font-medium"
                 : "border-border/30 text-muted-foreground hover:border-border/60"
             )}
           >
@@ -1342,7 +1342,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             className={cn(
               "flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-all flex-1",
               data.interpreterUsed
-                ? "border-accent bg-accent/10 text-accent font-medium"
+                ? "border-primary bg-primary/10 text-primary font-medium"
                 : "border-border/30 text-muted-foreground hover:border-border/60"
             )}
           >
@@ -1362,8 +1362,8 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const renderPreparer = () => (
     <div className="space-y-5">
       {isProfessional && (
-        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 mb-2">
-          <p className="text-xs text-accent font-medium">
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 mb-2">
+          <p className="text-xs text-primary font-medium">
             {t("⚙️ Professional-only section", "⚙️ Sección solo para profesionales")}
           </p>
         </div>
@@ -1371,7 +1371,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
       {data.interpreterUsed && (
         <>
-          <h3 className="text-lg font-semibold text-accent text-center">{t("Interpreter Information", "Datos del Intérprete")}</h3>
+          <h3 className="text-lg font-semibold text-primary text-center">{t("Interpreter Information", "Datos del Intérprete")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label={t("Last Name", "Apellido")}><Input className={inputCls} value={data.interpreterLastName} onChange={e => set("interpreterLastName", e.target.value)} /></Field>
             <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.interpreterFirstName} onChange={e => set("interpreterFirstName", e.target.value)} /></Field>
@@ -1402,7 +1402,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
       {data.preparerUsed && (
         <>
-          <h3 className="text-lg font-semibold text-accent text-center">{t("Preparer Information", "Datos del Preparador")}</h3>
+          <h3 className="text-lg font-semibold text-primary text-center">{t("Preparer Information", "Datos del Preparador")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label={t("Last Name", "Apellido")}><Input className={inputCls} value={data.preparerLastName} onChange={e => set("preparerLastName", e.target.value)} /></Field>
             <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.preparerFirstName} onChange={e => set("preparerFirstName", e.target.value)} /></Field>
@@ -1507,14 +1507,14 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground">
               {autoSaveStatus === "saving" && (
                 <>
-                  <Loader2 className="w-3 h-3 animate-spin text-accent" />
+                  <Loader2 className="w-3 h-3 animate-spin text-primary" />
                   <span>{t("Saving...", "Guardando...")}</span>
                 </>
               )}
               {autoSaveStatus === "saved" && (
                 <>
-                  <Cloud className="w-3 h-3 text-accent" />
-                  <span className="text-accent">{t("Saved", "Guardado")}</span>
+                  <Cloud className="w-3 h-3 text-primary" />
+                  <span className="text-primary">{t("Saved", "Guardado")}</span>
                 </>
               )}
               {autoSaveStatus === "error" && (
@@ -1528,11 +1528,11 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
           {isLast ? (
-            <Button onClick={() => setPdfDialogOpen(true)} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button onClick={() => setPdfDialogOpen(true)} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
               <FileText className="w-4 h-4" /> <span className="hidden sm:inline">{t("Generate PDF", "Generar PDF")}</span>
             </Button>
           ) : (
-            <Button onClick={next} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button onClick={next} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
               {t("Next", "Siguiente")} <ChevronRight className="w-4 h-4" />
             </Button>
           )}
@@ -1552,9 +1552,9 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               <button
                 type="button"
                 onClick={() => handleGeneratePdf("uscis")}
-                className="flex items-start gap-4 p-4 rounded-xl border border-border/40 hover:border-accent/60 hover:bg-accent/5 transition-all text-left cursor-pointer"
+                className="flex items-start gap-4 p-4 rounded-xl border border-border/40 hover:border-primary/60 hover:bg-primary/5 transition-all text-left cursor-pointer"
               >
-                <FileDown className="w-6 h-6 text-accent shrink-0 mt-0.5" />
+                <FileDown className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold text-sm">{t("Official USCIS PDF", "PDF Oficial USCIS")}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -1566,9 +1566,9 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <button
               type="button"
               onClick={() => handleGeneratePdf("summary")}
-              className="flex items-start gap-4 p-4 rounded-xl border border-border/40 hover:border-accent/60 hover:bg-accent/5 transition-all text-left cursor-pointer"
+              className="flex items-start gap-4 p-4 rounded-xl border border-border/40 hover:border-primary/60 hover:bg-primary/5 transition-all text-left cursor-pointer"
             >
-              <FileText className="w-6 h-6 text-accent shrink-0 mt-0.5" />
+              <FileText className="w-6 h-6 text-primary shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-sm">{t("Client Summary PDF", "PDF Resumen del Cliente")}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -1583,8 +1583,8 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
         <DialogContent className="sm:max-w-sm">
           <div className="flex flex-col items-center text-center gap-4 py-4">
-            <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8 text-accent" />
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
             </div>
             <div className="space-y-1.5">
               <h3 className="text-lg font-bold">{t("PDF Generated!", "¡PDF Generado!")}</h3>
@@ -1598,7 +1598,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               <Button variant="outline" className="flex-1" onClick={() => setSuccessDialogOpen(false)}>
                 {t("Keep editing", "Seguir editando")}
               </Button>
-              <Button className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => { setSuccessDialogOpen(false); navigate("/dashboard/smart-forms"); }}>
+              <Button className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setSuccessDialogOpen(false); navigate("/dashboard/smart-forms"); }}>
                 {t("Go to panel", "Ir al panel")}
               </Button>
             </div>

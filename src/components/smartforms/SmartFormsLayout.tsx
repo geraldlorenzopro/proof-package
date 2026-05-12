@@ -41,14 +41,14 @@ function MobileStepDrawer() {
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2 text-xs shrink-0">
-              <span className="font-bold text-accent">{currentStep + 1}/{steps.length}</span>
+              <span className="font-bold text-primary">{currentStep + 1}/{steps.length}</span>
               <span className="truncate max-w-[120px]">{I765_STEP_LABELS[steps[currentStep]][lang]}</span>
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0">
             <SheetHeader className="p-4 border-b border-border/40">
               <SheetTitle className="text-sm flex items-center gap-2">
-                <FileText className="w-4 h-4 text-accent" />
+                <FileText className="w-4 h-4 text-primary" />
                 Secciones del cuestionario
               </SheetTitle>
             </SheetHeader>
@@ -60,9 +60,9 @@ function MobileStepDrawer() {
                     className={cn(
                       "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs transition-all text-left",
                       i === currentStep
-                        ? "bg-accent/15 text-accent font-semibold border border-accent/30"
+                        ? "bg-primary/15 text-primary font-semibold border border-primary/30"
                         : i < currentStep
-                        ? "text-accent/70 hover:bg-accent/5"
+                        ? "text-primary/70 hover:bg-primary/5"
                         : "text-muted-foreground hover:bg-muted/50"
                     )}
                   >
@@ -71,7 +71,7 @@ function MobileStepDrawer() {
                     ) : (
                       <span className={cn(
                         "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border",
-                        i === currentStep ? "border-accent bg-accent text-accent-foreground" : "border-border bg-secondary/60"
+                        i === currentStep ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary/60"
                       )}>
                         {i + 1}
                       </span>
@@ -134,11 +134,11 @@ function TopNavBar() {
           <ArrowLeft className="w-4 h-4" />
           {fromCase && caseId ? (
             <span className="text-xs flex items-center gap-1">
-              <FileText className="w-3.5 h-3.5 text-accent" /> Volver al caso
+              <FileText className="w-3.5 h-3.5 text-primary" /> Volver al caso
             </span>
           ) : isHub ? (
             <span className="text-xs flex items-center gap-1">
-              <Shield className="w-3.5 h-3.5 text-accent" /> Hub
+              <Shield className="w-3.5 h-3.5 text-primary" /> Hub
             </span>
           ) : (
             <span className="text-xs">Dashboard</span>
@@ -148,7 +148,7 @@ function TopNavBar() {
         {/* Center: Branding + Nav tabs */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 shrink-0">
-            <FileText className="w-4 h-4 text-accent" />
+            <FileText className="w-4 h-4 text-primary" />
             <span className="font-bold text-sm hidden sm:inline">Smart Forms</span>
           </div>
           <div className="w-px h-5 bg-border/60 shrink-0" />
@@ -162,7 +162,7 @@ function TopNavBar() {
                 className={cn(
                   "gap-1.5 text-xs px-3 h-8 rounded-lg transition-all",
                   isActive(item.path, item.end)
-                    ? "bg-accent/15 text-accent font-semibold"
+                    ? "bg-primary/15 text-primary font-semibold"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -185,7 +185,7 @@ function TopNavBar() {
             onClick={() => navigate("/dashboard/smart-forms/settings")}
             className={cn(
               "w-8 h-8 shrink-0",
-              isSettingsActive ? "text-accent" : "text-muted-foreground hover:text-foreground"
+              isSettingsActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
             )}
             title="Configuración"
           >
@@ -209,9 +209,9 @@ function TopNavBar() {
                   className={cn(
                     "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all shrink-0",
                     isCurrent
-                      ? "bg-accent/15 text-accent font-semibold border border-accent/40 shadow-sm"
+                      ? "bg-primary/15 text-primary font-semibold border border-primary/40 shadow-sm"
                       : isCompleted
-                      ? "text-accent/70 hover:bg-accent/10 cursor-pointer"
+                      ? "text-primary/70 hover:bg-primary/10 cursor-pointer"
                       : "text-muted-foreground hover:bg-muted/60 cursor-pointer"
                   )}
                   title={I765_STEP_LABELS[s][lang]}
@@ -221,7 +221,7 @@ function TopNavBar() {
                   ) : (
                     <span className={cn(
                       "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border",
-                      isCurrent ? "border-accent bg-accent text-accent-foreground" : "border-border bg-secondary/60"
+                      isCurrent ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary/60"
                     )}>
                       {i + 1}
                     </span>
@@ -235,11 +235,11 @@ function TopNavBar() {
           <div className="flex items-center gap-3">
             <div className="relative h-2 w-full rounded-full bg-secondary overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-accent to-accent/60 transition-all duration-500 ease-out"
+                className="h-full rounded-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-500 ease-out"
                 style={{ width: `${((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100}%` }}
               />
             </div>
-            <span className="text-xs font-bold text-accent shrink-0">{Math.round(((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100)}%</span>
+            <span className="text-xs font-bold text-primary shrink-0">{Math.round(((wizardNav.currentStep + 1) / wizardNav.steps.length) * 100)}%</span>
           </div>
         </div>
       )}

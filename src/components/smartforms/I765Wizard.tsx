@@ -50,7 +50,7 @@ const StateSelect = ({ value, onChange }: { value: string; onChange: (v: string)
   </Select>
 );
 
-const inputCls = "bg-secondary/60 border-border/50 focus:border-accent/60";
+const inputCls = "bg-secondary/60 border-border/50 focus:border-primary/60";
 
 // ─── Client Link Section (inside caseConfig) ───
 function ClientLinkSection({ lang, shareToken, onRequestShareToken, t }: {
@@ -105,7 +105,7 @@ function ClientLinkSection({ lang, shareToken, onRequestShareToken, t }: {
             onClick={handleCopy}
           />
           <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5 shrink-0">
-            {copied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? t("Copied!", "¡Copiado!") : t("Copy", "Copiar")}
           </Button>
         </div>
@@ -392,7 +392,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     return (
       <div className="space-y-6">
         <div className="text-center space-y-1.5">
-          <h3 className="text-xl font-bold text-accent">{t("Set up this case", "Configura este caso")}</h3>
+          <h3 className="text-xl font-bold text-primary">{t("Set up this case", "Configura este caso")}</h3>
           <p className="text-sm text-muted-foreground">{t("Quick setup before starting the questionnaire", "Configuración rápida antes de iniciar el cuestionario")}</p>
         </div>
 
@@ -406,14 +406,14 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               className={cn(
                 "flex flex-col items-center gap-2 p-4 rounded-xl border text-center transition-all cursor-pointer",
                 data.formPreparedBy === r.value
-                  ? "border-accent bg-accent/10 ring-1 ring-accent/30 shadow-md shadow-accent/10"
+                  ? "border-primary bg-primary/10 ring-1 ring-primary/30 shadow-md shadow-accent/10"
                   : "border-border/30 hover:border-border/60 hover:bg-secondary/40"
               )}
             >
-              <r.icon className={cn("w-6 h-6", data.formPreparedBy === r.value ? "text-accent" : "text-muted-foreground")} />
+              <r.icon className={cn("w-6 h-6", data.formPreparedBy === r.value ? "text-primary" : "text-muted-foreground")} />
               <span className="text-sm font-bold">{r.label}</span>
               <span className="text-xs text-muted-foreground leading-tight">{r.desc}</span>
-              {r.name && r.ok && <span className="text-xs text-accent truncate max-w-full">✓ {r.name}</span>}
+              {r.name && r.ok && <span className="text-xs text-primary truncate max-w-full">✓ {r.name}</span>}
               {!r.ok && r.value !== "applicant" && (
                 <span className="text-xs text-destructive flex items-center gap-0.5"><AlertCircle className="w-3 h-3" />{t("Not set", "Sin datos")}</span>
               )}
@@ -445,7 +445,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               className={cn(
                 "flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-all min-w-[140px]",
                 data.applicantCanReadEnglish
-                  ? "border-accent bg-accent/10 text-accent font-medium"
+                  ? "border-primary bg-primary/10 text-primary font-medium"
                   : "border-border/30 text-muted-foreground hover:border-border/60"
               )}
             >
@@ -458,7 +458,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               className={cn(
                 "flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-all min-w-[140px]",
                 data.interpreterUsed
-                  ? "border-accent bg-accent/10 text-accent font-medium"
+                  ? "border-primary bg-primary/10 text-primary font-medium"
                   : "border-border/30 text-muted-foreground hover:border-border/60"
               )}
             >
@@ -472,7 +472,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         {isProfessional && (
           <div className="rounded-xl border border-border/30 p-4 space-y-3 text-center">
             <p className="text-sm font-bold text-foreground flex items-center justify-center gap-2">
-              <Link2 className="w-4 h-4 text-accent" />
+              <Link2 className="w-4 h-4 text-primary" />
               {t("Client Questionnaire", "Cuestionario del Cliente")}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -508,7 +508,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderReason = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("What do you need?", "¿Qué necesitas?")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("What do you need?", "¿Qué necesitas?")}</h3>
       <p className="text-sm text-muted-foreground text-center">{t("Select the option that best describes your situation", "Selecciona la opción que mejor describe tu situación")}</p>
       <RadioGroup value={data.reasonForApplying} onValueChange={v => set("reasonForApplying", v as I765Data["reasonForApplying"])}>
         {[
@@ -518,7 +518,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         ].map(o => (
           <label key={o.v} className={cn(
             "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all",
-            data.reasonForApplying === o.v ? "border-accent/60 bg-accent/5" : "border-border/30 hover:border-border/60"
+            data.reasonForApplying === o.v ? "border-primary/60 bg-primary/5" : "border-border/30 hover:border-border/60"
           )}>
             <RadioGroupItem value={o.v} className="mt-0.5" />
             <span className="text-sm">{t(o.en, o.es)}</span>
@@ -530,7 +530,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderPersonal = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("Tell us about yourself", "Cuéntanos sobre ti")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("Tell us about yourself", "Cuéntanos sobre ti")}</h3>
       <p className="text-xs text-muted-foreground text-center">{t("Your full legal name as it appears on your documents", "Tu nombre legal completo tal como aparece en tus documentos")}</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Last Name", "Apellido")}><Input className={inputCls} value={data.lastName} onChange={e => set("lastName", e.target.value)} /></Field>
@@ -610,7 +610,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderAddress = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("Where do you receive your mail?", "¿Dónde recibes tu correo?")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("Where do you receive your mail?", "¿Dónde recibes tu correo?")}</h3>
       <Field label={t("In Care Of", "A/C de")}><Input className={inputCls} value={data.mailingCareOf} onChange={e => set("mailingCareOf", e.target.value)} /></Field>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.mailingStreet} onChange={e => set("mailingStreet", e.target.value)} /></Field>
@@ -658,7 +658,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderBackground = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("A little more about you", "Un poco más sobre ti")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("A little more about you", "Un poco más sobre ti")}</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label={t("Sex", "Sexo")}>
           <RadioGroup value={data.sex} onValueChange={v => set("sex", v as "male" | "female")} className="flex gap-4 pt-1">
@@ -697,7 +697,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderArrival = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("When did you arrive in the U.S.?", "¿Cuándo llegaste a EE.UU.?")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("When did you arrive in the U.S.?", "¿Cuándo llegaste a EE.UU.?")}</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label="I-94 #"><Input className={inputCls} value={data.i94Number} onChange={e => set("i94Number", e.target.value)} /></Field>
         <Field label={t("Passport #", "# Pasaporte")}><Input className={inputCls} value={data.passportNumber} onChange={e => set("passportNumber", e.target.value)} /></Field>
@@ -719,7 +719,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderEligibility = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("What's your current situation?", "¿Cuál es tu situación actual?")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("What's your current situation?", "¿Cuál es tu situación actual?")}</h3>
       <p className="text-xs text-muted-foreground text-center">{t("This helps us determine the right category for your case", "Esto nos ayuda a determinar la categoría correcta para tu caso")}</p>
       <Select value={data.eligibilityCategory} onValueChange={v => set("eligibilityCategory", v)}>
         <SelectTrigger className="bg-secondary/60 border-border/50"><SelectValue placeholder={t("Select category", "Seleccionar categoría")} /></SelectTrigger>
@@ -769,9 +769,9 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
   const renderStatement = () => (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-accent text-center">{t("Your Contact Info", "Tu Información de Contacto")}</h3>
+      <h3 className="text-lg font-semibold text-primary text-center">{t("Your Contact Info", "Tu Información de Contacto")}</h3>
       {!isProfessional && (
-        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3">
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
           <p className="text-xs text-muted-foreground">
             📋 {t(
               "This questionnaire is a data collection tool provided by your legal office. It is NOT the official USCIS form and does not constitute legal advice. Your attorney/preparer will review all information before submitting the official application.",
@@ -791,8 +791,8 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const renderPreparer = () => (
     <div className="space-y-5">
       {isProfessional && (
-        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 mb-2">
-          <p className="text-xs text-accent font-medium">
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 mb-2">
+          <p className="text-xs text-primary font-medium">
             {t("⚙️ Professional-only section — This information will NOT be visible to the client.",
                "⚙️ Sección solo para profesionales — Esta información NO será visible para el cliente.")}
           </p>
@@ -801,7 +801,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
       {data.interpreterUsed && (
         <>
-          <h3 className="text-lg font-semibold text-accent text-center">{t("Interpreter Information", "Datos del Intérprete")}</h3>
+          <h3 className="text-lg font-semibold text-primary text-center">{t("Interpreter Information", "Datos del Intérprete")}</h3>
           {data.preparerUsed && (
             <div className="flex items-center gap-2 p-3 rounded-lg border border-border/40 bg-secondary/20">
               <Checkbox checked={data.interpreterSameAsPreparer} onCheckedChange={v => set("interpreterSameAsPreparer", !!v)} id="int-same" />
@@ -811,7 +811,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             </div>
           )}
           {data.interpreterSameAsPreparer && data.preparerUsed ? (
-            <div className="rounded-lg border border-accent/20 bg-accent/5 p-3">
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
               <p className="text-sm text-muted-foreground">
                 ✓ {t("Preparer data will be copied to interpreter section in the PDF.", "Los datos del preparador se copiarán a la sección de intérprete en el PDF.")}
               </p>
@@ -852,7 +852,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
       {data.preparerUsed && (
         <>
-          <h3 className="text-lg font-semibold text-accent text-center">{t("Who prepared this for you?", "¿Quién te ayudó a preparar esto?")}</h3>
+          <h3 className="text-lg font-semibold text-primary text-center">{t("Who prepared this for you?", "¿Quién te ayudó a preparar esto?")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label={t("Last Name", "Apellido")}><Input className={inputCls} value={data.preparerLastName} onChange={e => set("preparerLastName", e.target.value)} /></Field>
             <Field label={t("First Name", "Nombre")}><Input className={inputCls} value={data.preparerFirstName} onChange={e => set("preparerFirstName", e.target.value)} /></Field>
@@ -951,14 +951,14 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground">
               {autoSaveStatus === "saving" && (
                 <>
-                  <Loader2 className="w-3 h-3 animate-spin text-accent" />
+                  <Loader2 className="w-3 h-3 animate-spin text-primary" />
                   <span>{t("Saving...", "Guardando...")}</span>
                 </>
               )}
               {autoSaveStatus === "saved" && (
                 <>
-                  <Cloud className="w-3 h-3 text-accent" />
-                  <span className="text-accent">{t("Saved", "Guardado")}</span>
+                  <Cloud className="w-3 h-3 text-primary" />
+                  <span className="text-primary">{t("Saved", "Guardado")}</span>
                 </>
               )}
               {autoSaveStatus === "error" && (
@@ -972,11 +972,11 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
           {isLast ? (
-            <Button onClick={() => setPdfDialogOpen(true)} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button onClick={() => setPdfDialogOpen(true)} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
               <FileText className="w-4 h-4" /> <span className="hidden sm:inline">{t("Generate PDF", "Generar PDF")}</span>
             </Button>
           ) : (
-            <Button onClick={next} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button onClick={next} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
               {t("Next", "Siguiente")} <ChevronRight className="w-4 h-4" />
             </Button>
           )}
@@ -997,9 +997,9 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               <button
                 type="button"
                 onClick={() => handleGeneratePdf("uscis")}
-                className="flex items-start gap-4 p-4 rounded-xl border border-border/40 hover:border-accent/60 hover:bg-accent/5 transition-all text-left cursor-pointer"
+                className="flex items-start gap-4 p-4 rounded-xl border border-border/40 hover:border-primary/60 hover:bg-primary/5 transition-all text-left cursor-pointer"
               >
-                <FileDown className="w-6 h-6 text-accent shrink-0 mt-0.5" />
+                <FileDown className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold text-sm">{t("Official USCIS PDF", "PDF Oficial USCIS")}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -1011,9 +1011,9 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <button
               type="button"
               onClick={() => handleGeneratePdf("summary")}
-              className="flex items-start gap-4 p-4 rounded-xl border border-border/40 hover:border-accent/60 hover:bg-accent/5 transition-all text-left cursor-pointer"
+              className="flex items-start gap-4 p-4 rounded-xl border border-border/40 hover:border-primary/60 hover:bg-primary/5 transition-all text-left cursor-pointer"
             >
-              <FileText className="w-6 h-6 text-accent shrink-0 mt-0.5" />
+              <FileText className="w-6 h-6 text-primary shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-sm">{t("Client Summary PDF", "PDF Resumen del Cliente")}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -1029,8 +1029,8 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
         <DialogContent className="sm:max-w-sm">
           <div className="flex flex-col items-center text-center gap-4 py-4">
-            <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8 text-accent" />
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
             </div>
             <div className="space-y-1.5">
               <h3 className="text-lg font-bold">{t("PDF Generated!", "¡PDF Generado!")}</h3>
@@ -1049,7 +1049,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                 {t("Keep editing", "Seguir editando")}
               </Button>
               <Button
-                className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={() => { setSuccessDialogOpen(false); navigate("/dashboard/smart-forms"); }}
               >
                 {t("Go to panel", "Ir al panel")}

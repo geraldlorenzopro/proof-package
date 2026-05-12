@@ -297,7 +297,7 @@ export default function SmartFormsList() {
         <div className="flex items-center justify-between mb-5">
           <div>
             <div className="flex items-center gap-2.5">
-              <FileText className="w-5 h-5 text-accent" />
+              <FileText className="w-5 h-5 text-primary" />
               <h1 className="text-xl font-bold tracking-tight">Formularios</h1>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5 ml-7.5">
@@ -306,7 +306,7 @@ export default function SmartFormsList() {
           </div>
           <Button
             onClick={() => setCatalogOpen(true)}
-            className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 shadow-md shadow-accent/10"
+            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-accent/10"
           >
             <Plus className="w-4 h-4" /> Nuevo Formulario
           </Button>
@@ -326,13 +326,13 @@ export default function SmartFormsList() {
               className={cn(
                 "rounded-xl border px-4 py-3 text-left transition-all cursor-pointer",
                 filterStatus === key
-                  ? "border-accent bg-accent/10 shadow-sm shadow-accent/10"
+                  ? "border-primary bg-primary/10 shadow-sm shadow-accent/10"
                   : "border-border/30 bg-card/50 hover:border-border/60"
               )}
             >
               <p className={cn(
                 "text-2xl font-bold",
-                filterStatus === key ? "text-accent" : "text-foreground"
+                filterStatus === key ? "text-primary" : "text-foreground"
               )}>
                 {counts[key]}
               </p>
@@ -479,12 +479,12 @@ export default function SmartFormsList() {
                             onClick={() => handleFormClick(form)}
                             className={cn(
                               "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
-                              isAvailable ? "hover:bg-accent/10 cursor-pointer group" : "opacity-50 cursor-default"
+                              isAvailable ? "hover:bg-primary/10 cursor-pointer group" : "opacity-50 cursor-default"
                             )}
                           >
                             <div className={cn(
                               "w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
-                              isAvailable ? "bg-accent/15 text-accent" : "bg-muted/50 text-muted-foreground"
+                              isAvailable ? "bg-primary/15 text-primary" : "bg-muted/50 text-muted-foreground"
                             )}>
                               {form.name}
                             </div>
@@ -493,7 +493,7 @@ export default function SmartFormsList() {
                               <p className="text-xs text-muted-foreground truncate">{form.description}</p>
                             </div>
                             {isAvailable ? (
-                              <ArrowRight className="w-4 h-4 text-accent opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                              <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                             ) : (
                               <span className="text-[10px] text-muted-foreground/60 bg-muted/40 px-2 py-0.5 rounded-full shrink-0">Próximo</span>
                             )}
@@ -517,7 +517,7 @@ export default function SmartFormsList() {
             <DialogHeader className="px-5 pt-5 pb-2">
               <div className="flex items-center gap-2 mb-1">
                 {selectedForm && (
-                  <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">
+                  <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
                     {selectedForm.name}
                   </span>
                 )}
@@ -541,7 +541,7 @@ export default function SmartFormsList() {
                 />
                 {searchLoading && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="w-3.5 h-3.5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                    <div className="w-3.5 h-3.5 border-2 border-primary/30 border-t-accent rounded-full animate-spin" />
                   </div>
                 )}
               </div>
@@ -570,12 +570,12 @@ export default function SmartFormsList() {
                       onClick={() => setSelectedBeneficiaryId(selectedBeneficiaryId === c.id ? null : c.id)}
                       className={cn(
                         "w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors text-sm",
-                        selectedBeneficiaryId === c.id ? "bg-accent/10" : "hover:bg-secondary/60"
+                        selectedBeneficiaryId === c.id ? "bg-primary/10" : "hover:bg-secondary/60"
                       )}
                     >
                       <div className={cn(
                         "w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold",
-                        selectedBeneficiaryId === c.id ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+                        selectedBeneficiaryId === c.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                       )}>
                         {(c.first_name?.[0] || "").toUpperCase()}{(c.last_name?.[0] || "").toUpperCase()}
                       </div>
@@ -586,7 +586,7 @@ export default function SmartFormsList() {
                         {c.email && <p className="text-xs text-muted-foreground truncate">{c.email}</p>}
                       </div>
                       {selectedBeneficiaryId === c.id && (
-                        <Check className="w-4 h-4 text-accent shrink-0" />
+                        <Check className="w-4 h-4 text-primary shrink-0" />
                       )}
                     </button>
                   ))}
@@ -607,7 +607,7 @@ export default function SmartFormsList() {
               <Button
                 onClick={handleProceedToForm}
                 disabled={!selectedBeneficiaryId}
-                className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
+                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Continuar <ChevronRight className="w-4 h-4" />
               </Button>

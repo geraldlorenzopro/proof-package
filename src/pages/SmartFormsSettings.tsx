@@ -129,7 +129,7 @@ export default function SmartFormsSettings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 text-accent animate-spin" />
+        <Loader2 className="w-6 h-6 text-primary animate-spin" />
       </div>
     );
   }
@@ -158,8 +158,8 @@ export default function SmartFormsSettings() {
         {/* Attorney */}
         <div className="glow-border rounded-xl p-5 bg-card">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
-              <Scale className="w-4 h-4 text-accent" />
+            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Scale className="w-4 h-4 text-primary" />
             </div>
             <div>
               <h2 className="font-semibold text-foreground text-sm">Datos del Abogado</h2>
@@ -185,8 +185,8 @@ export default function SmartFormsSettings() {
         {/* Preparer */}
         <div className="glow-border rounded-xl p-5 bg-card">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
-              <FileText className="w-4 h-4 text-accent" />
+            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <FileText className="w-4 h-4 text-primary" />
             </div>
             <div>
               <h2 className="font-semibold text-foreground text-sm">Datos del Preparador</h2>
@@ -209,7 +209,7 @@ export default function SmartFormsSettings() {
       </div>
 
       <div className="mt-5">
-        <button onClick={handleSave} disabled={saving} className="gradient-gold text-accent-foreground font-semibold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="gradient-gold text-primary-foreground font-semibold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Guardar cambios
         </button>
