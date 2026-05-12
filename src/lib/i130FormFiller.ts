@@ -987,8 +987,9 @@ export async function fillI130Pdf(data: I130Data) {
   const benePriorIdx = data.relationshipType === "spouse" ? 0 : 1;
   const benePrior = data.beneficiaryPriorMarriages?.[benePriorIdx];
   if (benePrior) {
-    // NOTE: PDF NO tiene field para Spouse 2 name (solo date ended).
-    // El name va a Part 9 Addendum.
+    setText(form, P.pt4_l23a_family, benePrior.spouseLastName);
+    setText(form, P.pt4_l23b_given, benePrior.spouseFirstName);
+    setText(form, P.pt4_l23c_middle, benePrior.spouseMiddleName);
     setText(form, P.pt4_l24_dateEnded, fmtDate(benePrior.dateMarriageEnded));
   }
 
