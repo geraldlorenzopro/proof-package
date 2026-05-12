@@ -167,13 +167,13 @@ const P = {
   pt2_l4_family: /\.Pt2Line4a_FamilyName\[0\]/,
   pt2_l4_given: /\.Pt2Line4b_GivenName\[0\]/,
   pt2_l4_middle: /\.Pt2Line4c_MiddleName\[0\]/,
-  // Other Names Used (line 5 + repetition slot at index [1] of line 4)
+  // Other Names Used — el PDF I-130 SOLO tiene 1 slot (Pt2Line5).
+  // pt2_l4alt_* (que apuntaba a Pt2Line4a_FamilyName[1] en subform[11])
+  // estaba mal: ese slot ES Part 9 Item 1 (petitioner name en addendum), NO un
+  // 2do other name. Eliminado. OtherNames adicionales (2+) van a Part 9 overflow.
   pt2_l5_family: /\.Pt2Line5a_FamilyName\[0\]/,
   pt2_l5_given: /\.Pt2Line5b_GivenName\[0\]/,
   pt2_l5_middle: /\.Pt2Line5c_MiddleName\[0\]/,
-  pt2_l4alt_family: /\.Pt2Line4a_FamilyName\[1\]/,
-  pt2_l4alt_given: /\.Pt2Line4b_GivenName\[1\]/,
-  pt2_l4alt_middle: /\.Pt2Line4c_MiddleName\[1\]/,
 
   // Birth + sex
   pt2_l6_city: /\.Pt2Line6_CityTownOfBirth\[0\]/,
@@ -240,7 +240,10 @@ const P = {
 
   // Prior spouse (line 22 + 23)
   // Spouse 1 (Pt2Line20) — current spouse cuando relationshipType="spouse", o prior más reciente
-  pt2_l20_family: /\.Pt2Line20a_FamilyName\[0\]/,
+  // NOTE: el PDF USCIS Edition 04/01/24 tiene TYPO en el field name del family name:
+  // dice "PtLine20a_FamilyName" (sin "2") en lugar de "Pt2Line20a_FamilyName".
+  // Los demás campos (20b, 20c, 21) tienen el "2" correcto. Documented bug en el PDF.
+  pt2_l20_family: /\.PtLine20a_FamilyName\[0\]/,
   pt2_l20_given: /\.Pt2Line20b_GivenName\[0\]/,
   pt2_l20_middle: /\.Pt2Line20c_MiddleName\[0\]/,
   pt2_l21_dateEnded: /\.Pt2Line21_DateMarriageEnded\[0\]/,
@@ -317,8 +320,10 @@ const P = {
   pt2_l47_to: /\.Pt2Line47b_DateTo\[0\]/,
 
   // Part 3 — Biographic (petitioner)
-  pt3_eth_hispanic: /\.Pt3Line1_Ethnicity\[0\]/,
-  pt3_eth_not: /\.Pt3Line1_Ethnicity\[1\]/,
+  // NOTE: PDF índices [0] y [1] invertidos vs visual order.
+  // Confirmado por discovery: data="hispanic_latino" pintaba "Not Hispanic" en PDF.
+  pt3_eth_hispanic: /\.Pt3Line1_Ethnicity\[1\]/,
+  pt3_eth_not: /\.Pt3Line1_Ethnicity\[0\]/,
   pt3_race_white: /\.Pt3Line2_Race_White\[0\]/,
   pt3_race_asian: /\.Pt3Line2_Race_Asian\[0\]/,
   pt3_race_black: /\.Pt3Line2_Race_Black\[0\]/,
@@ -408,46 +413,59 @@ const P = {
   pt4_l24_country: /\.Pt4Line24_CountryOfIssuance\[0\]/,
   pt4_l25_exp: /\.Pt4Line25_ExpDate\[0\]/,
 
-  // Beneficiary's Family (Person 1-5) — Pt4Line25-44 según PDF Edition 04/01/24
-  // Order USCIS: Spouse first (si married), después hijos.
-  // Person 1: 25a/b/c name + 26 relationship + 27 DOB + 28 country
-  pt4_fam1_family: /\.Pt4Line25a_FamilyName\[0\]/,
-  pt4_fam1_given: /\.Pt4Line25b_GivenName\[0\]/,
-  pt4_fam1_middle: /\.Pt4Line25c_MiddleName\[0\]/,
-  pt4_fam1_relationship: /\.Pt4Line26_Relationship\[0\]/,
-  pt4_fam1_dob: /\.Pt4Line27_DateOfBirth\[0\]/,
-  pt4_fam1_country: /\.Pt4Line28_CountryOfBirth\[0\]/,
-  // Person 2: 29-32
-  pt4_fam2_family: /\.Pt4Line29a_FamilyName\[0\]/,
-  pt4_fam2_given: /\.Pt4Line29b_GivenName\[0\]/,
-  pt4_fam2_middle: /\.Pt4Line29c_MiddleName\[0\]/,
-  pt4_fam2_relationship: /\.Pt4Line30_Relationship\[0\]/,
-  pt4_fam2_dob: /\.Pt4Line31_DateOfBirth\[0\]/,
-  pt4_fam2_country: /\.Pt4Line32_CountryOfBirth\[0\]/,
-  // Person 3: 33-36
-  pt4_fam3_family: /\.Pt4Line33a_FamilyName\[0\]/,
-  pt4_fam3_given: /\.Pt4Line33b_GivenName\[0\]/,
-  pt4_fam3_middle: /\.Pt4Line33c_MiddleName\[0\]/,
-  pt4_fam3_relationship: /\.Pt4Line34_Relationship\[0\]/,
-  pt4_fam3_dob: /\.Pt4Line35_DateOfBirth\[0\]/,
-  pt4_fam3_country: /\.Pt4Line36_CountryOfBirth\[0\]/,
-  // Person 4: 37-40
-  pt4_fam4_family: /\.Pt4Line37a_FamilyName\[0\]/,
-  pt4_fam4_given: /\.Pt4Line37b_GivenName\[0\]/,
-  pt4_fam4_middle: /\.Pt4Line37c_MiddleName\[0\]/,
-  pt4_fam4_relationship: /\.Pt4Line38_Relationship\[0\]/,
-  pt4_fam4_dob: /\.Pt4Line39_DateOfBirth\[0\]/,
-  pt4_fam4_country: /\.Pt4Line40_CountryOfBirth\[0\]/,
-  // Person 5: 41-44
-  pt4_fam5_family: /\.Pt4Line41a_FamilyName\[0\]/,
-  pt4_fam5_given: /\.Pt4Line41b_GivenName\[0\]/,
-  pt4_fam5_middle: /\.Pt4Line41c_MiddleName\[0\]/,
-  pt4_fam5_relationship: /\.Pt4Line42_Relationship\[0\]/,
-  pt4_fam5_dob: /\.Pt4Line43_DateOfBirth\[0\]/,
-  pt4_fam5_country: /\.Pt4Line44_CountryOfBirth\[0\]/,
+  // Beneficiary's Family — field naming REAL del PDF (descubierto en discovery).
+  // Person 1 (visual) NO TIENE field name en el AcroForm — bug del PDF blank.
+  // Solo existen slots para 5 personas (visual Persons 2-6) con numbering NO-secuencial.
+  // Mapping confirmado por scripts/discover-i130-fields.mjs:
+  //   familyList[0] → Pt4Line30 (Person 2 visual)
+  //   familyList[1] → Pt4Line34 (Person 3 visual)
+  //   familyList[2] → Pt4Line38 (Person 4 visual)
+  //   familyList[3] → Pt4Line42 (Person 5 visual)
+  //   familyList[4] → Pt4Line46 (Person 6 visual, si existe en el blank)
+  pt4_fam1_family: /\.Pt4Line30a_FamilyName\[0\]/,
+  pt4_fam1_given: /\.Pt4Line30b_GivenName\[0\]/,
+  pt4_fam1_middle: /\.Pt4Line30c_MiddleName\[0\]/,
+  pt4_fam1_relationship: /\.Pt4Line31_Relationship\[0\]/,
+  pt4_fam1_dob: /\.Pt4Line32_DateOfBirth\[0\]/,
+  pt4_fam1_country: /\.Pt4Line49_CountryOfBirth\[0\]/, // weird PDF naming, en subform[5]
+  pt4_fam2_family: /\.Pt4Line34a_FamilyName\[0\]/,
+  pt4_fam2_given: /\.Pt4Line34b_GivenName\[0\]/,
+  pt4_fam2_middle: /\.Pt4Line34c_MiddleName\[0\]/,
+  pt4_fam2_relationship: /\.Pt4Line35_Relationship\[0\]/,
+  pt4_fam2_dob: /\.Pt4Line36_DateOfBirth\[0\]/,
+  pt4_fam2_country: /\.Pt4Line37_CountryOfBirth\[0\]/,
+  pt4_fam3_family: /\.Pt4Line38a_FamilyName\[0\]/,
+  pt4_fam3_given: /\.Pt4Line38b_GivenName\[0\]/,
+  pt4_fam3_middle: /\.Pt4Line38c_MiddleName\[0\]/,
+  pt4_fam3_relationship: /\.Pt4Line39_Relationship\[0\]/,
+  pt4_fam3_dob: /\.Pt4Line40_DateOfBirth\[0\]/,
+  pt4_fam3_country: /\.Pt4Line41_CountryOfBirth\[0\]/,
+  pt4_fam4_family: /\.Pt4Line42a_FamilyName\[0\]/,
+  pt4_fam4_given: /\.Pt4Line42b_GivenName\[0\]/,
+  pt4_fam4_middle: /\.Pt4Line42c_MiddleName\[0\]/,
+  pt4_fam4_relationship: /\.Pt4Line43_Relationship\[0\]/,
+  pt4_fam4_dob: /\.Pt4Line44_DateOfBirth\[0\]/,
+  pt4_fam4_country: /\.Pt4Line45_CountryOfBirth\[0\]/,
+  pt4_fam5_family: /\.Pt4Line46a_FamilyName\[0\]/,
+  pt4_fam5_given: /\.Pt4Line46b_GivenName\[0\]/,
+  pt4_fam5_middle: /\.Pt4Line46c_MiddleName\[0\]/,
+  pt4_fam5_relationship: /\.Pt4Line47_Relationship\[0\]/,
+  pt4_fam5_dob: /\.Pt4Line48_DateOfBirth\[0\]/,
+  pt4_fam5_country: /\.Pt4Line49_CountryOfBirth\[0\]/, // posible colisión con Person 1 — duplicado en PDF
 
-  // Beneficiary occupation (Item 48 según prompt, en PDF Pt4Line48 o similar)
-  pt4_l48_occupation: /\.Pt4Line48_Occupation\[0\]/,
+  // Beneficiary Spouse 1 + 2 names (PDF reusa numbering 17-19 que también es Items 17-19 marital info)
+  // Pt4Line17_DateMarriageEnded[0] = Spouse 1 date ended (Item 22 visual)
+  // Pt4Line17_DateMarriageEnded[1] = Spouse 2 date ended (Item 24 visual)
+  // Pt4Line18a_FamilyName etc = Spouse 1 name (Items 21.a-c visual)
+  pt4_l21a_family: /\.Pt4Line18a_FamilyName\[0\]/,
+  pt4_l21b_given: /\.Pt4Line18b_GivenName\[0\]/,
+  pt4_l21c_middle: /\.Pt4Line18c_MiddleName\[0\]/,
+  pt4_l22_dateEnded: /\.Pt4Line17_DateMarriageEnded\[0\]/,
+  // Spouse 2 name no tiene mapping descubierto en este PDF — overflow al Part 9
+  pt4_l24_dateEnded: /\.Pt4Line17_DateMarriageEnded\[1\]/,
+
+  // Beneficiary Native Script (Items 57-58 visual = Pt4Line16a-c en PDF)
+  // NOTE: Esos field names difieren del mapping anterior pt4_native_*
 
   // Part 5 — Simultaneous Relatives (Items 6.a-9 del PDF)
   // Relative 1: 6.a/b/c name + 7 relationship
@@ -462,11 +480,13 @@ const P = {
   pt5_rel2_relationship: /\.Pt5Line9_Relationship\[0\]/,
 
   // ── Part 9: Additional Information (Addendum) ──
-  // Item 1: petitioner name (siempre llenar para identificación)
-  pt9_l1_family: /\.Pt9Line1a_FamilyName\[0\]/,
-  pt9_l1_given: /\.Pt9Line1b_GivenName\[0\]/,
-  pt9_l1_middle: /\.Pt9Line1c_MiddleName\[0\]/,
-  pt9_l2_aNumber: /\.Pt9Line2_AlienNumber\[0\]/,
+  // DISCOVERY: el PDF reusa Pt2Line4a_FamilyName[1] en subform[11] como el
+  // "name field" del Part 9 Item 1 (NO tiene Pt9Line1*).
+  // El A-Number también: Pt2Line1_AlienNumber[1] en subform[11].
+  pt9_l1_family: /\.Pt2Line4a_FamilyName\[1\]/,
+  pt9_l1_given: /\.Pt2Line4b_GivenName\[1\]/,
+  pt9_l1_middle: /\.Pt2Line4c_MiddleName\[1\]/,
+  pt9_l2_aNumber: /\.Pt2Line1_AlienNumber\[1\]/,
   // 5 slots de overflow (items 3-7)
   pt9_l3_page: /\.Pt9Line3a_PageNumber\[0\]/,
   pt9_l3_part: /\.Pt9Line3b_PartNumber\[0\]/,
@@ -642,15 +662,12 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt2_l4_family, data.petitionerLastName);
   setText(form, P.pt2_l4_given, data.petitionerFirstName);
   setText(form, P.pt2_l4_middle, data.petitionerMiddleName);
+  // PDF I-130 SOLO tiene 1 slot para Other Names (Item 5).
+  // Cualquier OtherName adicional (idx 1+) va al Part 9 Addendum (ver más abajo).
   if (data.petitionerOtherNames?.[0]) {
     setText(form, P.pt2_l5_family, data.petitionerOtherNames[0].lastName);
     setText(form, P.pt2_l5_given, data.petitionerOtherNames[0].firstName);
     setText(form, P.pt2_l5_middle, data.petitionerOtherNames[0].middleName);
-  }
-  if (data.petitionerOtherNames?.[1]) {
-    setText(form, P.pt2_l4alt_family, data.petitionerOtherNames[1].lastName);
-    setText(form, P.pt2_l4alt_given, data.petitionerOtherNames[1].firstName);
-    setText(form, P.pt2_l4alt_middle, data.petitionerOtherNames[1].middleName);
   }
 
   // Birth
@@ -938,7 +955,33 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt4_marriagePlace_province, data.beneficiaryPlaceMarriageProvince);
   setText(form, P.pt4_marriagePlace_country, data.beneficiaryPlaceMarriageCountry);
 
-  // ── Beneficiary's Family (Items 25-44 del PDF: 5 Persons) ──
+  // ── Beneficiary Spouses (Items 21-24 visual) ──
+  // PDF reusa numbering Pt4Line17/18 para Spouse 1 name (raro pero confirmado).
+  // Spouse 1 (PDF Item 21 visual): petitioner si relationshipType="spouse",
+  // o el más reciente prior si no.
+  if (data.relationshipType === "spouse" && data.petitionerMaritalStatus === "married") {
+    // Current spouse = petitioner (espejo del beneficiary)
+    setText(form, P.pt4_l21a_family, data.petitionerLastName);
+    setText(form, P.pt4_l21b_given, data.petitionerFirstName);
+    setText(form, P.pt4_l21c_middle, data.petitionerMiddleName);
+  } else if (data.beneficiaryPriorMarriages?.[0]) {
+    const sp0 = data.beneficiaryPriorMarriages[0];
+    setText(form, P.pt4_l21a_family, sp0.spouseLastName);
+    setText(form, P.pt4_l21b_given, sp0.spouseFirstName);
+    setText(form, P.pt4_l21c_middle, sp0.spouseMiddleName);
+    setText(form, P.pt4_l22_dateEnded, fmtDate(sp0.dateMarriageEnded));
+  }
+  // Spouse 2 (Item 23-24 visual): primer prior si Spouse 1 fue current,
+  // o segundo prior si Spouse 1 fue el primer prior.
+  const benePriorIdx = data.relationshipType === "spouse" ? 0 : 1;
+  const benePrior = data.beneficiaryPriorMarriages?.[benePriorIdx];
+  if (benePrior) {
+    // NOTE: PDF NO tiene field para Spouse 2 name (solo date ended).
+    // El name va a Part 9 Addendum.
+    setText(form, P.pt4_l24_dateEnded, fmtDate(benePrior.dateMarriageEnded));
+  }
+
+  // ── Beneficiary's Family (Persons 1-5 visual, slots 30/34/38/42/46 en PDF) ──
   // Order USCIS: current spouse FIRST (si married), después hijos.
   // Cuando relationshipType="spouse", el petitioner ES el current spouse, así que
   // NO se incluye en esta lista. Solo hijos del beneficiary aquí.
@@ -1007,8 +1050,8 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt4_l26_zip, beJob.zip);
     setText(form, P.pt4_l26_country, beJob.country);
     setText(form, P.pt4_l27_began, fmtDate(beJob.fromDate));
-    // Item 48 (occupation) — campo faltante en filler anterior
-    setText(form, P.pt4_l48_occupation, beJob.occupation);
+    // NOTE: el PDF I-130 NO TIENE field name para beneficiary occupation.
+    // Si paralegal necesita llenarlo, va al Part 9 Addendum.
   }
 
   // Removal proceedings
@@ -1142,9 +1185,9 @@ export async function fillI130Pdf(data: I130Data) {
   type Overflow = { page: string; part: string; item: string; content: string };
   const overflow: Overflow[] = [];
 
-  // Other Names petitioner — slots para 2 (Item 5 + Item 4 alt). Overflow = idx >= 2.
-  if (data.petitionerOtherNames && data.petitionerOtherNames.length > 2) {
-    for (let i = 2; i < data.petitionerOtherNames.length; i++) {
+  // Other Names petitioner — el PDF SOLO tiene 1 slot (Pt2Line5). Overflow desde idx 1.
+  if (data.petitionerOtherNames && data.petitionerOtherNames.length > 1) {
+    for (let i = 1; i < data.petitionerOtherNames.length; i++) {
       const n = data.petitionerOtherNames[i];
       overflow.push({
         page: "2", part: "2", item: "5",
@@ -1152,7 +1195,7 @@ export async function fillI130Pdf(data: I130Data) {
       });
     }
   }
-  // Other Names beneficiary — slots para 2. Overflow = idx >= 2.
+  // Other Names beneficiary — el PDF tiene 2 slots (Item 5 con [0] y P4Line5). Overflow desde idx 2.
   if (data.beneficiaryOtherNames && data.beneficiaryOtherNames.length > 2) {
     for (let i = 2; i < data.beneficiaryOtherNames.length; i++) {
       const n = data.beneficiaryOtherNames[i];
@@ -1161,6 +1204,22 @@ export async function fillI130Pdf(data: I130Data) {
         content: `Additional Other Name (Beneficiary) #${i + 1}: ${n.lastName}, ${n.firstName} ${n.middleName}`.trim(),
       });
     }
+  }
+  // Beneficiary Spouse 2 NAME (PDF solo guarda date ended de Spouse 2, no nombre):
+  const benePriorNameIdx = data.relationshipType === "spouse" ? 0 : 1;
+  const benePriorName = data.beneficiaryPriorMarriages?.[benePriorNameIdx];
+  if (benePriorName && (benePriorName.spouseLastName || benePriorName.spouseFirstName)) {
+    overflow.push({
+      page: "6", part: "4", item: "23",
+      content: `Beneficiary Spouse 2 (Item 23 — Prior): ${benePriorName.spouseLastName}, ${benePriorName.spouseFirstName} ${benePriorName.spouseMiddleName} · Ended ${fmtDate(benePriorName.dateMarriageEnded)} (${benePriorName.howEnded})`.trim(),
+    });
+  }
+  // Beneficiary occupation — PDF NO tiene field, va a Part 9:
+  if (data.beneficiaryCurrentEmployment?.occupation) {
+    overflow.push({
+      page: "7", part: "4", item: "48",
+      content: `Beneficiary Occupation (Item 48): ${data.beneficiaryCurrentEmployment.occupation}`,
+    });
   }
   // Prior marriages petitioner — slot Spouse 2 = 1 prior (cuando spouse case) o 2 priors (otros).
   // Overflow cuando excede esos slots.
