@@ -12,9 +12,18 @@
 |---|:--:|:--:|:--:|---|
 | **I-130** Petition for Alien Relative | ✅ Cerrado | ✅ 0 errors | 15/15 | `62e7db9` |
 | **I-765** Application for EAD | ✅ Cerrado | ✅ 0 errors | 6/6 | `fb3ae9b` |
-| I-485 Adjustment of Status | ⚫ Pending | — | — | — |
+| **I-485** Adjustment of Status | 🟡 Fase 0 scaffold | ⚫ scaffold (PDF ✅, schema/filler/wizard ⚫) | — | TBD (arrancado 2026-05-13) |
 | N-400 Naturalization | ⚫ Pending | — | — | — |
 | DS-260 Immigrant Visa | ⚫ Pending | — | — | — |
+
+**I-485 Fase 0 status (760 fields · 24 páginas · usa convention Pt1..Pt13):**
+- ✅ `public/forms/i-485-template.pdf` (decryptado vía `qpdf-decrypt`)
+- ✅ `scripts/discover-i485-fields.mjs` (generó `i485-fields.txt`)
+- ✅ `scripts/check-i485-maxlen.mjs` (audit de caps críticos)
+- ✅ `scripts/test-i485-parity.mjs` (scaffold roadmap, falla intencional hasta schema/filler/wizard)
+- ⚫ `src/components/smartforms/i485Schema.ts` (PENDIENTE)
+- ⚫ `src/lib/i485FormFiller.ts` (PENDIENTE — heredar las 6 universales + ajustar maxLen Attorney Bar=9 USCIS quirk)
+- ⚫ `src/components/smartforms/I485Wizard.tsx` (PENDIENTE — territorio Lovable)
 
 **Sprint actual:**
 1. ✅ I-130 cierre estructural + playbook (2026-05-13)
