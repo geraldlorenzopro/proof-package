@@ -385,32 +385,54 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           <p className="text-sm font-bold text-foreground text-center">
             👤 {t("Beneficiary (foreign relative)", "Beneficiario (pariente extranjero)")}
           </p>
-          <p className="text-xs text-muted-foreground text-center">
-            {t("Select an existing client profile or fill manually in next steps", "Selecciona un cliente existente o llena manualmente en los pasos siguientes")}
-          </p>
-          <Input
-            placeholder={t("Search by name or email...", "Buscar por nombre o email...")}
-            className={inputCls}
-            value={clientSearch}
-            onChange={e => setClientSearch(e.target.value)}
-          />
-          {clientProfiles.length > 0 && (
-            <div className="max-h-40 overflow-y-auto rounded-md border border-border/30 divide-y divide-border/30">
-              {clientProfiles.slice(0, 10).map(c => (
-                <button
-                  key={c.id}
+          {selectedBeneficiaryId ? (() => {
+            const sel = clientProfiles.find(c => c.id === selectedBeneficiaryId);
+            const name = sel
+              ? `${sel.last_name || ""}, ${sel.first_name || ""} ${sel.middle_name || ""}`.trim()
+              : `${data.beneficiaryLastName || ""}, ${data.beneficiaryFirstName || ""} ${data.beneficiaryMiddleName || ""}`.trim();
+            return (
+              <div className="flex items-center justify-between gap-3 rounded-md border border-primary/40 bg-primary/10 px-3 py-2.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Check className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-sm font-medium truncate">{name || t("Selected beneficiary", "Beneficiario seleccionado")}</span>
+                </div>
+                <Button
                   type="button"
-                  onClick={() => selectBeneficiary(c.id)}
-                  className={cn(
-                    "w-full text-left px-3 py-2 hover:bg-primary/10 transition-colors text-sm flex items-center justify-between",
-                    selectedBeneficiaryId === c.id && "bg-primary/15"
-                  )}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setSelectedBeneficiaryId(null); setClientSearch(""); onBeneficiarySelect?.(null as any); }}
+                  className="text-xs"
                 >
-                  <span>{c.last_name}, {c.first_name} {c.middle_name}</span>
-                  {selectedBeneficiaryId === c.id && <Check className="w-4 h-4 text-primary" />}
-                </button>
-              ))}
-            </div>
+                  {t("Change", "Cambiar")}
+                </Button>
+              </div>
+            );
+          })() : (
+            <>
+              <p className="text-xs text-muted-foreground text-center">
+                {t("Select an existing client profile or fill manually in next steps", "Selecciona un cliente existente o llena manualmente en los pasos siguientes")}
+              </p>
+              <Input
+                placeholder={t("Search by name or email...", "Buscar por nombre o email...")}
+                className={inputCls}
+                value={clientSearch}
+                onChange={e => setClientSearch(e.target.value)}
+              />
+              {clientProfiles.length > 0 && (
+                <div className="max-h-40 overflow-y-auto rounded-md border border-border/30 divide-y divide-border/30">
+                  {clientProfiles.slice(0, 10).map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => selectBeneficiary(c.id)}
+                      className="w-full text-left px-3 py-2 hover:bg-primary/10 transition-colors text-sm"
+                    >
+                      <span>{c.last_name}, {c.first_name} {c.middle_name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
