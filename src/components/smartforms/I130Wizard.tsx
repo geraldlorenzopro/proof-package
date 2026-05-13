@@ -617,7 +617,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       </div>
 
       <div className="pt-3 border-t border-border/30 space-y-3">
-        <p className="text-sm font-semibold">{t("Citizenship Status", "Estado de Ciudadanía")}</p>
+        <p className="text-sm font-semibold">{t("What is your citizenship status?", "¿Cuál es su estatus migratorio?")}</p>
         <RadioGroup value={data.petitionerCitizenshipStatus} onValueChange={v => set("petitionerCitizenshipStatus", v as I130Data["petitionerCitizenshipStatus"])} className="grid grid-cols-2 gap-3">
           <label className={cn(
             "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
