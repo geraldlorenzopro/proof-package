@@ -1570,11 +1570,11 @@ export async function fillI130Pdf(data: I130Data) {
   // field text natively instead of relying on pre-baked appearances. ──
   try {
     const acroForm = pdf.catalog.lookup(PDFName.of("AcroForm"), PDFDict);
-    if (acroForm) {
-      acroForm.set(PDFName.of("NeedAppearances"), pdf.context.obj(true));
-    }
     const appearanceFont = await pdf.embedFont(StandardFonts.Helvetica);
     form.updateFieldAppearances(appearanceFont);
+    if (acroForm) {
+      acroForm.set(PDFName.of("NeedAppearances"), pdf.context.obj(false));
+    }
   } catch (e) {
     console.warn("[i130] Could not set NeedAppearances flag:", e);
   }
