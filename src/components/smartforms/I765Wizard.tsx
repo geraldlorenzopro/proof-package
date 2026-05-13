@@ -872,6 +872,12 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Field label={t("State", "Estado")}><StateSelect value={data.preparerState} onChange={v => set("preparerState", v)} /></Field>
             <Field label="ZIP"><Input className={inputCls} value={data.preparerZip} onChange={e => set("preparerZip", e.target.value)} /></Field>
           </div>
+          {/* Foreign address fields (cuando preparer está fuera de USA) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Field label={t("Province (foreign)", "Provincia")}><Input className={inputCls} value={data.preparerProvince} onChange={e => set("preparerProvince", e.target.value)} /></Field>
+            <Field label={t("Postal Code (foreign)", "Cód. Postal")}><Input className={inputCls} value={data.preparerPostalCode} onChange={e => set("preparerPostalCode", e.target.value)} /></Field>
+            <Field label={t("Country", "País")}><Input className={inputCls} value={data.preparerCountry} onChange={e => set("preparerCountry", e.target.value)} placeholder="United States" /></Field>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label={t("Phone", "Teléfono")}><Input className={inputCls} value={data.preparerPhone} onChange={e => set("preparerPhone", e.target.value)} /></Field>
             <Field label="Fax"><Input className={inputCls} value={data.preparerMobile} onChange={e => set("preparerMobile", e.target.value)} /></Field>
@@ -882,9 +888,24 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Label htmlFor="is-atty" className="text-sm cursor-pointer">{t("I am an attorney or accredited representative", "Soy abogado o representante acreditado")}</Label>
           </div>
           {data.preparerIsAttorney && (
-            <div className="flex items-center gap-2">
-              <Checkbox checked={data.preparerRepExtends} onCheckedChange={v => set("preparerRepExtends", !!v)} id="rep-extends" />
-              <Label htmlFor="rep-extends" className="text-sm cursor-pointer">{t("My representation extends beyond this form", "Mi representación se extiende más allá de este formulario")}</Label>
+            <div className="space-y-3 rounded-lg border border-border/30 bg-secondary/20 p-3">
+              <p className="text-sm font-semibold">{t("G-28 Attorney Information (required for valid representation)", "Información del Abogado G-28 (requerida para representación válida)")}</p>
+              <div className="flex items-center gap-2">
+                <Checkbox checked={data.g28Attached} onCheckedChange={v => set("g28Attached", !!v)} id="g28-attached" />
+                <Label htmlFor="g28-attached" className="text-sm cursor-pointer">{t("Form G-28 is attached", "Formulario G-28 adjunto")}</Label>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Field label={t("State Bar Number", "Número de Barra Estatal")}>
+                  <Input className={inputCls} value={data.attorneyBarNumber} onChange={e => set("attorneyBarNumber", e.target.value)} placeholder="FL12345" />
+                </Field>
+                <Field label={t("Attorney USCIS Online Account #", "# Cuenta USCIS Online del Abogado")}>
+                  <Input className={inputCls} value={data.attorneyUscisAccountNumber} onChange={e => set("attorneyUscisAccountNumber", e.target.value)} placeholder="123456789012" />
+                </Field>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox checked={data.preparerRepExtends} onCheckedChange={v => set("preparerRepExtends", !!v)} id="rep-extends" />
+                <Label htmlFor="rep-extends" className="text-sm cursor-pointer">{t("My representation extends beyond this form", "Mi representación se extiende más allá de este formulario")}</Label>
+              </div>
             </div>
           )}
         </>

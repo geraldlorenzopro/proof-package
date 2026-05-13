@@ -46,6 +46,84 @@ function sanitize(v: string): string {
   return v.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, "");
 }
 
+// ─── Defensas universales (mismas que i130FormFiller — playbook USCIS) ────────
+// USCIS PDFs comparten patrones de bugs. Estos helpers son no-negociables.
+
+/** Strip todo char no-numérico — para phone (maxLen=10), SSN (9), I-94 (11). */
+function digitsOnly(v: string): string {
+  return String(v).replace(/\D/g, "");
+}
+
+/** USCIS Online Account #: acepta "USCIS-XXXX-XXXX-XXXX" o digits puros. */
+function stripUscisAccount(v: string): string {
+  return String(v).replace(/^USCIS[-\s]*/i, "").replace(/[-\s]/g, "");
+}
+
+/** Attorney Bar #: acepta "BAR-FL-XXXXXX", "FL-XXXXXX", "FLXXXXXX". */
+function stripBarNumber(v: string): string {
+  return String(v).replace(/^BAR[-\s]*/i, "").replace(/[-\s]/g, "");
+}
+
+/** A-Number: el "A" está pre-impreso en el form, solo escribimos digits. */
+function stripAlienNumber(v: string): string {
+  return String(v).replace(/^A[-\s]*/i, "").replace(/\D/g, "");
+}
+
+/** Detecta cuando una fecha viene = today. Síntoma de placeholder corrupto
+ *  desde client_profiles o input vacío. Para DOB/expiration esto es imposible. */
+function isToday(dateStr: string | undefined | null): boolean {
+  if (!dateStr) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  return String(dateStr).startsWith(today);
+}
+
+/** Descarta fechas que vienen = today para campos que LÓGICAMENTE no pueden serlo. */
+function safeDate(d: string | undefined | null, context: "dob" | "expiration" | "ended" | "began"): string {
+  if (!d) return "";
+  if (isToday(d)) {
+    console.warn(`[i765] Suspicious ${context} date = today (${d}), skipping`);
+    return "";
+  }
+  return fmtDate(d);
+}
+
+/** Si el address asociado al state está vacío/N-A, omitir el state.
+ *  Previene "FL" colgado que viene de autofill basura de client_profiles. */
+function stateIfAddrPresent(state: string | undefined, street: string | undefined, city: string | undefined): string {
+  if (!state) return "";
+  const hasAddr = !!(street && street !== "N/A") || !!(city && city !== "N/A");
+  return hasAddr ? state : "";
+}
+
+/** setText overflow-aware: si el valor excede maxLen del field, escribe lo que
+ *  cabe (cortando en última palabra completa) y devuelve un overflow entry para
+ *  que el caller lo agregue al addendum.
+ *  Devuelve `null` si todo cupo, o `{ overflow: fullText }` si se desbordó. */
+function setTextOrOverflow(
+  form: PDFForm,
+  pattern: RegExp,
+  value: string | undefined | null,
+): { overflow: string } | null {
+  if (!value) return null;
+  const v = sanitize(String(value));
+  const field = findField(form, pattern);
+  if (!field) return null;
+  if (field instanceof PDFTextField) {
+    const maxLen = field.getMaxLength();
+    if (maxLen !== undefined && v.length > maxLen) {
+      const truncated = v.slice(0, maxLen);
+      const lastSpace = truncated.lastIndexOf(" ");
+      const visible = lastSpace > maxLen * 0.6 ? truncated.slice(0, lastSpace) : truncated;
+      field.setText(visible);
+      return { overflow: v };
+    }
+    field.setText(v);
+  } else {
+    setText(form, pattern, v);
+  }
+  return null;
+}
+
 /** Set a text field value by regex pattern, respecting maxLength.
  *  Also handles Dropdown fields (select) and barcode text fields. */
 function setText(form: PDFForm, pattern: RegExp, value: string | undefined | null) {
@@ -353,8 +431,8 @@ export async function fillI765Pdf(data: I765Data) {
 
   // ── Page 1 Header: Attorney/Rep block ──
   setCheck(form, P.g28_checkbox, data.g28Attached);
-  setText(form, P.atty_bar_number, data.attorneyBarNumber);
-  setText(form, P.atty_uscis_account, data.attorneyUscisAccountNumber);
+  setText(form, P.atty_bar_number, stripBarNumber(data.attorneyBarNumber || ""));
+  setText(form, P.atty_uscis_account, stripUscisAccount(data.attorneyUscisAccountNumber || ""));
 
   // ── Part 1: Reason for Applying ──
   setCheck(form, P.part1_initial, data.reasonForApplying === "initial");
@@ -378,8 +456,8 @@ export async function fillI765Pdf(data: I765Data) {
   setText(form, P.line3c_middle_item4, data.otherNames?.[2]?.middleName);
 
   // A-Number & USCIS Account
-  setText(form, P.line7_alien, data.aNumber?.replace(/^A-?/i, ""));
-  setText(form, P.line8_elis, data.uscisAccountNumber);
+  setText(form, P.line7_alien, stripAlienNumber(data.aNumber || ""));
+  setText(form, P.line8_elis, stripUscisAccount(data.uscisAccountNumber || ""));
 
   // SSN: clear the password flag on field AND all widget annotations so digits display
   const ssnField = findField(form, P.line12b_ssn);
@@ -418,7 +496,7 @@ export async function fillI765Pdf(data: I765Data) {
     } catch (e) {
       console.warn("[i765] Could not clear SSN password flag:", e);
     }
-    setText(form, P.line12b_ssn, data.ssn);
+    setText(form, P.line12b_ssn, digitsOnly(data.ssn || ""));
   }
 
   // ── Mailing Address ──
@@ -470,14 +548,15 @@ export async function fillI765Pdf(data: I765Data) {
   setText(form, P.line18a_city, data.cityOfBirth);
   setText(form, P.line18b_state, data.stateOfBirth);
   setText(form, P.line18c_country, data.countryOfBirth);
-  setText(form, P.line19_dob, fmtDate(data.dateOfBirth));
+  setText(form, P.line19_dob, safeDate(data.dateOfBirth, "dob"));
 
   // ── Arrival Info ──
   setText(form, P.line20a_i94, data.i94Number);
   setText(form, P.line20b_passport, data.passportNumber);
   setText(form, P.line20c_traveldoc, data.travelDocNumber);
   setText(form, P.line20d_country, data.passportCountry);
-  setText(form, P.line20e_exp, fmtDate(data.passportExpiration));
+  setText(form, P.line20e_exp, safeDate(data.passportExpiration, "expiration"));
+  // lastArrivalDate puede legítimamente ser today (entró hoy), no aplicar safeDate
   setText(form, P.line21_lastentry, fmtDate(data.lastArrivalDate));
   setText(form, P.place_entry, data.lastArrivalPlace);
   setText(form, P.line23_status, data.statusAtArrival);
@@ -530,7 +609,7 @@ export async function fillI765Pdf(data: I765Data) {
   setCheck(form, P.pt3_reads_english, data.applicantCanReadEnglish);
   setCheck(form, P.pt3_interpreter, data.interpreterUsed);
   setCheck(form, P.pt3_preparer, data.preparerUsed);
-  setText(form, P.pt3_phone, data.applicantPhone);
+  setText(form, P.pt3_phone, digitsOnly(data.applicantPhone || ""));
   setText(form, P.pt3_mobile, data.applicantMobile);
   setText(form, P.pt3_email, data.applicantEmail);
 
@@ -543,7 +622,8 @@ export async function fillI765Pdf(data: I765Data) {
     setText(form, P.pt4_org, intSame ? data.preparerOrg : data.interpreterOrg);
     setText(form, P.pt4_street, intSame ? data.preparerStreet : data.interpreterStreet);
     setText(form, P.pt4_apt, intSame ? data.preparerApt : data.interpreterApt);
-    const intAptType = intSame ? (data as any).preparerAptType : (data as any).interpreterAptType;
+    // Removido `as any` para que el test de paridad cuente cobertura correctamente
+    const intAptType = intSame ? data.preparerAptType : data.interpreterAptType;
     setCheck(form, P.pt4_unit_apt, intAptType === "apt");
     setCheck(form, P.pt4_unit_ste, intAptType === "ste");
     setCheck(form, P.pt4_unit_flr, intAptType === "flr");
@@ -551,7 +631,7 @@ export async function fillI765Pdf(data: I765Data) {
     setText(form, P.pt4_state, intSame ? data.preparerState : data.interpreterState);
     setText(form, P.pt4_zip, intSame ? data.preparerZip : data.interpreterZip);
     setText(form, P.pt4_province, intSame ? data.preparerProvince : data.interpreterProvince);
-    setText(form, P.pt4_phone, intSame ? data.preparerPhone : data.interpreterPhone);
+    setText(form, P.pt4_phone, digitsOnly(intSame ? data.preparerPhone : data.interpreterPhone || ""));
     setText(form, P.pt4_mobile, intSame ? data.preparerMobile : data.interpreterMobile);
     setText(form, P.pt4_email, intSame ? data.preparerEmail : data.interpreterEmail);
     setText(form, P.pt4_language, data.interpreterLanguage);
@@ -574,16 +654,16 @@ export async function fillI765Pdf(data: I765Data) {
     setText(form, P.pt5_org, data.preparerOrg);
     setText(form, P.pt5_street, data.preparerStreet);
     setText(form, P.pt5_apt, data.preparerApt);
-    setCheck(form, P.pt5_unit_apt, (data as any).preparerAptType === "apt");
-    setCheck(form, P.pt5_unit_ste, (data as any).preparerAptType === "ste");
-    setCheck(form, P.pt5_unit_flr, (data as any).preparerAptType === "flr");
+    setCheck(form, P.pt5_unit_apt, data.preparerAptType === "apt");
+    setCheck(form, P.pt5_unit_ste, data.preparerAptType === "ste");
+    setCheck(form, P.pt5_unit_flr, data.preparerAptType === "flr");
     setText(form, P.pt5_city, data.preparerCity);
     setText(form, P.pt5_state, data.preparerState);
     setText(form, P.pt5_zip, data.preparerZip);
     setText(form, P.pt5_province, data.preparerProvince);
     setText(form, P.pt5_postal, data.preparerPostalCode);
     setText(form, P.pt5_country, data.preparerCountry);
-    setText(form, P.pt5_phone, data.preparerPhone);
+    setText(form, P.pt5_phone, digitsOnly(data.preparerPhone || ""));
     setText(form, P.pt5_fax, data.preparerMobile); // preparerMobile stores fax per official form
     setText(form, P.pt5_email, data.preparerEmail);
     setCheck(form, P.pt5_is_attorney, data.preparerIsAttorney);
