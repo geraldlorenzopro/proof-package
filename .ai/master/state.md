@@ -1,8 +1,32 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-11
-**Audit por:** Claude Code (Opus 4.7) + Explore agent + Vanessa + Valerie + Pablo (orchestrator)
-**Próximo update:** post-demo Pipeline Dashboard (2026-05-12)
+**Última actualización:** 2026-05-13
+**Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) + extracción de gaps con scripts de paridad
+**Próximo update:** post comparativa UI wizards + arranque I-485
+
+---
+
+## 📊 Estado Smart Forms (forms USCIS) — Snapshot 2026-05-13
+
+| Form | Status | Test paridad | Defensas críticas | Commit clave |
+|---|:--:|:--:|:--:|---|
+| **I-130** Petition for Alien Relative | ✅ Cerrado | ✅ 0 errors | 15/15 | `62e7db9` |
+| **I-765** Application for EAD | ✅ Cerrado | ✅ 0 errors | 6/6 | `fb3ae9b` |
+| I-485 Adjustment of Status | ⚫ Pending | — | — | — |
+| N-400 Naturalization | ⚫ Pending | — | — | — |
+| DS-260 Immigrant Visa | ⚫ Pending | — | — | — |
+
+**Sprint actual:**
+1. ✅ I-130 cierre estructural + playbook (2026-05-13)
+2. ✅ I-765 hotfix con playbook (2026-05-13)
+3. ⏳ Comparativa UI wizards I-130 ↔ I-765 (prompt para Lovable preparado)
+4. ⚫ Extracción componentes compartidos (`SmartFormClientPicker`, `SmartFormPreparerBlock`)
+5. ⚫ I-485 arranque (siguiendo playbook desde Fase 0)
+
+**Backlog inmediato:**
+- Aplicar fixes que Lovable reporte de comparativa UI
+- Decidir: extraer componentes compartidos antes de I-485, o después
+- Verificación E2E I-765 con caso real (Pablo Almanzar Medrano u otro)
 
 > 📍 **Para visión estratégica completa, ver [`ROADMAP.md`](ROADMAP.md).**
 > Este doc se enfoca en estado operativo del sprint actual.

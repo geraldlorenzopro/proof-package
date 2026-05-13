@@ -775,7 +775,66 @@ Estos SÍ requieren equipo:
 - Refactor de arquitectura
 - Nuevas features de scope grande (>1 día)
 
+## Protocolo: Smart Forms USCIS (LOCKED 2026-05-13)
+
+**Decisión:** cualquier formulario USCIS nuevo (I-485, N-400, DS-260) arranca
+obligatoriamente con la Fase 0 del playbook ANTES de tocar UI. **No
+negociable.** Razón: ~15 rondas iterativas para cerrar el I-130 y descubrir
+después que el I-765 estaba en estado peor.
+
+**Playbook:** [`.ai/master/uscis-form-playbook.md`](.ai/master/uscis-form-playbook.md)
+
+### Fase 0 obligatoria antes de UI
+
+1. `qpdf --decrypt original.pdf public/forms/i-{N}-template.pdf`
+2. Adaptar `scripts/discover-i{N}-fields.mjs` → genera `i{N}-fields.txt`
+3. Adaptar `scripts/check-i{N}-maxlen.mjs` → audit maxLengths críticos
+4. Adaptar `scripts/test-i{N}-parity.mjs` → debe correr y pasar antes de UI
+
+### Las 6 defensas universales (no negociables en cualquier filler)
+
+| # | Helper | Bug que previene |
+|:--:|---|---|
+| 1 | `digitsOnly(v)` | Phone/SSN truncado por maxLen=10/9 |
+| 2 | `safeDate(d, ctx)` + `isToday(d)` | DOB/exp salen como today (placeholder corrupto) |
+| 3 | `stateIfAddrPresent()` | "FL" colgado de autofill sin street/city |
+| 4 | `setTextOrOverflow()` | Strings largos truncados → addendum |
+| 5 | `stripUscisAccount()` | "USCIS-XXXX-" prefix consume bytes |
+| 6 | `stripAlienNumber()` | "A" prefix duplica con pre-impreso |
+
+### Gate de pre-push para forms USCIS
+
+Antes de cualquier commit que toque schema/wizard/filler de un form USCIS:
+
+```bash
+node scripts/test-i{N}-parity.mjs
+# Debe imprimir: "✅ PASS — paridad estructural OK"
+```
+
+Si falla con errors → wireo o agrego a `KNOWN_UNMAPPED` con razón citable.
+**Allowlist sin razón está prohibido** (lección del I-130: usar allowlist
+como "lo veo después" esconde bugs reales).
+
+### Patrones de field naming raros documentados
+
+- Simultaneous Relatives Items 6-9 Part 5 del I-130: `Pt4Line6/7/8/9` (NO `Pt5LineN`)
+- I-765 fields tienen sufijo hash random: `Line1a_FamilyName[0]yk7lg78kypjti6jvbi`
+- Petitioner current spouse family: `PtLine20a_FamilyName` (sin "2", typo USCIS)
+- Native script Items 57-58: NO tienen AcroFields → routear a addendum
+- Schema `preparerMobile` mapea a PDF `Pt8Line5_PreparerFaxNumber` (semántico)
+
+### Estado Smart Forms
+
+| Form | Status | Commit |
+|---|:--:|---|
+| I-130 | ✅ Cerrado | `62e7db9` |
+| I-765 | ✅ Cerrado | `fb3ae9b` |
+| I-485 / N-400 / DS-260 | ⚫ Pending | (replicar playbook desde Fase 0) |
+
 ## Next concrete action
 
-Ver `.ai/master/state.md` sección "Sprint 1" para los 3 botones GHL —
-es lo que arrancamos próximo.
+Ver `.ai/master/state.md` para el sprint actual. Status reciente:
+1. ✅ I-130 + I-765 cerrados con playbook
+2. ⏳ Comparativa UI wizards (Lovable haciendo)
+3. ⚫ Extracción componentes compartidos
+4. ⚫ I-485 arranque (Fase 0 obligatoria)

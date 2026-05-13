@@ -6,6 +6,80 @@ pasadas — agregar nueva decisión que las supersede si cambian.**
 
 ---
 
+## 2026-05-13 — USCIS Form Wiring Playbook locked
+
+**Decisión:** cualquier formulario USCIS nuevo (I-485, N-400, DS-260, etc.)
+arranca obligatoriamente con la Fase 0 del playbook ANTES de tocar UI:
+PDF decrypt → discover fields → test de paridad → recién después schema/wizard/filler.
+
+**Quién decidió:** Mr. Lorenzo, después de ~15 rondas iterativas para cerrar el
+I-130 y descubrir que el I-765 estaba en estado peor (0/6 defensas activas,
+phones truncados en producción).
+
+**Contexto:** el I-130 se construyó "best-effort" contra el PDF decryptado,
+sin nunca cruzar contra el formulario oficial USCIS. Cada vez que alguien
+miraba un PDF generado, aparecía un hueco nuevo. Mr. Lorenzo perdió horas en
+el loop. El test de paridad endurecido (con inspección de sub-fields de
+Array<{...}>) detectó los gaps reales.
+
+**Artifacts creados:**
+- `.ai/master/uscis-form-playbook.md` — playbook completo
+- `scripts/discover-i130-fields.mjs` + `discover-i765-fields.mjs` — discovery PDF fields
+- `scripts/test-i130-parity.mjs` + `test-i765-parity.mjs` — gates ejecutables
+- `scripts/check-i130-maxlen.mjs` + `check-i765-maxlen.mjs` — audit de maxLengths
+- `scripts/audit-i130-pdf.mjs` + `render-i130-multi.ts` — render demos + audit
+
+**Las 6 defensas universales del playbook (no negociables en cualquier filler):**
+1. `digitsOnly()` — strip non-digits para phone (maxLen=10), SSN (9), I-94 (11)
+2. `safeDate()` + `isToday()` — descarta fechas = today (placeholder corrupto)
+3. `stateIfAddrPresent()` — omite State si no hay street/city
+4. `setTextOrOverflow()` — strings largos → addendum
+5. `stripUscisAccount()` — strip "USCIS-" prefix antes de escribir
+6. `stripAlienNumber()` — strip "A" prefix (pre-impreso en form)
+
+**Resultado en producción:**
+- I-130: cerrado (commit 62e7db9) — 254 fields llenos en demo Esposo
+- I-765: cerrado (commit fb3ae9b) — 6/6 defensas activas, phones/SSN/A# ya no se truncan
+
+**Cómo aplicar:** ver `.ai/master/uscis-form-playbook.md` sección "Checklist por
+form nuevo" — 10 ítems en orden.
+
+---
+
+## 2026-05-13 — Test de paridad como gate de pre-deploy
+
+**Decisión:** antes de cualquier push que toque schema/wizard/filler de un form
+USCIS, correr `node scripts/test-i{N}-parity.mjs`. Debe pasar con 0 errors.
+Warnings aceptables solo si están en `KNOWN_UNMAPPED` con razón citable.
+
+**Razón:** el extractor anterior del test solo inspeccionaba top-level keys
+del schema. Sub-fields dentro de `Array<{...}>` (ej. `petitionerEmployment.province`)
+nunca se contaban como faltantes. Eso explicó por qué se acumularon rondas de
+"PASS pero employment vacío".
+
+**Implementación:** `extractSchemaKeys()` ahora hace brace-depth stack para
+inspeccionar sub-fields. Schema visible subió de 221 → 281 keys en I-130.
+
+**Anti-pattern explícitamente prohibido:** agregar fields al `KNOWN_UNMAPPED`
+con razón vaga ("opcional", "raro"). Si un PDF field existe, o lo wireo o
+documento explícito por qué USCIS no lo necesita.
+
+---
+
+## 2026-05-13 — Coordinación UI entre wizards de forms USCIS (backlog)
+
+**Pendiente:** comparativa exhaustiva UI I-130 vs I-765 vs futuros forms para
+identificar bloques duplicados candidatos a componente compartido:
+- `<SmartFormCaseConfig>` — bloque caseConfig
+- `<SmartFormClientPicker>` — search + select lead
+- `<SmartFormPreparerBlock>` — preparer + G-28 attorney
+- `<SmartFormAddressBlock>` — street/apt/city/state/zip/foreign
+
+**Estado:** prompt para Lovable preparado. Lovable hará reporte línea por
+línea ANTES de yo extraer componentes.
+
+---
+
 ## 2026-04-29 — Visual direction: Linear meets Lexis
 
 **Decisión:** abandonar el estilo "Jarvis sci-fi" (cyan glow, scan-lines,
