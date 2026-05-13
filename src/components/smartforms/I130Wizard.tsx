@@ -1693,6 +1693,12 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Field label={t("State", "Estado")}><StateSelect value={data.interpreterState} onChange={v => set("interpreterState", v)} /></Field>
             <Field label="ZIP"><Input className={inputCls} value={data.interpreterZip} onChange={e => set("interpreterZip", e.target.value)} /></Field>
           </div>
+          {/* Foreign address fields (Pt7Line3 Province/Postal/Country) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Field label={t("Province (foreign)", "Provincia")}><Input className={inputCls} value={data.interpreterProvince} onChange={e => set("interpreterProvince", e.target.value)} /></Field>
+            <Field label={t("Postal Code (foreign)", "Cód. Postal")}><Input className={inputCls} value={data.interpreterPostalCode} onChange={e => set("interpreterPostalCode", e.target.value)} /></Field>
+            <Field label={t("Country", "País")}><Input className={inputCls} value={data.interpreterCountry} onChange={e => set("interpreterCountry", e.target.value)} placeholder="United States" /></Field>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label={t("Phone", "Teléfono")}><Input className={inputCls} value={data.interpreterPhone} onChange={e => set("interpreterPhone", e.target.value)} /></Field>
             <Field label={t("Mobile", "Celular")}><Input className={inputCls} value={data.interpreterMobile} onChange={e => set("interpreterMobile", e.target.value)} /></Field>
@@ -1723,9 +1729,15 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Field label={t("State", "Estado")}><StateSelect value={data.preparerState} onChange={v => set("preparerState", v)} /></Field>
             <Field label="ZIP"><Input className={inputCls} value={data.preparerZip} onChange={e => set("preparerZip", e.target.value)} /></Field>
           </div>
+          {/* Foreign address fields (Pt8Line3 Province/Postal/Country) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Field label={t("Province (foreign)", "Provincia")}><Input className={inputCls} value={data.preparerProvince} onChange={e => set("preparerProvince", e.target.value)} /></Field>
+            <Field label={t("Postal Code (foreign)", "Cód. Postal")}><Input className={inputCls} value={data.preparerPostalCode} onChange={e => set("preparerPostalCode", e.target.value)} /></Field>
+            <Field label={t("Country", "País")}><Input className={inputCls} value={data.preparerCountry} onChange={e => set("preparerCountry", e.target.value)} placeholder="United States" /></Field>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label={t("Phone", "Teléfono")}><Input className={inputCls} value={data.preparerPhone} onChange={e => set("preparerPhone", e.target.value)} /></Field>
-            <Field label="Fax"><Input className={inputCls} value={data.preparerMobile} onChange={e => set("preparerMobile", e.target.value)} /></Field>
+            <Field label={t("Fax", "Fax")}><Input className={inputCls} value={data.preparerMobile} onChange={e => set("preparerMobile", e.target.value)} placeholder={t("Pt8Line5", "Pt8Line5")} /></Field>
             <Field label="Email"><Input className={inputCls} value={data.preparerEmail} onChange={e => set("preparerEmail", e.target.value)} /></Field>
           </div>
           <div className="flex items-center gap-2">

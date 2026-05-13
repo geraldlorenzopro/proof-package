@@ -334,6 +334,9 @@ export interface I130Data {
   interpreterCity: string;
   interpreterState: string;
   interpreterZip: string;
+  // Foreign address fields (Pt7Line3 USCIS): Province/Postal/Country para intérpretes fuera de USA
+  interpreterProvince: string;
+  interpreterPostalCode: string;
   interpreterCountry: string;
   interpreterPhone: string;
   interpreterMobile: string;
@@ -350,9 +353,12 @@ export interface I130Data {
   preparerCity: string;
   preparerState: string;
   preparerZip: string;
+  // Foreign address fields (Pt8Line3 USCIS)
+  preparerProvince: string;
+  preparerPostalCode: string;
   preparerCountry: string;
   preparerPhone: string;
-  preparerMobile: string;
+  preparerMobile: string; // UI labeled "Fax" — mapea a Pt8Line5_PreparerFaxNumber en filler
   preparerEmail: string;
   preparerIsAttorney: boolean;
   preparerRepExtends: boolean;
@@ -483,12 +489,14 @@ export const defaultI130Data: I130Data = {
 
   interpreterLastName: "", interpreterFirstName: "", interpreterOrg: "",
   interpreterStreet: "", interpreterApt: "", interpreterAptType: "",
-  interpreterCity: "", interpreterState: "", interpreterZip: "", interpreterCountry: "",
+  interpreterCity: "", interpreterState: "", interpreterZip: "",
+  interpreterProvince: "", interpreterPostalCode: "", interpreterCountry: "",
   interpreterPhone: "", interpreterMobile: "", interpreterEmail: "", interpreterLanguage: "",
 
   preparerLastName: "", preparerFirstName: "", preparerOrg: "",
   preparerStreet: "", preparerApt: "", preparerAptType: "",
-  preparerCity: "", preparerState: "", preparerZip: "", preparerCountry: "",
+  preparerCity: "", preparerState: "", preparerZip: "",
+  preparerProvince: "", preparerPostalCode: "", preparerCountry: "",
   preparerPhone: "", preparerMobile: "", preparerEmail: "",
   preparerIsAttorney: false, preparerRepExtends: false,
 };

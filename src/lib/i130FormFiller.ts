@@ -661,6 +661,8 @@ const P = {
   pt8_city: /\.Pt8Line3_CityOrTown\[0\]/,
   pt8_state: /\.Pt8Line3_State\[0\]/,
   pt8_zip: /\.Pt8Line3_ZipCode\[0\]/,
+  pt8_province: /\.Pt8Line3_Province\[0\]/,
+  pt8_postal: /\.Pt8Line3_PostalCode\[0\]/,
   pt8_country: /\.Pt8Line3_Country\[0\]/,
   pt8_phone: /\.Pt8Line4_DaytimePhoneNumber\[0\]/,
   pt8_fax: /\.Pt8Line5_PreparerFaxNumber\[0\]/,
@@ -1292,6 +1294,8 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt7_city, data.interpreterCity);
     setText(form, P.pt7_state, data.interpreterState);
     setText(form, P.pt7_zip, data.interpreterZip);
+    setText(form, P.pt7_province, data.interpreterProvince);
+    setText(form, P.pt7_postal, data.interpreterPostalCode);
     setText(form, P.pt7_country, data.interpreterCountry);
     setText(form, P.pt7_phone, digitsOnly(data.interpreterPhone || ""));
     setText(form, P.pt7_email, data.interpreterEmail);
@@ -1309,8 +1313,13 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt8_city, data.preparerCity);
     setText(form, P.pt8_state, stateIfAddrPresent(data.preparerState, data.preparerStreet, data.preparerCity));
     setText(form, P.pt8_zip, data.preparerZip);
+    setText(form, P.pt8_province, data.preparerProvince);
+    setText(form, P.pt8_postal, data.preparerPostalCode);
     setText(form, P.pt8_country, data.preparerCountry);
     setText(form, P.pt8_phone, digitsOnly(data.preparerPhone || ""));
+    // Schema field `preparerMobile` mapea semánticamente al Pt8Line5_PreparerFaxNumber
+    // (la UI lo labela "Fax"). Wireado aquí en vez de a un mobile field inexistente.
+    setText(form, P.pt8_fax, digitsOnly(data.preparerMobile || ""));
     setText(form, P.pt8_email, data.preparerEmail);
     setCheck(form, P.pt8_isAttorney, data.preparerIsAttorney);
     setCheck(form, P.pt8_notAttorney, !data.preparerIsAttorney);
@@ -1356,6 +1365,42 @@ export async function fillI130Pdf(data: I130Data) {
     overflow.push({
       page: "7", part: "4", item: "48",
       content: `Beneficiary Occupation (Item 48): ${data.beneficiaryCurrentEmployment.occupation}`,
+    });
+  }
+  // Beneficiary native-script foreign address (Items 58.a-h) — el PDF decryptado
+  // NO expone fields para esto. Routear al addendum cuando el paralegal lo llenó.
+  const nativeAddrParts = [
+    data.beneficiaryNativeAddressStreet,
+    data.beneficiaryNativeAddressApt,
+    data.beneficiaryNativeAddressCity,
+    data.beneficiaryNativeAddressProvince,
+    data.beneficiaryNativeAddressPostalCode,
+    data.beneficiaryNativeAddressCountry,
+  ].filter(Boolean);
+  if (nativeAddrParts.length > 0) {
+    overflow.push({
+      page: "8", part: "4", item: "58",
+      content: `Beneficiary Native-Script Address (Items 58.a-h): ${nativeAddrParts.join(" · ")}`,
+    });
+  }
+  // Country of Citizenship beneficiario (no tiene field directo en PDF decryptado)
+  if (data.beneficiaryCountryOfCitizenship) {
+    overflow.push({
+      page: "5", part: "4", item: "9",
+      content: `Beneficiary Country of Citizenship: ${data.beneficiaryCountryOfCitizenship}`,
+    });
+  }
+  // State of Birth (Items 6 USCIS pet / 7 USCIS bene) — PDF solo pide City + Country
+  if (data.petitionerStateOfBirth) {
+    overflow.push({
+      page: "2", part: "2", item: "6",
+      content: `Petitioner State/Province of Birth: ${data.petitionerStateOfBirth}`,
+    });
+  }
+  if (data.beneficiaryStateOfBirth) {
+    overflow.push({
+      page: "5", part: "4", item: "7",
+      content: `Beneficiary State/Province of Birth: ${data.beneficiaryStateOfBirth}`,
     });
   }
   // Prior marriages petitioner — slot Spouse 2 = 1 prior (cuando spouse case) o 2 priors (otros).
