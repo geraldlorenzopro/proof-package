@@ -81,13 +81,19 @@ export interface I130Data {
     toDate: string;
   }>;
 
-  // Employment history (last 5 years) — up to 2 jobs
+  // Employment history (last 5 years) — up to 2 jobs.
+  // USCIS Items 42-49 (employer 1) y 46-49 (employer 2) piden address completo
+  // incluyendo apt/ste/flr y foreign fields (province, postal, country).
   petitionerEmployment: Array<{
     employerName: string;
     street: string;
+    aptType: "apt" | "ste" | "flr" | "";
+    apt: string;
     city: string;
     state: string;
     zip: string;
+    province: string;
+    postalCode: string;
     country: string;
     occupation: string;
     fromDate: string;
@@ -266,12 +272,17 @@ export interface I130Data {
   neverLivedTogether: boolean; // checkbox alternativo
 
   // Beneficiary employment
+  // USCIS Items 51.a-i + 52 — address completo del employer beneficiario.
   beneficiaryCurrentEmployment: {
     employerName: string;
     street: string;
+    aptType: "apt" | "ste" | "flr" | "";
+    apt: string;
     city: string;
     state: string;
     zip: string;
+    province: string;
+    postalCode: string;
     country: string;
     occupation: string;
     fromDate: string;
@@ -465,7 +476,8 @@ export const defaultI130Data: I130Data = {
   neverLivedTogether: false,
 
   beneficiaryCurrentEmployment: {
-    employerName: "", street: "", city: "", state: "", zip: "",
+    employerName: "", street: "", aptType: "", apt: "",
+    city: "", state: "", zip: "", province: "", postalCode: "",
     country: "", occupation: "", fromDate: "",
   },
 

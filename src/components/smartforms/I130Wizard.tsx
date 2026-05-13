@@ -776,7 +776,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
 
     const addEmployment = () => set("petitionerEmployment", [
       ...data.petitionerEmployment,
-      { employerName: "", street: "", city: "", state: "", zip: "", country: "", occupation: "", fromDate: "", toDate: "" },
+      { employerName: "", street: "", aptType: "", apt: "", city: "", state: "", zip: "", province: "", postalCode: "", country: "", occupation: "", fromDate: "", toDate: "" },
     ]);
     const removeEmployment = (i: number) => set("petitionerEmployment", data.petitionerEmployment.filter((_, idx) => idx !== i));
 
@@ -854,6 +854,9 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                   </SelectContent>
                 </Select>
               </div>
+              <Input className={inputCls} placeholder={t("Place where marriage ended (city, state/country)", "Lugar donde terminó (ciudad, estado/país)")} value={m.placeMarriageEnded} onChange={e => {
+                const arr = [...data.petitionerPriorMarriages]; arr[i] = { ...arr[i], placeMarriageEnded: e.target.value }; set("petitionerPriorMarriages", arr);
+              }} />
             </div>
           ))}
         </div>
@@ -874,9 +877,19 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
-              <Input className={inputCls} placeholder={t("Street", "Calle")} value={a.street} onChange={e => {
-                const arr = [...data.petitionerPriorAddresses]; arr[i] = { ...arr[i], street: e.target.value }; set("petitionerPriorAddresses", arr);
-              }} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <Input className={cn(inputCls, "md:col-span-2")} placeholder={t("Street", "Calle")} value={a.street} onChange={e => {
+                  const arr = [...data.petitionerPriorAddresses]; arr[i] = { ...arr[i], street: e.target.value }; set("petitionerPriorAddresses", arr);
+                }} />
+                <div className="flex gap-2">
+                  <AptTypeSelect value={a.aptType} onChange={v => {
+                    const arr = [...data.petitionerPriorAddresses]; arr[i] = { ...arr[i], aptType: v as any }; set("petitionerPriorAddresses", arr);
+                  }} />
+                  <Input className={cn(inputCls, "flex-1")} placeholder="Apt/Ste/Flr #" value={a.apt} onChange={e => {
+                    const arr = [...data.petitionerPriorAddresses]; arr[i] = { ...arr[i], apt: e.target.value }; set("petitionerPriorAddresses", arr);
+                  }} />
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <Input className={inputCls} placeholder={t("City", "Ciudad")} value={a.city} onChange={e => {
                   const arr = [...data.petitionerPriorAddresses]; arr[i] = { ...arr[i], city: e.target.value }; set("petitionerPriorAddresses", arr);
@@ -935,9 +948,19 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                   const arr = [...data.petitionerEmployment]; arr[i] = { ...arr[i], occupation: ev.target.value }; set("petitionerEmployment", arr);
                 }} />
               </div>
-              <Input className={inputCls} placeholder={t("Street", "Calle")} value={e.street} onChange={ev => {
-                const arr = [...data.petitionerEmployment]; arr[i] = { ...arr[i], street: ev.target.value }; set("petitionerEmployment", arr);
-              }} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <Input className={cn(inputCls, "md:col-span-2")} placeholder={t("Street", "Calle")} value={e.street} onChange={ev => {
+                  const arr = [...data.petitionerEmployment]; arr[i] = { ...arr[i], street: ev.target.value }; set("petitionerEmployment", arr);
+                }} />
+                <div className="flex gap-2">
+                  <AptTypeSelect value={e.aptType} onChange={v => {
+                    const arr = [...data.petitionerEmployment]; arr[i] = { ...arr[i], aptType: v as any }; set("petitionerEmployment", arr);
+                  }} />
+                  <Input className={cn(inputCls, "flex-1")} placeholder="Apt/Ste/Flr #" value={e.apt} onChange={ev => {
+                    const arr = [...data.petitionerEmployment]; arr[i] = { ...arr[i], apt: ev.target.value }; set("petitionerEmployment", arr);
+                  }} />
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <Input className={inputCls} placeholder={t("City", "Ciudad")} value={e.city} onChange={ev => {
                   const arr = [...data.petitionerEmployment]; arr[i] = { ...arr[i], city: ev.target.value }; set("petitionerEmployment", arr);
@@ -947,6 +970,18 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                 }} />
                 <Input className={inputCls} placeholder="ZIP" value={e.zip} onChange={ev => {
                   const arr = [...data.petitionerEmployment]; arr[i] = { ...arr[i], zip: ev.target.value }; set("petitionerEmployment", arr);
+                }} />
+              </div>
+              {/* Foreign address fields (Pt2Line41/45 Province/PostalCode/Country) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <Input className={inputCls} placeholder={t("Province (foreign)", "Provincia")} value={e.province} onChange={ev => {
+                  const arr = [...data.petitionerEmployment]; arr[i] = { ...arr[i], province: ev.target.value }; set("petitionerEmployment", arr);
+                }} />
+                <Input className={inputCls} placeholder={t("Postal Code (foreign)", "Cód. Postal")} value={e.postalCode} onChange={ev => {
+                  const arr = [...data.petitionerEmployment]; arr[i] = { ...arr[i], postalCode: ev.target.value }; set("petitionerEmployment", arr);
+                }} />
+                <Input className={inputCls} placeholder={t("Country", "País")} value={e.country} onChange={ev => {
+                  const arr = [...data.petitionerEmployment]; arr[i] = { ...arr[i], country: ev.target.value }; set("petitionerEmployment", arr);
                 }} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1299,6 +1334,9 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                   </SelectContent>
                 </Select>
               </div>
+              <Input className={inputCls} placeholder={t("Place where marriage ended (city, state/country)", "Lugar donde terminó (ciudad, estado/país)")} value={m.placeMarriageEnded} onChange={e => {
+                const arr = [...data.beneficiaryPriorMarriages]; arr[i] = { ...arr[i], placeMarriageEnded: e.target.value }; set("beneficiaryPriorMarriages", arr);
+              }} />
             </div>
           ))}
         </div>
@@ -1412,12 +1450,29 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           </div>
         </div>
 
-        {/* Current employment */}
+        {/* Current employment — Items 51.a-i + 52 */}
         <div className="space-y-3 pt-3 border-t border-border/30">
-          <p className="text-sm font-semibold">{t("Current Employment", "Empleo Actual")}</p>
+          <p className="text-sm font-semibold">{t("Beneficiary Current Employment (Items 51-52)", "Empleo Actual del Beneficiario")}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Input className={inputCls} placeholder={t("Employer", "Empleador")} value={data.beneficiaryCurrentEmployment.employerName} onChange={e => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, employerName: e.target.value })} />
             <Input className={inputCls} placeholder={t("Occupation", "Ocupación")} value={data.beneficiaryCurrentEmployment.occupation} onChange={e => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, occupation: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <Input className={cn(inputCls, "md:col-span-2")} placeholder={t("Street", "Calle")} value={data.beneficiaryCurrentEmployment.street} onChange={e => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, street: e.target.value })} />
+            <div className="flex gap-2">
+              <AptTypeSelect value={data.beneficiaryCurrentEmployment.aptType} onChange={v => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, aptType: v as any })} />
+              <Input className={cn(inputCls, "flex-1")} placeholder="Apt/Ste/Flr #" value={data.beneficiaryCurrentEmployment.apt} onChange={e => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, apt: e.target.value })} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <Input className={inputCls} placeholder={t("City", "Ciudad")} value={data.beneficiaryCurrentEmployment.city} onChange={e => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, city: e.target.value })} />
+            <Input className={inputCls} placeholder={t("State", "Estado")} value={data.beneficiaryCurrentEmployment.state} onChange={e => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, state: e.target.value })} />
+            <Input className={inputCls} placeholder="ZIP" value={data.beneficiaryCurrentEmployment.zip} onChange={e => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, zip: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <Input className={inputCls} placeholder={t("Province (foreign)", "Provincia")} value={data.beneficiaryCurrentEmployment.province} onChange={e => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, province: e.target.value })} />
+            <Input className={inputCls} placeholder={t("Postal Code (foreign)", "Cód. Postal")} value={data.beneficiaryCurrentEmployment.postalCode} onChange={e => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, postalCode: e.target.value })} />
+            <Input className={inputCls} placeholder={t("Country", "País")} value={data.beneficiaryCurrentEmployment.country} onChange={e => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, country: e.target.value })} />
           </div>
           <Input type="date" className={inputCls} placeholder={t("From Date", "Desde")} value={data.beneficiaryCurrentEmployment.fromDate} onChange={e => set("beneficiaryCurrentEmployment", { ...data.beneficiaryCurrentEmployment, fromDate: e.target.value })} />
         </div>

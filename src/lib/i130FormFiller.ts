@@ -362,6 +362,8 @@ const P = {
   pt2_l45_city: /\.Pt2Line45_CityOrTown\[0\]/,
   pt2_l45_state: /\.Pt2Line45_State\[0\]/,
   pt2_l45_zip: /\.Pt2Line45_ZipCode\[0\]/,
+  pt2_l45_province: /\.Pt2Line45_Province\[0\]/,
+  pt2_l45_postal: /\.Pt2Line45_PostalCode\[0\]/,
   pt2_l45_country: /\.Pt2Line45_Country\[0\]/,
   pt2_l46_occupation: /\.Pt2Line46_Occupation\[0\]/,
   pt2_l47_from: /\.Pt2Line47a_DateFrom\[0\]/,
@@ -525,15 +527,18 @@ const P = {
 
   // Part 5 — Simultaneous Relatives (Items 6.a-9 del PDF)
   // Relative 1: 6.a/b/c name + 7 relationship
-  pt5_rel1_family: /\.Pt5Line6a_FamilyName\[0\]/,
-  pt5_rel1_given: /\.Pt5Line6b_GivenName\[0\]/,
-  pt5_rel1_middle: /\.Pt5Line6c_MiddleName\[0\]/,
-  pt5_rel1_relationship: /\.Pt5Line7_Relationship\[0\]/,
-  // Relative 2: 8.a/b/c name + 9 relationship
-  pt5_rel2_family: /\.Pt5Line8a_FamilyName\[0\]/,
-  pt5_rel2_given: /\.Pt5Line8b_GivenName\[0\]/,
-  pt5_rel2_middle: /\.Pt5Line8c_MiddleName\[0\]/,
-  pt5_rel2_relationship: /\.Pt5Line9_Relationship\[0\]/,
+  // Simultaneous Relatives Items 6-9 USCIS. El PDF decryptado los nombra con
+  // prefijo Pt4 (no Pt5) y están en subform[7] (Relative 1) y subform[8] (Relative 2).
+  // Antes asumimos que Pt5Line6-9 no existían — ERROR. SÍ existen como Pt4Line6/7/8/9.
+  pt5_rel1_family: /\.Pt4Line6a_FamilyName\[0\]/,
+  pt5_rel1_given: /\.Pt4Line6b_GivenName\[0\]/,
+  pt5_rel1_middle: /\.Pt4Line6c_MiddleName\[0\]/,
+  pt5_rel1_relationship: /\.Pt4Line7_Relationship\[0\]/,
+  // Relative 2: Item 8.a/b/c name + 9 relationship — naming Pt4 en el PDF decryptado
+  pt5_rel2_family: /\.Pt4Line8a_FamilyName\[0\]/,
+  pt5_rel2_given: /\.Pt4Line8b_GivenName\[0\]/,
+  pt5_rel2_middle: /\.Pt4Line8c_MiddleName\[0\]/,
+  pt5_rel2_relationship: /\.Pt4Line9_Relationship\[0\]/,
 
   // ── Part 9: Additional Information (Addendum) ──
   // DISCOVERY: el PDF reusa Pt2Line4a_FamilyName[1] en subform[11] como el
@@ -629,6 +634,7 @@ const P = {
   pt6_interpreter: /\.Pt6Line1Checkbox\[1\]/,
   pt6_language: /\.Pt6Line1b_Language\[0\]/,
   pt6_preparer: /\.Pt6Line2_Checkbox\[0\]/,
+  pt6_repName: /\.Pt6Line2_RepresentativeName\[0\]/,
   pt6_phone: /\.Pt6Line3_DaytimePhoneNumber\[0\]/,
   pt6_mobile: /\.Pt6Line4_MobileNumber\[0\]/,
   pt6_email: /\.Pt6Line5_Email\[0\]/,
@@ -927,9 +933,13 @@ export async function fillI130Pdf(data: I130Data) {
   if (job0) {
     setTextOrOverflow(P.pt2_l40_employer, job0.employerName, { page: "4", part: "2", item: "40", label: "Petitioner Current Employer" });
     setText(form, P.pt2_l41_street, job0.street);
+    setText(form, P.pt2_l41_apt, job0.apt);
+    setUnitType(form, "Pt2Line41_Unit", job0.aptType);
     setText(form, P.pt2_l41_city, job0.city);
     setText(form, P.pt2_l41_state, job0.state);
     setText(form, P.pt2_l41_zip, job0.zip);
+    setText(form, P.pt2_l41_province, job0.province);
+    setText(form, P.pt2_l41_postal, job0.postalCode);
     setText(form, P.pt2_l41_country, job0.country);
     setText(form, P.pt2_l42_occupation, job0.occupation);
     setText(form, P.pt2_l43_from, fmtDate(job0.fromDate));
@@ -947,9 +957,13 @@ export async function fillI130Pdf(data: I130Data) {
   if (job1) {
     setTextOrOverflow(P.pt2_l44_employer, job1.employerName, { page: "4", part: "2", item: "44", label: "Petitioner Prior Employer" });
     setText(form, P.pt2_l45_street, job1.street);
+    setText(form, P.pt2_l45_apt, job1.apt);
+    setUnitType(form, "Pt2Line45_Unit", job1.aptType);
     setText(form, P.pt2_l45_city, job1.city);
     setText(form, P.pt2_l45_state, job1.state);
     setText(form, P.pt2_l45_zip, job1.zip);
+    setText(form, P.pt2_l45_province, job1.province);
+    setText(form, P.pt2_l45_postal, job1.postalCode);
     setText(form, P.pt2_l45_country, job1.country);
     setText(form, P.pt2_l46_occupation, job1.occupation);
     setText(form, P.pt2_l47_from, fmtDate(job1.fromDate));
@@ -1206,9 +1220,13 @@ export async function fillI130Pdf(data: I130Data) {
   if (beJob?.employerName) {
     setTextOrOverflow(P.pt4_l26_employer, beJob.employerName, { page: "7", part: "4", item: "47", label: "Beneficiary Current Employer" });
     setTextOrOverflow(P.pt4_l26_street, beJob.street, { page: "7", part: "4", item: "47", label: "Beneficiary Employer Street" });
+    setText(form, P.pt4_l26_apt, beJob.apt);
+    setUnitType(form, "Pt4Line26_Unit", beJob.aptType);
     setText(form, P.pt4_l26_city, beJob.city);
     setText(form, P.pt4_l26_state, beJob.state);
     setText(form, P.pt4_l26_zip, beJob.zip);
+    setText(form, P.pt4_l26_province, beJob.province);
+    setText(form, P.pt4_l26_postal, beJob.postalCode);
     setText(form, P.pt4_l26_country, beJob.country);
     setText(form, P.pt4_l27_began, safeDate(beJob.fromDate, "began"));
     // NOTE: el PDF I-130 NO TIENE field name para beneficiary occupation.
@@ -1278,6 +1296,11 @@ export async function fillI130Pdf(data: I130Data) {
   setCheck(form, P.pt6_interpreter, usesInterpreter);
   if (usesInterpreter) setText(form, P.pt6_language, data.interpreterLanguage);
   setCheck(form, P.pt6_preparer, !!data.preparerUsed);
+  // Pt6 Item 2 statement: "At my request, the preparer named in Part 8, [Name], prepared this..."
+  if (data.preparerUsed) {
+    const repFullName = [data.preparerFirstName, data.preparerLastName].filter(Boolean).join(" ").trim();
+    if (repFullName) setText(form, P.pt6_repName, repFullName);
+  }
   setText(form, P.pt6_phone, digitsOnly(data.petitionerDaytimePhone || ""));
   setText(form, P.pt6_mobile, digitsOnly(data.petitionerMobilePhone || ""));
   setText(form, P.pt6_email, data.petitionerEmail);
@@ -1411,7 +1434,26 @@ export async function fillI130Pdf(data: I130Data) {
       const m = data.petitionerPriorMarriages[i];
       overflow.push({
         page: "3", part: "2", item: "22",
-        content: `Additional Prior Spouse (Petitioner) #${i + 1}: ${m.spouseLastName}, ${m.spouseFirstName} ${m.spouseMiddleName} · Married ${fmtDate(m.dateOfMarriage)} · Ended ${fmtDate(m.dateMarriageEnded)} (${m.howEnded})`.trim(),
+        content: `Additional Prior Spouse (Petitioner) #${i + 1}: ${m.spouseLastName}, ${m.spouseFirstName} ${m.spouseMiddleName} · Married ${fmtDate(m.dateOfMarriage)} · Ended ${fmtDate(m.dateMarriageEnded)} at ${m.placeMarriageEnded} (${m.howEnded})`.trim(),
+      });
+    }
+  }
+  // placeMarriageEnded: el PDF no tiene field directo. Si está lleno, va al addendum.
+  for (let i = 0; i < (data.petitionerPriorMarriages?.length || 0); i++) {
+    const m = data.petitionerPriorMarriages[i];
+    if (m.placeMarriageEnded && i < petPriorSlots) {
+      overflow.push({
+        page: "3", part: "2", item: i === 0 ? "21" : "23",
+        content: `Petitioner Prior Marriage #${i + 1} — Place where marriage ended: ${m.placeMarriageEnded}`,
+      });
+    }
+  }
+  for (let i = 0; i < (data.beneficiaryPriorMarriages?.length || 0); i++) {
+    const m = data.beneficiaryPriorMarriages[i];
+    if (m.placeMarriageEnded && i < 2) {
+      overflow.push({
+        page: "6", part: "4", item: i === 0 ? "22" : "24",
+        content: `Beneficiary Prior Marriage #${i + 1} — Place where marriage ended: ${m.placeMarriageEnded}`,
       });
     }
   }
@@ -1456,14 +1498,31 @@ export async function fillI130Pdf(data: I130Data) {
       });
     }
   }
-  // Simultaneous Relatives — PDF no tiene AcroFields para Items 6.a-9 (fix B8).
-  // TODOS los simultaneous relatives van al addendum.
-  if (data.simultaneousRelatives && data.simultaneousRelatives.length > 0) {
-    for (let i = 0; i < data.simultaneousRelatives.length; i++) {
+  // Simultaneous Relatives — Items 6-9 USCIS.
+  // CORRECCIÓN (descubierto 2026-05-13): el PDF SÍ tiene AcroFields para los 2 slots,
+  // sólo que con naming `Pt4LineN` en lugar de `Pt5LineN` (cuirky decrypt). Antes
+  // ruteábamos TODO al addendum — bug, perdíamos info que sí cabía en los slots.
+  // Ahora: Relative 1 → Pt4Line6/7, Relative 2 → Pt4Line8/9, resto → addendum.
+  const rel0 = data.simultaneousRelatives?.[0];
+  if (rel0) {
+    setText(form, P.pt5_rel1_family, rel0.lastName);
+    setText(form, P.pt5_rel1_given, rel0.firstName);
+    setText(form, P.pt5_rel1_middle, rel0.middleName);
+    setText(form, P.pt5_rel1_relationship, rel0.relationship);
+  }
+  const rel1 = data.simultaneousRelatives?.[1];
+  if (rel1) {
+    setText(form, P.pt5_rel2_family, rel1.lastName);
+    setText(form, P.pt5_rel2_given, rel1.firstName);
+    setText(form, P.pt5_rel2_middle, rel1.middleName);
+    setText(form, P.pt5_rel2_relationship, rel1.relationship);
+  }
+  if (data.simultaneousRelatives && data.simultaneousRelatives.length > 2) {
+    for (let i = 2; i < data.simultaneousRelatives.length; i++) {
       const r = data.simultaneousRelatives[i];
       overflow.push({
         page: "9", part: "5", item: "6-9",
-        content: `Simultaneous Relative Petition #${i + 1}: ${r.lastName}, ${r.firstName} ${r.middleName} · ${r.relationship}`.trim(),
+        content: `Additional Simultaneous Relative #${i + 1}: ${r.lastName}, ${r.firstName} ${r.middleName} · ${r.relationship}`.trim(),
       });
     }
   }

@@ -75,9 +75,10 @@ const KNOWN_UNMAPPED = {
     /PDF417BarCode/, /pageSet/,
     // Items 41 LPR-through-marriage Yes/No (cubierto vía petitionerLprThroughMarriage)
     /Pt2Line41_(Yes|No)/,
-    // Province fields para employment foreign addresses (sub-fields opcionales)
-    /Pt2Line(41|45)_Province/, /Pt2Line(41|45)_PostalCode/, /Pt2Line40e_State/,
-    /Pt4Line26_Province/, /Pt4Line26_PostalCode/,
+    // FIX: removí Pt2Line(41|45)_Province/PostalCode + Pt4Line26_Province/PostalCode
+    // del allowlist. Esos son employment foreign address fields LEGÍTIMOS del PDF
+    // que estaban escondidos. Ahora el test los va a reportar para wirearlos.
+    /Pt2Line40e_State/,
     // Apt/Ste/Flr dropdowns para physical address 2
     /Pt2Line12_AptSteFlrNumber/, /Pt2Line12_(City|State|Zip|Country)/, /Pt2Line13/,
     // Children sub-fields (filled in loop)
@@ -115,28 +116,72 @@ async function getPdfFields(path) {
 }
 
 function extractSchemaKeys(schemaSource) {
-  // Parse `export interface I130Data { ... }` to get top-level keys.
-  // Trick: tracks brace depth pero antes de procesar cada línea calcula el depth
-  // DESPUÉS del cierre, no antes. Así una línea `foo: Array<{ ... }>` cuenta como
-  // depth-0 (es top-level) pero las líneas dentro de `{ nested: { ...` no.
+  // Parse `export interface I130Data { ... }` y devuelve TODAS las paths,
+  // incluyendo sub-fields dentro de Array<{...}> y objetos nested.
+  // Ejemplos de output:
+  //   "petitionerLastName"
+  //   "petitionerEmployment.employerName"
+  //   "petitionerEmployment.province"
+  //   "beneficiaryCurrentEmployment.street"
+  //
+  // FIX (Lovable diagnosis): extractor anterior solo veía top-level keys.
+  // Eso enmascaraba sub-fields faltantes en arrays/objects = root cause
+  // del whack-a-mole con employment fields.
   const interfaceMatch = schemaSource.match(/export interface I130Data \{([\s\S]+?)\n\}/);
   if (!interfaceMatch) throw new Error("Could not find I130Data interface");
   const body = interfaceMatch[1];
   const keys = new Set();
+  const pathStack = []; // [{ name: "petitionerEmployment", openedAt: depth+1 }]
+
   let depth = 0;
   for (const line of body.split("\n")) {
     const stripped = line.trim();
     if (stripped.startsWith("//") || stripped === "") continue;
     const opens = (stripped.match(/\{/g) || []).length;
     const closes = (stripped.match(/\}/g) || []).length;
-    // Top-level key extraction: solo si depth ANTES de procesar es 0
-    if (depth === 0) {
-      const m = stripped.match(/^([a-zA-Z][a-zA-Z0-9]*)\??:/);
-      if (m) keys.add(m[1]);
+
+    // Detect key on this line (if any)
+    const m = stripped.match(/^([a-zA-Z][a-zA-Z0-9]*)\??:/);
+    if (m) {
+      const keyName = m[1];
+      const path = pathStack.length > 0
+        ? pathStack.map(p => p.name).join(".") + "." + keyName
+        : keyName;
+      keys.add(path);
+
+      // Si esta línea abre un block (Array<{ o { directo) sin cerrarlo en la misma línea,
+      // pushear el key como parent del scope siguiente
+      if (opens > closes) {
+        pathStack.push({ name: keyName, openedAt: depth + 1 });
+      }
     }
-    depth += opens - closes;
+
+    // Apply depth changes
+    const newDepth = depth + opens - closes;
+
+    // Pop stack si bajamos por debajo del openedAt del top del stack
+    while (pathStack.length > 0 && newDepth < pathStack[pathStack.length - 1].openedAt) {
+      pathStack.pop();
+    }
+    depth = newDepth;
   }
   return [...keys].sort();
+}
+
+// Determina si un schema path (nested o top-level) está cubierto en una fuente
+// (filler o wizard). Para nested, busca el leaf + el parent.
+function isPathCovered(path, source) {
+  const parts = path.split(".");
+  if (parts.length === 1) {
+    // Top-level: data.X o set("X", ...) o "X" como key
+    const re = new RegExp(`\\bdata\\.${parts[0]}\\b|set\\("${parts[0]}"|"${parts[0]}":`);
+    return re.test(source);
+  }
+  // Nested: parent debe aparecer Y leaf debe aparecer como propiedad accedida
+  const [parent, leaf] = parts;
+  const parentRe = new RegExp(`\\bdata\\.${parent}\\b|"${parent}"`);
+  const leafRe = new RegExp(`[.[]${leaf}\\b|\\["${leaf}"\\]`);
+  return parentRe.test(source) && leafRe.test(source);
 }
 
 function extractFillerSchemaRefs(fillerSource) {
@@ -195,7 +240,9 @@ console.log("");
 let errors = 0, warnings = 0;
 
 // A. Schema fields NOT used in filler (data perdida)
-const aGaps = schemaKeys.filter(k => !fillerRefs.includes(k) && !isAllowlisted(k, KNOWN_UNMAPPED.schemaWithoutPdf));
+// FIX: ahora usa isPathCovered que también valida nested paths como
+// "petitionerEmployment.province" (antes ese path no se inspeccionaba)
+const aGaps = schemaKeys.filter(k => !isPathCovered(k, fillerSrc) && !isAllowlisted(k, KNOWN_UNMAPPED.schemaWithoutPdf));
 console.log("─── A. Schema fields sin uso en filler (data perdida) ───");
 if (aGaps.length === 0) {
   console.log("✅ Todos los fields del schema se usan en el filler O están allowlisted");
@@ -228,7 +275,8 @@ if (bGaps.length === 0) {
 console.log("");
 
 // C. Schema fields not in wizard (data no capturable)
-const cGaps = schemaKeys.filter(k => !wizardRefs.includes(k) && !isAllowlisted(k, KNOWN_UNMAPPED.schemaWithoutPdf));
+// FIX: ahora valida nested paths con isPathCovered
+const cGaps = schemaKeys.filter(k => !isPathCovered(k, wizardSrc) && !isAllowlisted(k, KNOWN_UNMAPPED.schemaWithoutPdf));
 console.log("─── C. Schema fields sin input en wizard ───");
 if (cGaps.length === 0) {
   console.log("✅ Todos los fields del schema tienen input en el wizard O están allowlisted");
