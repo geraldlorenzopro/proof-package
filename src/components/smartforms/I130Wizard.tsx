@@ -1221,7 +1221,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <p className="text-xs text-muted-foreground">{t("Place of Marriage (Item 20.a-d)", "Lugar del Matrimonio")}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.beneficiaryPlaceMarriageCity} onChange={e => set("beneficiaryPlaceMarriageCity", e.target.value)} /></Field>
-              <Field label={t("State (if US)", "Estado (si US)")}><StateSelect value={data.beneficiaryPlaceMarriageState} onChange={v => set("beneficiaryPlaceMarriageState", v)} /></Field>
+              <Field label={t("State (US) or 'Not in USA'", "Estado (US) o 'No fue en USA'")}><MarriageStateSelect value={data.beneficiaryPlaceMarriageState} onChange={v => set("beneficiaryPlaceMarriageState", v)} /></Field>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label={t("Province (if foreign)", "Provincia (si extranjero)")}><Input className={inputCls} value={data.beneficiaryPlaceMarriageProvince} onChange={e => set("beneficiaryPlaceMarriageProvince", e.target.value)} /></Field>
