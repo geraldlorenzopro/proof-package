@@ -191,11 +191,75 @@ Cuando arranque I-485, N-400, DS-260:
 
 ---
 
+## Regla auto-enforceada: paridad de cumplimiento cross-form
+
+**Decisión 2026-05-13:** todos los forms USCIS deben cumplir el playbook al
+MISMO nivel. No "el I-130 mejor que el I-765" — los dos al 100%, siempre.
+
+### Check F del test de paridad — Defensas APLICADAS
+
+El test individual ahora incluye un Check F que detecta cuándo un `setText()`
+escribe a un field tipo `phone/SSN/A#/USCIS#/Bar#/I-94` SIN aplicar el helper
+correspondiente. Antes el test solo validaba que el helper EXISTIERA como
+function — no que se USARA en cada lugar correcto.
+
+**Reglas auto-enforceadas:**
+
+| Pattern del field name | Helper REQUERIDO en el value |
+|---|---|
+| `_phone`, `_mobile`, `_fax`, `_telephone` | `digitsOnly()` |
+| `_ssn`, `SSN` | `digitsOnly()` |
+| `_alien`, `Alien` | `stripAlienNumber()` |
+| `_uscis`, `USCIS`, `elis` | `stripUscisAccount()` |
+| `attyBar`, `BarNumber`, `_bar_` | `stripBarNumber()` |
+| `_i94`, `I94`, `ArrivalDeparture` | `digitsOnly()` |
+
+Cualquier violación = test FAIL. **No se puede commitear**.
+
+### Meta-test cross-form
+
+[`scripts/test-all-forms-parity.mjs`](../../scripts/test-all-forms-parity.mjs)
+corre TODOS los tests individuales y verifica:
+
+1. Cada test individual debe pasar (exit 0)
+2. Cuenta defensas aplicadas por tipo y por form (tabla comparativa)
+3. Lista violations granulares (línea exacta donde la regla no se cumple)
+
+Counts diferentes entre forms NO son automáticamente bug (cada form USCIS tiene
+fields distintos — I-130 tiene 2 SSN, I-765 tiene 1). Lo que SÍ es bug: cualquier
+violation en Paso 3.
+
+### Cómo se agrega un form nuevo al meta-test
+
+En [`scripts/test-all-forms-parity.mjs`](../../scripts/test-all-forms-parity.mjs)
+agregar al array `FORMS`:
+
+```js
+{ id: "I-485", testScript: "scripts/test-i485-parity.mjs", filler: "src/lib/i485FormFiller.ts" },
+```
+
+Forma automática del check funciona porque el detector usa pattern matching
+sobre el nombre del field — no necesita conocer fields específicos del form.
+
+### Bugs reales que esta regla detectó cuando se construyó
+
+- I-765 `setText(form, P.line20a_i94, data.i94Number)` SIN `digitsOnly` →
+  I-94 con espacios se truncaba a 11 chars con espacio en vez de 11 dígitos.
+  Nadie había visto este bug — ni Lovable, ni Claude Mac escritorio, ni yo.
+  El test lo detectó automáticamente.
+
 ## Decisión de proceso
 
 A partir de 2026-05-13, **cualquier form USCIS nuevo arranca por este playbook**, en este orden. Si saltamos Fase 0 (test de paridad antes de UI), repetimos el loop del I-130.
 
 Mr. Lorenzo decidió este protocolo después de ~15 rondas iterativas y horas perdidas. Innegociable.
+
+**Antes de cualquier push que toque un filler USCIS:**
+
+```bash
+node scripts/test-all-forms-parity.mjs
+# Debe imprimir: "✅ PASS — todos los forms cumplen el playbook al mismo nivel"
+```
 
 ---
 

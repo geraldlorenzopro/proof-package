@@ -551,7 +551,8 @@ export async function fillI765Pdf(data: I765Data) {
   setText(form, P.line19_dob, safeDate(data.dateOfBirth, "dob"));
 
   // ── Arrival Info ──
-  setText(form, P.line20a_i94, data.i94Number);
+  // I-94 maxLen=11 — strip espacios para evitar truncamiento (mismo bug del I-130)
+  setText(form, P.line20a_i94, digitsOnly(data.i94Number || ""));
   setText(form, P.line20b_passport, data.passportNumber);
   setText(form, P.line20c_traveldoc, data.travelDocNumber);
   setText(form, P.line20d_country, data.passportCountry);

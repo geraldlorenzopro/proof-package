@@ -149,8 +149,74 @@ function isAllowlisted(field, allowlist) {
 }
 
 // ──────────────────────────────────────────────────────────────────
-// Main
+// Defense Application Detector (Check F) — mismo patrón que test-i130
 // ──────────────────────────────────────────────────────────────────
+const DEFENSE_RULES = [
+  { fieldPattern: /(_(phone|mobile|fax|telephone)|Phone|Mobile|Fax|Telephone)/i, helper: "digitsOnly", appliesTo: "phone/fax" },
+  { fieldPattern: /(_ssn|SSN)/i, helper: "digitsOnly", appliesTo: "SSN" },
+  { fieldPattern: /(_alien|Alien)/i, helper: "stripAlienNumber", appliesTo: "A-Number" },
+  { fieldPattern: /(_uscis|USCIS|uscis|elis)/i, helper: "stripUscisAccount", appliesTo: "USCIS Account" },
+  { fieldPattern: /(attyBar|BarNumber|_bar_)/i, helper: "stripBarNumber", appliesTo: "Attorney Bar" },
+  { fieldPattern: /(_i94|I94|ArrivalDeparture)/i, helper: "digitsOnly", appliesTo: "I-94 number" },
+];
+
+function findDefenseViolations(fillerSrc) {
+  const violations = [];
+  const lines = fillerSrc.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const m = line.match(/setText\s*\(\s*form\s*,\s*P\.([a-zA-Z0-9_]+)\s*,\s*(.+?)\)\s*;?\s*$/);
+    if (!m) continue;
+    const [, patternName, valueExpr] = m;
+    for (const rule of DEFENSE_RULES) {
+      if (rule.fieldPattern.test(patternName)) {
+        if (!valueExpr.includes(rule.helper + "(")) {
+          violations.push({
+            line: i + 1,
+            patternName,
+            expected: rule.helper,
+            appliesTo: rule.appliesTo,
+            snippet: line.trim().slice(0, 100),
+          });
+        }
+        break;
+      }
+    }
+  }
+  return violations;
+}
+
+function countDefenseApplications(fillerSrc) {
+  const counts = {};
+  for (const rule of DEFENSE_RULES) {
+    counts[rule.appliesTo] = { applied: 0, helper: rule.helper };
+  }
+  const lines = fillerSrc.split("\n");
+  for (const line of lines) {
+    const m = line.match(/setText\s*\(\s*form\s*,\s*P\.([a-zA-Z0-9_]+)\s*,\s*(.+?)\)\s*;?\s*$/);
+    if (!m) continue;
+    const [, patternName, valueExpr] = m;
+    for (const rule of DEFENSE_RULES) {
+      if (rule.fieldPattern.test(patternName) && valueExpr.includes(rule.helper + "(")) {
+        counts[rule.appliesTo].applied++;
+        break;
+      }
+    }
+  }
+  return counts;
+}
+
+export { findDefenseViolations, countDefenseApplications, DEFENSE_RULES };
+
+// ──────────────────────────────────────────────────────────────────
+// Main — solo ejecuta si se invoca directo (no si se importa)
+// ──────────────────────────────────────────────────────────────────
+const isMain = import.meta.url === `file://${process.argv[1]}` ||
+               import.meta.url.endsWith(process.argv[1]?.split("/").pop() || "");
+if (!isMain) {
+  // Importado como módulo — solo exportar helpers.
+} else {
+
 const pdfPath = "public/forms/i-765-template.pdf";
 const schemaPath = "src/components/smartforms/i765Schema.ts";
 const fillerPath = "src/lib/i765FormFiller.ts";
@@ -279,6 +345,26 @@ if (unmappedPdf.length === 0) {
 }
 console.log("");
 
+// F. Defense Application — cada setText con campo tipo phone/SSN/etc DEBE usar el helper
+console.log("─── F. Defensas APLICADAS en cada setText (no solo declaradas) ───");
+const violations = findDefenseViolations(fillerSrc);
+if (violations.length === 0) {
+  console.log("✅ Todos los setText con fields normalizables aplican el helper correcto");
+} else {
+  console.log(`❌ ${violations.length} setText sin helper aplicado:`);
+  violations.forEach(v => {
+    console.log(`  ❌ línea ${v.line} · ${v.patternName} (${v.appliesTo}) — falta ${v.expected}()`);
+    console.log(`     ${v.snippet}`);
+  });
+  errors += violations.length;
+}
+const counts = countDefenseApplications(fillerSrc);
+console.log("\n   Helper application count (para cross-form comparison):");
+for (const [type, info] of Object.entries(counts)) {
+  console.log(`     ${type.padEnd(20)} ${info.helper.padEnd(20)} × ${info.applied}`);
+}
+console.log("");
+
 // ──────────────────────────────────────────────────────────────────
 // Final verdict
 // ──────────────────────────────────────────────────────────────────
@@ -293,3 +379,5 @@ if (errors > 0) {
   if (warnings > 0) console.log(`   (${warnings} warnings de menor importancia, revisar si conviene cubrir)`);
   process.exit(0);
 }
+
+} // close `if (!isMain) ... else { ... }`
