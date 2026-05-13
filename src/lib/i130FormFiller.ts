@@ -806,6 +806,8 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt2_l12_city, data.petitionerPhysicalCity);
     setText(form, P.pt2_l12_state, data.petitionerPhysicalState);
     setText(form, P.pt2_l12_zip, data.petitionerPhysicalZip);
+    setText(form, P.pt2_l12_province, data.petitionerPhysicalProvince);
+    setText(form, P.pt2_l12_postal, data.petitionerPhysicalPostalCode);
     setText(form, P.pt2_l12_country, data.petitionerPhysicalCountry);
   }
   // Item 13 — Dates at current physical address (always emit when we have data;
@@ -822,6 +824,8 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt2_l14_city, prior0.city);
     setText(form, P.pt2_l14_state, prior0.state);
     setText(form, P.pt2_l14_zip, prior0.zip);
+    setText(form, P.pt2_l14_province, prior0.province);
+    setText(form, P.pt2_l14_postal, prior0.postalCode);
     setText(form, P.pt2_l14_country, prior0.country);
     setText(form, P.pt2_l15_from, fmtDate(prior0.fromDate));
     setText(form, P.pt2_l15_to, fmtDate(prior0.toDate));
