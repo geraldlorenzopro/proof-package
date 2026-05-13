@@ -1,7 +1,6 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, Search, User, CheckCircle2, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, CheckCircle2, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,6 +50,26 @@ const StateSelect = ({ value, onChange }: { value: string; onChange: (v: string)
 );
 
 const inputCls = "bg-secondary/60 border-border/50 focus:border-primary/60";
+
+const AptTypeSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger className="bg-secondary/60 border-border/50 w-24"><SelectValue placeholder="—" /></SelectTrigger>
+    <SelectContent>
+      <SelectItem value="apt">Apt.</SelectItem>
+      <SelectItem value="ste">Ste.</SelectItem>
+      <SelectItem value="flr">Flr.</SelectItem>
+    </SelectContent>
+  </Select>
+);
+
+// Autofill defenses (parity with I-130 selectBeneficiary)
+const todayISO = new Date().toISOString().slice(0, 10);
+const notToday = (v?: string | null) => (v && !String(v).startsWith(todayISO) ? v : "");
+const stateIfAddr = (state?: string | null, street?: string | null, city?: string | null) => {
+  if (!state) return "";
+  const hasAddr = !!street?.trim() || !!city?.trim();
+  return hasAddr ? state : "";
+};
 
 // ─── Client Link Section (inside caseConfig) ───
 function ClientLinkSection({ lang, shareToken, onRequestShareToken, t }: {
@@ -342,7 +361,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       firstName: c.first_name || prev.firstName,
       lastName: c.last_name || prev.lastName,
       middleName: c.middle_name || prev.middleName,
-      dateOfBirth: c.dob || prev.dateOfBirth,
+      dateOfBirth: notToday(c.dob) || prev.dateOfBirth,
       sex: c.gender === "male" ? "male" : c.gender === "female" ? "female" : prev.sex,
       maritalStatus: c.marital_status || prev.maritalStatus,
       aNumber: c.a_number || prev.aNumber,
@@ -353,12 +372,14 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       mailingStreet: c.address_street || prev.mailingStreet,
       mailingApt: c.address_apt || prev.mailingApt,
       mailingCity: c.address_city || prev.mailingCity,
-      mailingState: c.address_state || prev.mailingState,
+      mailingState: stateIfAddr(c.address_state, c.address_street, c.address_city) || prev.mailingState,
       mailingZip: c.address_zip || prev.mailingZip,
       sameAddress: c.mailing_same_as_physical !== false,
       physicalStreet: c.mailing_same_as_physical === false ? (c.mailing_street || "") : prev.physicalStreet,
       physicalCity: c.mailing_same_as_physical === false ? (c.mailing_city || "") : prev.physicalCity,
-      physicalState: c.mailing_same_as_physical === false ? (c.mailing_state || "") : prev.physicalState,
+      physicalState: c.mailing_same_as_physical === false
+        ? stateIfAddr(c.mailing_state, c.mailing_street, c.mailing_city)
+        : prev.physicalState,
       physicalZip: c.mailing_same_as_physical === false ? (c.mailing_zip || "") : prev.physicalZip,
       applicantEmail: c.email || prev.applicantEmail,
       applicantPhone: c.phone || prev.applicantPhone,
@@ -366,11 +387,11 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       i94Number: c.i94_number || prev.i94Number,
       passportNumber: c.passport_number || prev.passportNumber,
       passportCountry: c.passport_country || prev.passportCountry,
-      passportExpiration: c.passport_expiration || prev.passportExpiration,
+      passportExpiration: notToday(c.passport_expiration) || prev.passportExpiration,
       statusAtArrival: c.class_of_admission || prev.statusAtArrival,
       currentStatus: c.immigration_status || prev.currentStatus,
       lastArrivalPlace: c.place_of_last_entry || prev.lastArrivalPlace,
-      lastArrivalDate: c.date_of_last_entry || prev.lastArrivalDate,
+      lastArrivalDate: notToday(c.date_of_last_entry) || prev.lastArrivalDate,
     }));
   };
 
@@ -432,6 +453,62 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             ⚠️ {t("Add preparer info in Settings first.", "Agrega los datos del preparador en Settings primero.")}
           </p>
         )}
+
+        {/* Applicant picker (parity with I-130 beneficiary picker) */}
+        <div className="rounded-xl border border-border/30 p-4 space-y-3">
+          <p className="text-sm font-bold text-foreground text-center">
+            👤 {t("Applicant", "Aplicante")}
+          </p>
+          {selectedClientId ? (() => {
+            const sel = clientProfiles.find(c => c.id === selectedClientId);
+            const name = sel
+              ? `${sel.last_name || ""}, ${sel.first_name || ""} ${sel.middle_name || ""}`.trim()
+              : `${data.lastName || ""}, ${data.firstName || ""} ${data.middleName || ""}`.trim();
+            return (
+              <div className="flex items-center justify-between gap-3 rounded-md border border-primary/40 bg-primary/10 px-3 py-2.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Check className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-sm font-medium truncate">{name || t("Selected applicant", "Aplicante seleccionado")}</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setSelectedClientId(null); setClientSearch(""); onBeneficiarySelect?.(null as any); }}
+                  className="text-xs"
+                >
+                  {t("Change", "Cambiar")}
+                </Button>
+              </div>
+            );
+          })() : (
+            <>
+              <p className="text-xs text-muted-foreground text-center">
+                {t("Select an existing client profile or fill manually in next steps", "Selecciona un cliente existente o llena manualmente en los pasos siguientes")}
+              </p>
+              <Input
+                placeholder={t("Search by name or email...", "Buscar por nombre o email...")}
+                className={inputCls}
+                value={clientSearch}
+                onChange={e => setClientSearch(e.target.value)}
+              />
+              {clientProfiles.length > 0 && (
+                <div className="max-h-40 overflow-y-auto rounded-md border border-border/30 divide-y divide-border/30">
+                  {clientProfiles.slice(0, 10).map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => selectClient(c.id)}
+                      className="w-full text-left px-3 py-2 hover:bg-primary/10 transition-colors text-sm"
+                    >
+                      <span>{c.last_name}, {c.first_name} {c.middle_name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
 
         {/* Language — inline centered */}
         <div className="rounded-xl border border-border/30 p-4 space-y-3 text-center">
@@ -595,17 +672,6 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         </Field>
       </div>
     </div>
-  );
-
-  const AptTypeSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="bg-secondary/60 border-border/50 w-24"><SelectValue placeholder="—" /></SelectTrigger>
-      <SelectContent>
-        <SelectItem value="apt">Apt.</SelectItem>
-        <SelectItem value="ste">Ste.</SelectItem>
-        <SelectItem value="flr">Flr.</SelectItem>
-      </SelectContent>
-    </Select>
   );
 
   const renderAddress = () => (
