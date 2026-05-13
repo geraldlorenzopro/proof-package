@@ -749,6 +749,11 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Field label={t("State", "Estado")}><StateSelect value={data.petitionerPhysicalState} onChange={v => set("petitionerPhysicalState", v)} /></Field>
             <Field label="ZIP"><Input className={inputCls} value={data.petitionerPhysicalZip} onChange={e => set("petitionerPhysicalZip", e.target.value)} /></Field>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Field label={t("Province (foreign)", "Provincia (extranjero)")}><Input className={inputCls} value={data.petitionerPhysicalProvince} onChange={e => set("petitionerPhysicalProvince", e.target.value)} /></Field>
+            <Field label={t("Postal Code (foreign)", "Código Postal (extranjero)")}><Input className={inputCls} value={data.petitionerPhysicalPostalCode} onChange={e => set("petitionerPhysicalPostalCode", e.target.value)} /></Field>
+            <Field label={t("Country", "País")}><Input className={inputCls} value={data.petitionerPhysicalCountry} onChange={e => set("petitionerPhysicalCountry", e.target.value)} placeholder="United States" /></Field>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label={t("Living here since (Date From)", "Vive aquí desde (Fecha)")}>
               <Input type="date" className={inputCls} value={data.petitionerPhysicalDateFrom} onChange={e => set("petitionerPhysicalDateFrom", e.target.value)} />
@@ -765,7 +770,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   const renderPetitionerHistory = () => {
     const addPriorAddress = () => set("petitionerPriorAddresses", [
       ...data.petitionerPriorAddresses,
-      { street: "", aptType: "", apt: "", city: "", state: "", zip: "", country: "", fromDate: "", toDate: "" },
+      { street: "", aptType: "", apt: "", city: "", state: "", zip: "", province: "", postalCode: "", country: "", fromDate: "", toDate: "" },
     ]);
     const removePriorAddress = (i: number) => set("petitionerPriorAddresses", data.petitionerPriorAddresses.filter((_, idx) => idx !== i));
 
@@ -881,6 +886,17 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                 }} />
                 <Input className={inputCls} placeholder="ZIP" value={a.zip} onChange={e => {
                   const arr = [...data.petitionerPriorAddresses]; arr[i] = { ...arr[i], zip: e.target.value }; set("petitionerPriorAddresses", arr);
+                }} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <Input className={inputCls} placeholder={t("Province (foreign)", "Provincia")} value={a.province || ""} onChange={e => {
+                  const arr = [...data.petitionerPriorAddresses]; arr[i] = { ...arr[i], province: e.target.value }; set("petitionerPriorAddresses", arr);
+                }} />
+                <Input className={inputCls} placeholder={t("Postal Code (foreign)", "Código Postal")} value={a.postalCode || ""} onChange={e => {
+                  const arr = [...data.petitionerPriorAddresses]; arr[i] = { ...arr[i], postalCode: e.target.value }; set("petitionerPriorAddresses", arr);
+                }} />
+                <Input className={inputCls} placeholder={t("Country", "País")} value={a.country} onChange={e => {
+                  const arr = [...data.petitionerPriorAddresses]; arr[i] = { ...arr[i], country: e.target.value }; set("petitionerPriorAddresses", arr);
                 }} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
