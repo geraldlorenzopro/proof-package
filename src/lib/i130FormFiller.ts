@@ -137,7 +137,7 @@ function isToday(dateStr: string | undefined | null): boolean {
 
 /** Para fechas que LÓGICAMENTE no pueden ser hoy (DOB, passport exp, marriage ended).
  *  Si el dato viene = today → lo descartamos como placeholder corrupto. */
-function safeDate(d: string | undefined | null, context: "dob" | "expiration" | "ended" | "removal"): string {
+function safeDate(d: string | undefined | null, context: "dob" | "expiration" | "ended" | "removal" | "began"): string {
   if (!d) return "";
   if (isToday(d)) {
     console.warn(`[i130] Suspicious ${context} date = today (${d}), skipping`);
