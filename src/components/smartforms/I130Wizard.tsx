@@ -301,13 +301,13 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   }, [clientSearch, accountIdRef]);
 
   // Auto-fill beneficiary from selected client_profile (the foreign relative).
-  // Defensa: si client_profiles tiene valores corruptos (fecha = today, state sin
-  // street/city), NO los propagamos al wizard — son placeholders no datos reales.
+  // Defensa: si client_profiles tiene fechas corruptas (fecha = today), NO las
+  // propagamos al wizard. "N/A" sí cuenta como texto explícito y debe preservarse.
   const todayISO = new Date().toISOString().slice(0, 10);
   const notToday = (v?: string | null) => (v && !String(v).startsWith(todayISO) ? v : "");
   const stateIfAddr = (state?: string | null, street?: string | null, city?: string | null) => {
     if (!state) return "";
-    const hasAddr = !!(street && street !== "N/A") || !!(city && city !== "N/A");
+    const hasAddr = !!street?.trim() || !!city?.trim();
     return hasAddr ? state : "";
   };
 
