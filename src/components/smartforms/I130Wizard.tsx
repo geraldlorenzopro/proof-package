@@ -749,6 +749,14 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Field label={t("State", "Estado")}><StateSelect value={data.petitionerPhysicalState} onChange={v => set("petitionerPhysicalState", v)} /></Field>
             <Field label="ZIP"><Input className={inputCls} value={data.petitionerPhysicalZip} onChange={e => set("petitionerPhysicalZip", e.target.value)} /></Field>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label={t("Living here since (Date From)", "Vive aquí desde (Fecha)")}>
+              <Input type="date" className={inputCls} value={data.petitionerPhysicalDateFrom} onChange={e => set("petitionerPhysicalDateFrom", e.target.value)} />
+            </Field>
+            <Field label={t("Date To (leave empty if present)", "Fecha Hasta (vacío = actual)")}>
+              <Input type="date" className={inputCls} value={data.petitionerPhysicalDateTo} onChange={e => set("petitionerPhysicalDateTo", e.target.value)} />
+            </Field>
+          </div>
         </div>
       )}
     </div>

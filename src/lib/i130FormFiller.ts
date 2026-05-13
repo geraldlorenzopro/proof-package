@@ -807,6 +807,10 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt2_l12_zip, data.petitionerPhysicalZip);
     setText(form, P.pt2_l12_country, data.petitionerPhysicalCountry);
   }
+  // Item 13 — Dates at current physical address (always emit when we have data;
+  // if "same as mailing" the dates still describe the petitioner's residency).
+  setText(form, P.pt2_l13_from, fmtDate(data.petitionerPhysicalDateFrom));
+  setText(form, P.pt2_l13_to, fmtDate(data.petitionerPhysicalDateTo));
 
   // Prior address (first entry)
   const prior0 = data.petitionerPriorAddresses?.[0];
