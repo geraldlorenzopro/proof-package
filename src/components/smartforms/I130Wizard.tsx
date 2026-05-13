@@ -46,6 +46,17 @@ const StateSelect = ({ value, onChange }: { value: string; onChange: (v: string)
   </Select>
 );
 
+// Para "Place of Marriage" — incluye opción explícita "No fue en USA" (mapea a N/A)
+const MarriageStateSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+  <Select value={value || ""} onValueChange={onChange}>
+    <SelectTrigger className={inputCls}><SelectValue placeholder="Estado o 'No fue en USA'" /></SelectTrigger>
+    <SelectContent>
+      <SelectItem value="N/A">— No fue en USA —</SelectItem>
+      {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+    </SelectContent>
+  </Select>
+);
+
 const AptTypeSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
   <Select value={value} onValueChange={onChange}>
     <SelectTrigger className="bg-secondary/60 border-border/50 w-24"><SelectValue placeholder="—" /></SelectTrigger>
