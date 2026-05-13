@@ -1,0 +1,315 @@
+{
+  "_scenario": "ESPOSO — María (USC naturalizada) peticiona a Carlos (esposo mexicano, en US con B-2 expirado, AOS Miami)",
+
+  "g28Attached": true,
+  "attorneyBarNumber": "BAR-FL-104587",
+  "attorneyUscisAccountNumber": "USCIS-9384-7521-0036",
+  "formPreparedBy": "attorney",
+
+  "relationshipType": "spouse",
+  "marriedToPetitioner": true,
+  "isChildBornInWedlock": false,
+  "isChildAdopted": false,
+  "isStepchildOrStepparent": false,
+  "isSiblingHalf": false,
+
+  "petitionerLastName": "González",
+  "petitionerFirstName": "María",
+  "petitionerMiddleName": "Elena",
+  "petitionerOtherNames": [
+    { "lastName": "Hernández", "firstName": "María", "middleName": "Elena" },
+    { "lastName": "González-Hernández", "firstName": "María", "middleName": "E." }
+  ],
+
+  "petitionerCitizenshipStatus": "us_citizen",
+  "petitionerAcquiredBy": "naturalization",
+  "petitionerCertNumber": "C09384751",
+  "petitionerCertDate": "03/14/2019",
+  "petitionerCertPlace": "Miami, FL",
+  "petitionerLprANumber": "",
+  "petitionerLprClass": "",
+  "petitionerLprDateAdmitted": "",
+  "petitionerLprPlaceAdmitted": "",
+
+  "petitionerMailingCareOf": "",
+  "petitionerMailingStreet": "2847 SW 87th Ave",
+  "petitionerMailingApt": "412",
+  "petitionerMailingAptType": "apt",
+  "petitionerMailingCity": "Miami",
+  "petitionerMailingState": "FL",
+  "petitionerMailingZip": "33165",
+  "petitionerMailingProvince": "",
+  "petitionerMailingCountry": "United States",
+  "petitionerMailingPostalCode": "",
+
+  "petitionerPhysicalSameAsMailing": true,
+  "petitionerPhysicalStreet": "",
+  "petitionerPhysicalApt": "",
+  "petitionerPhysicalAptType": "",
+  "petitionerPhysicalCity": "",
+  "petitionerPhysicalState": "",
+  "petitionerPhysicalZip": "",
+  "petitionerPhysicalCountry": "",
+
+  "petitionerPriorAddresses": [
+    {
+      "street": "1340 W 49th St", "aptType": "apt", "apt": "207",
+      "city": "Hialeah", "state": "FL", "zip": "33012", "country": "United States",
+      "fromDate": "06/01/2021", "toDate": "10/15/2023"
+    },
+    {
+      "street": "8210 NW 36th St", "aptType": "ste", "apt": "B",
+      "city": "Doral", "state": "FL", "zip": "33166", "country": "United States",
+      "fromDate": "08/12/2019", "toDate": "05/30/2021"
+    }
+  ],
+
+  "petitionerEmployment": [
+    {
+      "employerName": "La Carreta Restaurant Group",
+      "street": "3632 SW 8th St", "city": "Miami", "state": "FL", "zip": "33135",
+      "country": "United States",
+      "occupation": "Restaurant Operations Manager",
+      "fromDate": "11/01/2022", "toDate": "PRESENT"
+    },
+    {
+      "employerName": "Bright Horizons Family Solutions",
+      "street": "200 Talcott Ave S", "city": "Watertown", "state": "MA", "zip": "02472",
+      "country": "United States",
+      "occupation": "Lead Childcare Teacher",
+      "fromDate": "03/15/2020", "toDate": "10/22/2022"
+    }
+  ],
+
+  "petitionerSex": "female",
+  "petitionerDateOfBirth": "07/22/1986",
+  "petitionerCityOfBirth": "Guadalajara",
+  "petitionerStateOfBirth": "Jalisco",
+  "petitionerCountryOfBirth": "Mexico",
+  "petitionerSsn": "598-47-3210",
+  "petitionerANumber": "A099847562",
+  "petitionerUscisAccountNumber": "USCIS-3847-9201-1184",
+
+  "petitionerMaritalStatus": "married",
+  "petitionerDateOfMarriage": "08/15/2024",
+  "petitionerPlaceOfMarriage": "Miami, FL, USA",
+  "petitionerPlaceMarriageCity": "Miami",
+  "petitionerPlaceMarriageState": "FL",
+  "petitionerPlaceMarriageProvince": "",
+  "petitionerPlaceMarriageCountry": "United States",
+  "petitionerPriorMarriages": [
+    {
+      "spouseLastName": "Mendoza",
+      "spouseFirstName": "Roberto",
+      "spouseMiddleName": "Javier",
+      "dateOfMarriage": "05/18/2012",
+      "dateMarriageEnded": "11/03/2022",
+      "placeMarriageEnded": "Miami-Dade County, FL, USA",
+      "howEnded": "divorce"
+    }
+  ],
+  "petitionerLprThroughMarriage": false,
+
+  "petitionerFatherLastName": "González",
+  "petitionerFatherFirstName": "Antonio",
+  "petitionerFatherMiddleName": "Rafael",
+  "petitionerFatherDateOfBirth": "02/11/1958",
+  "petitionerFatherCountryOfBirth": "Mexico",
+  "petitionerFatherCityOfResidence": "Guadalajara",
+  "petitionerFatherCountryOfResidence": "Mexico",
+
+  "petitionerMotherLastName": "Hernández",
+  "petitionerMotherFirstName": "Lucía",
+  "petitionerMotherMiddleName": "del Carmen",
+  "petitionerMotherDateOfBirth": "06/24/1960",
+  "petitionerMotherCountryOfBirth": "Mexico",
+  "petitionerMotherCityOfResidence": "Miami",
+  "petitionerMotherCountryOfResidence": "United States",
+
+  "petitionerDaytimePhone": "(305) 478-9214",
+  "petitionerMobilePhone": "(786) 332-1095",
+  "petitionerEmail": "maria.gonzalez@protonmail.com",
+
+  "petitionerEthnicity": "hispanic_latino",
+  "petitionerRace": ["white"],
+  "petitionerHeightFeet": "5",
+  "petitionerHeightInches": "4",
+  "petitionerWeightLbs": "138",
+  "petitionerEyeColor": "brown",
+  "petitionerHairColor": "black",
+
+  "beneficiaryLastName": "Ramírez",
+  "beneficiaryFirstName": "Carlos",
+  "beneficiaryMiddleName": "Eduardo",
+  "beneficiaryOtherNames": [
+    { "lastName": "Ramírez Pérez", "firstName": "Carlos", "middleName": "E." }
+  ],
+
+  "beneficiarySex": "male",
+  "beneficiaryDateOfBirth": "11/04/1983",
+  "beneficiaryCityOfBirth": "Guadalajara",
+  "beneficiaryStateOfBirth": "Jalisco",
+  "beneficiaryCountryOfBirth": "Mexico",
+  "beneficiaryCountryOfCitizenship": "Mexico",
+  "beneficiarySsn": "",
+  "beneficiaryANumber": "A205837149",
+  "beneficiaryUscisAccountNumber": "",
+
+  "beneficiaryAddressInUS": true,
+  "beneficiaryMailingCareOf": "",
+  "beneficiaryStreet": "2847 SW 87th Ave",
+  "beneficiaryAptType": "apt",
+  "beneficiaryApt": "412",
+  "beneficiaryCity": "Miami",
+  "beneficiaryState": "FL",
+  "beneficiaryZip": "33165",
+  "beneficiaryProvince": "",
+  "beneficiaryCountry": "United States",
+  "beneficiaryPostalCode": "",
+
+  "beneficiaryForeignAddressStreet": "Av. Patria 1320, Col. Jardines del Bosque",
+  "beneficiaryForeignAddressCity": "Guadalajara",
+  "beneficiaryForeignAddressProvince": "Jalisco",
+  "beneficiaryForeignAddressCountry": "Mexico",
+  "beneficiaryForeignAddressPostalCode": "44520",
+
+  "beneficiaryDaytimePhone": "(786) 451-8377",
+  "beneficiaryMobilePhone": "(305) 887-2244",
+  "beneficiaryEmail": "carlos.ramirez83@gmail.com",
+
+  "beneficiaryMaritalStatus": "married",
+  "beneficiaryDateOfMarriage": "08/15/2024",
+  "beneficiaryPlaceOfMarriage": "Miami, FL, USA",
+  "beneficiaryPlaceMarriageCity": "Miami",
+  "beneficiaryPlaceMarriageState": "FL",
+  "beneficiaryPlaceMarriageProvince": "",
+  "beneficiaryPlaceMarriageCountry": "United States",
+  "beneficiaryPriorMarriages": [
+    {
+      "spouseLastName": "Vargas Solís",
+      "spouseFirstName": "Adriana",
+      "spouseMiddleName": "Lucero",
+      "dateOfMarriage": "09/22/2008",
+      "dateMarriageEnded": "04/17/2021",
+      "placeMarriageEnded": "Guadalajara, Jalisco, Mexico",
+      "howEnded": "divorce"
+    }
+  ],
+
+  "beneficiaryEverInUS": true,
+  "beneficiaryDateOfLastEntry": "02/14/2022",
+  "beneficiaryStatusAtEntry": "B-2 Visitor",
+  "beneficiaryI94Number": "847291035 22",
+  "beneficiaryPassportNumber": "G29047185",
+  "beneficiaryTravelDocNumber": "",
+  "beneficiaryPassportCountry": "Mexico",
+  "beneficiaryPassportExpiration": "06/30/2029",
+  "beneficiaryDateAuthStayExpires": "08/13/2022",
+
+  "beneficiaryInRemovalProceedings": false,
+  "beneficiaryRemovalType": "",
+  "beneficiaryRemovalCity": "",
+  "beneficiaryRemovalState": "",
+  "beneficiaryRemovalDate": "",
+
+  "beneficiaryNativeLastName": "Ramírez Pérez",
+  "beneficiaryNativeFirstName": "Carlos",
+  "beneficiaryNativeMiddleName": "Eduardo",
+  "beneficiaryNativeAddressStreet": "Av. Patria 1320, Col. Jardines del Bosque",
+  "beneficiaryNativeAddressApt": "",
+  "beneficiaryNativeAddressAptType": "",
+  "beneficiaryNativeAddressCity": "Guadalajara",
+  "beneficiaryNativeAddressProvince": "Jalisco",
+  "beneficiaryNativeAddressPostalCode": "44520",
+  "beneficiaryNativeAddressCountry": "Mexico",
+
+  "livedTogetherStreet": "1340 W 49th St",
+  "livedTogetherApt": "207",
+  "livedTogetherAptType": "apt",
+  "livedTogetherCity": "Hialeah",
+  "livedTogetherState": "FL",
+  "livedTogetherZip": "33012",
+  "livedTogetherProvince": "",
+  "livedTogetherPostalCode": "",
+  "livedTogetherCountry": "United States",
+  "livedTogetherFromDate": "10/20/2023",
+  "livedTogetherToDate": "PRESENT",
+  "neverLivedTogether": false,
+
+  "beneficiaryCurrentEmployment": {
+    "employerName": "Sabor Latino Construction LLC",
+    "street": "5421 NW 79th Ave",
+    "city": "Miami",
+    "state": "FL",
+    "zip": "33166",
+    "country": "United States",
+    "occupation": "Construction Foreman (1099)",
+    "fromDate": "06/01/2023"
+  },
+
+  "beneficiaryChildren": [
+    {
+      "lastName": "Ramírez Vargas", "firstName": "Sofía", "middleName": "Isabel",
+      "relationship": "Daughter", "dateOfBirth": "03/12/2011", "countryOfBirth": "Mexico"
+    },
+    {
+      "lastName": "Ramírez Vargas", "firstName": "Diego", "middleName": "Alejandro",
+      "relationship": "Son", "dateOfBirth": "08/29/2014", "countryOfBirth": "Mexico"
+    }
+  ],
+
+  "consularProcessing": false,
+  "adjustmentOfStatusCity": "Miami",
+  "adjustmentOfStatusState": "FL",
+  "consularPostCity": "",
+  "consularPostProvince": "",
+  "consularPostCountry": "",
+
+  "hasFiledPriorPetition": true,
+  "priorPetitionsCount": 1,
+  "priorPetitionsDetails": "Form I-130 filed 03/18/2018 in Boston, MA for prior spouse Roberto Javier Mendoza. Petition withdrawn 05/02/2020 after divorce proceedings began.",
+  "priorPetitionBeneficiaryLastName": "Mendoza",
+  "priorPetitionBeneficiaryFirstName": "Roberto",
+  "priorPetitionBeneficiaryMiddleName": "Javier",
+  "priorPetitionFilingCity": "Boston",
+  "priorPetitionFilingState": "MA",
+  "priorPetitionFilingDate": "03/18/2018",
+  "priorPetitionResult": "Withdrawn 05/02/2020",
+  "hasBeneficiaryFiledPetition": false,
+  "simultaneousRelatives": [],
+
+  "petitionerCanReadEnglish": false,
+  "interpreterUsed": true,
+  "preparerUsed": true,
+
+  "interpreterLastName": "Castro",
+  "interpreterFirstName": "Patricia",
+  "interpreterOrg": "NER Immigration AI — Certified Interpreter",
+  "interpreterStreet": "9495 SW 72nd St",
+  "interpreterApt": "210",
+  "interpreterAptType": "ste",
+  "interpreterCity": "Miami",
+  "interpreterState": "FL",
+  "interpreterZip": "33173",
+  "interpreterCountry": "United States",
+  "interpreterPhone": "(305) 555-0148",
+  "interpreterMobile": "(786) 555-0233",
+  "interpreterEmail": "p.castro@nerimmigration.com",
+  "interpreterLanguage": "Spanish",
+
+  "preparerLastName": "Lorenzo",
+  "preparerFirstName": "Gerald",
+  "preparerOrg": "NER Immigration AI",
+  "preparerStreet": "9495 SW 72nd St",
+  "preparerApt": "210",
+  "preparerAptType": "ste",
+  "preparerCity": "Miami",
+  "preparerState": "FL",
+  "preparerZip": "33173",
+  "preparerCountry": "United States",
+  "preparerPhone": "(305) 555-0100",
+  "preparerMobile": "(786) 555-0101",
+  "preparerEmail": "gerald@nerimmigration.com",
+  "preparerIsAttorney": true,
+  "preparerRepExtends": true
+}

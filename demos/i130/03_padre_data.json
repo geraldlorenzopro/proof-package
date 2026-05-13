@@ -1,0 +1,306 @@
+{
+  "_scenario": "PADRE — José (USC by birth in US, 28a Tampa) peticiona a Mercedes (madre viuda 62a, Cuba, IR-5) consular processing La Habana",
+
+  "g28Attached": true,
+  "attorneyBarNumber": "BAR-FL-208714",
+  "attorneyUscisAccountNumber": "USCIS-5589-1147-2233",
+  "formPreparedBy": "attorney",
+
+  "relationshipType": "parent",
+  "marriedToPetitioner": false,
+  "isChildBornInWedlock": true,
+  "isChildAdopted": false,
+  "isStepchildOrStepparent": false,
+  "isSiblingHalf": false,
+
+  "petitionerLastName": "Hernández",
+  "petitionerFirstName": "José",
+  "petitionerMiddleName": "Manuel",
+  "petitionerOtherNames": [],
+
+  "petitionerCitizenshipStatus": "us_citizen",
+  "petitionerAcquiredBy": "birth_in_us",
+  "petitionerCertNumber": "",
+  "petitionerCertDate": "",
+  "petitionerCertPlace": "",
+  "petitionerLprANumber": "",
+  "petitionerLprClass": "",
+  "petitionerLprDateAdmitted": "",
+  "petitionerLprPlaceAdmitted": "",
+
+  "petitionerMailingCareOf": "",
+  "petitionerMailingStreet": "3415 W Bay to Bay Blvd",
+  "petitionerMailingApt": "",
+  "petitionerMailingAptType": "",
+  "petitionerMailingCity": "Tampa",
+  "petitionerMailingState": "FL",
+  "petitionerMailingZip": "33629",
+  "petitionerMailingProvince": "",
+  "petitionerMailingCountry": "United States",
+  "petitionerMailingPostalCode": "",
+
+  "petitionerPhysicalSameAsMailing": true,
+  "petitionerPhysicalStreet": "",
+  "petitionerPhysicalApt": "",
+  "petitionerPhysicalAptType": "",
+  "petitionerPhysicalCity": "",
+  "petitionerPhysicalState": "",
+  "petitionerPhysicalZip": "",
+  "petitionerPhysicalCountry": "",
+
+  "petitionerPriorAddresses": [
+    {
+      "street": "2840 N Highland Ave", "aptType": "apt", "apt": "5B",
+      "city": "Tampa", "state": "FL", "zip": "33602", "country": "United States",
+      "fromDate": "08/15/2021", "toDate": "09/30/2023"
+    }
+  ],
+
+  "petitionerEmployment": [
+    {
+      "employerName": "Tampa General Hospital",
+      "street": "1 Tampa General Cir", "city": "Tampa", "state": "FL", "zip": "33606",
+      "country": "United States",
+      "occupation": "Physician Assistant — Emergency Medicine",
+      "fromDate": "07/12/2022", "toDate": "PRESENT"
+    },
+    {
+      "employerName": "AdventHealth Carrollwood",
+      "street": "7171 N Dale Mabry Hwy", "city": "Tampa", "state": "FL", "zip": "33614",
+      "country": "United States",
+      "occupation": "Medical Scribe",
+      "fromDate": "06/01/2019", "toDate": "06/30/2022"
+    }
+  ],
+
+  "petitionerSex": "male",
+  "petitionerDateOfBirth": "09/27/1996",
+  "petitionerCityOfBirth": "Miami",
+  "petitionerStateOfBirth": "FL",
+  "petitionerCountryOfBirth": "United States",
+  "petitionerSsn": "147-92-8430",
+  "petitionerANumber": "",
+  "petitionerUscisAccountNumber": "",
+
+  "petitionerMaritalStatus": "single",
+  "petitionerDateOfMarriage": "",
+  "petitionerPlaceOfMarriage": "",
+  "petitionerPlaceMarriageCity": "",
+  "petitionerPlaceMarriageState": "",
+  "petitionerPlaceMarriageProvince": "",
+  "petitionerPlaceMarriageCountry": "",
+  "petitionerPriorMarriages": [],
+  "petitionerLprThroughMarriage": false,
+
+  "petitionerFatherLastName": "Hernández Cruz",
+  "petitionerFatherFirstName": "Manuel",
+  "petitionerFatherMiddleName": "Alberto",
+  "petitionerFatherDateOfBirth": "12/05/1961",
+  "petitionerFatherCountryOfBirth": "Cuba",
+  "petitionerFatherCityOfResidence": "Deceased — La Habana, Cuba 2022",
+  "petitionerFatherCountryOfResidence": "Deceased",
+
+  "petitionerMotherLastName": "Rivera Ortega",
+  "petitionerMotherFirstName": "Mercedes",
+  "petitionerMotherMiddleName": "",
+  "petitionerMotherDateOfBirth": "05/14/1962",
+  "petitionerMotherCountryOfBirth": "Cuba",
+  "petitionerMotherCityOfResidence": "La Habana",
+  "petitionerMotherCountryOfResidence": "Cuba",
+
+  "petitionerDaytimePhone": "(813) 224-8915",
+  "petitionerMobilePhone": "(813) 555-0287",
+  "petitionerEmail": "j.hernandez.pa@gmail.com",
+
+  "petitionerEthnicity": "hispanic_latino",
+  "petitionerRace": ["white", "black_african_american"],
+  "petitionerHeightFeet": "5",
+  "petitionerHeightInches": "11",
+  "petitionerWeightLbs": "175",
+  "petitionerEyeColor": "hazel",
+  "petitionerHairColor": "black",
+
+  "beneficiaryLastName": "Rivera Ortega",
+  "beneficiaryFirstName": "Mercedes",
+  "beneficiaryMiddleName": "",
+  "beneficiaryOtherNames": [
+    { "lastName": "Hernández Rivera", "firstName": "Mercedes", "middleName": "" },
+    { "lastName": "Rivera de Hernández", "firstName": "Mercedes", "middleName": "" }
+  ],
+
+  "beneficiarySex": "female",
+  "beneficiaryDateOfBirth": "05/14/1962",
+  "beneficiaryCityOfBirth": "Santa Clara",
+  "beneficiaryStateOfBirth": "Villa Clara",
+  "beneficiaryCountryOfBirth": "Cuba",
+  "beneficiaryCountryOfCitizenship": "Cuba",
+  "beneficiarySsn": "",
+  "beneficiaryANumber": "",
+  "beneficiaryUscisAccountNumber": "",
+
+  "beneficiaryAddressInUS": false,
+  "beneficiaryMailingCareOf": "",
+  "beneficiaryStreet": "Calle 23 #1854, e/ 18 y 20, Vedado",
+  "beneficiaryAptType": "apt",
+  "beneficiaryApt": "3-B",
+  "beneficiaryCity": "La Habana",
+  "beneficiaryState": "",
+  "beneficiaryZip": "",
+  "beneficiaryProvince": "La Habana",
+  "beneficiaryCountry": "Cuba",
+  "beneficiaryPostalCode": "10400",
+
+  "beneficiaryForeignAddressStreet": "Calle 23 #1854, e/ 18 y 20, Vedado",
+  "beneficiaryForeignAddressCity": "La Habana",
+  "beneficiaryForeignAddressProvince": "La Habana",
+  "beneficiaryForeignAddressCountry": "Cuba",
+  "beneficiaryForeignAddressPostalCode": "10400",
+
+  "beneficiaryDaytimePhone": "+53 7838-2104",
+  "beneficiaryMobilePhone": "+53 5247-8930",
+  "beneficiaryEmail": "mercedes.rivera62@nauta.cu",
+
+  "beneficiaryMaritalStatus": "widowed",
+  "beneficiaryDateOfMarriage": "",
+  "beneficiaryPlaceOfMarriage": "",
+  "beneficiaryPlaceMarriageCity": "",
+  "beneficiaryPlaceMarriageState": "",
+  "beneficiaryPlaceMarriageProvince": "",
+  "beneficiaryPlaceMarriageCountry": "",
+  "beneficiaryPriorMarriages": [
+    {
+      "spouseLastName": "Hernández Cruz",
+      "spouseFirstName": "Manuel",
+      "spouseMiddleName": "Alberto",
+      "dateOfMarriage": "02/12/1988",
+      "dateMarriageEnded": "08/30/2022",
+      "placeMarriageEnded": "La Habana, Cuba",
+      "howEnded": "death"
+    }
+  ],
+
+  "beneficiaryEverInUS": false,
+  "beneficiaryDateOfLastEntry": "",
+  "beneficiaryStatusAtEntry": "",
+  "beneficiaryI94Number": "",
+  "beneficiaryPassportNumber": "K384719205",
+  "beneficiaryTravelDocNumber": "",
+  "beneficiaryPassportCountry": "Cuba",
+  "beneficiaryPassportExpiration": "03/18/2030",
+  "beneficiaryDateAuthStayExpires": "",
+
+  "beneficiaryInRemovalProceedings": false,
+  "beneficiaryRemovalType": "",
+  "beneficiaryRemovalCity": "",
+  "beneficiaryRemovalState": "",
+  "beneficiaryRemovalDate": "",
+
+  "beneficiaryNativeLastName": "Rivera Ortega",
+  "beneficiaryNativeFirstName": "Mercedes",
+  "beneficiaryNativeMiddleName": "",
+  "beneficiaryNativeAddressStreet": "Calle 23 #1854, entre 18 y 20, Vedado",
+  "beneficiaryNativeAddressApt": "3-B",
+  "beneficiaryNativeAddressAptType": "apt",
+  "beneficiaryNativeAddressCity": "La Habana",
+  "beneficiaryNativeAddressProvince": "La Habana",
+  "beneficiaryNativeAddressPostalCode": "10400",
+  "beneficiaryNativeAddressCountry": "Cuba",
+
+  "livedTogetherStreet": "",
+  "livedTogetherApt": "",
+  "livedTogetherAptType": "",
+  "livedTogetherCity": "",
+  "livedTogetherState": "",
+  "livedTogetherZip": "",
+  "livedTogetherProvince": "",
+  "livedTogetherPostalCode": "",
+  "livedTogetherCountry": "",
+  "livedTogetherFromDate": "",
+  "livedTogetherToDate": "",
+  "neverLivedTogether": false,
+
+  "beneficiaryCurrentEmployment": {
+    "employerName": "Retired (Maestra de primaria, jubilada 2021)",
+    "street": "",
+    "city": "La Habana",
+    "state": "",
+    "zip": "",
+    "country": "Cuba",
+    "occupation": "Retired Elementary School Teacher",
+    "fromDate": ""
+  },
+
+  "beneficiaryChildren": [
+    {
+      "lastName": "Hernández Rivera", "firstName": "Carmen", "middleName": "Lucía",
+      "relationship": "Daughter (in Cuba)", "dateOfBirth": "11/08/1990", "countryOfBirth": "Cuba"
+    },
+    {
+      "lastName": "Hernández Rivera", "firstName": "Pedro", "middleName": "Manuel",
+      "relationship": "Son (in Cuba)", "dateOfBirth": "07/23/1993", "countryOfBirth": "Cuba"
+    },
+    {
+      "lastName": "Hernández Rivera", "firstName": "José", "middleName": "Manuel",
+      "relationship": "Son (US Citizen — Petitioner)", "dateOfBirth": "09/27/1996", "countryOfBirth": "United States"
+    },
+    {
+      "lastName": "Hernández Rivera", "firstName": "Daniela", "middleName": "Esther",
+      "relationship": "Daughter (in Cuba)", "dateOfBirth": "04/15/2001", "countryOfBirth": "Cuba"
+    }
+  ],
+
+  "consularProcessing": true,
+  "adjustmentOfStatusCity": "",
+  "adjustmentOfStatusState": "",
+  "consularPostCity": "La Habana",
+  "consularPostProvince": "La Habana",
+  "consularPostCountry": "Cuba",
+
+  "hasFiledPriorPetition": false,
+  "priorPetitionsCount": 0,
+  "priorPetitionsDetails": "",
+  "priorPetitionBeneficiaryLastName": "",
+  "priorPetitionBeneficiaryFirstName": "",
+  "priorPetitionBeneficiaryMiddleName": "",
+  "priorPetitionFilingCity": "",
+  "priorPetitionFilingState": "",
+  "priorPetitionFilingDate": "",
+  "priorPetitionResult": "",
+  "hasBeneficiaryFiledPetition": false,
+  "simultaneousRelatives": [],
+
+  "petitionerCanReadEnglish": true,
+  "interpreterUsed": false,
+  "preparerUsed": true,
+
+  "interpreterLastName": "",
+  "interpreterFirstName": "",
+  "interpreterOrg": "",
+  "interpreterStreet": "",
+  "interpreterApt": "",
+  "interpreterAptType": "",
+  "interpreterCity": "",
+  "interpreterState": "",
+  "interpreterZip": "",
+  "interpreterCountry": "",
+  "interpreterPhone": "",
+  "interpreterMobile": "",
+  "interpreterEmail": "",
+  "interpreterLanguage": "",
+
+  "preparerLastName": "Lorenzo",
+  "preparerFirstName": "Gerald",
+  "preparerOrg": "NER Immigration AI",
+  "preparerStreet": "9495 SW 72nd St",
+  "preparerApt": "210",
+  "preparerAptType": "ste",
+  "preparerCity": "Miami",
+  "preparerState": "FL",
+  "preparerZip": "33173",
+  "preparerCountry": "United States",
+  "preparerPhone": "(305) 555-0100",
+  "preparerMobile": "(786) 555-0101",
+  "preparerEmail": "gerald@nerimmigration.com",
+  "preparerIsAttorney": true,
+  "preparerRepExtends": true
+}

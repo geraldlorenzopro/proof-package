@@ -49,6 +49,26 @@ function sanitize(v: string): string {
   return v.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, "");
 }
 
+// ── Normalizadores para campos USCIS de ancho fijo ──
+// Los campos USCIS tienen maxLength chico (phone=10, SSN=9, USCIS#=12, etc.)
+// Si pasamos "(305) 478-9214" a un field de 10 chars, pdf-lib trunca a "(305) 478-"
+// y se pierde "9214". Hay que normalizar a dígitos puros antes de escribir.
+function digitsOnly(v: string): string {
+  return String(v).replace(/\D/g, "");
+}
+function stripUscisAccount(v: string): string {
+  // Acepta "USCIS-3847-9201-1184", "3847-9201-1184", "384792011184" → 12 dígitos
+  return String(v).replace(/^USCIS[-\s]*/i, "").replace(/[-\s]/g, "");
+}
+function stripBarNumber(v: string): string {
+  // Acepta "BAR-FL-104587", "FL-104587", "FL104587" → strip "BAR-" prefix solo
+  return String(v).replace(/^BAR[-\s]*/i, "").replace(/[-\s]/g, "");
+}
+function stripAlienNumber(v: string): string {
+  // Acepta "A099847562", "099847562" → 9 dígitos (la "A" es pre-impresa en el form)
+  return String(v).replace(/^A[-\s]*/i, "").replace(/\D/g, "");
+}
+
 function setText(form: PDFForm, pattern: RegExp, value: string | undefined | null) {
   if (!value) return;
   value = sanitize(String(value));
@@ -645,10 +665,52 @@ export async function fillI130Pdf(data: I130Data) {
 
   clearAllFields(form);
 
+  // ── Accumulator de overflow para Part 9 addendum ──
+  // Se llena durante todo el filler. Bug B7 fix: cuando un valor excede el
+  // maxLength del campo USCIS, lo escribimos truncado en el form + entry
+  // completa en el addendum (con "...SEE PART 9").
+  type Overflow = { page: string; part: string; item: string; content: string };
+  const overflow: Overflow[] = [];
+
+  /** setText overflow-aware: si value excede maxLen del field, escribe lo que
+   *  cabe (sin cortar palabras a la fuerza) + pushea entry completa al addendum. */
+  function setTextOrOverflow(
+    pattern: RegExp,
+    value: string | undefined | null,
+    meta: { page: string; part: string; item: string; label: string }
+  ) {
+    if (!value) return;
+    const v = sanitize(String(value));
+    const field = findField(form, pattern);
+    if (!field) {
+      console.warn(`[i130] No field for: ${pattern.source}`);
+      return;
+    }
+    if (field instanceof PDFTextField) {
+      const maxLen = field.getMaxLength();
+      if (maxLen !== undefined && v.length > maxLen) {
+        // Escribir lo que cabe (cortar en última palabra antes del límite)
+        const truncated = v.slice(0, maxLen);
+        const lastSpace = truncated.lastIndexOf(" ");
+        const visible = lastSpace > maxLen * 0.6 ? truncated.slice(0, lastSpace) : truncated;
+        field.setText(visible);
+        overflow.push({
+          page: meta.page, part: meta.part, item: meta.item,
+          content: `${meta.label} (full text): ${v}`,
+        });
+      } else {
+        field.setText(v);
+      }
+    } else {
+      // Fallback non-textfield: usar setText regular
+      setText(form, pattern, v);
+    }
+  }
+
   // ── Header ──
   setCheck(form, P.g28, data.g28Attached);
-  setText(form, P.attyBar, data.attorneyBarNumber);
-  setText(form, P.attyUscis, data.attorneyUscisAccountNumber);
+  setText(form, P.attyBar, stripBarNumber(data.attorneyBarNumber || ""));
+  setText(form, P.attyUscis, stripUscisAccount(data.attorneyUscisAccountNumber || ""));
 
   // ── Part 1: Relationship ──
   setCheck(form, P.pt1_spouse, data.relationshipType === "spouse");
@@ -665,9 +727,9 @@ export async function fillI130Pdf(data: I130Data) {
   setCheck(form, P.pt1_l4_yes, data.petitionerLprThroughMarriage);
 
   // ── Part 2: Petitioner identifiers ──
-  setText(form, P.pt2_alien, data.petitionerANumber?.replace(/^A-?/i, ""));
-  setText(form, P.pt2_uscis, data.petitionerUscisAccountNumber);
-  setText(form, P.pt2_ssn, data.petitionerSsn);
+  setText(form, P.pt2_alien, stripAlienNumber(data.petitionerANumber || ""));
+  setText(form, P.pt2_uscis, stripUscisAccount(data.petitionerUscisAccountNumber || ""));
+  setText(form, P.pt2_ssn, digitsOnly(data.petitionerSsn || ""));
 
   // Names
   setText(form, P.pt2_l4_family, data.petitionerLastName);
@@ -690,7 +752,7 @@ export async function fillI130Pdf(data: I130Data) {
 
   // Mailing address
   setText(form, P.pt2_l10_careof, data.petitionerMailingCareOf);
-  setText(form, P.pt2_l10_street, data.petitionerMailingStreet);
+  setTextOrOverflow(P.pt2_l10_street, data.petitionerMailingStreet, { page: "2", part: "2", item: "10", label: "Petitioner Mailing Street" });
   setText(form, P.pt2_l10_apt, data.petitionerMailingApt);
   setUnitType(form, "Pt2Line10_Unit", data.petitionerMailingAptType);
   setText(form, P.pt2_l10_city, data.petitionerMailingCity);
@@ -705,7 +767,7 @@ export async function fillI130Pdf(data: I130Data) {
 
   // Physical address (only if different)
   if (!data.petitionerPhysicalSameAsMailing) {
-    setText(form, P.pt2_l12_street, data.petitionerPhysicalStreet);
+    setTextOrOverflow(P.pt2_l12_street, data.petitionerPhysicalStreet, { page: "2", part: "2", item: "12", label: "Petitioner Physical Street" });
     setText(form, P.pt2_l12_apt, data.petitionerPhysicalApt);
     setUnitType(form, "Pt2Line12_Unit", data.petitionerPhysicalAptType);
     setText(form, P.pt2_l12_city, data.petitionerPhysicalCity);
@@ -717,7 +779,7 @@ export async function fillI130Pdf(data: I130Data) {
   // Prior address (first entry)
   const prior0 = data.petitionerPriorAddresses?.[0];
   if (prior0) {
-    setText(form, P.pt2_l14_street, prior0.street);
+    setTextOrOverflow(P.pt2_l14_street, prior0.street, { page: "2", part: "2", item: "14", label: "Petitioner Prior Address Street" });
     setText(form, P.pt2_l14_apt, prior0.apt);
     setUnitType(form, "Pt2Line14_Unit", prior0.aptType);
     setText(form, P.pt2_l14_city, prior0.city);
@@ -817,7 +879,7 @@ export async function fillI130Pdf(data: I130Data) {
   // Current employment
   const job0 = data.petitionerEmployment?.[0];
   if (job0) {
-    setText(form, P.pt2_l40_employer, job0.employerName);
+    setTextOrOverflow(P.pt2_l40_employer, job0.employerName, { page: "4", part: "2", item: "40", label: "Petitioner Current Employer" });
     setText(form, P.pt2_l41_street, job0.street);
     setText(form, P.pt2_l41_city, job0.city);
     setText(form, P.pt2_l41_state, job0.state);
@@ -837,7 +899,7 @@ export async function fillI130Pdf(data: I130Data) {
   // Prior employment
   const job1 = data.petitionerEmployment?.[1];
   if (job1) {
-    setText(form, P.pt2_l44_employer, job1.employerName);
+    setTextOrOverflow(P.pt2_l44_employer, job1.employerName, { page: "4", part: "2", item: "44", label: "Petitioner Prior Employer" });
     setText(form, P.pt2_l45_street, job1.street);
     setText(form, P.pt2_l45_city, job1.city);
     setText(form, P.pt2_l45_state, job1.state);
@@ -851,11 +913,16 @@ export async function fillI130Pdf(data: I130Data) {
   // ── Part 3: Biographic ──
   setCheck(form, P.pt3_eth_hispanic, data.petitionerEthnicity === "hispanic_latino");
   setCheck(form, P.pt3_eth_not, data.petitionerEthnicity === "not_hispanic_latino");
-  if (data.petitionerRace?.includes("white")) setCheck(form, P.pt3_race_white, true);
-  if (data.petitionerRace?.includes("asian")) setCheck(form, P.pt3_race_asian, true);
-  if (data.petitionerRace?.includes("black")) setCheck(form, P.pt3_race_black, true);
-  if (data.petitionerRace?.includes("native_american")) setCheck(form, P.pt3_race_native, true);
-  if (data.petitionerRace?.includes("pacific_islander")) setCheck(form, P.pt3_race_pacific, true);
+  // Race: schema canónico usa "white"/"asian"/"black"/"native_american"/"pacific_islander",
+  // pero también aceptamos variantes largas tipo "black_african_american" por tolerancia.
+  const races = (data.petitionerRace || []).map((r) => r.toLowerCase());
+  const hasRace = (key: string, ...aliases: string[]) =>
+    races.some((r) => r === key || aliases.some((a) => r === a || r.startsWith(a)));
+  if (hasRace("white")) setCheck(form, P.pt3_race_white, true);
+  if (hasRace("asian")) setCheck(form, P.pt3_race_asian, true);
+  if (hasRace("black", "black_african_american", "african_american")) setCheck(form, P.pt3_race_black, true);
+  if (hasRace("native_american", "american_indian", "alaska_native")) setCheck(form, P.pt3_race_native, true);
+  if (hasRace("pacific_islander", "native_hawaiian", "hawaiian")) setCheck(form, P.pt3_race_pacific, true);
   setText(form, P.pt3_height_ft, data.petitionerHeightFeet);
   setText(form, P.pt3_height_in, data.petitionerHeightInches);
   // Weight: 3 dígitos en 3 fields
@@ -881,9 +948,9 @@ export async function fillI130Pdf(data: I130Data) {
   }
 
   // ── Part 4: Beneficiary ──
-  setText(form, P.pt4_alien, data.beneficiaryANumber?.replace(/^A-?/i, ""));
-  setText(form, P.pt4_uscis, data.beneficiaryUscisAccountNumber);
-  setText(form, P.pt4_ssn, data.beneficiarySsn);
+  setText(form, P.pt4_alien, stripAlienNumber(data.beneficiaryANumber || ""));
+  setText(form, P.pt4_uscis, stripUscisAccount(data.beneficiaryUscisAccountNumber || ""));
+  setText(form, P.pt4_ssn, digitsOnly(data.beneficiarySsn || ""));
   setText(form, P.pt4_family, data.beneficiaryLastName);
   setText(form, P.pt4_given, data.beneficiaryFirstName);
   setText(form, P.pt4_middle, data.beneficiaryMiddleName);
@@ -905,7 +972,7 @@ export async function fillI130Pdf(data: I130Data) {
   setCheck(form, P.pt4_l9_female, data.beneficiarySex === "female");
 
   // Beneficiary mailing
-  setText(form, P.pt4_l11_street, data.beneficiaryStreet);
+  setTextOrOverflow(P.pt4_l11_street, data.beneficiaryStreet, { page: "5", part: "4", item: "11", label: "Beneficiary Physical Street" });
   setText(form, P.pt4_l11_apt, data.beneficiaryApt);
   setUnitType(form, "Pt4Line11_Unit", data.beneficiaryAptType);
   setText(form, P.pt4_l11_city, data.beneficiaryCity);
@@ -927,7 +994,7 @@ export async function fillI130Pdf(data: I130Data) {
 
   // Foreign address (line 13)
   if (data.beneficiaryForeignAddressStreet || data.beneficiaryForeignAddressCity) {
-    setText(form, P.pt4_l13_street, data.beneficiaryForeignAddressStreet);
+    setTextOrOverflow(P.pt4_l13_street, data.beneficiaryForeignAddressStreet, { page: "5", part: "4", item: "13", label: "Beneficiary Foreign Address Street" });
     setText(form, P.pt4_l13_city, data.beneficiaryForeignAddressCity);
     setText(form, P.pt4_l13_province, data.beneficiaryForeignAddressProvince);
     setText(form, P.pt4_l13_postal, data.beneficiaryForeignAddressPostalCode);
@@ -935,8 +1002,8 @@ export async function fillI130Pdf(data: I130Data) {
   }
 
   // Beneficiary contact
-  setText(form, P.pt4_l14_phone, data.beneficiaryDaytimePhone);
-  setText(form, P.pt4_l15_mobile, data.beneficiaryMobilePhone);
+  setText(form, P.pt4_l14_phone, digitsOnly(data.beneficiaryDaytimePhone || ""));
+  setText(form, P.pt4_l15_mobile, digitsOnly(data.beneficiaryMobilePhone || ""));
   setText(form, P.pt4_l16_email, data.beneficiaryEmail);
 
   // Native script name
@@ -946,9 +1013,11 @@ export async function fillI130Pdf(data: I130Data) {
 
   // Marital
   // ── Beneficiary marital ──
-  // Number of marriages = current (si NO single) + prior marriages array
+  // Number of marriages = (current si "married") + prior marriages array.
+  // Para divorced/widowed/separated/annulled: el matrimonio terminado YA está
+  // en priorMarriages, NO sumar 1 extra (bug B10 fix).
   const beneNumMarriages =
-    (data.beneficiaryMaritalStatus && data.beneficiaryMaritalStatus !== "single" ? 1 : 0) +
+    (data.beneficiaryMaritalStatus === "married" ? 1 : 0) +
     (data.beneficiaryPriorMarriages?.length || 0);
   setText(form, P.pt4_numMarriages, String(beneNumMarriages));
   // Beneficiary marital status: índices DISPERSOS según discovery.
@@ -1042,7 +1111,7 @@ export async function fillI130Pdf(data: I130Data) {
   // Entry to US
   if (data.beneficiaryEverInUS) {
     setText(form, P.pt4_l21a_class, data.beneficiaryStatusAtEntry);
-    setText(form, P.pt4_l21b_i94, data.beneficiaryI94Number);
+    setText(form, P.pt4_l21b_i94, digitsOnly(data.beneficiaryI94Number || ""));
     setText(form, P.pt4_l21c_arrival, fmtDate(data.beneficiaryDateOfLastEntry));
     setText(form, P.pt4_l21d_expired, fmtDate(data.beneficiaryDateAuthStayExpires));
   }
@@ -1054,8 +1123,8 @@ export async function fillI130Pdf(data: I130Data) {
   // Current employment beneficiary
   const beJob = data.beneficiaryCurrentEmployment;
   if (beJob?.employerName) {
-    setText(form, P.pt4_l26_employer, beJob.employerName);
-    setText(form, P.pt4_l26_street, beJob.street);
+    setTextOrOverflow(P.pt4_l26_employer, beJob.employerName, { page: "7", part: "4", item: "47", label: "Beneficiary Current Employer" });
+    setTextOrOverflow(P.pt4_l26_street, beJob.street, { page: "7", part: "4", item: "47", label: "Beneficiary Employer Street" });
     setText(form, P.pt4_l26_city, beJob.city);
     setText(form, P.pt4_l26_state, beJob.state);
     setText(form, P.pt4_l26_zip, beJob.zip);
@@ -1078,7 +1147,7 @@ export async function fillI130Pdf(data: I130Data) {
 
   // Last address lived together
   if (!data.neverLivedTogether) {
-    setText(form, P.pt4_l57_street, data.livedTogetherStreet);
+    setTextOrOverflow(P.pt4_l57_street, data.livedTogetherStreet, { page: "8", part: "4", item: "57", label: "Lived Together Street" });
     setText(form, P.pt4_l57_apt, data.livedTogetherApt);
     setUnitType(form, "Pt4Line57_Unit", data.livedTogetherAptType);
     setText(form, P.pt4_l57_city, data.livedTogetherCity);
@@ -1115,22 +1184,9 @@ export async function fillI130Pdf(data: I130Data) {
   }
 
   // ── Part 5: Simultaneous Relatives (Items 6.a-9 del PDF) ──
-  // Otros parientes peticionados al mismo tiempo (batch filing).
-  const rel0 = data.simultaneousRelatives?.[0];
-  if (rel0) {
-    setText(form, P.pt5_rel1_family, rel0.lastName);
-    setText(form, P.pt5_rel1_given, rel0.firstName);
-    setText(form, P.pt5_rel1_middle, rel0.middleName);
-    setText(form, P.pt5_rel1_relationship, rel0.relationship);
-  }
-  const rel1 = data.simultaneousRelatives?.[1];
-  if (rel1) {
-    setText(form, P.pt5_rel2_family, rel1.lastName);
-    setText(form, P.pt5_rel2_given, rel1.firstName);
-    setText(form, P.pt5_rel2_middle, rel1.middleName);
-    setText(form, P.pt5_rel2_relationship, rel1.relationship);
-  }
-  // Relatives 3+ van al Part 9 addendum (más abajo).
+  // BUG FIX B8: el PDF decryptado NO expone AcroFields para Pt5Line6-9, así que
+  // los 2 primeros se silenciaban. Ahora TODOS van al Part 9 addendum (más abajo).
+  // Se acumulan en `overflow` array dentro del bloque Part 9.
 
   // ── Part 6: Petitioner Statement ──
   // PDF Items 1.a y 1.b son EXCLUYENTES: lee inglés O usa intérprete.
@@ -1141,8 +1197,8 @@ export async function fillI130Pdf(data: I130Data) {
   setCheck(form, P.pt6_interpreter, usesInterpreter);
   if (usesInterpreter) setText(form, P.pt6_language, data.interpreterLanguage);
   setCheck(form, P.pt6_preparer, !!data.preparerUsed);
-  setText(form, P.pt6_phone, data.petitionerDaytimePhone);
-  setText(form, P.pt6_mobile, data.petitionerMobilePhone);
+  setText(form, P.pt6_phone, digitsOnly(data.petitionerDaytimePhone || ""));
+  setText(form, P.pt6_mobile, digitsOnly(data.petitionerMobilePhone || ""));
   setText(form, P.pt6_email, data.petitionerEmail);
   setText(form, P.pt6_sigDate, fmtDate(new Date().toISOString().slice(0, 10)));
 
@@ -1150,7 +1206,7 @@ export async function fillI130Pdf(data: I130Data) {
   if (data.interpreterUsed) {
     setText(form, P.pt7_family, data.interpreterLastName);
     setText(form, P.pt7_given, data.interpreterFirstName);
-    setText(form, P.pt7_org, data.interpreterOrg);
+    setTextOrOverflow(P.pt7_org, data.interpreterOrg, { page: "9", part: "7", item: "2", label: "Interpreter Business/Org" });
     setText(form, P.pt7_street, data.interpreterStreet);
     setText(form, P.pt7_apt, data.interpreterApt);
     setUnitType(form, "Pt7Line3_Unit", data.interpreterAptType);
@@ -1158,7 +1214,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt7_state, data.interpreterState);
     setText(form, P.pt7_zip, data.interpreterZip);
     setText(form, P.pt7_country, data.interpreterCountry);
-    setText(form, P.pt7_phone, data.interpreterPhone);
+    setText(form, P.pt7_phone, digitsOnly(data.interpreterPhone || ""));
     setText(form, P.pt7_email, data.interpreterEmail);
     setText(form, P.pt7_language, data.interpreterLanguage);
   }
@@ -1167,7 +1223,7 @@ export async function fillI130Pdf(data: I130Data) {
   if (data.preparerUsed) {
     setText(form, P.pt8_family, data.preparerLastName);
     setText(form, P.pt8_given, data.preparerFirstName);
-    setText(form, P.pt8_org, data.preparerOrg);
+    setTextOrOverflow(P.pt8_org, data.preparerOrg, { page: "10", part: "8", item: "2", label: "Preparer Business/Org" });
     setText(form, P.pt8_street, data.preparerStreet);
     setText(form, P.pt8_apt, data.preparerApt);
     setUnitType(form, "Pt8Line3_Unit", data.preparerAptType);
@@ -1175,7 +1231,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt8_state, data.preparerState);
     setText(form, P.pt8_zip, data.preparerZip);
     setText(form, P.pt8_country, data.preparerCountry);
-    setText(form, P.pt8_phone, data.preparerPhone);
+    setText(form, P.pt8_phone, digitsOnly(data.preparerPhone || ""));
     setText(form, P.pt8_email, data.preparerEmail);
     setCheck(form, P.pt8_isAttorney, data.preparerIsAttorney);
     setCheck(form, P.pt8_notAttorney, !data.preparerIsAttorney);
@@ -1190,11 +1246,10 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt9_l1_family, data.petitionerLastName);
   setText(form, P.pt9_l1_given, data.petitionerFirstName);
   setText(form, P.pt9_l1_middle, data.petitionerMiddleName);
-  setText(form, P.pt9_l2_aNumber, data.petitionerANumber?.replace(/^A-?/i, ""));
+  setText(form, P.pt9_l2_aNumber, stripAlienNumber(data.petitionerANumber || ""));
 
-  // Recolectar overflow entries con referencias al item original del PDF
-  type Overflow = { page: string; part: string; item: string; content: string };
-  const overflow: Overflow[] = [];
+  // `overflow` ya viene acumulado desde arriba (declarado al inicio del filler)
+  // con entries de campos truncados por maxLen (B7 fix).
 
   // Other Names petitioner — el PDF SOLO tiene 1 slot (Pt2Line5). Overflow desde idx 1.
   if (data.petitionerOtherNames && data.petitionerOtherNames.length > 1) {
@@ -1276,13 +1331,14 @@ export async function fillI130Pdf(data: I130Data) {
       });
     }
   }
-  // Simultaneous Relatives — slots para 2. Overflow = idx >= 2.
-  if (data.simultaneousRelatives && data.simultaneousRelatives.length > 2) {
-    for (let i = 2; i < data.simultaneousRelatives.length; i++) {
+  // Simultaneous Relatives — PDF no tiene AcroFields para Items 6.a-9 (fix B8).
+  // TODOS los simultaneous relatives van al addendum.
+  if (data.simultaneousRelatives && data.simultaneousRelatives.length > 0) {
+    for (let i = 0; i < data.simultaneousRelatives.length; i++) {
       const r = data.simultaneousRelatives[i];
       overflow.push({
-        page: "9", part: "5", item: "8",
-        content: `Additional Simultaneous Relative #${i + 1}: ${r.lastName}, ${r.firstName} ${r.middleName} · ${r.relationship}`.trim(),
+        page: "9", part: "5", item: "6-9",
+        content: `Simultaneous Relative Petition #${i + 1}: ${r.lastName}, ${r.firstName} ${r.middleName} · ${r.relationship}`.trim(),
       });
     }
   }
@@ -1295,7 +1351,9 @@ export async function fillI130Pdf(data: I130Data) {
     });
   }
 
-  // Llenar los 5 slots del Part 9 (items 3-7)
+  // Llenar los 5 slots del Part 9 (items 3-7).
+  // Los fields Pt9LineXd_AdditionalInfo son multilínea sin maxLength, así que
+  // cuando hay >5 overflow, listamos TODO lo restante en el slot 7 (último).
   const addendaPatterns = [
     [P.pt9_l3_page, P.pt9_l3_part, P.pt9_l3_item, P.pt9_l3_content],
     [P.pt9_l4_page, P.pt9_l4_part, P.pt9_l4_item, P.pt9_l4_content],
@@ -1303,7 +1361,8 @@ export async function fillI130Pdf(data: I130Data) {
     [P.pt9_l6_page, P.pt9_l6_part, P.pt9_l6_item, P.pt9_l6_content],
     [P.pt9_l7_page, P.pt9_l7_part, P.pt9_l7_item, P.pt9_l7_content],
   ];
-  for (let i = 0; i < Math.min(overflow.length, 5); i++) {
+  const slotsUsed = Math.min(overflow.length, 4); // primeros 4 entries van a slots 3-6
+  for (let i = 0; i < slotsUsed; i++) {
     const o = overflow[i];
     const [pp, partp, itemp, contentp] = addendaPatterns[i];
     setText(form, pp, o.page);
@@ -1311,12 +1370,24 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, itemp, o.item);
     setText(form, contentp, o.content);
   }
-  // Si hay >5 overflow, agregar nota al último slot (item 7) — el resto requiere
-  // página adicional según instructions de USCIS (limitación del PDF, no del filler).
-  if (overflow.length > 5) {
-    const lastPattern = addendaPatterns[4];
-    const extraCount = overflow.length - 4;
-    setText(form, lastPattern[3], overflow[4].content + ` [+ ${extraCount - 1} additional entries — attach extra Part 9 pages per USCIS instructions]`);
+  // Slot 7 (último): el 5to overflow O lista consolidada de TODO lo restante.
+  if (overflow.length === 5) {
+    const o = overflow[4];
+    const [pp, partp, itemp, contentp] = addendaPatterns[4];
+    setText(form, pp, o.page);
+    setText(form, partp, o.part);
+    setText(form, itemp, o.item);
+    setText(form, contentp, o.content);
+  } else if (overflow.length > 5) {
+    const [pp, partp, itemp, contentp] = addendaPatterns[4];
+    setText(form, pp, "—"); // múltiples páginas
+    setText(form, partp, "—");
+    setText(form, itemp, "Multi");
+    // Cada entry en su propia línea (multiline=true)
+    const consolidated = overflow.slice(4).map((o, idx) =>
+      `[${idx + 5}] Page ${o.page} / Part ${o.part} / Item ${o.item}\n${o.content}`
+    ).join("\n\n");
+    setText(form, contentp, consolidated);
   }
 
   // ── Generate PDF417 barcode IMAGES and embed them on each page (12 páginas) ──

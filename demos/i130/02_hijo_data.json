@@ -1,0 +1,309 @@
+{
+  "_scenario": "HIJO — Ana (USC naturalizada, Houston) peticiona a Luis F. (hijo soltero 24a, Honduras, F2B) con sibling simultáneo y consular processing Tegucigalpa",
+
+  "g28Attached": true,
+  "attorneyBarNumber": "BAR-TX-298471",
+  "attorneyUscisAccountNumber": "USCIS-7710-3284-9920",
+  "formPreparedBy": "attorney",
+
+  "relationshipType": "child",
+  "marriedToPetitioner": false,
+  "isChildBornInWedlock": true,
+  "isChildAdopted": false,
+  "isStepchildOrStepparent": false,
+  "isSiblingHalf": false,
+
+  "petitionerLastName": "Mejía",
+  "petitionerFirstName": "Ana",
+  "petitionerMiddleName": "Patricia",
+  "petitionerOtherNames": [
+    { "lastName": "Mejía Castillo", "firstName": "Ana", "middleName": "P." },
+    { "lastName": "Castillo", "firstName": "Ana", "middleName": "Patricia" }
+  ],
+
+  "petitionerCitizenshipStatus": "us_citizen",
+  "petitionerAcquiredBy": "naturalization",
+  "petitionerCertNumber": "C12847593",
+  "petitionerCertDate": "11/08/2015",
+  "petitionerCertPlace": "Houston, TX",
+  "petitionerLprANumber": "",
+  "petitionerLprClass": "",
+  "petitionerLprDateAdmitted": "",
+  "petitionerLprPlaceAdmitted": "",
+
+  "petitionerMailingCareOf": "",
+  "petitionerMailingStreet": "12847 Westheimer Rd",
+  "petitionerMailingApt": "3201",
+  "petitionerMailingAptType": "apt",
+  "petitionerMailingCity": "Houston",
+  "petitionerMailingState": "TX",
+  "petitionerMailingZip": "77077",
+  "petitionerMailingProvince": "",
+  "petitionerMailingCountry": "United States",
+  "petitionerMailingPostalCode": "",
+
+  "petitionerPhysicalSameAsMailing": false,
+  "petitionerPhysicalStreet": "5847 Bissonnet St",
+  "petitionerPhysicalApt": "1408",
+  "petitionerPhysicalAptType": "apt",
+  "petitionerPhysicalCity": "Houston",
+  "petitionerPhysicalState": "TX",
+  "petitionerPhysicalZip": "77081",
+  "petitionerPhysicalCountry": "United States",
+
+  "petitionerPriorAddresses": [
+    {
+      "street": "4521 Long Point Rd", "aptType": "apt", "apt": "215",
+      "city": "Houston", "state": "TX", "zip": "77055", "country": "United States",
+      "fromDate": "03/12/2020", "toDate": "07/30/2023"
+    },
+    {
+      "street": "1820 N Main St", "aptType": "", "apt": "",
+      "city": "Pearland", "state": "TX", "zip": "77581", "country": "United States",
+      "fromDate": "01/15/2018", "toDate": "02/28/2020"
+    }
+  ],
+
+  "petitionerEmployment": [
+    {
+      "employerName": "Memorial Hermann Healthcare System",
+      "street": "6411 Fannin St", "city": "Houston", "state": "TX", "zip": "77030",
+      "country": "United States",
+      "occupation": "Registered Nurse, Med-Surg",
+      "fromDate": "04/10/2019", "toDate": "PRESENT"
+    },
+    {
+      "employerName": "Houston Methodist Hospital",
+      "street": "6565 Fannin St", "city": "Houston", "state": "TX", "zip": "77030",
+      "country": "United States",
+      "occupation": "Licensed Vocational Nurse",
+      "fromDate": "08/01/2016", "toDate": "03/31/2019"
+    }
+  ],
+
+  "petitionerSex": "female",
+  "petitionerDateOfBirth": "04/18/1972",
+  "petitionerCityOfBirth": "Tegucigalpa",
+  "petitionerStateOfBirth": "Francisco Morazán",
+  "petitionerCountryOfBirth": "Honduras",
+  "petitionerSsn": "624-83-4109",
+  "petitionerANumber": "A074298137",
+  "petitionerUscisAccountNumber": "USCIS-4421-7733-9081",
+
+  "petitionerMaritalStatus": "divorced",
+  "petitionerDateOfMarriage": "",
+  "petitionerPlaceOfMarriage": "",
+  "petitionerPlaceMarriageCity": "",
+  "petitionerPlaceMarriageState": "",
+  "petitionerPlaceMarriageProvince": "",
+  "petitionerPlaceMarriageCountry": "",
+  "petitionerPriorMarriages": [
+    {
+      "spouseLastName": "Santos Funes",
+      "spouseFirstName": "Marco",
+      "spouseMiddleName": "Antonio",
+      "dateOfMarriage": "06/28/1997",
+      "dateMarriageEnded": "09/14/2014",
+      "placeMarriageEnded": "Tegucigalpa, Francisco Morazán, Honduras",
+      "howEnded": "divorce"
+    }
+  ],
+  "petitionerLprThroughMarriage": false,
+
+  "petitionerFatherLastName": "Mejía",
+  "petitionerFatherFirstName": "Carlos",
+  "petitionerFatherMiddleName": "Augusto",
+  "petitionerFatherDateOfBirth": "10/03/1945",
+  "petitionerFatherCountryOfBirth": "Honduras",
+  "petitionerFatherCityOfResidence": "Tegucigalpa",
+  "petitionerFatherCountryOfResidence": "Honduras",
+
+  "petitionerMotherLastName": "Castillo",
+  "petitionerMotherFirstName": "Rosa",
+  "petitionerMotherMiddleName": "Elvira",
+  "petitionerMotherDateOfBirth": "07/22/1948",
+  "petitionerMotherCountryOfBirth": "Honduras",
+  "petitionerMotherCityOfResidence": "Tegucigalpa",
+  "petitionerMotherCountryOfResidence": "Honduras",
+
+  "petitionerDaytimePhone": "(713) 487-9203",
+  "petitionerMobilePhone": "(832) 449-7715",
+  "petitionerEmail": "ana.mejia72@outlook.com",
+
+  "petitionerEthnicity": "hispanic_latino",
+  "petitionerRace": ["white", "native_american"],
+  "petitionerHeightFeet": "5",
+  "petitionerHeightInches": "2",
+  "petitionerWeightLbs": "152",
+  "petitionerEyeColor": "brown",
+  "petitionerHairColor": "brown",
+
+  "beneficiaryLastName": "Mejía Santos",
+  "beneficiaryFirstName": "Luis",
+  "beneficiaryMiddleName": "Fernando",
+  "beneficiaryOtherNames": [
+    { "lastName": "Mejía", "firstName": "Luis", "middleName": "F." }
+  ],
+
+  "beneficiarySex": "male",
+  "beneficiaryDateOfBirth": "02/19/2001",
+  "beneficiaryCityOfBirth": "Tegucigalpa",
+  "beneficiaryStateOfBirth": "Francisco Morazán",
+  "beneficiaryCountryOfBirth": "Honduras",
+  "beneficiaryCountryOfCitizenship": "Honduras",
+  "beneficiarySsn": "",
+  "beneficiaryANumber": "",
+  "beneficiaryUscisAccountNumber": "",
+
+  "beneficiaryAddressInUS": false,
+  "beneficiaryMailingCareOf": "Rosa Elvira Castillo",
+  "beneficiaryStreet": "Col. Las Colinas, Bloque H, Casa 1142",
+  "beneficiaryAptType": "",
+  "beneficiaryApt": "",
+  "beneficiaryCity": "Tegucigalpa",
+  "beneficiaryState": "",
+  "beneficiaryZip": "",
+  "beneficiaryProvince": "Francisco Morazán",
+  "beneficiaryCountry": "Honduras",
+  "beneficiaryPostalCode": "11101",
+
+  "beneficiaryForeignAddressStreet": "Col. Las Colinas, Bloque H, Casa 1142",
+  "beneficiaryForeignAddressCity": "Tegucigalpa",
+  "beneficiaryForeignAddressProvince": "Francisco Morazán",
+  "beneficiaryForeignAddressCountry": "Honduras",
+  "beneficiaryForeignAddressPostalCode": "11101",
+
+  "beneficiaryDaytimePhone": "+504 2231-4087",
+  "beneficiaryMobilePhone": "+504 9847-3015",
+  "beneficiaryEmail": "luis.mejia.santos@gmail.com",
+
+  "beneficiaryMaritalStatus": "single",
+  "beneficiaryDateOfMarriage": "",
+  "beneficiaryPlaceOfMarriage": "",
+  "beneficiaryPlaceMarriageCity": "",
+  "beneficiaryPlaceMarriageState": "",
+  "beneficiaryPlaceMarriageProvince": "",
+  "beneficiaryPlaceMarriageCountry": "",
+  "beneficiaryPriorMarriages": [],
+
+  "beneficiaryEverInUS": false,
+  "beneficiaryDateOfLastEntry": "",
+  "beneficiaryStatusAtEntry": "",
+  "beneficiaryI94Number": "",
+  "beneficiaryPassportNumber": "E08475291",
+  "beneficiaryTravelDocNumber": "",
+  "beneficiaryPassportCountry": "Honduras",
+  "beneficiaryPassportExpiration": "11/22/2031",
+  "beneficiaryDateAuthStayExpires": "",
+
+  "beneficiaryInRemovalProceedings": false,
+  "beneficiaryRemovalType": "",
+  "beneficiaryRemovalCity": "",
+  "beneficiaryRemovalState": "",
+  "beneficiaryRemovalDate": "",
+
+  "beneficiaryNativeLastName": "Mejía Santos",
+  "beneficiaryNativeFirstName": "Luis",
+  "beneficiaryNativeMiddleName": "Fernando",
+  "beneficiaryNativeAddressStreet": "Colonia Las Colinas, Bloque H, Casa 1142",
+  "beneficiaryNativeAddressApt": "",
+  "beneficiaryNativeAddressAptType": "",
+  "beneficiaryNativeAddressCity": "Tegucigalpa",
+  "beneficiaryNativeAddressProvince": "Francisco Morazán",
+  "beneficiaryNativeAddressPostalCode": "11101",
+  "beneficiaryNativeAddressCountry": "Honduras",
+
+  "livedTogetherStreet": "",
+  "livedTogetherApt": "",
+  "livedTogetherAptType": "",
+  "livedTogetherCity": "",
+  "livedTogetherState": "",
+  "livedTogetherZip": "",
+  "livedTogetherProvince": "",
+  "livedTogetherPostalCode": "",
+  "livedTogetherCountry": "",
+  "livedTogetherFromDate": "",
+  "livedTogetherToDate": "",
+  "neverLivedTogether": false,
+
+  "beneficiaryCurrentEmployment": {
+    "employerName": "Cervecería Hondureña S.A.",
+    "street": "Bo. El Edén, Avenida La Hacienda",
+    "city": "Tegucigalpa",
+    "state": "",
+    "zip": "11101",
+    "country": "Honduras",
+    "occupation": "Sales Coordinator",
+    "fromDate": "07/15/2022"
+  },
+
+  "beneficiaryChildren": [],
+
+  "consularProcessing": true,
+  "adjustmentOfStatusCity": "",
+  "adjustmentOfStatusState": "",
+  "consularPostCity": "Tegucigalpa",
+  "consularPostProvince": "Francisco Morazán",
+  "consularPostCountry": "Honduras",
+
+  "hasFiledPriorPetition": false,
+  "priorPetitionsCount": 0,
+  "priorPetitionsDetails": "",
+  "priorPetitionBeneficiaryLastName": "",
+  "priorPetitionBeneficiaryFirstName": "",
+  "priorPetitionBeneficiaryMiddleName": "",
+  "priorPetitionFilingCity": "",
+  "priorPetitionFilingState": "",
+  "priorPetitionFilingDate": "",
+  "priorPetitionResult": "",
+  "hasBeneficiaryFiledPetition": false,
+  "simultaneousRelatives": [
+    {
+      "lastName": "Mejía Santos",
+      "firstName": "Andrea",
+      "middleName": "Beatriz",
+      "relationship": "Daughter (unmarried, 22)"
+    },
+    {
+      "lastName": "Mejía Santos",
+      "firstName": "Miguel",
+      "middleName": "Ángel",
+      "relationship": "Son (unmarried, 19)"
+    }
+  ],
+
+  "petitionerCanReadEnglish": true,
+  "interpreterUsed": true,
+  "preparerUsed": true,
+
+  "interpreterLastName": "Castro",
+  "interpreterFirstName": "Patricia",
+  "interpreterOrg": "NER Immigration AI — Certified Interpreter",
+  "interpreterStreet": "9495 SW 72nd St",
+  "interpreterApt": "210",
+  "interpreterAptType": "ste",
+  "interpreterCity": "Miami",
+  "interpreterState": "FL",
+  "interpreterZip": "33173",
+  "interpreterCountry": "United States",
+  "interpreterPhone": "(305) 555-0148",
+  "interpreterMobile": "(786) 555-0233",
+  "interpreterEmail": "p.castro@nerimmigration.com",
+  "interpreterLanguage": "Spanish",
+
+  "preparerLastName": "Lorenzo",
+  "preparerFirstName": "Gerald",
+  "preparerOrg": "NER Immigration AI",
+  "preparerStreet": "9495 SW 72nd St",
+  "preparerApt": "210",
+  "preparerAptType": "ste",
+  "preparerCity": "Miami",
+  "preparerState": "FL",
+  "preparerZip": "33173",
+  "preparerCountry": "United States",
+  "preparerPhone": "(305) 555-0100",
+  "preparerMobile": "(786) 555-0101",
+  "preparerEmail": "gerald@nerimmigration.com",
+  "preparerIsAttorney": true,
+  "preparerRepExtends": true
+}
