@@ -301,13 +301,13 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
   }, [clientSearch, accountIdRef]);
 
   // Auto-fill beneficiary from selected client_profile (the foreign relative).
-  // Defensa: si client_profiles tiene valores corruptos (fecha = today, state sin
-  // street/city), NO los propagamos al wizard — son placeholders no datos reales.
+  // Defensa: si client_profiles tiene fechas corruptas (fecha = today), NO las
+  // propagamos al wizard. "N/A" sí cuenta como texto explícito y debe preservarse.
   const todayISO = new Date().toISOString().slice(0, 10);
   const notToday = (v?: string | null) => (v && !String(v).startsWith(todayISO) ? v : "");
   const stateIfAddr = (state?: string | null, street?: string | null, city?: string | null) => {
     if (!state) return "";
-    const hasAddr = !!(street && street !== "N/A") || !!(city && city !== "N/A");
+    const hasAddr = !!street?.trim() || !!city?.trim();
     return hasAddr ? state : "";
   };
 
@@ -1717,9 +1717,20 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <Label htmlFor="prep-atty" className="text-sm cursor-pointer">{t("I am an attorney or accredited representative", "Soy abogado o representante acreditado")}</Label>
           </div>
           {data.preparerIsAttorney && (
-            <div className="flex items-center gap-2">
-              <Checkbox checked={data.preparerRepExtends} onCheckedChange={v => set("preparerRepExtends", !!v)} id="prep-rep-ext" />
-              <Label htmlFor="prep-rep-ext" className="text-sm cursor-pointer">{t("My representation extends beyond this form", "Mi representación se extiende más allá")}</Label>
+            <div className="space-y-3 rounded-lg border border-border/30 bg-secondary/20 p-3">
+              <p className="text-sm font-semibold">{t("Attorney / representative header", "Encabezado del abogado / representante")}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Field label={t("State Bar Number", "Número de barra")}> 
+                  <Input className={inputCls} value={data.attorneyBarNumber} onChange={e => set("attorneyBarNumber", e.target.value)} placeholder="FL12345" />
+                </Field>
+                <Field label={t("Attorney USCIS Online Account #", "Cuenta USCIS Online del abogado")}> 
+                  <Input className={inputCls} value={data.attorneyUscisAccountNumber} onChange={e => set("attorneyUscisAccountNumber", e.target.value)} placeholder="123456789012" />
+                </Field>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox checked={data.preparerRepExtends} onCheckedChange={v => set("preparerRepExtends", !!v)} id="prep-rep-ext" />
+                <Label htmlFor="prep-rep-ext" className="text-sm cursor-pointer">{t("My representation extends beyond this form", "Mi representación se extiende más allá")}</Label>
+              </div>
             </div>
           )}
         </>

@@ -1,6 +1,7 @@
 import {
   PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, PDFForm,
   PDFName, PDFString, PDFHexString, PDFDict, PDFArray, PDFNumber,
+  StandardFonts,
 } from "pdf-lib";
 // @ts-ignore - bwip-js has no type declarations
 import bwipjs from "bwip-js";
@@ -146,11 +147,11 @@ function safeDate(d: string | undefined | null, context: "dob" | "expiration" | 
   return fmtDate(d);
 }
 
-/** Para fields de State (FL/CA/etc): si el address asociado está vacío, omitir el state.
- *  Resuelve el bug del autofill de client_profiles que deja "FL" colgado sin street/city. */
+/** Para fields de State (FL/CA/etc): si el address asociado está realmente vacío,
+ *  omitir el state. "N/A" cuenta como texto escrito por el usuario y debe mapearse. */
 function stateIfAddrPresent(state: string | undefined, street: string | undefined, city: string | undefined): string {
   if (!state) return "";
-  const hasAddr = !!(street && street !== "N/A") || !!(city && city !== "N/A");
+  const hasAddr = !!street?.trim() || !!city?.trim();
   return hasAddr ? state : "";
 }
 
@@ -1569,8 +1570,10 @@ export async function fillI130Pdf(data: I130Data) {
   // field text natively instead of relying on pre-baked appearances. ──
   try {
     const acroForm = pdf.catalog.lookup(PDFName.of("AcroForm"), PDFDict);
+    const appearanceFont = await pdf.embedFont(StandardFonts.Helvetica);
+    form.updateFieldAppearances(appearanceFont);
     if (acroForm) {
-      acroForm.set(PDFName.of("NeedAppearances"), pdf.context.obj(true));
+      acroForm.set(PDFName.of("NeedAppearances"), pdf.context.obj(false));
     }
   } catch (e) {
     console.warn("[i130] Could not set NeedAppearances flag:", e);

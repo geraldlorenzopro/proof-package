@@ -101,7 +101,7 @@ export default function SmartFormPage() {
         if (accountId) {
           const { data } = await supabase
             .from("office_config")
-            .select("attorney_name, bar_number, bar_state, firm_name, firm_address, firm_phone, firm_email")
+            .select("attorney_name, attorney_bar_number, attorney_bar_state, attorney_address, attorney_city, attorney_state, attorney_zip, attorney_country, attorney_phone, attorney_email, attorney_fax, attorney_uscis_account, bar_number, bar_state, firm_name, firm_address, firm_phone, firm_email")
             .eq("account_id", accountId)
             .maybeSingle();
           oc = data;
@@ -142,10 +142,16 @@ export default function SmartFormPage() {
             prefillData.preparerLastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
             prefillData.preparerFirstName = nameParts[0] || "";
             prefillData.preparerOrg = oc.firm_name || "";
-            prefillData.preparerStreet = oc.firm_address || "";
-            prefillData.preparerPhone = oc.firm_phone || "";
-            prefillData.preparerEmail = oc.firm_email || "";
-            prefillData.attorneyBarNumber = oc.bar_number || "";
+            prefillData.preparerStreet = oc.attorney_address || oc.firm_address || "";
+            prefillData.preparerCity = oc.attorney_city || "";
+            prefillData.preparerState = oc.attorney_state || "";
+            prefillData.preparerZip = oc.attorney_zip || "";
+            prefillData.preparerCountry = oc.attorney_country || "US";
+            prefillData.preparerPhone = oc.attorney_phone || oc.firm_phone || "";
+            prefillData.preparerMobile = oc.attorney_fax || "";
+            prefillData.preparerEmail = oc.attorney_email || oc.firm_email || "";
+            prefillData.attorneyBarNumber = oc.attorney_bar_number || oc.bar_number || "";
+            prefillData.attorneyUscisAccountNumber = oc.attorney_uscis_account || "";
           }
           setInitialData(prefillData);
         } else {
@@ -184,10 +190,16 @@ export default function SmartFormPage() {
             prefillData.preparerLastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
             prefillData.preparerFirstName = nameParts[0] || "";
             prefillData.preparerOrg = oc.firm_name || "";
-            prefillData.preparerStreet = oc.firm_address || "";
-            prefillData.preparerPhone = oc.firm_phone || "";
-            prefillData.preparerEmail = oc.firm_email || "";
-            prefillData.attorneyBarNumber = oc.bar_number || "";
+            prefillData.preparerStreet = oc.attorney_address || oc.firm_address || "";
+            prefillData.preparerCity = oc.attorney_city || "";
+            prefillData.preparerState = oc.attorney_state || "";
+            prefillData.preparerZip = oc.attorney_zip || "";
+            prefillData.preparerCountry = oc.attorney_country || "US";
+            prefillData.preparerPhone = oc.attorney_phone || oc.firm_phone || "";
+            prefillData.preparerMobile = oc.attorney_fax || "";
+            prefillData.preparerEmail = oc.attorney_email || oc.firm_email || "";
+            prefillData.attorneyBarNumber = oc.attorney_bar_number || oc.bar_number || "";
+            prefillData.attorneyUscisAccountNumber = oc.attorney_uscis_account || "";
           }
           setInitialData(prefillData);
         }
