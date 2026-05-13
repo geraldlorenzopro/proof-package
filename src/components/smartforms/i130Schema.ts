@@ -402,7 +402,12 @@ export const defaultI130Data: I130Data = {
   petitionerPhysicalProvince: "", petitionerPhysicalPostalCode: "", petitionerPhysicalCountry: "",
   petitionerPhysicalDateFrom: "", petitionerPhysicalDateTo: "",
   petitionerPriorAddresses: [],
-  petitionerEmployment: [],
+  // Show the two official I-130 employment slots in the wizard from first render
+  // so Pt2Line41/Pt2Line45 address sub-fields are visible without clicking Add.
+  petitionerEmployment: [
+    { employerName: "", street: "", aptType: "", apt: "", city: "", state: "", zip: "", province: "", postalCode: "", country: "", occupation: "", fromDate: "", toDate: "" },
+    { employerName: "", street: "", aptType: "", apt: "", city: "", state: "", zip: "", province: "", postalCode: "", country: "", occupation: "", fromDate: "", toDate: "" },
+  ],
 
   petitionerSex: "", petitionerDateOfBirth: "",
   petitionerCityOfBirth: "", petitionerStateOfBirth: "", petitionerCountryOfBirth: "",
@@ -495,7 +500,12 @@ export const defaultI130Data: I130Data = {
   priorPetitionFilingCity: "", priorPetitionFilingState: "",
   priorPetitionFilingDate: "", priorPetitionResult: "",
   hasBeneficiaryFiledPetition: false,
-  simultaneousRelatives: [],
+  // Show the two official simultaneous-relative slots from first render
+  // so Pt4Line6/Pt4Line8 fields are visible without clicking Add.
+  simultaneousRelatives: [
+    { lastName: "", firstName: "", middleName: "", relationship: "" },
+    { lastName: "", firstName: "", middleName: "", relationship: "" },
+  ],
 
   petitionerCanReadEnglish: true, interpreterUsed: false, preparerUsed: false,
 
