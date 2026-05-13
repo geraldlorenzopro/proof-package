@@ -146,11 +146,11 @@ function safeDate(d: string | undefined | null, context: "dob" | "expiration" | 
   return fmtDate(d);
 }
 
-/** Para fields de State (FL/CA/etc): si el address asociado está vacío, omitir el state.
- *  Resuelve el bug del autofill de client_profiles que deja "FL" colgado sin street/city. */
+/** Para fields de State (FL/CA/etc): si el address asociado está realmente vacío,
+ *  omitir el state. "N/A" cuenta como texto escrito por el usuario y debe mapearse. */
 function stateIfAddrPresent(state: string | undefined, street: string | undefined, city: string | undefined): string {
   if (!state) return "";
-  const hasAddr = !!(street && street !== "N/A") || !!(city && city !== "N/A");
+  const hasAddr = !!street?.trim() || !!city?.trim();
   return hasAddr ? state : "";
 }
 
