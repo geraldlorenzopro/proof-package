@@ -1199,7 +1199,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt4_l26_state, beJob.state);
     setText(form, P.pt4_l26_zip, beJob.zip);
     setText(form, P.pt4_l26_country, beJob.country);
-    setText(form, P.pt4_l27_began, fmtDate(beJob.fromDate));
+    setText(form, P.pt4_l27_began, safeDate(beJob.fromDate, "began"));
     // NOTE: el PDF I-130 NO TIENE field name para beneficiary occupation.
     // Si paralegal necesita llenarlo, va al Part 9 Addendum.
   }
