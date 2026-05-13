@@ -59,6 +59,8 @@ export interface I130Data {
   petitionerPhysicalCity: string;
   petitionerPhysicalState: string;
   petitionerPhysicalZip: string;
+  petitionerPhysicalProvince: string;
+  petitionerPhysicalPostalCode: string;
   petitionerPhysicalCountry: string;
   // Item 13 — Dates at current physical address (13b empty = PRESENT)
   petitionerPhysicalDateFrom: string;
@@ -72,6 +74,8 @@ export interface I130Data {
     city: string;
     state: string;
     zip: string;
+    province: string;
+    postalCode: string;
     country: string;
     fromDate: string;
     toDate: string;
@@ -378,7 +382,7 @@ export const defaultI130Data: I130Data = {
   petitionerPhysicalSameAsMailing: true,
   petitionerPhysicalStreet: "", petitionerPhysicalApt: "", petitionerPhysicalAptType: "",
   petitionerPhysicalCity: "", petitionerPhysicalState: "", petitionerPhysicalZip: "",
-  petitionerPhysicalCountry: "",
+  petitionerPhysicalProvince: "", petitionerPhysicalPostalCode: "", petitionerPhysicalCountry: "",
   petitionerPhysicalDateFrom: "", petitionerPhysicalDateTo: "",
   petitionerPriorAddresses: [],
   petitionerEmployment: [],
