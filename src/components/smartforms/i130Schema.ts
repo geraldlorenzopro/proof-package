@@ -379,6 +379,7 @@ export const defaultI130Data: I130Data = {
   petitionerPhysicalStreet: "", petitionerPhysicalApt: "", petitionerPhysicalAptType: "",
   petitionerPhysicalCity: "", petitionerPhysicalState: "", petitionerPhysicalZip: "",
   petitionerPhysicalCountry: "",
+  petitionerPhysicalDateFrom: "", petitionerPhysicalDateTo: "",
   petitionerPriorAddresses: [],
   petitionerEmployment: [],
 
