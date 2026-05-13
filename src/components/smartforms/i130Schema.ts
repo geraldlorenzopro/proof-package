@@ -60,6 +60,9 @@ export interface I130Data {
   petitionerPhysicalState: string;
   petitionerPhysicalZip: string;
   petitionerPhysicalCountry: string;
+  // Item 13 — Dates at current physical address (13b empty = PRESENT)
+  petitionerPhysicalDateFrom: string;
+  petitionerPhysicalDateTo: string;
 
   // Address history (last 5 years) — up to 2 prior addresses
   petitionerPriorAddresses: Array<{
