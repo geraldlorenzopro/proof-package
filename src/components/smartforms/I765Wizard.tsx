@@ -616,17 +616,6 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     </div>
   );
 
-  const AptTypeSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="bg-secondary/60 border-border/50 w-24"><SelectValue placeholder="—" /></SelectTrigger>
-      <SelectContent>
-        <SelectItem value="apt">Apt.</SelectItem>
-        <SelectItem value="ste">Ste.</SelectItem>
-        <SelectItem value="flr">Flr.</SelectItem>
-      </SelectContent>
-    </Select>
-  );
-
   const renderAddress = () => (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-primary text-center">{t("Where do you receive your mail?", "¿Dónde recibes tu correo?")}</h3>
