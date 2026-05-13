@@ -51,6 +51,26 @@ const StateSelect = ({ value, onChange }: { value: string; onChange: (v: string)
 
 const inputCls = "bg-secondary/60 border-border/50 focus:border-primary/60";
 
+const AptTypeSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger className="bg-secondary/60 border-border/50 w-24"><SelectValue placeholder="—" /></SelectTrigger>
+    <SelectContent>
+      <SelectItem value="apt">Apt.</SelectItem>
+      <SelectItem value="ste">Ste.</SelectItem>
+      <SelectItem value="flr">Flr.</SelectItem>
+    </SelectContent>
+  </Select>
+);
+
+// Autofill defenses (parity with I-130 selectBeneficiary)
+const todayISO = new Date().toISOString().slice(0, 10);
+const notToday = (v?: string | null) => (v && !String(v).startsWith(todayISO) ? v : "");
+const stateIfAddr = (state?: string | null, street?: string | null, city?: string | null) => {
+  if (!state) return "";
+  const hasAddr = !!street?.trim() || !!city?.trim();
+  return hasAddr ? state : "";
+};
+
 // ─── Client Link Section (inside caseConfig) ───
 function ClientLinkSection({ lang, shareToken, onRequestShareToken, t }: {
   lang: "en" | "es";
