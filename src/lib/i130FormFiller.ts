@@ -982,14 +982,40 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt4_l11_postal, data.beneficiaryPostalCode);
   setText(form, P.pt4_l11_country, data.beneficiaryCountry);
 
-  // US address (line 12)
+  // Item 12 — US address where beneficiary intends to live.
+  // USCIS instruction: si la dirección es la misma que Item 11, escribir "SAME" en 12.a.
+  // Si vive afuera, default a la dirección física del peticionario (donde vivirá post-aprobación).
   if (data.beneficiaryAddressInUS) {
-    setText(form, P.pt4_l12_street, data.beneficiaryStreet);
-    setText(form, P.pt4_l12_apt, data.beneficiaryApt);
-    setUnitType(form, "Pt4Line12b_Unit", data.beneficiaryAptType);
-    setText(form, P.pt4_l12_city, data.beneficiaryCity);
-    setText(form, P.pt4_l12_state, data.beneficiaryState);
-    setText(form, P.pt4_l12_zip, data.beneficiaryZip);
+    // Vive en USA → misma dirección que Item 11 → poner "SAME" según instrucciones del form.
+    setText(form, P.pt4_l12_street, "SAME");
+  } else {
+    // Vive afuera → default = dirección del peticionario (donde vivirá post-aprobación)
+    const petStreet = data.petitionerPhysicalSameAsMailing
+      ? data.petitionerMailingStreet
+      : (data.petitionerPhysicalStreet || data.petitionerMailingStreet);
+    const petApt = data.petitionerPhysicalSameAsMailing
+      ? data.petitionerMailingApt
+      : (data.petitionerPhysicalApt || data.petitionerMailingApt);
+    const petAptType = data.petitionerPhysicalSameAsMailing
+      ? data.petitionerMailingAptType
+      : (data.petitionerPhysicalAptType || data.petitionerMailingAptType);
+    const petCity = data.petitionerPhysicalSameAsMailing
+      ? data.petitionerMailingCity
+      : (data.petitionerPhysicalCity || data.petitionerMailingCity);
+    const petState = data.petitionerPhysicalSameAsMailing
+      ? data.petitionerMailingState
+      : (data.petitionerPhysicalState || data.petitionerMailingState);
+    const petZip = data.petitionerPhysicalSameAsMailing
+      ? data.petitionerMailingZip
+      : (data.petitionerPhysicalZip || data.petitionerMailingZip);
+    if (petStreet) {
+      setText(form, P.pt4_l12_street, petStreet);
+      setText(form, P.pt4_l12_apt, petApt);
+      setUnitType(form, "Pt4Line12b_Unit", petAptType);
+      setText(form, P.pt4_l12_city, petCity);
+      setText(form, P.pt4_l12_state, petState);
+      setText(form, P.pt4_l12_zip, petZip);
+    }
   }
 
   // Foreign address (line 13)
