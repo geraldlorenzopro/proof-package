@@ -31,6 +31,22 @@ const KNOWN_UNMAPPED = {
     /DateofSignature/, /SignaturePartOf/, /Date_of_Signature/,
     // PDF417 barcodes (dinámicos con bwip-js)
     /PDF417BarCode/, /pageSet/,
+    // ─── Part 6 addendum metadata (Page 7) — llenado DINÁMICO ────────────
+    // Razón citable: cuando un campo del form principal excede su maxLength,
+    // setTextOrOverflow() escribe lo que cabe en el campo original + agrega
+    // el texto completo al addendum de Part 6. Cada slot del addendum tiene
+    // 4 sub-fields: PageNumber/PartNumber/ItemNumber (referencian al field
+    // que se desbordó) + AdditionalInfo (el texto completo). Estos NO se
+    // wirean estáticamente — los popula el helper de overflow.
+    // Ver: i765FormFiller.ts → setTextOrOverflow()
+    // Ver: uscis-form-playbook.md → Sección "Las 15 defensas críticas" #4
+    /Page7\[0\]\.Pt6Line\d+[abcd]_(PageNumber|PartNumber|ItemNumber|AdditionalInfo)/,
+    // ─── Part 6 addendum HEADER (Page 7) — auto-fill cuando hay overflow ─
+    // Razón citable: el header del addendum repite el nombre del applicant
+    // y A# para que USCIS pueda relacionar el addendum con la application
+    // principal. Se llena dinámicamente cuando hay contenido de overflow.
+    /Page7\[0\]\.Line1[abc]_(FamilyName|GivenName|MiddleName)/,
+    /Page7\[0\]\.Line7_AlienNumber/,
   ],
 };
 

@@ -443,96 +443,13 @@ filings (es de las tareas más tediosas).
 
 ---
 
-## 📅 Roadmap priorizado
+## 📅 Roadmap
 
-### Fase 1 — Membership Definition ✅ CERRADA (2026-05-02)
-
-Tiers definidos:
-- Essential $197 / 2 users / sin workflows
-- Professional $297 / 5 users / con workflows
-- Elite $497 / 10 users / con workflows + API
-- Enterprise Custom / ilimitado / agency services
-
-Detalles completos: [`membership-tiers.md`](membership-tiers.md).
-
-### Fase 2 — Splash Integration 🟡 ACTUAL
-
-**Componente HubSplash.tsx:** ✅ creado con animación funcional, tagline
-"Cada caso, una estrategia.", logo NER real, paleta brandbook.
-
-**Pendiente Fase 2:**
-- [ ] Integrar HubSplash en HubPage.tsx con sessionStorage gate
-- [ ] Crear `/dev/splash-preview` para que Mr. Lorenzo lo vea funcionando
-- [ ] Pasar `firmName` desde `data.account_name`
-- [ ] Pasar `firmInitials` calculados desde nombre
-- [ ] `firmLogoUrl` desde `office_config.logo_url` (campo a agregar — Fase 3)
-- [ ] Test con sesión real (login + handshake GHL)
-- [ ] **Mr. Lorenzo aprueba y dice "deploy"** ← gate explícito
-
-### Fase 3 — Membership Implementation (post-Splash)
-
-- [ ] Verify ENUM `enterprise` exists in DB
-- [ ] Migration: `max_users` defaults + backfill 8 firmas
-- [ ] Migration: `office_config.logo_url`
-- [ ] Supabase Storage bucket `firm-logos/`
-- [ ] `UpgradePrompt` component
-- [ ] GHL Workflows middleware (gate Professional+)
-- [ ] UI en `/admin/firms` para change plan
-
-### Sprint 1 — 3 botones GHL (1-2 semanas) 🔴 PRIORIDAD MÁXIMA
-
-**Objetivo:** la paralegal NUNCA más abre GHL.
-
-1. **Botón "Enviar link de pago de consulta"** en `/hub/consultations`
-   - Edge function nueva: `create-stripe-payment-link`
-   - Llama GHL `POST /payments/links`
-   - Guarda referencia en `intake_sessions`
-   - UI: botón en card de consulta + copy link
-
-2. **Botón "Enviar contrato"** en `ConsultationRoom`
-   - Edge function nueva: `create-ghl-contract`
-   - Llama GHL `POST /documents/contracts`
-   - Pre-arma con datos del cliente + tipo de caso
-   - Webhook `contract-signed` ya existe
-
-3. **Botón "Enviar factura"** en `Case Engine` (tab Pagos nuevo)
-   - Edge function nueva: `create-ghl-invoice`
-   - Llama GHL `POST /invoices`
-   - Templates por case_type
-   - Webhook `payment-confirmed` ya existe
-
-### Sprint 2 — Family + Lifecycle UI (1-2 semanas)
-
-- Schema `family_members` + RLS
-- Tab "Familia" en `ClientProfilePage` y `CaseEnginePage`
-- Calendar bidireccional GHL ↔ NER
-- HubAgendaPage upgrade a calendar view
-
-### Sprint 3 — Cleanup + ENUM (1 sprint)
-
-- Cleanup `index.css` (kill Jarvis tokens)
-- `case_type` → ENUM con 20 tipos
-- Schema `case_lifecycle_events` con 22 stages
-- Migration con columnas paralelas (sin downtime)
-- Documentar Nina/Max o eliminar
-
-### Sprint 4 — USCIS receipt + Evidence builder (2 sprints)
-
-- I-797 OCR parser
-- Evidence Packet Builder UI
-- PDF export con índice
-
-### Sprint 5 — Court tracker (2-3 sprints)
-
-- Tablas immigration_courts + judges + hearings + nta_events
-- UI tab en CaseEngine
-- Deadline calculator (NTA windows, motion deadlines)
-
-### Sprint 6+ — Producto agentes IA + Splash brand
-
-- Registrar 8 agentes en `ai_agents` table (Maya/Felix/Lucía/etc.)
-- Cada agente con su toolset (Agent SDK)
-- Splash 800ms + brand cleanup
+> **Vestigial section removed 2026-05-13.** Las fases 1-6 y sprints 1-6 que vivían
+> aquí eran la numeración pre-consolidación. La fuente de verdad estratégica vive
+> ahora en [`ROADMAP.md`](ROADMAP.md) (10 fases, 10 decisiones LOCKED, 45 features).
+> Este doc se enfoca en estado operativo del sprint actual (sección "Sprint actual"
+> en el header) — NO duplicar roadmap aquí.
 
 ---
 

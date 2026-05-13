@@ -791,16 +791,20 @@ después que el I-765 estaba en estado peor.
 3. Adaptar `scripts/check-i{N}-maxlen.mjs` → audit maxLengths críticos
 4. Adaptar `scripts/test-i{N}-parity.mjs` → debe correr y pasar antes de UI
 
-### Las 6 defensas universales (no negociables en cualquier filler)
+### Las 6 defensas universales (no negociables en CUALQUIER filler)
 
-| # | Helper | Bug que previene |
-|:--:|---|---|
-| 1 | `digitsOnly(v)` | Phone/SSN truncado por maxLen=10/9 |
-| 2 | `safeDate(d, ctx)` + `isToday(d)` | DOB/exp salen como today (placeholder corrupto) |
-| 3 | `stateIfAddrPresent()` | "FL" colgado de autofill sin street/city |
-| 4 | `setTextOrOverflow()` | Strings largos truncados → addendum |
-| 5 | `stripUscisAccount()` | "USCIS-XXXX-" prefix consume bytes |
-| 6 | `stripAlienNumber()` | "A" prefix duplica con pre-impreso |
+Estas 6 son el **mínimo común** que aplica a cualquier form USCIS, incluso al más simple (I-765 employment authorization). El **playbook tiene 15 defensas totales** — las 9 adicionales son **I-130-específicas** (race tolerance, marriage count, fallback legacy place of marriage, Item-10 mutually-exclusive, etc.) y no aplican a forms de un solo applicant sin relationship. Ver `uscis-form-playbook.md` para el set completo.
+
+| # | Helper | Bug que previene | Aplica a |
+|:--:|---|---|:--:|
+| 1 | `digitsOnly(v)` | Phone/SSN truncado por maxLen=10/9 | TODOS |
+| 2 | `safeDate(d, ctx)` + `isToday(d)` | DOB/exp salen como today (placeholder corrupto) | TODOS |
+| 3 | `stateIfAddrPresent()` | "FL" colgado de autofill sin street/city | TODOS |
+| 4 | `setTextOrOverflow()` | Strings largos truncados → addendum | TODOS |
+| 5 | `stripUscisAccount()` | "USCIS-XXXX-" prefix consume bytes | TODOS |
+| 6 | `stripAlienNumber()` | "A" prefix duplica con pre-impreso | TODOS |
+
+`stripBarNumber()` aplica solo si el form acepta G-28 attorney (la mayoría). `setUnitType()` aplica si hay address con apt/ste/flr dropdown. Estas son **universales-condicionales** — se aplican si el form las requiere. El parity test del I-765 (`test-i765-parity.mjs`) valida las 6 universales mínimas; el del I-130 valida las 15 completas.
 
 ### Gate de pre-push para forms USCIS
 

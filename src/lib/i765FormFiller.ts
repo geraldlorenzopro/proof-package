@@ -610,7 +610,7 @@ export async function fillI765Pdf(data: I765Data) {
   setCheck(form, P.pt3_interpreter, data.interpreterUsed);
   setCheck(form, P.pt3_preparer, data.preparerUsed);
   setText(form, P.pt3_phone, digitsOnly(data.applicantPhone || ""));
-  setText(form, P.pt3_mobile, data.applicantMobile);
+  setText(form, P.pt3_mobile, digitsOnly(data.applicantMobile || ""));
   setText(form, P.pt3_email, data.applicantEmail);
 
   // ── Part 4: Interpreter ──
@@ -632,7 +632,7 @@ export async function fillI765Pdf(data: I765Data) {
     setText(form, P.pt4_zip, intSame ? data.preparerZip : data.interpreterZip);
     setText(form, P.pt4_province, intSame ? data.preparerProvince : data.interpreterProvince);
     setText(form, P.pt4_phone, digitsOnly(intSame ? data.preparerPhone : data.interpreterPhone || ""));
-    setText(form, P.pt4_mobile, intSame ? data.preparerMobile : data.interpreterMobile);
+    setText(form, P.pt4_mobile, digitsOnly((intSame ? data.preparerMobile : data.interpreterMobile) || ""));
     setText(form, P.pt4_email, intSame ? data.preparerEmail : data.interpreterEmail);
     setText(form, P.pt4_language, data.interpreterLanguage);
   }
@@ -664,7 +664,7 @@ export async function fillI765Pdf(data: I765Data) {
     setText(form, P.pt5_postal, data.preparerPostalCode);
     setText(form, P.pt5_country, data.preparerCountry);
     setText(form, P.pt5_phone, digitsOnly(data.preparerPhone || ""));
-    setText(form, P.pt5_fax, data.preparerMobile); // preparerMobile stores fax per official form
+    setText(form, P.pt5_fax, digitsOnly(data.preparerMobile || "")); // preparerMobile stores fax per official form
     setText(form, P.pt5_email, data.preparerEmail);
     setCheck(form, P.pt5_is_attorney, data.preparerIsAttorney);
     setCheck(form, P.pt5_not_attorney, !data.preparerIsAttorney);
