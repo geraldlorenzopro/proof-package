@@ -531,6 +531,15 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           </div>
         </div>
       )}
+
+      {/* Item 1.4 USCIS: Did you gain LPR through marriage/adoption? */}
+      <div className="p-4 rounded-lg border border-border/40 bg-secondary/20 space-y-2">
+        <p className="text-sm">{t("Did you gain lawful permanent resident status or citizenship through adoption? (Item 4)", "¿Obtuviste estatus de residente permanente o ciudadanía por adopción?")}</p>
+        <RadioGroup value={data.petitionerLprThroughMarriage ? "yes" : "no"} onValueChange={v => set("petitionerLprThroughMarriage", v === "yes")} className="flex gap-4">
+          <label className="flex items-center gap-2 cursor-pointer text-sm"><RadioGroupItem value="yes" />{t("Yes", "Sí")}</label>
+          <label className="flex items-center gap-2 cursor-pointer text-sm"><RadioGroupItem value="no" />{t("No", "No")}</label>
+        </RadioGroup>
+      </div>
     </div>
   );
 
@@ -579,6 +588,32 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         <Field label="SSN"><Input className={inputCls} value={data.petitionerSsn} onChange={e => set("petitionerSsn", e.target.value)} placeholder="XXX-XX-XXXX" /></Field>
         <Field label="A-Number"><Input className={inputCls} value={data.petitionerANumber} onChange={e => set("petitionerANumber", e.target.value)} placeholder="A-" /></Field>
         <Field label="USCIS Online Account #"><Input className={inputCls} value={data.petitionerUscisAccountNumber} onChange={e => set("petitionerUscisAccountNumber", e.target.value)} /></Field>
+      </div>
+
+      {/* Petitioner Other Names array (Item 5.a-c) */}
+      <div className="space-y-3 pt-3 border-t border-border/30">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold">{t("Your Other Names (Item 5)", "Tus Otros Nombres")}</p>
+          <Button type="button" variant="ghost" size="sm" onClick={() => set("petitionerOtherNames", [...data.petitionerOtherNames, { lastName: "", firstName: "", middleName: "" }])} className="gap-1">
+            <Plus className="w-3.5 h-3.5" /> {t("Add", "Agregar")}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">{t("Aliases, maiden name, nicknames", "Alias, nombre de soltera, apodos")}</p>
+        {data.petitionerOtherNames.map((n, i) => (
+          <div key={i} className="p-3 rounded-lg border border-border/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">{t("Other Name", "Otro Nombre")} {i + 1}</p>
+              <Button type="button" variant="ghost" size="sm" onClick={() => set("petitionerOtherNames", data.petitionerOtherNames.filter((_, idx) => idx !== i))} className="text-destructive h-7 px-2">
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <Input className={inputCls} placeholder={t("Last Name", "Apellido")} value={n.lastName} onChange={e => { const arr = [...data.petitionerOtherNames]; arr[i] = { ...arr[i], lastName: e.target.value }; set("petitionerOtherNames", arr); }} />
+              <Input className={inputCls} placeholder={t("First Name", "Nombre")} value={n.firstName} onChange={e => { const arr = [...data.petitionerOtherNames]; arr[i] = { ...arr[i], firstName: e.target.value }; set("petitionerOtherNames", arr); }} />
+              <Input className={inputCls} placeholder={t("Middle", "Segundo")} value={n.middleName} onChange={e => { const arr = [...data.petitionerOtherNames]; arr[i] = { ...arr[i], middleName: e.target.value }; set("petitionerOtherNames", arr); }} />
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="pt-3 border-t border-border/30 space-y-3">
@@ -662,6 +697,12 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         <Field label={t("State", "Estado")}><StateSelect value={data.petitionerMailingState} onChange={v => set("petitionerMailingState", v)} /></Field>
         <Field label="ZIP"><Input className={inputCls} value={data.petitionerMailingZip} onChange={e => set("petitionerMailingZip", e.target.value)} /></Field>
       </div>
+      {/* Foreign address fields (Items 10.g-i) — para mailing fuera de US */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Field label={t("Province (foreign)", "Provincia (extranjero)")}><Input className={inputCls} value={data.petitionerMailingProvince} onChange={e => set("petitionerMailingProvince", e.target.value)} /></Field>
+        <Field label={t("Postal Code (foreign)", "Código Postal (extranjero)")}><Input className={inputCls} value={data.petitionerMailingPostalCode} onChange={e => set("petitionerMailingPostalCode", e.target.value)} /></Field>
+        <Field label={t("Country", "País")}><Input className={inputCls} value={data.petitionerMailingCountry} onChange={e => set("petitionerMailingCountry", e.target.value)} placeholder="United States" /></Field>
+      </div>
 
       <div className="flex items-center gap-2 pt-2">
         <Checkbox checked={data.petitionerPhysicalSameAsMailing} onCheckedChange={v => set("petitionerPhysicalSameAsMailing", !!v)} id="petitioner-same" />
@@ -715,13 +756,21 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       <div className="space-y-5">
         <h3 className="text-lg font-semibold text-primary text-center">{t("Your History (last 5 years)", "Tu Historia (últimos 5 años)")}</h3>
 
-        {/* Current marriage */}
+        {/* Current marriage (Items 18-19 USCIS) */}
         {data.petitionerMaritalStatus === "married" && (
           <div className="space-y-3">
             <p className="text-sm font-semibold">{t("Current Marriage", "Matrimonio Actual")}</p>
+            <Field label={t("Date of Marriage (Item 18)", "Fecha de Matrimonio")}>
+              <Input type="date" className={inputCls} value={data.petitionerDateOfMarriage} onChange={e => set("petitionerDateOfMarriage", e.target.value)} />
+            </Field>
+            <p className="text-xs text-muted-foreground">{t("Place of Current Marriage (Item 19.a-d)", "Lugar del Matrimonio Actual")}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label={t("Date of Marriage", "Fecha de Matrimonio")}><Input type="date" className={inputCls} value={data.petitionerDateOfMarriage} onChange={e => set("petitionerDateOfMarriage", e.target.value)} /></Field>
-              <Field label={t("Place of Marriage", "Lugar de Matrimonio")}><Input className={inputCls} value={data.petitionerPlaceOfMarriage} onChange={e => set("petitionerPlaceOfMarriage", e.target.value)} /></Field>
+              <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.petitionerPlaceMarriageCity} onChange={e => set("petitionerPlaceMarriageCity", e.target.value)} /></Field>
+              <Field label={t("State (if US)", "Estado (si US)")}><StateSelect value={data.petitionerPlaceMarriageState} onChange={v => set("petitionerPlaceMarriageState", v)} /></Field>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field label={t("Province (if foreign)", "Provincia (si extranjero)")}><Input className={inputCls} value={data.petitionerPlaceMarriageProvince} onChange={e => set("petitionerPlaceMarriageProvince", e.target.value)} /></Field>
+              <Field label={t("Country", "País")}><Input className={inputCls} value={data.petitionerPlaceMarriageCountry} onChange={e => set("petitionerPlaceMarriageCountry", e.target.value)} /></Field>
             </div>
           </div>
         )}
@@ -878,10 +927,11 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               <Input className={inputCls} placeholder={t("Middle", "Segundo")} value={data.petitionerFatherMiddleName} onChange={e => set("petitionerFatherMiddleName", e.target.value)} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <Input type="date" className={inputCls} placeholder={t("Date of Birth", "DOB")} value={data.petitionerFatherDateOfBirth} onChange={e => set("petitionerFatherDateOfBirth", e.target.value)} />
-              <Input className={inputCls} placeholder={t("Country of Birth", "País Nacimiento")} value={data.petitionerFatherCountryOfBirth} onChange={e => set("petitionerFatherCountryOfBirth", e.target.value)} />
-              <Input className={inputCls} placeholder={t("Country of Residence", "País Residencia")} value={data.petitionerFatherCountryOfResidence} onChange={e => set("petitionerFatherCountryOfResidence", e.target.value)} />
+              <Field label={t("Date of Birth", "Fecha de Nacimiento")}><Input type="date" className={inputCls} value={data.petitionerFatherDateOfBirth} onChange={e => set("petitionerFatherDateOfBirth", e.target.value)} /></Field>
+              <Field label={t("Country of Birth", "País Nacimiento")}><Input className={inputCls} value={data.petitionerFatherCountryOfBirth} onChange={e => set("petitionerFatherCountryOfBirth", e.target.value)} /></Field>
+              <Field label={t("City of Residence (Item 28)", "Ciudad de Residencia")}><Input className={inputCls} value={data.petitionerFatherCityOfResidence} onChange={e => set("petitionerFatherCityOfResidence", e.target.value)} /></Field>
             </div>
+            <Field label={t("Country of Residence", "País de Residencia")}><Input className={inputCls} value={data.petitionerFatherCountryOfResidence} onChange={e => set("petitionerFatherCountryOfResidence", e.target.value)} placeholder={t("If deceased, write \"Deceased\"", "Si fallecido, escribir \"Deceased\"")} /></Field>
           </div>
           <div className="space-y-3 pt-2">
             <p className="text-xs text-muted-foreground">{t("Mother", "Madre")}</p>
@@ -891,10 +941,11 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               <Input className={inputCls} placeholder={t("Middle", "Segundo")} value={data.petitionerMotherMiddleName} onChange={e => set("petitionerMotherMiddleName", e.target.value)} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <Input type="date" className={inputCls} placeholder={t("Date of Birth", "DOB")} value={data.petitionerMotherDateOfBirth} onChange={e => set("petitionerMotherDateOfBirth", e.target.value)} />
-              <Input className={inputCls} placeholder={t("Country of Birth", "País Nacimiento")} value={data.petitionerMotherCountryOfBirth} onChange={e => set("petitionerMotherCountryOfBirth", e.target.value)} />
-              <Input className={inputCls} placeholder={t("Country of Residence", "País Residencia")} value={data.petitionerMotherCountryOfResidence} onChange={e => set("petitionerMotherCountryOfResidence", e.target.value)} />
+              <Field label={t("Date of Birth", "Fecha de Nacimiento")}><Input type="date" className={inputCls} value={data.petitionerMotherDateOfBirth} onChange={e => set("petitionerMotherDateOfBirth", e.target.value)} /></Field>
+              <Field label={t("Country of Birth", "País Nacimiento")}><Input className={inputCls} value={data.petitionerMotherCountryOfBirth} onChange={e => set("petitionerMotherCountryOfBirth", e.target.value)} /></Field>
+              <Field label={t("City of Residence (Item 34)", "Ciudad de Residencia")}><Input className={inputCls} value={data.petitionerMotherCityOfResidence} onChange={e => set("petitionerMotherCityOfResidence", e.target.value)} /></Field>
             </div>
+            <Field label={t("Country of Residence", "País de Residencia")}><Input className={inputCls} value={data.petitionerMotherCountryOfResidence} onChange={e => set("petitionerMotherCountryOfResidence", e.target.value)} placeholder={t("If deceased, write \"Deceased\"", "Si fallecida, escribir \"Deceased\"")} /></Field>
           </div>
         </div>
       </div>
@@ -1014,6 +1065,47 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         <Field label="SSN (US)"><Input className={inputCls} value={data.beneficiarySsn} onChange={e => set("beneficiarySsn", e.target.value)} placeholder={t("If any", "Si tiene")} /></Field>
         <Field label="A-Number"><Input className={inputCls} value={data.beneficiaryANumber} onChange={e => set("beneficiaryANumber", e.target.value)} placeholder="A-" /></Field>
       </div>
+
+      <Field label={t("USCIS Online Account # (Item 2, if any)", "Número de Cuenta USCIS Online (si tiene)")}>
+        <Input className={inputCls} value={data.beneficiaryUscisAccountNumber} onChange={e => set("beneficiaryUscisAccountNumber", e.target.value)} placeholder="123456789012" />
+      </Field>
+
+      {/* Other Names Beneficiary (Item 5.a-c array) */}
+      <div className="space-y-3 pt-3 border-t border-border/30">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold">{t("Other Names Used by Beneficiary (Item 5)", "Otros Nombres del Beneficiario")}</p>
+          <Button type="button" variant="ghost" size="sm" onClick={() => set("beneficiaryOtherNames", [...data.beneficiaryOtherNames, { lastName: "", firstName: "", middleName: "" }])} className="gap-1">
+            <Plus className="w-3.5 h-3.5" /> {t("Add", "Agregar")}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">{t("Aliases, maiden name, nicknames", "Alias, nombre de soltera, apodos")}</p>
+        {data.beneficiaryOtherNames.map((n, i) => (
+          <div key={i} className="p-3 rounded-lg border border-border/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">{t("Other Name", "Otro Nombre")} {i + 1}</p>
+              <Button type="button" variant="ghost" size="sm" onClick={() => set("beneficiaryOtherNames", data.beneficiaryOtherNames.filter((_, idx) => idx !== i))} className="text-destructive h-7 px-2">
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <Input className={inputCls} placeholder={t("Last Name", "Apellido")} value={n.lastName} onChange={e => { const arr = [...data.beneficiaryOtherNames]; arr[i] = { ...arr[i], lastName: e.target.value }; set("beneficiaryOtherNames", arr); }} />
+              <Input className={inputCls} placeholder={t("First Name", "Nombre")} value={n.firstName} onChange={e => { const arr = [...data.beneficiaryOtherNames]; arr[i] = { ...arr[i], firstName: e.target.value }; set("beneficiaryOtherNames", arr); }} />
+              <Input className={inputCls} placeholder={t("Middle", "Segundo")} value={n.middleName} onChange={e => { const arr = [...data.beneficiaryOtherNames]; arr[i] = { ...arr[i], middleName: e.target.value }; set("beneficiaryOtherNames", arr); }} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Item 10 USCIS: ¿Alguien más ha presentado petición para el beneficiario? */}
+      <div className="space-y-2 pt-3 border-t border-border/30">
+        <p className="text-sm font-semibold">{t("Has anyone else ever filed a petition for the beneficiary? (Item 10)", "¿Alguien más ha presentado petición para el beneficiario?")}</p>
+        <RadioGroup value={data.anyoneElseFiledForBeneficiary} onValueChange={v => set("anyoneElseFiledForBeneficiary", v as "yes" | "no" | "unknown")} className="flex gap-4">
+          <label className="flex items-center gap-2 cursor-pointer text-sm"><RadioGroupItem value="yes" />{t("Yes", "Sí")}</label>
+          <label className="flex items-center gap-2 cursor-pointer text-sm"><RadioGroupItem value="no" />{t("No", "No")}</label>
+          <label className="flex items-center gap-2 cursor-pointer text-sm"><RadioGroupItem value="unknown" />{t("Unknown", "Desconocido")}</label>
+        </RadioGroup>
+        <p className="text-xs text-muted-foreground">{t("Select 'Unknown' only if you and the beneficiary both don't know", "Selecciona 'Desconocido' solo si ambos no saben")}</p>
+      </div>
     </div>
   );
 
@@ -1073,6 +1165,17 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           </div>
         </div>
       )}
+
+      {/* Beneficiary contact info (Items 14, 15, 16 USCIS) */}
+      <div className="space-y-3 pt-3 border-t border-border/30">
+        <p className="text-sm font-semibold">{t("Beneficiary Contact", "Contacto del Beneficiario")}</p>
+        <p className="text-xs text-muted-foreground">{t("Items 14-16 of Form I-130", "Ítems 14-16 del Formulario I-130")}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Field label={t("Daytime Phone (Item 14)", "Teléfono de Día")}><Input className={inputCls} value={data.beneficiaryDaytimePhone} onChange={e => set("beneficiaryDaytimePhone", e.target.value)} placeholder="+1 305 555 0100" /></Field>
+          <Field label={t("Mobile Phone (Item 15)", "Teléfono Móvil")}><Input className={inputCls} value={data.beneficiaryMobilePhone} onChange={e => set("beneficiaryMobilePhone", e.target.value)} placeholder="+1 786 555 0100" /></Field>
+        </div>
+        <Field label={t("Email (Item 16)", "Correo Electrónico")}><Input type="email" className={inputCls} value={data.beneficiaryEmail} onChange={e => set("beneficiaryEmail", e.target.value)} placeholder="email@example.com" /></Field>
+      </div>
     </div>
   );
 
@@ -1087,13 +1190,21 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       <div className="space-y-5">
         <h3 className="text-lg font-semibold text-primary text-center">{t("Beneficiary History", "Historia del Beneficiario")}</h3>
 
-        {/* Marriage info */}
+        {/* Marriage info (Items 19-20 USCIS) */}
         {data.beneficiaryMaritalStatus === "married" && (
           <div className="space-y-3">
             <p className="text-sm font-semibold">{t("Current Marriage", "Matrimonio Actual")}</p>
+            <Field label={t("Date of Marriage (Item 19)", "Fecha de Matrimonio")}>
+              <Input type="date" className={inputCls} value={data.beneficiaryDateOfMarriage} onChange={e => set("beneficiaryDateOfMarriage", e.target.value)} />
+            </Field>
+            <p className="text-xs text-muted-foreground">{t("Place of Marriage (Item 20.a-d)", "Lugar del Matrimonio")}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label={t("Date of Marriage", "Fecha")}><Input type="date" className={inputCls} value={data.beneficiaryDateOfMarriage} onChange={e => set("beneficiaryDateOfMarriage", e.target.value)} /></Field>
-              <Field label={t("Place of Marriage", "Lugar")}><Input className={inputCls} value={data.beneficiaryPlaceOfMarriage} onChange={e => set("beneficiaryPlaceOfMarriage", e.target.value)} /></Field>
+              <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.beneficiaryPlaceMarriageCity} onChange={e => set("beneficiaryPlaceMarriageCity", e.target.value)} /></Field>
+              <Field label={t("State (if US)", "Estado (si US)")}><StateSelect value={data.beneficiaryPlaceMarriageState} onChange={v => set("beneficiaryPlaceMarriageState", v)} /></Field>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field label={t("Province (if foreign)", "Provincia (si extranjero)")}><Input className={inputCls} value={data.beneficiaryPlaceMarriageProvince} onChange={e => set("beneficiaryPlaceMarriageProvince", e.target.value)} /></Field>
+              <Field label={t("Country", "País")}><Input className={inputCls} value={data.beneficiaryPlaceMarriageCountry} onChange={e => set("beneficiaryPlaceMarriageCountry", e.target.value)} /></Field>
             </div>
           </div>
         )}
@@ -1147,6 +1258,44 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           ))}
         </div>
 
+        {/* Lived-together address (Items 59-60) — solo spouse case */}
+        {data.relationshipType === "spouse" && (
+          <div className="space-y-3 pt-3 border-t border-border/30">
+            <p className="text-sm font-semibold">{t("Last Address You Lived Together (Item 59-60)", "Última Dirección donde Vivieron Juntos")}</p>
+            <div className="flex items-center gap-2">
+              <Checkbox checked={data.neverLivedTogether} onCheckedChange={v => set("neverLivedTogether", !!v)} id="never-together" />
+              <Label htmlFor="never-together" className="text-sm cursor-pointer">{t("We never lived together", "Nunca vivimos juntos")}</Label>
+            </div>
+            {!data.neverLivedTogether && (
+              <div className="space-y-2 p-3 rounded-lg bg-secondary/20 border border-border/30">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <Field label={t("Street", "Calle")} className="md:col-span-2"><Input className={inputCls} value={data.livedTogetherStreet} onChange={e => set("livedTogetherStreet", e.target.value)} /></Field>
+                  <Field label="Apt/Ste/Flr">
+                    <div className="flex gap-2">
+                      <AptTypeSelect value={data.livedTogetherAptType} onChange={v => set("livedTogetherAptType", v as I130Data["livedTogetherAptType"])} />
+                      <Input className={cn(inputCls, "flex-1")} value={data.livedTogetherApt} onChange={e => set("livedTogetherApt", e.target.value)} placeholder="#" />
+                    </div>
+                  </Field>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.livedTogetherCity} onChange={e => set("livedTogetherCity", e.target.value)} /></Field>
+                  <Field label={t("State", "Estado")}><StateSelect value={data.livedTogetherState} onChange={v => set("livedTogetherState", v)} /></Field>
+                  <Field label="ZIP"><Input className={inputCls} value={data.livedTogetherZip} onChange={e => set("livedTogetherZip", e.target.value)} /></Field>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <Field label={t("Province (if foreign)", "Provincia")}><Input className={inputCls} value={data.livedTogetherProvince} onChange={e => set("livedTogetherProvince", e.target.value)} /></Field>
+                  <Field label={t("Postal Code", "Código Postal")}><Input className={inputCls} value={data.livedTogetherPostalCode} onChange={e => set("livedTogetherPostalCode", e.target.value)} /></Field>
+                  <Field label={t("Country", "País")}><Input className={inputCls} value={data.livedTogetherCountry} onChange={e => set("livedTogetherCountry", e.target.value)} placeholder="United States" /></Field>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <Field label={t("From", "Desde")}><Input type="date" className={inputCls} value={data.livedTogetherFromDate} onChange={e => set("livedTogetherFromDate", e.target.value)} /></Field>
+                  <Field label={t("To", "Hasta")}><Input className={inputCls} value={data.livedTogetherToDate} onChange={e => set("livedTogetherToDate", e.target.value)} placeholder={t("Date or PRESENT", "Fecha o PRESENT")} /></Field>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Entry to US */}
         <div className="space-y-3 pt-3 border-t border-border/30">
           <div className="flex items-center gap-2">
@@ -1161,30 +1310,61 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
                 <Field label={t("Status at Entry", "Estatus al Entrar")}><Input className={inputCls} value={data.beneficiaryStatusAtEntry} onChange={e => set("beneficiaryStatusAtEntry", e.target.value)} placeholder="e.g. B-2" /></Field>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Field label={t("Passport #", "# Pasaporte")}><Input className={inputCls} value={data.beneficiaryPassportNumber} onChange={e => set("beneficiaryPassportNumber", e.target.value)} /></Field>
-                <Field label={t("Passport Country", "País Pasaporte")}><Input className={inputCls} value={data.beneficiaryPassportCountry} onChange={e => set("beneficiaryPassportCountry", e.target.value)} /></Field>
-                <Field label={t("Passport Exp.", "Venc.")}><Input type="date" className={inputCls} value={data.beneficiaryPassportExpiration} onChange={e => set("beneficiaryPassportExpiration", e.target.value)} /></Field>
+                <Field label={t("Passport # (Item 47)", "# Pasaporte")}><Input className={inputCls} value={data.beneficiaryPassportNumber} onChange={e => set("beneficiaryPassportNumber", e.target.value)} /></Field>
+                <Field label={t("Travel Document # (Item 48)", "# Doc. Viaje")}><Input className={inputCls} value={data.beneficiaryTravelDocNumber} onChange={e => set("beneficiaryTravelDocNumber", e.target.value)} placeholder={t("Alternative to passport", "Alternativa al pasaporte")} /></Field>
+                <Field label={t("Country of Issuance", "País de Emisión")}><Input className={inputCls} value={data.beneficiaryPassportCountry} onChange={e => set("beneficiaryPassportCountry", e.target.value)} /></Field>
               </div>
-              <Field label={t("Authorized Stay Expires", "Estancia Autorizada Hasta")}>
-                <Input type="date" className={inputCls} value={data.beneficiaryDateAuthStayExpires} onChange={e => set("beneficiaryDateAuthStayExpires", e.target.value)} />
-              </Field>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Field label={t("Passport/Doc Expiration", "Vencimiento")}><Input type="date" className={inputCls} value={data.beneficiaryPassportExpiration} onChange={e => set("beneficiaryPassportExpiration", e.target.value)} /></Field>
+                <Field label={t("Authorized Stay Expires", "Estancia Autorizada Hasta")}><Input type="date" className={inputCls} value={data.beneficiaryDateAuthStayExpires} onChange={e => set("beneficiaryDateAuthStayExpires", e.target.value)} /></Field>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Removal */}
+        {/* Removal proceedings (Items 53-56) */}
         <div className="space-y-3 pt-3 border-t border-border/30">
           <div className="flex items-center gap-2">
             <Checkbox checked={data.beneficiaryInRemovalProceedings} onCheckedChange={v => set("beneficiaryInRemovalProceedings", !!v)} id="ben-removal" />
-            <Label htmlFor="ben-removal" className="text-sm cursor-pointer">{t("Beneficiary is in removal proceedings", "Está en proceso de remoción")}</Label>
+            <Label htmlFor="ben-removal" className="text-sm cursor-pointer">{t("Beneficiary is in immigration proceedings (Item 53)", "Está en proceso de inmigración")}</Label>
           </div>
           {data.beneficiaryInRemovalProceedings && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 rounded-lg bg-secondary/20 border border-border/30">
-              <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.beneficiaryRemovalCity} onChange={e => set("beneficiaryRemovalCity", e.target.value)} /></Field>
-              <Field label={t("State", "Estado")}><StateSelect value={data.beneficiaryRemovalState} onChange={v => set("beneficiaryRemovalState", v)} /></Field>
-              <Field label={t("Date", "Fecha")}><Input type="date" className={inputCls} value={data.beneficiaryRemovalDate} onChange={e => set("beneficiaryRemovalDate", e.target.value)} /></Field>
+            <div className="space-y-3 p-3 rounded-lg bg-secondary/20 border border-border/30">
+              <Field label={t("Type of Proceedings (Item 54)", "Tipo de Proceso")}>
+                <Select value={data.beneficiaryRemovalType} onValueChange={v => set("beneficiaryRemovalType", v as I130Data["beneficiaryRemovalType"])}>
+                  <SelectTrigger className={inputCls}><SelectValue placeholder={t("Select type", "Seleccionar")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="removal">{t("Removal", "Remoción")}</SelectItem>
+                    <SelectItem value="exclusion_deportation">{t("Exclusion/Deportation", "Exclusión/Deportación")}</SelectItem>
+                    <SelectItem value="rescission">{t("Rescission", "Rescisión")}</SelectItem>
+                    <SelectItem value="other_judicial">{t("Other Judicial Proceedings", "Otros Procesos Judiciales")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Field label={t("City (Item 55.a)", "Ciudad")}><Input className={inputCls} value={data.beneficiaryRemovalCity} onChange={e => set("beneficiaryRemovalCity", e.target.value)} /></Field>
+                <Field label={t("State (55.b)", "Estado")}><StateSelect value={data.beneficiaryRemovalState} onChange={v => set("beneficiaryRemovalState", v)} /></Field>
+                <Field label={t("Date (Item 56)", "Fecha")}><Input type="date" className={inputCls} value={data.beneficiaryRemovalDate} onChange={e => set("beneficiaryRemovalDate", e.target.value)} /></Field>
+              </div>
             </div>
           )}
+        </div>
+
+        {/* Native script name + foreign address (Items 57-58) */}
+        <div className="space-y-3 pt-3 border-t border-border/30">
+          <p className="text-sm font-semibold">{t("Native-Script Name & Address (Items 57-58)", "Nombre y Dirección en Idioma Nativo")}</p>
+          <p className="text-xs text-muted-foreground">{t("Required if beneficiary's language uses non-Roman letters (Chinese, Arabic, etc.). Optional for Spanish.", "Requerido si el idioma del beneficiario no usa letras romanas (chino, árabe, etc.). Opcional en español.")}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <Input className={inputCls} placeholder={t("Last Name (native)", "Apellido (nativo)")} value={data.beneficiaryNativeLastName} onChange={e => set("beneficiaryNativeLastName", e.target.value)} />
+            <Input className={inputCls} placeholder={t("First Name (native)", "Nombre")} value={data.beneficiaryNativeFirstName} onChange={e => set("beneficiaryNativeFirstName", e.target.value)} />
+            <Input className={inputCls} placeholder={t("Middle (native)", "Segundo")} value={data.beneficiaryNativeMiddleName} onChange={e => set("beneficiaryNativeMiddleName", e.target.value)} />
+          </div>
+          <Input className={inputCls} placeholder={t("Street (native)", "Calle (nativo)")} value={data.beneficiaryNativeAddressStreet} onChange={e => set("beneficiaryNativeAddressStreet", e.target.value)} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <Input className={inputCls} placeholder={t("City", "Ciudad")} value={data.beneficiaryNativeAddressCity} onChange={e => set("beneficiaryNativeAddressCity", e.target.value)} />
+            <Input className={inputCls} placeholder={t("Province", "Provincia")} value={data.beneficiaryNativeAddressProvince} onChange={e => set("beneficiaryNativeAddressProvince", e.target.value)} />
+            <Input className={inputCls} placeholder={t("Country", "País")} value={data.beneficiaryNativeAddressCountry} onChange={e => set("beneficiaryNativeAddressCountry", e.target.value)} />
+          </div>
         </div>
 
         {/* Current employment */}
@@ -1290,40 +1470,94 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         </label>
       </RadioGroup>
 
-      {data.consularProcessing && (
+      {data.consularProcessing ? (
         <div className="space-y-3 pt-3 border-t border-border/30">
-          <p className="text-sm font-semibold">{t("Consular Post Location", "Ubicación del Consulado")}</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <p className="text-sm font-semibold">{t("Consular Post Location (Item 62.a-c)", "Ubicación del Consulado")}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.consularPostCity} onChange={e => set("consularPostCity", e.target.value)} /></Field>
+            <Field label={t("Province", "Provincia")}><Input className={inputCls} value={data.consularPostProvince} onChange={e => set("consularPostProvince", e.target.value)} /></Field>
             <Field label={t("Country", "País")}><Input className={inputCls} value={data.consularPostCountry} onChange={e => set("consularPostCountry", e.target.value)} /></Field>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3 pt-3 border-t border-border/30">
+          <p className="text-sm font-semibold">{t("USCIS Office for Adjustment of Status (Item 61.a-b)", "Oficina USCIS para Ajuste de Estatus")}</p>
+          <p className="text-xs text-muted-foreground">{t("Where the beneficiary will apply for adjustment (e.g., Miami, FL)", "Donde el beneficiario aplicará el ajuste (ej. Miami, FL)")}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.adjustmentOfStatusCity} onChange={e => set("adjustmentOfStatusCity", e.target.value)} /></Field>
+            <Field label={t("State", "Estado")}><StateSelect value={data.adjustmentOfStatusState} onChange={v => set("adjustmentOfStatusState", v)} /></Field>
           </div>
         </div>
       )}
 
       <div className="pt-3 border-t border-border/30 space-y-3">
-        <p className="text-sm font-semibold">{t("Prior Petitions", "Peticiones Anteriores")}</p>
+        <p className="text-sm font-semibold">{t("Prior Petitions (Part 5 Items 1-5)", "Peticiones Anteriores")}</p>
         <div className="flex items-center gap-2">
           <Checkbox checked={data.hasFiledPriorPetition} onCheckedChange={v => set("hasFiledPriorPetition", !!v)} id="prior-petition" />
-          <Label htmlFor="prior-petition" className="text-sm cursor-pointer">{t("Have you filed petitions for other relatives before?", "¿Has presentado peticiones para otros parientes antes?")}</Label>
+          <Label htmlFor="prior-petition" className="text-sm cursor-pointer">{t("Have you filed petitions for other beneficiaries before?", "¿Has presentado peticiones para otros beneficiarios antes?")}</Label>
         </div>
         {data.hasFiledPriorPetition && (
-          <div className="space-y-2 p-3 rounded-lg bg-secondary/20 border border-border/30">
-            <Field label={t("How many?", "¿Cuántas?")}>
+          <div className="space-y-3 p-3 rounded-lg bg-secondary/20 border border-border/30">
+            <p className="text-xs text-muted-foreground">{t("Most recent prior petition (USCIS Items 2-5)", "Petición anterior más reciente")}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <Field label={t("Last Name (Item 2.a)", "Apellido")}><Input className={inputCls} value={data.priorPetitionBeneficiaryLastName} onChange={e => set("priorPetitionBeneficiaryLastName", e.target.value)} /></Field>
+              <Field label={t("First Name (2.b)", "Nombre")}><Input className={inputCls} value={data.priorPetitionBeneficiaryFirstName} onChange={e => set("priorPetitionBeneficiaryFirstName", e.target.value)} /></Field>
+              <Field label={t("Middle (2.c)", "Segundo")}><Input className={inputCls} value={data.priorPetitionBeneficiaryMiddleName} onChange={e => set("priorPetitionBeneficiaryMiddleName", e.target.value)} /></Field>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <Field label={t("City Filed (3.a)", "Ciudad Presentada")}><Input className={inputCls} value={data.priorPetitionFilingCity} onChange={e => set("priorPetitionFilingCity", e.target.value)} /></Field>
+              <Field label={t("State (3.b)", "Estado")}><StateSelect value={data.priorPetitionFilingState} onChange={v => set("priorPetitionFilingState", v)} /></Field>
+              <Field label={t("Date Filed (4)", "Fecha Presentada")}><Input type="date" className={inputCls} value={data.priorPetitionFilingDate} onChange={e => set("priorPetitionFilingDate", e.target.value)} /></Field>
+            </div>
+            <Field label={t("Result (Item 5 — approved/denied/withdrawn)", "Resultado")}>
+              <Input className={inputCls} value={data.priorPetitionResult} onChange={e => set("priorPetitionResult", e.target.value)} placeholder={t("e.g., Approved 01/15/2020", "ej. Aprobada 01/15/2020")} />
+            </Field>
+            <Field label={t("How many prior petitions total?", "¿Cuántas peticiones anteriores en total?")}>
               <Input type="number" className={inputCls} value={data.priorPetitionsCount} onChange={e => set("priorPetitionsCount", parseInt(e.target.value) || 0)} />
             </Field>
-            <Field label={t("Details (names, relationships, year filed)", "Detalles (nombres, relación, año)")}>
-              <textarea
-                className={cn(inputCls, "w-full rounded-md px-3 py-2 text-sm min-h-[80px]")}
-                value={data.priorPetitionsDetails}
-                onChange={e => set("priorPetitionsDetails", e.target.value)}
-              />
-            </Field>
+            {data.priorPetitionsCount > 1 && (
+              <Field label={t("Additional petitions detail (will go to Part 9 addendum)", "Detalles de peticiones adicionales (irán al addendum)")}>
+                <textarea
+                  className={cn(inputCls, "w-full rounded-md px-3 py-2 text-sm min-h-[80px]")}
+                  value={data.priorPetitionsDetails}
+                  onChange={e => set("priorPetitionsDetails", e.target.value)}
+                  placeholder={t("Petition #2: name, city, date, result...", "Petición #2: nombre, ciudad, fecha, resultado...")}
+                />
+              </Field>
+            )}
           </div>
         )}
         <div className="flex items-center gap-2">
           <Checkbox checked={data.hasBeneficiaryFiledPetition} onCheckedChange={v => set("hasBeneficiaryFiledPetition", !!v)} id="ben-prior" />
-          <Label htmlFor="ben-prior" className="text-sm cursor-pointer">{t("Has the beneficiary ever filed an immigration petition?", "¿El beneficiario ha presentado petición de inmigración antes?")}</Label>
+          <Label htmlFor="ben-prior" className="text-sm cursor-pointer">{t("Has the beneficiary ever filed an immigration petition?", "¿El beneficiario ha presentado petición antes?")}</Label>
         </div>
+      </div>
+
+      {/* Simultaneous Relatives (Part 5 Items 6.a-9) — para batch filings */}
+      <div className="pt-3 border-t border-border/30 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold">{t("Other Relatives Being Petitioned at the Same Time (Items 6-9)", "Otros Parientes Peticionados al Mismo Tiempo")}</p>
+          <Button type="button" variant="ghost" size="sm" onClick={() => set("simultaneousRelatives", [...data.simultaneousRelatives, { lastName: "", firstName: "", middleName: "", relationship: "" }])} className="gap-1">
+            <Plus className="w-3.5 h-3.5" /> {t("Add", "Agregar")}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">{t("Only if you're filing I-130 petitions for multiple relatives in the same batch (e.g., F2B for several siblings)", "Solo si presentas múltiples I-130 al mismo tiempo (ej. F2B para varios hermanos)")}</p>
+        {data.simultaneousRelatives.map((r, i) => (
+          <div key={i} className="p-3 rounded-lg border border-border/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">{t("Relative", "Pariente")} {i + 1}</p>
+              <Button type="button" variant="ghost" size="sm" onClick={() => set("simultaneousRelatives", data.simultaneousRelatives.filter((_, idx) => idx !== i))} className="text-destructive h-7 px-2">
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <Input className={inputCls} placeholder={t("Last Name", "Apellido")} value={r.lastName} onChange={e => { const arr = [...data.simultaneousRelatives]; arr[i] = { ...arr[i], lastName: e.target.value }; set("simultaneousRelatives", arr); }} />
+              <Input className={inputCls} placeholder={t("First Name", "Nombre")} value={r.firstName} onChange={e => { const arr = [...data.simultaneousRelatives]; arr[i] = { ...arr[i], firstName: e.target.value }; set("simultaneousRelatives", arr); }} />
+              <Input className={inputCls} placeholder={t("Middle", "Segundo")} value={r.middleName} onChange={e => { const arr = [...data.simultaneousRelatives]; arr[i] = { ...arr[i], middleName: e.target.value }; set("simultaneousRelatives", arr); }} />
+            </div>
+            <Input className={inputCls} placeholder={t("Relationship to petitioner (e.g., Son, Daughter)", "Relación con peticionario (ej. Hijo, Hija)")} value={r.relationship} onChange={e => { const arr = [...data.simultaneousRelatives]; arr[i] = { ...arr[i], relationship: e.target.value }; set("simultaneousRelatives", arr); }} />
+          </div>
+        ))}
       </div>
     </div>
   );

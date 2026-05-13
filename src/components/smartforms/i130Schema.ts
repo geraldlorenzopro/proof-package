@@ -166,6 +166,10 @@ export interface I130Data {
   beneficiaryANumber: string;
   beneficiaryUscisAccountNumber: string;
 
+  // Item 10 USCIS: "Has anyone else ever filed a petition for the beneficiary?"
+  // Yes/No/Unknown — diferente de Part 5 Item 1 (que es: ¿el petitioner filed antes?)
+  anyoneElseFiledForBeneficiary: "yes" | "no" | "unknown" | "";
+
   // Beneficiary address
   beneficiaryAddressInUS: boolean;
   beneficiaryMailingCareOf: string;
@@ -405,6 +409,8 @@ export const defaultI130Data: I130Data = {
   beneficiaryCityOfBirth: "", beneficiaryStateOfBirth: "", beneficiaryCountryOfBirth: "",
   beneficiaryCountryOfCitizenship: "", beneficiarySsn: "",
   beneficiaryANumber: "", beneficiaryUscisAccountNumber: "",
+
+  anyoneElseFiledForBeneficiary: "",
 
   beneficiaryAddressInUS: true,
   beneficiaryMailingCareOf: "",

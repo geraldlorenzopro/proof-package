@@ -376,6 +376,11 @@ const P = {
   pt4_l9_male: /\.Pt4Line9_Male\[0\]/,
   pt4_l9_female: /\.Pt4Line9_Female\[0\]/,
 
+  // Item 10: "Has anyone else ever filed a petition for the beneficiary?"
+  pt4_l10_yes: /\.Pt4Line10_Yes\[0\]/,
+  pt4_l10_no: /\.Pt4Line10_No\[0\]/,
+  pt4_l10_unknown: /\.Pt4Line10_Unknown\[0\]/,
+
   // Beneficiary mailing address (line 11)
   pt4_l11_street: /\.Pt4Line11_StreetNumberName\[0\]/,
   pt4_l11_apt: /\.Pt4Line11_AptSteFlrNumber\[0\]/,
@@ -799,7 +804,10 @@ export async function fillI130Pdf(data: I130Data) {
   setCheck(form, P.pt2_l17_separated, data.petitionerMaritalStatus === "separated");
   setCheck(form, P.pt2_l17_annulled, data.petitionerMaritalStatus === "annulled");
   setText(form, P.pt2_l18_marriageDate, fmtDate(data.petitionerDateOfMarriage));
-  setText(form, P.pt2_l19a_city, data.petitionerPlaceMarriageCity);
+  // Place of marriage: estructurado preferido, fallback al legacy string si los structured están vacíos.
+  // Casos viejos solo tienen `petitionerPlaceOfMarriage` combinado.
+  const petPlaceCity = data.petitionerPlaceMarriageCity || data.petitionerPlaceOfMarriage || "";
+  setText(form, P.pt2_l19a_city, petPlaceCity);
   setText(form, P.pt2_l19b_state, data.petitionerPlaceMarriageState);
   setText(form, P.pt2_l19c_province, data.petitionerPlaceMarriageProvince);
   setText(form, P.pt2_l19d_country, data.petitionerPlaceMarriageCountry);
@@ -971,6 +979,12 @@ export async function fillI130Pdf(data: I130Data) {
   setCheck(form, P.pt4_l9_male, data.beneficiarySex === "male");
   setCheck(form, P.pt4_l9_female, data.beneficiarySex === "female");
 
+  // Item 10: "Has anyone else ever filed a petition for the beneficiary?"
+  // Yes/No/Unknown — campo nuevo en schema, mutually exclusive con USCIS spec.
+  setCheck(form, P.pt4_l10_yes, data.anyoneElseFiledForBeneficiary === "yes");
+  setCheck(form, P.pt4_l10_no, data.anyoneElseFiledForBeneficiary === "no");
+  setCheck(form, P.pt4_l10_unknown, data.anyoneElseFiledForBeneficiary === "unknown");
+
   // Beneficiary mailing
   setTextOrOverflow(P.pt4_l11_street, data.beneficiaryStreet, { page: "5", part: "4", item: "11", label: "Beneficiary Physical Street" });
   setText(form, P.pt4_l11_apt, data.beneficiaryApt);
@@ -1055,7 +1069,9 @@ export async function fillI130Pdf(data: I130Data) {
     }
   }
   setText(form, P.pt4_marriageDate, fmtDate(data.beneficiaryDateOfMarriage));
-  setText(form, P.pt4_marriagePlace_city, data.beneficiaryPlaceMarriageCity);
+  // Place of beneficiary's marriage: fallback al legacy string si los structured están vacíos
+  const benePlaceCity = data.beneficiaryPlaceMarriageCity || data.beneficiaryPlaceOfMarriage || "";
+  setText(form, P.pt4_marriagePlace_city, benePlaceCity);
   setText(form, P.pt4_marriagePlace_state, data.beneficiaryPlaceMarriageState);
   setText(form, P.pt4_marriagePlace_province, data.beneficiaryPlaceMarriageProvince);
   setText(form, P.pt4_marriagePlace_country, data.beneficiaryPlaceMarriageCountry);
