@@ -452,6 +452,21 @@ Fase 10 — POSTPONED — QuickBooks integration
 9. Feature flags = **Por firma**, vos activás de a poco
 10. OCR/Translation = **Claude Vision** (no Google Cloud)
 
+## Local dev setup (Mac nueva o limpia)
+
+Para configurar una Mac nueva con todo el tooling necesario:
+
+```bash
+bash scripts/setup-mac.sh
+```
+
+Instala (vía Homebrew): Node.js, qpdf (CRÍTICO para Fase 0 del playbook —
+decrypt USCIS PDFs), poppler (pdftotext), gh CLI, ImageMagick, tree. Plus
+Python packages: pikepdf, python-docx. El script es idempotente — corrérlo
+de nuevo no rompe nada.
+
+`bun` ya viene en setups normales; si falta, el script lo detecta.
+
 ## How Claude Code (yo) trabaja con Mr. Lorenzo
 
 **Default action policy:** Ejecutar sin pedir permiso para acciones de bajo
