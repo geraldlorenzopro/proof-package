@@ -1298,7 +1298,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt8_apt, data.preparerApt);
     setUnitType(form, "Pt8Line3_Unit", data.preparerAptType);
     setText(form, P.pt8_city, data.preparerCity);
-    setText(form, P.pt8_state, data.preparerState);
+    setText(form, P.pt8_state, stateIfAddrPresent(data.preparerState, data.preparerStreet, data.preparerCity));
     setText(form, P.pt8_zip, data.preparerZip);
     setText(form, P.pt8_country, data.preparerCountry);
     setText(form, P.pt8_phone, digitsOnly(data.preparerPhone || ""));
