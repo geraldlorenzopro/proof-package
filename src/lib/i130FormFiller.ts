@@ -1374,9 +1374,10 @@ export async function fillI130Pdf(data: I130Data) {
   if (data.petitionerPriorAddresses && data.petitionerPriorAddresses.length > 1) {
     for (let i = 1; i < data.petitionerPriorAddresses.length; i++) {
       const a = data.petitionerPriorAddresses[i];
+      const locality = [a.city, a.state, a.zip, a.province, a.postalCode, a.country].filter(Boolean).join(" ");
       overflow.push({
         page: "2", part: "2", item: "14",
-        content: `Additional Prior Address #${i + 1}: ${a.street}, ${a.apt} ${a.city}, ${a.state} ${a.zip} ${a.country} · From ${fmtDate(a.fromDate)} to ${fmtDate(a.toDate)}`.trim(),
+        content: `Additional Prior Address #${i + 1}: ${a.street}, ${a.apt} ${locality} · From ${fmtDate(a.fromDate)} to ${fmtDate(a.toDate)}`.trim(),
       });
     }
   }
