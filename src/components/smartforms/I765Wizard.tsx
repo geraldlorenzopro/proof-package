@@ -454,6 +454,62 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
           </p>
         )}
 
+        {/* Applicant picker (parity with I-130 beneficiary picker) */}
+        <div className="rounded-xl border border-border/30 p-4 space-y-3">
+          <p className="text-sm font-bold text-foreground text-center">
+            👤 {t("Applicant", "Aplicante")}
+          </p>
+          {selectedClientId ? (() => {
+            const sel = clientProfiles.find(c => c.id === selectedClientId);
+            const name = sel
+              ? `${sel.last_name || ""}, ${sel.first_name || ""} ${sel.middle_name || ""}`.trim()
+              : `${data.lastName || ""}, ${data.firstName || ""} ${data.middleName || ""}`.trim();
+            return (
+              <div className="flex items-center justify-between gap-3 rounded-md border border-primary/40 bg-primary/10 px-3 py-2.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Check className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-sm font-medium truncate">{name || t("Selected applicant", "Aplicante seleccionado")}</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setSelectedClientId(null); setClientSearch(""); onBeneficiarySelect?.(null as any); }}
+                  className="text-xs"
+                >
+                  {t("Change", "Cambiar")}
+                </Button>
+              </div>
+            );
+          })() : (
+            <>
+              <p className="text-xs text-muted-foreground text-center">
+                {t("Select an existing client profile or fill manually in next steps", "Selecciona un cliente existente o llena manualmente en los pasos siguientes")}
+              </p>
+              <Input
+                placeholder={t("Search by name or email...", "Buscar por nombre o email...")}
+                className={inputCls}
+                value={clientSearch}
+                onChange={e => setClientSearch(e.target.value)}
+              />
+              {clientProfiles.length > 0 && (
+                <div className="max-h-40 overflow-y-auto rounded-md border border-border/30 divide-y divide-border/30">
+                  {clientProfiles.slice(0, 10).map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => selectClient(c.id)}
+                      className="w-full text-left px-3 py-2 hover:bg-primary/10 transition-colors text-sm"
+                    >
+                      <span>{c.last_name}, {c.first_name} {c.middle_name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
         {/* Language — inline centered */}
         <div className="rounded-xl border border-border/30 p-4 space-y-3 text-center">
           <p className="text-sm font-bold text-foreground">
