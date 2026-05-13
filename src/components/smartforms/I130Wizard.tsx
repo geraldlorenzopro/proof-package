@@ -46,6 +46,17 @@ const StateSelect = ({ value, onChange }: { value: string; onChange: (v: string)
   </Select>
 );
 
+// Para "Place of Marriage" — incluye opción explícita "No fue en USA" (mapea a N/A)
+const MarriageStateSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+  <Select value={value || ""} onValueChange={onChange}>
+    <SelectTrigger className={inputCls}><SelectValue placeholder="Estado o 'No fue en USA'" /></SelectTrigger>
+    <SelectContent>
+      <SelectItem value="N/A">— No fue en USA —</SelectItem>
+      {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+    </SelectContent>
+  </Select>
+);
+
 const AptTypeSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
   <Select value={value} onValueChange={onChange}>
     <SelectTrigger className="bg-secondary/60 border-border/50 w-24"><SelectValue placeholder="—" /></SelectTrigger>
@@ -776,7 +787,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <p className="text-xs text-muted-foreground">{t("Place of Current Marriage (Item 19.a-d)", "Lugar del Matrimonio Actual")}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.petitionerPlaceMarriageCity} onChange={e => set("petitionerPlaceMarriageCity", e.target.value)} /></Field>
-              <Field label={t("State (if US)", "Estado (si US)")}><StateSelect value={data.petitionerPlaceMarriageState} onChange={v => set("petitionerPlaceMarriageState", v)} /></Field>
+              <Field label={t("State (US) or 'Not in USA'", "Estado (US) o 'No fue en USA'")}><MarriageStateSelect value={data.petitionerPlaceMarriageState} onChange={v => set("petitionerPlaceMarriageState", v)} /></Field>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label={t("Province (if foreign)", "Provincia (si extranjero)")}><Input className={inputCls} value={data.petitionerPlaceMarriageProvince} onChange={e => set("petitionerPlaceMarriageProvince", e.target.value)} /></Field>
@@ -1210,7 +1221,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
             <p className="text-xs text-muted-foreground">{t("Place of Marriage (Item 20.a-d)", "Lugar del Matrimonio")}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label={t("City", "Ciudad")}><Input className={inputCls} value={data.beneficiaryPlaceMarriageCity} onChange={e => set("beneficiaryPlaceMarriageCity", e.target.value)} /></Field>
-              <Field label={t("State (if US)", "Estado (si US)")}><StateSelect value={data.beneficiaryPlaceMarriageState} onChange={v => set("beneficiaryPlaceMarriageState", v)} /></Field>
+              <Field label={t("State (US) or 'Not in USA'", "Estado (US) o 'No fue en USA'")}><MarriageStateSelect value={data.beneficiaryPlaceMarriageState} onChange={v => set("beneficiaryPlaceMarriageState", v)} /></Field>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label={t("Province (if foreign)", "Provincia (si extranjero)")}><Input className={inputCls} value={data.beneficiaryPlaceMarriageProvince} onChange={e => set("beneficiaryPlaceMarriageProvince", e.target.value)} /></Field>
