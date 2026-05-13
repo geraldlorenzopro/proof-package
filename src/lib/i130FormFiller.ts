@@ -137,7 +137,7 @@ function isToday(dateStr: string | undefined | null): boolean {
 
 /** Para fechas que LÓGICAMENTE no pueden ser hoy (DOB, passport exp, marriage ended).
  *  Si el dato viene = today → lo descartamos como placeholder corrupto. */
-function safeDate(d: string | undefined | null, context: "dob" | "expiration" | "ended" | "removal"): string {
+function safeDate(d: string | undefined | null, context: "dob" | "expiration" | "ended" | "removal" | "began"): string {
   if (!d) return "";
   if (isToday(d)) {
     console.warn(`[i130] Suspicious ${context} date = today (${d}), skipping`);
@@ -1199,7 +1199,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt4_l26_state, beJob.state);
     setText(form, P.pt4_l26_zip, beJob.zip);
     setText(form, P.pt4_l26_country, beJob.country);
-    setText(form, P.pt4_l27_began, fmtDate(beJob.fromDate));
+    setText(form, P.pt4_l27_began, safeDate(beJob.fromDate, "began"));
     // NOTE: el PDF I-130 NO TIENE field name para beneficiary occupation.
     // Si paralegal necesita llenarlo, va al Part 9 Addendum.
   }
@@ -1298,7 +1298,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt8_apt, data.preparerApt);
     setUnitType(form, "Pt8Line3_Unit", data.preparerAptType);
     setText(form, P.pt8_city, data.preparerCity);
-    setText(form, P.pt8_state, data.preparerState);
+    setText(form, P.pt8_state, stateIfAddrPresent(data.preparerState, data.preparerStreet, data.preparerCity));
     setText(form, P.pt8_zip, data.preparerZip);
     setText(form, P.pt8_country, data.preparerCountry);
     setText(form, P.pt8_phone, digitsOnly(data.preparerPhone || ""));
