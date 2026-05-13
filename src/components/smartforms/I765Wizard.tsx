@@ -1,7 +1,6 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, ChevronLeft, Save, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, Search, User, CheckCircle2, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, FileText, FileDown, Scale, FileEdit, UserCheck, AlertCircle, Link2, Copy, Check, CheckCircle2, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
