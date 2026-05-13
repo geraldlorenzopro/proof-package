@@ -361,7 +361,7 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       firstName: c.first_name || prev.firstName,
       lastName: c.last_name || prev.lastName,
       middleName: c.middle_name || prev.middleName,
-      dateOfBirth: c.dob || prev.dateOfBirth,
+      dateOfBirth: notToday(c.dob) || prev.dateOfBirth,
       sex: c.gender === "male" ? "male" : c.gender === "female" ? "female" : prev.sex,
       maritalStatus: c.marital_status || prev.maritalStatus,
       aNumber: c.a_number || prev.aNumber,
@@ -372,12 +372,14 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       mailingStreet: c.address_street || prev.mailingStreet,
       mailingApt: c.address_apt || prev.mailingApt,
       mailingCity: c.address_city || prev.mailingCity,
-      mailingState: c.address_state || prev.mailingState,
+      mailingState: stateIfAddr(c.address_state, c.address_street, c.address_city) || prev.mailingState,
       mailingZip: c.address_zip || prev.mailingZip,
       sameAddress: c.mailing_same_as_physical !== false,
       physicalStreet: c.mailing_same_as_physical === false ? (c.mailing_street || "") : prev.physicalStreet,
       physicalCity: c.mailing_same_as_physical === false ? (c.mailing_city || "") : prev.physicalCity,
-      physicalState: c.mailing_same_as_physical === false ? (c.mailing_state || "") : prev.physicalState,
+      physicalState: c.mailing_same_as_physical === false
+        ? stateIfAddr(c.mailing_state, c.mailing_street, c.mailing_city)
+        : prev.physicalState,
       physicalZip: c.mailing_same_as_physical === false ? (c.mailing_zip || "") : prev.physicalZip,
       applicantEmail: c.email || prev.applicantEmail,
       applicantPhone: c.phone || prev.applicantPhone,
@@ -385,11 +387,11 @@ export default function I765Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       i94Number: c.i94_number || prev.i94Number,
       passportNumber: c.passport_number || prev.passportNumber,
       passportCountry: c.passport_country || prev.passportCountry,
-      passportExpiration: c.passport_expiration || prev.passportExpiration,
+      passportExpiration: notToday(c.passport_expiration) || prev.passportExpiration,
       statusAtArrival: c.class_of_admission || prev.statusAtArrival,
       currentStatus: c.immigration_status || prev.currentStatus,
       lastArrivalPlace: c.place_of_last_entry || prev.lastArrivalPlace,
-      lastArrivalDate: c.date_of_last_entry || prev.lastArrivalDate,
+      lastArrivalDate: notToday(c.date_of_last_entry) || prev.lastArrivalDate,
     }));
   };
 
