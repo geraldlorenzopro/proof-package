@@ -1,6 +1,7 @@
 import {
   PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, PDFForm,
   PDFName, PDFString, PDFHexString, PDFDict, PDFArray, PDFNumber,
+  StandardFonts,
 } from "pdf-lib";
 // @ts-ignore - bwip-js has no type declarations
 import bwipjs from "bwip-js";
@@ -1572,6 +1573,8 @@ export async function fillI130Pdf(data: I130Data) {
     if (acroForm) {
       acroForm.set(PDFName.of("NeedAppearances"), pdf.context.obj(true));
     }
+    const appearanceFont = await pdf.embedFont(StandardFonts.Helvetica);
+    form.updateFieldAppearances(appearanceFont);
   } catch (e) {
     console.warn("[i130] Could not set NeedAppearances flag:", e);
   }
