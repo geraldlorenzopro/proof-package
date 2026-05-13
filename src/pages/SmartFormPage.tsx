@@ -277,9 +277,9 @@ export default function SmartFormPage() {
         } else if (formType === "i-130") {
           await fillI130Pdf(formData);
         }
-      } else {
-        toast({ title: lang === "es" ? "💾 Borrador guardado" : "💾 Draft saved", duration: 2000 });
       }
+      // Nota: para drafts no mostramos toast — el wizard ya tiene un
+      // indicador inline (autoSaveStatus) en el footer que no tapa botones.
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
