@@ -289,7 +289,17 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, [clientSearch, accountIdRef]);
 
-  // Auto-fill beneficiary from selected client_profile (the foreign relative)
+  // Auto-fill beneficiary from selected client_profile (the foreign relative).
+  // Defensa: si client_profiles tiene valores corruptos (fecha = today, state sin
+  // street/city), NO los propagamos al wizard — son placeholders no datos reales.
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const notToday = (v?: string | null) => (v && !String(v).startsWith(todayISO) ? v : "");
+  const stateIfAddr = (state?: string | null, street?: string | null, city?: string | null) => {
+    if (!state) return "";
+    const hasAddr = !!(street && street !== "N/A") || !!(city && city !== "N/A");
+    return hasAddr ? state : "";
+  };
+
   const selectBeneficiary = (clientId: string) => {
     const c = clientProfiles.find(cp => cp.id === clientId);
     if (!c) return;
@@ -300,7 +310,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       beneficiaryFirstName: c.first_name || prev.beneficiaryFirstName,
       beneficiaryLastName: c.last_name || prev.beneficiaryLastName,
       beneficiaryMiddleName: c.middle_name || prev.beneficiaryMiddleName,
-      beneficiaryDateOfBirth: c.dob || prev.beneficiaryDateOfBirth,
+      beneficiaryDateOfBirth: notToday(c.dob) || prev.beneficiaryDateOfBirth,
       beneficiarySex: c.gender === "male" ? "male" : c.gender === "female" ? "female" : prev.beneficiarySex,
       beneficiaryMaritalStatus: c.marital_status || prev.beneficiaryMaritalStatus,
       beneficiaryANumber: c.a_number || prev.beneficiaryANumber,
@@ -311,15 +321,15 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
       beneficiaryStreet: c.address_street || prev.beneficiaryStreet,
       beneficiaryApt: c.address_apt || prev.beneficiaryApt,
       beneficiaryCity: c.address_city || prev.beneficiaryCity,
-      beneficiaryState: c.address_state || prev.beneficiaryState,
+      beneficiaryState: stateIfAddr(c.address_state, c.address_street, c.address_city) || prev.beneficiaryState,
       beneficiaryZip: c.address_zip || prev.beneficiaryZip,
       beneficiaryI94Number: c.i94_number || prev.beneficiaryI94Number,
       beneficiaryPassportNumber: c.passport_number || prev.beneficiaryPassportNumber,
       beneficiaryPassportCountry: c.passport_country || prev.beneficiaryPassportCountry,
-      beneficiaryPassportExpiration: c.passport_expiration || prev.beneficiaryPassportExpiration,
+      beneficiaryPassportExpiration: notToday(c.passport_expiration) || prev.beneficiaryPassportExpiration,
       beneficiaryStatusAtEntry: c.class_of_admission || prev.beneficiaryStatusAtEntry,
-      beneficiaryDateOfLastEntry: c.date_of_last_entry || prev.beneficiaryDateOfLastEntry,
-      beneficiaryEverInUS: !!(c.date_of_last_entry || c.i94_number),
+      beneficiaryDateOfLastEntry: notToday(c.date_of_last_entry) || prev.beneficiaryDateOfLastEntry,
+      beneficiaryEverInUS: !!(notToday(c.date_of_last_entry) || c.i94_number),
     }));
   };
 

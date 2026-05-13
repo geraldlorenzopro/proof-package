@@ -127,6 +127,33 @@ function fmtDate(d: string | undefined | null): string {
   return `${m}/${day}/${y}`;
 }
 
+// Detecta cuando un campo de fecha viene = hoy. Síntoma típico de placeholder de
+// client_profiles o input de <input type="date"> donde el user clickeó sin escribir.
+function isToday(dateStr: string | undefined | null): boolean {
+  if (!dateStr) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  return String(dateStr).startsWith(today);
+}
+
+/** Para fechas que LÓGICAMENTE no pueden ser hoy (DOB, passport exp, marriage ended).
+ *  Si el dato viene = today → lo descartamos como placeholder corrupto. */
+function safeDate(d: string | undefined | null, context: "dob" | "expiration" | "ended" | "removal"): string {
+  if (!d) return "";
+  if (isToday(d)) {
+    console.warn(`[i130] Suspicious ${context} date = today (${d}), skipping`);
+    return "";
+  }
+  return fmtDate(d);
+}
+
+/** Para fields de State (FL/CA/etc): si el address asociado está vacío, omitir el state.
+ *  Resuelve el bug del autofill de client_profiles que deja "FL" colgado sin street/city. */
+function stateIfAddrPresent(state: string | undefined, street: string | undefined, city: string | undefined): string {
+  if (!state) return "";
+  const hasAddr = !!(street && street !== "N/A") || !!(city && city !== "N/A");
+  return hasAddr ? state : "";
+}
+
 function clearAllFields(form: PDFForm) {
   for (const field of form.getFields()) {
     if (field instanceof PDFTextField) {
@@ -751,7 +778,7 @@ export async function fillI130Pdf(data: I130Data) {
   // Birth
   setText(form, P.pt2_l6_city, data.petitionerCityOfBirth);
   setText(form, P.pt2_l7_country, data.petitionerCountryOfBirth);
-  setText(form, P.pt2_l8_dob, fmtDate(data.petitionerDateOfBirth));
+  setText(form, P.pt2_l8_dob, safeDate(data.petitionerDateOfBirth, "dob"));
   setCheck(form, P.pt2_l9_male, data.petitionerSex === "male");
   setCheck(form, P.pt2_l9_female, data.petitionerSex === "female");
 
@@ -828,7 +855,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt2_l20_family, sp0.spouseLastName);
     setText(form, P.pt2_l20_given, sp0.spouseFirstName);
     setText(form, P.pt2_l20_middle, sp0.spouseMiddleName);
-    setText(form, P.pt2_l21_dateEnded, fmtDate(sp0.dateMarriageEnded));
+    setText(form, P.pt2_l21_dateEnded, safeDate(sp0.dateMarriageEnded, "ended"));
   }
 
   // Spouse 2 = primer prior marriage (cuando spouse 1 es current),
@@ -839,7 +866,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt2_l22_family, priorSp.spouseLastName);
     setText(form, P.pt2_l22_given, priorSp.spouseFirstName);
     setText(form, P.pt2_l22_middle, priorSp.spouseMiddleName);
-    setText(form, P.pt2_l23_dateEnded, fmtDate(priorSp.dateMarriageEnded));
+    setText(form, P.pt2_l23_dateEnded, safeDate(priorSp.dateMarriageEnded, "ended"));
     setCheck(form, P.pt2_l23_divorce, priorSp.howEnded === "divorce");
     setCheck(form, P.pt2_l23_death, priorSp.howEnded === "death");
     setCheck(form, P.pt2_l23_annul, priorSp.howEnded === "annulment");
@@ -849,7 +876,7 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt2_father_family, data.petitionerFatherLastName);
   setText(form, P.pt2_father_given, data.petitionerFatherFirstName);
   setText(form, P.pt2_father_middle, data.petitionerFatherMiddleName);
-  setText(form, P.pt2_father_dob, fmtDate(data.petitionerFatherDateOfBirth));
+  setText(form, P.pt2_father_dob, safeDate(data.petitionerFatherDateOfBirth, "dob"));
   setCheck(form, P.pt2_father_male, true); // Father siempre Male
   setText(form, P.pt2_father_country, data.petitionerFatherCountryOfBirth);
   setText(form, P.pt2_father_city_res, data.petitionerFatherCityOfResidence);
@@ -859,7 +886,7 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt2_mother_family, data.petitionerMotherLastName);
   setText(form, P.pt2_mother_given, data.petitionerMotherFirstName);
   setText(form, P.pt2_mother_middle, data.petitionerMotherMiddleName);
-  setText(form, P.pt2_mother_dob, fmtDate(data.petitionerMotherDateOfBirth));
+  setText(form, P.pt2_mother_dob, safeDate(data.petitionerMotherDateOfBirth, "dob"));
   setCheck(form, P.pt2_mother_female, true); // Mother siempre Female
   setText(form, P.pt2_mother_country, data.petitionerMotherCountryOfBirth);
   setText(form, P.pt2_mother_city_res, data.petitionerMotherCityOfResidence);
@@ -975,7 +1002,7 @@ export async function fillI130Pdf(data: I130Data) {
 
   setText(form, P.pt4_l7_city_birth, data.beneficiaryCityOfBirth);
   setText(form, P.pt4_l8_country_birth, data.beneficiaryCountryOfBirth);
-  setText(form, P.pt4_l9_dob, fmtDate(data.beneficiaryDateOfBirth));
+  setText(form, P.pt4_l9_dob, safeDate(data.beneficiaryDateOfBirth, "dob"));
   setCheck(form, P.pt4_l9_male, data.beneficiarySex === "male");
   setCheck(form, P.pt4_l9_female, data.beneficiarySex === "female");
 
@@ -990,7 +1017,8 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt4_l11_apt, data.beneficiaryApt);
   setUnitType(form, "Pt4Line11_Unit", data.beneficiaryAptType);
   setText(form, P.pt4_l11_city, data.beneficiaryCity);
-  setText(form, P.pt4_l11_state, data.beneficiaryState);
+  // State defense: si beneficiary street + city están vacíos/N-A, no escribir state (autofill garbage)
+  setText(form, P.pt4_l11_state, stateIfAddrPresent(data.beneficiaryState, data.beneficiaryStreet, data.beneficiaryCity));
   setText(form, P.pt4_l11_zip, data.beneficiaryZip);
   setText(form, P.pt4_l11_province, data.beneficiaryProvince);
   setText(form, P.pt4_l11_postal, data.beneficiaryPostalCode);
@@ -1090,7 +1118,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt4_l21a_family, sp0.spouseLastName);
     setText(form, P.pt4_l21b_given, sp0.spouseFirstName);
     setText(form, P.pt4_l21c_middle, sp0.spouseMiddleName);
-    setText(form, P.pt4_l22_dateEnded, fmtDate(sp0.dateMarriageEnded));
+    setText(form, P.pt4_l22_dateEnded, safeDate(sp0.dateMarriageEnded, "ended"));
   }
   // Spouse 2 (Item 23-24 visual): primer prior si Spouse 1 fue current,
   // o segundo prior si Spouse 1 fue el primer prior.
@@ -1100,7 +1128,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt4_l23a_family, benePrior.spouseLastName);
     setText(form, P.pt4_l23b_given, benePrior.spouseFirstName);
     setText(form, P.pt4_l23c_middle, benePrior.spouseMiddleName);
-    setText(form, P.pt4_l24_dateEnded, fmtDate(benePrior.dateMarriageEnded));
+    setText(form, P.pt4_l24_dateEnded, safeDate(benePrior.dateMarriageEnded, "ended"));
   }
 
   // ── Beneficiary's Family (Persons 1-5 visual, slots 30/34/38/42/46 en PDF) ──
@@ -1146,7 +1174,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, gp, fam.firstName);
     setText(form, mp, fam.middleName);
     setText(form, rp, fam.relationship);
-    setText(form, dp, fmtDate(fam.dateOfBirth));
+    setText(form, dp, safeDate(fam.dateOfBirth, "dob"));
     setText(form, cp, fam.countryOfBirth);
   }
 
@@ -1160,7 +1188,7 @@ export async function fillI130Pdf(data: I130Data) {
   setText(form, P.pt4_l22_passport, data.beneficiaryPassportNumber);
   setText(form, P.pt4_l23_travelDoc, data.beneficiaryTravelDocNumber);
   setText(form, P.pt4_l24_country, data.beneficiaryPassportCountry);
-  setText(form, P.pt4_l25_exp, fmtDate(data.beneficiaryPassportExpiration));
+  setText(form, P.pt4_l25_exp, safeDate(data.beneficiaryPassportExpiration, "expiration"));
 
   // Current employment beneficiary
   const beJob = data.beneficiaryCurrentEmployment;
@@ -1184,8 +1212,8 @@ export async function fillI130Pdf(data: I130Data) {
   setCheck(form, P.pt4_l54_rescission, data.beneficiaryRemovalType === "rescission");
   setCheck(form, P.pt4_l54_judicial, data.beneficiaryRemovalType === "other_judicial");
   setText(form, P.pt4_l55_city, data.beneficiaryRemovalCity);
-  setText(form, P.pt4_l55_state, data.beneficiaryRemovalState);
-  setText(form, P.pt4_l56_date, fmtDate(data.beneficiaryRemovalDate));
+  setText(form, P.pt4_l55_state, stateIfAddrPresent(data.beneficiaryRemovalState, "", data.beneficiaryRemovalCity));
+  setText(form, P.pt4_l56_date, safeDate(data.beneficiaryRemovalDate, "removal"));
 
   // Last address lived together
   if (!data.neverLivedTogether) {
@@ -1193,7 +1221,7 @@ export async function fillI130Pdf(data: I130Data) {
     setText(form, P.pt4_l57_apt, data.livedTogetherApt);
     setUnitType(form, "Pt4Line57_Unit", data.livedTogetherAptType);
     setText(form, P.pt4_l57_city, data.livedTogetherCity);
-    setText(form, P.pt4_l57_state, data.livedTogetherState);
+    setText(form, P.pt4_l57_state, stateIfAddrPresent(data.livedTogetherState, data.livedTogetherStreet, data.livedTogetherCity));
     setText(form, P.pt4_l57_zip, data.livedTogetherZip);
     setText(form, P.pt4_l57_province, data.livedTogetherProvince);
     setText(form, P.pt4_l57_postal, data.livedTogetherPostalCode);
@@ -1205,7 +1233,7 @@ export async function fillI130Pdf(data: I130Data) {
   // Visa processing
   if (!data.consularProcessing) {
     setText(form, P.pt4_l60_city, data.adjustmentOfStatusCity);
-    setText(form, P.pt4_l60_state, data.adjustmentOfStatusState);
+    setText(form, P.pt4_l60_state, stateIfAddrPresent(data.adjustmentOfStatusState, "", data.adjustmentOfStatusCity));
   } else {
     setText(form, P.pt4_l61_city, data.consularPostCity);
     setText(form, P.pt4_l61_province, data.consularPostProvince);
