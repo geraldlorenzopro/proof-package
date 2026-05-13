@@ -45,13 +45,18 @@ const results = [];
 // Paso 1: cada test individual debe pasar
 // ──────────────────────────────────────────────────────────────────
 console.log("─── Paso 1: tests individuales ───");
+// FIX 2026-05-13: usar process.argv[0] (la runtime que corre este meta-test)
+// en vez de hardcodear "node". Setup de Mr. Lorenzo (y muchos workflows
+// modernos) usa `bun` sin `node` instalado. process.argv[0] funciona en
+// ambos entornos (Node, Bun, Deno con shim) sin asumir nada del PATH.
+const runtime = process.argv[0];
 for (const form of FORMS) {
   try {
-    execSync(`node ${form.testScript}`, { stdio: "pipe" });
+    execSync(`${runtime} ${form.testScript}`, { stdio: "pipe" });
     console.log(`  ✅ ${form.id} parity test passes`);
     results.push({ form, passed: true });
   } catch (e) {
-    console.log(`  ❌ ${form.id} parity test FAILS — corré 'node ${form.testScript}' para ver detalle`);
+    console.log(`  ❌ ${form.id} parity test FAILS — corré '${runtime} ${form.testScript}' para ver detalle`);
     results.push({ form, passed: false });
     totalErrors++;
   }
