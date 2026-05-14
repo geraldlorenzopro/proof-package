@@ -8,9 +8,10 @@ import {
   Globe,
   MessageSquare,
   Archive,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
-import { getToolOutputs, type ToolOutput } from "./useCaseContext";
+import { listToolOutputs, type ToolOutput } from "@/lib/caseToolOutputs";
 import { cn } from "@/lib/utils";
 
 const TOOL_ICONS: Record<string, LucideIcon> = {
@@ -29,19 +30,27 @@ interface Props {
 
 /**
  * Sección del workspace que muestra outputs generados por tools NER
- * y guardados al expediente. Lee de localStorage hoy, de Supabase mañana.
+ * y guardados al expediente. Lee del cliente hybrid (Supabase + localStorage).
  *
  * Se actualiza vía storage event cuando otra tab guarda algo (paralegal
  * generó PDF en /tools/evidence?case_id=X, vuelve al workspace y ve el
- * output listado sin recargar).
+ * output listado sin recargar) y también en window focus.
  */
 export default function CaseOutputsList({ caseId }: Props) {
   const [outputs, setOutputs] = useState<ToolOutput[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const refresh = () => setOutputs(getToolOutputs(caseId));
+    let alive = true;
+    const refresh = async () => {
+      const list = await listToolOutputs(caseId);
+      if (alive) {
+        setOutputs(list);
+        setLoading(false);
+      }
+    };
     refresh();
-    // Refresh cuando otra tab guarde algo
+    // Refresh cuando otra tab guarde algo en localStorage
     const onStorage = (e: StorageEvent) => {
       if (e.key === `ner.case-tools.${caseId}`) refresh();
     };
@@ -50,12 +59,17 @@ export default function CaseOutputsList({ caseId }: Props) {
     const onFocus = () => refresh();
     window.addEventListener("focus", onFocus);
     return () => {
+      alive = false;
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("focus", onFocus);
     };
   }, [caseId]);
 
+  if (loading) return null;
   if (outputs.length === 0) return null;
+
+  const supabaseCount = outputs.filter((o) => o._source === "supabase").length;
+  const localCount = outputs.filter((o) => o._source === "localStorage").length;
 
   return (
     <div className="bg-card border border-border rounded-xl p-3 flex flex-col">
@@ -68,7 +82,7 @@ export default function CaseOutputsList({ caseId }: Props) {
       </div>
       <ul className="space-y-1.5">
         {outputs.slice(0, 6).map((o) => {
-          const Icon = TOOL_ICONS[o.toolSlug] ?? Archive;
+          const Icon = TOOL_ICONS[o.tool_slug] ?? Archive;
           return (
             <li
               key={o.id}
@@ -79,20 +93,37 @@ export default function CaseOutputsList({ caseId }: Props) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[11.5px] font-semibold text-foreground leading-tight truncate">
-                  {o.toolLabel}
+                  {o.tool_label}
                 </div>
-                <div className="text-[10px] text-muted-foreground leading-tight">
-                  {formatRelativeTime(o.generatedAt)}
-                  {o.meta?.output_type && (
-                    <>
-                      {" · "}
-                      <span className="font-mono uppercase tracking-wider">
-                        {String(o.meta.output_type)}
-                      </span>
-                    </>
+                <div className="text-[10px] text-muted-foreground leading-tight flex items-center gap-1.5 flex-wrap">
+                  <span>{formatRelativeTime(o.generated_at)}</span>
+                  <span className="text-muted-foreground/60">·</span>
+                  <span className="font-mono uppercase tracking-wider text-[9px]">
+                    {o.output_type}
+                  </span>
+                  {o._source === "supabase" && (
+                    <span className="text-emerald-400 font-mono uppercase tracking-wider text-[8.5px]">
+                      · sync ✓
+                    </span>
+                  )}
+                  {o._source === "localStorage" && (
+                    <span className="text-amber-300 font-mono uppercase tracking-wider text-[8.5px]">
+                      · local
+                    </span>
                   )}
                 </div>
               </div>
+              {o.storage_url && (
+                <a
+                  href={o.storage_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 p-1 rounded text-muted-foreground hover:text-jarvis transition-colors"
+                  title="Abrir archivo"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
             </li>
           );
         })}
@@ -102,11 +133,12 @@ export default function CaseOutputsList({ caseId }: Props) {
           Ver todos ({outputs.length})
         </button>
       )}
-      <div className="mt-2 pt-2 border-t border-border/40 text-[9px] text-muted-foreground/70 leading-tight">
-        Persistencia local (puente). Migración a Supabase pendiente — los outputs guardados acá se
-        migrarán automáticamente cuando la tabla{" "}
-        <code className="font-mono">case_tool_outputs</code> esté activa.
-      </div>
+      {localCount > 0 && supabaseCount === 0 && (
+        <div className="mt-2 pt-2 border-t border-border/40 text-[9px] text-muted-foreground/70 leading-tight">
+          Algunos outputs están en localStorage (puente). Se migrarán a Supabase
+          automáticamente cuando guardes el próximo output en un caso real.
+        </div>
+      )}
     </div>
   );
 }

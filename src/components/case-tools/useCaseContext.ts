@@ -1,15 +1,20 @@
 import { useSearchParams } from "react-router-dom";
+import {
+  saveToolOutput as saveOutputClient,
+  listToolOutputs as listClient,
+  type ToolOutput as ClientToolOutput,
+  type SaveOutputInput,
+} from "@/lib/caseToolOutputs";
 
-/**
- * Lee `?case_id=X` opcional del URL. Tools standalone NO reciben este param,
- * funcionan EXACTO igual que antes. Tools invocados desde un case engine
- * reciben el param y pueden ajustar UI mínimamente (banner "Vinculado al caso",
- * link "Volver al caso", botón "Guardar al expediente").
- *
- * IMPORTANTE — additive only: este hook NO obliga a usar case_id. Si retorna
- * null, el tool sigue funcionando como standalone para las 8 firmas que ya
- * lo usan así.
- */
+// ═══════════════════════════════════════════════════════════════════
+// Hook: lee el query string del URL y expone el contexto del caso.
+//
+// Tools standalone que NO reciben ?case_id=X funcionan exactamente igual
+// que antes — useCaseContext retorna {caseId: null, ...} y todos los
+// componentes que dependen de él (CaseToolBanner, SaveToCaseButton) NO
+// renderizan nada.
+// ═══════════════════════════════════════════════════════════════════
+
 export interface CaseContext {
   caseId: string | null;
   packType: "i130" | "i485" | "i765" | "n400" | "ds260" | "i751" | null;
@@ -28,38 +33,65 @@ export function useCaseContext(): CaseContext {
   };
 }
 
-const STORAGE_PREFIX = "ner.case-tools";
+// ═══════════════════════════════════════════════════════════════════
+// Persistence helpers — fachada delgada al cliente hybrid.
+//
+// Hoy: si caseId UUID + user auth → Supabase. Sino → localStorage.
+// Mañana: cuando Lovable regenere types.ts, quitamos los `as any` del
+// cliente. La interfaz acá NO cambia.
+// ═══════════════════════════════════════════════════════════════════
 
-export interface ToolOutput {
-  id: string;
+export type ToolOutput = ClientToolOutput;
+
+/**
+ * Guarda un output al expediente del caso.
+ * @returns el output creado, o null si caseId vacío
+ */
+export function saveToolOutput(input: {
   caseId: string;
-  toolSlug: string;
+  toolSlug:
+    | "affidavit"
+    | "evidence"
+    | "cspa"
+    | "uscis-analyzer"
+    | "checklist"
+    | "visa-evaluator"
+    | "interview-sim";
   toolLabel: string;
-  generatedAt: string;
-  meta: Record<string, string | number>;
+  meta?: Record<string, string | number>;
+}) {
+  // Adapter: convertir meta del legacy (Record<string,string|number>) al nuevo
+  // (Record<string, unknown>). El output_type se infiere del meta si está.
+  const outputType =
+    (input.meta?.output_type as SaveOutputInput["outputType"]) ?? "pdf";
+  const cleanMeta: Record<string, unknown> = { ...input.meta };
+  delete cleanMeta.output_type;
+
+  // Fire-and-forget para mantener API sync con el legacy
+  // (los componentes que llamen no necesitan await).
+  saveOutputClient({
+    caseId: input.caseId,
+    toolSlug: input.toolSlug,
+    toolLabel: input.toolLabel,
+    outputType,
+    meta: cleanMeta,
+  }).catch((e) => console.warn("[useCaseContext] saveToolOutput failed:", e));
 }
 
-export function saveToolOutput(output: Omit<ToolOutput, "id" | "generatedAt">) {
-  if (!output.caseId) return;
-  const key = `${STORAGE_PREFIX}.${output.caseId}`;
-  try {
-    const raw = localStorage.getItem(key);
-    const list: ToolOutput[] = raw ? JSON.parse(raw) : [];
-    list.unshift({
-      ...output,
-      id: `out_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      generatedAt: new Date().toISOString(),
-    });
-    localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
-  } catch {
-    /* fail silently */
-  }
-}
-
+/**
+ * Lista outputs guardados. Hoy async — pre-existente código que usaba
+ * versión sync de localStorage (getToolOutputs) sigue funcionando pero
+ * vacío al primer render. Cuando se monta CaseOutputsList usa el async
+ * fetch directamente del cliente.
+ *
+ * @deprecated Usar listToolOutputs directo de @/lib/caseToolOutputs.
+ *             Esta función queda como compat layer hasta migrar callers.
+ */
 export function getToolOutputs(caseId: string): ToolOutput[] {
   if (!caseId) return [];
+  // Sync legacy: solo localStorage. Para data completa usar listToolOutputs.
   try {
-    const raw = localStorage.getItem(`${STORAGE_PREFIX}.${caseId}`);
+    const raw = localStorage.getItem(`ner.case-tools.${caseId}`);
     return raw ? (JSON.parse(raw) as ToolOutput[]) : [];
   } catch {
     return [];
@@ -71,3 +103,6 @@ export function getBackToCasePath(ctx: CaseContext): string | null {
   if (ctx.packType) return `/hub/cases/${ctx.caseId}/${ctx.packType}-pack`;
   return `/hub/cases/${ctx.caseId}`;
 }
+
+// Re-export para callers que prefieran el async API directo
+export { listToolOutputs, countToolOutputs, backfillLocalToSupabase } from "@/lib/caseToolOutputs";

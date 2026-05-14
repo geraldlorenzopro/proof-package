@@ -407,6 +407,7 @@ export default function Index() {
                   toolSlug="evidence"
                   toolLabel="Photo Evidence Organizer"
                   outputType="pdf"
+                  fileExtension="pdf"
                   meta={{
                     num_items: numberedItems.length,
                     photos: numberedItems.filter((i) => i.type === 'photo').length,
@@ -415,6 +416,7 @@ export default function Index() {
                     petitioner: caseInfo.petitioner_name,
                     beneficiary: caseInfo.beneficiary_name,
                   }}
+                  notes={`Paquete de evidencia: ${numberedItems.length} items para ${caseInfo.beneficiary_name || 'beneficiario'}`}
                 />
               </div>
             )}
