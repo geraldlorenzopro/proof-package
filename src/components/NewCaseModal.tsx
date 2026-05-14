@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { X, Copy, Check, ArrowRight, User, Mail, Briefcase } from 'lucide-react';
 import { logAudit } from '@/lib/auditLog';
+import { trackEvent } from '@/lib/analytics';
 
 const CASE_TYPES = ['I-130', 'I-485', 'I-751', 'I-129F', 'N-400', 'DACA', 'TPS', 'Otro'];
 
@@ -50,6 +51,12 @@ export default function NewCaseModal({ onClose, onCreated }: Props) {
         entity_id: data.id,
         entity_label: `${caseType} - ${clientName}`,
         metadata: { case_type: caseType },
+      });
+      // Ola 3.2.a — track al universal event log.
+      // Solo enviamos case_type y caseId. NO mandamos client_name (PII).
+      void trackEvent("case.created", {
+        caseId: data.id,
+        properties: { case_type: caseType },
       });
     }
   }

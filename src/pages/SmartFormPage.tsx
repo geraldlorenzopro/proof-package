@@ -13,6 +13,7 @@ import { fillI130Pdf } from "@/lib/i130FormFiller";
 import { mapFelixOutputToI765Data } from "@/lib/i765FelixMapper";
 import { mapFelixOutputToI130Data } from "@/lib/i130FelixMapper";
 import { useSmartFormsContext } from "@/components/smartforms/SmartFormsContext";
+import { trackEvent } from "@/lib/analytics";
 
 export default function SmartFormPage() {
   const navigate = useNavigate();
@@ -309,6 +310,12 @@ export default function SmartFormPage() {
       return;
     }
     setFelixRunning(true);
+    // Ola 3.2.a — track invocación (intent). Medimos duration en `completed`.
+    const startedAt = Date.now();
+    void trackEvent("ai.invoked", {
+      caseId: linkedCaseId,
+      properties: { agent: "felix", form_type: formType, language: lang },
+    });
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
@@ -336,6 +343,16 @@ export default function SmartFormPage() {
 
       if (!resp.ok || result.error) {
         if (result.error === "insufficient_credits") {
+          // Ola 3.2.a — track fail por credits, importante para billing dashboard
+          void trackEvent("ai.completed", {
+            caseId: linkedCaseId,
+            properties: {
+              agent: "felix",
+              success: false,
+              reason: "insufficient_credits",
+              duration_ms: Date.now() - startedAt,
+            },
+          });
           toast({
             title: "Créditos insuficientes",
             description: `Felix necesita ${result.needed} créditos · saldo: ${result.balance}`,
@@ -361,6 +378,23 @@ export default function SmartFormPage() {
 
       console.log("[Felix]", formType, "Applied:", mapped.applied, "Ignored:", mapped.ignored, "Missing:", mapped.missing);
 
+      // Ola 3.2.a — track success con métricas reales del output.
+      // Counts (applied/missing/warnings) son numerics, no PII.
+      void trackEvent("ai.completed", {
+        caseId: linkedCaseId,
+        properties: {
+          agent: "felix",
+          success: true,
+          duration_ms: Date.now() - startedAt,
+          form_type: formType,
+          completion_pct: completion,
+          fields_applied: mapped.applied,
+          fields_missing: missingCount,
+          warnings: warningsCount,
+          ignored: ignoredCount,
+        },
+      });
+
       toast({
         title: `✨ Felix completó ${completion}% · ${mapped.applied} campos aplicados`,
         description: [
@@ -372,6 +406,16 @@ export default function SmartFormPage() {
         duration: 7000,
       });
     } catch (err: any) {
+      // Ola 3.2.a — track fail con reason truncado (sin stack)
+      void trackEvent("ai.completed", {
+        caseId: linkedCaseId,
+        properties: {
+          agent: "felix",
+          success: false,
+          duration_ms: Date.now() - startedAt,
+          reason: typeof err?.message === "string" ? err.message.slice(0, 100) : "unknown",
+        },
+      });
       toast({ title: "Error con Felix", description: err.message, variant: "destructive" });
     } finally {
       setFelixRunning(false);

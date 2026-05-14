@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import HubCreditsWidget from "./HubCreditsWidget";
 import CamilaFloatingPanel from "./CamilaFloatingPanel";
 import { useDemoMode, exitDemoMode, DEMO_SIDEBAR_BADGES } from "@/hooks/useDemoData";
+import { trackEvent } from "@/lib/analytics";
 interface Props {
   children: ReactNode;
   accountName?: string;
@@ -52,6 +53,9 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
     const reset = () => {
       clearTimeout(timer);
       timer = setTimeout(async () => {
+        // Ola 3.2.a — dispara ANTES de signOut para que la session aún
+        // exista (el evento necesita auth.uid() válido por RLS).
+        await trackEvent("auth.logout", { properties: { reason: "inactivity" } });
         sessionStorage.removeItem("ner_hub_data");
         sessionStorage.removeItem("ner_impersonate");
         sessionStorage.removeItem("ner_active_account_id");
@@ -95,6 +99,9 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   })();
 
   async function handleLogout() {
+    // Ola 3.2.a — track ANTES de signOut (auth listener en analytics.ts
+    // limpia cache automáticamente al SIGNED_OUT, así que doble-safe).
+    await trackEvent("auth.logout", { properties: { reason: "manual" } });
     sessionStorage.removeItem("ner_hub_data");
     sessionStorage.removeItem("ner_active_account_id");
     sessionStorage.removeItem("ner_impersonate");

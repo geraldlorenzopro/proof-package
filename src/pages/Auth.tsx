@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { logAudit } from '@/lib/auditLog';
 import { lovable } from '@/integrations/lovable/index';
 import { useTrackPageView } from '@/hooks/useTrackPageView';
+import { trackEvent } from '@/lib/analytics';
 
 async function handleGoogleSignIn(setError: (s: string) => void) {
   setError('');
@@ -123,6 +124,10 @@ export default function Auth() {
 
         // No MFA — check if user belongs to a firm account
         logAudit({ action: "auth.login", entity_type: "auth", entity_label: email });
+        // Ola 3.2.a — track success (sin MFA path)
+        void trackEvent("auth.login_success", {
+          properties: { mfa: false, method: "password" },
+        });
         const explicitRedirect = redirectParam || sessionStorage.getItem('ner_auth_redirect');
         sessionStorage.removeItem('ner_auth_redirect');
         if (explicitRedirect) {
@@ -143,8 +148,22 @@ export default function Auth() {
           });
         }
         setMessage('Revisa tu correo para confirmar tu cuenta.');
+        // Ola 3.2.a — track signup éxito.
+        // OJO: pre-confirm-email el user no tiene session activa.
+        // Si la RLS bloquea (es policy authenticated-only post-Ola 3.1),
+        // el evento se silencia gracefully en analytics.ts.
+        void trackEvent("auth.signup", {
+          properties: { email_domain: email.split("@")[1] || "unknown" },
+        });
       }
     } catch (err: any) {
+      // Ola 3.2.a — track failure. Reason del error pero NO incluir password ni email.
+      void trackEvent(mode === "login" ? "auth.login_failed" : "auth.signup_failed", {
+        properties: {
+          reason: typeof err?.message === "string" ? err.message.slice(0, 80) : "unknown",
+          email_domain: email.split("@")[1] || "unknown",
+        },
+      });
       setError(err.message || 'Error inesperado');
     } finally {
       setLoading(false);
@@ -171,6 +190,10 @@ export default function Auth() {
       if (verifyError) throw verifyError;
 
       logAudit({ action: "auth.login", entity_type: "auth", entity_label: email, metadata: { mfa: true } });
+      // Ola 3.2.a — track success (MFA path)
+      void trackEvent("auth.login_success", {
+        properties: { mfa: true, method: "password+totp" },
+      });
       const explicitRedirect = sessionStorage.getItem('ner_auth_redirect');
       sessionStorage.removeItem('ner_auth_redirect');
       if (explicitRedirect) {

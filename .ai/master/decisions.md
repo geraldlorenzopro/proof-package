@@ -52,6 +52,65 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-14 (late noche) — Ola 3.2.a: Instrumentación core (auth + case + ai)
+
+**Decisión:** después de cerrar Ola 3.1 (hardening RLS + closed_at column),
+arrancamos Ola 3.2 sub-dividida. La sub-ola .a es 100% frontend (no requiere
+Lovable apply, sin migrations, sin edge functions) — wire de 8 eventos
+core a través de archivos ya existentes.
+
+**Por qué frontend primero (no edge function de pre-auth):**
+- Edge function para pre-auth requiere deploy Lovable + coordinación
+- Estos 8 eventos son authenticated users, no necesitan edge function
+- Permite empezar a acumular data INMEDIATAMENTE mientras Lovable apply
+  más cambios en sub-ola .b
+- Mismo patrón que Olas 1+2: frontend instrumentado primero, infrastructure
+  alrededor después
+
+**Eventos wireados (8 nuevos en taxonomy event log):**
+
+| Evento | Archivo | Trigger |
+|---|---|---|
+| `auth.login_success` | `Auth.tsx:handleSubmit` + `handleMfaVerify` | Submit login OK (con o sin MFA) |
+| `auth.login_failed` | `Auth.tsx:handleSubmit` catch | Submit error |
+| `auth.signup` | `Auth.tsx:handleSubmit` mode=signup | Submit signup OK |
+| `auth.signup_failed` | `Auth.tsx:handleSubmit` catch | Submit signup error |
+| `auth.logout` | `HubLayout.tsx:handleLogout` + inactividad timeout | Click logout o 2h inactividad |
+| `case.created` | `NewCaseModal.tsx:handleCreate` | Insert OK en client_cases |
+| `case.viewed` (vía page.view) | `CaseEnginePage` mount | useTrackPageView("case_engine.view") — captura tab también gracias a fix H4 audit ronda 2 |
+| `case.stage_changed` | `CaseEnginePage:handleStageChange` | Update pipeline_stage OK |
+| `ai.invoked` | `SmartFormPage:handleRunFelix` antes del fetch | Click "Run Felix" |
+| `ai.completed` | `SmartFormPage:handleRunFelix` success + catch + insufficient_credits | Fin invocación con success/reason/duration_ms |
+
+**Reglas aplicadas (validadas por PII guard refactor de audit ronda 2):**
+
+1. **Nunca PII en properties:**
+   - case.created: `case_type`, caseId — NO client_name
+   - case.stage_changed: `from_stage`, `to_stage`, `ball_in_court` (role) — NO assignee
+   - ai.completed: counts numerics (`fields_applied`, `completion_pct`) — NO contenido
+   - auth.signup: solo `email_domain` (`@gmail.com` ok, email completo no)
+   - auth.login_failed: `reason` truncado a 80 chars sin stack
+2. **AI events incluyen `duration_ms`** — base para ROI dashboard de agentes
+3. **`auth.logout` dispara ANTES de signOut** — necesita auth.uid() activo
+   por RLS strict de Ola 3.1
+4. **Coexistencia con `logAudit` existente** — analytics paralelo, no
+   reemplazo. logAudit es para auditoría legal, trackEvent es para dashboards.
+
+**Lo que NO está wireado en esta sub-ola (deferido a .b):**
+- Pre-auth events (signup pre-email-confirm, applicant intake sin login) →
+  Ola 3.2.b edge function con rate limit + signed token + service_role
+- Nina/Max/Camila invocations → siguen el mismo patrón que Felix, copy-paste
+  trivial. Deferido para no inflar este commit. Ola 3.2.c.
+- case.assigned_to_changed, case.task_completed → diferido cuando se wire
+  el assignee selector y task panel.
+
+**Próximo:** Ola 3.2.b — edge function pre-auth events. Necesita:
+- Rate limiting por IP (deno-kv o tabla `event_rate_limits`)
+- Signed token validation para applicant portal links
+- Service role insert (bypassa RLS controladamente)
+
+---
+
 ## 2026-05-14 (noche) — Ola 3.1 Hardening: H2 cierre + M2 closed_at column
 
 **Decisión:** después de audit ronda 2 que dejó H2 + M2 diferidos (requieren

@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { getCaseTypeLabel, normalizeClientName } from "@/lib/caseTypeLabels";
 import { logAccess } from "@/lib/auditLog";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
+import { trackEvent } from "@/lib/analytics";
 import {
   ArrowLeft, Loader2, AlertTriangle, BarChart3, FileText,
   MessageSquare, ListTodo, Clock, FolderOpen, Sparkles, Mic,
@@ -71,6 +73,10 @@ export default function CaseEnginePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Ola 3.2.a — track page.view incluyendo tab (URL-synced). Re-dispara
+  // cuando cambia ?tab= gracias al fix H4 de audit ronda 2.
+  useTrackPageView("case_engine.view");
 
   const tabParam = searchParams.get("tab");
   const activeTab: TabId = (tabParam && (VALID_TABS as string[]).includes(tabParam)) ? (tabParam as TabId) : "resumen";
@@ -243,6 +249,17 @@ export default function CaseEnginePage() {
         to_stage: newStage,
         changed_by: user.id,
         changed_by_name: profile?.full_name || "Staff",
+      });
+
+      // Ola 3.2.a — track stage change para funnels de pipeline.
+      // No PII: solo stage slugs y ball_in_court (roles, no nombres).
+      void trackEvent("case.stage_changed", {
+        caseId,
+        properties: {
+          from_stage: oldStage,
+          to_stage: newStage,
+          ball_in_court: newStageData?.owner || "team",
+        },
       });
 
       toast.success(`Etapa cambiada a: ${stageLabels[newStage] || newStage}`);
