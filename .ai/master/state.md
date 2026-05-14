@@ -13,8 +13,10 @@
 | **Ola 1 — Foundation** | ✅ Live | `0430471` | Tabla `events` + RLS + `useTrackPageView` + 3 páginas instrumentadas |
 | **Ola 2 — `/hub/reports`** | ✅ Live | `01f80bc` | Dashboard Owner: 4 KPIs reales + CasesAtRisk |
 | **Audit Round 1 + Fixes** | ✅ Live | `adb47bf` | 6 fixes: demo mode, multi-firma, errors visibles, session cache, filter syntax, event rename |
-| **Audit Round 2 + Fixes** | ✅ Live | TBD | 6 fixes: migration no-op, auth listener, PII substring, tab tracking, avg clamp, KPICard a11y |
-| **Ola 3 — Granular events** | ⚫ Next | — | `case.created`, `ai.invoked`, `applicant.*`, `auth.*`, columna `closed_at`, RLS pre-auth via edge fn |
+| **Audit Round 2 + Fixes** | ✅ Live | `bec53e1` | 6 fixes: migration no-op, auth listener, PII substring, tab tracking, avg clamp, KPICard a11y |
+| **Ola 3.1 — Hardening** | ⏳ Pending Lovable apply | TBD | 2 migrations: events RLS strict + closed_at column. Frontend switch en commit follow-up. |
+| **Ola 3.2 — Granular events** | ⚫ Next | — | Edge fn pre-auth + `case.*`, `ai.*`, `auth.*`, `applicant.*` instrumentation |
+| **Ola 3.3 — Team views** | ⚫ After 3.2 | — | `/hub/reports/team`, heatmap, skill tracking |
 | **Ola 4 — Consolidación** | ⚫ Mes 2+ | — | Strategic Packs → tab Case Engine, deprecar `/dashboard/*` |
 
 **Eventos confirmados en BD (Ner Tech `ae903f7f…`):**

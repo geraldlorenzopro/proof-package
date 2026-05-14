@@ -52,6 +52,65 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-14 (noche) — Ola 3.1 Hardening: H2 cierre + M2 closed_at column
+
+**Decisión:** después de audit ronda 2 que dejó H2 + M2 diferidos (requieren
+cambio de schema), arrancamos Ola 3 con sub-ola 3.1 dedicada a hardening
+antes de instrumentar más events.
+
+**Por qué primero hardening, no más instrumentación:**
+- H2 abierto = vector DoS via anon key. Me incomodaba dejarlo después de
+  documentarlo en decisions.md.
+- M2 abierto = KPI "Días promedio" usaba `updated_at` como proxy con
+  limitación documentada. Cuando wireamos más events sin arreglarlo,
+  vamos a confiar en data sesgada para decisiones de capacidad.
+- Es el patrón establecido: foundation → uso. No al revés.
+
+**Migrations creadas (PENDING_ prefix, esperando Lovable apply):**
+
+1. `PENDING_events_rls_hardening.sql` — fix H2:
+   - DROP policy `events_insert_own_account`
+   - CREATE `events_insert_authenticated_own_account` que requiere
+     `auth.uid() IS NOT NULL` + match con account_members + user_id=auth.uid()
+   - Elimina el caso `(account_id IS NULL AND user_id IS NULL)` que permitía
+     anon-key INSERT
+   - Pre-auth events (signup, applicant intake sin login) se rutearán por
+     edge function en Ola 3.2 con rate limit + signed token + service_role
+
+2. `PENDING_client_cases_closed_at.sql` — fix M2:
+   - ADD COLUMN `closed_at TIMESTAMPTZ` (nullable, default NULL)
+   - Trigger BEFORE UPDATE OF status: setea closed_at=NOW() cuando pasa a
+     terminal state ('completed','archived','cancelled'). Reabrir caso
+     limpia closed_at=NULL.
+   - Backfill idempotente para casos ya cerrados (usa updated_at como
+     aproximación histórica)
+   - Index partial `(account_id, closed_at DESC) WHERE closed_at IS NOT NULL`
+     para queries del KPI
+
+**Por qué NO actualizar ReportsPage en este commit:**
+- La columna `closed_at` no existe en BD ni en types regenerados hasta
+  que Lovable apply
+- Si el frontend hace SELECT closed_at antes de eso → query rota →
+  dashboard roto entre commit y Lovable apply
+- Mejor: commit migrations solo + docs. Después de Lovable confirma apply
+  → follow-up commit cambiando `updated_at` por `closed_at` en useFirmMetrics
+
+**Workflow post-deploy:**
+1. Mr. Lorenzo pega prompt a Lovable
+2. Lovable aplica las 2 migrations (renombrando PENDING_ con timestamps reales)
+3. Lovable regenera types Supabase (incluye `closed_at`)
+4. Mr. Lorenzo confirma
+5. Yo hago commit follow-up: ReportsPage usa `closed_at` directamente,
+   limpia el comentario M2 del helpText
+
+**Próximo en Ola 3.2:**
+- Edge function para pre-auth events (cierra el gap de H2 para signups,
+  applicant intakes sin login)
+- Instrumentación: `case.created`, `case.stage_changed`, `ai.invoked`,
+  `auth.login_success|failed`, `applicant.intake_completed`
+
+---
+
 ## 2026-05-14 (noche) — Auditoría profunda (ronda 2) + 6 fixes adicionales
 
 **Decisión:** después de ronda 1 (6 fixes pushed), Mr. Lorenzo pidió ronda
