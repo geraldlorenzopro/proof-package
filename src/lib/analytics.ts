@@ -157,7 +157,7 @@ export async function trackEvent(
   }
 
   try {
-    const { error } = await supabase.from("events").insert([payload]);
+    const { error } = await supabase.from("events").insert([payload as never]);
 
     if (error) {
       const reason =
