@@ -733,5 +733,51 @@ Cada uno es un TAB condicional del Case Engine. NUNCA una ruta paralela.
 
 ---
 
+## 16. ADDENDUM — Rutas de medición (added 2026-05-14)
+
+Tras la decisión "todo debe ser medible" (ver `MEASUREMENT-FRAMEWORK.md`), se agregan estas rutas canónicas:
+
+### Nuevas rutas de medición
+
+| Ruta | Quién accede | Función |
+|---|---|---|
+| `/hub/reports` | Owner + Admin firma | Dashboard ejecutivo de la firma (6 KPIs, heatmap equipo, top casos riesgo) |
+| `/hub/reports/cases` | Owner + Admin firma | Drill-down: funnel por stage, tabla cases con sort/filter |
+| `/hub/reports/team` | Owner + Admin firma | Productividad por paralegal, ranking interno |
+| `/hub/reports/ai` | Owner + Admin firma | AI usage + ROI por agente en la firma |
+| `/hub/reports/benchmark` | Owner (Elite only) | Comparativa anonimizada vs NER avg |
+| `/admin/ceo` | NER internal (Gerald) | North star CEO platform-wide (MRR, churn, cohorts) |
+| `/admin/health` | NER internal (engineering) | SLIs/SLOs técnicos |
+| `/admin/cohorts` | NER internal | Cohort analysis signups |
+
+### Toda ruta nueva DEBE declarar
+
+1. **Page view event** — `useTrackPageView('hub.reports')`
+2. **Acciones críticas** — botones/links que cambien datos disparan `trackEvent`
+3. **KPI mostrado** — qué del MEASUREMENT-FRAMEWORK consume
+
+### Reglas adicionales de namespace
+
+- Reports y dashboards **de firma** → SIEMPRE en `/hub/reports/*`
+- Dashboards **platform-wide** (Gerald CEO) → SIEMPRE en `/admin/*`
+- Métricas embebidas en otra pantalla (ej. sidebar del Case Engine, widget Hub Inicio) → NO son rutas nuevas, son componentes
+
+### Tabla `events` accesible vía RLS
+
+- Cada user solo ve `events` de su `account_id`
+- Admin NER ve cross-account (con audit log)
+- Aplicantes nunca ven events directamente
+
+### Patrón de extensibilidad para nuevos KPIs
+
+Si Gerald decide medir algo nuevo:
+1. Agregar event_name al taxonomy de MEASUREMENT-FRAMEWORK.md §13
+2. Instrumentarlo donde corresponda (sin tocar pantallas existentes innecesariamente)
+3. Agregarlo a la MV correspondiente (`case_metrics_daily`, `firm_metrics_daily`, etc.)
+4. Exponerlo en el dashboard relevante (`/hub/reports` o `/admin/ceo`)
+
+---
+
 **Documento entregado: 2026-05-14**
+**Addendum métricas: 2026-05-14**
 **Próximo: USER-FLOWS.md (cómo navega cada rol)**

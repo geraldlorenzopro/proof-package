@@ -12,11 +12,13 @@ import CaseTable from "@/components/hub/CaseTable";
 import CaseKanban from "@/components/hub/CaseKanban";
 import { useCasePipeline, PIPELINE_COLUMNS } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "tabla" | "kanban";
 
 export default function HubCasesPage() {
+  useTrackPageView("hub.cases");
   const navigate = useNavigate();
   const accountId = (() => {
     try {

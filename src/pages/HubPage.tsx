@@ -8,6 +8,7 @@ import HubSplash from "@/components/hub/HubSplash";
 import OnboardingWizard from "@/components/hub/OnboardingWizard";
 import { useAppPermissions } from "@/hooks/useAppPermissions";
 import { useDemoMode, DEMO_FIRM_NAME, DEMO_ATTORNEY } from "@/hooks/useDemoData";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 // Datos sintéticos para demo mode — bypassa auth completo, permite mostrar
 // el hub a prospectos sin cuenta. SIN tocar BD: los hooks (HubFocusedWidgets,
@@ -61,6 +62,7 @@ function getCachedHubData() {
 }
 
 export default function HubPage() {
+  useTrackPageView("hub.dashboard");
   const [searchParams] = useSearchParams();
   const demoMode = useDemoMode();
   // En demo mode: bypassa cache + auth, usa data sintética de Méndez Immigration Law

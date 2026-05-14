@@ -840,7 +840,194 @@ De estos 18 flows, los principios que aplican a TODO el producto:
 
 10. **Privacy by default.** Visibility 'team' por default, escalar a attorney_only/admin_only solo cuando necesario.
 
+11. **Todo flow es medible.** Cada uno de los 18 flows declara entry event, completion event, drop-off points y SLAs medibles. Ver `MEASUREMENT-FRAMEWORK.md`.
+
+---
+
+## 12. ADDENDUM — Instrumentación de cada flow (added 2026-05-14)
+
+Cada flow F-01 a F-22 debe declarar **mínimo 3 eventos** (entry, completion, drop-off) más cualquier touch crítico intermedio. Esto es lo que alimenta el dashboard `/hub/reports` y el funnel de PostHog.
+
+### F-01 — Sign-in firma desde GHL handshake
+
+| Tipo | Event name | Properties | SLA |
+|---|---|---|---|
+| Entry | `auth.handshake_started` | source='ghl', cid_hash | n/a |
+| Completion | `auth.session_established` | duration_ms, splash_shown | < 3s p95 |
+| Drop-off | `auth.handshake_failed` | reason | < 1% |
+
+### F-02 — Sign-in firma directo NER
+
+| Tipo | Event name | Properties | SLA |
+|---|---|---|---|
+| Entry | `auth.login_attempted` | email_domain | n/a |
+| Completion | `auth.login_success` | mfa_used | < 2s |
+| Drop-off | `auth.login_failed` | reason='wrong_password' \| 'mfa_failed' | < 5% |
+
+### F-03 — Owner crea cuenta + invita equipo
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `account.provision_started` | n/a |
+| Mid | `account.member_invited` (× N) | n/a |
+| Completion | `account.team_activated` (todos los miembros loguearon ≥1x en 7d) | > 80% |
+
+### F-04 — Paralegal procesa lead nuevo
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `lead.viewed` | n/a |
+| Mid | `lead.contacted` | < 24h post-creation |
+| Completion | `lead.converted_to_client` OR `lead.disqualified` | 7-30d |
+
+### F-05 — Convertir lead en cliente
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `client.create_started` | n/a |
+| Completion | `client.created` | < 5min UI session |
+
+### F-06 — Crear caso desde cliente
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `case.create_started` | n/a |
+| Mid | `case.type_selected` | n/a |
+| Completion | `case.created` | < 3min UI |
+| Drop-off | `case.create_abandoned` | < 10% |
+
+### F-07 — Enviar Pre-Intake al aplicante
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `intake.link_generated` | n/a |
+| Mid | `applicant.portal_opened` (lo dispara aplicante) | < 24h |
+| Mid | `applicant.intake_started` | < 48h |
+| Completion | `applicant.intake_completed` | < 14d |
+| Drop-off | `intake.abandoned` (sin actividad 7d) | < 30% |
+
+### F-08 — Aplicante completa Pre-Intake
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `applicant.intake_started` | n/a |
+| Mid | `applicant.intake_field_completed` (granular) | n/a |
+| Mid | `applicant.intake_50pct` | n/a |
+| Completion | `applicant.intake_completed` | < 30min UI |
+| Drop-off | `applicant.intake_abandoned` (cerró >24h sin volver) | < 25% |
+
+### F-09 — Paralegal valida intake y arranca packet
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `intake.review_started` | < 24h post-completion |
+| Mid | `intake.field_corrected` (× N) | n/a |
+| Completion | `case.packet_started` | < 48h |
+
+### F-10 — Solicitar evidencia al aplicante
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `evidence.list_sent` | n/a |
+| Mid | `applicant.doc_uploaded` (× N) | n/a |
+| Completion | `evidence.complete` (todos docs requeridos uploaded) | < 14d |
+
+### F-11 — Felix llena formulario USCIS
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `ai.invoked` (agent='felix') | n/a |
+| Completion | `ai.completed` (success=true) | < 30s |
+| Outcome | `ai.output_accepted` OR `ai.output_edited` (% edits) | > 80% accepted |
+
+### F-12 — Nina ensambla packet PDF
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `ai.invoked` (agent='nina') | n/a |
+| Completion | `ai.completed` (pages_count) | < 90s |
+
+### F-13 — Max QA del packet
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `ai.invoked` (agent='max') | n/a |
+| Completion | `ai.completed` (issues_found) | < 60s |
+| Outcome | `case.packet_approved` OR `case.packet_revision_needed` | > 90% |
+
+### F-14 — Envío del packet a USCIS
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `case.submission_started` | n/a |
+| Completion | `case.submitted_to_uscis` | < 1d post-approval |
+| Mid | `uscis.receipt_received` | < 30d |
+
+### F-15 — Recibir RFE / NOID
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `uscis.rfe_received` (auto desde tracker) | n/a |
+| Completion | `case.rfe_response_submitted` | < deadline USCIS (típico 87d) |
+| Outcome | `uscis.approved_after_rfe` OR `uscis.denied_after_rfe` | > 75% |
+
+### F-16 — Aprobación + cierre caso
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `uscis.approved` (auto) | n/a |
+| Mid | `client.notified_of_approval` | < 24h |
+| Completion | `case.closed` | < 14d |
+
+### F-17 — Voice call con Camila
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `ai.invoked` (agent='camila', type='voice') | n/a |
+| Mid | `ai.transcript_segment` (× N) | n/a |
+| Completion | `ai.completed` (duration_sec, minutes_used) | depende |
+
+### F-18 — Aplicante consulta portal público (`/case-track/:token`)
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `applicant.portal_opened` | n/a |
+| Mid | `applicant.stage_viewed` | n/a |
+| Completion | `applicant.portal_session_ended` (idle 30s) | depende |
+
+### F-19 — Owner consulta reporte de la firma (NEW)
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `page.view` (route='/hub/reports') | n/a |
+| Mid | `report.filter_applied` (filter='stage'\|'paralegal'\|'date_range') | n/a |
+| Mid | `report.drill_down` (target='case'\|'team_member') | n/a |
+| Completion | `report.session_ended` | depende |
+
+### F-20 — Paralegal revisa widget de productividad personal (NEW)
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `page.view` (route='/hub/inicio', widget='my_performance') | diario |
+| Mid | `widget.kpi_clicked` (kpi_name) | n/a |
+
+### F-21 — Email digest semanal Owner (NEW)
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `email.digest_sent` (recipient='owner', period='week') | Lunes 9am |
+| Outcome | `email.digest_opened` | > 60% |
+| Outcome | `email.digest_link_clicked` | > 30% |
+
+### F-22 — Gerald CEO check dashboard platform-wide (NEW)
+
+| Tipo | Event name | SLA |
+|---|---|---|
+| Entry | `page.view` (route='/admin/ceo', user='gerald') | diario |
+| Mid | `ceo.metric_drill_down` (metric_name) | n/a |
+
 ---
 
 **Documento entregado: 2026-05-14**
+**Addendum métricas: 2026-05-14**
 **Próximo: WIREFRAMES.md (estructura visual de cada pantalla)**

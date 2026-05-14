@@ -4,6 +4,7 @@ import { Scale, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, ArrowLeft, Loa
 import { useNavigate } from 'react-router-dom';
 import { logAudit } from '@/lib/auditLog';
 import { lovable } from '@/integrations/lovable/index';
+import { useTrackPageView } from '@/hooks/useTrackPageView';
 
 async function handleGoogleSignIn(setError: (s: string) => void) {
   setError('');
@@ -16,6 +17,7 @@ async function handleGoogleSignIn(setError: (s: string) => void) {
 }
 
 export default function Auth() {
+  useTrackPageView("auth.login");
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

@@ -911,5 +911,214 @@ Cuando agreguemos features futuros, encajan así:
 
 ---
 
+## ADDENDUM — Wireframes de medición (added 2026-05-14)
+
+Tras la decisión "todo debe ser medible" (ver `MEASUREMENT-FRAMEWORK.md`), agregamos los wireframes de las pantallas dedicadas a reportes.
+
+### W-26: `/hub/reports` — Dashboard ejecutivo Owner
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  [Logo firma]   Reportes / Performance              [👤 Owner ▾]  [⚙]  │
+├────────────────────────────────────────────────────────────────────────┤
+│  Sidebar     │   ← Inicio    Mi firma esta semana    [Mes ▾] [Filtros]│
+│              │                                                          │
+│ • Inicio     │   ┌──── KPI STRIP (6 cards) ─────────────────────────┐ │
+│ • Leads      │   │ Casos act.  Cerrados  Aprob %  RFE %  Avg días $ │ │
+│ • Clientes   │   │   42        12 (+3)   91% ↑    8% ↓   78d     💰│ │
+│ • Casos      │   │   ⬆ +5 wk   vs 9 last benchm   benchm -12d      │ │
+│ • Consultas  │   └──────────────────────────────────────────────────┘ │
+│ • Agenda     │                                                          │
+│ • Reports ●  │   ┌─── Funnel por stage ────┐  ┌─── Top casos riesgo ─┐│
+│   ├ Cases    │   │ Intake     ████████ 18  │  │ García I-130 🔴 87r ││
+│   ├ Team     │   │ Pre-packet ██████ 12     │  │ Pérez I-485 🔴 72r  ││
+│   ├ AI       │   │ Submitted  █████ 8       │  │ Rivera N-400 🟡 64r ││
+│   └ Benchmrk │   │ RFE        ██ 4          │  │ ...                  ││
+│ • Settings   │   │ Approved   ███ 5         │  └──────────────────────┘│
+│              │   └──────────────────────────┘                          │
+│  AI Team:    │                                                          │
+│  Felix ✓     │   ┌─── Performance equipo (heatmap) ─────────────────┐│
+│  Nina  ✓     │   │           Vanessa  Carlos   María   Promedio      ││
+│  Max   ✓     │   │ Cases    ████████  ██████   █████   ███████       ││
+│  Camila✓     │   │ Closed/mo   4        3        2       3.0         ││
+│              │   │ AI usage  95%      82%      45%      74%          ││
+│              │   │ SLA met   98%      94%      88%      93%          ││
+│              │   └────────────────────────────────────────────────────┘│
+│              │                                                          │
+│              │   ┌─── Trend 12 semanas ──────────────────────────────┐│
+│              │   │ Casos cerrados:  ╱╲╱╲    ╱╲╱╲╱╲╱        upward    ││
+│              │   │ Approval rate:   ─────╱─╲────── 91% target met    ││
+│              │   └────────────────────────────────────────────────────┘│
+│              │                                                          │
+│              │   [Exportar CSV]  [Programar email semanal]  [Compartir]│
+└──────────────┴──────────────────────────────────────────────────────────┘
+```
+
+**Instrumentación:**
+- Page view: `page.view route='/hub/reports'`
+- Filtros: `report.filter_applied filter=stage|paralegal|date`
+- Drill-down: `report.drill_down target='case'|'team_member'`
+- Export: `report.exported format=csv`
+
+### W-27: `/hub/reports/team` — Drill team
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  [Sidebar]   Performance equipo                                        │
+├────────────────────────────────────────────────────────────────────────┤
+│              ┌─── Vanessa M. ─────────────────────────────────────────┐│
+│              │ 📊 22 casos activos · 4 cerrados último mes · 95% AI    ││
+│              │                                                         ││
+│              │ Skills: USCIS ●●●● · NVC ●● · Embajada ○                ││
+│              │                                                         ││
+│              │ ┌──── KPIs personales ───────────────────────────────┐│││
+│              │ │ Avg response time:  3.2h     SLA: 4h        ✅      │││
+│              │ │ Tasks overdue:      0        SLA: 0          ✅      │││
+│              │ │ AI adoption:        95%      target: 70%     ✅      │││
+│              │ │ Approval rate:      94%      benchmark: 87%  ✅      │││
+│              │ └───────────────────────────────────────────────────┘│││
+│              │                                                         ││
+│              │ Trend 6 semanas:  ╱╱╲╱╱╱ closed cases                  ││
+│              │                                                         ││
+│              │ [Ver casos asignados]  [Reasignar]  [Coaching note]    ││
+│              └────────────────────────────────────────────────────────┘│
+│              ┌─── Carlos R. ──────────────────────────────────────────┐│
+│              │ ... similar ...                                         ││
+│              └────────────────────────────────────────────────────────┘│
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### W-28: Hub Inicio — Widget "Mi performance" (paralegal)
+
+```
+┌────────────────────────────────────────────┐
+│  Hola Vanessa, esto es lo tuyo hoy:        │
+├────────────────────────────────────────────┤
+│  ┌──────────┬──────────┬──────────────────┐│
+│  │ Casos    │ Tareas   │ Riesgo           ││
+│  │   22     │   0 ⚡    │   2 🔴            ││
+│  │ activos  │ overdue  │ requieren        ││
+│  │          │          │ atención         ││
+│  └──────────┴──────────┴──────────────────┘│
+│                                              │
+│  Esta semana:                                │
+│  • 18 mensajes contestados (avg 2.1h) ✅    │
+│  • 12 forms generados con Felix             │
+│  • Streak: 14 días sin overdue 🔥           │
+│                                              │
+│  [Ver detalle completo]                      │
+└──────────────────────────────────────────────┘
+```
+
+**Instrumentación:** `page.view route='/hub/inicio' widget='my_performance'`
+
+### W-29: Case Engine — Sidebar de métricas
+
+Agregar al sidebar derecho del Case Engine (en todos los tabs):
+
+```
+┌──── Salud del caso ────┐
+│ Días abiertos: 47       │
+│ En etapa actual: 12d    │
+│ ▰▰▰▱▱▱▱▱ 42% progress  │
+│                         │
+│ Risk score: 28 🟢       │
+│                         │
+│ Próximo milestone:      │
+│ NVC interview pending   │
+│ (ETA: 3-4 semanas)      │
+│                         │
+│ AI usado: 24 calls      │
+│ Costo: $4.32            │
+└─────────────────────────┘
+```
+
+### W-30: `/admin/ceo` — Dashboard CEO platform-wide
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  NER · Admin · CEO Dashboard                 Gerald Lorenzo  [Settings]│
+├────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌──── NORTH STAR ──────────────────────────────────────────────────┐ │
+│  │ MRR        ARR        Firmas      Churn     LTV/CAC    NPS       │ │
+│  │ $2,376    $28,512     8 active    2.1% ✅   2.8 ⚠     +47        │ │
+│  │ +18% MoM  +234% YoY   +2 this mo  target<5  target>3  target>50  │ │
+│  └──────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌──── Cohorts table ────┐  ┌──── AI ROI por agente ──────────────┐   │
+│  │ Cohort  M1  M3  M6 M12│  │ Felix:   $4.2K saved / $0.3K cost   │   │
+│  │ Jan26   95% 85% --  --│  │ Nina:    $3.1K saved / $0.5K cost   │   │
+│  │ Feb26   90% 80% --  --│  │ Max:     $2.8K saved / $0.2K cost   │   │
+│  │ Mar26   88% 75% 65% --│  │ Camila:  $5.0K saved / $1.2K cost   │   │
+│  │ Apr26   92% 80% --  --│  │ Total ROI: 8.2× cost                 │   │
+│  └────────────────────────┘  └──────────────────────────────────────┘   │
+│                                                                          │
+│  ┌──── Top firms by usage ──────────────────────────────────────────┐ │
+│  │ 1. Mr Visa          234 cases   $14.5K LTV   95% activity         │ │
+│  │ 2. García Law       180 cases   $11.2K LTV   88% activity         │ │
+│  │ ...                                                                │ │
+│  └──────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌──── Cost vs Revenue ────────────────────────────────────────────┐  │
+│  │ Revenue:    $2,376                                              │  │
+│  │ AI costs:   $187   (7.8% of rev)                                │  │
+│  │ Infra:      $123   (5.2% of rev)                                │  │
+│  │ Total cost: $310   (13.0% of rev) — healthy                     │  │
+│  │ Margin:     $2,066                                              │  │
+│  └──────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+**Instrumentación:** `page.view route='/admin/ceo'`
+
+### W-31: `/admin/health` — Technical health
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  Engineering Health · Last 24h                                          │
+├────────────────────────────────────────────────────────────────────────┤
+│  Uptime:        99.97% ✅       SLO: 99.5%                              │
+│  Error rate:    0.3% ✅          SLO: <0.5%                             │
+│  Page load p95: 1.8s ✅          SLO: <2.5s                             │
+│  API p95:       540ms ✅         SLO: <800ms                            │
+│                                                                          │
+│  Recent errors (top 5):                                                  │
+│  • [warn] CaseEngine: maybeSingle null x12                              │
+│  • [error] camila-tts timeout (3 occurrences)                            │
+│  ...                                                                     │
+│                                                                          │
+│  AI provider availability:                                               │
+│  • Claude:    ✅ 99.9%                                                  │
+│  • OpenAI:    ✅ 99.7%                                                  │
+│  • ElevenLabs: ⚠ 98.2% (degraded)                                       │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### Patrón visual común a todos los dashboards
+
+- **KPI Card:** `bg-card border-border rounded-xl p-4`. Headline number 32px Sora bold, label 12px uppercase, trend arrow color-coded.
+- **Sparkline:** SVG inline, AI Blue stroke, 80×24px típico.
+- **Trend arrow:** ↑ green / ↓ red / → gray.
+- **Threshold indicators:** ✅ verde / ⚠ amber / 🔴 red.
+- **Heatmap:** grid de 12-16 celdas, opacity proporcional al valor, AI Blue → Cyan accent gradient.
+
+### Estados vacíos
+
+| Pantalla | Empty state |
+|---|---|
+| `/hub/reports` cero cases | "Aún no tenés casos. Comienza creando tu primer caso." + CTA |
+| `/admin/ceo` cero firmas | "Plataforma en pre-launch." (no debería pasar) |
+| Widget paralegal sin asignados | "Aún no tenés casos asignados. Hablale a tu Owner." |
+
+### Responsive
+
+- Mobile (<640px): KPI strip se convierte en 2×3 grid en lugar de 6×1
+- Tablet (640-1024px): heatmap se convierte en lista vertical
+- Desktop (>1024px): full grid
+
+---
+
 **Documento entregado: 2026-05-14**
+**Addendum métricas: 2026-05-14**
 **Próximo: DESIGN-SYSTEM.md (componentes + tokens + consolidación)**

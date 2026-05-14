@@ -1,0 +1,2515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NER · Planos del Producto · Vista Visual</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sora: ['Sora', 'system-ui', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'ui-monospace', 'monospace'],
+      },
+      colors: {
+        'ai-blue': '#2563EB',
+        'deep-navy': '#0B1F3A',
+        'cyan-accent': '#22D3EE',
+        'soft-gray': '#F3F4F6',
+        'graphite': '#1F2937',
+      }
+    }
+  }
+}
+</script>
+<style>
+body { font-family: 'Sora', system-ui, sans-serif; background: #0a1428; color: #e2e8f0; }
+.glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); }
+.card-hover:hover { background: rgba(37,99,235,0.05); border-color: rgba(37,99,235,0.3); }
+.tab-active { background: rgba(34,211,238,0.1); color: #22D3EE; border-bottom: 2px solid #22D3EE; }
+.tree-line { position: relative; padding-left: 1.5rem; }
+.tree-line::before { content: ''; position: absolute; left: 0.5rem; top: 0; bottom: 0; width: 1px; background: rgba(34,211,238,0.2); }
+.tree-line::after { content: ''; position: absolute; left: 0.5rem; top: 1.2rem; width: 0.75rem; height: 1px; background: rgba(34,211,238,0.2); }
+.wireframe-mock { background: #0f1729; border: 1px solid rgba(255,255,255,0.08); border-radius: 0.75rem; }
+.wireframe-screen { background: #1a2540; border: 1px solid rgba(34,211,238,0.15); }
+.wireframe-block { background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.15); }
+.flow-step { background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.3); }
+.flow-arrow { color: #22D3EE; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+.gradient-text { background: linear-gradient(135deg, #2563EB 0%, #22D3EE 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.role-card { transition: all 0.2s; }
+.role-card:hover { transform: translateY(-2px); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- HEADER -->
+<header class="border-b border-white/5 bg-[#0a1428]/95 backdrop-blur sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-ai-blue to-cyan-accent flex items-center justify-center">
+        <span class="font-extrabold text-white">N</span>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg">NER Immigration AI</h1>
+        <p class="text-xs text-slate-400">Planos del producto · Vista visual</p>
+      </div>
+    </div>
+    <div class="text-xs text-slate-400">
+      Última actualización: <span class="text-cyan-accent font-mono">2026-05-14</span>
+    </div>
+  </div>
+  <!-- TABS -->
+  <nav class="max-w-7xl mx-auto px-6 flex items-center gap-1 -mb-px overflow-x-auto">
+    <button data-tab="overview" class="tab-btn tab-active px-4 py-3 text-sm font-semibold whitespace-nowrap transition-colors">📊 Resumen</button>
+    <button data-tab="sitemap" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors">🗺️ Sitemap</button>
+    <button data-tab="roles" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors">👥 Roles</button>
+    <button data-tab="flows" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors">🚶 User Flows</button>
+    <button data-tab="wireframes" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors">🖼️ Wireframes</button>
+    <button data-tab="design" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors">🎨 Design System</button>
+    <button data-tab="aiteam" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors">🤖 Equipo AI</button>
+    <button data-tab="metrics" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors">📊 Métricas</button>
+    <button data-tab="clarify" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors">💡 Aclaraciones</button>
+    <button data-tab="future" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white whitespace-nowrap transition-colors">🚀 Futuro</button>
+  </nav>
+</header>
+
+<main class="max-w-7xl mx-auto px-6 py-8">
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB: RESUMEN -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section data-tab-content="overview" class="tab-content">
+  <div class="mb-12">
+    <h2 class="text-3xl font-extrabold mb-3 gradient-text">El Edificio NER en una pantalla</h2>
+    <p class="text-slate-400 max-w-3xl leading-relaxed">
+      Antes esto era código sin planos. Ahora tenés 4 documentos arquitectónicos que definen cómo se construye TODO. Cada feature nuevo se valida contra estos planos primero.
+    </p>
+  </div>
+
+  <!-- 4 PLANOS GRID -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+    <div class="glass rounded-xl p-5 card-hover transition-all">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-9 h-9 rounded-md bg-cyan-accent/15 border border-cyan-accent/30 flex items-center justify-center">
+          <span class="text-cyan-accent">🗺️</span>
+        </div>
+        <h3 class="font-bold">1. Information Architecture</h3>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed mb-3">Dónde vive cada cosa. Sitemap canónico. 4 namespaces (/hub, /tools, /admin, /dashboard DEPRECADO).</p>
+      <div class="text-xs font-mono text-slate-500">737 líneas · INFORMATION-ARCHITECTURE.md</div>
+    </div>
+
+    <div class="glass rounded-xl p-5 card-hover transition-all">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-9 h-9 rounded-md bg-cyan-accent/15 border border-cyan-accent/30 flex items-center justify-center">
+          <span class="text-cyan-accent">🚶</span>
+        </div>
+        <h3 class="font-bold">2. User Flows</h3>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed mb-3">Cómo navega cada rol. 18 flows canónicos. Happy path E2E completo I-130 (120 días).</p>
+      <div class="text-xs font-mono text-slate-500">846 líneas · USER-FLOWS.md</div>
+    </div>
+
+    <div class="glass rounded-xl p-5 card-hover transition-all">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-9 h-9 rounded-md bg-cyan-accent/15 border border-cyan-accent/30 flex items-center justify-center">
+          <span class="text-cyan-accent">🖼️</span>
+        </div>
+        <h3 class="font-bold">3. Wireframes</h3>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed mb-3">Estructura visual de cada pantalla. Splash, Hub, Case Engine, portales aplicante. Mobile + desktop.</p>
+      <div class="text-xs font-mono text-slate-500">915 líneas · WIREFRAMES.md</div>
+    </div>
+
+    <div class="glass rounded-xl p-5 card-hover transition-all">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-9 h-9 rounded-md bg-cyan-accent/15 border border-cyan-accent/30 flex items-center justify-center">
+          <span class="text-cyan-accent">🎨</span>
+        </div>
+        <h3 class="font-bold">4. Design System</h3>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed mb-3">AI Blue 80% + Cyan 20%. Sora typography. Inventario 250+ componentes. Tokens completos.</p>
+      <div class="text-xs font-mono text-slate-500">1,032 líneas · DESIGN-SYSTEM.md</div>
+    </div>
+  </div>
+
+  <!-- ESTADO DEL AUDIT -->
+  <div class="glass rounded-xl p-6 mb-8">
+    <h3 class="text-lg font-bold mb-4">Estado real del proyecto · auditado</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="text-center">
+        <div class="text-3xl font-extrabold text-emerald-400">8</div>
+        <div class="text-xs text-slate-400 uppercase tracking-wider mt-1">Firmas pagantes</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl font-extrabold text-emerald-400">$2,376</div>
+        <div class="text-xs text-slate-400 uppercase tracking-wider mt-1">MRR actual</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl font-extrabold text-amber-400">80</div>
+        <div class="text-xs text-slate-400 uppercase tracking-wider mt-1">Páginas activas</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl font-extrabold text-cyan-accent">3,530</div>
+        <div class="text-xs text-slate-400 uppercase tracking-wider mt-1">Líneas de planos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LO QUE SE LIMPIÓ -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="glass rounded-xl p-5">
+      <h4 class="font-bold mb-3 text-emerald-400">✓ Limpiado esta semana</h4>
+      <ul class="space-y-2 text-xs text-slate-300">
+        <li>• 11 archivos <code class="text-cyan-accent">_legacy/</code> eliminados</li>
+        <li>• HubNotifications huérfano eliminado</li>
+        <li>• PENDING migrations obsoletas eliminadas</li>
+        <li class="text-slate-400">~3,250 líneas de código muerto removidas</li>
+      </ul>
+    </div>
+    <div class="glass rounded-xl p-5">
+      <h4 class="font-bold mb-3 text-amber-400">⚠ Pendiente (Semana 2)</h4>
+      <ul class="space-y-2 text-xs text-slate-300">
+        <li>• Consolidar /tools/X vs /dashboard/X</li>
+        <li>• Strategic Packs → tab Case Engine</li>
+        <li>• Refactor HubDashboard monolith</li>
+        <li>• Brandbook migration global</li>
+      </ul>
+    </div>
+    <div class="glass rounded-xl p-5">
+      <h4 class="font-bold mb-3 text-cyan-accent">🚀 Futuro extensible</h4>
+      <ul class="space-y-2 text-xs text-slate-300">
+        <li>• USCIS Case Tracker</li>
+        <li>• NVC + Embassy tracking</li>
+        <li>• Document translator</li>
+        <li>• Court / EOIR / ICE workflows</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB: SITEMAP -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section data-tab-content="sitemap" class="tab-content hidden">
+  <div class="mb-8">
+    <h2 class="text-3xl font-extrabold mb-3 gradient-text">Sitemap · Dónde vive cada cosa</h2>
+    <p class="text-slate-400 max-w-3xl leading-relaxed">
+      NER tiene 4 zonas claras. Cada feature nuevo debe encajar en una de ellas (no inventar paralelas).
+    </p>
+  </div>
+
+  <!-- 4 NAMESPACES -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="glass rounded-xl p-5 border-l-4 border-emerald-400">
+      <div class="text-xs uppercase tracking-wider text-emerald-400 font-mono font-bold mb-1">PRIMARIO</div>
+      <h3 class="font-bold mb-2">/hub/*</h3>
+      <p class="text-xs text-slate-400 leading-relaxed">Workspace del profesional autenticado. <strong>El día a día.</strong></p>
+      <div class="mt-3 text-xs text-slate-500">Requiere auth · Multi-tenant</div>
+    </div>
+    <div class="glass rounded-xl p-5 border-l-4 border-cyan-accent">
+      <div class="text-xs uppercase tracking-wider text-cyan-accent font-mono font-bold mb-1">PÚBLICO</div>
+      <h3 class="font-bold mb-2">/tools/*</h3>
+      <p class="text-xs text-slate-400 leading-relaxed">Herramientas públicas. <strong>SEO + leads.</strong></p>
+      <div class="mt-3 text-xs text-slate-500">Sin auth · Con auth opcional</div>
+    </div>
+    <div class="glass rounded-xl p-5 border-l-4 border-amber-400">
+      <div class="text-xs uppercase tracking-wider text-amber-400 font-mono font-bold mb-1">ADMIN</div>
+      <h3 class="font-bold mb-2">/admin/*</h3>
+      <p class="text-xs text-slate-400 leading-relaxed">Mr. Lorenzo gestiona SaaS. <strong>Cross-firmas.</strong></p>
+      <div class="mt-3 text-xs text-slate-500">Platform admin only</div>
+    </div>
+    <div class="glass rounded-xl p-5 border-l-4 border-rose-400 opacity-60">
+      <div class="text-xs uppercase tracking-wider text-rose-400 font-mono font-bold mb-1">DEPRECADO</div>
+      <h3 class="font-bold mb-2 line-through">/dashboard/*</h3>
+      <p class="text-xs text-slate-400 leading-relaxed">Legacy. <strong>Migrar a /hub o /tools.</strong></p>
+      <div class="mt-3 text-xs text-slate-500">Eliminar gradualmente</div>
+    </div>
+  </div>
+
+  <!-- SITEMAP TREE -->
+  <div class="glass rounded-xl p-6">
+    <h3 class="text-lg font-bold mb-4">Sitemap canónico completo</h3>
+
+    <!-- HUB BRANCH -->
+    <div class="mb-6">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-emerald-400">🏠</span>
+        <span class="font-mono font-semibold text-emerald-400">/hub/*</span>
+        <span class="text-xs text-slate-400">— oficina virtual del profesional</span>
+      </div>
+      <div class="tree-line space-y-1 text-sm font-mono text-slate-300">
+        <div>📊 /hub <span class="text-slate-500">— Dashboard + briefing Camila</span></div>
+        <div>🔍 /hub/leads <span class="text-slate-500">— Pipeline pre-case</span></div>
+        <div>👥 /hub/clients <span class="text-slate-500">— Cliente 360</span></div>
+        <div>💬 /hub/consultations <span class="text-slate-500">— Kanban consultas</span></div>
+        <div class="text-cyan-accent">📁 /hub/cases <span class="text-slate-500">— Pipeline + Kanban</span></div>
+        <div class="tree-line pl-4 mt-1">
+          <div class="text-cyan-accent">⭐ /hub/cases/:caseId <span class="text-slate-500">— CASE ENGINE (corazón)</span></div>
+          <div class="pl-6 text-slate-400 text-xs space-y-0.5 mt-1">
+            <div>tabs base: ?tab=resumen / consulta / documentos / formularios / tareas / historial</div>
+            <div>tabs condicionales: strategy / consular / court / naturalization / asylum / vawa</div>
+          </div>
+        </div>
+        <div>📄 /hub/forms <span class="text-slate-500">— Smart Forms global firma</span></div>
+        <div>📅 /hub/agenda <span class="text-slate-500">— Calendario + sync GHL</span></div>
+        <div>📊 /hub/reports <span class="text-slate-500">— Analytics firma</span></div>
+        <div>🤖 /hub/team <span class="text-slate-500">— Felix/Nina/Max/Camila</span></div>
+        <div>⚙️ /hub/settings <span class="text-slate-500">— Config (office/team/billing/features/audit)</span></div>
+      </div>
+    </div>
+
+    <!-- TOOLS BRANCH -->
+    <div class="mb-6">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-cyan-accent">🔧</span>
+        <span class="font-mono font-semibold text-cyan-accent">/tools/*</span>
+        <span class="text-xs text-slate-400">— herramientas públicas</span>
+      </div>
+      <div class="tree-line space-y-1 text-sm font-mono text-slate-300">
+        <div>💰 /tools/affidavit <span class="text-slate-500">— I-864 Calculator</span></div>
+        <div>📅 /tools/cspa <span class="text-slate-500">— CSPA + Visa Bulletin</span></div>
+        <div>📸 /tools/evidence <span class="text-slate-500">— Photo Evidence Organizer</span></div>
+        <div>🔍 /tools/uscis-analyzer <span class="text-slate-500">— RFE/NOID Analyzer AI</span></div>
+        <div>🎤 /tools/interview-sim <span class="text-slate-500">— Interview Simulator</span></div>
+        <div>🌎 /tools/visa-evaluator <span class="text-slate-500">— Visa Evaluator</span></div>
+        <div>✓ /tools/checklist <span class="text-slate-500">— Checklist Generator</span></div>
+        <div>🌐 /tools/translator <span class="text-slate-500 italic">(futuro)</span></div>
+      </div>
+    </div>
+
+    <!-- ADMIN BRANCH -->
+    <div class="mb-6">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-amber-400">🛡️</span>
+        <span class="font-mono font-semibold text-amber-400">/admin/*</span>
+        <span class="text-xs text-slate-400">— platform admin (Mr. Lorenzo)</span>
+      </div>
+      <div class="tree-line space-y-1 text-sm font-mono text-slate-300">
+        <div>📊 /admin/dashboard <span class="text-slate-500">— MRR + ARR + KPIs</span></div>
+        <div>🏢 /admin/firms <span class="text-slate-500">— Lista firmas</span></div>
+        <div>👤 /admin/users <span class="text-slate-500">— Users globales</span></div>
+        <div>💳 /admin/billing <span class="text-slate-500">— Stripe + cobranza</span></div>
+        <div>📈 /admin/analytics <span class="text-slate-500">— Uso tools + AI credits</span></div>
+        <div>📜 /admin/logs <span class="text-slate-500">— Audit cross-firmas</span></div>
+        <div>🚩 /admin/features <span class="text-slate-500 italic">(planeado)</span></div>
+      </div>
+    </div>
+
+    <!-- PUBLIC BRANCH -->
+    <div>
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-slate-400">🌍</span>
+        <span class="font-mono font-semibold text-slate-300">Portales aplicante</span>
+        <span class="text-xs text-slate-400">— sin login, token-based</span>
+      </div>
+      <div class="tree-line space-y-1 text-sm font-mono text-slate-300">
+        <div>📋 /case-track/:token <span class="text-slate-500">— Cliente ve su caso</span></div>
+        <div>📤 /upload/:token <span class="text-slate-500">— Sube evidencia</span></div>
+        <div>📝 /q/:token <span class="text-slate-500">— Cuestionario detallado</span></div>
+        <div>📥 /intake/:token <span class="text-slate-500">— Pre-intake (72h expiry)</span></div>
+        <div>📊 /shared-analysis/:token <span class="text-slate-500">— Análisis compartido</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB: ROLES -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section data-tab-content="roles" class="tab-content hidden">
+  <div class="mb-8">
+    <h2 class="text-3xl font-extrabold mb-3 gradient-text">5 tipos de usuario</h2>
+    <p class="text-slate-400 max-w-3xl leading-relaxed">
+      NER vende a 4 tipos de profesionales autorizados (los firmadores G-28). El aplicante es el cliente del cliente. Mr. Lorenzo es el admin de la plataforma.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+    <!-- ABOGADO -->
+    <div class="role-card glass rounded-xl p-5 border-l-4 border-ai-blue">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-10 h-10 rounded-lg bg-ai-blue/20 border border-ai-blue/40 flex items-center justify-center text-xl">⚖️</div>
+        <div>
+          <h3 class="font-bold">Abogado</h3>
+          <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">G-28 Attorney</div>
+        </div>
+      </div>
+      <ul class="text-xs text-slate-300 space-y-1.5 mb-3">
+        <li>• Licensed attorney (J.D., admitted)</li>
+        <li>• Firma G-28 attorney section</li>
+        <li>• Acceso full + admin posible</li>
+        <li>• Cliente pagante del SaaS</li>
+      </ul>
+      <div class="text-[10px] text-slate-500 font-mono">Tier acceso: Full</div>
+    </div>
+
+    <!-- REP ACREDITADO -->
+    <div class="role-card glass rounded-xl p-5 border-l-4 border-cyan-accent">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-10 h-10 rounded-lg bg-cyan-accent/20 border border-cyan-accent/40 flex items-center justify-center text-xl">🏛️</div>
+        <div>
+          <h3 class="font-bold">Rep Acreditado</h3>
+          <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">G-28 Accredited Rep</div>
+        </div>
+      </div>
+      <ul class="text-xs text-slate-300 space-y-1.5 mb-3">
+        <li>• BIA-recognized organization</li>
+        <li>• ONGs, iglesias, legal aid</li>
+        <li>• Firma G-28 como attorney</li>
+        <li>• Acceso full + admin posible</li>
+      </ul>
+      <div class="text-[10px] text-slate-500 font-mono">Tier acceso: Full</div>
+    </div>
+
+    <!-- PREPARADOR -->
+    <div class="role-card glass rounded-xl p-5 border-l-4 border-emerald-400">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xl">📝</div>
+        <div>
+          <h3 class="font-bold">Preparador</h3>
+          <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">G-1145 Preparer</div>
+        </div>
+      </div>
+      <ul class="text-xs text-slate-300 space-y-1.5 mb-3">
+        <li>• Non-attorney pagado</li>
+        <li>• Firma G-1145 (no G-28)</li>
+        <li>• Acceso full work</li>
+        <li>• NO firma attorney sections</li>
+      </ul>
+      <div class="text-[10px] text-slate-500 font-mono">Tier acceso: Work-only</div>
+    </div>
+
+    <!-- APLICANTE -->
+    <div class="role-card glass rounded-xl p-5 border-l-4 border-amber-400">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl">🌎</div>
+        <div>
+          <h3 class="font-bold">Aplicante</h3>
+          <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Self-petitioner</div>
+        </div>
+      </div>
+      <ul class="text-xs text-slate-300 space-y-1.5 mb-3">
+        <li>• El inmigrante mismo</li>
+        <li>• Firma por sí mismo (no G-28)</li>
+        <li>• Acceso SOLO a su caso (portal)</li>
+        <li>• Tokens públicos sin login</li>
+      </ul>
+      <div class="text-[10px] text-slate-500 font-mono">Tier acceso: Solo su caso</div>
+    </div>
+
+    <!-- PLATFORM ADMIN -->
+    <div class="role-card glass rounded-xl p-5 border-l-4 border-rose-400">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-10 h-10 rounded-lg bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-xl">🛡️</div>
+        <div>
+          <h3 class="font-bold">Platform Admin</h3>
+          <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Mr. Lorenzo</div>
+        </div>
+      </div>
+      <ul class="text-xs text-slate-300 space-y-1.5 mb-3">
+        <li>• CEO de NER SaaS</li>
+        <li>• Onboardea firmas nuevas</li>
+        <li>• Impersonate para soporte</li>
+        <li>• Cobranza + suspender</li>
+      </ul>
+      <div class="text-[10px] text-slate-500 font-mono">Tier acceso: Cross-firmas</div>
+    </div>
+  </div>
+
+  <!-- MATRIZ ROL × FUNCIONALIDAD -->
+  <div class="glass rounded-xl p-6 overflow-x-auto">
+    <h3 class="text-lg font-bold mb-4">Matriz Rol × Funcionalidad</h3>
+    <table class="w-full text-xs">
+      <thead>
+        <tr class="border-b border-white/10">
+          <th class="text-left py-2 pr-4 font-semibold text-slate-300">Funcionalidad</th>
+          <th class="text-center py-2 px-3 font-semibold">Abogado</th>
+          <th class="text-center py-2 px-3 font-semibold">Rep BIA</th>
+          <th class="text-center py-2 px-3 font-semibold">Preparador</th>
+          <th class="text-center py-2 px-3 font-semibold">Aplicante</th>
+          <th class="text-center py-2 px-3 font-semibold">Admin</th>
+        </tr>
+      </thead>
+      <tbody class="text-slate-300">
+        <tr class="border-b border-white/5"><td class="py-1.5 pr-4">Login NER</td><td class="text-center text-emerald-400">✓</td><td class="text-center text-emerald-400">✓</td><td class="text-center text-emerald-400">✓</td><td class="text-center text-slate-500">token</td><td class="text-center text-emerald-400">✓</td></tr>
+        <tr class="border-b border-white/5"><td class="py-1.5 pr-4">Crear caso</td><td class="text-center text-emerald-400">✓</td><td class="text-center text-emerald-400">✓</td><td class="text-center text-emerald-400">✓</td><td class="text-center text-rose-400">✗</td><td class="text-center text-slate-500">—</td></tr>
+        <tr class="border-b border-white/5"><td class="py-1.5 pr-4">Firmar G-28 attorney</td><td class="text-center text-emerald-400">✓</td><td class="text-center text-emerald-400">✓</td><td class="text-center text-rose-400">✗</td><td class="text-center text-slate-500">N/A</td><td class="text-center text-slate-500">N/A</td></tr>
+        <tr class="border-b border-white/5"><td class="py-1.5 pr-4">Ver notas attorney_only</td><td class="text-center text-emerald-400">✓</td><td class="text-center text-emerald-400">✓</td><td class="text-center text-rose-400">✗</td><td class="text-center text-rose-400">✗</td><td class="text-center text-slate-500">impersonate</td></tr>
+        <tr class="border-b border-white/5"><td class="py-1.5 pr-4">Subir documentos al caso</td><td class="text-center text-slate-500">—</td><td class="text-center text-slate-500">—</td><td class="text-center text-slate-500">—</td><td class="text-center text-emerald-400">✓</td><td class="text-center text-slate-500">—</td></tr>
+        <tr class="border-b border-white/5"><td class="py-1.5 pr-4">Crear firma nueva</td><td class="text-center text-rose-400">✗</td><td class="text-center text-rose-400">✗</td><td class="text-center text-rose-400">✗</td><td class="text-center text-rose-400">✗</td><td class="text-center text-emerald-400">✓</td></tr>
+        <tr><td class="py-1.5 pr-4">Cambiar plan firma</td><td class="text-center text-amber-400">owner</td><td class="text-center text-rose-400">✗</td><td class="text-center text-rose-400">✗</td><td class="text-center text-rose-400">✗</td><td class="text-center text-emerald-400">✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB: USER FLOWS -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section data-tab-content="flows" class="tab-content hidden">
+  <div class="mb-8">
+    <h2 class="text-3xl font-extrabold mb-3 gradient-text">User Flows · Cómo se usa NER</h2>
+    <p class="text-slate-400 max-w-3xl leading-relaxed">
+      18 flows canónicos cubren el 95% del uso real. Cada uno tiene trigger, secuencia, outcome y tiempo esperado.
+    </p>
+  </div>
+
+  <!-- FLOW EJEMPLO 1: MAÑANA OPERATIVA -->
+  <div class="glass rounded-xl p-6 mb-6">
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div>
+        <div class="text-xs font-mono uppercase tracking-wider text-cyan-accent">F-01 · Rol: Profesional</div>
+        <h3 class="text-xl font-bold mt-1">Mañana operativa del paralegal</h3>
+        <p class="text-xs text-slate-400 mt-1">Vanessa, paralegal con 15 años exp, llega al estudio 7:30am</p>
+      </div>
+      <div class="text-right">
+        <div class="text-[10px] uppercase tracking-wider text-slate-400 font-mono">Target</div>
+        <div class="text-emerald-400 font-bold text-sm">3-5 min</div>
+      </div>
+    </div>
+
+    <div class="flex items-stretch gap-3 overflow-x-auto pb-4">
+      <div class="flow-step rounded-lg p-3 min-w-[160px] flex-shrink-0">
+        <div class="text-cyan-accent text-xs font-mono font-bold mb-1">1</div>
+        <div class="text-sm font-semibold mb-1">Login</div>
+        <div class="text-[10px] text-slate-400">/auth · email + MFA</div>
+        <div class="text-[10px] text-slate-500 mt-2 font-mono">30s</div>
+      </div>
+      <div class="flex items-center text-cyan-accent text-2xl flex-shrink-0">→</div>
+      <div class="flow-step rounded-lg p-3 min-w-[160px] flex-shrink-0">
+        <div class="text-cyan-accent text-xs font-mono font-bold mb-1">2</div>
+        <div class="text-sm font-semibold mb-1">Splash 2.7s</div>
+        <div class="text-[10px] text-slate-400">Logo firma + tagline</div>
+        <div class="text-[10px] text-slate-500 mt-2 font-mono">3s</div>
+      </div>
+      <div class="flex items-center text-cyan-accent text-2xl flex-shrink-0">→</div>
+      <div class="flow-step rounded-lg p-3 min-w-[160px] flex-shrink-0">
+        <div class="text-cyan-accent text-xs font-mono font-bold mb-1">3</div>
+        <div class="text-sm font-semibold mb-1">Hub Dashboard</div>
+        <div class="text-[10px] text-slate-400">Briefing Camila + 4 widgets</div>
+        <div class="text-[10px] text-slate-500 mt-2 font-mono">60s lectura</div>
+      </div>
+      <div class="flex items-center text-cyan-accent text-2xl flex-shrink-0">→</div>
+      <div class="flow-step rounded-lg p-3 min-w-[160px] flex-shrink-0">
+        <div class="text-cyan-accent text-xs font-mono font-bold mb-1">4</div>
+        <div class="text-sm font-semibold mb-1">Acción priorizada</div>
+        <div class="text-[10px] text-slate-400">García RFE / Sánchez consulta / etc</div>
+        <div class="text-[10px] text-slate-500 mt-2 font-mono">2-3 min decisión</div>
+      </div>
+    </div>
+
+    <div class="mt-4 pt-4 border-t border-white/5 text-xs">
+      <strong class="text-emerald-400">Outcome esperado:</strong>
+      <span class="text-slate-300 ml-2">En 5 minutos sabe los 3 fuegos del día y prioriza acción</span>
+    </div>
+  </div>
+
+  <!-- FLOW EJEMPLO 2: CONSULTA SUCEDE -->
+  <div class="glass rounded-xl p-6 mb-6">
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div>
+        <div class="text-xs font-mono uppercase tracking-wider text-cyan-accent">F-04 · Rol: Profesional</div>
+        <h3 class="text-xl font-bold mt-1">Consulta sucede + decisión tomar caso</h3>
+        <p class="text-xs text-slate-400 mt-1">Camila graba + transcribe en tiempo real, paralegal decide tomar</p>
+      </div>
+      <div class="text-right">
+        <div class="text-[10px] uppercase tracking-wider text-slate-400 font-mono">Target</div>
+        <div class="text-emerald-400 font-bold text-sm">30-60 min</div>
+      </div>
+    </div>
+
+    <div class="flex items-stretch gap-3 overflow-x-auto pb-4">
+      <div class="flow-step rounded-lg p-3 min-w-[140px] flex-shrink-0">
+        <div class="text-cyan-accent text-xs font-mono font-bold mb-1">1</div>
+        <div class="text-sm font-semibold mb-1">/hub/consultations</div>
+        <div class="text-[10px] text-slate-400">Click consulta hoy</div>
+      </div>
+      <div class="flex items-center text-cyan-accent text-xl flex-shrink-0">→</div>
+      <div class="flow-step rounded-lg p-3 min-w-[140px] flex-shrink-0">
+        <div class="text-cyan-accent text-xs font-mono font-bold mb-1">2</div>
+        <div class="text-sm font-semibold mb-1">ConsultationRoom</div>
+        <div class="text-[10px] text-slate-400">Ver pre-intake del cliente</div>
+      </div>
+      <div class="flex items-center text-cyan-accent text-xl flex-shrink-0">→</div>
+      <div class="flow-step rounded-lg p-3 min-w-[140px] flex-shrink-0">
+        <div class="text-cyan-accent text-xs font-mono font-bold mb-1">3</div>
+        <div class="text-sm font-semibold mb-1">🎙️ Camila records</div>
+        <div class="text-[10px] text-slate-400">35 min consulta</div>
+      </div>
+      <div class="flex items-center text-cyan-accent text-xl flex-shrink-0">→</div>
+      <div class="flow-step rounded-lg p-3 min-w-[140px] flex-shrink-0">
+        <div class="text-cyan-accent text-xs font-mono font-bold mb-1">4</div>
+        <div class="text-sm font-semibold mb-1">AI summary auto</div>
+        <div class="text-[10px] text-slate-400">Resumen + decisión gate</div>
+      </div>
+      <div class="flex items-center text-cyan-accent text-xl flex-shrink-0">→</div>
+      <div class="flow-step rounded-lg p-3 min-w-[140px] flex-shrink-0 border-emerald-500/40 bg-emerald-500/5">
+        <div class="text-emerald-400 text-xs font-mono font-bold mb-1">5</div>
+        <div class="text-sm font-semibold mb-1">✓ Caso creado</div>
+        <div class="text-[10px] text-slate-400">client_cases + token</div>
+      </div>
+    </div>
+
+    <div class="mt-4 pt-4 border-t border-white/5 text-xs">
+      <strong class="text-emerald-400">Outcome:</strong>
+      <span class="text-slate-300 ml-2">Caso creado + pre-filled con datos de consulta + portal token para cliente</span>
+    </div>
+  </div>
+
+  <!-- HAPPY PATH E2E -->
+  <div class="glass rounded-xl p-6 mb-6 border-2 border-cyan-accent/30">
+    <div class="mb-5">
+      <div class="text-xs font-mono uppercase tracking-wider text-cyan-accent">HAPPY PATH E2E</div>
+      <h3 class="text-2xl font-bold mt-1">Patricia Alvarado · I-130 de A a Z</h3>
+      <p class="text-sm text-slate-400 mt-1">Caso completo: 4 meses · 30-50 interactions en NER</p>
+    </div>
+
+    <div class="space-y-3">
+      <!-- D0 -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">Día 0</div>
+        <div class="flex-1 flow-step rounded-lg p-3">
+          <div class="text-sm font-semibold">🔍 Lead llega de GHL · 14:30</div>
+          <div class="text-xs text-slate-400 mt-1">Patricia llena form web → contacto en GHL → badge "1 nuevo" en sidebar Vanessa</div>
+        </div>
+      </div>
+      <!-- D1 -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">Día 1</div>
+        <div class="flex-1 flow-step rounded-lg p-3">
+          <div class="text-sm font-semibold">📥 Patricia recibe SMS pre-intake</div>
+          <div class="text-xs text-slate-400 mt-1">Click /intake/:token · llena 5 secciones en 12 min · success</div>
+        </div>
+      </div>
+      <!-- D3 -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">Día 3</div>
+        <div class="flex-1 flow-step rounded-lg p-3">
+          <div class="text-sm font-semibold">🎙️ Consulta sucede · 35 min</div>
+          <div class="text-xs text-slate-400 mt-1">Anna usa Camila record · resumen IA · decisión "tomar caso" · client_cases row creada</div>
+        </div>
+      </div>
+      <!-- D3+ -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">Día 3+</div>
+        <div class="flex-1 flow-step rounded-lg p-3">
+          <div class="text-sm font-semibold">📝 Strategic Pack tab "Strategy" en Case Engine</div>
+          <div class="text-xs text-slate-400 mt-1">Anna envía cuestionario detallado al cliente (/q/:token?pack=i130)</div>
+        </div>
+      </div>
+      <!-- D5 -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">Día 5</div>
+        <div class="flex-1 flow-step rounded-lg p-3">
+          <div class="text-sm font-semibold">✓ Patricia completa cuestionario · 45 min</div>
+          <div class="text-xs text-slate-400 mt-1">35 preguntas · auto-save · Smart Form draft pre-llenado 70%</div>
+        </div>
+      </div>
+      <!-- D7 -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">Día 7</div>
+        <div class="flex-1 flow-step rounded-lg p-3">
+          <div class="text-sm font-semibold">📋 Vanessa solicita evidencia faltante</div>
+          <div class="text-xs text-slate-400 mt-1">Doc 03 Evidence Checklist · batch send · cliente recibe link /upload/:token</div>
+        </div>
+      </div>
+      <!-- D10-15 -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">D 10-15</div>
+        <div class="flex-1 flow-step rounded-lg p-3">
+          <div class="text-sm font-semibold">📤 Patricia sube documentos · 3 sesiones</div>
+          <div class="text-xs text-slate-400 mt-1">Drag-drop con metadata · notifica al paralegal cada upload</div>
+        </div>
+      </div>
+      <!-- D16 -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">Día 16</div>
+        <div class="flex-1 flow-step rounded-lg p-3">
+          <div class="text-sm font-semibold">🛠️ Vanessa arma packet + Photo Organizer</div>
+          <div class="text-xs text-slate-400 mt-1">Tool con ?case_id=X · genera PDF · "Guardar al expediente" · I-130 Wizard 9 pasos · Felix 80% autofill</div>
+        </div>
+      </div>
+      <!-- D17 -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">Día 17</div>
+        <div class="flex-1 flow-step rounded-lg p-3">
+          <div class="text-sm font-semibold">✍️ Anna review + sign · envío USCIS Chicago Lockbox</div>
+          <div class="text-xs text-slate-400 mt-1">Stage cambia a "Envío USCIS · esperando receipt"</div>
+        </div>
+      </div>
+      <!-- D30 -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">Día 30</div>
+        <div class="flex-1 flow-step rounded-lg p-3">
+          <div class="text-sm font-semibold">📨 USCIS receipt I-797C · stage USCIS Petición</div>
+          <div class="text-xs text-slate-400 mt-1">Futuro: USCIS tracker auto-poll cambios</div>
+        </div>
+      </div>
+      <!-- D75 -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">Día 75</div>
+        <div class="flex-1 flow-step rounded-lg p-3 border-amber-500/40 bg-amber-500/5">
+          <div class="text-sm font-semibold">⚠️ RFE llega · USCIS Document Analyzer</div>
+          <div class="text-xs text-slate-400 mt-1">Tool analiza con AI · estrategia respuesta · respuesta enviada</div>
+        </div>
+      </div>
+      <!-- D120 -->
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-xs font-mono text-cyan-accent text-right shrink-0">Día 120</div>
+        <div class="flex-1 flow-step rounded-lg p-3 border-emerald-500/40 bg-emerald-500/5">
+          <div class="text-sm font-semibold">🎉 APROBADO · stage actualizado · Patricia notificada</div>
+          <div class="text-xs text-slate-400 mt-1">Próximo paso: I-485 (Patricia ya en USA) · sub-caso o continúa</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 pt-4 border-t border-white/5 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+      <div>
+        <div class="text-xs uppercase tracking-wider text-slate-400 font-mono">Duración</div>
+        <div class="text-lg font-bold text-emerald-400">120 días</div>
+      </div>
+      <div>
+        <div class="text-xs uppercase tracking-wider text-slate-400 font-mono">Touches NER</div>
+        <div class="text-lg font-bold text-cyan-accent">30-50</div>
+      </div>
+      <div>
+        <div class="text-xs uppercase tracking-wider text-slate-400 font-mono">Honorarios firma</div>
+        <div class="text-lg font-bold text-amber-400">$5-15k</div>
+      </div>
+      <div>
+        <div class="text-xs uppercase tracking-wider text-slate-400 font-mono">Costo NER</div>
+        <div class="text-lg font-bold text-rose-400">$1,188</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOWS ADICIONALES (compactos) -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="glass rounded-xl p-5">
+      <div class="text-xs font-mono uppercase tracking-wider text-amber-400 mb-2">F-08 · RFE Response</div>
+      <h4 class="font-bold mb-2">RFE/NOID → analizar + responder</h4>
+      <div class="text-xs text-slate-400 mb-3">Upload PDF → USCIS Analyzer → estrategia → response</div>
+      <div class="text-[10px] text-slate-500 font-mono">Target: 45-90 min</div>
+    </div>
+    <div class="glass rounded-xl p-5">
+      <div class="text-xs font-mono uppercase tracking-wider text-cyan-accent mb-2">F-15 · Onboard Firma</div>
+      <h4 class="font-bold mb-2">Mr. Lorenzo onboardea firma nueva</h4>
+      <div class="text-xs text-slate-400 mb-3">Modal NewFirmModal → provision-account → magic link email</div>
+      <div class="text-[10px] text-slate-500 font-mono">Target: 5-10 min</div>
+    </div>
+    <div class="glass rounded-xl p-5">
+      <div class="text-xs font-mono uppercase tracking-wider text-emerald-400 mb-2">F-11 · Pre-Intake</div>
+      <h4 class="font-bold mb-2">Aplicante completa pre-intake</h4>
+      <div class="text-xs text-slate-400 mb-3">Token link → 5 secciones → success → paralegal notificado</div>
+      <div class="text-[10px] text-slate-500 font-mono">Target: 10-15 min</div>
+    </div>
+    <div class="glass rounded-xl p-5">
+      <div class="text-xs font-mono uppercase tracking-wider text-amber-400 mb-2">F-18 · Impersonate</div>
+      <h4 class="font-bold mb-2">Admin debugger firma</h4>
+      <div class="text-xs text-slate-400 mb-3">Click "Entrar como firma" → 15min session → debug → salir</div>
+      <div class="text-[10px] text-slate-500 font-mono">Target: 3-5 min</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB: WIREFRAMES -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section data-tab-content="wireframes" class="tab-content hidden">
+  <div class="mb-8">
+    <h2 class="text-3xl font-extrabold mb-3 gradient-text">Wireframes · Cómo se ve cada pantalla</h2>
+    <p class="text-slate-400 max-w-3xl leading-relaxed">
+      Mockups conceptuales de las pantallas principales. Estos son los planos visuales del producto.
+    </p>
+  </div>
+
+  <!-- HUB DASHBOARD WIREFRAME -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold">Hub Dashboard · /hub</h3>
+      <div class="text-xs font-mono text-slate-400">Entry point del profesional</div>
+    </div>
+    <div class="wireframe-mock p-4">
+      <div class="flex gap-3 min-h-[400px]">
+        <!-- Sidebar 72px -->
+        <div class="w-16 bg-slate-900/40 rounded-md p-2 space-y-2 shrink-0">
+          <div class="w-10 h-10 rounded-md bg-cyan-accent/20 border border-cyan-accent/40 flex items-center justify-center text-cyan-accent font-bold">N</div>
+          <div class="space-y-1 pt-2 border-t border-white/5">
+            <div class="w-10 h-10 rounded-md bg-cyan-accent/15 flex items-center justify-center text-cyan-accent text-xs">🏠</div>
+            <div class="w-10 h-10 rounded-md hover:bg-white/5 flex items-center justify-center text-slate-500 text-xs">🔍</div>
+            <div class="w-10 h-10 rounded-md hover:bg-white/5 flex items-center justify-center text-slate-500 text-xs">👥</div>
+            <div class="w-10 h-10 rounded-md hover:bg-white/5 flex items-center justify-center text-slate-500 text-xs">💬</div>
+            <div class="w-10 h-10 rounded-md hover:bg-white/5 flex items-center justify-center text-slate-500 text-xs">📁</div>
+            <div class="w-10 h-10 rounded-md hover:bg-white/5 flex items-center justify-center text-slate-500 text-xs">📄</div>
+          </div>
+        </div>
+        <!-- Main content -->
+        <div class="flex-1 space-y-3">
+          <!-- Crisis bar -->
+          <div class="wireframe-block bg-rose-500/5 border-rose-500/30 rounded-md p-2 text-xs flex items-center gap-2">
+            <span class="text-rose-400">🚨</span>
+            <span class="text-rose-300">García I-797 RFE vence en 3 días · [Ver caso →]</span>
+          </div>
+          <!-- Camila briefing -->
+          <div class="wireframe-block rounded-md p-3">
+            <div class="text-[9px] uppercase tracking-wider text-cyan-accent font-mono mb-1">CAMILA · BRIEFING DEL DÍA</div>
+            <div class="text-sm font-bold">Buenas tardes, Gerald</div>
+            <div class="text-xs text-slate-400 mt-1">3 cosas urgentes: García RFE · Pérez biometrics · Sánchez consulta 11am</div>
+            <div class="mt-2 flex gap-2">
+              <input class="flex-1 bg-slate-900/50 border border-white/10 rounded px-2 py-1 text-xs" placeholder="Pregúntale a Camila..." disabled>
+              <button class="bg-cyan-accent/20 border border-cyan-accent/40 text-cyan-accent rounded px-2 text-xs">🎙️</button>
+            </div>
+          </div>
+          <!-- 4 widgets -->
+          <div class="grid grid-cols-4 gap-2">
+            <div class="wireframe-block rounded-md p-2 text-center">
+              <div class="text-[9px] text-slate-400 uppercase">✒️ Para firmar</div>
+              <div class="text-2xl font-bold mt-1">3</div>
+            </div>
+            <div class="wireframe-block rounded-md p-2 text-center">
+              <div class="text-[9px] text-slate-400 uppercase">👁 Para revisar</div>
+              <div class="text-2xl font-bold mt-1">2</div>
+            </div>
+            <div class="wireframe-block rounded-md p-2 text-center">
+              <div class="text-[9px] text-slate-400 uppercase">📅 Consultas hoy</div>
+              <div class="text-2xl font-bold mt-1">1</div>
+            </div>
+            <div class="wireframe-block rounded-md p-2 text-center">
+              <div class="text-[9px] text-slate-400 uppercase">🏛️ Entrevistas 7d</div>
+              <div class="text-2xl font-bold mt-1">2</div>
+            </div>
+          </div>
+          <!-- Pulse strip -->
+          <div class="wireframe-block rounded-md p-2 flex items-center justify-around text-[10px] text-slate-400">
+            <span>12 CASOS</span><span>5 LEADS</span><span>80% APROBACIÓN</span><span>2/2 EQUIPO</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CASE ENGINE WIREFRAME -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold">Case Engine · /hub/cases/:caseId</h3>
+      <div class="text-xs font-mono text-slate-400">⭐ El corazón del producto</div>
+    </div>
+    <div class="wireframe-mock p-4">
+      <!-- Header -->
+      <div class="wireframe-block rounded-md p-3 mb-3">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-xs text-slate-400">← Volver a casos</div>
+          <div class="flex gap-2 text-xs"><span class="text-slate-500">📤 Compartir</span></div>
+        </div>
+        <div class="text-base font-bold">Patricia Alvarado · I-130 Cónyuge</div>
+        <div class="text-xs text-slate-400 mt-1">NERTECH-2026-001 · <span class="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded text-[10px]">USCIS Petición</span> · 0 días</div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-1 border-b border-white/5 mb-3 overflow-x-auto">
+        <div class="px-3 py-2 text-xs border-b-2 border-cyan-accent text-cyan-accent font-semibold">📋 Resumen</div>
+        <div class="px-3 py-2 text-xs text-slate-500">🎙 Consulta</div>
+        <div class="px-3 py-2 text-xs text-slate-500">📂 Documentos</div>
+        <div class="px-3 py-2 text-xs text-slate-500">📄 Formularios</div>
+        <div class="px-3 py-2 text-xs text-slate-500">✓ Tareas</div>
+        <div class="px-3 py-2 text-xs text-slate-500">📊 Historial</div>
+        <div class="px-3 py-2 text-xs bg-emerald-500/10 text-emerald-300 rounded-t font-semibold">🧭 Strategy</div>
+        <div class="px-3 py-2 text-xs text-slate-600 italic">🌎 Consular*</div>
+        <div class="px-3 py-2 text-xs text-slate-600 italic">⚖️ Court*</div>
+      </div>
+      <div class="text-[9px] text-slate-500 mb-3 italic">* condicionales según case_type</div>
+
+      <!-- Body 2 cols -->
+      <div class="grid grid-cols-3 gap-3">
+        <!-- Main content -->
+        <div class="col-span-2 space-y-3">
+          <div class="wireframe-block rounded-md p-3">
+            <div class="text-xs text-slate-400 uppercase mb-2">📋 CASE INTAKE PANEL</div>
+            <div class="text-xs text-slate-300">Datos demográficos · País origen · Status visa</div>
+          </div>
+          <div class="wireframe-block rounded-md p-3">
+            <div class="text-xs text-slate-400 uppercase mb-2">📍 PIPELINE TRACKER</div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-emerald-400">✓</span><span class="text-slate-500">Lead</span>
+              <span class="text-cyan-accent">→</span>
+              <span class="text-emerald-400">✓</span><span class="text-slate-500">Consulta</span>
+              <span class="text-cyan-accent">→</span>
+              <span class="text-cyan-accent font-bold">● USCIS</span>
+              <span class="text-slate-600">→</span>
+              <span class="text-slate-600">○ Aprobado</span>
+            </div>
+          </div>
+          <div class="wireframe-block rounded-md p-3">
+            <div class="text-xs text-slate-400 uppercase mb-2">📊 PORTAL TRACKING</div>
+            <div class="text-xs text-slate-300">Cliente vio el portal hace 2 días</div>
+          </div>
+        </div>
+        <!-- Sidebar sticky -->
+        <div class="space-y-2">
+          <div class="wireframe-block rounded-md p-2 border-cyan-accent/20">
+            <div class="text-[9px] text-cyan-accent uppercase font-mono">📍 DECISION</div>
+            <div class="text-xs mt-1">USCIS · 12d SLA</div>
+            <div class="text-[10px] text-amber-400">🎯 Ball: USCIS</div>
+          </div>
+          <div class="wireframe-block rounded-md p-2">
+            <div class="text-[9px] text-slate-400 uppercase">✓ TOP 3 TAREAS</div>
+            <div class="text-[11px] text-slate-300 mt-1 space-y-0.5">
+              <div>☐ Llamar sponsor</div>
+              <div>☐ G-1256</div>
+              <div>☐ Review</div>
+            </div>
+          </div>
+          <div class="wireframe-block rounded-md p-2">
+            <div class="text-[9px] text-slate-400 uppercase">📝 TOP 3 NOTAS</div>
+            <div class="text-[10px] text-slate-300 mt-1">★ Bona fide solid</div>
+          </div>
+          <div class="wireframe-block rounded-md p-2 border-cyan-accent/20">
+            <div class="text-[9px] text-cyan-accent uppercase font-mono">🔧 TOOLS DEL CASO ▼</div>
+            <div class="text-[10px] text-slate-300 mt-1">7 tools disponibles</div>
+          </div>
+          <div class="wireframe-block rounded-md p-2">
+            <div class="text-[9px] text-slate-400 uppercase">📦 OUTPUTS</div>
+            <div class="text-[10px] text-emerald-400 mt-1">📸 Photo PDF · sync ✓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PORTAL APLICANTE -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold">Portal Aplicante · /case-track/:token</h3>
+      <div class="text-xs font-mono text-slate-400">Mobile-first · Cliente sin login</div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Desktop view -->
+      <div class="wireframe-mock p-3">
+        <div class="text-[10px] text-slate-500 mb-2 font-mono">Desktop</div>
+        <div class="wireframe-block rounded-md p-3 mb-2">
+          <div class="flex justify-between items-center text-xs">
+            <span>[Logo Mr Visa]</span>
+            <span class="text-slate-400">ES | EN</span>
+          </div>
+        </div>
+        <div class="wireframe-block rounded-md p-3 mb-2">
+          <div class="text-sm font-bold">Hola Patricia 👋</div>
+          <div class="text-xs text-slate-400">Tu caso I-130 · actualizado hace 2 días</div>
+          <div class="mt-3 flex items-center gap-1 text-[10px]">
+            <span class="text-emerald-400">●━</span><span class="text-emerald-400">●━</span><span class="text-emerald-400">●━</span><span class="text-cyan-accent">●━</span><span class="text-slate-600">○━</span><span class="text-slate-600">○</span>
+          </div>
+          <div class="text-[10px] text-cyan-accent mt-1">↑ Estás aquí</div>
+        </div>
+        <div class="wireframe-block rounded-md p-3 mb-2 bg-amber-500/5 border-amber-500/20">
+          <div class="text-xs font-bold mb-1">📋 PRÓXIMOS PASOS TUYOS</div>
+          <div class="text-[10px] text-slate-300 space-y-0.5">
+            <div>☐ Tax returns conjuntos 2024</div>
+            <div>☐ Foto matrimonio con familia</div>
+          </div>
+          <button class="mt-2 bg-cyan-accent/20 border border-cyan-accent/40 text-cyan-accent rounded px-2 py-1 text-[10px]">📤 Subir documentos</button>
+        </div>
+        <div class="wireframe-block rounded-md p-3">
+          <div class="text-xs font-bold mb-1">💬 ¿Preguntas?</div>
+          <button class="text-[10px] text-cyan-accent">📞 +1 305 555-0100</button>
+        </div>
+      </div>
+      <!-- Mobile view -->
+      <div class="wireframe-mock p-3 max-w-[280px] mx-auto">
+        <div class="text-[10px] text-slate-500 mb-2 font-mono text-center">📱 Mobile</div>
+        <div class="wireframe-block rounded-md p-2 mb-1.5 text-[10px]">
+          <span>☰</span><span class="float-right">👤</span>
+        </div>
+        <div class="wireframe-block rounded-md p-2 mb-1.5 bg-rose-500/5 border-rose-500/30 text-[9px]">
+          🚨 García RFE 3 días
+        </div>
+        <div class="wireframe-block rounded-md p-2 mb-1.5">
+          <div class="text-[11px] font-bold">📊 BRIEFING</div>
+          <div class="text-[9px] text-slate-400 mt-1">3 cosas urgentes hoy</div>
+        </div>
+        <div class="wireframe-block rounded-md p-2 mb-1.5">
+          <div class="text-[9px]">✒️ Para firmar · <strong>3</strong></div>
+        </div>
+        <div class="wireframe-block rounded-md p-2">
+          <div class="text-[9px]">👁 Para revisar · <strong>2</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLS WIREFRAME -->
+  <div>
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xl font-bold">Tool con contexto de caso · /tools/X?case_id=Y</h3>
+      <div class="text-xs font-mono text-slate-400">Banner cyan superior · "Save to case" al final</div>
+    </div>
+    <div class="wireframe-mock p-4">
+      <div class="bg-cyan-accent/10 border border-cyan-accent/30 rounded-md p-2 mb-3 flex items-center justify-between text-xs">
+        <span class="text-cyan-accent">🔗 Affidavit Calculator · vinculado al caso ee460f9c</span>
+        <span class="text-cyan-accent text-[10px]">[← Volver al caso]</span>
+      </div>
+      <div class="wireframe-block rounded-md p-3 mb-3">
+        <div class="text-sm font-bold">💰 AFFIDAVIT CALCULATOR</div>
+        <div class="text-xs text-slate-400 mt-1">I-864 con HHS Poverty Guidelines 2026</div>
+      </div>
+      <div class="wireframe-block rounded-md p-3 mb-3">
+        <div class="text-xs text-slate-400">[Wizard content con campos pre-llenados desde caseData...]</div>
+      </div>
+      <div class="text-center">
+        <button class="bg-cyan-accent/20 border border-cyan-accent/40 text-cyan-accent rounded-md px-4 py-2 text-xs font-semibold">💾 Guardar al expediente</button>
+        <div class="text-[10px] text-slate-500 mt-1">(solo aparece si ?case_id=X)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB: DESIGN SYSTEM -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section data-tab-content="design" class="tab-content hidden">
+  <div class="mb-8">
+    <h2 class="text-3xl font-extrabold mb-3 gradient-text">Design System</h2>
+    <p class="text-slate-400 max-w-3xl leading-relaxed">
+      Brandbook locked 2026-05-02: <strong>AI Blue 80% · Cyan 20% accent</strong>. Sora typography. Sin Jarvis sci-fi legacy.
+    </p>
+  </div>
+
+  <!-- COLORES -->
+  <div class="mb-8">
+    <h3 class="text-xl font-bold mb-4">Paleta oficial</h3>
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="h-24 bg-ai-blue"></div>
+        <div class="p-3">
+          <div class="text-sm font-bold">AI Blue</div>
+          <div class="text-[10px] font-mono text-slate-400">#2563EB</div>
+          <div class="text-[10px] text-slate-500 mt-1">Primary tech</div>
+        </div>
+      </div>
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="h-24 bg-deep-navy"></div>
+        <div class="p-3">
+          <div class="text-sm font-bold">Deep Navy</div>
+          <div class="text-[10px] font-mono text-slate-400">#0B1F3A</div>
+          <div class="text-[10px] text-slate-500 mt-1">Background dark</div>
+        </div>
+      </div>
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="h-24 bg-cyan-accent"></div>
+        <div class="p-3">
+          <div class="text-sm font-bold">Electric Cyan</div>
+          <div class="text-[10px] font-mono text-slate-400">#22D3EE</div>
+          <div class="text-[10px] text-slate-500 mt-1">Accent 20% only</div>
+        </div>
+      </div>
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="h-24 bg-soft-gray"></div>
+        <div class="p-3">
+          <div class="text-sm font-bold">Soft Gray</div>
+          <div class="text-[10px] font-mono text-slate-400">#F3F4F6</div>
+          <div class="text-[10px] text-slate-500 mt-1">Interfaces limpias</div>
+        </div>
+      </div>
+      <div class="glass rounded-xl overflow-hidden">
+        <div class="h-24 bg-graphite"></div>
+        <div class="p-3">
+          <div class="text-sm font-bold">Graphite</div>
+          <div class="text-[10px] font-mono text-slate-400">#1F2937</div>
+          <div class="text-[10px] text-slate-500 mt-1">Texto principal</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS COLORS -->
+  <div class="mb-8">
+    <h3 class="text-xl font-bold mb-4">Estados semánticos (saturación reducida)</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-emerald-500/15 border border-emerald-500/30 rounded-lg p-3">
+        <div class="text-xs font-bold uppercase tracking-wider text-emerald-300">SUCCESS</div>
+        <div class="text-[10px] text-slate-400 mt-1">Completado, sync OK</div>
+      </div>
+      <div class="bg-amber-500/15 border border-amber-500/30 rounded-lg p-3">
+        <div class="text-xs font-bold uppercase tracking-wider text-amber-300">WARNING</div>
+        <div class="text-[10px] text-slate-400 mt-1">Pendiente, en progreso</div>
+      </div>
+      <div class="bg-rose-500/15 border border-rose-500/30 rounded-lg p-3">
+        <div class="text-xs font-bold uppercase tracking-wider text-rose-300">DANGER</div>
+        <div class="text-[10px] text-slate-400 mt-1">Crítico, bloquea</div>
+      </div>
+      <div class="bg-cyan-accent/15 border border-cyan-accent/30 rounded-lg p-3">
+        <div class="text-xs font-bold uppercase tracking-wider text-cyan-accent">INFO</div>
+        <div class="text-[10px] text-slate-400 mt-1">AI sugerencia</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPOGRAFÍA -->
+  <div class="mb-8">
+    <h3 class="text-xl font-bold mb-4">Tipografía · Sora</h3>
+    <div class="glass rounded-xl p-6 space-y-4">
+      <div>
+        <div class="text-[28px] font-extrabold leading-none">Display 28px / 700</div>
+        <div class="text-[10px] font-mono text-slate-400 mt-1">font-display · text-2xl · font-bold</div>
+      </div>
+      <div>
+        <div class="text-[18px] font-bold">Heading 1 · 18px</div>
+        <div class="text-[10px] font-mono text-slate-400 mt-0.5">text-[18px] · font-bold</div>
+      </div>
+      <div>
+        <div class="text-[14px] font-bold uppercase tracking-wider">HEADING 2 · 14PX UPPERCASE</div>
+        <div class="text-[10px] font-mono text-slate-400 mt-0.5">text-[14px] · uppercase · tracking-wider</div>
+      </div>
+      <div>
+        <div class="text-[12px]">Body 12px · texto normal del producto</div>
+        <div class="text-[10px] font-mono text-slate-400 mt-0.5">text-[12px]</div>
+      </div>
+      <div>
+        <div class="text-[11px] text-slate-400">Small 11px · captions secundarios</div>
+        <div class="text-[10px] font-mono text-slate-400 mt-0.5">text-[11px] · text-muted-foreground</div>
+      </div>
+      <div>
+        <div class="text-[10px] font-mono uppercase tracking-wider text-cyan-accent">CAPTION 10PX MONO</div>
+        <div class="text-[10px] font-mono text-slate-400 mt-0.5">text-[10px] · font-mono · uppercase · tracking-wider</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPONENTES -->
+  <div class="mb-8">
+    <h3 class="text-xl font-bold mb-4">Componentes UI estándar</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Botones -->
+      <div class="glass rounded-xl p-5">
+        <div class="text-sm font-bold mb-3">Botones</div>
+        <div class="space-y-2">
+          <button class="bg-ai-blue hover:bg-ai-blue/90 text-white px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors">Primary</button>
+          <div class="block"></div>
+          <button class="bg-transparent border border-white/15 hover:border-cyan-accent/40 text-white px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors">Secondary</button>
+          <div class="block"></div>
+          <button class="bg-rose-500 hover:bg-rose-400 text-white px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors">Danger</button>
+          <div class="block"></div>
+          <button class="p-1 rounded text-slate-400 hover:text-white hover:bg-white/5 transition-colors">⚙</button> ghost
+        </div>
+      </div>
+      <!-- Badges -->
+      <div class="glass rounded-xl p-5">
+        <div class="text-sm font-bold mb-3">Badges</div>
+        <div class="flex flex-wrap gap-2">
+          <span class="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border bg-rose-500/15 text-rose-300 border-rose-500/30">OBLIGATORIO</span>
+          <span class="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border bg-cyan-accent/15 text-cyan-accent border-cyan-accent/30">RECOMENDADO</span>
+          <span class="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border bg-white/5 text-slate-400 border-white/10">OPCIONAL</span>
+          <span class="bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded text-[10px]">USCIS</span>
+          <span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded text-[10px]">NVC</span>
+          <span class="bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded text-[10px]">EMB</span>
+        </div>
+      </div>
+      <!-- Cards -->
+      <div class="glass rounded-xl p-5">
+        <div class="text-sm font-bold mb-3">Cards primarios</div>
+        <div class="bg-white/5 border border-white/10 rounded-xl p-3">
+          <div class="flex items-center justify-center gap-2 pb-2 mb-2 border-b border-white/10 relative">
+            <div class="w-7 h-7 rounded-md flex items-center justify-center bg-cyan-accent/15 border border-cyan-accent/30">
+              <span class="text-cyan-accent text-xs">📋</span>
+            </div>
+            <div class="text-[12px] font-semibold">Para firmar</div>
+            <div class="absolute right-0 text-[20px] font-bold text-cyan-accent">3</div>
+          </div>
+          <div class="text-[11px] text-slate-400">Listado de signatures pendientes...</div>
+        </div>
+      </div>
+      <!-- Citation -->
+      <div class="glass rounded-xl p-5">
+        <div class="text-sm font-bold mb-3">Citation / Source</div>
+        <div class="border-l-2 border-cyan-accent/60 bg-cyan-accent/5 pl-3 py-1.5">
+          <div class="text-[9.5px] uppercase tracking-wider text-cyan-accent font-mono font-semibold">USCIS Form I-130 Instructions (Rev. 04/01/2024)</div>
+          <div class="text-[11px] text-slate-300 mt-0.5">Documentos extranjeros DEBEN ser traducidos al inglés...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROHIBIDOS -->
+  <div class="glass rounded-xl p-6 border-l-4 border-rose-400">
+    <h3 class="text-lg font-bold mb-3 text-rose-400">❌ Patrones prohibidos (legacy)</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+      <div class="text-slate-400">• Jarvis sci-fi cyan dominante</div>
+      <div class="text-slate-400">• Scan-lines animations</div>
+      <div class="text-slate-400">• Orbitron font legacy</div>
+      <div class="text-slate-400">• Particle effects</div>
+      <div class="text-slate-400">• Gold gradients corporativo</div>
+      <div class="text-slate-400">• Sombras pesadas</div>
+      <div class="text-slate-400">• Frases vacías ("Estamos aquí para ayudarte")</div>
+      <div class="text-slate-400">• Glow effects pulsing</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB: FUTURO -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB: EQUIPO AI -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section data-tab-content="aiteam" class="tab-content hidden">
+  <div class="mb-8">
+    <h2 class="text-3xl font-extrabold mb-3 gradient-text">🤖 Tu Equipo AI · "Tengo un equipo a disposición"</h2>
+    <p class="text-slate-400 max-w-3xl leading-relaxed">
+      La sensación que pediste: el profesional entra a NER y siente que <strong>tiene un equipo</strong>. No es "tools sueltas" — es un <strong>staff completo de asistentes virtuales</strong> listos para ayudarlo.
+    </p>
+  </div>
+
+  <!-- WIDGET TU EQUIPO en el HUB -->
+  <div class="mb-10">
+    <h3 class="text-xl font-bold mb-4">📍 Widget "Tu Equipo NER" en el Hub Dashboard</h3>
+    <p class="text-sm text-slate-400 mb-4">Aparece arriba de los 4 widgets focus, primer cosa que ve el profesional al entrar.</p>
+
+    <div class="wireframe-mock p-6 bg-gradient-to-br from-ai-blue/5 to-cyan-accent/5 border border-cyan-accent/20 rounded-xl">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-cyan-accent font-mono font-bold">EQUIPO NER · LISTO HOY</div>
+          <h4 class="text-lg font-bold mt-1">👥 Tu equipo de inteligencia artificial está disponible</h4>
+        </div>
+        <div class="text-xs text-emerald-400 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Todos en línea
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div class="bg-white/5 border border-cyan-accent/20 rounded-lg p-3 hover:border-cyan-accent/50 transition-all cursor-pointer">
+          <div class="flex items-center justify-between mb-2">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-accent to-ai-blue flex items-center justify-center text-lg">🎙️</div>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <div class="font-bold text-sm">Camila</div>
+          <div class="text-[10px] text-cyan-accent uppercase tracking-wider">Voice AI</div>
+          <div class="text-[10px] text-slate-400 mt-1 leading-tight">Graba consultas + transcribe + resume + asignar tareas</div>
+          <div class="text-[9px] text-amber-400 mt-2 font-mono">450 créditos voice</div>
+        </div>
+
+        <div class="bg-white/5 border border-cyan-accent/20 rounded-lg p-3 hover:border-cyan-accent/50 transition-all cursor-pointer">
+          <div class="flex items-center justify-between mb-2">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-lg">📝</div>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <div class="font-bold text-sm">Felix</div>
+          <div class="text-[10px] text-cyan-accent uppercase tracking-wider">Forms Filler</div>
+          <div class="text-[10px] text-slate-400 mt-1 leading-tight">Llena formularios USCIS leyendo el expediente · I-130 + I-765 listos</div>
+          <div class="text-[9px] text-amber-400 mt-2 font-mono">5 créditos/uso</div>
+        </div>
+
+        <div class="bg-white/5 border border-cyan-accent/20 rounded-lg p-3 hover:border-cyan-accent/50 transition-all cursor-pointer">
+          <div class="flex items-center justify-between mb-2">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-lg">📦</div>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <div class="font-bold text-sm">Nina</div>
+          <div class="text-[10px] text-cyan-accent uppercase tracking-wider">Packet Builder</div>
+          <div class="text-[10px] text-slate-400 mt-1 leading-tight">Ensambla el packet completo · cover letter · exhibits · orden correcto</div>
+          <div class="text-[9px] text-amber-400 mt-2 font-mono">10 créditos/uso</div>
+        </div>
+
+        <div class="bg-white/5 border border-cyan-accent/20 rounded-lg p-3 hover:border-cyan-accent/50 transition-all cursor-pointer">
+          <div class="flex items-center justify-between mb-2">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center text-lg">✓</div>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <div class="font-bold text-sm">Max</div>
+          <div class="text-[10px] text-cyan-accent uppercase tracking-wider">Quality Assurance</div>
+          <div class="text-[10px] text-slate-400 mt-1 leading-tight">Revisa el packet antes de envío · detecta errores · valida documentos</div>
+          <div class="text-[9px] text-amber-400 mt-2 font-mono">10 créditos/uso</div>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-white/5">
+        <div class="flex items-center gap-3 bg-slate-900/40 rounded-lg p-3">
+          <span class="text-cyan-accent text-xl">💬</span>
+          <input class="flex-1 bg-transparent border-none outline-none text-sm text-slate-300 placeholder-slate-500" placeholder='Pregúntale al equipo: "Camila, ¿qué se acordó con García en la consulta?"' disabled>
+          <button class="bg-cyan-accent/20 border border-cyan-accent/40 text-cyan-accent rounded-md px-3 py-1.5 text-xs font-semibold">Preguntar →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI ESPECIALISTAS FUTUROS -->
+  <div class="mb-10">
+    <h3 class="text-xl font-bold mb-4">🔮 Próximos miembros del equipo AI (planeados)</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="glass rounded-lg p-4 opacity-70">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">✍️</div>
+          <div class="font-bold text-sm">Pablo</div>
+          <span class="text-[9px] uppercase tracking-wider text-amber-400 ml-auto font-mono">PLANNED</span>
+        </div>
+        <div class="text-[10px] text-slate-400">Legal Writer · drafts de cartas, affidavits, RFE responses con cita legal</div>
+      </div>
+      <div class="glass rounded-lg p-4 opacity-70">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">📚</div>
+          <div class="font-bold text-sm">Lucía</div>
+          <span class="text-[9px] uppercase tracking-wider text-amber-400 ml-auto font-mono">PLANNED</span>
+        </div>
+        <div class="text-[10px] text-slate-400">Evidence Specialist · checklist contextual + valida documents subidos</div>
+      </div>
+      <div class="glass rounded-lg p-4 opacity-70">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">⚖️</div>
+          <div class="font-bold text-sm">Sofía</div>
+          <span class="text-[9px] uppercase tracking-wider text-amber-400 ml-auto font-mono">PLANNED</span>
+        </div>
+        <div class="text-[10px] text-slate-400">Court Specialist · EOIR procedures · motions · hearings</div>
+      </div>
+      <div class="glass rounded-lg p-4 opacity-70">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">📞</div>
+          <div class="font-bold text-sm">Rosa</div>
+          <span class="text-[9px] uppercase tracking-wider text-amber-400 ml-auto font-mono">PLANNED</span>
+        </div>
+        <div class="text-[10px] text-slate-400">Client Communications · emails · SMS · follow-ups · multi-lang</div>
+      </div>
+      <div class="glass rounded-lg p-4 opacity-70">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">📚</div>
+          <div class="font-bold text-sm">Carmen</div>
+          <span class="text-[9px] uppercase tracking-wider text-amber-400 ml-auto font-mono">PLANNED</span>
+        </div>
+        <div class="text-[10px] text-slate-400">Knowledge Expert · USCIS PM · 9 FAM · 8 CFR · INA queries</div>
+      </div>
+      <div class="glass rounded-lg p-4 opacity-70">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">📊</div>
+          <div class="font-bold text-sm">Leo</div>
+          <span class="text-[9px] uppercase tracking-wider text-amber-400 ml-auto font-mono">PLANNED</span>
+        </div>
+        <div class="text-[10px] text-slate-400">Analytics · firma performance · case outcomes · benchmarks</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI CHAT CONTEXTUAL EN EL CASE ENGINE -->
+  <div class="mb-10">
+    <h3 class="text-xl font-bold mb-4">💬 AI Chat contextual dentro del Case Engine</h3>
+    <p class="text-sm text-slate-400 mb-4">Hablás con Camila sobre el caso específico que estás viendo. Ella lee el expediente + transcripción de consulta + notas.</p>
+
+    <div class="wireframe-mock p-4">
+      <!-- Mini case header -->
+      <div class="wireframe-block rounded-md p-2 mb-3 text-xs flex items-center justify-between">
+        <span class="font-bold">Patricia Alvarado · I-130 · USCIS Petición</span>
+        <span class="text-cyan-accent">[Tab: AI Chat]</span>
+      </div>
+
+      <!-- Chat UI -->
+      <div class="bg-slate-900/40 rounded-lg p-4 space-y-3 max-h-[400px] overflow-y-auto">
+        <!-- User message -->
+        <div class="flex gap-2 justify-end">
+          <div class="bg-cyan-accent/15 border border-cyan-accent/30 rounded-lg rounded-tr-sm p-3 max-w-md">
+            <div class="text-xs text-cyan-accent font-mono uppercase tracking-wider mb-1">Tú</div>
+            <div class="text-sm text-slate-200">¿Qué se acordó con García en la consulta del 14 de mayo?</div>
+          </div>
+          <div class="w-8 h-8 rounded-full bg-cyan-accent/20 flex items-center justify-center shrink-0 text-xs">👤</div>
+        </div>
+
+        <!-- Camila message -->
+        <div class="flex gap-2">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-accent to-ai-blue flex items-center justify-center shrink-0 text-sm">🎙️</div>
+          <div class="bg-white/5 border border-white/10 rounded-lg rounded-tl-sm p-3 max-w-md">
+            <div class="text-xs text-cyan-accent font-mono uppercase tracking-wider mb-1">Camila</div>
+            <div class="text-sm text-slate-200 leading-relaxed">
+              En la consulta del 14 de mayo (35 min, grabada) acordaron:
+              <ul class="mt-2 space-y-1 text-xs text-slate-300">
+                <li>• <strong>Filing concurrente</strong> I-130 + I-485 + I-765</li>
+                <li>• <strong>Carlos</strong> firma como sponsor I-864</li>
+                <li>• Match con bona fide solid (cuenta conjunta 12m + fotos timeline 2 años)</li>
+              </ul>
+              <div class="mt-2 text-xs text-amber-300">⚠️ Pendiente acordado:</div>
+              <ul class="space-y-1 text-xs text-slate-300">
+                <li>• Tax transcripts del sponsor (3 años)</li>
+                <li>• 3 cartas Matter of Patel</li>
+                <li>• Foto matrimonio con familia ≥5 invitados</li>
+              </ul>
+            </div>
+            <div class="mt-2 pt-2 border-t border-white/10 text-[10px] text-slate-500">
+              Fuente: transcripción ConsultationPanel + notas tab Resumen
+            </div>
+          </div>
+        </div>
+
+        <!-- User message -->
+        <div class="flex gap-2 justify-end">
+          <div class="bg-cyan-accent/15 border border-cyan-accent/30 rounded-lg rounded-tr-sm p-3 max-w-md">
+            <div class="text-xs text-cyan-accent font-mono uppercase tracking-wider mb-1">Tú</div>
+            <div class="text-sm text-slate-200">Creá una tarea: llamar al sponsor mañana, asignar a Vanessa</div>
+          </div>
+          <div class="w-8 h-8 rounded-full bg-cyan-accent/20 flex items-center justify-center shrink-0 text-xs">👤</div>
+        </div>
+
+        <!-- Camila confirm -->
+        <div class="flex gap-2">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-accent to-ai-blue flex items-center justify-center shrink-0 text-sm">🎙️</div>
+          <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-lg rounded-tl-sm p-3">
+            <div class="text-xs text-emerald-400 font-mono uppercase tracking-wider mb-1">Camila ✓</div>
+            <div class="text-sm text-slate-200">
+              ✓ Tarea creada en el caso de Patricia Alvarado:<br>
+              <strong>"Llamar a Carlos Alvarado para tax transcripts del sponsor"</strong><br>
+              <span class="text-xs text-slate-400">Asignada a Vanessa · Deadline 2026-05-15 · Prioridad alta</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="mt-3 flex gap-2">
+        <input class="flex-1 bg-slate-900/40 border border-white/10 rounded-md px-3 py-2 text-sm placeholder-slate-500" placeholder='Preguntá sobre el caso, agregá una nota, o creá una tarea...' disabled>
+        <button class="bg-cyan-accent text-deep-navy rounded-md px-4 text-sm font-bold">Enviar →</button>
+      </div>
+      <div class="mt-2 flex gap-2 text-[10px] text-slate-500">
+        <span class="font-mono">💡 Camila lee:</span>
+        <span class="px-2 py-0.5 rounded bg-white/5">transcripción consulta</span>
+        <span class="px-2 py-0.5 rounded bg-white/5">notas del caso</span>
+        <span class="px-2 py-0.5 rounded bg-white/5">documentos subidos</span>
+        <span class="px-2 py-0.5 rounded bg-white/5">historial</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- KNOWLEDGE BASE -->
+  <div class="mb-10">
+    <h3 class="text-xl font-bold mb-4">📚 Knowledge Base · USCIS PM + 9 FAM + 8 CFR + INA</h3>
+    <p class="text-sm text-slate-400 mb-4">Consulta rápida de las fuentes oficiales. Carmen (AI especialista) responde con citas exactas.</p>
+
+    <div class="wireframe-mock p-4">
+      <div class="wireframe-block rounded-md p-3 mb-3">
+        <div class="flex items-center gap-2 text-xs">
+          <span class="text-cyan-accent">📚</span>
+          <span class="font-bold">/hub/knowledge</span>
+          <span class="text-slate-400">— Consultá la regulación migratoria</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/40 rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-xl">🔍</span>
+          <input class="flex-1 bg-transparent border-b border-cyan-accent/40 px-2 py-1 text-sm" value='"245(c) bar" en filing concurrente' disabled>
+        </div>
+
+        <div class="space-y-3">
+          <!-- Result 1 -->
+          <div class="bg-white/5 border-l-2 border-cyan-accent rounded-r-md p-3">
+            <div class="flex items-center justify-between mb-1">
+              <div class="text-[10px] font-mono uppercase tracking-wider text-cyan-accent">USCIS Policy Manual · Vol. 7 · Part B</div>
+              <span class="text-[9px] text-emerald-400 font-mono">match 96%</span>
+            </div>
+            <div class="text-sm font-semibold mb-1">Bars to Adjustment of Status under INA 245(c)</div>
+            <div class="text-xs text-slate-300 leading-relaxed">
+              Section 245(c) bars certain noncitizens from adjustment of status, including those who have failed to maintain continuously a lawful status...
+            </div>
+            <button class="mt-2 text-[10px] text-cyan-accent hover:underline">Ver fuente completa →</button>
+          </div>
+
+          <!-- Result 2 -->
+          <div class="bg-white/5 border-l-2 border-amber-400/60 rounded-r-md p-3">
+            <div class="flex items-center justify-between mb-1">
+              <div class="text-[10px] font-mono uppercase tracking-wider text-amber-300">8 CFR § 245.1(b)</div>
+              <span class="text-[9px] text-emerald-400 font-mono">match 91%</span>
+            </div>
+            <div class="text-sm font-semibold mb-1">Restrictions on adjustment of status</div>
+            <div class="text-xs text-slate-300 leading-relaxed">
+              An alien is ineligible for adjustment of status under section 245(a)... unless he or she is an immediate relative of a US citizen...
+            </div>
+            <button class="mt-2 text-[10px] text-cyan-accent hover:underline">Ver fuente completa →</button>
+          </div>
+
+          <!-- Carmen synthesis -->
+          <div class="bg-cyan-accent/5 border border-cyan-accent/30 rounded-md p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-cyan-accent text-base">📚</span>
+              <span class="text-xs font-bold text-cyan-accent">Carmen sintetiza:</span>
+            </div>
+            <div class="text-xs text-slate-200 leading-relaxed">
+              El 245(c) bar bloquea adjustment of status para quienes: (1) trabajaron sin autorización, (2) estuvieron out-of-status, (3) entraron sin inspección. <strong>EXCEPCIONES:</strong> immediate relatives de USC (IR1, CR1, K-1 derivative) están exentos. Tu cliente Patricia es CR1 → NO aplica 245(c) bar.
+            </div>
+            <div class="mt-2 text-[10px] text-slate-500">
+              Fuentes citadas: USCIS PM Vol. 7 Part B Ch. 3 · 8 CFR 245.1(b) · INA 245(c)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 glass rounded-lg p-4 border-l-4 border-emerald-400">
+      <div class="text-sm font-bold mb-2 text-emerald-400">💰 Costo eficiente</div>
+      <div class="text-xs text-slate-300 leading-relaxed">
+        <strong>Tecnología:</strong> embeddings OpenAI text-embedding-3-small ($0.02 / 1M tokens) + vector search Supabase pgvector + Claude Haiku synthesis.<br>
+        <strong>Costo real:</strong> ~$0.001 por consulta. <strong>Setup:</strong> una sola vez scrape USCIS PM + 9 FAM + 8 CFR + INA (gratuito) + generar embeddings.
+      </div>
+    </div>
+  </div>
+
+  <!-- CONSULTATION ROOM -->
+  <div>
+    <h3 class="text-xl font-bold mb-4">🎙️ Consultation Room · La sala de reuniones virtual</h3>
+    <p class="text-sm text-slate-400 mb-4">Acá entra el cliente y el profesional. Camila modera + graba + transcribe + resume. Da la sensación de "sala virtual".</p>
+
+    <div class="wireframe-mock p-4">
+      <div class="wireframe-block rounded-md p-3 mb-3">
+        <div class="text-xs text-cyan-accent font-mono uppercase tracking-wider">🎙️ EN VIVO · CONSULTATION ROOM</div>
+        <div class="text-sm font-bold mt-1">Sánchez · Consulta I-130 · 11:00 AM · Anna Rodríguez (attorney)</div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mb-3">
+        <!-- Video / Audio source 1 -->
+        <div class="aspect-video bg-slate-900 rounded-md flex items-center justify-center relative">
+          <div class="w-16 h-16 rounded-full bg-cyan-accent/30 flex items-center justify-center text-2xl">👩‍💼</div>
+          <div class="absolute bottom-2 left-2 text-[10px] bg-black/60 px-2 py-0.5 rounded">Anna · Attorney</div>
+          <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400"></div>
+        </div>
+        <div class="aspect-video bg-slate-900 rounded-md flex items-center justify-center relative">
+          <div class="w-16 h-16 rounded-full bg-amber-500/30 flex items-center justify-center text-2xl">👤</div>
+          <div class="absolute bottom-2 left-2 text-[10px] bg-black/60 px-2 py-0.5 rounded">Sánchez · Cliente</div>
+          <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400"></div>
+        </div>
+        <div class="aspect-video bg-gradient-to-br from-cyan-accent/20 to-ai-blue/20 rounded-md flex items-center justify-center relative border border-cyan-accent/30">
+          <div class="text-3xl animate-pulse">🎙️</div>
+          <div class="absolute bottom-2 left-2 text-[10px] bg-cyan-accent/30 px-2 py-0.5 rounded font-mono">CAMILA · Grabando</div>
+          <div class="absolute top-2 right-2 flex items-center gap-1 text-[9px]">
+            <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
+            <span>REC 18:34</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <!-- Transcripción en vivo -->
+        <div class="wireframe-block rounded-md p-3 max-h-[200px] overflow-y-auto">
+          <div class="text-[10px] uppercase tracking-wider text-cyan-accent font-mono font-bold mb-2">📝 TRANSCRIPCIÓN EN VIVO</div>
+          <div class="space-y-2 text-xs">
+            <div><span class="font-bold text-cyan-accent">[Anna]</span> <span class="text-slate-300">Buenos días, gracias por agendar. ¿Cómo está tu situación actualmente?</span></div>
+            <div><span class="font-bold text-amber-400">[Sánchez]</span> <span class="text-slate-300">Estoy con visa F-1 expirada hace 8 meses, mi esposa es USC, queremos hacer el I-130...</span></div>
+            <div><span class="font-bold text-cyan-accent">[Anna]</span> <span class="text-slate-300">Perfecto. Cuéntame de tu esposa, ¿cuándo se casaron?</span></div>
+            <div class="text-slate-500 italic">[continúa...]</div>
+          </div>
+        </div>
+
+        <!-- AI Insights en vivo -->
+        <div class="wireframe-block rounded-md p-3 max-h-[200px] overflow-y-auto bg-cyan-accent/5">
+          <div class="text-[10px] uppercase tracking-wider text-cyan-accent font-mono font-bold mb-2">💡 CAMILA ANALIZA EN VIVO</div>
+          <div class="space-y-2 text-xs">
+            <div class="bg-white/5 rounded p-2">
+              <div class="text-cyan-accent text-[9px] font-bold">📊 DETECTADO</div>
+              <div class="text-slate-300 mt-0.5">Out-of-status 8 meses · pero immediate relative de USC → 245(c) bar EXENTO</div>
+            </div>
+            <div class="bg-amber-500/10 rounded p-2">
+              <div class="text-amber-300 text-[9px] font-bold">⚠️ A INVESTIGAR</div>
+              <div class="text-slate-300 mt-0.5">Trabajo sin autorización durante F-1? Confirmar para evaluar 245(c)</div>
+            </div>
+            <div class="bg-emerald-500/10 rounded p-2">
+              <div class="text-emerald-400 text-[9px] font-bold">✓ FILING APROPIADO</div>
+              <div class="text-slate-300 mt-0.5">Concurrent filing I-130 + I-485 + I-765 + I-131 elegible</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3 flex items-center justify-between bg-slate-900/40 rounded-md p-3">
+        <div class="flex items-center gap-2">
+          <button class="bg-rose-500/20 border border-rose-500/40 text-rose-400 rounded-full w-10 h-10 flex items-center justify-center">🎤</button>
+          <button class="bg-rose-500/20 border border-rose-500/40 text-rose-400 rounded-full w-10 h-10 flex items-center justify-center">📹</button>
+          <button class="bg-white/5 border border-white/10 rounded-full w-10 h-10 flex items-center justify-center">💬</button>
+        </div>
+        <div class="text-xs text-slate-400">Reunión 18:34 / ~45 min esperados</div>
+        <button class="bg-rose-500 text-white rounded-md px-4 py-2 text-xs font-bold">Terminar consulta</button>
+      </div>
+    </div>
+
+    <div class="mt-4 glass rounded-lg p-4">
+      <div class="text-sm font-bold mb-2">Al terminar, Camila auto-genera:</div>
+      <ul class="text-xs text-slate-300 space-y-1">
+        <li>✓ Resumen ejecutivo de 200 palabras</li>
+        <li>✓ Lista de issues legales detectados</li>
+        <li>✓ Sugerencias de filing strategy</li>
+        <li>✓ Lista de documentos requeridos</li>
+        <li>✓ Decisión gate: Tomar / Pensar / Rechazar / Referir</li>
+        <li>✓ Si "Tomar" → caso creado automático con pre-fill</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB: MÉTRICAS · Framework de medición -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section data-tab-content="metrics" class="tab-content hidden">
+  <div class="mb-8">
+    <h2 class="text-3xl font-extrabold mb-3 gradient-text">📊 Framework de Medición · Todo es medible</h2>
+    <p class="text-slate-400 max-w-3xl leading-relaxed">
+      <strong>Principio fundacional:</strong> "lo que no se mide no se puede mejorar". NER se diseña como producto <strong>data-driven desde el día 1</strong>. Cada acción, cada output, cada interacción deja huella medible.
+    </p>
+  </div>
+
+  <!-- 8 NIVELES DE MEDICIÓN -->
+  <div class="mb-10">
+    <h3 class="text-xl font-bold mb-4">8 niveles de medición</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+      <!-- Nivel 1 -->
+      <div class="glass rounded-xl p-4 border-l-4 border-rose-400">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-rose-400 font-mono font-bold">NIVEL 1</div>
+            <h4 class="font-bold">CEO · Platform SaaS</h4>
+          </div>
+          <span class="text-2xl">🏆</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-2">Mr. Lorenzo decide el rumbo del SaaS basado en estas</p>
+        <ul class="text-[11px] text-slate-300 space-y-0.5">
+          <li>• MRR · ARR · Churn rate · LTV / CAC</li>
+          <li>• Activation rate de firmas nuevas</li>
+          <li>• Feature adoption rate</li>
+          <li>• Conversion lead → cliente por firma</li>
+          <li>• Costo AI vs revenue per firma</li>
+        </ul>
+        <div class="mt-2 text-[10px] text-cyan-accent font-mono">📍 /admin/dashboard + /admin/analytics</div>
+      </div>
+
+      <!-- Nivel 2 -->
+      <div class="glass rounded-xl p-4 border-l-4 border-amber-400">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-amber-400 font-mono font-bold">NIVEL 2</div>
+            <h4 class="font-bold">Owner de la firma</h4>
+          </div>
+          <span class="text-2xl">⚖️</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-2">El abogado dueño quiere ver su negocio</p>
+        <ul class="text-[11px] text-slate-300 space-y-0.5">
+          <li>• Casos activos · cerrados · aprobados / mes</li>
+          <li>• RFE rate · approval rate · denial rate</li>
+          <li>• Tiempo promedio (intake → approved)</li>
+          <li>• Revenue por caso · costo NER per caso</li>
+          <li>• Performance del equipo (casos por paralegal)</li>
+        </ul>
+        <div class="mt-2 text-[10px] text-cyan-accent font-mono">📍 /hub/reports</div>
+      </div>
+
+      <!-- Nivel 3 -->
+      <div class="glass rounded-xl p-4 border-l-4 border-cyan-accent">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-cyan-accent font-mono font-bold">NIVEL 3</div>
+            <h4 class="font-bold">Paralegal individual</h4>
+          </div>
+          <span class="text-2xl">👤</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-2">Su propio performance</p>
+        <ul class="text-[11px] text-slate-300 space-y-0.5">
+          <li>• Casos asignados a mí · cuántos cerré</li>
+          <li>• Tiempo medio response a cliente</li>
+          <li>• Tareas completadas vs pendientes vs overdue</li>
+          <li>• Uso de AI agents (Felix/Nina/Max/Camila)</li>
+          <li>• Knowledge base queries hechas</li>
+        </ul>
+        <div class="mt-2 text-[10px] text-cyan-accent font-mono">📍 Widget /hub "Tu performance esta semana"</div>
+      </div>
+
+      <!-- Nivel 4 -->
+      <div class="glass rounded-xl p-4 border-l-4 border-emerald-400">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-emerald-400 font-mono font-bold">NIVEL 4</div>
+            <h4 class="font-bold">Cada caso individual</h4>
+          </div>
+          <span class="text-2xl">📁</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-2">Métricas vivas del expediente</p>
+        <ul class="text-[11px] text-slate-300 space-y-0.5">
+          <li>• Tiempo en cada stage (USCIS → NVC → Embajada)</li>
+          <li>• Documentos solicitados vs recibidos</li>
+          <li>• RFE recibidas · tiempo respuesta · resultado</li>
+          <li>• AI usado · créditos gastados en este caso</li>
+          <li>• Cliente engagement (visitas al portal)</li>
+        </ul>
+        <div class="mt-2 text-[10px] text-cyan-accent font-mono">📍 Sidebar Case Engine "Métricas del caso"</div>
+      </div>
+
+      <!-- Nivel 5 -->
+      <div class="glass rounded-xl p-4 border-l-4 border-purple-400">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-purple-400 font-mono font-bold">NIVEL 5</div>
+            <h4 class="font-bold">Aplicante · UX del cliente</h4>
+          </div>
+          <span class="text-2xl">🌎</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-2">Engagement del beneficiario con el portal</p>
+        <ul class="text-[11px] text-slate-300 space-y-0.5">
+          <li>• Pre-intake completion rate</li>
+          <li>• Time-to-upload (solicitud → subida)</li>
+          <li>• Portal visits · cuándo + frequency</li>
+          <li>• Mensajes WhatsApp respondidos</li>
+          <li>• NPS post-caso aprobado (futuro)</li>
+        </ul>
+        <div class="mt-2 text-[10px] text-cyan-accent font-mono">📍 Widget Case Engine "Engagement del cliente"</div>
+      </div>
+
+      <!-- Nivel 6 -->
+      <div class="glass rounded-xl p-4 border-l-4 border-blue-400">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-blue-400 font-mono font-bold">NIVEL 6</div>
+            <h4 class="font-bold">Equipo AI · Performance</h4>
+          </div>
+          <span class="text-2xl">🤖</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-2">¿Mis AI agents están performando?</p>
+        <ul class="text-[11px] text-slate-300 space-y-0.5">
+          <li>• Felix calls · accuracy rate (% campos correctos)</li>
+          <li>• Nina packets generados · errors</li>
+          <li>• Max QA reviews · errors caught</li>
+          <li>• Camila minutes · transcripts generados</li>
+          <li>• Knowledge base hit rate</li>
+          <li>• AI credits cost per task</li>
+        </ul>
+        <div class="mt-2 text-[10px] text-cyan-accent font-mono">📍 /hub/team panel "AI Performance"</div>
+      </div>
+
+      <!-- Nivel 7 -->
+      <div class="glass rounded-xl p-4 border-l-4 border-slate-400">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-mono font-bold">NIVEL 7</div>
+            <h4 class="font-bold">Técnico · Salud SaaS</h4>
+          </div>
+          <span class="text-2xl">⚙️</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-2">Silenciosas pero críticas</p>
+        <ul class="text-[11px] text-slate-300 space-y-0.5">
+          <li>• Page load time (target &lt;2s)</li>
+          <li>• Error rate · crash rate</li>
+          <li>• Uptime SaaS · edge function latency</li>
+          <li>• Database query performance</li>
+          <li>• API costs (OpenAI, ElevenLabs, Anthropic)</li>
+        </ul>
+        <div class="mt-2 text-[10px] text-cyan-accent font-mono">📍 /admin/health (futuro)</div>
+      </div>
+
+      <!-- Nivel 8 -->
+      <div class="glass rounded-xl p-4 border-l-4 border-orange-400">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-orange-400 font-mono font-bold">NIVEL 8 · ÚNICO NER</div>
+            <h4 class="font-bold">Legales · Diferenciador</h4>
+          </div>
+          <span class="text-2xl">⚖️</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-2">Ninguna competencia mide esto</p>
+        <ul class="text-[11px] text-slate-300 space-y-0.5">
+          <li>• Approval rate por tipo de caso (I-130, I-485, etc.)</li>
+          <li>• RFE rate por firma vs benchmark industry</li>
+          <li>• Tiempo total USCIS por tipo de caso</li>
+          <li>• Court appearances per case</li>
+          <li>• Casos por agency (USCIS · NVC · Embassy · EOIR · ICE · CBP)</li>
+        </ul>
+        <div class="mt-2 text-[10px] text-cyan-accent font-mono">📍 /hub/reports/legal-outcomes</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ARQUITECTURA TÉCNICA -->
+  <div class="mb-10">
+    <h3 class="text-xl font-bold mb-4">⚙️ Arquitectura técnica · Stack económico</h3>
+    <div class="glass rounded-xl p-6 bg-gradient-to-br from-emerald-500/5 to-cyan-accent/5 border border-emerald-500/20">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+        <div class="bg-white/5 rounded-lg p-3 text-center">
+          <div class="text-[9px] font-mono text-emerald-400 uppercase mb-1">EVENT TRACKING</div>
+          <div class="font-bold text-sm">PostHog</div>
+          <div class="text-[10px] text-slate-400 mt-1">1M events/mo free</div>
+          <div class="text-[10px] text-emerald-400 mt-1">$0</div>
+        </div>
+        <div class="bg-white/5 rounded-lg p-3 text-center">
+          <div class="text-[9px] font-mono text-emerald-400 uppercase mb-1">METRICS DASHBOARD</div>
+          <div class="font-bold text-sm">Supabase Views</div>
+          <div class="text-[10px] text-slate-400 mt-1">Ya tenemos</div>
+          <div class="text-[10px] text-emerald-400 mt-1">$0</div>
+        </div>
+        <div class="bg-white/5 rounded-lg p-3 text-center">
+          <div class="text-[9px] font-mono text-emerald-400 uppercase mb-1">ERROR TRACKING</div>
+          <div class="font-bold text-sm">Sentry Free</div>
+          <div class="text-[10px] text-slate-400 mt-1">5K errors/mo</div>
+          <div class="text-[10px] text-emerald-400 mt-1">$0</div>
+        </div>
+        <div class="bg-white/5 rounded-lg p-3 text-center">
+          <div class="text-[9px] font-mono text-emerald-400 uppercase mb-1">AI COST TRACKING</div>
+          <div class="font-bold text-sm">ai_credit_tx</div>
+          <div class="text-[10px] text-slate-400 mt-1">Ya existe ✓</div>
+          <div class="text-[10px] text-emerald-400 mt-1">$0</div>
+        </div>
+        <div class="bg-white/5 rounded-lg p-3 text-center">
+          <div class="text-[9px] font-mono text-emerald-400 uppercase mb-1">USAGE LOGS</div>
+          <div class="font-bold text-sm">tool_usage_logs</div>
+          <div class="text-[10px] text-slate-400 mt-1">Ya existe ✓</div>
+          <div class="text-[10px] text-emerald-400 mt-1">$0</div>
+        </div>
+      </div>
+      <div class="text-center text-emerald-400 font-bold text-lg">
+        💰 Costo total: $0/mes para las 8 firmas · ~$50/mes cuando lleguen a 50 firmas
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD DEL OWNER FIRMA -->
+  <div class="mb-10">
+    <h3 class="text-xl font-bold mb-4">📊 Wireframe · /hub/reports (Dashboard del Owner)</h3>
+    <p class="text-sm text-slate-400 mb-4">Lo que ve el abogado dueño cuando entra a Reportes</p>
+
+    <div class="wireframe-mock p-4">
+      <!-- Header -->
+      <div class="wireframe-block rounded-md p-3 mb-3 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-slate-400 uppercase tracking-wider font-mono">REPORTES DE TU FIRMA · Maya Immigration Law</div>
+          <div class="text-sm font-bold mt-1">Mayo 2026</div>
+        </div>
+        <div class="flex gap-2">
+          <select class="bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs">
+            <option>Este mes</option>
+          </select>
+          <button class="bg-cyan-accent/20 border border-cyan-accent/40 text-cyan-accent rounded px-2 py-1 text-xs">📥 Export CSV</button>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="grid grid-cols-4 gap-2 mb-3">
+        <div class="wireframe-block rounded-md p-2 text-center bg-emerald-500/5 border-emerald-500/20">
+          <div class="text-[9px] text-emerald-400 uppercase font-mono">CASOS ACTIVOS</div>
+          <div class="text-2xl font-bold mt-1">42</div>
+          <div class="text-[10px] text-emerald-400">+8 este mes</div>
+        </div>
+        <div class="wireframe-block rounded-md p-2 text-center bg-cyan-accent/5 border-cyan-accent/20">
+          <div class="text-[9px] text-cyan-accent uppercase font-mono">APROBACIÓN 30D</div>
+          <div class="text-2xl font-bold mt-1">87%</div>
+          <div class="text-[10px] text-emerald-400">+5% vs ant.</div>
+        </div>
+        <div class="wireframe-block rounded-md p-2 text-center bg-amber-500/5 border-amber-500/20">
+          <div class="text-[9px] text-amber-400 uppercase font-mono">RFE RATE</div>
+          <div class="text-2xl font-bold mt-1">12%</div>
+          <div class="text-[10px] text-rose-400">+2% (revisar)</div>
+        </div>
+        <div class="wireframe-block rounded-md p-2 text-center bg-purple-500/5 border-purple-500/20">
+          <div class="text-[9px] text-purple-400 uppercase font-mono">TIEMPO PROMEDIO</div>
+          <div class="text-2xl font-bold mt-1">94d</div>
+          <div class="text-[10px] text-emerald-400">-12d mejorado</div>
+        </div>
+      </div>
+
+      <!-- 2 col content -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="wireframe-block rounded-md p-3">
+          <div class="text-[10px] uppercase tracking-wider text-slate-400 font-mono mb-2">PIPELINE POR UBICACIÓN</div>
+          <div class="space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <span>USCIS</span>
+              <div class="flex items-center gap-2">
+                <div class="w-32 h-2 bg-blue-500/20 rounded overflow-hidden"><div class="h-full bg-blue-500" style="width: 70%"></div></div>
+                <span class="font-mono text-blue-400">28</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>NVC</span>
+              <div class="flex items-center gap-2">
+                <div class="w-32 h-2 bg-amber-500/20 rounded overflow-hidden"><div class="h-full bg-amber-500" style="width: 25%"></div></div>
+                <span class="font-mono text-amber-400">8</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>EMBAJADA</span>
+              <div class="flex items-center gap-2">
+                <div class="w-32 h-2 bg-orange-500/20 rounded overflow-hidden"><div class="h-full bg-orange-500" style="width: 15%"></div></div>
+                <span class="font-mono text-orange-400">4</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>CORTE EOIR</span>
+              <div class="flex items-center gap-2">
+                <div class="w-32 h-2 bg-purple-500/20 rounded overflow-hidden"><div class="h-full bg-purple-500" style="width: 10%"></div></div>
+                <span class="font-mono text-purple-400">2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wireframe-block rounded-md p-3">
+          <div class="text-[10px] uppercase tracking-wider text-slate-400 font-mono mb-2">PERFORMANCE EQUIPO</div>
+          <div class="space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-bold">Vanessa</div>
+                <div class="text-[10px] text-slate-400">USCIS specialist</div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono text-emerald-400">15 casos</div>
+                <div class="text-[10px] text-slate-400">93% approval</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-bold">Carlos</div>
+                <div class="text-[10px] text-slate-400">NVC + Embassy</div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono text-emerald-400">8 casos</div>
+                <div class="text-[10px] text-slate-400">88% approval</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-bold">María</div>
+                <div class="text-[10px] text-slate-400">Generalista</div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono text-emerald-400">12 casos</div>
+                <div class="text-[10px] text-slate-400">85% approval</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wireframe-block rounded-md p-3 col-span-2">
+          <div class="text-[10px] uppercase tracking-wider text-slate-400 font-mono mb-2">USO AI · COSTO vs VALOR</div>
+          <div class="grid grid-cols-4 gap-3 text-center">
+            <div>
+              <div class="text-lg font-bold text-cyan-accent">450</div>
+              <div class="text-[10px] text-slate-400">Felix calls</div>
+              <div class="text-[10px] text-emerald-400">$45 gastado</div>
+            </div>
+            <div>
+              <div class="text-lg font-bold text-cyan-accent">120</div>
+              <div class="text-[10px] text-slate-400">Nina packets</div>
+              <div class="text-[10px] text-emerald-400">$36 gastado</div>
+            </div>
+            <div>
+              <div class="text-lg font-bold text-cyan-accent">85</div>
+              <div class="text-[10px] text-slate-400">Max QA reviews</div>
+              <div class="text-[10px] text-emerald-400">$25 gastado</div>
+            </div>
+            <div>
+              <div class="text-lg font-bold text-cyan-accent">320</div>
+              <div class="text-[10px] text-slate-400">Camila minutes</div>
+              <div class="text-[10px] text-emerald-400">$80 gastado</div>
+            </div>
+          </div>
+          <div class="mt-2 pt-2 border-t border-white/10 text-center text-xs text-emerald-400">
+            💰 ROI: ahorraste ~80h de paralegal (~$4,000) por $186 en AI · 21x return
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WIDGET PARALEGAL -->
+  <div class="mb-10">
+    <h3 class="text-xl font-bold mb-4">👤 Widget · Tu performance esta semana (en /hub)</h3>
+    <p class="text-sm text-slate-400 mb-4">Aparece en el Hub Dashboard del paralegal — su propia productividad</p>
+
+    <div class="wireframe-mock p-4">
+      <div class="bg-gradient-to-br from-cyan-accent/5 to-emerald-500/5 border border-cyan-accent/20 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <div class="text-[9px] uppercase tracking-wider text-cyan-accent font-mono">TU PERFORMANCE · ESTA SEMANA</div>
+            <h4 class="font-bold mt-1">Buen ritmo, Vanessa 🎯</h4>
+          </div>
+          <button class="text-[10px] text-cyan-accent hover:underline">Ver mi reporte completo →</button>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <div class="bg-white/5 rounded p-2 text-center">
+            <div class="text-xl font-bold text-emerald-400">8</div>
+            <div class="text-[9px] text-slate-400 uppercase">Casos avanzados</div>
+          </div>
+          <div class="bg-white/5 rounded p-2 text-center">
+            <div class="text-xl font-bold text-cyan-accent">22</div>
+            <div class="text-[9px] text-slate-400 uppercase">Tareas done</div>
+          </div>
+          <div class="bg-white/5 rounded p-2 text-center">
+            <div class="text-xl font-bold text-amber-400">3</div>
+            <div class="text-[9px] text-slate-400 uppercase">RFE drafts</div>
+          </div>
+          <div class="bg-white/5 rounded p-2 text-center">
+            <div class="text-xl font-bold text-purple-400">12</div>
+            <div class="text-[9px] text-slate-400 uppercase">Felix usado</div>
+          </div>
+          <div class="bg-white/5 rounded p-2 text-center">
+            <div class="text-xl font-bold text-rose-400">2.4h</div>
+            <div class="text-[9px] text-slate-400 uppercase">Tiempo response</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MÉTRICAS DEL CASO -->
+  <div class="mb-10">
+    <h3 class="text-xl font-bold mb-4">📁 Métricas del Caso (sidebar Case Engine)</h3>
+    <p class="text-sm text-slate-400 mb-4">Cada caso individual mide sus propios indicadores</p>
+
+    <div class="wireframe-mock p-4 max-w-md mx-auto">
+      <div class="wireframe-block rounded-md p-3">
+        <div class="text-[9px] uppercase tracking-wider text-cyan-accent font-mono font-bold mb-2">📊 MÉTRICAS DEL CASO</div>
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between"><span class="text-slate-400">Días abiertos</span><span class="font-mono font-bold">94</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Stage actual (USCIS)</span><span class="font-mono">42d</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Docs solicitados</span><span class="font-mono">15/18</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">RFE recibidas</span><span class="font-mono text-amber-400">1</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">AI créditos usados</span><span class="font-mono text-cyan-accent">28</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Costo AI total</span><span class="font-mono text-emerald-400">$3.50</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Cliente visitas portal</span><span class="font-mono">7</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Último contacto cliente</span><span class="font-mono text-amber-400">3d</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPLEMENTACIÓN POR FASES -->
+  <div class="glass rounded-xl p-6 border-l-4 border-cyan-accent">
+    <h3 class="text-xl font-bold mb-4">📋 Implementación por fases · Priorización</h3>
+    <div class="space-y-3">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="bg-rose-500/20 border border-rose-500/40 text-rose-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">P0 · Día 1</span>
+          <span class="text-sm font-semibold">Critical metrics — base mínima viable</span>
+        </div>
+        <ul class="text-xs text-slate-300 ml-6 space-y-0.5">
+          <li>• MRR · firmas activas · usuarios (admin)</li>
+          <li>• Casos creados · cerrados · aprobados (owner firma)</li>
+          <li>• AI credits consumidos · cost por firma (admin)</li>
+          <li>• Tiempo response cliente (paralegal)</li>
+        </ul>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="bg-amber-500/20 border border-amber-500/40 text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">P1 · Mes 1</span>
+          <span class="text-sm font-semibold">Productivity metrics</span>
+        </div>
+        <ul class="text-xs text-slate-300 ml-6 space-y-0.5">
+          <li>• Approval rate · RFE rate por firma</li>
+          <li>• Tiempo promedio por stage</li>
+          <li>• Performance por paralegal · skills</li>
+          <li>• Cliente engagement (portal visits)</li>
+        </ul>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">P2 · Mes 2-3</span>
+          <span class="text-sm font-semibold">Differentiator metrics</span>
+        </div>
+        <ul class="text-xs text-slate-300 ml-6 space-y-0.5">
+          <li>• Approval rate por tipo caso (I-130, I-485, etc.)</li>
+          <li>• Benchmark vs industria (cuando tengamos data)</li>
+          <li>• ROI calculator (cuánto ahorra la firma usando NER)</li>
+          <li>• Predictive analytics (RFE risk score)</li>
+        </ul>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="bg-purple-500/20 border border-purple-500/40 text-purple-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">P3 · Futuro</span>
+          <span class="text-sm font-semibold">Advanced analytics</span>
+        </div>
+        <ul class="text-xs text-slate-300 ml-6 space-y-0.5">
+          <li>• ML model · predict outcome del caso</li>
+          <li>• A/B testing de features (variantes)</li>
+          <li>• Cohort analysis (firmas que onboardearon en mismo período)</li>
+          <li>• Forecast de revenue por firma</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODO ES MEDIBLE -->
+  <div class="mt-8 glass rounded-xl p-6 bg-gradient-to-br from-rose-500/5 to-amber-500/5 border-2 border-cyan-accent/30 text-center">
+    <h3 class="text-2xl font-bold mb-3 gradient-text">"Lo que no se mide no se puede mejorar"</h3>
+    <p class="text-sm text-slate-300 max-w-2xl mx-auto leading-relaxed">
+      Cada acción del paralegal · cada output AI · cada visita del cliente · cada cambio de stage del caso · cada error técnico · cada feature usado · <strong>todo deja huella medible</strong>.
+    </p>
+    <p class="text-xs text-slate-400 mt-3 italic">
+      Desde el día 1 NER es un producto data-driven. No "agregamos analytics después" — la arquitectura YA está pensada para medir.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB: ACLARACIONES (Consultas vs Agenda, Leads vs Clientes) -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section data-tab-content="clarify" class="tab-content hidden">
+  <div class="mb-8">
+    <h2 class="text-3xl font-extrabold mb-3 gradient-text">💡 Aclaraciones · diferencias clave</h2>
+    <p class="text-slate-400 max-w-3xl leading-relaxed">
+      Tus preguntas válidas: Consultas vs Agenda, Leads vs Clientes. Acá las diferencias reales con sentido.
+    </p>
+  </div>
+
+  <!-- LEADS VS CLIENTES -->
+  <div class="mb-10">
+    <h3 class="text-2xl font-bold mb-4">🔍 Leads vs 👥 Clientes</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="glass rounded-xl p-5 border-l-4 border-amber-400">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">🔍</span>
+          <div>
+            <div class="font-bold">Leads</div>
+            <div class="text-[10px] uppercase tracking-wider text-amber-400">FRÍO · POTENCIAL</div>
+          </div>
+        </div>
+        <div class="text-sm text-slate-300 mb-3"><strong>Quién aparece acá:</strong></div>
+        <ul class="text-xs text-slate-400 space-y-1 mb-3">
+          <li>• Persona que llenó form de contacto en website</li>
+          <li>• Lead de Facebook ad / Google ad / TikTok</li>
+          <li>• Referido por otro cliente</li>
+          <li>• <strong>NO ha pagado nada todavía</strong></li>
+          <li>• <strong>NO firmó contrato</strong></li>
+        </ul>
+        <div class="text-sm text-slate-300 mb-2"><strong>Acciones típicas:</strong></div>
+        <ul class="text-xs text-slate-400 space-y-1">
+          <li>• Agendar consulta</li>
+          <li>• Enviar pre-intake form</li>
+          <li>• Calificar interés (hot/warm/cold)</li>
+          <li>• Marcar como "no interesado" o "convertir"</li>
+        </ul>
+      </div>
+
+      <div class="glass rounded-xl p-5 border-l-4 border-emerald-400">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">👥</span>
+          <div>
+            <div class="font-bold">Clientes</div>
+            <div class="text-[10px] uppercase tracking-wider text-emerald-400">ACTIVO · CONTRATÓ</div>
+          </div>
+        </div>
+        <div class="text-sm text-slate-300 mb-3"><strong>Quién aparece acá:</strong></div>
+        <ul class="text-xs text-slate-400 space-y-1 mb-3">
+          <li>• Persona que <strong>pagó consulta</strong> O</li>
+          <li>• Persona que <strong>firmó contrato</strong></li>
+          <li>• Tiene profile completo (familia, A#, address)</li>
+          <li>• Puede tener N casos abiertos</li>
+        </ul>
+        <div class="text-sm text-slate-300 mb-2"><strong>Acciones típicas:</strong></div>
+        <ul class="text-xs text-slate-400 space-y-1">
+          <li>• Ver Cliente 360 (toda su info)</li>
+          <li>• Iniciar nuevo caso</li>
+          <li>• Ver historial de casos (algunos cerrados, otros activos)</li>
+          <li>• Actualizar datos del cliente</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-4 glass rounded-xl p-5 bg-gradient-to-br from-amber-500/5 to-emerald-500/5">
+      <div class="text-sm font-bold mb-3 flex items-center gap-2">
+        <span>↗️</span> El AUTO-PROMOTE (Lead → Cliente)
+      </div>
+      <div class="text-xs text-slate-300 leading-relaxed mb-3">
+        Cuando un Lead <strong>paga consulta</strong> o <strong>firma contrato</strong>, NER lo promueve automáticamente a Cliente:
+      </div>
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="flow-step rounded-md px-3 py-2 text-xs">🔍 Lead "Patricia"</div>
+        <span class="text-cyan-accent">→</span>
+        <div class="flow-step rounded-md px-3 py-2 text-xs bg-amber-500/10">📅 Agendó consulta</div>
+        <span class="text-cyan-accent">→</span>
+        <div class="flow-step rounded-md px-3 py-2 text-xs bg-amber-500/10">💳 Pagó consulta</div>
+        <span class="text-cyan-accent">→</span>
+        <div class="flow-step rounded-md px-3 py-2 text-xs bg-emerald-500/10 border-emerald-500/40">👥 Cliente Patricia (auto)</div>
+      </div>
+      <div class="text-[10px] text-slate-500 mt-3 italic">
+        En la pantalla Leads, Patricia desaparece. Aparece en Clientes con profile pre-llenado del pre-intake.
+      </div>
+    </div>
+
+    <div class="mt-4 text-xs text-cyan-accent">
+      <strong>Conclusión:</strong> separación tiene 100% sentido. Es CRM básico. Permite medir conversión funnel.
+    </div>
+  </div>
+
+  <!-- CONSULTAS VS AGENDA -->
+  <div class="mb-10">
+    <h3 class="text-2xl font-bold mb-4">💬 Consultas vs 📅 Agenda</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="glass rounded-xl p-5 border-l-4 border-cyan-accent">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">💬</span>
+          <div>
+            <div class="font-bold">Consultas</div>
+            <div class="text-[10px] uppercase tracking-wider text-cyan-accent">WORKFLOW PRE-CASE</div>
+          </div>
+        </div>
+        <div class="text-sm text-slate-300 mb-3"><strong>Es un Kanban con estados:</strong></div>
+        <div class="space-y-2 mb-3">
+          <div class="bg-blue-500/10 rounded-md px-2 py-1.5 text-[11px]">1️⃣ Agendada · Lead reservó cita</div>
+          <div class="bg-amber-500/10 rounded-md px-2 py-1.5 text-[11px]">2️⃣ Pre-intake enviado · Lead llenó form</div>
+          <div class="bg-emerald-500/10 rounded-md px-2 py-1.5 text-[11px]">3️⃣ En consulta · Anna entrevista</div>
+          <div class="bg-emerald-500/15 rounded-md px-2 py-1.5 text-[11px]">4️⃣ Contratado → caso creado</div>
+          <div class="bg-rose-500/10 rounded-md px-2 py-1.5 text-[11px]">5️⃣ No contrató</div>
+        </div>
+        <div class="text-sm text-slate-300 mb-2"><strong>Pregunta que responde:</strong></div>
+        <div class="text-xs text-cyan-accent italic">"¿Cuáles consultas tengo, en qué estado están, y cuáles voy a tomar?"</div>
+      </div>
+
+      <div class="glass rounded-xl p-5 border-l-4 border-emerald-400">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">📅</span>
+          <div>
+            <div class="font-bold">Agenda</div>
+            <div class="text-[10px] uppercase tracking-wider text-emerald-400">CALENDARIO UNIFICADO</div>
+          </div>
+        </div>
+        <div class="text-sm text-slate-300 mb-3"><strong>Es un calendario con TODOS los eventos:</strong></div>
+        <div class="space-y-2 mb-3">
+          <div class="bg-cyan-accent/10 rounded-md px-2 py-1.5 text-[11px]">💬 Consultas pre-case</div>
+          <div class="bg-blue-500/10 rounded-md px-2 py-1.5 text-[11px]">🏛️ Biometrics USCIS programados</div>
+          <div class="bg-orange-500/10 rounded-md px-2 py-1.5 text-[11px]">🌎 Embassy interviews</div>
+          <div class="bg-purple-500/10 rounded-md px-2 py-1.5 text-[11px]">⚖️ Court hearings EOIR</div>
+          <div class="bg-amber-500/10 rounded-md px-2 py-1.5 text-[11px]">👥 Meetings internas equipo</div>
+        </div>
+        <div class="text-sm text-slate-300 mb-2"><strong>Pregunta que responde:</strong></div>
+        <div class="text-xs text-emerald-400 italic">"¿Qué tengo agendado esta semana? ¿Mes? ¿Hoy?"</div>
+      </div>
+    </div>
+
+    <!-- USO REAL -->
+    <div class="mt-4 glass rounded-xl p-5">
+      <div class="text-sm font-bold mb-3">🎯 Uso real del paralegal</div>
+      <div class="space-y-3">
+        <div class="flex items-start gap-3">
+          <div class="text-xs font-mono text-cyan-accent shrink-0 w-20">Lunes 9am</div>
+          <div class="flex-1 text-xs text-slate-300">
+            Vanessa abre <strong class="text-emerald-400">Agenda</strong> → ve calendario semana → "Sánchez consulta 11am · Pérez biometrics jueves · García hearing viernes"
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="text-xs font-mono text-cyan-accent shrink-0 w-20">Lunes 10:55</div>
+          <div class="flex-1 text-xs text-slate-300">
+            Vanessa va a <strong class="text-cyan-accent">Consultas</strong> → encuentra Sánchez en "Agendada" → click "Empezar consulta" → entra a ConsultationRoom
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="text-xs font-mono text-cyan-accent shrink-0 w-20">Lunes 11:35</div>
+          <div class="flex-1 text-xs text-slate-300">
+            Termina consulta → en <strong class="text-cyan-accent">Consultas</strong>, Sánchez pasa a columna "En consulta" → "Contratado" → caso creado automático
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 text-xs text-cyan-accent">
+      <strong>Conclusión:</strong> ambas tienen sentido pero <strong>cumplen propósitos distintos</strong>. Consultas es workflow, Agenda es vista temporal. Mantener separadas.
+    </div>
+  </div>
+
+  <!-- ESTRUCTURA SIDEBAR FINAL -->
+  <div class="glass rounded-xl p-6 border-2 border-cyan-accent/30">
+    <h3 class="text-xl font-bold mb-4">📐 Estructura final del Sidebar (10 items)</h3>
+    <div class="space-y-2 text-sm">
+      <div class="flex items-center gap-3 p-2 rounded hover:bg-white/5">
+        <span class="text-xl">🏠</span>
+        <div class="flex-1">
+          <div class="font-semibold">Inicio</div>
+          <div class="text-[11px] text-slate-400">Briefing día + Equipo AI + widgets focus + recursos</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded hover:bg-white/5">
+        <span class="text-xl">🔍</span>
+        <div class="flex-1">
+          <div class="font-semibold">Leads</div>
+          <div class="text-[11px] text-slate-400">Personas que contactaron, NO pagaron · workflow conversión</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded hover:bg-white/5">
+        <span class="text-xl">👥</span>
+        <div class="flex-1">
+          <div class="font-semibold">Clientes</div>
+          <div class="text-[11px] text-slate-400">Contrataron, tienen N casos · Cliente 360</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded hover:bg-white/5">
+        <span class="text-xl">💬</span>
+        <div class="flex-1">
+          <div class="font-semibold">Consultas</div>
+          <div class="text-[11px] text-slate-400">Kanban pre-case (Agendada → En consulta → Contratado/No)</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded hover:bg-white/5 bg-cyan-accent/5 border border-cyan-accent/20">
+        <span class="text-xl">📁</span>
+        <div class="flex-1">
+          <div class="font-semibold">Casos ⭐</div>
+          <div class="text-[11px] text-slate-400">El corazón · click → Case Engine con 7+ tabs</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded hover:bg-white/5">
+        <span class="text-xl">📄</span>
+        <div class="flex-1">
+          <div class="font-semibold">Forms</div>
+          <div class="text-[11px] text-slate-400">Lista global Smart Forms (I-130/I-765/etc.) cross-cases</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded hover:bg-white/5">
+        <span class="text-xl">📅</span>
+        <div class="flex-1">
+          <div class="font-semibold">Agenda</div>
+          <div class="text-[11px] text-slate-400">Calendario unificado · consultas + biometrics + hearings + interviews</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded hover:bg-white/5">
+        <span class="text-xl">📚</span>
+        <div class="flex-1">
+          <div class="font-semibold">Knowledge ⭐ NUEVO</div>
+          <div class="text-[11px] text-slate-400">USCIS PM + 9 FAM + 8 CFR + INA · consulta rápida con Carmen AI</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded hover:bg-white/5">
+        <span class="text-xl">🤖</span>
+        <div class="flex-1">
+          <div class="font-semibold">Equipo</div>
+          <div class="text-[11px] text-slate-400">Tu equipo humano (con skills) + tu equipo AI (Felix/Nina/Max/Camila)</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded hover:bg-white/5">
+        <span class="text-xl">⚙️</span>
+        <div class="flex-1">
+          <div class="font-semibold">Config</div>
+          <div class="text-[11px] text-slate-400">Office · Team · Billing · Integrations · Features · Audit</div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 text-[11px] text-slate-500 italic">
+      Reportes se elimina del sidebar (gap funcional · postponed) · se vuelve sub-item de Config si necesario.
+    </div>
+  </div>
+</section>
+
+<section data-tab-content="future" class="tab-content hidden">
+  <div class="mb-8">
+    <h2 class="text-3xl font-extrabold mb-3 gradient-text">Features futuros · Extensibilidad</h2>
+    <p class="text-slate-400 max-w-3xl leading-relaxed">
+      Los planos están pensados para crecer. Cada feature futuro encaja sin refactor masivo. Acá cómo:
+    </p>
+  </div>
+
+  <!-- ROADMAP DE FEATURES -->
+  <div class="space-y-4">
+    <!-- USCIS TRACKER -->
+    <div class="glass rounded-xl p-5">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-2xl shrink-0">📡</div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="font-bold">USCIS Case Tracker</h3>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-amber-400">FUTURO</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-2">Auto-poll de receipt numbers en USCIS website + alertas cuando cambian de estado</p>
+          <div class="text-[11px] text-slate-300">
+            <strong class="text-cyan-accent">Dónde encaja:</strong> Widget en Decision Panel del Case Engine + edge function cron 6h
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NVC TRACKER -->
+    <div class="glass rounded-xl p-5">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-2xl shrink-0">🌐</div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="font-bold">NVC Case Tracker (Consular Processing)</h3>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-amber-400">FUTURO</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-2">Track casos en NVC stage · DS-260 · fee tracking · civil documents</p>
+          <div class="text-[11px] text-slate-300">
+            <strong class="text-cyan-accent">Dónde encaja:</strong> Tab condicional <code class="text-cyan-accent font-mono">?tab=consular</code> aparece automático cuando case.process_stage = 'nvc'
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSLATOR -->
+    <div class="glass rounded-xl p-5">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-2xl shrink-0">🌐</div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="font-bold">Document Translator</h3>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-amber-400">FUTURO</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-2">Traducir docs (PDF/Imagen) con Claude Vision + certificación auto-generada</p>
+          <div class="text-[11px] text-slate-300">
+            <strong class="text-cyan-accent">Dónde encaja:</strong> Tool standalone <code class="text-cyan-accent font-mono">/tools/translator</code> + botón "Traducir" en tab Documentos del Case Engine
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COURT TRACKER -->
+    <div class="glass rounded-xl p-5">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-lg bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-2xl shrink-0">⚖️</div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="font-bold">Court Tracker (EOIR)</h3>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-amber-400">FUTURO</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-2">Trackear casos en immigration court · hearings · motions · bond</p>
+          <div class="text-[11px] text-slate-300">
+            <strong class="text-cyan-accent">Dónde encaja:</strong> Tab condicional <code class="text-cyan-accent font-mono">?tab=court</code> + nueva tabla court_hearings
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- N400 -->
+    <div class="glass rounded-xl p-5">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-lg bg-cyan-accent/20 border border-cyan-accent/40 flex items-center justify-center text-2xl shrink-0">🎓</div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="font-bold">N-400 Naturalization</h3>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-amber-400">FUTURO</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-2">Flow completo: eligibility test · civics prep · interview simulation</p>
+          <div class="text-[11px] text-slate-300">
+            <strong class="text-cyan-accent">Dónde encaja:</strong> Tab <code class="text-cyan-accent font-mono">?tab=naturalization</code> cuando case_type='n-400' + Smart Form N-400 wizard
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASYLUM -->
+    <div class="glass rounded-xl p-5">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-lg bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-2xl shrink-0">🆘</div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="font-bold">Asylum (I-589)</h3>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-amber-400">FUTURO</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-2">Flow asilum USCIS affirmative + EOIR defensive · EAD (c)(8) automation</p>
+          <div class="text-[11px] text-slate-300">
+            <strong class="text-cyan-accent">Dónde encaja:</strong> Tab <code class="text-cyan-accent font-mono">?tab=asylum</code> + transición fluida USCIS ↔ Court
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VAWA -->
+    <div class="glass rounded-xl p-5">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-lg bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-2xl shrink-0">🛡️</div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="font-bold">VAWA Self-Petition</h3>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-amber-400">FUTURO</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-2">Flow para abused spouse/parent/child USC/LPR · confidencialidad estricta</p>
+          <div class="text-[11px] text-slate-300">
+            <strong class="text-cyan-accent">Dónde encaja:</strong> Tab <code class="text-cyan-accent font-mono">?tab=vawa</code> con visibility=attorney_only por default
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GHL INVISIBLE -->
+    <div class="glass rounded-xl p-5">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-lg bg-pink-500/20 border border-pink-500/40 flex items-center justify-center text-2xl shrink-0">💸</div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="font-bold">GHL Invisible Auto-billing</h3>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-amber-400">FUTURO</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-2">3 botones core: pago consulta · enviar contrato · enviar factura · auto-flow GHL invisible</p>
+          <div class="text-[11px] text-slate-300">
+            <strong class="text-cyan-accent">Dónde encaja:</strong> Botones contextuales en Consulta + Case Engine · edge functions
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PATRÓN COMÚN -->
+  <div class="mt-8 glass rounded-xl p-6 border-2 border-cyan-accent/30">
+    <h3 class="text-lg font-bold mb-3 text-cyan-accent">El patrón común</h3>
+    <p class="text-sm text-slate-300 mb-4 leading-relaxed">
+      <strong>Todo feature nuevo es:</strong>
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="flow-step rounded-md p-3">
+        <div class="text-cyan-accent text-xs font-mono font-bold mb-1">OPCIÓN 1</div>
+        <div class="text-sm font-semibold mb-1">Tab del Case Engine</div>
+        <div class="text-[10px] text-slate-400">Si está dentro de un caso · condicional según case_type</div>
+      </div>
+      <div class="flow-step rounded-md p-3">
+        <div class="text-cyan-accent text-xs font-mono font-bold mb-1">OPCIÓN 2</div>
+        <div class="text-sm font-semibold mb-1">Tool en /tools/X</div>
+        <div class="text-[10px] text-slate-400">Si es público SEO · acepta ?case_id=X opcional</div>
+      </div>
+      <div class="flow-step rounded-md p-3">
+        <div class="text-cyan-accent text-xs font-mono font-bold mb-1">OPCIÓN 3</div>
+        <div class="text-sm font-semibold mb-1">Widget del sidebar</div>
+        <div class="text-[10px] text-slate-400">Si es info contextual permanente · ej: USCIS tracker</div>
+      </div>
+    </div>
+    <p class="text-xs text-slate-400 mt-4 italic">
+      <strong class="text-rose-400">NUNCA</strong> rutas paralelas como pasó con Strategic Packs. El audit corrigió ese error.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="border-t border-white/5 py-6 mt-12">
+  <div class="max-w-7xl mx-auto px-6 text-center">
+    <p class="text-xs text-slate-500">
+      Vista visual de los 4 planos arquitectónicos de NER Immigration AI
+    </p>
+    <p class="text-[10px] text-slate-600 mt-1 font-mono">
+      Documentos fuente: .ai/master/INFORMATION-ARCHITECTURE.md · USER-FLOWS.md · WIREFRAMES.md · DESIGN-SYSTEM.md
+    </p>
+  </div>
+</footer>
+
+<script>
+// Tab switching
+const tabs = document.querySelectorAll('.tab-btn');
+const contents = document.querySelectorAll('.tab-content');
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.tab;
+
+    // Reset all tabs
+    tabs.forEach(t => {
+      t.classList.remove('tab-active');
+      t.classList.add('text-slate-400');
+    });
+
+    // Activate clicked tab
+    tab.classList.add('tab-active');
+    tab.classList.remove('text-slate-400');
+
+    // Hide all content
+    contents.forEach(c => c.classList.add('hidden'));
+
+    // Show target content
+    const targetContent = document.querySelector(`[data-tab-content="${target}"]`);
+    if (targetContent) targetContent.classList.remove('hidden');
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
+</script>
+
+</body>
+</html>

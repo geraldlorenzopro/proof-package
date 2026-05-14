@@ -1028,5 +1028,195 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
 
 ---
 
+## ADDENDUM — Componentes de medición (added 2026-05-14)
+
+Tras la decisión "todo debe ser medible" (ver `MEASUREMENT-FRAMEWORK.md`), agregamos componentes nuevos al sistema. Todos siguen brand AI Blue + 20% Cyan accent, Sora typography.
+
+### Nuevos componentes a CREAR
+
+#### `<KPICard />` — Card de KPI individual
+
+```tsx
+interface KPICardProps {
+  label: string;            // "Casos activos"
+  value: number | string;   // 42
+  trend?: {
+    direction: 'up' | 'down' | 'flat';
+    delta: string;           // "+5"
+    period: string;          // "esta semana"
+  };
+  threshold?: {
+    status: 'good' | 'warning' | 'critical';
+    benchmark?: string;      // "target <5%"
+  };
+  sparkline?: number[];      // [3,5,8,12,15,18,22]
+  onClick?: () => void;     // drill-down
+}
+```
+
+Layout:
+- `bg-card border-border rounded-xl p-4`
+- Label: `text-xs uppercase tracking-wider text-muted-foreground font-sora`
+- Value: `text-3xl font-bold font-sora text-foreground`
+- Trend: inline arrow + delta en color (green/red/gray)
+- Sparkline: SVG 80×24 AI Blue stroke
+- Threshold badge bottom-right si presente
+- Hover: `cursor-pointer ring-2 ring-primary/20` si `onClick`
+
+Trackea: `kpi.viewed` en mount, `kpi.clicked` en onClick
+
+#### `<KPIStrip />` — Container horizontal de KPIs
+
+```tsx
+<KPIStrip>
+  <KPICard label="Casos act." value={42} trend={...} />
+  <KPICard label="Cerrados" value={12} trend={...} />
+  ...
+</KPIStrip>
+```
+
+- Grid responsive: 2 cols mobile, 3 cols tablet, 6 cols desktop
+- `gap-3`
+- Sin background propio (heredado del padre)
+
+#### `<TrendSparkline />` — SVG inline
+
+```tsx
+<TrendSparkline
+  data={[3,5,8,12,15,18,22]}
+  color="primary"  // 'primary'|'cyan'|'green'|'red'
+  width={80}
+  height={24}
+/>
+```
+
+- SVG inline (no recharts para no inflar bundle)
+- Stroke 2px
+- No axes, no labels (es sparkline puro)
+
+#### `<RiskBadge />` — Indicador de riesgo case
+
+```tsx
+<RiskBadge score={28} />
+// Renders: 🟢 28
+```
+
+Reglas:
+- 0-30: verde 🟢
+- 31-60: amber 🟡
+- 61-100: rojo 🔴
+
+#### `<HeatmapGrid />` — Heatmap de productividad
+
+```tsx
+<HeatmapGrid
+  rows={[
+    { label: 'Vanessa', values: [4,6,3,5,7,4,6] },
+    { label: 'Carlos', values: [3,4,2,5,5,3,4] },
+  ]}
+  columns={['L','M','M','J','V','S','D']}
+  scale="auto" // o explicit [min, max]
+/>
+```
+
+- Cada celda: bg color con opacity proporcional, AI Blue base
+- Tooltip on hover con valor exacto
+
+#### `<FunnelChart />` — Funnel de cases por stage
+
+```tsx
+<FunnelChart
+  stages={[
+    { name: 'Intake',     count: 18, color: 'primary' },
+    { name: 'Pre-packet', count: 12, color: 'primary' },
+    { name: 'Submitted',  count: 8,  color: 'cyan' },
+    { name: 'RFE',        count: 4,  color: 'amber' },
+    { name: 'Approved',   count: 5,  color: 'green' },
+  ]}
+/>
+```
+
+- Barras horizontales, ancho proporcional
+- Conversion rate label entre stages
+
+#### `<DigestEmail />` — Template email semanal Owner
+
+Componente React Email para `email.digest_sent`. No es UI in-app, es template.
+
+- Sora typography
+- AI Blue header
+- Same KPI cards renderizadas con tags compatible email
+- Footer con "Ver en dashboard" CTA
+
+#### `<MetricsTooltip />` — Wrapper que explica un KPI
+
+```tsx
+<MetricsTooltip
+  metric="RFE rate"
+  formula="(Cases with RFE) / (Cases submitted)"
+  source="case_events table"
+  benchmark="< 15% NER avg"
+>
+  <KPICard ... />
+</MetricsTooltip>
+```
+
+Hover sobre un KPI muestra mini popover con cómo se calcula. Crucial para confianza del Owner ("¿de dónde sacaron 91%?").
+
+### Tokens nuevos
+
+```css
+:root {
+  /* Performance status colors */
+  --status-good: 142 76% 36%;       /* green */
+  --status-warning: 38 92% 50%;     /* amber */
+  --status-critical: 0 84% 60%;     /* red */
+  --status-neutral: 215 16% 47%;    /* gray */
+
+  /* Sparkline / data viz */
+  --data-primary: 220 83% 53%;      /* AI Blue */
+  --data-cyan: 188 87% 53%;         /* Cyan accent */
+  --data-purple: 262 80% 60%;       /* Tertiary */
+
+  /* Heatmap scale (AI Blue → Cyan) */
+  --heat-0: 220 30% 90%;
+  --heat-1: 220 50% 75%;
+  --heat-2: 220 70% 60%;
+  --heat-3: 220 83% 53%;            /* AI Blue */
+  --heat-4: 188 87% 53%;            /* Cyan peak */
+}
+```
+
+### Anti-patterns en visualización de datos
+
+- ❌ Pie charts. Nunca. Difíciles de comparar.
+- ❌ 3D charts. Decorativos, no funcionales.
+- ❌ Más de 6 KPIs en strip principal. Si necesitás más, segundo nivel.
+- ❌ Rojo decorativo. Solo si threshold crítico.
+- ❌ Mostrar números sin contexto (sin benchmark, sin trend).
+
+### Checklist para componente de medición nuevo
+
+1. ¿Tiene benchmark o threshold? (sino, ¿cómo sabe el user si está bien?)
+2. ¿Tiene trend? (un número aislado dice poco)
+3. ¿Es clickeable a drill-down?
+4. ¿Dispara evento `kpi.viewed`?
+5. ¿Tiene loading state? (skeleton mientras carga)
+6. ¿Tiene empty state? (si los datos son cero)
+7. ¿Tiene error state? (si falla la query)
+8. ¿Es responsive?
+9. ¿Cumple paleta brand AI Blue + 20% Cyan?
+10. ¿Usa tokens (no hard-coded colors)?
+
+### Naming conventions
+
+- Eventos: `<category>.<entity>.<action>` (case.created, ai.invoked)
+- Componentes de medición: `<KPI...>`, `<Trend...>`, `<Risk...>`
+- Tokens de status: `--status-good`, `--status-warning`, `--status-critical`
+- Hooks: `useMetric(name)`, `useTrackEvent(name)`, `useDashboard(viewId)`
+
+---
+
 **Documento entregado: 2026-05-14**
+**Addendum métricas: 2026-05-14**
 **Próximo: aplicar el plan (cleanup ejecutable + commit)**
