@@ -32,10 +32,52 @@
 4. ⚫ Extracción componentes compartidos (`SmartFormClientPicker`, `SmartFormPreparerBlock`)
 5. ⚫ I-485 arranque (siguiendo playbook desde Fase 0)
 
+## 🎯 Strategic Packs (2026-05-14 nocturna)
+
+Nueva capa de UX **por encima de Smart Forms wizards**: cuestionarios pre-flight,
+guías estratégicas, checklists, screeners legales. Cada caso tiene su workspace
+con 7 docs interactivos. Diferenciador NER vs competencia: ningún software de
+inmigración tiene este nivel de UX legal+playbook integrado.
+
+| Pack | Workspace | 7 Docs | Estado |
+|---|:--:|:--:|:--:|
+| **I-130** Petition for Alien Relative | ✅ `/hub/cases/:caseId/i130-pack` | ✅ 01-07 | Live local, sin push |
+| **I-485** Adjustment of Status | ✅ `/hub/cases/:caseId/i485-pack` | ✅ 01-07 | Live local, sin push |
+| **I-765** EAD Application | ✅ `/hub/cases/:caseId/i765-pack` | ✅ 01-07 | Live local, sin push |
+| N-400 Naturalization | ⚫ Planned | ⚫ | TBD |
+| DS-260 Immigrant Visa | ⚫ Planned | ⚫ | TBD |
+| I-751 Conditional Removal | ⚫ Planned | ⚫ | TBD |
+
+**Highlights de los 21 docs:**
+- I-485 Doc 05 Inadmissibility Screener — 20 preguntas cubren los 4 grupos INA 212(a) con waiver strategy
+- I-485 Doc 06 I-693 Medical Tracker — Civil surgeon + validity calculator + USCIS PA-2024-09
+- I-485 Doc 01 Eligibility — 245(c) bars + 245(i) protection + readiness score
+- I-765 Doc 01 Category Selector — 12 categories más comunes (c9/c8/a5/c33/c31/etc.)
+- I-765 Doc 07 Status Tracking — 90-day rule mandamus eligibility (c)(9)
+- I-130 Doc 06 I-864 Support — Calculadora 125% poverty 2025 HHS
+- I-130 Doc 05 Bona Fide Builder — Score 5 categorías con recomendación auto
+
+**Arquitectura packs:**
+- `src/components/questionnaire-packs/shared/` — hook genérico `useCasePack<T>`, `PackChrome`, `Citation`, `SectionTitle`, types
+- `src/components/questionnaire-packs/{i130,i485,i765}/` — hook específico por pack + componentes únicos
+- `src/pages/packs/{i130,i485,i765}/Doc0[1-7]*.tsx` — 21 docs
+- `src/pages/I{130,485,765}PackWorkspace.tsx` — 3 workspaces
+
+**Persistencia:**
+- Hoy: localStorage namespace `ner.{packType}-pack.{caseId}`
+- Pendiente: migration `case_pack_state` (pack_type ENUM: i130/i485/i765/n400/i751/ds260)
+- Archivo `supabase/migrations/PENDING_case_pack_state.sql` listo, NO aplicado
+
+**Bilingual + Multi-pro G-28:**
+- Toda doc tiene LangToggle ES/EN y ProRoleSelect (attorney/accredited_rep/form_preparer/self_petitioner)
+- Footer dinámico cita rol activo en disclaimer
+
 **Backlog inmediato:**
 - Aplicar fixes que Lovable reporte de comparativa UI
-- Decidir: extraer componentes compartidos antes de I-485, o después
+- Decidir: extraer componentes compartidos antes de N-400/DS-260, o después
 - Verificación E2E I-765 con caso real (Pablo Almanzar Medrano u otro)
+- Pre-push validación visual de los 3 workspaces + 21 docs
+- Decidir si aplicar migration `case_pack_state` ahora o esperar más packs
 
 > 📍 **Para visión estratégica completa, ver [`ROADMAP.md`](ROADMAP.md).**
 > Este doc se enfoca en estado operativo del sprint actual.

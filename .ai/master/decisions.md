@@ -1344,6 +1344,55 @@ Probablemente cache `.tsbuildinfo` stale. tsc no re-validó imports.
 
 ---
 
+## 2026-05-14 — Strategic Packs como nueva capa de UX legal sobre Smart Forms
+
+**Decisión:** Crear "Strategic Packs" como capa UX por encima de Smart Forms
+wizards. Cada caso tiene su pack con 1 workspace + 7 docs interactivos:
+cuestionarios, guías estratégicas, evidence checklists, packet preparation,
+screeners legales, document trackers, interview prep.
+
+**Quién decidió:** Mr. Lorenzo (visión "oficina virtual de inmigración más
+potente de USA y Latinoamérica") + Claude Code (arquitectura técnica).
+
+**Contexto:** Smart Forms wizards (Felix auto-fill de PDFs USCIS) son una
+pieza del flujo, no el flujo completo. El paralegal/abogado necesita
+pre-flight strategy ANTES de tocar el wizard: ¿es elegible?, ¿qué evidencia
+falta?, ¿hay inadmissibility?, ¿el sponsor califica?, etc. Estos son los
+docs que tradicionalmente la firma arma a mano en Word/Google Docs. El Pack
+los integra al case engine NER con persistencia local.
+
+**Alternativas consideradas:**
+1. Construir cada doc como entry separada en /dashboard/smart-forms ❌ rompe
+   la idea de "todo el journey en el caso" del CLAUDE.md
+2. Integrar dentro del Case Engine como nuevos tabs ❌ Lovable está editando
+   CaseEngine, riesgo de conflicts
+3. **Nueva ruta /hub/cases/:caseId/{packType}-pack/** ✅ aislada, no toca
+   archivos hot, escalable a N packs (n400, ds260, i751, vawa)
+
+**Razón:** El Pack es el "playbook strategy" del caso. El wizard es el
+"form filler". Son cosas distintas con audiencias y momentos del flujo
+distintos. Separarlos en rutas dedicadas permite que cada uno crezca sin
+acoplar.
+
+**Implicación:**
+- 21 docs nuevos en código (`src/pages/packs/{i130,i485,i765}/`)
+- 3 workspaces (`src/pages/I{130,485,765}PackWorkspace.tsx`)
+- 24 rutas nuevas en `App.tsx`, todas protegidas
+- Hook genérico `useCasePack<T>` en `src/components/questionnaire-packs/shared/`
+- `PackChrome` reutilizable para todos los packs (bilingual + multi-pro)
+- Migration `case_pack_state` con pack_type ENUM (i130, i485, i765, n400, i751, ds260) — PENDING aprobación
+- Nueva expectativa: cualquier form USCIS nuevo (N-400, DS-260, etc.) DEBE
+  tener su Pack además del Wizard. Pattern documentado.
+- Lenguaje "profesional de la inmigración" mantenido en TODO el Pack (NO
+  "abogado"), cubre attorney + accredited rep + form preparer + self-petitioner
+
+**Diferenciador competitivo:** Ningún software de inmigración (Clio Immigration,
+ImmigrationFly, Lawmatics, etc.) tiene este nivel de UX legal playbook
+integrado al case engine. Es lo que separa "software de tracking" de "oficina
+virtual completa".
+
+---
+
 ## Plantilla para nueva decisión
 
 ```markdown
