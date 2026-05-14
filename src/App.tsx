@@ -82,6 +82,7 @@ import I765Doc04FeeWaiver from "./pages/packs/i765/Doc04FeeWaiver";
 import I765Doc05ComboCard from "./pages/packs/i765/Doc05ComboCard";
 import I765Doc06Packet from "./pages/packs/i765/Doc06Packet";
 import I765Doc07Status from "./pages/packs/i765/Doc07Status";
+import { PacksGate } from "./components/questionnaire-packs/shared/PacksGate";
 import HubFormsPage from "./pages/HubFormsPage";
 import HubAgendaPage from "./pages/HubAgendaPage";
 import HubAiPage from "./pages/HubAiPage";
@@ -181,32 +182,32 @@ const App = () => (
           <Route path="/portfolio" element={<Navigate to="/dashboard/workspace-demo" replace />} />
           <Route path="/hub/cases" element={<ProtectedRoute><HubCasesPage /></ProtectedRoute>} />
           {/* ═══ I-130 PACK ═══ */}
-          <Route path="/hub/cases/:caseId/i130-pack" element={<ProtectedRoute><I130PackWorkspace /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i130-pack/01-cuestionario" element={<ProtectedRoute><I130Doc01Cuestionario /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i130-pack/02-guia-entrevista" element={<ProtectedRoute><I130Doc02Guia /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i130-pack/03-evidence-checklist" element={<ProtectedRoute><I130Doc03Evidence /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i130-pack/04-packet-preparation" element={<ProtectedRoute><I130Doc04Packet /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i130-pack/05-bona-fide-builder" element={<ProtectedRoute><I130Doc05BonaFide /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i130-pack/06-i864-support" element={<ProtectedRoute><I130Doc06I864 /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i130-pack/07-interview-prep" element={<ProtectedRoute><I130Doc07InterviewPrep /></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack" element={<ProtectedRoute><PacksGate><I130PackWorkspace /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/01-cuestionario" element={<ProtectedRoute><PacksGate><I130Doc01Cuestionario /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/02-guia-entrevista" element={<ProtectedRoute><PacksGate><I130Doc02Guia /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/03-evidence-checklist" element={<ProtectedRoute><PacksGate><I130Doc03Evidence /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/04-packet-preparation" element={<ProtectedRoute><PacksGate><I130Doc04Packet /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/05-bona-fide-builder" element={<ProtectedRoute><PacksGate><I130Doc05BonaFide /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/06-i864-support" element={<ProtectedRoute><PacksGate><I130Doc06I864 /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/07-interview-prep" element={<ProtectedRoute><PacksGate><I130Doc07InterviewPrep /></PacksGate></ProtectedRoute>} />
           {/* ═══ I-485 PACK ═══ */}
-          <Route path="/hub/cases/:caseId/i485-pack" element={<ProtectedRoute><I485PackWorkspace /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i485-pack/01-eligibility" element={<ProtectedRoute><I485Doc01Eligibility /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i485-pack/02-guia-entrevista" element={<ProtectedRoute><I485Doc02Guia /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i485-pack/03-evidence-checklist" element={<ProtectedRoute><I485Doc03Evidence /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i485-pack/04-packet-preparation" element={<ProtectedRoute><I485Doc04Packet /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i485-pack/05-inadmissibility-screener" element={<ProtectedRoute><I485Doc05Inadmissibility /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i485-pack/06-i693-medical" element={<ProtectedRoute><I485Doc06I693Medical /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i485-pack/07-interview-prep" element={<ProtectedRoute><I485Doc07InterviewPrep /></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i485-pack" element={<ProtectedRoute><PacksGate><I485PackWorkspace /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i485-pack/01-eligibility" element={<ProtectedRoute><PacksGate><I485Doc01Eligibility /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i485-pack/02-guia-entrevista" element={<ProtectedRoute><PacksGate><I485Doc02Guia /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i485-pack/03-evidence-checklist" element={<ProtectedRoute><PacksGate><I485Doc03Evidence /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i485-pack/04-packet-preparation" element={<ProtectedRoute><PacksGate><I485Doc04Packet /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i485-pack/05-inadmissibility-screener" element={<ProtectedRoute><PacksGate><I485Doc05Inadmissibility /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i485-pack/06-i693-medical" element={<ProtectedRoute><PacksGate><I485Doc06I693Medical /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i485-pack/07-interview-prep" element={<ProtectedRoute><PacksGate><I485Doc07InterviewPrep /></PacksGate></ProtectedRoute>} />
           {/* ═══ I-765 PACK ═══ */}
-          <Route path="/hub/cases/:caseId/i765-pack" element={<ProtectedRoute><I765PackWorkspace /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i765-pack/01-eligibility-category" element={<ProtectedRoute><I765Doc01Category /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i765-pack/02-documents" element={<ProtectedRoute><I765Doc02Documents /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i765-pack/03-photo" element={<ProtectedRoute><I765Doc03Photo /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i765-pack/04-fee-waiver" element={<ProtectedRoute><I765Doc04FeeWaiver /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i765-pack/05-combo-card" element={<ProtectedRoute><I765Doc05ComboCard /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i765-pack/06-packet" element={<ProtectedRoute><I765Doc06Packet /></ProtectedRoute>} />
-          <Route path="/hub/cases/:caseId/i765-pack/07-status" element={<ProtectedRoute><I765Doc07Status /></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i765-pack" element={<ProtectedRoute><PacksGate><I765PackWorkspace /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i765-pack/01-eligibility-category" element={<ProtectedRoute><PacksGate><I765Doc01Category /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i765-pack/02-documents" element={<ProtectedRoute><PacksGate><I765Doc02Documents /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i765-pack/03-photo" element={<ProtectedRoute><PacksGate><I765Doc03Photo /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i765-pack/04-fee-waiver" element={<ProtectedRoute><PacksGate><I765Doc04FeeWaiver /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i765-pack/05-combo-card" element={<ProtectedRoute><PacksGate><I765Doc05ComboCard /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i765-pack/06-packet" element={<ProtectedRoute><PacksGate><I765Doc06Packet /></PacksGate></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i765-pack/07-status" element={<ProtectedRoute><PacksGate><I765Doc07Status /></PacksGate></ProtectedRoute>} />
           {/* /hub/formularios DEPRECATED 2026-05-12 — fuente de verdad única en /dashboard/smart-forms */}
           <Route path="/hub/formularios" element={<Navigate to="/dashboard/smart-forms" replace />} />
           <Route path="/hub/agenda" element={<ProtectedRoute><HubAgendaPage /></ProtectedRoute>} />
