@@ -50,17 +50,18 @@ ALTER TABLE public.case_pack_state ENABLE ROW LEVEL SECURITY;
 
 -- SELECT: cualquier miembro del account puede ver pack state team-visible.
 -- Attorney_only requiere tier 1-2. Admin_only requiere tier 1.
--- Asumimos helper existente public.user_can_view_visibility(text) ya en NER
--- (ver supabase/migrations/20260503100000_role_visibility_hierarchical.sql).
+-- Helper existente: public.user_can_view_visibility(p_user_id UUID, p_account_id UUID,
+-- p_visibility TEXT) — 3 args, definido en
+-- supabase/migrations/20260503100000_role_visibility_hierarchical.sql.
 CREATE POLICY "case_pack_state_select"
   ON public.case_pack_state
   FOR SELECT
   USING (
     account_id IN (
-      SELECT account_id FROM public.account_users
-      WHERE user_id = auth.uid()
+      SELECT account_id FROM public.account_members
+      WHERE user_id = auth.uid() AND is_active = true
     )
-    AND public.user_can_view_visibility(visibility)
+    AND public.user_can_view_visibility(auth.uid(), account_id, visibility)
   );
 
 CREATE POLICY "case_pack_state_insert"
@@ -68,8 +69,8 @@ CREATE POLICY "case_pack_state_insert"
   FOR INSERT
   WITH CHECK (
     account_id IN (
-      SELECT account_id FROM public.account_users
-      WHERE user_id = auth.uid()
+      SELECT account_id FROM public.account_members
+      WHERE user_id = auth.uid() AND is_active = true
     )
   );
 
@@ -78,10 +79,10 @@ CREATE POLICY "case_pack_state_update"
   FOR UPDATE
   USING (
     account_id IN (
-      SELECT account_id FROM public.account_users
-      WHERE user_id = auth.uid()
+      SELECT account_id FROM public.account_members
+      WHERE user_id = auth.uid() AND is_active = true
     )
-    AND public.user_can_view_visibility(visibility)
+    AND public.user_can_view_visibility(auth.uid(), account_id, visibility)
   );
 
 CREATE POLICY "case_pack_state_delete"
@@ -89,8 +90,8 @@ CREATE POLICY "case_pack_state_delete"
   FOR DELETE
   USING (
     account_id IN (
-      SELECT account_id FROM public.account_users
-      WHERE user_id = auth.uid()
+      SELECT account_id FROM public.account_members
+      WHERE user_id = auth.uid() AND is_active = true
     )
     AND visibility != 'admin_only' -- solo admins borran admin_only
   );

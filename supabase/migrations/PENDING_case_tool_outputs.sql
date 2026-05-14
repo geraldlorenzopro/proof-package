@@ -16,6 +16,11 @@
 -- Solo cuando llega ?case_id=X aparece el botón "Guardar al expediente"
 -- que inserta una row aquí.
 --
+-- SCHEMA NOTES (verificado contra repo 2026-05-15):
+-- - Tabla membresía firm→user: account_members (NO account_users)
+--   con columnas account_id, user_id, is_active
+-- - Helper: user_can_view_visibility(p_user_id UUID, p_account_id UUID,
+--   p_visibility TEXT) — 3 args (no 1)
 -- ═══════════════════════════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS public.case_tool_outputs (
@@ -44,15 +49,11 @@ CREATE TABLE IF NOT EXISTS public.case_tool_outputs (
     'transcript'   -- transcripción/práctica (interview-sim)
   )),
 
-  -- Storage del output (Supabase Storage)
-  storage_path TEXT,  -- ej: 'case-outputs/{case_id}/{tool}/{timestamp}.pdf'
+  -- Storage del output (Supabase Storage bucket 'case-outputs')
+  storage_path TEXT,  -- ej: '{case_id}/{tool}/{timestamp}.pdf'
   storage_url TEXT,   -- signed URL pública si applicable
 
   -- Metadata del output (varía por tool)
-  -- Photo: { num_photos, sections, file_size_kb }
-  -- USCIS Analyzer: { doc_type, num_points, urgency }
-  -- CSPA: { cspa_age, qualifies, beneficiary_age }
-  -- Affidavit: { household_size, threshold, income, qualifies }
   meta JSONB NOT NULL DEFAULT '{}'::jsonb,
 
   -- Quién lo generó / asignó
@@ -71,7 +72,6 @@ CREATE TABLE IF NOT EXISTS public.case_tool_outputs (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   -- Source del invocation (para analytics)
-  -- 'workspace', 'workspace-quick', 'standalone', 'features-page', etc.
   source TEXT
 );
 
@@ -88,10 +88,10 @@ CREATE POLICY "case_tool_outputs_select"
   FOR SELECT
   USING (
     account_id IN (
-      SELECT account_id FROM public.account_users
-      WHERE user_id = auth.uid()
+      SELECT account_id FROM public.account_members
+      WHERE user_id = auth.uid() AND is_active = true
     )
-    AND public.user_can_view_visibility(visibility)
+    AND public.user_can_view_visibility(auth.uid(), account_id, visibility)
   );
 
 CREATE POLICY "case_tool_outputs_insert"
@@ -99,8 +99,8 @@ CREATE POLICY "case_tool_outputs_insert"
   FOR INSERT
   WITH CHECK (
     account_id IN (
-      SELECT account_id FROM public.account_users
-      WHERE user_id = auth.uid()
+      SELECT account_id FROM public.account_members
+      WHERE user_id = auth.uid() AND is_active = true
     )
   );
 
@@ -109,10 +109,10 @@ CREATE POLICY "case_tool_outputs_update"
   FOR UPDATE
   USING (
     account_id IN (
-      SELECT account_id FROM public.account_users
-      WHERE user_id = auth.uid()
+      SELECT account_id FROM public.account_members
+      WHERE user_id = auth.uid() AND is_active = true
     )
-    AND public.user_can_view_visibility(visibility)
+    AND public.user_can_view_visibility(auth.uid(), account_id, visibility)
   );
 
 CREATE POLICY "case_tool_outputs_delete"
@@ -120,10 +120,10 @@ CREATE POLICY "case_tool_outputs_delete"
   FOR DELETE
   USING (
     account_id IN (
-      SELECT account_id FROM public.account_users
-      WHERE user_id = auth.uid()
+      SELECT account_id FROM public.account_members
+      WHERE user_id = auth.uid() AND is_active = true
     )
-    AND public.user_can_view_visibility(visibility)
+    AND public.user_can_view_visibility(auth.uid(), account_id, visibility)
   );
 
 -- ═══ Updated_at trigger ═══
@@ -141,17 +141,10 @@ CREATE TRIGGER trg_case_tool_outputs_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.tg_case_tool_outputs_updated_at();
 
--- ═══ STORAGE BUCKET (Lovable lo crea via dashboard) ═══
--- Crear bucket 'case-outputs' privado en Supabase Dashboard
+-- ═══ STORAGE BUCKET ═══
+-- Crear bucket 'case-outputs' private en Supabase Dashboard.
 -- Path pattern: {case_id}/{tool_slug}/{timestamp}.{ext}
--- Policy de bucket: lectura/escritura solo para users del mismo account_id
---                   (gateado por la RLS de case_tool_outputs)
---
--- INSTRUCCIONES PARA LOVABLE:
--- 1. Crear bucket 'case-outputs' (private)
--- 2. Aplicar esta migration
--- 3. Confirmar que public.user_can_view_visibility(text) helper existe
---    (migration 20260503100000_role_visibility_hierarchical.sql)
+-- La RLS de case_tool_outputs gatea acceso indirecto.
 
 -- ═══ Rollback plan ═══
 -- DROP TABLE IF EXISTS public.case_tool_outputs CASCADE;
