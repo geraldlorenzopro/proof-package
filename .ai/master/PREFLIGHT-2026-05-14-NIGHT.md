@@ -32,20 +32,22 @@ fallback graceful, PII guard reforzado.
 | 1 | `2a33619` | Audits Ola 3.2.a — 7 fixes (PII, race, UX) | Pull + hard refresh |
 | 2 | `d037bf5` | Ola 3.2.b — edge fn pre-auth + applicant funnel | **Pull + apply migration + deploy edge fn** |
 | 3 | `f63ddd6` | Ola 3.2.c — AI agents universal + Felix M5 fix | Pull + hard refresh |
+| 4 | `b2296e6` | Ola 3.3 — Camila + M6 + TeamHeatmap + applicant.doc | Pull + hard refresh |
 
 ---
 
 ## 🚀 Prompt único para Lovable (cuando vuelvas)
 
-Copiá y pegá esto en el chat de Lovable. Cubre los 3 commits de una vez:
+Copiá y pegá esto en el chat de Lovable. Cubre los 4 commits de una vez:
 
 ```
-Pull main commit f63ddd6 (último de la noche del 2026-05-14).
+Pull main commit b2296e6 (último de la noche del 2026-05-14).
 
-Hay 3 commits a aplicar en cascada:
+Hay 4 commits a aplicar en cascada:
   1. 2a33619 — audits Ola 3.2.a (7 fixes frontend, no requiere apply)
   2. d037bf5 — Ola 3.2.b (NUEVA migration + NUEVA edge function)
   3. f63ddd6 — Ola 3.2.c (frontend AI agents, no requiere apply)
+  4. b2296e6 — Ola 3.3 (Camila + M6 + TeamHeatmap + applicant.doc, frontend only)
 
 ACCIONES REQUERIDAS:
 
@@ -171,6 +173,29 @@ quedan trackeados automáticamente sin duplicar lógica.
 **M5 fix Felix:** `visibilitychange` listener en SmartFormPage emite
 `ai.completed reason="page_unload"` si tab se hide mientras Felix corre.
 
+### Ola 3.3 — Camila + M6 + TeamHeatmap + applicant.doc
+
+**Camila chat instrumentation** (CamilaFloatingPanel + HubChatPage):
+- `ai.invoked` + `ai.completed` con duration_ms y response_length
+- Distingue `mode: "chat"` vs `"voice"`, `user_aborted` no cuenta failure
+
+**Camila voice instrumentation** (CamilaFloatingPanel start/stop):
+- `duration_ms` REAL al stopVoiceConversation (voice minutes son billable)
+- Tracking de `mic_permission_denied` separado de generic failures
+
+**M6 fix** (auth.session_landed): HubPage useEffect dispara cuando user
+EFECTIVAMENTE llegó al hub con data cargada. useRef previene re-fire.
+Cierra el funnel: login_success (intent) → session_landed (arrived).
+
+**applicant.doc_uploaded** (ClientUpload): trackPublicEvent via edge fn
+con counts y file_types (NO file names). + applicant.doc_upload_failed.
+
+**TeamHeatmap** (`src/components/reports/TeamHeatmap.tsx`):
+- Query agregada por account_member: active_cases, closed_30d, avg_close_days
+- Display: lista vertical con barra heatmap intensity
+- Wireado en /hub/reports en grid 2-col con CasesAtRisk
+- Demo mode con 3 miembros mock
+
 ---
 
 ## 🎯 Estado actual del plan de medición
@@ -186,26 +211,25 @@ quedan trackeados automáticamente sin duplicar lógica.
 | **Ola 3.2.a Audits ronda 1+2** | ✅ Live | `2a33619` |
 | **Ola 3.2.b Edge fn pre-auth** | ⏳ **Pending Lovable apply** | `d037bf5` |
 | **Ola 3.2.c AI agents universal** | ⏳ Pending verify | `f63ddd6` |
-| Ola 3.3 Team views + Camila | ⚫ Next | — |
+| **Ola 3.3 Camila + M6 + Team + applicant.doc** | ⏳ Pending verify | `b2296e6` |
+| Ola 3.4 Polish (sparklines, drill-down) | ⚫ Next | — |
 
 ---
 
-## 📌 Si querés saltar a Ola 3.3 directamente (post Lovable confirm)
+## 📌 Update post Ola 3.3 — todo el roadmap original cumplido
 
-Mi sugerencia para Ola 3.3:
+Los 4 items que sugerí en este pre-flight YA están hechos:
+- ✅ Camila instrumentation (chat + voice)
+- ✅ Team Heatmap (inline en /hub/reports, no necesita ruta separada todavía)
+- ✅ M6 fix (auth.session_landed)
+- ✅ applicant.doc_uploaded
 
-1. **Camila instrumentation** — wire `ai.invoked`/`ai.completed` en
-   CamilaFloatingPanel (chat) y VoiceAIPanel (voz). Cierra el último
-   gap de AI tracking.
-
-2. **Team Heatmap** — implementar `/hub/reports/team` con productividad
-   por paralegal. Wireframe W-27 en WIREFRAMES.md ya tiene el diseño.
-
-3. **M6 fix** — separar `auth.login_success` (intent) de `auth.session_landed`
-   (arrived at hub). Cierra el funnel realmente.
-
-4. **applicant.doc_uploaded** — wire en ClientUpload para completar el
-   funnel del aplicante.
+Lo que queda para Ola 3.4 (no urgente):
+- Promover TeamHeatmap a `/hub/reports/team` dedicada cuando crezca con
+  drill-down + skill tracking + ranking
+- Voice page_unload fix (similar a Felix M5)
+- Sparklines time-series 12 semanas en KPI cards
+- Approval rate / RFE rate cuando case_forms data madure
 
 ---
 
