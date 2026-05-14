@@ -26,6 +26,7 @@ import SortableDocCard from "@/components/questionnaire-packs/shared/SortableDoc
 import { useCardOrder } from "@/components/questionnaire-packs/shared/useCardOrder";
 import CaseToolsMenu from "@/components/case-tools/CaseToolsMenu";
 import QuickToolButton from "@/components/case-tools/QuickToolButton";
+import CaseOutputsList from "@/components/case-tools/CaseOutputsList";
 import { Camera, FileSearch, Calculator } from "lucide-react";
 import AlertsList from "@/components/questionnaire-packs/i130/AlertsList";
 import NextActionsList from "@/components/questionnaire-packs/i130/NextActionsList";
@@ -292,7 +293,12 @@ export default function I485PackWorkspace() {
               <PackHero data={CASE_SUMMARY} />
             </div>
             <div className="flex items-start gap-2">
-              <CaseToolsMenu caseId={caseId} packType="i485" />
+              <CaseToolsMenu
+                caseId={caseId}
+                packType="i485"
+                petitioner={CASE_SUMMARY.petitionerLabel}
+                beneficiary={CASE_SUMMARY.clientName}
+              />
               <FilingTargetWidget
                 target={CASE_SUMMARY.filing.target}
                 daysRemaining={CASE_SUMMARY.filing.daysRemaining}
@@ -379,6 +385,8 @@ export default function I485PackWorkspace() {
               source="workspace-quick"
             />
           </div>
+
+          <CaseOutputsList caseId={caseId} />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <AlertsList alerts={ALERTS} />

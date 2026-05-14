@@ -37,6 +37,10 @@ import {
 import { Button } from '@/components/ui/button';
 import ToolSplash from '@/components/ToolSplash';
 import CaseToolBanner from '@/components/case-tools/CaseToolBanner';
+import SaveToCaseButton from '@/components/case-tools/SaveToCaseButton';
+import { useCaseContext } from '@/components/case-tools/useCaseContext';
+import { useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 
 const EVIDENCE_DISCLAIMER = {
   title: { es: "Aviso Legal Importante", en: "Important Legal Notice" },
@@ -98,11 +102,30 @@ export default function Index() {
     }
     setStepRaw(target);
   }, [step]);
+  // Auto-prefill desde query params si el tool fue invocado desde un case engine
+  const [searchParams] = useSearchParams();
+  const initialPetitioner = searchParams.get('petitioner') ?? '';
+  const initialBeneficiary = searchParams.get('beneficiary') ?? '';
+  const caseCtx = useCaseContext();
+
   const [caseInfo, setCaseInfo] = useState<CaseInfo>({
-    petitioner_name: '',
-    beneficiary_name: '',
+    petitioner_name: initialPetitioner,
+    beneficiary_name: initialBeneficiary,
     compiled_date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
   });
+
+  // Si el usuario abrió con case_id pero el caseInfo se vacía después (ej. botón reset),
+  // re-poblamos desde los params.
+  useEffect(() => {
+    if (initialPetitioner || initialBeneficiary) {
+      setCaseInfo((prev) => ({
+        ...prev,
+        petitioner_name: prev.petitioner_name || initialPetitioner,
+        beneficiary_name: prev.beneficiary_name || initialBeneficiary,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [items, setItems] = useState<EvidenceItem[]>([]);
   const [generating, setGenerating] = useState(false);
   const [pdfStatus, setPdfStatus] = useState('');
@@ -376,6 +399,25 @@ export default function Index() {
                 </>
               )}
             </button>
+
+            {/* Save to case — additive, solo aparece si ?case_id=X */}
+            {caseCtx.caseId && (
+              <div className="flex justify-center pt-2">
+                <SaveToCaseButton
+                  toolSlug="evidence"
+                  toolLabel="Photo Evidence Organizer"
+                  outputType="pdf"
+                  meta={{
+                    num_items: numberedItems.length,
+                    photos: numberedItems.filter((i) => i.type === 'photo').length,
+                    chats: numberedItems.filter((i) => i.type === 'chat').length,
+                    other: numberedItems.filter((i) => i.type === 'other').length,
+                    petitioner: caseInfo.petitioner_name,
+                    beneficiary: caseInfo.beneficiary_name,
+                  }}
+                />
+              </div>
+            )}
 
             <p className="text-xs text-center text-muted-foreground">
               {t('noStorage', lang)}

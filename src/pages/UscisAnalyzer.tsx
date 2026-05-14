@@ -16,6 +16,8 @@ import AnalysisHistory from "@/components/AnalysisHistory";
 import { detectUrgency } from "@/components/AnalysisSummaryCard";
 import ToolSplash from "@/components/ToolSplash";
 import CaseToolBanner from "@/components/case-tools/CaseToolBanner";
+import SaveToCaseButton from "@/components/case-tools/SaveToCaseButton";
+import { useCaseContext } from "@/components/case-tools/useCaseContext";
 
 
 const DOCUMENT_TYPES = [
@@ -118,6 +120,7 @@ function fileToBase64(file: File): Promise<string> {
 export default function UscisAnalyzer() {
   const navigate = useNavigate();
   const { destination: backDest, isHub } = useBackDestination();
+  const caseCtx = useCaseContext();
   const [step, setStep] = useState<Step>("splash");
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [lang, setLang] = useState<'es' | 'en'>('es');
@@ -923,7 +926,20 @@ export default function UscisAnalyzer() {
                     </div>
                   </div>
                   {!isLoading && result && (
-                    <div className="flex gap-1.5 flex-wrap justify-end">
+                    <div className="flex gap-1.5 flex-wrap justify-end items-center">
+                      {/* Save to case — additive, solo aparece si ?case_id=X */}
+                      {caseCtx.caseId && (
+                        <SaveToCaseButton
+                          toolSlug="uscis-analyzer"
+                          toolLabel="USCIS Document Analyzer"
+                          outputType="analysis"
+                          meta={{
+                            doc_type: documentType,
+                            language,
+                            num_files: uploadedFiles.length,
+                          }}
+                        />
+                      )}
                       {shareToken && (
                         <Button variant="outline" size="sm" onClick={handleShare} className="border-jarvis/30 text-jarvis hover:bg-jarvis/10">
                           <Share2 className="w-3 h-3 mr-1" /> {lang === 'es' ? 'Compartir' : 'Share'}

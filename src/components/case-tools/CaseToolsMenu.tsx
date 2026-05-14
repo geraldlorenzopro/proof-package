@@ -94,9 +94,11 @@ const TOOLS: ToolDef[] = [
 interface Props {
   caseId: string;
   packType: PackType;
+  petitioner?: string;
+  beneficiary?: string;
 }
 
-export default function CaseToolsMenu({ caseId, packType }: Props) {
+export default function CaseToolsMenu({ caseId, packType, petitioner, beneficiary }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -110,7 +112,10 @@ export default function CaseToolsMenu({ caseId, packType }: Props) {
 
   function buildHref(tool: ToolDef): string {
     const sep = tool.href.includes("?") ? "&" : "?";
-    return `${tool.href}${sep}case_id=${encodeURIComponent(caseId)}&pack=${packType}&source=workspace`;
+    let url = `${tool.href}${sep}case_id=${encodeURIComponent(caseId)}&pack=${packType}&source=workspace`;
+    if (petitioner) url += `&petitioner=${encodeURIComponent(petitioner)}`;
+    if (beneficiary) url += `&beneficiary=${encodeURIComponent(beneficiary)}`;
+    return url;
   }
 
   return (
