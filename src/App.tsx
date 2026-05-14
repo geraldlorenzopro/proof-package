@@ -58,6 +58,7 @@ import ConsultationsPage from "./pages/ConsultationsPage";
 import ClientProfilePage from "./pages/ClientProfilePage";
 import HubClientsPage from "./pages/HubClientsPage";
 import HubCasesPage from "./pages/HubCasesPage";
+import I130PackWorkspace from "./pages/I130PackWorkspace";
 import HubFormsPage from "./pages/HubFormsPage";
 import HubAgendaPage from "./pages/HubAgendaPage";
 import HubAiPage from "./pages/HubAiPage";
@@ -156,6 +157,7 @@ const App = () => (
           {/* ═══ REDIRECT ROUTES ═══ */}
           <Route path="/portfolio" element={<Navigate to="/dashboard/workspace-demo" replace />} />
           <Route path="/hub/cases" element={<ProtectedRoute><HubCasesPage /></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack" element={<ProtectedRoute><I130PackWorkspace /></ProtectedRoute>} />
           {/* /hub/formularios DEPRECATED 2026-05-12 — fuente de verdad única en /dashboard/smart-forms */}
           <Route path="/hub/formularios" element={<Navigate to="/dashboard/smart-forms" replace />} />
           <Route path="/hub/agenda" element={<ProtectedRoute><HubAgendaPage /></ProtectedRoute>} />
