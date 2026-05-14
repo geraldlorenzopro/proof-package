@@ -35,6 +35,7 @@ import PdfFieldInspector from "./pages/PdfFieldInspector";
 import CaseWorkspace from "./pages/CaseWorkspace";
 import CaseEnginePage from "./pages/CaseEnginePage";
 import IntelligenceCenterPage from "./pages/IntelligenceCenterPage";
+import ReportsPage from "./pages/ReportsPage";
 import VisaEvaluatorPage from "./pages/VisaEvaluatorPage";
 import VisaEvalPublic from "./pages/VisaEvalPublic";
 import CaseTrackPublic from "./pages/CaseTrackPublic";
@@ -126,7 +127,7 @@ const App = () => (
           {/* ═══ PROTECTED ROUTES ═══ */}
           <Route path="/hub" element={<HubPage />} />
           <Route path="/hub/intelligence" element={<ProtectedRoute><IntelligenceCenterPage /></ProtectedRoute>} />
-          <Route path="/hub/reports" element={<ProtectedRoute><IntelligenceCenterPage /></ProtectedRoute>} />
+          <Route path="/hub/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
           <Route path="/hub/consultations" element={<ProtectedRoute><ConsultationsPage /></ProtectedRoute>} />
           <Route path="/hub/consultations/:intakeId" element={<ProtectedRoute><ConsultationRoom /></ProtectedRoute>} />
           <Route path="/hub/leads" element={<ProtectedRoute><HubLeadsPage /></ProtectedRoute>} />
