@@ -47,95 +47,115 @@ const PACK_TABS: PackTab[] = [
   { id: "notas", label: "Notas" },
 ];
 
-const DOC_CARDS: DocCardData[] = [
-  {
-    id: "i864",
-    title: "I-864 Sponsor",
-    subtitle: "Affidavit of Support · 125% poverty",
-    status: "blocker",
-    heroStat: "0/4",
-    heroStatLabel: "documentos sponsor",
-    items: [
-      { id: "1", label: "Identidad sponsor (pasaporte/DL)", status: "danger" },
-      { id: "2", label: "Estatus USC/LPR del sponsor", status: "danger" },
-      { id: "3", label: "Ingresos 3 años (tax transcripts)", status: "danger" },
-      { id: "4", label: "Domicilio sponsor (utility bill)", status: "danger" },
-    ],
-    primaryAction: { label: "Iniciar ahora", href: "#" },
-  },
-  {
-    id: "packet",
-    title: "Packet pre-flight",
-    subtitle: "Checklist envío USCIS",
-    status: "in_progress",
-    heroStat: "9/14",
-    percent: 64,
-    items: [
-      { id: "1", label: "G-1145 e-Notification", status: "done" },
-      { id: "2", label: "Cover letter", status: "done" },
-      { id: "3", label: "G-1450 pago tarjeta", status: "pending" },
-      { id: "4", label: "Orden documentos por exhibits", status: "pending" },
-    ],
-    primaryAction: { label: "Continuar checklist", href: "#" },
-  },
-  {
-    id: "evidencia",
-    title: "Evidencia cliente",
-    subtitle: "Bona fide + civil docs",
-    status: "pending",
-    heroStat: "28/42",
-    percent: 67,
-    items: [
-      { id: "1", label: "Acta de matrimonio (apostillada)", status: "done" },
-      { id: "2", label: "Divorcios previos certificados", status: "done" },
-      { id: "3", label: "Cuentas conjuntas (12 meses)", status: "pending" },
-      { id: "4", label: "Fotos timeline 4 años", status: "pending" },
-    ],
-    primaryAction: { label: "Solicitar al cliente", href: "#" },
-  },
-  {
-    id: "bonafide",
-    title: "Bona fide builder",
-    subtitle: "Score de matrimonio",
-    status: "ready",
-    heroStat: "4/5",
-    heroStatLabel: "categorías cubiertas",
-    items: [
-      { id: "1", label: "Financiero compartido", status: "done" },
-      { id: "2", label: "Residencia compartida", status: "done" },
-      { id: "3", label: "Hijos / familia", status: "done" },
-      { id: "4", label: "Declaraciones de terceros", status: "pending" },
-    ],
-    primaryAction: { label: "Cerrar score", href: "#" },
-  },
-];
+function buildDocCards(caseId: string): DocCardData[] {
+  return [
+    {
+      id: "i864",
+      title: "I-864 Sponsor",
+      subtitle: "Affidavit of Support · 125% poverty",
+      status: "blocker",
+      heroStat: "0/4",
+      heroStatLabel: "documentos sponsor",
+      items: [
+        { id: "1", label: "Identidad sponsor (pasaporte/DL)", status: "danger" },
+        { id: "2", label: "Estatus USC/LPR del sponsor", status: "danger" },
+        { id: "3", label: "Ingresos 3 años (tax transcripts)", status: "danger" },
+        { id: "4", label: "Domicilio sponsor (utility bill)", status: "danger" },
+      ],
+      primaryAction: {
+        label: "Iniciar ahora",
+        href: `/hub/cases/${caseId}/i130-pack/06-i864-support`,
+      },
+    },
+    {
+      id: "packet",
+      title: "Packet pre-flight",
+      subtitle: "Checklist envío USCIS",
+      status: "in_progress",
+      heroStat: "9/14",
+      percent: 64,
+      items: [
+        { id: "1", label: "G-1145 e-Notification", status: "done" },
+        { id: "2", label: "Cover letter", status: "done" },
+        { id: "3", label: "G-1450 pago tarjeta", status: "pending" },
+        { id: "4", label: "Orden documentos por exhibits", status: "pending" },
+      ],
+      primaryAction: {
+        label: "Continuar checklist",
+        href: `/hub/cases/${caseId}/i130-pack/04-packet-preparation`,
+      },
+    },
+    {
+      id: "evidencia",
+      title: "Evidencia cliente",
+      subtitle: "Bona fide + civil docs",
+      status: "pending",
+      heroStat: "28/42",
+      percent: 67,
+      items: [
+        { id: "1", label: "Acta de matrimonio (apostillada)", status: "done" },
+        { id: "2", label: "Divorcios previos certificados", status: "done" },
+        { id: "3", label: "Cuentas conjuntas (12 meses)", status: "pending" },
+        { id: "4", label: "Fotos timeline 4 años", status: "pending" },
+      ],
+      primaryAction: {
+        label: "Solicitar al cliente",
+        href: `/hub/cases/${caseId}/i130-pack/03-evidence-checklist`,
+      },
+    },
+    {
+      id: "bonafide",
+      title: "Bona fide builder",
+      subtitle: "Score de matrimonio",
+      status: "ready",
+      heroStat: "4/5",
+      heroStatLabel: "categorías cubiertas",
+      items: [
+        { id: "1", label: "Financiero compartido", status: "done" },
+        { id: "2", label: "Residencia compartida", status: "done" },
+        { id: "3", label: "Hijos / familia", status: "done" },
+        { id: "4", label: "Declaraciones de terceros", status: "pending" },
+      ],
+      primaryAction: {
+        label: "Cerrar score",
+        href: `/hub/cases/${caseId}/i130-pack/05-bona-fide-builder`,
+      },
+    },
+  ];
+}
 
-const COMPACT_DOCS: CompactDocItem[] = [
-  {
-    id: "cuestionario",
-    title: "Cuestionario Cliente",
-    meta: "Completado · 14 may",
-    status: "done",
-  },
-  {
-    id: "guia",
-    title: "Guía Entrevista",
-    meta: "Lista para profesional",
-    status: "done",
-  },
-  {
-    id: "interview",
-    title: "Interview Prep",
-    meta: "Pendiente · G-1256 intérprete",
-    status: "pending",
-  },
-  {
-    id: "wizard",
-    title: "I-130 Wizard",
-    meta: "82% · Felix sugiriendo",
-    status: "in_progress",
-  },
-];
+function buildCompactDocs(caseId: string): (CompactDocItem & { href?: string })[] {
+  return [
+    {
+      id: "cuestionario",
+      title: "Cuestionario Cliente",
+      meta: "Completado · 14 may",
+      status: "done",
+      href: `/hub/cases/${caseId}/i130-pack/01-cuestionario`,
+    },
+    {
+      id: "guia",
+      title: "Guía Entrevista",
+      meta: "Lista para profesional",
+      status: "done",
+      href: `/hub/cases/${caseId}/i130-pack/02-guia-entrevista`,
+    },
+    {
+      id: "interview",
+      title: "Interview Prep",
+      meta: "Pendiente · G-1256 intérprete",
+      status: "pending",
+      href: `/hub/cases/${caseId}/i130-pack/07-interview-prep`,
+    },
+    {
+      id: "wizard",
+      title: "I-130 Wizard",
+      meta: "82% · Felix sugiriendo",
+      status: "in_progress",
+      href: `/dashboard/smart-forms`,
+    },
+  ];
+}
 
 const ALERTS: AlertItem[] = [
   {
@@ -192,9 +212,12 @@ export default function I130PackWorkspace() {
   const params = useParams<{ caseId: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("cuestionarios");
+  const caseId = params.caseId ?? "demo";
+  const docCards = buildDocCards(caseId);
+  const compactDocs = buildCompactDocs(caseId);
 
   function handleStartI864() {
-    navigate(`/case-engine/${params.caseId ?? "demo"}?panel=affidavit`);
+    navigate(`/hub/cases/${caseId}/i130-pack/06-i864-support`);
   }
 
   return (
@@ -222,12 +245,12 @@ export default function I130PackWorkspace() {
           <PackTabs tabs={PACK_TABS} activeId={activeTab} onSelect={setActiveTab} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {DOC_CARDS.map((d) => (
-              <DocCard key={d.id} data={d} />
+            {docCards.map((d) => (
+              <DocCard key={d.id} data={d} onAction={() => navigate(d.primaryAction.href)} />
             ))}
           </div>
 
-          <CompactDocsRow docs={COMPACT_DOCS} />
+          <CompactDocsRow docs={compactDocs} onSelect={(href) => href && navigate(href)} />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <AlertsList alerts={ALERTS} />

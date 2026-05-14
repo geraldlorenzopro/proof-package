@@ -6,10 +6,12 @@ export interface CompactDocItem {
   title: string;
   meta: string;
   status: "done" | "in_progress" | "pending";
+  href?: string;
 }
 
 interface Props {
   docs: CompactDocItem[];
+  onSelect?: (href: string | undefined) => void;
 }
 
 const ICON: Record<string, { Cmp: typeof CheckCircle2; cls: string }> = {
@@ -18,15 +20,21 @@ const ICON: Record<string, { Cmp: typeof CheckCircle2; cls: string }> = {
   pending: { Cmp: Circle, cls: "text-muted-foreground" },
 };
 
-export default function CompactDocsRow({ docs }: Props) {
+export default function CompactDocsRow({ docs, onSelect }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
       {docs.map((d) => {
         const { Cmp, cls } = ICON[d.status];
+        const clickable = !!d.href;
+        const Wrapper = clickable ? "button" : "div";
         return (
-          <div
+          <Wrapper
             key={d.id}
-            className="bg-card/60 border border-border rounded-md px-3 py-2 flex items-center gap-2.5"
+            onClick={clickable ? () => onSelect?.(d.href) : undefined}
+            className={cn(
+              "bg-card/60 border border-border rounded-md px-3 py-2 flex items-center gap-2.5 text-left w-full",
+              clickable && "hover:border-jarvis/40 transition-colors cursor-pointer",
+            )}
           >
             <Cmp className={cn("w-4 h-4 shrink-0", cls)} />
             <div className="min-w-0 flex-1">
@@ -37,7 +45,7 @@ export default function CompactDocsRow({ docs }: Props) {
                 {d.meta}
               </div>
             </div>
-          </div>
+          </Wrapper>
         );
       })}
     </div>

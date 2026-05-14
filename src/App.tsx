@@ -59,6 +59,13 @@ import ClientProfilePage from "./pages/ClientProfilePage";
 import HubClientsPage from "./pages/HubClientsPage";
 import HubCasesPage from "./pages/HubCasesPage";
 import I130PackWorkspace from "./pages/I130PackWorkspace";
+import Doc01Cuestionario from "./pages/packs/i130/Doc01Cuestionario";
+import Doc02Guia from "./pages/packs/i130/Doc02Guia";
+import Doc03Evidence from "./pages/packs/i130/Doc03Evidence";
+import Doc04Packet from "./pages/packs/i130/Doc04Packet";
+import Doc05BonaFide from "./pages/packs/i130/Doc05BonaFide";
+import Doc06I864 from "./pages/packs/i130/Doc06I864";
+import Doc07InterviewPrep from "./pages/packs/i130/Doc07InterviewPrep";
 import HubFormsPage from "./pages/HubFormsPage";
 import HubAgendaPage from "./pages/HubAgendaPage";
 import HubAiPage from "./pages/HubAiPage";
@@ -158,6 +165,13 @@ const App = () => (
           <Route path="/portfolio" element={<Navigate to="/dashboard/workspace-demo" replace />} />
           <Route path="/hub/cases" element={<ProtectedRoute><HubCasesPage /></ProtectedRoute>} />
           <Route path="/hub/cases/:caseId/i130-pack" element={<ProtectedRoute><I130PackWorkspace /></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/01-cuestionario" element={<ProtectedRoute><Doc01Cuestionario /></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/02-guia-entrevista" element={<ProtectedRoute><Doc02Guia /></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/03-evidence-checklist" element={<ProtectedRoute><Doc03Evidence /></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/04-packet-preparation" element={<ProtectedRoute><Doc04Packet /></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/05-bona-fide-builder" element={<ProtectedRoute><Doc05BonaFide /></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/06-i864-support" element={<ProtectedRoute><Doc06I864 /></ProtectedRoute>} />
+          <Route path="/hub/cases/:caseId/i130-pack/07-interview-prep" element={<ProtectedRoute><Doc07InterviewPrep /></ProtectedRoute>} />
           {/* /hub/formularios DEPRECATED 2026-05-12 — fuente de verdad única en /dashboard/smart-forms */}
           <Route path="/hub/formularios" element={<Navigate to="/dashboard/smart-forms" replace />} />
           <Route path="/hub/agenda" element={<ProtectedRoute><HubAgendaPage /></ProtectedRoute>} />
