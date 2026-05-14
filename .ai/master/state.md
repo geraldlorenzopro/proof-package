@@ -12,9 +12,9 @@
 |---|:--:|---|---|
 | **Ola 1 — Foundation** | ✅ Live | `0430471` | Tabla `events` + RLS + `useTrackPageView` + 3 páginas instrumentadas |
 | **Ola 2 — `/hub/reports`** | ✅ Live | `01f80bc` | Dashboard Owner: 4 KPIs reales + CasesAtRisk |
-| **Audit Round 1 + Fixes** | ✅ Live | TBD | 6 fixes: demo mode, multi-firma, errors visibles, session cache, filter syntax, event rename |
-| **Audit Round 2** | ⚫ Next | — | Auditoría profunda Ola 1+2 antes de Ola 3 |
-| **Ola 3 — Granular events** | ⚫ Pending | — | `case.created`, `ai.invoked`, `applicant.*`, `auth.*` |
+| **Audit Round 1 + Fixes** | ✅ Live | `adb47bf` | 6 fixes: demo mode, multi-firma, errors visibles, session cache, filter syntax, event rename |
+| **Audit Round 2 + Fixes** | ✅ Live | TBD | 6 fixes: migration no-op, auth listener, PII substring, tab tracking, avg clamp, KPICard a11y |
+| **Ola 3 — Granular events** | ⚫ Next | — | `case.created`, `ai.invoked`, `applicant.*`, `auth.*`, columna `closed_at`, RLS pre-auth via edge fn |
 | **Ola 4 — Consolidación** | ⚫ Mes 2+ | — | Strategic Packs → tab Case Engine, deprecar `/dashboard/*` |
 
 **Eventos confirmados en BD (Ner Tech `ae903f7f…`):**
@@ -26,10 +26,24 @@
 - Banner de errors visible si query falla (M1 fix)
 - Demo mode soportado (badge "DEMO" + mock data)
 
-**Pendientes en plan medición:**
-- H3 RLS aplicante (cuando se instrumente portal público en Ola 3)
-- L1-L4 polish (StrictMode double-fire DEV, layout shift, code-splitting)
+**Pendientes en plan medición (post audit ronda 2):**
+
+Backlog Ola 3+:
+- **H2** (Ola 3) — Mover INSERT pre-auth a edge function con rate limit + signed token. Vector DoS abierto via anon key.
+- **M2** (Ola 3) — Agregar columna `closed_at` a `client_cases` + trigger → fix definitivo de `avgDaysOpen` (hoy usa `updated_at` como proxy con limitación documentada).
+- **M4** — Index parcial `(account_id, updated_at) WHERE status NOT IN (closed)` cuando alguna firma supere ~5k casos.
+- **H3 RLS aplicante** — Cuando wire `applicant.intake_completed` desde portal público con token.
+
+Polish diferido (cosmetic, no urgente):
+- **L1** — Verificar `cn()` usa `tailwind-merge`
+- **L2** — `CasesAtRisk` error state visible (hoy queda como empty state)
+- **L4** — Doc engañosa en `KPICard.handleClick`
+- **L5** — Posible colisión naming `auth.login`
+
+Infraestructura futura (cuando escalemos):
 - Materialized views `firm_metrics_daily` (cuando MRR > $5K o N firmas > 50)
+- Code-splitting de `/hub/reports` y `/admin/*` con `React.lazy`
+- StrictMode double-fire en DEV (no afecta PROD)
 
 ---
 

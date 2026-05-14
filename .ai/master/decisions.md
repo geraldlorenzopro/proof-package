@@ -52,6 +52,88 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-14 (noche) — Auditoría profunda (ronda 2) + 6 fixes adicionales
+
+**Decisión:** después de ronda 1 (6 fixes pushed), Mr. Lorenzo pidió ronda
+profunda. Delegamos a un Agent code-review con instrucciones específicas:
+race conditions, RLS gaps, PII leaks, error swallowing, N+1, cleanup, type
+unsafety, auth race, cache invalidation. Reportó 15 findings nuevos
+(1 CRITICAL / 4 HIGH / 5 MEDIUM / 5 LOW). Fixeamos los 6 más urgentes en
+un solo commit. Resto diferido o documentado.
+
+**Findings clasificados:**
+
+🔴 **CRITICAL:**
+- **C1** — Lovable creó migration duplicada (`20260514192237_*.sql`) que iba
+  a romper el próximo `supabase db push` (CREATE POLICY no soporta IF NOT
+  EXISTS en Postgres < 15 → "policy already exists" abort).
+  *Fix:* convertir la duplicada en no-op idempotente (`SELECT 1 WHERE FALSE`).
+
+🟠 **HIGH (4 — todos fixed):**
+- **H1** — Cache stale 60s en analytics permitía cross-firma data leak para
+  paralegales multi-membership.
+  *Fix:* `invalidateAnalyticsCache()` + `supabase.auth.onAuthStateChange()`
+  listener en module init que reacciona a SIGNED_OUT/SIGNED_IN/TOKEN_REFRESHED/
+  USER_UPDATED.
+- **H2 (DIFERIDO)** — RLS permite que cualquiera con anon key (que está en el
+  bundle JS público) haga `INSERT INTO events` arbitrarios. Vector DoS / storage
+  burn. *Diferido* porque no instrumentamos pre-auth events todavía. Fix futuro:
+  rutear pre-auth via edge function con rate-limit + signed token.
+- **H3** — PII guard usaba exact match → `client_email`, `petitioner_name`
+  no se detectaban. False sense of safety.
+  *Fix:* substring match sobre lista de stems inequívocos (`fullname`, `ssn`,
+  `passport`, `dob`, etc.) + pattern compuesto `entity_prefix + suffix` para
+  cazar `petitioner_name`, `client_email`, etc. Allowlist explícita para `_id$`.
+- **H4** — `useTrackPageView` deps solo incluía `location.pathname`. El comentario
+  decía "re-dispara si cambia pathname (ej. tabs Case Engine: ?tab=tareas)" pero
+  los tabs viven en `location.search`. Funnels de tabs invisibles en analytics.
+  *Fix:* agregar `location.search` a deps.
+
+🟡 **MEDIUM:**
+- **M1** — `avgDaysOpen` podía ser negativo si `updated_at < created_at` (casos
+  importados GHL backfill). *Fix:* clamp `Math.max(0, diff)` + filtrar `!isFinite`.
+- **M2 (DIFERIDO)** — `updated_at` no es buen proxy de `closed_at` (edit
+  post-cierre lo distorsiona). *Workaround temporal:* documentado en `helpText`
+  del KPI. Fix definitivo requiere migration: agregar columna `closed_at` a
+  `client_cases` con trigger en status change. Diferido a Ola 3.
+- **M3 (DIFERIDO)** — Race condition en `useNerAccountId` initial state si
+  alguien refactoriza el guard. *Workaround:* documentado en código.
+- **M4 (DIFERIDO)** — Falta index parcial `(account_id, updated_at) WHERE status
+  NOT IN (closed)` → queries lentas con >5k casos por firma. Diferido hasta que
+  alguna firma supere ese umbral (Mr Visa actual ~50 casos).
+- **M5** — `client_session_id` no se rotaba al logout → 2 users en misma pestaña
+  compartían session_id (attribution leak). *Fix:* `resetAnalytics()` ahora se
+  llama desde el auth listener en SIGNED_OUT.
+
+🟢 **LOW:**
+- **L1 (DIFERIDO)** — Verificar que `cn()` use `tailwind-merge` para que
+  `lg:grid-cols-4` gane sobre `lg:grid-cols-6` default. Funciona en la
+  evidencia, pero confirmar.
+- **L2 (DIFERIDO)** — `CasesAtRisk` muestra empty state incluso cuando query
+  falla. Cosmetic — el query rara vez falla en lo medido.
+- **L3** — `KPICard` usaba `<div onClick>` → no keyboard focusable, no anuncia
+  rol a screen readers.
+  *Fix:* renderiza como `<button type="button">` cuando hay `onClick`, con
+  `focus-visible:ring`, `aria-label` con label+value, fallback a `<div>` para
+  cards no-interactivas.
+- **L4 (DIFERIDO)** — Doc del `KPICard.handleClick` engañosa. Cosmetic.
+- **L5 (DIFERIDO)** — Posible colisión semántica futura entre `auth.login`
+  (page view) y `auth.login` (success event). No hay event con ese nombre aún.
+
+**Snapshot post-fixes:**
+- Plan medición protegido contra: cross-firma leak, PII filtration por
+  naming descuido, deploy rompido por policy duplicada, tabs invisibles,
+  outliers que rompen avg, dashboards inaccesibles por teclado.
+- Diferidos documentados para no perderlos: H2 (edge function pre-auth),
+  M2 (columna closed_at), M3 (refactor demo guard), M4 (index parcial),
+  L1/L2/L4/L5 (cosmetics).
+
+**Patrón validado:** auditoría en 2 rondas funciona — la ronda 2 (con agent
+focalizado) encontró 15 cosas que la ronda 1 (yo solo) no vio. Aplicar este
+patrón cuando algo se considere production-ready.
+
+---
+
 ## 2026-05-14 (tarde) — Auditoría Ola 1 + Ola 2 (ronda 1) + 6 fixes
 
 **Decisión:** después de validar que `/hub/reports` carga y trackea correctamente

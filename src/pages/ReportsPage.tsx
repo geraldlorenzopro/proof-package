@@ -127,18 +127,26 @@ function useFirmMetrics(accountId: string | null, isDemo: boolean): FirmMetrics 
       if (recentClosedRes.error) errors.push("promedio");
       if (staleRes.error) errors.push("stale");
 
+      // M1 fix (audit ronda 2): clamp en 0 para casos importados via GHL
+      // backfill donde updated_at puede ser < created_at (trigger raro o
+      // migration tocando rows). Sin clamp, un outlier baja el avg a
+      // números absurdos y rompe la confianza del Owner.
+      //
+      // M2 nota: estamos usando updated_at como proxy de closed_at. Cualquier
+      // edit post-cierre (nota agregada, retag) sesga este KPI. Cuando se
+      // agregue columna closed_at + trigger (cambio de schema, requiere
+      // Lovable), cambiar aquí. Mientras tanto se documenta en helpText.
       const closedRows = recentClosedRes.data ?? [];
+      const validDiffs = closedRows
+        .map((c) =>
+          (new Date(c.updated_at).getTime() - new Date(c.created_at).getTime()) / 86400000
+        )
+        .filter((d) => Number.isFinite(d))
+        .map((d) => Math.max(0, d));
       const avgDays =
-        closedRows.length === 0
+        validDiffs.length === 0
           ? null
-          : Math.round(
-              closedRows.reduce((acc, c) => {
-                const diff =
-                  (new Date(c.updated_at).getTime() - new Date(c.created_at).getTime()) /
-                  86400000;
-                return acc + diff;
-              }, 0) / closedRows.length
-            );
+          : Math.round(validDiffs.reduce((a, b) => a + b, 0) / validDiffs.length);
 
       setState({
         activeCases: activeRes.count ?? 0,
@@ -271,7 +279,7 @@ export default function ReportsPage() {
             value={metrics.avgDaysOpen ?? "—"}
             loading={metrics.loading}
             kpiId="avg_days_open"
-            helpText="Tiempo medio de cierre (últimos 90 días)"
+            helpText="Tiempo medio de cierre (últimos 90 días). MVP usa updated_at como proxy de closed_at — KPI se afina cuando agreguemos columna closed_at dedicada."
             threshold={
               metrics.avgDaysOpen === null
                 ? undefined

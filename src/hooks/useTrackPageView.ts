@@ -38,10 +38,14 @@ export function useTrackPageView(
       properties: {
         view: viewName,
         pathname: location.pathname,
+        search: location.search || undefined,
         ...extraProps,
       },
     });
-    // Re-dispara si cambia el pathname dentro de la misma página
-    // (ej. tabs URL-synced en Case Engine: ?tab=tareas vs ?tab=overview)
-  }, [viewName, location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+    // H4 fix (audit ronda 2): re-dispara también cuando cambia el query string.
+    // Esto captura tabs URL-synced del Case Engine (?tab=tareas vs ?tab=overview),
+    // filtros guardados en URL, paginación, etc. Antes el comentario decía que
+    // esto funcionaba pero solo monitoreábamos pathname → tabs invisibles en
+    // funnels analytics.
+  }, [viewName, location.pathname, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
 }

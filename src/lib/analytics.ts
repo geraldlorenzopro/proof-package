@@ -46,24 +46,58 @@ export interface TrackEventResult {
 }
 
 // ─── PII guard ───────────────────────────────────────────────────────
+//
+// H3 fix (audit ronda 2): exact match no detectaba "client_email" porque
+// solo "email" estaba en la lista. Ahora matchea por substring sobre una
+// lista de stems. False positives son baratos (warning en DEV) — false
+// negatives filtran PII a la BD.
+//
+// Allowlist no es factible: el shape de `properties` es libre y crecerá
+// con cada feature. Substring match en denylist es el trade-off pragmático.
 
-const PII_KEYS = new Set([
-  "name", "fullname", "full_name", "firstname", "lastname",
+// Stems que son PII inequívoca (no aparecen en nombres técnicos de UI/sistema)
+const PII_STEMS: readonly string[] = [
+  "fullname", "firstname", "lastname", "surname",
   "ssn", "social_security",
-  "a_number", "alien_number", "alien_registration",
-  "passport", "passport_number",
-  "dob", "date_of_birth", "birthdate",
-  "address", "street", "phone", "phone_number",
-  "email", // emails enteros — usar email_domain si necesitamos categorizar
-]);
+  "alien", "a_number", "a-number", "anumber",
+  "passport",
+  "dob", "birth", "birthdate",
+  "address", "street", "zipcode", "postal",
+  "phone", "mobile", "telephone",
+  "email", // matchea email, client_email, applicant_email, beneficiary_email
+];
+
+// Prefijos de entidades: si una key empieza con esto Y termina con algo
+// que parece nombre/email/etc → PII. Ej: petitioner_name, client_email.
+const PII_ENTITY_PREFIXES: readonly string[] = [
+  "petitioner_", "beneficiary_", "client_", "applicant_", "preparer_",
+];
+const PII_ENTITY_SUFFIXES: readonly string[] = [
+  "name", "email", "phone", "dob", "address", "ssn",
+];
+
+function looksLikePII(key: string): boolean {
+  const lower = key.toLowerCase();
+  // Permitir IDs explícitos: client_id, petitioner_id, etc.
+  if (/_id$/i.test(lower)) return false;
+
+  // Stems inequívocos
+  if (PII_STEMS.some((stem) => lower.includes(stem))) return true;
+
+  // Compuestos: petitioner_name, client_email, applicant_phone, etc.
+  return PII_ENTITY_PREFIXES.some((prefix) =>
+    lower.startsWith(prefix) &&
+    PII_ENTITY_SUFFIXES.some((suffix) => lower.endsWith(suffix))
+  );
+}
 
 function assertNoPII(properties: Record<string, unknown> | undefined): void {
   if (!import.meta.env.DEV || !properties) return;
   for (const key of Object.keys(properties)) {
-    if (PII_KEYS.has(key.toLowerCase())) {
+    if (looksLikePII(key)) {
       console.warn(
         `[analytics] PII guard: key "${key}" looks like PII. ` +
-        `Use IDs/categories instead. See MEASUREMENT-FRAMEWORK.md §10.4`
+        `Use IDs (uuid_id) or categories instead. See MEASUREMENT-FRAMEWORK.md §10.4`
       );
     }
   }
@@ -215,16 +249,51 @@ export async function identify(userId: string, accountId: string | null): Promis
   cachedAuth = { accountId, userId, at: Date.now() };
   await trackEvent("auth.session_established", {
     accountId,
-    properties: { user_id: userId },
+    properties: { uid: userId },
   });
 }
 
 /**
- * Clear cache cuando el usuario hace logout.
+ * Clear cache cuando el usuario hace logout o cambia de firma.
+ * Rota el session_id para que el siguiente user no herede el rastro del anterior.
  */
 export function resetAnalytics(): void {
   cachedAuth = null;
   if (typeof window !== "undefined") {
     sessionStorage.removeItem(SESSION_KEY);
   }
+}
+
+/**
+ * Invalida solo el cache de auth (no rota el session_id).
+ * Llamar después de firm-switch (multi-membership) para que los próximos
+ * trackEvent resuelvan el account_id de la firma nueva.
+ */
+export function invalidateAnalyticsCache(): void {
+  cachedAuth = null;
+}
+
+// ─── Auth state subscription ────────────────────────────────────────
+//
+// H1 + M5 fix (audit ronda 2): suscribirse a auth events para que:
+//   - SIGNED_OUT → resetAnalytics() (limpia cache + rota session_id)
+//   - SIGNED_IN  → invalida cache (forzará re-resolve en próximo trackEvent)
+//   - TOKEN_REFRESHED → invalida (por si el token nuevo trae claims distintos)
+//   - USER_UPDATED → invalida
+//
+// Side-effect on module import — válido porque el módulo se importa una sola
+// vez. Si SSR/Node se introduce, este código solo corre en browser.
+
+if (typeof window !== "undefined") {
+  void supabase.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT") {
+      resetAnalytics();
+    } else if (
+      event === "SIGNED_IN" ||
+      event === "TOKEN_REFRESHED" ||
+      event === "USER_UPDATED"
+    ) {
+      invalidateAnalyticsCache();
+    }
+  });
 }

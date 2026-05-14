@@ -79,16 +79,16 @@ export function KPICard({
     onClick();
   }
 
-  return (
-    <div
-      onClick={onClick ? handleClick : undefined}
-      className={cn(
-        "bg-card border border-border rounded-xl p-4 flex flex-col gap-2",
-        "transition-shadow",
-        onClick && "cursor-pointer hover:shadow-md hover:border-primary/40"
-      )}
-      title={helpText}
-    >
+  // L3 fix (audit ronda 2): card interactiva debe ser <button> para keyboard
+  // focus + screen reader. Si no es clickeable, queda como <div> estático.
+  const baseClasses = cn(
+    "bg-card border border-border rounded-xl p-4 flex flex-col gap-2 text-left w-full",
+    "transition-shadow",
+    onClick && "cursor-pointer hover:shadow-md hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+  );
+
+  const content = (
+    <>
       <div className="flex items-start justify-between">
         <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
           {label}
@@ -103,7 +103,7 @@ export function KPICard({
 
       <div className="text-3xl font-bold text-foreground tabular-nums">
         {loading ? (
-          <span className="inline-block w-16 h-8 bg-muted animate-pulse rounded" />
+          <span className="inline-block w-16 h-9 bg-muted animate-pulse rounded" aria-hidden="true" />
         ) : (
           value
         )}
@@ -111,7 +111,7 @@ export function KPICard({
 
       {trend && !loading && (
         <div className={cn("flex items-center gap-1 text-xs", TREND_COLORS[trend.direction])}>
-          {TrendIcon && <TrendIcon className="w-3 h-3" />}
+          {TrendIcon && <TrendIcon className="w-3 h-3" aria-hidden="true" />}
           <span className="font-medium tabular-nums">{trend.delta}</span>
           {trend.period && (
             <span className="text-muted-foreground">· {trend.period}</span>
@@ -124,6 +124,26 @@ export function KPICard({
           {threshold.benchmark}
         </span>
       )}
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        className={baseClasses}
+        title={helpText}
+        aria-label={`${label}: ${loading ? "cargando" : value}`}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className={baseClasses} title={helpText}>
+      {content}
     </div>
   );
 }
