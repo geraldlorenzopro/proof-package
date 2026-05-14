@@ -35,6 +35,7 @@ import { generateCSPAReport, type CSPAReportData } from "@/lib/cspaPdfGenerator"
 import OnboardingSpotlight, { type TourStep } from "@/components/OnboardingSpotlight";
 import ToolSplash from "@/components/ToolSplash";
 import { toast } from "@/hooks/use-toast";
+import CaseToolBanner from "@/components/case-tools/CaseToolBanner";
 
 // ─── Translations ─────────────────────────────────────────────────────────────
 type Lang = "es" | "en";
@@ -704,6 +705,9 @@ export default function CSPACalculator() {
 
   return (
     <div className="min-h-screen bg-background grid-bg flex flex-col">
+      {/* Case context banner — additive, solo aparece si ?case_id=X presente */}
+      <CaseToolBanner toolLabel="CSPA Calculator" />
+
       {/* Sticky header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" data-tour="header">
         <div className="max-w-4xl mx-auto flex items-center justify-between h-14 px-4">

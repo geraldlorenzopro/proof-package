@@ -15,6 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import AnalysisHistory from "@/components/AnalysisHistory";
 import { detectUrgency } from "@/components/AnalysisSummaryCard";
 import ToolSplash from "@/components/ToolSplash";
+import CaseToolBanner from "@/components/case-tools/CaseToolBanner";
+import SaveToCaseButton from "@/components/case-tools/SaveToCaseButton";
+import { useCaseContext } from "@/components/case-tools/useCaseContext";
 
 
 const DOCUMENT_TYPES = [
@@ -117,6 +120,7 @@ function fileToBase64(file: File): Promise<string> {
 export default function UscisAnalyzer() {
   const navigate = useNavigate();
   const { destination: backDest, isHub } = useBackDestination();
+  const caseCtx = useCaseContext();
   const [step, setStep] = useState<Step>("splash");
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [lang, setLang] = useState<'es' | 'en'>('es');
@@ -752,6 +756,9 @@ export default function UscisAnalyzer() {
       {/* ── MAIN APP (upload + result) ── */}
       {step !== "splash" && (
         <div className="min-h-screen bg-background">
+          {/* Case context banner — additive, solo aparece si ?case_id=X presente */}
+          <CaseToolBanner toolLabel="USCIS Document Analyzer" />
+
           {/* Sticky header */}
           <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="max-w-3xl mx-auto flex items-center justify-between h-14 px-4">
@@ -919,7 +926,25 @@ export default function UscisAnalyzer() {
                     </div>
                   </div>
                   {!isLoading && result && (
-                    <div className="flex gap-1.5 flex-wrap justify-end">
+                    <div className="flex gap-1.5 flex-wrap justify-end items-center">
+                      {/* Save to case — additive, solo aparece si ?case_id=X.
+                          Convertimos el markdown del análisis en Blob para
+                          subir al bucket case-outputs. */}
+                      {caseCtx.caseId && result && (
+                        <SaveToCaseButton
+                          toolSlug="uscis-analyzer"
+                          toolLabel="USCIS Document Analyzer"
+                          outputType="analysis"
+                          fileExtension="md"
+                          blob={new Blob([result], { type: 'text/markdown' })}
+                          meta={{
+                            doc_type: documentType,
+                            language,
+                            num_files: uploadedFiles.length,
+                          }}
+                          notes={`Análisis ${documentType} en ${language}`}
+                        />
+                      )}
                       {shareToken && (
                         <Button variant="outline" size="sm" onClick={handleShare} className="border-jarvis/30 text-jarvis hover:bg-jarvis/10">
                           <Share2 className="w-3 h-3 mr-1" /> {lang === 'es' ? 'Compartir' : 'Share'}

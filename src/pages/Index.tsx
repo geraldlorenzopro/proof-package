@@ -36,6 +36,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import ToolSplash from '@/components/ToolSplash';
+import CaseToolBanner from '@/components/case-tools/CaseToolBanner';
+import SaveToCaseButton from '@/components/case-tools/SaveToCaseButton';
+import { useCaseContext } from '@/components/case-tools/useCaseContext';
+import { useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 
 const EVIDENCE_DISCLAIMER = {
   title: { es: "Aviso Legal Importante", en: "Important Legal Notice" },
@@ -97,15 +102,35 @@ export default function Index() {
     }
     setStepRaw(target);
   }, [step]);
+  // Auto-prefill desde query params si el tool fue invocado desde un case engine
+  const [searchParams] = useSearchParams();
+  const initialPetitioner = searchParams.get('petitioner') ?? '';
+  const initialBeneficiary = searchParams.get('beneficiary') ?? '';
+  const caseCtx = useCaseContext();
+
   const [caseInfo, setCaseInfo] = useState<CaseInfo>({
-    petitioner_name: '',
-    beneficiary_name: '',
+    petitioner_name: initialPetitioner,
+    beneficiary_name: initialBeneficiary,
     compiled_date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
   });
+
+  // Si el usuario abrió con case_id pero el caseInfo se vacía después (ej. botón reset),
+  // re-poblamos desde los params.
+  useEffect(() => {
+    if (initialPetitioner || initialBeneficiary) {
+      setCaseInfo((prev) => ({
+        ...prev,
+        petitioner_name: prev.petitioner_name || initialPetitioner,
+        beneficiary_name: prev.beneficiary_name || initialBeneficiary,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [items, setItems] = useState<EvidenceItem[]>([]);
   const [generating, setGenerating] = useState(false);
   const [pdfStatus, setPdfStatus] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
+  const [generatedPdf, setGeneratedPdf] = useState<{ blob: Blob; filename: string } | null>(null);
 
   const steps = STEPS(lang);
 
@@ -136,7 +161,9 @@ export default function Index() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     trackToolUsage("evidence-organizer", "generate_pdf", { itemCount: numberedItems.length });
     try {
-      await generateEvidencePDF(numberedItems, caseInfo, (status) => setPdfStatus(status));
+      const result = await generateEvidencePDF(numberedItems, caseInfo, (status) => setPdfStatus(status));
+      // Capturar el Blob para que SaveToCaseButton lo suba al bucket case-outputs
+      setGeneratedPdf({ blob: result.blob, filename: result.filename });
     } finally {
       setGenerating(false);
       setPdfStatus('');
@@ -165,6 +192,9 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Case context banner — additive, solo aparece si ?case_id=X presente */}
+      <CaseToolBanner toolLabel="Photo Evidence Organizer" />
+
       {/* Sticky header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
@@ -372,6 +402,38 @@ export default function Index() {
                 </>
               )}
             </button>
+
+            {/* Save to case — additive, solo aparece si ?case_id=X.
+                Si el PDF ya fue generado, pasamos el Blob para subirlo al
+                bucket case-outputs. Si todavía no se generó, guarda solo
+                metadata y el paralegal puede volver a generar + guardar. */}
+            {caseCtx.caseId && (
+              <div className="flex justify-center pt-2">
+                <SaveToCaseButton
+                  toolSlug="evidence"
+                  toolLabel="Photo Evidence Organizer"
+                  outputType="pdf"
+                  fileExtension="pdf"
+                  blob={generatedPdf?.blob}
+                  disabled={!generatedPdf && !generating}
+                  meta={{
+                    num_items: numberedItems.length,
+                    photos: numberedItems.filter((i) => i.type === 'photo').length,
+                    chats: numberedItems.filter((i) => i.type === 'chat').length,
+                    other: numberedItems.filter((i) => i.type === 'other').length,
+                    petitioner: caseInfo.petitioner_name,
+                    beneficiary: caseInfo.beneficiary_name,
+                    filename: generatedPdf?.filename ?? '',
+                  }}
+                  notes={`Paquete de evidencia: ${numberedItems.length} items para ${caseInfo.beneficiary_name || 'beneficiario'}`}
+                />
+              </div>
+            )}
+            {caseCtx.caseId && !generatedPdf && !generating && (
+              <p className="text-[10px] text-center text-muted-foreground italic">
+                Generá el PDF primero para poder guardarlo al expediente
+              </p>
+            )}
 
             <p className="text-xs text-center text-muted-foreground">
               {t('noStorage', lang)}
