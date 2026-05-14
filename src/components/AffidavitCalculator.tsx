@@ -26,6 +26,7 @@ import nerLogo from "@/assets/ner-logo.png";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Calculator } from "lucide-react";
 import ToolSplash from "@/components/ToolSplash";
+import CaseToolBanner from "@/components/case-tools/CaseToolBanner";
 
 // ──────── i18n ────────
 type Lang = "es" | "en";
@@ -317,6 +318,9 @@ export default function AffidavitCalculator() {
   // ── Calculator ──
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* Case context banner — additive, solo aparece si ?case_id=X presente */}
+      <CaseToolBanner toolLabel="Affidavit Calculator" />
+
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-lg mx-auto flex items-center justify-between h-14 px-4">

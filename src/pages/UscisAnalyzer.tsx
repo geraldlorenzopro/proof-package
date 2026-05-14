@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AnalysisHistory from "@/components/AnalysisHistory";
 import { detectUrgency } from "@/components/AnalysisSummaryCard";
 import ToolSplash from "@/components/ToolSplash";
+import CaseToolBanner from "@/components/case-tools/CaseToolBanner";
 
 
 const DOCUMENT_TYPES = [
@@ -752,6 +753,9 @@ export default function UscisAnalyzer() {
       {/* ── MAIN APP (upload + result) ── */}
       {step !== "splash" && (
         <div className="min-h-screen bg-background">
+          {/* Case context banner — additive, solo aparece si ?case_id=X presente */}
+          <CaseToolBanner toolLabel="USCIS Document Analyzer" />
+
           {/* Sticky header */}
           <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="max-w-3xl mx-auto flex items-center justify-between h-14 px-4">

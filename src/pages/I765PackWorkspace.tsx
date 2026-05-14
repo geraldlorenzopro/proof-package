@@ -24,6 +24,9 @@ import PackHero from "@/components/questionnaire-packs/i130/PackHero";
 import FilingTargetWidget from "@/components/questionnaire-packs/i130/FilingTargetWidget";
 import SortableDocCard from "@/components/questionnaire-packs/shared/SortableDocCard";
 import { useCardOrder } from "@/components/questionnaire-packs/shared/useCardOrder";
+import CaseToolsMenu from "@/components/case-tools/CaseToolsMenu";
+import QuickToolButton from "@/components/case-tools/QuickToolButton";
+import { Camera, FileSearch } from "lucide-react";
 import AlertsList from "@/components/questionnaire-packs/i130/AlertsList";
 import NextActionsList from "@/components/questionnaire-packs/i130/NextActionsList";
 import CompactDocsRow, {
@@ -285,11 +288,14 @@ export default function I765PackWorkspace() {
             <div className="flex-1 min-w-[280px] flex items-center">
               <PackHero data={CASE_SUMMARY} />
             </div>
-            <FilingTargetWidget
-              target={CASE_SUMMARY.filing.target}
-              daysRemaining={CASE_SUMMARY.filing.daysRemaining}
-              currentStep={CASE_SUMMARY.filing.currentStep}
-            />
+            <div className="flex items-start gap-2">
+              <CaseToolsMenu caseId={caseId} packType="i765" />
+              <FilingTargetWidget
+                target={CASE_SUMMARY.filing.target}
+                daysRemaining={CASE_SUMMARY.filing.daysRemaining}
+                currentStep={CASE_SUMMARY.filing.currentStep}
+              />
+            </div>
           </div>
 
           <PackTabs tabs={PACK_TABS} activeId={activeTab} onSelect={setActiveTab} />
@@ -338,6 +344,30 @@ export default function I765PackWorkspace() {
           </DndContext>
 
           <CompactDocsRow docs={compactDocs} onSelect={(href) => href && navigate(href)} />
+
+          {/* Quick tool entry points — additive, abren tools en nueva tab con case_id */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono font-semibold">
+              Acciones rápidas con tools NER:
+            </span>
+            <QuickToolButton
+              caseId={caseId}
+              packType="i765"
+              toolPath="/tools/evidence"
+              icon={Camera}
+              label="Armar paquete de fotos"
+              source="workspace-quick"
+            />
+            <QuickToolButton
+              caseId={caseId}
+              packType="i765"
+              toolPath="/tools/uscis-analyzer"
+              icon={FileSearch}
+              label="Analizar RFE / NOID"
+              tone="amber"
+              source="workspace-quick"
+            />
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <AlertsList alerts={ALERTS} />
