@@ -1403,6 +1403,7 @@ export type Database = {
           client_email: string
           client_name: string
           client_profile_id: string | null
+          closed_at: string | null
           co_sponsor_name: string | null
           created_at: string
           custom_fields: Json | null
@@ -1458,6 +1459,7 @@ export type Database = {
           client_email: string
           client_name: string
           client_profile_id?: string | null
+          closed_at?: string | null
           co_sponsor_name?: string | null
           created_at?: string
           custom_fields?: Json | null
@@ -1513,6 +1515,7 @@ export type Database = {
           client_email?: string
           client_name?: string
           client_profile_id?: string | null
+          closed_at?: string | null
           co_sponsor_name?: string | null
           created_at?: string
           custom_fields?: Json | null
