@@ -927,17 +927,22 @@ export default function UscisAnalyzer() {
                   </div>
                   {!isLoading && result && (
                     <div className="flex gap-1.5 flex-wrap justify-end items-center">
-                      {/* Save to case — additive, solo aparece si ?case_id=X */}
-                      {caseCtx.caseId && (
+                      {/* Save to case — additive, solo aparece si ?case_id=X.
+                          Convertimos el markdown del análisis en Blob para
+                          subir al bucket case-outputs. */}
+                      {caseCtx.caseId && result && (
                         <SaveToCaseButton
                           toolSlug="uscis-analyzer"
                           toolLabel="USCIS Document Analyzer"
                           outputType="analysis"
+                          fileExtension="md"
+                          blob={new Blob([result], { type: 'text/markdown' })}
                           meta={{
                             doc_type: documentType,
                             language,
                             num_files: uploadedFiles.length,
                           }}
+                          notes={`Análisis ${documentType} en ${language}`}
                         />
                       )}
                       {shareToken && (

@@ -130,6 +130,7 @@ export default function Index() {
   const [generating, setGenerating] = useState(false);
   const [pdfStatus, setPdfStatus] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
+  const [generatedPdf, setGeneratedPdf] = useState<{ blob: Blob; filename: string } | null>(null);
 
   const steps = STEPS(lang);
 
@@ -160,7 +161,9 @@ export default function Index() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     trackToolUsage("evidence-organizer", "generate_pdf", { itemCount: numberedItems.length });
     try {
-      await generateEvidencePDF(numberedItems, caseInfo, (status) => setPdfStatus(status));
+      const result = await generateEvidencePDF(numberedItems, caseInfo, (status) => setPdfStatus(status));
+      // Capturar el Blob para que SaveToCaseButton lo suba al bucket case-outputs
+      setGeneratedPdf({ blob: result.blob, filename: result.filename });
     } finally {
       setGenerating(false);
       setPdfStatus('');
@@ -400,7 +403,10 @@ export default function Index() {
               )}
             </button>
 
-            {/* Save to case — additive, solo aparece si ?case_id=X */}
+            {/* Save to case — additive, solo aparece si ?case_id=X.
+                Si el PDF ya fue generado, pasamos el Blob para subirlo al
+                bucket case-outputs. Si todavía no se generó, guarda solo
+                metadata y el paralegal puede volver a generar + guardar. */}
             {caseCtx.caseId && (
               <div className="flex justify-center pt-2">
                 <SaveToCaseButton
@@ -408,6 +414,8 @@ export default function Index() {
                   toolLabel="Photo Evidence Organizer"
                   outputType="pdf"
                   fileExtension="pdf"
+                  blob={generatedPdf?.blob}
+                  disabled={!generatedPdf && !generating}
                   meta={{
                     num_items: numberedItems.length,
                     photos: numberedItems.filter((i) => i.type === 'photo').length,
@@ -415,10 +423,16 @@ export default function Index() {
                     other: numberedItems.filter((i) => i.type === 'other').length,
                     petitioner: caseInfo.petitioner_name,
                     beneficiary: caseInfo.beneficiary_name,
+                    filename: generatedPdf?.filename ?? '',
                   }}
                   notes={`Paquete de evidencia: ${numberedItems.length} items para ${caseInfo.beneficiary_name || 'beneficiario'}`}
                 />
               </div>
+            )}
+            {caseCtx.caseId && !generatedPdf && !generating && (
+              <p className="text-[10px] text-center text-muted-foreground italic">
+                Generá el PDF primero para poder guardarlo al expediente
+              </p>
             )}
 
             <p className="text-xs text-center text-muted-foreground">

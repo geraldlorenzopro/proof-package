@@ -109,11 +109,23 @@ function drawGoldRule(doc: jsPDF, y: number, margin: number = 20) {
 
 // ── Main Export ──────────────────────────────────────────────────────────────
 
+export interface GeneratePDFOptions {
+  /** Si true, NO descarga el PDF localmente — solo retorna el Blob.
+   *  Útil para upload a Supabase Storage sin trigger de download. */
+  skipDownload?: boolean;
+}
+
+export interface GeneratePDFResult {
+  blob: Blob;
+  filename: string;
+}
+
 export async function generateEvidencePDF(
   items: EvidenceItem[],
   caseInfo: CaseInfo,
   onProgress?: (status: string) => void,
-): Promise<void> {
+  options?: GeneratePDFOptions,
+): Promise<GeneratePDFResult> {
   onProgress?.('Translating to English…');
   const translatedItems = await translateItems(items);
   onProgress?.('Building PDF…');
@@ -290,8 +302,17 @@ export async function generateEvidencePDF(
 
   onProgress?.('Saving PDF…');
   const filename = `USCIS_Evidence_${(caseInfo.petitioner_name || 'Case').replace(/\s+/g, '_')}_${caseInfo.compiled_date.replace(/[\s,/]/g, '-')}.pdf`;
-  doc.save(filename);
+
+  // Capturar Blob para upload (no rompe el download — jsPDF .output('blob')
+  // genera una copia independiente del estado interno)
+  const blob = doc.output('blob') as Blob;
+
+  if (!options?.skipDownload) {
+    doc.save(filename);
+  }
+
   onProgress?.('');
+  return { blob, filename };
 }
 
 // ── Render 4 photos in 2x2 grid ─────────────────────────────────────────────
