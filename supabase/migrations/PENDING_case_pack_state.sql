@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS public.case_pack_state (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id UUID NOT NULL REFERENCES public.ner_accounts(id) ON DELETE CASCADE,
   case_id UUID NOT NULL REFERENCES public.client_cases(id) ON DELETE CASCADE,
-  pack_type TEXT NOT NULL CHECK (pack_type IN ('i130', 'i485', 'n400', 'i751')),
+  pack_type TEXT NOT NULL CHECK (pack_type IN ('i130', 'i485', 'i765', 'n400', 'i751', 'ds260')),
   -- state es el blob completo de UI state — bilingüe, multi-pro, checklists.
   -- Razón JSON vs columnas: el shape evoluciona rápido entre los 4 packs;
   -- mover a columnas tipadas cuando se estabilice (probablemente nunca, los

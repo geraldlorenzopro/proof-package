@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+// I-130 specific state shape + API. Built on top of generic useCasePack.
 
-export type PackLang = "es" | "en";
-export type PackProRole = "attorney" | "accredited_rep" | "form_preparer" | "self_petitioner";
+import { useCallback } from "react";
+import { useCasePack, toggleInList } from "../../shared/useCasePack";
+import type { PackLang, PackProRole } from "../../shared/types";
+
+export type { PackLang, PackProRole };
 
 export interface I130PackState {
   lang: PackLang;
@@ -36,9 +39,7 @@ export interface I130PackState {
   };
 }
 
-const DEFAULT_STATE: I130PackState = {
-  lang: "es",
-  proRole: "attorney",
+const I130_DEFAULTS: Omit<I130PackState, "lang" | "proRole"> = {
   i864: {
     sponsorIncome: null,
     householdSize: 2,
@@ -58,58 +59,32 @@ const DEFAULT_STATE: I130PackState = {
   evidence: { completed: [], requested: [] },
 };
 
-function storageKey(caseId: string) {
-  return `ner.i130-pack.${caseId}`;
-}
-
-// NOTE: persistence bridge — localStorage hoy, Supabase mañana.
-// La forma del hook está congelada: cuando schema case_pack_state se
-// apruebe (ver supabase/migrations/PENDING_*.sql), reemplazar el bloque
-// load/save por queries con filtro account_id+case_id. Resto del repo
-// no se entera del cambio.
 export function useI130Pack(caseId: string) {
-  const [state, setState] = useState<I130PackState>(() => {
-    try {
-      const raw = localStorage.getItem(storageKey(caseId));
-      if (!raw) return DEFAULT_STATE;
-      return { ...DEFAULT_STATE, ...JSON.parse(raw) };
-    } catch {
-      return DEFAULT_STATE;
-    }
-  });
+  const { state, setState, setLang, setProRole, patchSection } = useCasePack<I130PackState>(
+    "i130",
+    caseId,
+    I130_DEFAULTS,
+  );
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(storageKey(caseId), JSON.stringify(state));
-    } catch {
-      // localStorage llena o desactivada — fail silently, state vive en memoria
-    }
-  }, [caseId, state]);
-
-  const update = useCallback(<K extends keyof I130PackState>(key: K, patch: Partial<I130PackState[K]>) => {
-    setState((prev) => ({
-      ...prev,
-      [key]: { ...(prev[key] as object), ...patch },
-    }));
-  }, []);
-
-  const setLang = useCallback((lang: PackLang) => {
-    setState((prev) => ({ ...prev, lang }));
-  }, []);
-
-  const setProRole = useCallback((proRole: PackProRole) => {
-    setState((prev) => ({ ...prev, proRole }));
-  }, []);
+  // Keep the legacy `update(key, patch)` API for the 7 docs.
+  const update = useCallback(
+    <K extends keyof I130PackState>(key: K, sectionPatch: Partial<I130PackState[K]>) => {
+      patchSection(key, sectionPatch);
+    },
+    [patchSection],
+  );
 
   const toggleItem = useCallback(
     (section: "i864" | "packet" | "interview" | "evidence", itemId: string) => {
-      setState((prev) => {
-        const list = prev[section].completed;
-        const next = list.includes(itemId) ? list.filter((x) => x !== itemId) : [...list, itemId];
-        return { ...prev, [section]: { ...prev[section], completed: next } };
-      });
+      setState((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          completed: toggleInList(prev[section].completed, itemId),
+        },
+      }));
     },
-    [],
+    [setState],
   );
 
   const toggleBonaFide = useCallback(
@@ -125,16 +100,21 @@ export function useI130Pack(caseId: string) {
         },
       }));
     },
-    [],
+    [setState],
   );
 
-  const toggleRequested = useCallback((itemId: string) => {
-    setState((prev) => {
-      const list = prev.evidence.requested;
-      const next = list.includes(itemId) ? list.filter((x) => x !== itemId) : [...list, itemId];
-      return { ...prev, evidence: { ...prev.evidence, requested: next } };
-    });
-  }, []);
+  const toggleRequested = useCallback(
+    (itemId: string) => {
+      setState((prev) => ({
+        ...prev,
+        evidence: {
+          ...prev.evidence,
+          requested: toggleInList(prev.evidence.requested, itemId),
+        },
+      }));
+    },
+    [setState],
+  );
 
   return {
     state,
