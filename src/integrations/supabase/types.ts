@@ -1313,6 +1313,76 @@ export type Database = {
           },
         ]
       }
+      case_tool_outputs: {
+        Row: {
+          account_id: string
+          case_id: string | null
+          client_profile_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          metadata: Json
+          output_type: string
+          storage_path: string | null
+          title: string
+          tool_slug: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          account_id: string
+          case_id?: string | null
+          client_profile_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          metadata?: Json
+          output_type: string
+          storage_path?: string | null
+          title: string
+          tool_slug: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          account_id?: string
+          case_id?: string | null
+          client_profile_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          metadata?: Json
+          output_type?: string
+          storage_path?: string | null
+          title?: string
+          tool_slug?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_tool_outputs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_tool_outputs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_tool_outputs_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_cases: {
         Row: {
           access_token: string
