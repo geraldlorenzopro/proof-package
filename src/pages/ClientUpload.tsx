@@ -5,6 +5,7 @@ import { Scale, Upload, CheckCircle, Clock, Image, MessageSquare, FileText, Chev
 import { cn } from '@/lib/utils';
 import { compressImages, EVIDENCE_LIMIT_PER_CASE } from '@/lib/imageCompression';
 import { toast } from 'sonner';
+import { trackPublicEvent } from '@/lib/publicAnalytics';
 
 type EvidenceItem = {
   id: string;
@@ -166,6 +167,23 @@ export default function ClientUpload() {
     if (newItems.length > 0) {
       const newUrls = await resolveSignedUrls(newItems);
       setSignedUrls(prev => ({ ...prev, ...newUrls }));
+      // Ola 3.3.d — track docs uploaded via edge fn public.
+      // Solo metadata: counts, types. NO file names (PII potential).
+      void trackPublicEvent("applicant.doc_uploaded", {
+        applicantToken: token!,
+        properties: {
+          uploaded_count: newItems.length,
+          attempted_count: filesToUpload.length,
+          total_after: items.length + newItems.length,
+          file_types: Array.from(new Set(newItems.map(i => detectType(i.file_name || "")))),
+        },
+      });
+    } else if (filesToUpload.length > 0) {
+      // Todos fallaron → track upload_failed
+      void trackPublicEvent("applicant.doc_upload_failed", {
+        applicantToken: token!,
+        properties: { attempted_count: filesToUpload.length },
+      });
     }
     setItems(prev => [...prev, ...newItems]);
     setUploading(false);

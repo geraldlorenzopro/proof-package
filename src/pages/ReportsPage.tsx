@@ -24,6 +24,7 @@ import HubLayout from "@/components/hub/HubLayout";
 import { KPIStrip } from "@/components/reports/KPIStrip";
 import { KPICard } from "@/components/reports/KPICard";
 import { CasesAtRisk } from "@/components/reports/CasesAtRisk";
+import { TeamHeatmap } from "@/components/reports/TeamHeatmap";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { useNerAccountId } from "@/hooks/useNerAccountId";
 import { supabase } from "@/integrations/supabase/client";
@@ -318,8 +319,11 @@ export default function ReportsPage() {
           />
         </KPIStrip>
 
-        {/* Cases at risk */}
-        <CasesAtRisk accountId={accountId} limit={5} isDemo={isDemo} />
+        {/* Cases at risk + Team grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <CasesAtRisk accountId={accountId} limit={5} isDemo={isDemo} />
+          <TeamHeatmap accountId={accountId} isDemo={isDemo} />
+        </div>
 
         {/* Próximos paneles (Ola 3) */}
         <div className="bg-muted/30 border border-dashed border-border rounded-xl p-6 text-center text-sm text-muted-foreground">

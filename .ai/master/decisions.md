@@ -52,6 +52,117 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-14 (madrugada) — Ola 3.3: Camila + M6 fix + Team Heatmap + applicant.doc
+
+**Decisión:** trabajo autónomo continuo. Después de Lovable confirmar que la
+pipeline de eventos funciona (32 page.view registrados), avanzar con Ola 3.3
+sin esperar testing manual del resto.
+
+**Contexto:** Lovable reportó que solo `page.view` aparecía en BD (32 events),
+pero los 6 events de Ola 3.2.a (auth.*, case.*, ai.*) NO aparecían. Audit
+focalizado confirmó que NO hay bug — la pipeline funciona (page.view es
+prueba), simplemente las acciones de submit/click no se han ejecutado todavía
+por testing manual del Mr. Lorenzo. Decisión: seguir construyendo en
+paralelo, el testing se hace cuando vuelve.
+
+**Componentes wireados:**
+
+🎤 **Ola 3.3.a — Camila chat (CamilaFloatingPanel + HubChatPage):**
+- `ai.invoked` antes del fetch: agent, mode: "chat", message_length,
+  conversation_turn
+- `ai.completed onDone`: success, duration_ms, response_length
+- `ai.completed catch`: success: false, reason sanitized
+- `ai.completed AbortError`: reason: "user_aborted" (no es failure real)
+
+🎙️ **Ola 3.3.b — Camila voice (CamilaFloatingPanel start/stop):**
+- `ai.invoked` en startVoiceConversation con mode: "voice", connection: "websocket"
+- `ai.completed` en stopVoiceConversation con duration_ms REAL (voice
+  minutes son billable)
+- `ai.completed` failure paths: mic_permission_denied, generic error
+- voiceStartedAtRef captura inicio para calcular duración exacta
+
+🔗 **Ola 3.3.c — M6 fix (auth.session_landed):**
+- HubPage useEffect dispara `auth.session_landed` cuando data?.account_id
+  está cargado + loading false + no demo
+- useRef garantiza single-fire por mount
+- Properties: source ("ghl_handshake" si cid+sig, "direct_login" else)
+- Cierra el funnel: auth.login_success (intent) → auth.session_landed
+  (arrived). Drop entre ambos = redirect/handshake problems.
+
+📎 **Ola 3.3.d — applicant.doc_uploaded (ClientUpload):**
+- `applicant.doc_uploaded` via trackPublicEvent (edge fn pre-auth)
+  Properties: uploaded_count, attempted_count, total_after, file_types
+  (Set unique). NO file names (PII potential).
+- `applicant.doc_upload_failed` si todos los uploads fallaron
+- Wireado en handleFiles() después del bucle de uploads
+
+👥 **Ola 3.3.e — Team Heatmap (/hub/reports/team):**
+- Componente nuevo `src/components/reports/TeamHeatmap.tsx`
+- Query agregada: para cada account_member activo, fetch counts de:
+  active_cases, closed_30d, avg_close_days (último 90d usando closed_at)
+- Display: lista vertical con barra heatmap (intensity = active/max)
+- Empty state, error state, loading state cubiertos
+- Demo mode con 3 miembros mock (Vanessa, Carlos, María)
+- Wireado en ReportsPage en grid 2-col con CasesAtRisk
+
+**Decisiones de diseño:**
+
+- **Por qué TeamHeatmap como componente y no /hub/reports/team route:**
+  - Para el MVP, mostrarlo INLINE en /hub/reports (grid con CasesAtRisk)
+    es más impactante que esconderlo detrás de una ruta más.
+  - Cuando crezca (drill-down, skill tracking, comparativa), promoverlo
+    a página dedicada `/hub/reports/team`. Pending Ola 3.4.
+
+- **Por qué Camila tracking dual path:**
+  - CamilaFloatingPanel (FAB) y HubChatPage (dedicada) usan misma
+    streamChat function pero son componentes separados. `source` property
+    distingue: "case_engine_panel" implícito vs "hub_chat_page" explícito.
+
+- **Por qué voice mide duration solo al stopVoiceConversation:**
+  - WebSocket session puede durar varios minutos. Capturar duration cuando
+    el user cierra (manual o auto-end de ElevenLabs) da minute billing
+    real. Si user cierra tab sin stop, voice queda huérfano (similar a
+    Felix M5) — pendiente fix con visibilitychange en Ola 3.4.
+
+- **Por qué auth.session_landed usa useRef:**
+  - useEffect con [data?.account_id] re-corre si data muta (load case,
+    refresh). Sin ref, dispararía múltiples session_landed por sesión.
+  - useRef.current = true después del primer fire → idempotente.
+
+**Cobertura final de AI events (post 3.3):**
+
+| Agente | Path 1 | Path 2 |
+|---|---|---|
+| Felix | SmartFormPage.handleRunFelix | CaseAgentPanel.activateAgent |
+| Nina | CaseAgentPanel.activateAgent | — |
+| Max | CaseAgentPanel.activateAgent | — |
+| Camila chat | CamilaFloatingPanel.send | HubChatPage.send |
+| Camila voice | CamilaFloatingPanel start/stop | — |
+
+**Cobertura final del funnel del aplicante (post 3.3):**
+
+```
+LINK_OPENED              applicant.portal_opened    (Ola 3.2.b)
+   ↓
+INTAKE_OPENED            applicant.intake_opened    (Ola 3.2.b)
+   ↓
+INTAKE_COMPLETED         applicant.intake_completed (Ola 3.2.b)
+   ↓
+DOCS_UPLOADED            applicant.doc_uploaded     (Ola 3.3.d) ✨ NEW
+```
+
+Falta solamente:
+- `applicant.consent_signed` (si hay flow de consent — investigar)
+- `applicant.review_approved` (si aplica al flow del aplicante)
+
+**Pending Ola 3.4 (no urgente):**
+- Promover TeamHeatmap a página dedicada `/hub/reports/team` con drill-down
+- Voice page_unload fix (similar a Felix M5)
+- Sparklines time-series para trends 12 semanas
+- Approval rate / RFE rate cuando case_forms data madure
+
+---
+
 ## 2026-05-14 (final) — Ola 3.2.c: AI agents instrumentation + Felix M5 fix
 
 **Decisión:** completar el ciclo de instrumentación de AI agents wireando

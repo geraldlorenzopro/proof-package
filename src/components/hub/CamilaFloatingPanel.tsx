@@ -5,6 +5,7 @@ import { Sparkles, X, Send, Mic, MicOff, Phone, PhoneOff } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent, sanitizeErrorReason } from "@/lib/analytics";
 
 const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
 
@@ -337,6 +338,19 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
     setInput("");
     setIsLoading(true);
 
+    // Ola 3.3.a — track Camila chat invocación.
+    // NO mandamos el text (PII potential). Solo metadata: longitud,
+    // si es primer mensaje de la conversación, etc.
+    const startedAt = Date.now();
+    void trackEvent("ai.invoked", {
+      properties: {
+        agent: "camila",
+        mode: "chat",
+        message_length: text.length,
+        conversation_turn: messages.length + 1,
+      },
+    });
+
     let assistantSoFar = "";
     const sanitize = (t: string) => t
       .replace(/Image may be NSFW\.?\s*Clik?k? here to view\.?/gi, "")
@@ -361,12 +375,45 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
         messages: [...messages, userMsg],
         accountId,
         onDelta: upsert,
-        onDone: () => setIsLoading(false),
+        onDone: () => {
+          setIsLoading(false);
+          // Ola 3.3.a — track success con response length + duration
+          void trackEvent("ai.completed", {
+            properties: {
+              agent: "camila",
+              mode: "chat",
+              success: true,
+              duration_ms: Date.now() - startedAt,
+              response_length: assistantSoFar.length,
+            },
+          });
+        },
         signal: abortRef.current.signal,
       });
     } catch (e: any) {
       if (e.name !== "AbortError") {
         setMessages(prev => [...prev, { role: "assistant", content: `⚠️ ${e.message || "Error de conexión"}` }]);
+        // Ola 3.3.a — track real failure (abort no cuenta como failure)
+        void trackEvent("ai.completed", {
+          properties: {
+            agent: "camila",
+            mode: "chat",
+            success: false,
+            duration_ms: Date.now() - startedAt,
+            reason: sanitizeErrorReason(e?.message, 100),
+          },
+        });
+      } else {
+        // Abort = user canceled. Track como cancellation, no failure.
+        void trackEvent("ai.completed", {
+          properties: {
+            agent: "camila",
+            mode: "chat",
+            success: false,
+            reason: "user_aborted",
+            duration_ms: Date.now() - startedAt,
+          },
+        });
       }
       setIsLoading(false);
     }
@@ -375,9 +422,16 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
   useEffect(() => { sendRef.current = send; }, [send]);
 
   // ── Voice: start ElevenLabs WebSocket ──
+  const voiceStartedAtRef = useRef<number | null>(null);
+
   const startVoiceConversation = useCallback(async () => {
     setIsConnecting(true);
     unlockAudioContext();
+    // Ola 3.3.a — track voice session start. Duration se calcula al end.
+    voiceStartedAtRef.current = Date.now();
+    void trackEvent("ai.invoked", {
+      properties: { agent: "camila", mode: "voice", connection: "websocket" },
+    });
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
       const [signedUrl, officeData] = await Promise.all([
@@ -394,16 +448,41 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
       } as any);
     } catch (err: any) {
       const msg = String(err?.message || err || "");
+      const isPermission = msg.includes("Permission") || msg.includes("NotAllowed");
       toast.error(
-        msg.includes("Permission") || msg.includes("NotAllowed")
+        isPermission
           ? "Se necesita permiso de micrófono."
           : `No se pudo conectar: ${msg}`
       );
+      // Ola 3.3.a — track voice session failure
+      void trackEvent("ai.completed", {
+        properties: {
+          agent: "camila",
+          mode: "voice",
+          success: false,
+          duration_ms: voiceStartedAtRef.current ? Date.now() - voiceStartedAtRef.current : 0,
+          reason: isPermission ? "mic_permission_denied" : sanitizeErrorReason(msg, 80),
+        },
+      });
+      voiceStartedAtRef.current = null;
       setIsConnecting(false);
     }
   }, [conversation, accountId]);
 
   const stopVoiceConversation = useCallback(async () => {
+    // Ola 3.3.a — track voice session end con duración real.
+    // Voice minutes son billable, así que duration_ms es business-critical.
+    if (voiceStartedAtRef.current) {
+      void trackEvent("ai.completed", {
+        properties: {
+          agent: "camila",
+          mode: "voice",
+          success: true,
+          duration_ms: Date.now() - voiceStartedAtRef.current,
+        },
+      });
+      voiceStartedAtRef.current = null;
+    }
     await conversation.endSession();
   }, [conversation]);
 

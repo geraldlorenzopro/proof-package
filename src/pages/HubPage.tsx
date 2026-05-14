@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, AlertTriangle } from "lucide-react";
@@ -9,6 +9,7 @@ import OnboardingWizard from "@/components/hub/OnboardingWizard";
 import { useAppPermissions } from "@/hooks/useAppPermissions";
 import { useDemoMode, DEMO_FIRM_NAME, DEMO_ATTORNEY } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
+import { trackEvent } from "@/lib/analytics";
 
 // Datos sintéticos para demo mode — bypassa auth completo, permite mostrar
 // el hub a prospectos sin cuenta. SIN tocar BD: los hooks (HubFocusedWidgets,
@@ -88,6 +89,31 @@ export default function HubPage() {
   });
   const navigate = useNavigate();
   const { canAccess, userRole, loading: permLoading } = useAppPermissions(data?.account_id ?? null);
+
+  // M6 fix audit ronda 2: trackeamos auth.session_landed cuando el user
+  // EFECTIVAMENTE llegó al hub con data cargada. Antes, auth.login_success
+  // se disparaba post-signInWithPassword pero si resolvePostLoginDestination
+  // o navigate fallaba, el funnel registraba success aunque user no llegó.
+  //
+  // Ahora: auth.login_success (intent) → auth.session_landed (arrived).
+  // Pair en el funnel: drop = redirect/handshake problems.
+  const sessionLandedRef = useRef(false);
+  useEffect(() => {
+    if (
+      !sessionLandedRef.current &&
+      data?.account_id &&
+      !loading &&
+      !demoMode
+    ) {
+      sessionLandedRef.current = true;
+      void trackEvent("auth.session_landed", {
+        accountId: data.account_id,
+        properties: {
+          source: cid && sig ? "ghl_handshake" : "direct_login",
+        },
+      });
+    }
+  }, [data?.account_id, loading, demoMode, cid, sig]);
 
   const cid = searchParams.get("cid");
   const sig = searchParams.get("sig");

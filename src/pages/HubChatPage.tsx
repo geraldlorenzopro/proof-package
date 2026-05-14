@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
 import HubLayout from "@/components/hub/HubLayout";
+import { trackEvent, sanitizeErrorReason } from "@/lib/analytics";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
@@ -529,6 +530,18 @@ function HubChatPageInner() {
     setInput("");
     setIsLoading(true);
 
+    // Ola 3.3.a — track Camila chat invocación (HubChatPage path).
+    const chatStartedAt = Date.now();
+    void trackEvent("ai.invoked", {
+      properties: {
+        agent: "camila",
+        mode: "chat",
+        source: "hub_chat_page",
+        message_length: text.length,
+        conversation_turn: messages.length + 1,
+      },
+    });
+
     let assistantSoFar = "";
     const upsert = (chunk: string) => {
       assistantSoFar += chunk;
@@ -548,12 +561,45 @@ function HubChatPageInner() {
         messages: [...messages, userMsg],
         accountId,
         onDelta: upsert,
-        onDone: () => setIsLoading(false),
+        onDone: () => {
+          setIsLoading(false);
+          void trackEvent("ai.completed", {
+            properties: {
+              agent: "camila",
+              mode: "chat",
+              source: "hub_chat_page",
+              success: true,
+              duration_ms: Date.now() - chatStartedAt,
+              response_length: assistantSoFar.length,
+            },
+          });
+        },
         signal: abortRef.current.signal,
       });
     } catch (e: any) {
       if (e.name !== "AbortError") {
         setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: `⚠️ ${e.message || "Error de conexión"}`, timestamp: new Date().toISOString() }]);
+        void trackEvent("ai.completed", {
+          properties: {
+            agent: "camila",
+            mode: "chat",
+            source: "hub_chat_page",
+            success: false,
+            duration_ms: Date.now() - chatStartedAt,
+            reason: sanitizeErrorReason(e?.message, 100),
+          },
+        });
+      } else {
+        void trackEvent("ai.completed", {
+          properties: {
+            agent: "camila",
+            mode: "chat",
+            source: "hub_chat_page",
+            success: false,
+            reason: "user_aborted",
+            duration_ms: Date.now() - chatStartedAt,
+          },
+        });
       }
       setIsLoading(false);
     }
