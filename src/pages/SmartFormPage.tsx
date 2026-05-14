@@ -300,6 +300,33 @@ export default function SmartFormPage() {
     }
   };
 
+  // M5 fix audit ronda 2: si tab cierra mid-fetch, ai.invoked queda
+  // huérfano (sin ai.completed correspondiente) → funnel inflado.
+  // Solución: visibilitychange listener que emite completed con
+  // reason="page_unload" si Felix está corriendo.
+  //
+  // Por qué visibilitychange y NO beforeunload:
+  // - beforeunload no fires en mobile reliably
+  // - sendBeacon no soporta auth headers ni response, no aplica
+  // - visibilitychange + trackEvent regular suele tener tiempo de
+  //   resolverse antes del unload (best-effort, no garantizado)
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "hidden" && felixRunning && linkedCaseId) {
+        void trackEvent("ai.completed", {
+          caseId: linkedCaseId,
+          properties: {
+            agent: "felix",
+            success: false,
+            reason: "page_unload",
+          },
+        });
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [felixRunning, linkedCaseId]);
+
   const handleRunFelix = async () => {
     if (!linkedCaseId) {
       toast({

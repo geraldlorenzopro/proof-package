@@ -52,6 +52,58 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-14 (final) — Ola 3.2.c: AI agents instrumentation + Felix M5 fix
+
+**Decisión:** completar el ciclo de instrumentación de AI agents wireando
+el invocador genérico (CaseAgentPanel.activateAgent) que cubre Nina, Max,
+Felix y cualquier agente futuro. Además aplicar el fix M5 diferido en
+audit ronda 2 (Felix duration_ms huérfano si tab cierra mid-fetch).
+
+**Cambios:**
+
+1. **CaseAgentPanel.activateAgent** — wireado completo de tracking en TODOS
+   los outcomes del path genérico:
+   - `ai.invoked` antes del fetch (agent slug + name + source: "case_agent_panel")
+   - `ai.completed success=true` con duration_ms + output_keys count
+   - `ai.completed success=false` para 4 paths:
+     - `reason: "insufficient_credits"` con balance + needed (billing)
+     - `reason: sanitizeErrorReason(error.message)` (network/server)
+     - `reason: "empty_response"` (edge case sin output)
+     - `reason: sanitizeErrorReason(err.message)` (catch del try)
+
+   Beneficio: instrumentación universal sin duplicar lógica en cada agent.
+   Cualquier nuevo agente registrado en `ai_agents` table queda trackeado
+   automáticamente.
+
+2. **SmartFormPage M5 fix** — visibilitychange listener emite
+   `ai.completed` con `reason: "page_unload"` si tab se hide mientras
+   `felixRunning=true`.
+   - Por qué visibilitychange y NO beforeunload: beforeunload no fires
+     reliably en mobile.
+   - Por qué NO sendBeacon: no soporta auth headers ni response.
+   - Best-effort: trackEvent regular suele resolverse antes del unload.
+
+**Cobertura final de eventos AI (post 3.2.c):**
+
+| Agente | Trackeado en | Path |
+|---|---|---|
+| Felix | SmartFormPage.handleRunFelix + CaseAgentPanel.activateAgent | Dual (form wizard directo + agent panel del case engine) |
+| Nina | CaseAgentPanel.activateAgent | Solo agent panel |
+| Max | CaseAgentPanel.activateAgent | Solo agent panel |
+| Camila | (separado — voice/chat, no via agent panel) | Pending Ola 3.3+ |
+
+**Nota sobre Camila:** Camila no se invoca via CaseAgentPanel — tiene su
+propio flow (CamilaFloatingPanel para chat, VoiceAIPanel para voz). Su
+instrumentación requiere wire específico en esos paneles. Diferido a 3.3
+porque toca componentes más grandes (no es copy-paste del pattern).
+
+**Diferidos restantes documentados:**
+- M6 (MFA login_success antes de navigate) — Ola 3.3
+- L7 (MFA reason truncate) — no urgente
+- Camila instrumentation — Ola 3.3
+
+---
+
 ## 2026-05-14 (post audits) — Ola 3.2.b: Edge function pre-auth events
 
 **Decisión:** completar el ecosystem de medición agregando la capa pre-auth

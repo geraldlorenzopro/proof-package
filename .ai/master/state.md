@@ -18,7 +18,8 @@
 | **Ola 3.2.a — Core events** | ✅ Live | TBD | 8 events wired: auth.* + case.* + ai.* (Felix). Frontend only, sin Lovable. |
 | **Ola 3.2.a audits + fixes** | ✅ Live | `2a33619` | 7 fixes: PII Postgres pattern + race conditions + UX freezes |
 | **Ola 3.2.b — Edge fn pre-auth** | ⏳ Pending Lovable apply | TBD | Edge fn + migration rate_limits + frontend client + 3 applicant events wireados |
-| **Ola 3.2.c — AI agents + M5 fix** | ⚫ Next | — | Wire Nina/Max/Camila + Felix M5 fix (page_unload tracking) |
+| **Ola 3.2.c — AI agents + M5 fix** | ✅ Live | TBD | Nina/Max trackeados via CaseAgentPanel + Felix M5 page_unload fix |
+| **Ola 3.3 — Team views + Camila** | ⚫ Next | — | `/hub/reports/team`, heatmap, skill tracking, Camila instrumentation |
 | **Ola 3.3 — Team views** | ⚫ After 3.2 | — | `/hub/reports/team`, heatmap, skill tracking |
 | **Ola 4 — Consolidación** | ⚫ Mes 2+ | — | Strategic Packs → tab Case Engine, deprecar `/dashboard/*` |
 

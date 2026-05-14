@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { trackEvent, sanitizeErrorReason } from "@/lib/analytics";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -120,6 +121,20 @@ export default function CaseAgentPanel({ caseId, accountId }: { caseId: string; 
       setLoadingMsg(msgs[msgIdx]);
     }, 3000);
 
+    // Ola 3.2.c — track invocación genérica (cubre Nina, Max, Felix vía
+    // CaseAgentPanel, y cualquier agente futuro registrado en ai_agents).
+    // Felix también se trackea desde SmartFormPage (path alternativo).
+    const startedAt = Date.now();
+    void trackEvent("ai.invoked", {
+      caseId,
+      properties: {
+        agent: agent.slug,
+        agent_name: agent.name,
+        source: "case_agent_panel",
+        ...(agent.slug === "felix" ? { form_type: felixForm } : {}),
+      },
+    });
+
     try {
       const body: any = { case_id: caseId, account_id: accountId };
       if (agent.slug === "felix") body.form_type = felixForm;
@@ -129,16 +144,71 @@ export default function CaseAgentPanel({ caseId, accountId }: { caseId: string; 
       clearInterval(interval);
 
       if (error) {
+        // Ola 3.2.c — track invoke failure (network/timeout/server)
+        void trackEvent("ai.completed", {
+          caseId,
+          properties: {
+            agent: agent.slug,
+            success: false,
+            duration_ms: Date.now() - startedAt,
+            reason: sanitizeErrorReason(error.message, 100),
+          },
+        });
         toast.error(`Error al activar ${agent.name}`);
         console.error(error);
       } else if (data?.error === "insufficient_credits") {
+        // Ola 3.2.c — billing-relevant outcome
+        void trackEvent("ai.completed", {
+          caseId,
+          properties: {
+            agent: agent.slug,
+            success: false,
+            reason: "insufficient_credits",
+            duration_ms: Date.now() - startedAt,
+            balance: data.balance,
+            needed: data.needed,
+          },
+        });
         toast.error(`No hay suficientes créditos. Tienes ${data.balance}, necesitas ${data.needed}.`);
       } else if (data?.output) {
+        // Ola 3.2.c — track success con duration_ms y output_size
+        void trackEvent("ai.completed", {
+          caseId,
+          properties: {
+            agent: agent.slug,
+            success: true,
+            duration_ms: Date.now() - startedAt,
+            output_keys: typeof data.output === "object" && data.output !== null
+              ? Object.keys(data.output).length
+              : 0,
+          },
+        });
         setActiveOutput({ agent, output: data.output });
         toast.success(`${agent.emoji} ${agent.name} completó el trabajo`);
+      } else {
+        // Edge case: no error, no output, no credit issue — raro
+        void trackEvent("ai.completed", {
+          caseId,
+          properties: {
+            agent: agent.slug,
+            success: false,
+            reason: "empty_response",
+            duration_ms: Date.now() - startedAt,
+          },
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       clearInterval(interval);
+      // Ola 3.2.c — track unhandled error (catch del try)
+      void trackEvent("ai.completed", {
+        caseId,
+        properties: {
+          agent: agent.slug,
+          success: false,
+          duration_ms: Date.now() - startedAt,
+          reason: sanitizeErrorReason(err?.message, 100),
+        },
+      });
       toast.error("Error inesperado");
     }
 
