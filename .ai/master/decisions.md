@@ -52,6 +52,69 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-14 (post Ola 3.2.a) — Audits ronda 1+2 + 7 fixes
+
+**Decisión:** Mr. Lorenzo pidió trabajo autónomo mientras estaba fuera.
+Patrón validado de Olas 1+2 aplicado: 2 rondas de audit (yo + agent
+focalizado) antes de marcar 3.2.a como production-ready. Total 10 findings
+nuevos (3 ronda 1 + 7 ronda 2). Fixeados 7. Diferidos 3 documentados.
+
+**Ronda 1 — 3 findings MEDIUM (todos fixed):**
+- **A3+A8** — `err.message.slice(N)` preservaba PII de errors Supabase tipo
+  "User already exists user@example.com". *Fix:* helper `sanitizeErrorReason()`
+  reemplaza emails/phones/SSNs/A-numbers/nombres ANTES del slice.
+- **A6** — `handleMfaVerify` catch no trackeaba `auth.login_failed` → funnel
+  ciego para errores de TOTP. *Fix:* wire trackEvent con `mfa: true` flag.
+- **A7** — `case.stage_changed` se disparaba aunque la query UPDATE fallara
+  silenciosamente. *Fix:* capturar `updateRes.error` y solo trackear si OK.
+  Properties incluye `history_recorded` flag por si la segunda insert falla.
+
+**Ronda 2 — 7 findings (4 fixed, 3 diferidos):**
+
+🟠 HIGH fixed:
+- **H1** — Inactivity timeout race: `await trackEvent` tomaba 500-2000ms
+  durante los cuales el user podía hacer 100 clicks que disparen `reset`,
+  pero el timer.callback ya estaba corriendo → logout aunque hubo actividad.
+  *Fix:* track `lastActivityAt`, re-armar timer si actividad reciente.
+- **H2** — `sanitizeErrorReason` no cubría patrón canónico Postgres
+  `Key (col)=(val)` donde value NO está entre quotes. PII LEAK REAL.
+  *Fix:* regex preventivo `replace(/Key \([^)]+\)=\(([^)]+)\)/g, ...)` ANTES
+  de los otros patterns.
+- **H3** — Firm-switch dentro de misma sesión Supabase NO disparaba
+  `onAuthStateChange` → cache de account_id stale durante 60s → eventos
+  cross-tenant. *Fix:* listener `window.addEventListener('storage', ...)`
+  invalida cache cuando `ner_hub_data` cambia en otra pestaña. Para misma
+  pestaña, `invalidateAnalyticsCache()` exportado para llamar explícito
+  desde el código que hace switch (HubPage o similar — pending implementar
+  el switch UI, esto es preventivo).
+
+🟡 MEDIUM fixed:
+- **M4** — `await trackEvent` en logout/inactivity bloqueaba UI 1-10s con
+  red lenta. El INSERT queda encolado con la JWT vigente antes de signOut
+  sin necesidad de await. *Fix:* cambiar `await` por `void`.
+
+🟡 MEDIUM diferidos (documentados):
+- **M5** — Felix `duration_ms` huérfano si tab cierra mid-fetch. Funnel
+  muestra `ai.invoked` sin `ai.completed`. Fix futuro: `visibilitychange`
+  listener que dispare `ai.completed` con `reason: "page_unload"` si
+  `felixRunning=true`. NO con sendBeacon (no soporta headers auth).
+  Pending Ola 3.2.c.
+- **M6** — MFA `auth.login_success` se dispara antes de `navigate` →
+  si redirect falla, funnel registra success pero user no llegó al hub.
+  Fix futuro: segundo evento `auth.session_landed` desde HubPage mount.
+  Pending Ola 3.3.
+
+🟢 LOW diferido:
+- **L7** — `reason: 80` en MFA error trunca "Invalid TOTP code provided.
+  Please verify..." Useful info cortada. Fix trivial: subir maxLen a 150
+  o categorizar reason antes de sanitize. No urgente.
+
+**Filosofía validada:** 2 rondas de audit > 1 ronda. Ronda 2 (agent
+focalizado) encontró 4 HIGHs que ronda 1 (yo solo) no vio. Confirmado el
+patrón de Olas 1+2 — aplicar a cada sub-ola production-ready.
+
+---
+
 ## 2026-05-14 (late noche) — Ola 3.2.a: Instrumentación core (auth + case + ai)
 
 **Decisión:** después de cerrar Ola 3.1 (hardening RLS + closed_at column),

@@ -13,7 +13,7 @@ import { fillI130Pdf } from "@/lib/i130FormFiller";
 import { mapFelixOutputToI765Data } from "@/lib/i765FelixMapper";
 import { mapFelixOutputToI130Data } from "@/lib/i130FelixMapper";
 import { useSmartFormsContext } from "@/components/smartforms/SmartFormsContext";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, sanitizeErrorReason } from "@/lib/analytics";
 
 export default function SmartFormPage() {
   const navigate = useNavigate();
@@ -406,14 +406,15 @@ export default function SmartFormPage() {
         duration: 7000,
       });
     } catch (err: any) {
-      // Ola 3.2.a — track fail con reason truncado (sin stack)
+      // Ola 3.2.a + fix A8 audit ronda 1 post-3.2.a: sanitizeErrorReason
+      // reemplaza emails/UUIDs/phones/SSNs antes del slice.
       void trackEvent("ai.completed", {
         caseId: linkedCaseId,
         properties: {
           agent: "felix",
           success: false,
           duration_ms: Date.now() - startedAt,
-          reason: typeof err?.message === "string" ? err.message.slice(0, 100) : "unknown",
+          reason: sanitizeErrorReason(err?.message, 100),
         },
       });
       toast({ title: "Error con Felix", description: err.message, variant: "destructive" });

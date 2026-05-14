@@ -234,15 +234,25 @@ export default function CaseEnginePage() {
 
       const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
 
+      // A7 fix audit post-3.2.a: capturamos errors de cada operación.
+      // Antes, si update o insert fallaba silenciosamente (RLS, network),
+      // trackEvent registraba "stage cambió" cuando NO cambió → data corrupta
+      // en funnel de pipeline.
+
       // Update case
-      await supabase.from("client_cases").update({
+      const updateRes = await supabase.from("client_cases").update({
         pipeline_stage: newStage,
         stage_entered_at: new Date().toISOString(),
         ball_in_court: newStageData?.owner || "team",
       } as any).eq("id", caseId);
 
-      // Record history
-      await supabase.from("case_stage_history").insert({
+      if (updateRes.error) {
+        toast.error("Error al cambiar etapa");
+        return;
+      }
+
+      // Record history (no bloquea track si falla — el update sí pasó)
+      const historyRes = await supabase.from("case_stage_history").insert({
         case_id: caseId,
         account_id: caseData.account_id,
         from_stage: oldStage,
@@ -251,7 +261,7 @@ export default function CaseEnginePage() {
         changed_by_name: profile?.full_name || "Staff",
       });
 
-      // Ola 3.2.a — track stage change para funnels de pipeline.
+      // Ola 3.2.a — track stage change SOLO si el update OK.
       // No PII: solo stage slugs y ball_in_court (roles, no nombres).
       void trackEvent("case.stage_changed", {
         caseId,
@@ -259,6 +269,7 @@ export default function CaseEnginePage() {
           from_stage: oldStage,
           to_stage: newStage,
           ball_in_court: newStageData?.owner || "team",
+          history_recorded: !historyRes.error,
         },
       });
 

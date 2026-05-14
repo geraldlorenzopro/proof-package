@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { logAudit } from '@/lib/auditLog';
 import { lovable } from '@/integrations/lovable/index';
 import { useTrackPageView } from '@/hooks/useTrackPageView';
-import { trackEvent } from '@/lib/analytics';
+import { trackEvent, sanitizeErrorReason } from '@/lib/analytics';
 
 async function handleGoogleSignIn(setError: (s: string) => void) {
   setError('');
@@ -157,10 +157,13 @@ export default function Auth() {
         });
       }
     } catch (err: any) {
-      // Ola 3.2.a — track failure. Reason del error pero NO incluir password ni email.
+      // Ola 3.2.a — track failure con reason sanitized (A3 fix audit ronda 1
+      // post-3.2.a: err.message puede contener "User already exists with
+      // email user@example.com" → sanitizeErrorReason() reemplaza el email
+      // con <email> antes del slice).
       void trackEvent(mode === "login" ? "auth.login_failed" : "auth.signup_failed", {
         properties: {
-          reason: typeof err?.message === "string" ? err.message.slice(0, 80) : "unknown",
+          reason: sanitizeErrorReason(err?.message, 80),
           email_domain: email.split("@")[1] || "unknown",
         },
       });
@@ -204,6 +207,16 @@ export default function Auth() {
         navigate(destination, { replace: true });
       }
     } catch (err: any) {
+      // A6 fix audit post-3.2.a: el path MFA carecía de tracking en
+      // failure → funnel ciego. Trackeamos auth.login_failed con mfa=true
+      // para distinguir TOTP errors de password errors.
+      void trackEvent("auth.login_failed", {
+        properties: {
+          mfa: true,
+          reason: sanitizeErrorReason(err?.message, 80),
+          email_domain: email.split("@")[1] || "unknown",
+        },
+      });
       setError(err.message === 'Invalid TOTP code' ? 'Código incorrecto. Intenta de nuevo.' : (err.message || 'Error de verificación'));
       setMfaCode('');
     } finally {

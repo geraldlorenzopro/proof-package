@@ -254,6 +254,38 @@ export async function identify(userId: string, accountId: string | null): Promis
 }
 
 /**
+ * Sanitiza un string de error para usarlo como `reason` en trackEvent.
+ *
+ * Razón: errors de Supabase/Postgres pueden contener fragmentos de PII como:
+ *   - "User already registered: user@example.com"
+ *   - "duplicate key value violates unique constraint... (email)=(...)"
+ *   - "Foreign key violation: client_name='Juan Pérez'"
+ *
+ * Strategy: detectar y reemplazar patrones PII conocidos con placeholders
+ * ANTES del slice. Si nada queda interpretable, devuelve categoria genérica.
+ */
+export function sanitizeErrorReason(raw: unknown, maxLen = 100): string {
+  if (typeof raw !== "string") return "unknown";
+  let s = raw;
+  // H2 fix audit ronda 2: pattern canónico de Postgres
+  // "Key (client_name)=(Juan Pérez)" — value sin quotes, escapaba al regex
+  // de nombres. Replace antes de los demás patterns para no destruir el wrap.
+  s = s.replace(/Key \(([^)]+)\)=\(([^)]+)\)/g, "Key (<col>)=(<val>)");
+  // Emails: foo@bar.baz → <email>
+  s = s.replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, "<email>");
+  // Phones (sequences of 7+ digits): 5551234567 → <phone>
+  s = s.replace(/\b\d{7,}\b/g, "<num>");
+  // UUIDs: leave (no PII, útil para debugging)
+  // Nombres en comillas o single-quotes (heurística): 'Juan Pérez' → <name>
+  s = s.replace(/['"][A-ZÁÉÍÓÚÑ][\w\sÀ-ſ.'-]{2,40}['"]/g, "<name>");
+  // SSN format: 123-45-6789 → <ssn>
+  s = s.replace(/\b\d{3}-\d{2}-\d{4}\b/g, "<ssn>");
+  // A-numbers: A12345678 → <anum>
+  s = s.replace(/\bA\d{8,9}\b/gi, "<anum>");
+  return s.slice(0, maxLen);
+}
+
+/**
  * Clear cache cuando el usuario hace logout o cambia de firma.
  * Rota el session_id para que el siguiente user no herede el rastro del anterior.
  */
@@ -293,6 +325,21 @@ if (typeof window !== "undefined") {
       event === "TOKEN_REFRESHED" ||
       event === "USER_UPDATED"
     ) {
+      invalidateAnalyticsCache();
+    }
+  });
+
+  // H3 fix audit ronda 2: firm-switch (multi-membership) cambia
+  // sessionStorage["ner_hub_data"].account_id sin disparar onAuthStateChange.
+  // Sin esto, el cache de 60s tendría el account_id viejo → eventos
+  // cross-tenant.
+  //
+  // 'storage' event NO se dispara en la misma pestaña que escribió, así que
+  // adicionalmente exponemos `invalidateAnalyticsCache()` para que el código
+  // que hace el switch lo llame explícitamente (HubPage o similar).
+  // El listener cubre el caso de switch en OTRA pestaña (raro pero posible).
+  window.addEventListener("storage", (e) => {
+    if (e.key === "ner_hub_data") {
       invalidateAnalyticsCache();
     }
   });

@@ -49,13 +49,26 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   // ═══ Inactivity timeout ═══
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
+    // H1 fix audit ronda 2: trackeo lastActivityAt para evitar logout
+    // si actividad ocurrió durante el await trackEvent. Antes: timer
+    // disparaba → await trackEvent (500-2000ms) → durante esos ms el user
+    // puede haber hecho 100 clicks pero el logout corría igual.
+    let lastActivityAt = Date.now();
 
     const reset = () => {
+      lastActivityAt = Date.now();
       clearTimeout(timer);
       timer = setTimeout(async () => {
-        // Ola 3.2.a — dispara ANTES de signOut para que la session aún
-        // exista (el evento necesita auth.uid() válido por RLS).
-        await trackEvent("auth.logout", { properties: { reason: "inactivity" } });
+        // Si actividad reciente (durante el await previo de un timer
+        // anterior, por ejemplo), re-armar en lugar de logout.
+        if (Date.now() - lastActivityAt < INACTIVITY_MS) {
+          reset();
+          return;
+        }
+        // M4 fix audit ronda 2: void en lugar de await — el INSERT queda
+        // encolado con la JWT vigente antes de signOut. UI no se freezea
+        // por red lenta.
+        void trackEvent("auth.logout", { properties: { reason: "inactivity" } });
         sessionStorage.removeItem("ner_hub_data");
         sessionStorage.removeItem("ner_impersonate");
         sessionStorage.removeItem("ner_active_account_id");
@@ -99,9 +112,10 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   })();
 
   async function handleLogout() {
-    // Ola 3.2.a — track ANTES de signOut (auth listener en analytics.ts
-    // limpia cache automáticamente al SIGNED_OUT, así que doble-safe).
-    await trackEvent("auth.logout", { properties: { reason: "manual" } });
+    // M4 fix audit ronda 2: void no await. El insert queda encolado con
+    // la JWT vigente antes de signOut, y el botón Logout responde inmediato
+    // sin esperar a network. El auth listener limpia cache en SIGNED_OUT.
+    void trackEvent("auth.logout", { properties: { reason: "manual" } });
     sessionStorage.removeItem("ner_hub_data");
     sessionStorage.removeItem("ner_active_account_id");
     sessionStorage.removeItem("ner_impersonate");
