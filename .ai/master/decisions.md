@@ -52,6 +52,73 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-14 (post audits) — Ola 3.2.b: Edge function pre-auth events
+
+**Decisión:** completar el ecosystem de medición agregando la capa pre-auth
+que faltaba después del hardening de Ola 3.1 (que cerró el INSERT directo
+para anon users). Ahora hay path controlado para trackear el funnel del
+aplicante público (token-based, sin login) y signups pre-confirm-email.
+
+**Componentes creados:**
+
+1. **Migration** `PENDING_event_rate_limits.sql`:
+   - Tabla `event_rate_limits` (key, window_start, count, last_seen_at)
+   - Sin RLS policies → solo `service_role` accede (la edge fn)
+   - Función `cleanup_event_rate_limits()` para purgar entries >5min
+
+2. **Edge function** `supabase/functions/track-public-event/`:
+   - POST endpoint público, sin auth requirement
+   - Rate limit sliding window 60s × max 30 events por IP+category
+   - Allowlist de event_name: `public.*`, `applicant.*`, `auth.signup_started`,
+     `auth.passwordless_*`. Cualquier otro → 403.
+   - Token validation: si `applicant_token` presente, lookup en
+     `client_cases.access_token` → resolve case_id + account_id
+   - PII strip server-side (defense in depth, mismo guard que frontend)
+   - Insert con service_role (bypassa RLS controlado)
+   - Fail-open en rate limit si tabla no existe (no rompe deploy en cascada)
+   - Logs estructurados para debugging
+
+3. **Frontend client** `src/lib/publicAnalytics.ts`:
+   - `trackPublicEvent(name, options)` wraps `supabase.functions.invoke`
+   - Mismo session_id que `trackEvent` (compartido via sessionStorage)
+   - Fallback graceful si edge fn no deployada todavía
+
+4. **Wireado** de 4 eventos públicos críticos:
+   - `applicant.portal_opened` en CaseTrackPublic (con referrer_domain)
+   - `applicant.intake_opened` en PreIntakePage useEffect
+   - `applicant.intake_completed` en handleSubmit success (props con counts,
+     NO contenido)
+   - `applicant.intake_failed` en handleSubmit catch (reason='submit_error')
+
+**Decisiones arquitectónicas:**
+
+- **Why allowlist y no denylist:** la edge fn es endpoint público. Cualquier
+  evento "fuera de prefix" probably indica abuso o bug en el caller.
+- **Why service_role insert:** la tabla `events` post-Ola 3.1 tiene policy
+  authenticated-only. Service_role bypassa RLS controlado solo para este
+  endpoint específico con validación previa.
+- **Why rate limit por IP+category:** un atacante podría rotar event_names
+  para evadir limit. Agrupar por category evita esto.
+- **Why fail-open en rate limit:** preferimos que un deploy parcial
+  (edge fn + migration mismatched) NO rompa el flow del aplicante, aunque
+  pierda rate limit temporal. Log warns para visibility.
+- **Why no sendBeacon:** sendBeacon no soporta custom headers ni respuestas.
+  Si lo usáramos, no podríamos validar token ni pasar Authorization.
+  Para tab unload usaremos visibilitychange + sync invoke (best-effort).
+
+**Pending:**
+- Lovable apply migration + deploy edge function (Ola 3.2.b apply step)
+- Wire eventos adicionales: `applicant.doc_uploaded` (en ClientUpload),
+  `applicant.consent_signed` (si hay flow de consent)
+- M5 fix (Felix duration_ms huérfano) — Ola 3.2.c con visibilitychange
+
+**Riesgo de deploy:**
+- Migration: bajo. Tabla nueva, sin RLS exposed, sin foreign keys.
+- Edge function: bajo. Endpoint nuevo, no afecta existing functions.
+- Frontend: bajo. Falla gracefully si edge fn no responde.
+
+---
+
 ## 2026-05-14 (post Ola 3.2.a) — Audits ronda 1+2 + 7 fixes
 
 **Decisión:** Mr. Lorenzo pidió trabajo autónomo mientras estaba fuera.

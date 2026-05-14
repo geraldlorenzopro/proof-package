@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { trackPublicEvent } from "@/lib/publicAnalytics";
 
 interface AppointmentData {
   id: string;
@@ -85,7 +86,13 @@ export default function PreIntakePage() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    if (token) loadAppointment();
+    if (token) {
+      loadAppointment();
+      // Ola 3.2.b — track intake portal opened
+      void trackPublicEvent("applicant.intake_opened", {
+        applicantToken: token,
+      });
+    }
   }, [token]);
 
   async function loadAppointment() {
@@ -153,9 +160,27 @@ export default function PreIntakePage() {
 
       if (err) throw err;
       setSubmitted(true);
+      // Ola 3.2.b — milestone clave del funnel del aplicante.
+      // Properties: counts/booleans solamente. NO el contenido del intake (PII).
+      void trackPublicEvent("applicant.intake_completed", {
+        applicantToken: token!,
+        properties: {
+          has_situation: !!situation,
+          has_time_in_us: !!timeInUs,
+          has_goal: !!goal,
+          has_family: !!family,
+          has_documents: documents.length > 0,
+          documents_count: documents.length,
+          has_additional_notes: !!additionalNotes,
+        },
+      });
       toast.success("¡Información enviada!");
     } catch (e: any) {
       toast.error("Error al enviar. Intenta de nuevo.");
+      void trackPublicEvent("applicant.intake_failed", {
+        applicantToken: token!,
+        properties: { reason: "submit_error" },
+      });
       console.error(e);
     } finally {
       setSubmitting(false);

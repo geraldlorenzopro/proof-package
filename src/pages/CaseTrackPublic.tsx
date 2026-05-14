@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { trackPublicEvent } from "@/lib/publicAnalytics";
 
 interface StageInfo {
   order: number;
@@ -48,6 +49,16 @@ export default function CaseTrackPublic() {
   useEffect(() => {
     if (!token) return;
     loadCase();
+    // Ola 3.2.b — track portal open. Edge fn resuelve case_id desde token.
+    void trackPublicEvent("applicant.portal_opened", {
+      applicantToken: token,
+      properties: {
+        has_referrer: !!document.referrer,
+        referrer_domain: (() => {
+          try { return new URL(document.referrer).hostname; } catch { return null; }
+        })(),
+      },
+    });
   }, [token]);
 
   useEffect(() => {
