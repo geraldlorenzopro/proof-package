@@ -18,16 +18,21 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Download, Mail } from "lucide-react";
+import { Download, Mail, AlertTriangle } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
 import { KPIStrip } from "@/components/reports/KPIStrip";
 import { KPICard } from "@/components/reports/KPICard";
 import { CasesAtRisk } from "@/components/reports/CasesAtRisk";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
+import { useNerAccountId } from "@/hooks/useNerAccountId";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 
 const CLOSED_STATUSES = ["completed", "archived", "cancelled"];
+// PostgREST .in() recibe lista sin comillas internas — coma separa values.
+// Si algún status tuviera coma/paréntesis habría que escapar, pero son
+// constantes hardcoded, no input usuario.
+const CLOSED_FILTER = `(${CLOSED_STATUSES.join(",")})`;
 
 interface FirmMetrics {
   activeCases: number;
@@ -35,18 +40,44 @@ interface FirmMetrics {
   avgDaysOpen: number | null;
   staleCases: number;
   loading: boolean;
+  /** Lista de queries que fallaron — visible al Owner para que sepa que la
+   * data está incompleta. Vacío si todo OK. */
+  errors: string[];
+  /** Demo mode: data sintética, no consultar BD. */
+  isDemo: boolean;
 }
 
-function useFirmMetrics(accountId: string | null): FirmMetrics {
-  const [state, setState] = useState<FirmMetrics>({
-    activeCases: 0,
-    closed30d: 0,
-    avgDaysOpen: null,
-    staleCases: 0,
-    loading: true,
-  });
+// Mock metrics para demo mode (Méndez Immigration Law preset)
+const DEMO_METRICS: FirmMetrics = {
+  activeCases: 42,
+  closed30d: 12,
+  avgDaysOpen: 78,
+  staleCases: 3,
+  loading: false,
+  errors: [],
+  isDemo: true,
+};
+
+function useFirmMetrics(accountId: string | null, isDemo: boolean): FirmMetrics {
+  const [state, setState] = useState<FirmMetrics>(() =>
+    isDemo
+      ? DEMO_METRICS
+      : {
+          activeCases: 0,
+          closed30d: 0,
+          avgDaysOpen: null,
+          staleCases: 0,
+          loading: true,
+          errors: [],
+          isDemo: false,
+        }
+  );
 
   useEffect(() => {
+    if (isDemo) {
+      setState(DEMO_METRICS);
+      return;
+    }
     if (!accountId) {
       setState((s) => ({ ...s, loading: false }));
       return;
@@ -63,7 +94,7 @@ function useFirmMetrics(accountId: string | null): FirmMetrics {
           .from("client_cases")
           .select("id", { count: "exact", head: true })
           .eq("account_id", accountId)
-          .not("status", "in", `(${CLOSED_STATUSES.map((s) => `"${s}"`).join(",")})`),
+          .not("status", "in", CLOSED_FILTER),
 
         supabase
           .from("client_cases")
@@ -83,11 +114,18 @@ function useFirmMetrics(accountId: string | null): FirmMetrics {
           .from("client_cases")
           .select("id", { count: "exact", head: true })
           .eq("account_id", accountId)
-          .not("status", "in", `(${CLOSED_STATUSES.map((s) => `"${s}"`).join(",")})`)
+          .not("status", "in", CLOSED_FILTER)
           .lt("updated_at", sevenDaysAgo),
       ]);
 
       if (cancelled) return;
+
+      // M1 fix: error tracking visible al usuario
+      const errors: string[] = [];
+      if (activeRes.error) errors.push("activos");
+      if (closedRes.error) errors.push("cerrados");
+      if (recentClosedRes.error) errors.push("promedio");
+      if (staleRes.error) errors.push("stale");
 
       const closedRows = recentClosedRes.data ?? [];
       const avgDays =
@@ -108,48 +146,15 @@ function useFirmMetrics(accountId: string | null): FirmMetrics {
         avgDaysOpen: avgDays,
         staleCases: staleRes.count ?? 0,
         loading: false,
+        errors,
+        isDemo: false,
       });
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [accountId]);
-
-  return state;
-}
-
-function useAccountId(): { accountId: string | null; loading: boolean } {
-  const [state, setState] = useState<{ accountId: string | null; loading: boolean }>({
-    accountId: null,
-    loading: true,
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.user) {
-        if (!cancelled) setState({ accountId: null, loading: false });
-        return;
-      }
-      const { data } = await supabase
-        .from("account_members")
-        .select("account_id")
-        .eq("user_id", session.user.id)
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle();
-      if (!cancelled) {
-        setState({ accountId: (data?.account_id as string | undefined) ?? null, loading: false });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }, [accountId, isDemo]);
 
   return state;
 }
@@ -157,17 +162,19 @@ function useAccountId(): { accountId: string | null; loading: boolean } {
 export default function ReportsPage() {
   useTrackPageView("hub.reports");
   const navigate = useNavigate();
-  const { accountId, loading: authLoading } = useAccountId();
-  const metrics = useFirmMetrics(accountId);
+  const { accountId, source, loading: authLoading } = useNerAccountId();
+  const isDemo = source === "demo";
+  const metrics = useFirmMetrics(accountId, isDemo);
 
+  // M2 fix: distinguir click (intent) de exported (success).
+  // En Ola 3 cuando el CSV se genera realmente, dispararemos `report.exported`.
   function handleExport() {
-    void trackEvent("report.exported", { properties: { format: "csv" } });
-    // CSV export — implementación completa en Ola 3
+    void trackEvent("report.export_clicked", { properties: { format: "csv" } });
     alert("Export CSV vendrá en Ola 3");
   }
 
   function handleScheduleEmail() {
-    void trackEvent("report.email_digest_scheduled", {});
+    void trackEvent("report.email_digest_clicked", {});
     alert("Email digest semanal vendrá en Ola 3");
   }
 
@@ -179,7 +186,8 @@ export default function ReportsPage() {
     );
   }
 
-  if (!accountId) {
+  // En demo mode no tenemos accountId real pero queremos mostrar la página.
+  if (!accountId && !isDemo) {
     return (
       <HubLayout>
         <div className="p-8 text-center text-muted-foreground">
@@ -194,9 +202,13 @@ export default function ReportsPage() {
       <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto space-y-6">
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Reportes</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Reportes {isDemo && <span className="text-xs text-amber-500 ml-2 font-normal">DEMO</span>}
+            </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Tu firma en números — datos en vivo, sin maquillaje.
+              {isDemo
+                ? "Datos sintéticos de Méndez Immigration Law (modo demo)."
+                : "Tu firma en números — datos en vivo, sin maquillaje."}
             </p>
           </div>
           <div className="flex gap-2">
@@ -216,6 +228,21 @@ export default function ReportsPage() {
             </button>
           </div>
         </div>
+
+        {/* M1 fix: error banner visible si alguna query falló */}
+        {metrics.errors.length > 0 && (
+          <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 text-sm">
+            <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-amber-700 dark:text-amber-400">
+                Algunos KPIs no pudieron cargarse
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Falló: {metrics.errors.join(", ")}. Refrescá la página o consultá a soporte.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* KPI Strip */}
         <KPIStrip className="lg:grid-cols-4">
@@ -282,7 +309,7 @@ export default function ReportsPage() {
         </KPIStrip>
 
         {/* Cases at risk */}
-        <CasesAtRisk accountId={accountId} limit={5} />
+        <CasesAtRisk accountId={accountId} limit={5} isDemo={isDemo} />
 
         {/* Próximos paneles (Ola 3) */}
         <div className="bg-muted/30 border border-dashed border-border rounded-xl p-6 text-center text-sm text-muted-foreground">

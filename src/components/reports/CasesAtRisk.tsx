@@ -29,14 +29,57 @@ interface RiskCase {
 interface Props {
   accountId: string | null;
   limit?: number;
+  /** Demo mode: usar mock data en lugar de query. */
+  isDemo?: boolean;
 }
 
-export function CasesAtRisk({ accountId, limit = 5 }: Props) {
+// Mock data para demo mode
+const DEMO_RISK_CASES: RiskCase[] = [
+  {
+    id: "demo-case-1",
+    client_name: "Patricia Alvarado",
+    case_type: "I-130",
+    pipeline_stage: "Esperando evidencia",
+    updated_at: new Date(Date.now() - 22 * 86400000).toISOString(),
+    days_stale: 22,
+    risk_level: "red",
+  },
+  {
+    id: "demo-case-2",
+    client_name: "Roberto García",
+    case_type: "I-485",
+    pipeline_stage: "Pre-packet",
+    updated_at: new Date(Date.now() - 15 * 86400000).toISOString(),
+    days_stale: 15,
+    risk_level: "red",
+  },
+  {
+    id: "demo-case-3",
+    client_name: "Carmen Pérez",
+    case_type: "N-400",
+    pipeline_stage: "Intake",
+    updated_at: new Date(Date.now() - 9 * 86400000).toISOString(),
+    days_stale: 9,
+    risk_level: "yellow",
+  },
+];
+
+// M4 fix: PostgREST .in() recibe lista sin comillas internas.
+const CLOSED_STATUS_FILTER = "(completed,archived,cancelled)";
+
+export function CasesAtRisk({ accountId, limit = 5, isDemo = false }: Props) {
   const navigate = useNavigate();
-  const [cases, setCases] = useState<RiskCase[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [cases, setCases] = useState<RiskCase[]>(() =>
+    isDemo ? DEMO_RISK_CASES.slice(0, limit) : []
+  );
+  const [loading, setLoading] = useState(!isDemo);
 
   useEffect(() => {
+    if (isDemo) {
+      setCases(DEMO_RISK_CASES.slice(0, limit));
+      setLoading(false);
+      return;
+    }
     if (!accountId) {
       setLoading(false);
       return;
@@ -50,7 +93,7 @@ export function CasesAtRisk({ accountId, limit = 5 }: Props) {
         .from("client_cases")
         .select("id, client_name, case_type, pipeline_stage, updated_at, status")
         .eq("account_id", accountId)
-        .not("status", "in", '("completed","archived","cancelled")')
+        .not("status", "in", CLOSED_STATUS_FILTER)
         .lt("updated_at", sevenDaysAgo)
         .order("updated_at", { ascending: true })
         .limit(limit);
@@ -88,9 +131,16 @@ export function CasesAtRisk({ accountId, limit = 5 }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [accountId, limit]);
+  }, [accountId, limit, isDemo]);
 
   function handleCaseClick(caseId: string) {
+    // En demo no navegamos a un case que no existe — solo loguemos intent.
+    if (isDemo) {
+      void trackEvent("report.drill_down", {
+        properties: { target: "case", source: "cases_at_risk_demo" },
+      });
+      return;
+    }
     void trackEvent("report.drill_down", {
       caseId,
       properties: { target: "case", source: "cases_at_risk" },

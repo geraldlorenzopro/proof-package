@@ -27,6 +27,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedNerAccountId, isDemoAccountId } from "@/hooks/useNerAccountId";
 
 // ─── Tipos ───────────────────────────────────────────────────────────
 
@@ -82,34 +83,63 @@ function getSessionId(): string {
   return id;
 }
 
-// ─── Resolver account_id activo (cache 1 min) ───────────────────────
+// ─── Resolver account_id + user_id activos (cache 1 min) ────────────
+//
+// Optimization: cacheamos {accountId, userId} juntos para evitar:
+//   - Doble supabase.auth.getSession() por evento (~60ms ahorro)
+//   - Query repetido a account_members en burst de eventos
+//
+// Source de account_id (prioridad):
+//   1. sessionStorage["ner_hub_data"].account_id (canonical para multi-firma)
+//   2. account_members query (fallback, primer membership .limit(1))
 
-let cachedAccountId: { id: string | null; at: number } | null = null;
-const ACCOUNT_CACHE_MS = 60_000;
+interface AuthCache {
+  accountId: string | null;
+  userId: string | null;
+  at: number;
+}
 
-async function getCurrentAccountId(): Promise<string | null> {
+let cachedAuth: AuthCache | null = null;
+const AUTH_CACHE_MS = 60_000;
+
+async function getCurrentAuth(): Promise<{ accountId: string | null; userId: string | null }> {
   const now = Date.now();
-  if (cachedAccountId && now - cachedAccountId.at < ACCOUNT_CACHE_MS) {
-    return cachedAccountId.id;
+  if (cachedAuth && now - cachedAuth.at < AUTH_CACHE_MS) {
+    return { accountId: cachedAuth.accountId, userId: cachedAuth.userId };
   }
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      cachedAccountId = { id: null, at: now };
-      return null;
+    const userId = session?.user?.id ?? null;
+    if (!userId) {
+      cachedAuth = { accountId: null, userId: null, at: now };
+      return { accountId: null, userId: null };
     }
-    const { data } = await supabase
-      .from("account_members")
-      .select("account_id")
-      .eq("user_id", session.user.id)
-      .eq("is_active", true)
-      .limit(1)
-      .maybeSingle();
-    const id = (data?.account_id as string | undefined) ?? null;
-    cachedAccountId = { id, at: now };
-    return id;
+
+    // Preferir el account_id cached en sessionStorage — respeta la firma
+    // activa cuando el user tiene múltiples memberships.
+    let accountId = getCachedNerAccountId();
+
+    // Fallback: query si no hay cache (primer mount post-login antes del handshake)
+    if (!accountId) {
+      const { data } = await supabase
+        .from("account_members")
+        .select("account_id")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+      accountId = (data?.account_id as string | undefined) ?? null;
+    }
+
+    // Demo mode: cached returns un sentinel que NO es UUID. No persistir a Supabase.
+    if (isDemoAccountId(accountId)) {
+      accountId = null;
+    }
+
+    cachedAuth = { accountId, userId, at: now };
+    return { accountId, userId };
   } catch {
-    return null;
+    return { accountId: null, userId: null };
   }
 }
 
@@ -137,14 +167,14 @@ export async function trackEvent(
   assertNoPII(options.properties);
 
   const category = eventName.split(".")[0];
+  // Single fetch que resuelve {accountId, userId} de una vez (M3 fix)
+  const auth = await getCurrentAuth();
   const accountId =
-    options.accountId !== undefined ? options.accountId : await getCurrentAccountId();
-
-  const userId = (await supabase.auth.getSession()).data.session?.user?.id ?? null;
+    options.accountId !== undefined ? options.accountId : auth.accountId;
 
   const payload = {
     account_id: accountId,
-    user_id: userId,
+    user_id: auth.userId,
     case_id: options.caseId ?? null,
     event_name: eventName,
     event_category: category,
@@ -182,7 +212,7 @@ export async function trackEvent(
  * En Ola 2 esto va a sincronizar también con PostHog.identify().
  */
 export async function identify(userId: string, accountId: string | null): Promise<void> {
-  cachedAccountId = { id: accountId, at: Date.now() };
+  cachedAuth = { accountId, userId, at: Date.now() };
   await trackEvent("auth.session_established", {
     accountId,
     properties: { user_id: userId },
@@ -193,7 +223,7 @@ export async function identify(userId: string, accountId: string | null): Promis
  * Clear cache cuando el usuario hace logout.
  */
 export function resetAnalytics(): void {
-  cachedAccountId = null;
+  cachedAuth = null;
   if (typeof window !== "undefined") {
     sessionStorage.removeItem(SESSION_KEY);
   }

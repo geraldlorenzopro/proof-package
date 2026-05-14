@@ -1,8 +1,35 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-13
+**Última actualización:** 2026-05-14 (tarde)
 **Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) + extracción de gaps con scripts de paridad
-**Próximo update:** post comparativa UI wizards + arranque I-485
+**Próximo update:** post auditoría profunda ronda 2 + Ola 3 arranque
+
+---
+
+## 📊 Plan de Medición — Snapshot 2026-05-14
+
+| Ola | Status | Commit | Entregado |
+|---|:--:|---|---|
+| **Ola 1 — Foundation** | ✅ Live | `0430471` | Tabla `events` + RLS + `useTrackPageView` + 3 páginas instrumentadas |
+| **Ola 2 — `/hub/reports`** | ✅ Live | `01f80bc` | Dashboard Owner: 4 KPIs reales + CasesAtRisk |
+| **Audit Round 1 + Fixes** | ✅ Live | TBD | 6 fixes: demo mode, multi-firma, errors visibles, session cache, filter syntax, event rename |
+| **Audit Round 2** | ⚫ Next | — | Auditoría profunda Ola 1+2 antes de Ola 3 |
+| **Ola 3 — Granular events** | ⚫ Pending | — | `case.created`, `ai.invoked`, `applicant.*`, `auth.*` |
+| **Ola 4 — Consolidación** | ⚫ Mes 2+ | — | Strategic Packs → tab Case Engine, deprecar `/dashboard/*` |
+
+**Eventos confirmados en BD (Ner Tech `ae903f7f…`):**
+- `page.view` para `hub.dashboard`, `hub.cases`, `hub.reports`, `auth.login`
+
+**Dashboard live:** `/hub/reports`
+- 4 KPIs: Casos activos · Cerrados 30d · Días promedio · Stale 7d+
+- Panel CasesAtRisk (top 5 casos sin actividad > 7d)
+- Banner de errors visible si query falla (M1 fix)
+- Demo mode soportado (badge "DEMO" + mock data)
+
+**Pendientes en plan medición:**
+- H3 RLS aplicante (cuando se instrumente portal público en Ola 3)
+- L1-L4 polish (StrictMode double-fire DEV, layout shift, code-splitting)
+- Materialized views `firm_metrics_daily` (cuando MRR > $5K o N firmas > 50)
 
 ---
 

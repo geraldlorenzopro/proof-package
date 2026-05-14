@@ -6,6 +6,116 @@ pasadas — agregar nueva decisión que las supersede si cambian.**
 
 ---
 
+## 2026-05-14 — 5° plano fundacional MEASUREMENT-FRAMEWORK + Olas 1-2 deploy
+
+**Decisión:** "todo debe ser medible hasta lo más mínimo" — agregamos un 5°
+plano fundacional al `.ai/master/` con 8 niveles de medición (CEO / Owner /
+Paralegal / Case / Aplicante / AI / Tech / Legal) y secuenciamos la aplicación
+en 4 olas, no big-bang.
+
+**Quién decidió:** Mr. Lorenzo, después de cerrar los 4 planos iniciales
+(IA + Flows + Wireframes + Design System) y consultar el audit completo.
+
+**Contexto:** plataforma con 8 firmas activas, $2.376 MRR, sin instrumentación
+unificada. Cada feature se construye sin pregunta "¿cómo sabremos si funciona?".
+Para defender el moat legal (approval rates anonimizados) hace falta source of
+truth de eventos.
+
+**Secuencia (locked):**
+- **Ola 1 (semana 1)** ✅ — Foundation: tabla `events` + RLS + `useTrackPageView` +
+  instrumentar 3 páginas críticas. Commit `0430471`.
+- **Ola 2 (semana 1)** ✅ — `/hub/reports` dashboard Owner con 4 KPIs reales
+  (Casos activos · Cerrados 30d · Días promedio · Stale 7d+) + CasesAtRisk.
+  Commit `01f80bc`.
+- **Ola 3 (semanas 2-3)** ⚫ — Instrumentación granular de eventos críticos
+  (`case.created`, `ai.invoked`, `applicant.intake_completed`, etc.).
+- **Ola 4 (mes 2+)** ⚫ — Consolidación arquitectónica (Strategic Packs a tab
+  Case Engine, deprecar `/dashboard/*`, brandbook compliance global).
+
+**Stack inicial $0/mes:** PostHog free + Supabase materialized views + Sentry
+free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
+
+**Artifacts:**
+- `.ai/master/MEASUREMENT-FRAMEWORK.md` (5° plano, ~600 líneas)
+- Addenda en los 4 planos previos (IA §16, Flows §12, Wireframes W-26..W-31,
+  Design-System §addendum)
+- `supabase/migrations/20260514192216_events_table.sql` (Lovable applied)
+- `src/lib/analytics.ts` + `src/hooks/useTrackPageView.ts`
+- `src/pages/ReportsPage.tsx` + `src/components/reports/*`
+- `mockups/NER-PLANOS-VISUAL.html` con tab Métricas
+
+**Reglas que se desprenden:**
+- Cada feature nuevo declara sus eventos antes de mergearse (no PR sin lista)
+- Nunca PII en `properties` (linter custom valida)
+- Dashboards privados por rol (Owner ve su firma; CEO ve todo via switch)
+- Métricas legales solo se exponen anonimizadas entre firmas
+
+---
+
+## 2026-05-14 (tarde) — Auditoría Ola 1 + Ola 2 (ronda 1) + 6 fixes
+
+**Decisión:** después de validar que `/hub/reports` carga y trackea correctamente
+en Ner Tech LLC, Mr. Lorenzo pidió auditoría antes de Ola 3. Reportamos 11
+findings (3 HIGH / 4 MEDIUM / 4 LOW-NIT). Fixeamos los 7 más importantes
+(H1, H2, M1, M2, M3, M4) en un solo commit. H3 (RLS aplicante) diferido a Ola 3
+cuando se instrumenten applicant events.
+
+**Findings (clasificados por severidad):**
+
+🟠 **HIGH:**
+- **H1** — ReportsPage no respetaba demo mode → crash con mensaje feo.
+  *Fix:* hook `useNerAccountId` detecta `?demo=true` y devuelve sentinel
+  `DEMO_ACCOUNT_ID`. ReportsPage muestra data sintética y badge "DEMO".
+- **H2** — Multi-firma silencioso: `.limit(1)` devolvía firma al azar para
+  paralegales en N firmas. Eventos al account_id equivocado.
+  *Fix:* hook centralizado prioriza `sessionStorage["ner_hub_data"].account_id`
+  (canonical para sesión activa), fallback a query solo si no hay cache.
+  Mismo patrón aplicado a `analytics.ts`.
+- **H3 (DIFERIDO)** — RLS policy `events_insert_own_account` falta cubrir
+  `(account_id IS NOT NULL AND user_id IS NULL)` para aplicantes públicos con
+  token. No impacta hoy (no instrumentamos applicant events). Apply en Ola 3
+  cuando wire `applicant.intake_completed` desde portal público.
+
+🟡 **MEDIUM:**
+- **M1** — `useFirmMetrics` tragaba errors silenciosos → Owner veía data
+  corrupta sin saber.
+  *Fix:* error tracking visible. Banner amber-500 con lista de queries que
+  fallaron ("Falló: activos, stale. Refrescá la página").
+- **M2** — `report.exported` se logueaba al click sin export real → funnel
+  inflado.
+  *Fix:* renombrado a `report.export_clicked` (intent). Reservar `exported`
+  para cuando CSV se genere realmente (Ola 3).
+- **M3** — Doble `supabase.auth.getSession()` por cada `trackEvent` → ~60ms
+  extra + risk de state inconsistente.
+  *Fix:* `getCurrentAuth()` resuelve `{accountId, userId}` en un solo fetch.
+  Cache 1 min compartido.
+- **M4** — `.not("status", "in", '("a","b")')` con string interpolation manual
+  frágil.
+  *Fix:* PostgREST `.in()` recibe lista SIN comillas internas. Usar
+  `CLOSED_FILTER = "(completed,archived,cancelled)"`.
+
+🟢 **LOW/NIT (diferidos):**
+- **L1** — `useTrackPageView` double-fires en React StrictMode (solo DEV)
+- **L2** — KPICard skeleton `h-8` vs `text-3xl` (~36px) → layout shift
+- **L3** — Lovable creó 2 migrations idénticas (idempotentes con IF NOT EXISTS)
+- **L4** — Bundle `index-*.js` 5.9MB sin code-splitting
+
+**Lo que SÍ está bien:**
+- PII guard funcionando
+- Cleanup correcto en todos los `useEffect`
+- RLS multi-tenant sólida para casos autenticados
+- Fallback graceful si tabla `events` no existe
+- Tracking confirmado en BD para Ner Tech (`ae903f7f…`)
+
+**Artifact nuevo:** `src/hooks/useNerAccountId.ts` (hook canónico para resolver
+account_id activo, evita duplicar el pattern en N páginas).
+
+**Por qué documentar audits:** Mr. Lorenzo dijo *"todo esto esta actualizandose
+y documentandose en los archivos del proyecto?"*. Sí — cada decisión técnica
+de magnitud queda en `decisions.md`. Snapshots de estado en `state.md`.
+
+---
+
 ## 2026-05-13 — USCIS Form Wiring Playbook locked
 
 **Decisión:** cualquier formulario USCIS nuevo (I-485, N-400, DS-260, etc.)
