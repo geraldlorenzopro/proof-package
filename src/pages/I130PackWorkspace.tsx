@@ -1,10 +1,29 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { RotateCcw } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
 import ActionBanner from "@/components/questionnaire-packs/i130/ActionBanner";
 import PackHero from "@/components/questionnaire-packs/i130/PackHero";
 import FilingTargetWidget from "@/components/questionnaire-packs/i130/FilingTargetWidget";
-import DocCard from "@/components/questionnaire-packs/i130/DocCard";
+import SortableDocCard from "@/components/questionnaire-packs/shared/SortableDocCard";
+import { useCardOrder } from "@/components/questionnaire-packs/shared/useCardOrder";
 import AlertsList from "@/components/questionnaire-packs/i130/AlertsList";
 import NextActionsList from "@/components/questionnaire-packs/i130/NextActionsList";
 import CompactDocsRow, {
@@ -46,6 +65,13 @@ const PACK_TABS: PackTab[] = [
   { id: "tareas", label: "Tareas", count: 5 },
   { id: "notas", label: "Notas" },
 ];
+
+// Default order = workflow real del paralegal:
+// 1. Evidencia cliente (lo que más trabaja día a día)
+// 2. Packet pre-flight (ensamblar cover letter + exhibits)
+// 3. Bona fide builder (apoyo a la evidencia)
+// 4. I-864 preparatorio (para después, no urge en I-130)
+const I130_DEFAULT_ORDER = ["evidencia", "packet", "bonafide", "i864"];
 
 function buildDocCards(caseId: string): DocCardData[] {
   return [
@@ -216,6 +242,34 @@ export default function I130PackWorkspace() {
   const docCards = buildDocCards(caseId);
   const compactDocs = buildCompactDocs(caseId);
 
+  // Card order — persisted per user via localStorage. Workflow real del paralegal.
+  const { order, setOrder, resetToDefault } = useCardOrder("i130", I130_DEFAULT_ORDER);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const orderedCards = order
+    .map((id) => docCards.find((c) => c.id === id))
+    .filter((c): c is DocCardData => Boolean(c));
+  const activeDragCard = activeDragId ? docCards.find((c) => c.id === activeDragId) : null;
+  const isCustomOrder = order.join(",") !== I130_DEFAULT_ORDER.join(",");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveDragId(String(event.active.id));
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveDragId(null);
+    if (!over || active.id === over.id) return;
+    const oldIndex = order.indexOf(String(active.id));
+    const newIndex = order.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    setOrder(arrayMove(order, oldIndex, newIndex));
+  }
+
   function handleStartI864() {
     navigate(`/hub/cases/${caseId}/i130-pack/06-i864-support`);
   }
@@ -244,11 +298,48 @@ export default function I130PackWorkspace() {
 
           <PackTabs tabs={PACK_TABS} activeId={activeTab} onSelect={setActiveTab} />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {docCards.map((d) => (
-              <DocCard key={d.id} data={d} onAction={() => navigate(d.primaryAction.href)} />
-            ))}
-          </div>
+          {isCustomOrder && (
+            <div className="flex items-center justify-end">
+              <button
+                onClick={resetToDefault}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                title="Restaurar el orden recomendado por NER"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Restaurar orden NER
+              </button>
+            </div>
+          )}
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={order} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {orderedCards.map((d) => (
+                  <SortableDocCard
+                    key={d.id}
+                    id={d.id}
+                    data={d}
+                    onAction={() => navigate(d.primaryAction.href)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+            <DragOverlay>
+              {activeDragCard && (
+                <SortableDocCard
+                  id={activeDragCard.id}
+                  data={activeDragCard}
+                  onAction={() => {}}
+                  isDragOverlay
+                />
+              )}
+            </DragOverlay>
+          </DndContext>
 
           <CompactDocsRow docs={compactDocs} onSelect={(href) => href && navigate(href)} />
 

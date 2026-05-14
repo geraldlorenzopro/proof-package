@@ -1,10 +1,29 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { RotateCcw } from "lucide-react";
 import HubLayout from "@/components/hub/HubLayout";
 import ActionBanner from "@/components/questionnaire-packs/i130/ActionBanner";
 import PackHero from "@/components/questionnaire-packs/i130/PackHero";
 import FilingTargetWidget from "@/components/questionnaire-packs/i130/FilingTargetWidget";
-import DocCard from "@/components/questionnaire-packs/i130/DocCard";
+import SortableDocCard from "@/components/questionnaire-packs/shared/SortableDocCard";
+import { useCardOrder } from "@/components/questionnaire-packs/shared/useCardOrder";
 import AlertsList from "@/components/questionnaire-packs/i130/AlertsList";
 import NextActionsList from "@/components/questionnaire-packs/i130/NextActionsList";
 import CompactDocsRow, {
@@ -17,6 +36,13 @@ import type {
   NextActionItem,
   PackCaseSummary,
 } from "@/components/questionnaire-packs/i130/types";
+
+// Default order I-485 = workflow real:
+// 1. Inadmissibility screener (PRIMERO — sin esto no se filea legalmente)
+// 2. I-693 Medical (paralelo, civil surgeon agenda)
+// 3. Packet (concurrente con I-130/I-765/I-131 + cover letter + exhibits)
+// 4. Interview Prep (para el final del flow, cuando USCIS agenda)
+const I485_DEFAULT_ORDER = ["inadmissibility", "medical", "packet", "interview"];
 
 const CASE_SUMMARY: PackCaseSummary = {
   caseId: "case-demo",
@@ -216,6 +242,33 @@ export default function I485PackWorkspace() {
   const docCards = buildDocCards(caseId);
   const compactDocs = buildCompactDocs(caseId);
 
+  const { order, setOrder, resetToDefault } = useCardOrder("i485", I485_DEFAULT_ORDER);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const orderedCards = order
+    .map((id) => docCards.find((c) => c.id === id))
+    .filter((c): c is DocCardData => Boolean(c));
+  const activeDragCard = activeDragId ? docCards.find((c) => c.id === activeDragId) : null;
+  const isCustomOrder = order.join(",") !== I485_DEFAULT_ORDER.join(",");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveDragId(String(event.active.id));
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveDragId(null);
+    if (!over || active.id === over.id) return;
+    const oldIndex = order.indexOf(String(active.id));
+    const newIndex = order.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    setOrder(arrayMove(order, oldIndex, newIndex));
+  }
+
   function handleStartMedical() {
     navigate(`/hub/cases/${caseId}/i485-pack/06-i693-medical`);
   }
@@ -244,11 +297,48 @@ export default function I485PackWorkspace() {
 
           <PackTabs tabs={PACK_TABS} activeId={activeTab} onSelect={setActiveTab} />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {docCards.map((d) => (
-              <DocCard key={d.id} data={d} onAction={() => navigate(d.primaryAction.href)} />
-            ))}
-          </div>
+          {isCustomOrder && (
+            <div className="flex items-center justify-end">
+              <button
+                onClick={resetToDefault}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                title="Restaurar el orden recomendado por NER"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Restaurar orden NER
+              </button>
+            </div>
+          )}
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={order} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {orderedCards.map((d) => (
+                  <SortableDocCard
+                    key={d.id}
+                    id={d.id}
+                    data={d}
+                    onAction={() => navigate(d.primaryAction.href)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+            <DragOverlay>
+              {activeDragCard && (
+                <SortableDocCard
+                  id={activeDragCard.id}
+                  data={activeDragCard}
+                  onAction={() => {}}
+                  isDragOverlay
+                />
+              )}
+            </DragOverlay>
+          </DndContext>
 
           <CompactDocsRow docs={compactDocs} onSelect={(href) => href && navigate(href)} />
 
