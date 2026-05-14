@@ -14,7 +14,7 @@
 | **Ola 2 — `/hub/reports`** | ✅ Live | `01f80bc` | Dashboard Owner: 4 KPIs reales + CasesAtRisk |
 | **Audit Round 1 + Fixes** | ✅ Live | `adb47bf` | 6 fixes: demo mode, multi-firma, errors visibles, session cache, filter syntax, event rename |
 | **Audit Round 2 + Fixes** | ✅ Live | `bec53e1` | 6 fixes: migration no-op, auth listener, PII substring, tab tracking, avg clamp, KPICard a11y |
-| **Ola 3.1 — Hardening** | ⏳ Pending Lovable apply | TBD | 2 migrations: events RLS strict + closed_at column. Frontend switch en commit follow-up. |
+| **Ola 3.1 — Hardening** | ✅ Live | `a8ab37f` + follow-up | 2 migrations aplicadas (events RLS strict + closed_at column + trigger + backfill + index). ReportsPage usa `closed_at` directo. |
 | **Ola 3.2 — Granular events** | ⚫ Next | — | Edge fn pre-auth + `case.*`, `ai.*`, `auth.*`, `applicant.*` instrumentation |
 | **Ola 3.3 — Team views** | ⚫ After 3.2 | — | `/hub/reports/team`, heatmap, skill tracking |
 | **Ola 4 — Consolidación** | ⚫ Mes 2+ | — | Strategic Packs → tab Case Engine, deprecar `/dashboard/*` |

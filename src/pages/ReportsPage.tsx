@@ -3,13 +3,14 @@
  *
  * Ola 2 del plan de medición — wireframe W-26 en WIREFRAMES.md.
  *
- * KPIs MVP (Ola 2 inicial):
+ * KPIs MVP (Ola 2 + Ola 3.1):
  *   1. Casos activos      — status NOT IN closed states
- *   2. Cerrados 30d       — status='completed' AND updated_at > NOW-30d
- *   3. Días promedio      — AVG(updated_at - created_at) closed last 90d
- *   4. Casos stale 7d+    — active sin update > 7 días
+ *   2. Cerrados 30d       — status='completed' AND closed_at > NOW-30d
+ *   3. Días promedio      — AVG(closed_at - created_at) cerrados last 90d
+ *   4. Casos stale 7d+    — active sin update > 7 días (sigue usando
+ *      updated_at — correcto: "stale" = sin actividad reciente)
  *
- * Deferred a Ola 3+:
+ * Deferred a Ola 3.2+:
  *   - Approval rate (necesita case_forms data madura)
  *   - RFE rate (case_uscis_events table)
  *   - Revenue (firm_fee_schedule)
@@ -96,19 +97,23 @@ function useFirmMetrics(accountId: string | null, isDemo: boolean): FirmMetrics 
           .eq("account_id", accountId)
           .not("status", "in", CLOSED_FILTER),
 
+        // Ola 3.1 follow-up: switch a closed_at (M2 fix definitivo).
+        // closed_at se setea por trigger cuando status pasa a terminal,
+        // sin sesgo de edits post-cierre.
         supabase
           .from("client_cases")
           .select("id", { count: "exact", head: true })
           .eq("account_id", accountId)
           .eq("status", "completed")
-          .gte("updated_at", thirtyDaysAgo),
+          .gte("closed_at", thirtyDaysAgo),
 
         supabase
           .from("client_cases")
-          .select("created_at, updated_at")
+          .select("created_at, closed_at")
           .eq("account_id", accountId)
           .eq("status", "completed")
-          .gte("updated_at", ninetyDaysAgo),
+          .gte("closed_at", ninetyDaysAgo)
+          .not("closed_at", "is", null),
 
         supabase
           .from("client_cases")
@@ -127,19 +132,16 @@ function useFirmMetrics(accountId: string | null, isDemo: boolean): FirmMetrics 
       if (recentClosedRes.error) errors.push("promedio");
       if (staleRes.error) errors.push("stale");
 
-      // M1 fix (audit ronda 2): clamp en 0 para casos importados via GHL
-      // backfill donde updated_at puede ser < created_at (trigger raro o
-      // migration tocando rows). Sin clamp, un outlier baja el avg a
-      // números absurdos y rompe la confianza del Owner.
-      //
-      // M2 nota: estamos usando updated_at como proxy de closed_at. Cualquier
-      // edit post-cierre (nota agregada, retag) sesga este KPI. Cuando se
-      // agregue columna closed_at + trigger (cambio de schema, requiere
-      // Lovable), cambiar aquí. Mientras tanto se documenta en helpText.
+      // Avg días hasta cierre: usa closed_at (seteado por trigger en BD)
+      // en lugar de updated_at proxy. M2 cerrado en Ola 3.1.
+      // M1 clamp se mantiene para casos backfill cuyo closed_at puede ser
+      // < created_at (best-effort histórico fue updated_at, que puede ser
+      // anterior al created_at en casos con migration history rara).
       const closedRows = recentClosedRes.data ?? [];
       const validDiffs = closedRows
+        .filter((c) => c.closed_at !== null)
         .map((c) =>
-          (new Date(c.updated_at).getTime() - new Date(c.created_at).getTime()) / 86400000
+          (new Date(c.closed_at as string).getTime() - new Date(c.created_at).getTime()) / 86400000
         )
         .filter((d) => Number.isFinite(d))
         .map((d) => Math.max(0, d));
@@ -279,7 +281,7 @@ export default function ReportsPage() {
             value={metrics.avgDaysOpen ?? "—"}
             loading={metrics.loading}
             kpiId="avg_days_open"
-            helpText="Tiempo medio de cierre (últimos 90 días). MVP usa updated_at como proxy de closed_at — KPI se afina cuando agreguemos columna closed_at dedicada."
+            helpText="Tiempo medio entre apertura del caso y status final (completed/archived/cancelled). Últimos 90 días."
             threshold={
               metrics.avgDaysOpen === null
                 ? undefined
