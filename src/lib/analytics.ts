@@ -157,9 +157,7 @@ export async function trackEvent(
   }
 
   try {
-    // @ts-expect-error — table `events` no está en types regenerados todavía.
-    // Removeremos el cast post-migration cuando Lovable regenere types.
-    const { error } = await supabase.from("events").insert(payload);
+    const { error } = await supabase.from("events").insert([payload as never]);
 
     if (error) {
       const reason =

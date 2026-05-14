@@ -2038,6 +2038,63 @@ export type Database = {
           },
         ]
       }
+      events: {
+        Row: {
+          account_id: string | null
+          case_id: string | null
+          client_session_id: string | null
+          event_category: string
+          event_name: string
+          id: string
+          ip_country: string | null
+          occurred_at: string
+          properties: Json
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          case_id?: string | null
+          client_session_id?: string | null
+          event_category: string
+          event_name: string
+          id?: string
+          ip_country?: string | null
+          occurred_at?: string
+          properties?: Json
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          case_id?: string | null
+          client_session_id?: string | null
+          event_category?: string
+          event_name?: string
+          id?: string
+          ip_country?: string | null
+          occurred_at?: string
+          properties?: Json
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evidence_items: {
         Row: {
           caption: string | null
@@ -3209,6 +3266,7 @@ export type Database = {
         Args: { _evidence_id: string; _token: string }
         Returns: string
       }
+      events_retention_cleanup: { Args: never; Returns: number }
       generate_file_number: { Args: { p_account_id: string }; Returns: string }
       get_appointment_by_token: {
         Args: { _token: string }
