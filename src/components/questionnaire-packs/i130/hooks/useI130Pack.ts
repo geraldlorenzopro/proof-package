@@ -22,6 +22,10 @@ export interface I130PackState {
     children: Record<string, boolean>;
     statements: Record<string, boolean>;
     timeline: Record<string, boolean>;
+    // Notas de evidencia alternativa por categoría (si no tienen lease pero viven con suegra, etc.)
+    altEvidence: Record<string, string>;
+    // Marcar categoría como "N/A justificado" (sin penalizar score)
+    notApplicable: Record<string, boolean>;
   };
   packet: {
     completed: string[];
@@ -36,6 +40,12 @@ export interface I130PackState {
   evidence: {
     completed: string[];
     requested: string[];
+    // Items custom de la firma agregados al checklist (no parte de la plantilla NER)
+    customItems: Array<{ id: string; label: string; section: string; hint?: string }>;
+    // Items NER marcados como "no aplica al caso" (no penaliza, pero queda registro)
+    skipped: string[];
+    // Selección actual para batch send (no persiste como tal, pero útil tenerlo en state)
+    selectedForSend: string[];
   };
 }
 
@@ -53,10 +63,12 @@ const I130_DEFAULTS: Omit<I130PackState, "lang" | "proRole"> = {
     children: {},
     statements: {},
     timeline: {},
+    altEvidence: {},
+    notApplicable: {},
   },
   packet: { completed: [], paymentMethod: null },
   interview: { completed: [], interpreterName: "", interpreterRelation: "", g1256Signed: false },
-  evidence: { completed: [], requested: [] },
+  evidence: { completed: [], requested: [], customItems: [], skipped: [], selectedForSend: [] },
 };
 
 export function useI130Pack(caseId: string) {
@@ -116,6 +128,128 @@ export function useI130Pack(caseId: string) {
     [setState],
   );
 
+  const setAltEvidence = useCallback(
+    (categoryId: string, text: string) => {
+      setState((prev) => ({
+        ...prev,
+        bonaFide: {
+          ...prev.bonaFide,
+          altEvidence: { ...prev.bonaFide.altEvidence, [categoryId]: text },
+        },
+      }));
+    },
+    [setState],
+  );
+
+  const toggleNotApplicable = useCallback(
+    (categoryId: string) => {
+      setState((prev) => ({
+        ...prev,
+        bonaFide: {
+          ...prev.bonaFide,
+          notApplicable: {
+            ...prev.bonaFide.notApplicable,
+            [categoryId]: !prev.bonaFide.notApplicable[categoryId],
+          },
+        },
+      }));
+    },
+    [setState],
+  );
+
+  // ── Evidence: custom items + skipped + selection for batch send ──
+  const addCustomItem = useCallback(
+    (section: string, label: string, hint?: string) => {
+      if (!label.trim()) return;
+      setState((prev) => ({
+        ...prev,
+        evidence: {
+          ...prev.evidence,
+          customItems: [
+            ...(prev.evidence.customItems ?? []),
+            {
+              id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              label: label.trim(),
+              section,
+              hint: hint?.trim() || undefined,
+            },
+          ],
+        },
+      }));
+    },
+    [setState],
+  );
+
+  const removeCustomItem = useCallback(
+    (itemId: string) => {
+      setState((prev) => ({
+        ...prev,
+        evidence: {
+          ...prev.evidence,
+          customItems: (prev.evidence.customItems ?? []).filter((it) => it.id !== itemId),
+          completed: prev.evidence.completed.filter((id) => id !== itemId),
+          requested: prev.evidence.requested.filter((id) => id !== itemId),
+          selectedForSend: (prev.evidence.selectedForSend ?? []).filter((id) => id !== itemId),
+        },
+      }));
+    },
+    [setState],
+  );
+
+  const toggleSkipped = useCallback(
+    (itemId: string) => {
+      setState((prev) => ({
+        ...prev,
+        evidence: {
+          ...prev.evidence,
+          skipped: toggleInList(prev.evidence.skipped ?? [], itemId),
+        },
+      }));
+    },
+    [setState],
+  );
+
+  const toggleSelectedForSend = useCallback(
+    (itemId: string) => {
+      setState((prev) => ({
+        ...prev,
+        evidence: {
+          ...prev.evidence,
+          selectedForSend: toggleInList(prev.evidence.selectedForSend ?? [], itemId),
+        },
+      }));
+    },
+    [setState],
+  );
+
+  const selectAllForSend = useCallback(
+    (itemIds: string[]) => {
+      setState((prev) => ({
+        ...prev,
+        evidence: { ...prev.evidence, selectedForSend: itemIds },
+      }));
+    },
+    [setState],
+  );
+
+  const clearSelection = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      evidence: { ...prev.evidence, selectedForSend: [] },
+    }));
+  }, [setState]);
+
+  const sendBatchRequest = useCallback(() => {
+    setState((prev) => {
+      const toMark = prev.evidence.selectedForSend ?? [];
+      const newRequested = Array.from(new Set([...prev.evidence.requested, ...toMark]));
+      return {
+        ...prev,
+        evidence: { ...prev.evidence, requested: newRequested, selectedForSend: [] },
+      };
+    });
+  }, [setState]);
+
   return {
     state,
     update,
@@ -124,5 +258,14 @@ export function useI130Pack(caseId: string) {
     toggleItem,
     toggleBonaFide,
     toggleRequested,
+    setAltEvidence,
+    toggleNotApplicable,
+    addCustomItem,
+    removeCustomItem,
+    toggleSkipped,
+    toggleSelectedForSend,
+    selectAllForSend,
+    clearSelection,
+    sendBatchRequest,
   };
 }

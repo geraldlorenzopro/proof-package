@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils";
 import type { DocCardData, DocChecklistItem } from "./types";
 
 const STATUS_BORDER: Record<string, string> = {
-  blocker: "border-rose-500/40",
-  in_progress: "border-amber-500/40",
-  ready: "border-emerald-500/40",
-  completed: "border-emerald-500/40",
-  pending: "border-jarvis/40",
+  blocker: "border-rose-500/30",
+  in_progress: "border-border",
+  ready: "border-border",
+  completed: "border-border",
+  pending: "border-border",
 };
 
 const STATUS_TAG: Record<string, { label: string; cls: string }> = {
@@ -19,11 +19,11 @@ const STATUS_TAG: Record<string, { label: string; cls: string }> = {
 };
 
 const HERO_COLOR: Record<string, string> = {
-  blocker: "text-rose-400",
-  in_progress: "text-amber-400",
-  ready: "text-emerald-400",
-  completed: "text-emerald-400",
-  pending: "text-jarvis",
+  blocker: "text-rose-300",
+  in_progress: "text-foreground",
+  ready: "text-jarvis",
+  completed: "text-jarvis",
+  pending: "text-foreground/90",
 };
 
 const BUTTON_STYLE: Record<string, string> = {

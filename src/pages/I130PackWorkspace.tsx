@@ -26,9 +26,9 @@ const CASE_SUMMARY: PackCaseSummary = {
   petitionerLabel: "USC peticionando",
   startedAt: "jueves 14 de mayo",
   tags: [
-    { label: "Filing concurrente", tone: "info" },
-    { label: "2 bloqueos", tone: "danger" },
-    { label: "Filing en 9 días", tone: "warning" },
+    { label: "I-130 family-based", tone: "info" },
+    { label: "Bona fide en construcción", tone: "warning" },
+    { label: "Filing target 9 días", tone: "neutral" },
   ],
   filing: {
     target: "Envío USCIS",
@@ -51,19 +51,19 @@ function buildDocCards(caseId: string): DocCardData[] {
   return [
     {
       id: "i864",
-      title: "I-864 Sponsor",
-      subtitle: "Affidavit of Support · 125% poverty",
-      status: "blocker",
+      title: "I-864 Sponsor (preparatorio)",
+      subtitle: "Se filea con el I-485, no con el I-130. Adelantar ahora ahorra tiempo.",
+      status: "pending",
       heroStat: "0/4",
       heroStatLabel: "documentos sponsor",
       items: [
-        { id: "1", label: "Identidad sponsor (pasaporte/DL)", status: "danger" },
-        { id: "2", label: "Estatus USC/LPR del sponsor", status: "danger" },
-        { id: "3", label: "Ingresos 3 años (tax transcripts)", status: "danger" },
-        { id: "4", label: "Domicilio sponsor (utility bill)", status: "danger" },
+        { id: "1", label: "Identidad sponsor (pasaporte/DL)", status: "blank" },
+        { id: "2", label: "Estatus USC/LPR del sponsor", status: "blank" },
+        { id: "3", label: "Ingresos 3 años (tax transcripts)", status: "blank" },
+        { id: "4", label: "Domicilio sponsor (utility bill)", status: "blank" },
       ],
       primaryAction: {
-        label: "Iniciar ahora",
+        label: "Empezar preparativo",
         href: `/hub/cases/${caseId}/i130-pack/06-i864-support`,
       },
     },
@@ -160,23 +160,23 @@ function buildCompactDocs(caseId: string): (CompactDocItem & { href?: string })[
 const ALERTS: AlertItem[] = [
   {
     id: "1",
-    severity: "critical",
-    title: "I-485 sin I-864 adjunto",
-    body: "Filing concurrente bloquea sin Affidavit of Support. Iniciá la solicitud al sponsor hoy.",
-    source: "USCIS Filing Instructions",
+    severity: "warning",
+    title: "Bona fide: declaraciones de terceros poco específicas",
+    body: "USCIS rechaza cartas genéricas. Necesitan anécdotas concretas + relación del autor + status migratorio. Ver Matter of Patel 19 I&N Dec. 774 (BIA 1988).",
+    source: "USCIS NOID precedent",
   },
   {
     id: "2",
-    severity: "warning",
-    title: "Bona fide: faltan declaraciones de terceros",
-    body: "Score actual 4/5. USCIS valora cartas de testigos para fortalecer credibilidad.",
-    source: "9 FAM 102.8-1(C)",
+    severity: "info",
+    title: "Adelantá evidencia financiera 'commingling'",
+    body: "Cuentas conjuntas con movimientos regulares, utility bills con ambos nombres, transferencias entre cuentas personales. Tax return jointly por sí solo NO es suficiente.",
+    source: "USCIS Bona Fide review standard",
   },
   {
     id: "3",
     severity: "info",
     title: "USCIS payment update 2025-10-28",
-    body: "No money orders ni checks. Solo G-1450 (tarjeta) o G-1650 (ACH). Confirmá con sponsor.",
+    body: "No money orders ni checks. Solo G-1450 (tarjeta) o G-1650 (ACH).",
     source: "USCIS Form Instructions (Rev. 10/2025)",
   },
 ];
@@ -184,27 +184,27 @@ const ALERTS: AlertItem[] = [
 const NEXT_ACTIONS: NextActionItem[] = [
   {
     id: "1",
-    label: "Llamar a sponsor → solicitar tax transcripts 3 años",
+    label: "Recolectar fotos cronológicas (3-5 años, con otras personas)",
     when: "HOY",
-    whenColor: "rose",
+    whenColor: "amber",
   },
   {
     id: "2",
-    label: "Enviar G-1256 al cliente para selección de intérprete",
-    when: "MAÑANA",
+    label: "Pedir 3 cartas con anécdotas específicas (Matter of Patel)",
+    when: "EN 2 DÍAS",
     whenColor: "amber",
   },
   {
     id: "3",
-    label: "Cerrar Bona fide score con 3 cartas de testigos",
-    when: "EN 3 DÍAS",
-    whenColor: "amber",
+    label: "Reunir evidencia financiera commingling (cuentas + bills + insurance)",
+    when: "EN 5 DÍAS",
+    whenColor: "muted",
   },
   {
     id: "4",
     label: "Felix → completar 18% restante del wizard I-130",
-    when: "EN 5 DÍAS",
-    whenColor: "emerald",
+    when: "EN 7 DÍAS",
+    whenColor: "muted",
   },
 ];
 
@@ -225,10 +225,10 @@ export default function I130PackWorkspace() {
       <div className="h-full overflow-y-auto">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-3">
           <ActionBanner
-            title="Acción recomendada · iniciá I-864 hoy"
-            body="El sponsor no tiene tax transcripts cargados. Sin esto, el filing concurrente del I-485 no puede armarse en 9 días."
-            actionLabel="Iniciar I-864"
-            onAction={handleStartI864}
+            title="Sugerencia · adelantá la evidencia bona fide"
+            body="El I-130 inicial NO requiere I-864. Sí necesita evidencia sólida del matrimonio: fotos cronológicas, cuentas conjuntas, declaraciones detalladas. El I-864 entra después con el I-485."
+            actionLabel="Ver evidencia bona fide"
+            onAction={() => navigate(`/hub/cases/${caseId}/i130-pack/05-bona-fide-builder`)}
           />
 
           <div className="flex items-stretch gap-3 flex-wrap">
