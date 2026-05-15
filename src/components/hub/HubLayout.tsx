@@ -2,7 +2,8 @@ import { ReactNode, useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Shield, Home, LogOut, Users, UserSearch, MessageSquare,
-  FolderOpen, Calendar, BarChart3, Bot, Settings, ClipboardList, FileText
+  FolderOpen, Calendar, BarChart3, Bot, Settings, ClipboardList, FileText,
+  BookOpen
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ const NAV_ITEMS: Array<{
   { icon: Calendar, label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", demoSupported: false },
   { icon: BarChart3, label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", demoSupported: false },
   { icon: Bot, label: "Equipo AI", path: "/hub/ai", match: (p: string) => p === "/hub/ai", demoSupported: false },
+  { icon: BookOpen, label: "Knowledge", path: "/hub/knowledge", match: (p: string) => p === "/hub/knowledge", demoSupported: true },
   { icon: Settings, label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings"), demoSupported: true },
   { icon: ClipboardList, label: "Audit Logs", path: "/hub/audit", match: (p: string) => p === "/hub/audit", demoSupported: false },
 ];

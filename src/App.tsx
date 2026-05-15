@@ -48,6 +48,7 @@ import CaseWorkspace from "./pages/CaseWorkspace";
 import CaseEnginePage from "./pages/CaseEnginePage";
 // Ola 4.1: IntelligenceCenterPage removido — /hub/intelligence ahora redirect a /hub/reports
 import ReportsPage from "./pages/ReportsPage";
+import HubKnowledgePage from "./pages/HubKnowledgePage";
 import VisaEvaluatorPage from "./pages/VisaEvaluatorPage";
 import VisaEvalPublic from "./pages/VisaEvalPublic";
 import CaseTrackPublic from "./pages/CaseTrackPublic";
@@ -148,6 +149,8 @@ const App = () => (
           {/* ═══ PROTECTED ROUTES ═══ */}
           <Route path="/hub" element={<HubPage />} />
           <Route path="/hub/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+          {/* Ola 5.c — Knowledge Base */}
+          <Route path="/hub/knowledge" element={<ProtectedRoute><HubKnowledgePage /></ProtectedRoute>} />
           {/* Ola 4.1 — /hub/intelligence DEPRECATED, redirect a /hub/reports (canonical post-Ola 2) */}
           <Route path="/hub/intelligence" element={<Navigate to="/hub/reports" replace />} />
           <Route path="/hub/consultations" element={<ProtectedRoute><ConsultationsPage /></ProtectedRoute>} />
