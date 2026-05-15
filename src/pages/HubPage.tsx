@@ -97,6 +97,13 @@ export default function HubPage() {
   //
   // Ahora: auth.login_success (intent) → auth.session_landed (arrived).
   // Pair en el funnel: drop = redirect/handshake problems.
+  const cid = searchParams.get("cid");
+  const sig = searchParams.get("sig");
+  const ts = searchParams.get("ts");
+  const exp = searchParams.get("exp");
+  const uemail = searchParams.get("uemail");
+  const uname = searchParams.get("uname");
+
   const sessionLandedRef = useRef(false);
   useEffect(() => {
     if (
@@ -114,13 +121,6 @@ export default function HubPage() {
       });
     }
   }, [data?.account_id, loading, demoMode, cid, sig]);
-
-  const cid = searchParams.get("cid");
-  const sig = searchParams.get("sig");
-  const ts = searchParams.get("ts");
-  const exp = searchParams.get("exp");
-  const uemail = searchParams.get("uemail");
-  const uname = searchParams.get("uname");
 
   useEffect(() => {
     // DEMO MODE: bypassa toda la lógica de auth/cache/GHL handshake.
