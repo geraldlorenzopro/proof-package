@@ -19,6 +19,7 @@ import HubFocusedWidgets from "./HubFocusedWidgets";
 import HubCrisisBar from "./HubCrisisBar";
 import AITeamCard from "./AITeamCard";
 import MyPerformanceWidget from "./MyPerformanceWidget";
+import QuickAskCamila from "./QuickAskCamila";
 import { useDemoMode, DEMO_BRIEFING_TEXT, exitDemoMode } from "@/hooks/useDemoData";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -746,6 +747,11 @@ function HubDashboardInner({
             {/* Ola 5.a — Widget personal del paralegal (wireframe W-28).
                 Solo cuando NO es demo (en demo data sintética puede confundir). */}
             {!demoMode && <MyPerformanceWidget accountId={accountId} isDemo={demoMode} />}
+
+            {/* Ola 5.b — Quick prompts contextuales que disparan Camila
+                con preguntas pre-cargadas. Reusa CustomEvent 'camila:open'
+                que el FloatingPanel ya escucha. */}
+            <QuickAskCamila isDemo={demoMode} />
 
             {/* Ola 5.a — Equipo IA prominente (visión "oficina virtual" plano §10).
                 Muestra agents live + planned. Visible en demo y real. */}
