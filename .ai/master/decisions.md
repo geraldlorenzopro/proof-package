@@ -52,6 +52,81 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-15 (tarde) — Ola 4.1.5: Auditoría quirúrgica + corrección de error Ola 4.1
+
+**Decisión:** Mr. Lorenzo pidió hacer "auditoría quirúrgica" antes de decidir el
+destino de las rutas legacy restantes. Cross-reference con los 5 planos
+fundacionales reveló que las decisiones YA estaban tomadas — yo debí haber
+auditado antes de preguntar.
+
+**Hallazgo crítico:** En Ola 4.1 (commit anterior) yo migré SmartForms a
+`/hub/formularios` por inercia del legacy path. **El plano dice claramente
+`/hub/forms`** (consistente con `/hub/cases`, `/hub/leads` — namespace inglés
+unificado). Sección §3.1 L100 + §15.1 L620. Mi error, corregido en este commit.
+
+**Tabla de decisión del plano (NO requería consenso):**
+
+| Ruta legacy | Destino canonical | Ref plano |
+|---|---|:--:|
+| `/dashboard/checklist` | `/tools/checklist` | §7.1 L347 |
+| `/dashboard/interview-sim` | `/tools/interview-sim` | §7.1 L345 |
+| `/dashboard/visa-evaluator` | `/tools/visa-evaluator` | §7.1 L346 |
+| `/dashboard/vawa-screener` | `/tools/vawa/screener` (FF `vawa-tools`) | §7.2 L359 |
+| `/dashboard/vawa-checklist` | `/tools/vawa/checklist` (FF `vawa-tools`) | §7.2 L359 |
+| `/hub/formularios` (mi error) | `/hub/forms` | §3.1 L100 |
+| `/dashboard/workspace-demo` | ELIMINAR (redirect cons.) | §15.1 L619 |
+| `/dashboard/tracker` | ELIMINAR (widget no ruta) | §10.1 |
+
+**Cambios ejecutados:**
+
+CORRECCIÓN MI ERROR:
+- Canonical SmartForms ahora es `/hub/forms` (4 nested routes: index/new/settings/:id)
+- `/hub/formularios/*` → redirect a `/hub/forms/*` (4 redirects para preservar
+  nested paths)
+- Sidebar HubLayout línea 34: path "Forms" apunta a `/hub/forms`. Match preserva
+  `/hub/formularios` + `/dashboard/smart-forms` para active state durante transición.
+
+NUEVAS RUTAS CANONICAL `/tools/*` (5):
+- `/tools/checklist` → ChecklistGenerator (público, sin auth)
+- `/tools/interview-sim` → InterviewSimulatorPage (público)
+- `/tools/visa-evaluator` → VisaEvaluatorPage (ProtectedRoute — usa supabase
+  shareToken)
+- `/tools/vawa/screener` → VawaScreener (público — funnel marketing)
+- `/tools/vawa/checklist` → VawaChecklistPage (ProtectedRoute — persiste con
+  logAudit)
+
+REDIRECTS `/dashboard/*` → `/tools/*` (5 nuevos):
+- `/dashboard/checklist` → `/tools/checklist`
+- `/dashboard/interview-sim` → `/tools/interview-sim`
+- `/dashboard/visa-evaluator` → `/tools/visa-evaluator`
+- `/dashboard/vawa-screener` → `/tools/vawa/screener`
+- `/dashboard/vawa-checklist` → `/tools/vawa/checklist`
+
+CONSERVADOR (redirects en lugar de delete):
+- `/dashboard/workspace-demo` → `/hub/cases` (plano dice ELIMINAR pero
+  "confirmar con Mr. Lorenzo")
+- `/dashboard/tracker` → `/hub/cases` (USCIS tracker es widget del Case Engine
+  §10.1, no ruta)
+
+DUPLICADO ELIMINADO:
+- `/interview-sim/practice` apuntaba al MISMO componente que `/dashboard/interview-sim`.
+  Ahora ambos redirect a `/tools/interview-sim` canonical.
+
+PENDING (no urgente):
+- Feature flag `vawa-tools` no existe en código todavía. Cuando Mr. Lorenzo
+  decida si VAWA va público o gated, agregar `<FeatureFlag slug="vawa-tools">`
+  envolviendo las 2 rutas VAWA.
+- 27 referencias internas `navigate("/dashboard/*")` funcionan vía redirects
+  (round-trip extra invisible). Update completo cuando se toque cada componente
+  para brand migration (Ola 4.2).
+
+**Lección aprendida:** seguir el protocolo de mi memoria CLAUDE.md ("NUNCA
+PREGUNTAR — SIEMPRE AUDITAR"). Mr. Lorenzo tuvo que recordármelo. La
+auditoría quirúrgica tomó 5 minutos y resolvió 7 decisiones que yo iba a
+poner como "pending para Mr. Lorenzo".
+
+---
+
 ## 2026-05-15 — Ola 4.1: Cleanup arquitectónico (redirects + SmartForms migration)
 
 **Decisión:** Mr. Lorenzo preguntó "¿cuándo se van a actualizar estos URLs del

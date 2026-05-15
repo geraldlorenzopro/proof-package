@@ -129,11 +129,20 @@ const App = () => (
           <Route path="/portal/:cid" element={<ClientPortalRouter />} />
           <Route path="/intake/:token" element={<PreIntakePage />} />
 
-          {/* ═══ PUBLIC TOOL ROUTES (GHL Custom Menu Links) ═══ */}
+          {/* ═══ PUBLIC TOOL ROUTES (GHL Custom Menu Links + SEO) ═══ */}
+          {/* Ola 4.1.5 — namespace canonical de tools según INFORMATION-ARCHITECTURE.md §7 */}
           <Route path="/tools/affidavit" element={<AffidavitTool />} />
           <Route path="/tools/evidence" element={<EvidenceTool />} />
           <Route path="/tools/cspa" element={<CspaTool />} />
           <Route path="/tools/uscis-analyzer" element={<UscisAnalyzer />} />
+          {/* Ola 4.1.5 — tools canonical agregados (antes solo en /dashboard/*) */}
+          <Route path="/tools/checklist" element={<ChecklistGenerator />} />
+          <Route path="/tools/interview-sim" element={<InterviewSimulatorPage />} />
+          <Route path="/tools/visa-evaluator" element={<ProtectedRoute><VisaEvaluatorPage /></ProtectedRoute>} />
+          {/* VAWA — público pero pending feature flag vawa-tools (no existe todavía,
+              agregar <FeatureFlag> cuando Mr. Lorenzo lo cree) */}
+          <Route path="/tools/vawa/screener" element={<VawaScreener />} />
+          <Route path="/tools/vawa/checklist" element={<ProtectedRoute><VawaChecklistPage /></ProtectedRoute>} />
           
 
           {/* ═══ PROTECTED ROUTES ═══ */}
@@ -147,46 +156,59 @@ const App = () => (
           <Route path="/hub/clients" element={<ProtectedRoute><HubClientsPage /></ProtectedRoute>} />
           <Route path="/hub/clients/:id" element={<ProtectedRoute><ClientProfilePage /></ProtectedRoute>} />
           <Route path="/hub/settings/office" element={<ProtectedRoute><OfficeSettingsPage /></ProtectedRoute>} />
-          {/* ═══ SMART FORMS — /hub/formularios CANONICAL (Ola 4.1) ═══ */}
-          {/* Movido desde /dashboard/smart-forms. El namespace /dashboard/* está
-              DEPRECADO según INFORMATION-ARCHITECTURE.md §3. Redirects abajo. */}
-          <Route path="/hub/formularios" element={<ProtectedRoute><SmartFormsLayout /></ProtectedRoute>}>
+          {/* ═══ SMART FORMS — /hub/forms CANONICAL (Ola 4.1.5) ═══ */}
+          {/* Plano §3.1 L100 + §15.1 L620 declara /hub/forms canonical
+              (consistente con /hub/cases, /hub/leads — namespace inglés).
+              Movido desde /dashboard/smart-forms y /hub/formularios. */}
+          <Route path="/hub/forms" element={<ProtectedRoute><SmartFormsLayout /></ProtectedRoute>}>
             <Route index element={<SmartFormsList />} />
             <Route path="new" element={<SmartFormPage />} />
             <Route path="settings" element={<SmartFormsSettings />} />
             <Route path=":id" element={<SmartFormPage />} />
           </Route>
+          {/* Redirect Ola 4.1.5: /hub/formularios → /hub/forms (corrige error de Ola 4.1) */}
+          <Route path="/hub/formularios" element={<Navigate to="/hub/forms" replace />} />
+          <Route path="/hub/formularios/new" element={<Navigate to="/hub/forms/new" replace />} />
+          <Route path="/hub/formularios/settings" element={<Navigate to="/hub/forms/settings" replace />} />
+          <Route path="/hub/formularios/:id" element={<RedirectWithParams to="/hub/forms" />} />
 
-          {/* ═══ /dashboard/* DEPRECATED — redirects a /hub/* o /tools/* (Ola 4.1) ═══ */}
-          {/* Mantenemos /dashboard root para backwards compat de bookmarks generales */}
+          {/* ═══ /dashboard/* DEPRECATED — redirects (Ola 4.1 + 4.1.5) ═══ */}
+          {/* /dashboard root mantiene Dashboard original para backwards compat */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          {/* Tools públicos: redirect a /tools/* (fuente de verdad para tools) */}
+          {/* Tools públicos → /tools/* */}
           <Route path="/dashboard/affidavit" element={<Navigate to="/tools/affidavit" replace />} />
           <Route path="/dashboard/cspa" element={<Navigate to="/tools/cspa" replace />} />
           <Route path="/dashboard/evidence" element={<Navigate to="/tools/evidence" replace />} />
           <Route path="/dashboard/uscis-analyzer" element={<Navigate to="/tools/uscis-analyzer" replace />} />
-          {/* Workflows auth: redirect a /hub/* */}
+          {/* Ola 4.1.5: tools agregados al namespace canonical */}
+          <Route path="/dashboard/checklist" element={<Navigate to="/tools/checklist" replace />} />
+          <Route path="/dashboard/interview-sim" element={<Navigate to="/tools/interview-sim" replace />} />
+          <Route path="/dashboard/visa-evaluator" element={<Navigate to="/tools/visa-evaluator" replace />} />
+          <Route path="/dashboard/vawa-screener" element={<Navigate to="/tools/vawa/screener" replace />} />
+          <Route path="/dashboard/vawa-checklist" element={<Navigate to="/tools/vawa/checklist" replace />} />
+          {/* Workflows auth → /hub/* */}
           <Route path="/dashboard/cases" element={<Navigate to="/hub/cases" replace />} />
           <Route path="/dashboard/settings" element={<Navigate to="/hub/settings/office" replace />} />
-          <Route path="/dashboard/smart-forms" element={<Navigate to="/hub/formularios" replace />} />
-          <Route path="/dashboard/smart-forms/new" element={<Navigate to="/hub/formularios/new" replace />} />
-          <Route path="/dashboard/smart-forms/settings" element={<Navigate to="/hub/formularios/settings" replace />} />
-          <Route path="/dashboard/smart-forms/:id" element={<RedirectWithParams to="/hub/formularios" />} />
-          {/* Features sin equivalente directo aún — mantener temporalmente bajo /dashboard hasta decision Ola 4.1.5 */}
-          <Route path="/dashboard/tracker" element={<ProtectedRoute><PlaceholderTool tool="tracker" /></ProtectedRoute>} />
-          <Route path="/dashboard/checklist" element={<ProtectedRoute><ChecklistGenerator /></ProtectedRoute>} />
-          <Route path="/dashboard/vawa-screener" element={<ProtectedRoute><VawaScreener /></ProtectedRoute>} />
-          <Route path="/dashboard/vawa-checklist" element={<ProtectedRoute><VawaChecklistPage /></ProtectedRoute>} />
-          <Route path="/dashboard/workspace-demo" element={<ProtectedRoute><CaseWorkspace /></ProtectedRoute>} />
-          <Route path="/dashboard/visa-evaluator" element={<ProtectedRoute><VisaEvaluatorPage /></ProtectedRoute>} />
-          <Route path="/dashboard/interview-sim" element={<ProtectedRoute><InterviewSimulatorPage /></ProtectedRoute>} />
-          {/* Legacy /case/:id → redirect a /case-engine/:caseId (Ola 4.1) */}
+          <Route path="/dashboard/smart-forms" element={<Navigate to="/hub/forms" replace />} />
+          <Route path="/dashboard/smart-forms/new" element={<Navigate to="/hub/forms/new" replace />} />
+          <Route path="/dashboard/smart-forms/settings" element={<Navigate to="/hub/forms/settings" replace />} />
+          <Route path="/dashboard/smart-forms/:id" element={<RedirectWithParams to="/hub/forms" />} />
+          {/* Ola 4.1.5 conservador: workspace-demo y tracker → /hub/cases.
+              Plano §15.1 L619 dice ELIMINAR workspace-demo "confirmar con Mr. Lorenzo".
+              Tracker es widget del Case Engine (§10.1), no ruta. Mantengo redirect
+              hasta confirmación final para eliminar componentes y rutas. */}
+          <Route path="/dashboard/workspace-demo" element={<Navigate to="/hub/cases" replace />} />
+          <Route path="/dashboard/tracker" element={<Navigate to="/hub/cases" replace />} />
+          {/* Legacy /case/:id → /case-engine/:id (Ola 4.1) */}
           <Route path="/case/:id" element={<RedirectWithParams to="/case-engine" useParam="id" />} />
+          {/* /interview-sim/practice DUPLICADO de /dashboard/interview-sim (mismo componente).
+              Ambos redirect a /tools/interview-sim canonical (Ola 4.1.5). */}
+          <Route path="/interview-sim/practice" element={<Navigate to="/tools/interview-sim" replace />} />
           <Route path="/case-engine/:caseId" element={<ProtectedRoute><CaseEnginePage /></ProtectedRoute>} />
           <Route path="/b1b2-admin/:cid" element={<ProtectedRoute><B1B2AdminLite /></ProtectedRoute>} />
           <Route path="/b1b2-dashboard" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
           <Route path="/b1b2-dashboard/:accountCid" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
-          <Route path="/interview-sim/practice" element={<ProtectedRoute><InterviewSimulatorPage /></ProtectedRoute>} />
+          {/* /interview-sim/practice removed Ola 4.1.5 — redirect declarado arriba */}
           <Route path="/debug/pdf-fields" element={<ProtectedRoute><PdfFieldInspector /></ProtectedRoute>} />
           {/* Dev-only route — NOT accessible in production (Vite tree-shakes when DEV=false) */}
           {import.meta.env.DEV && (
