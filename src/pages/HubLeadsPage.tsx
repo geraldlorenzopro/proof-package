@@ -318,8 +318,8 @@ export default function HubLeadsPage() {
         {/* Fixed top: Header */}
         <div className="flex items-center justify-between gap-4 shrink-0">
            <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
-               <UserSearch className="w-5 h-5 text-amber-400" />
+             <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+               <UserSearch className="w-5 h-5 text-primary" />
              </div>
              <div>
                <div className="flex items-center gap-2">
