@@ -52,6 +52,89 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-15 — Ola 4.1: Cleanup arquitectónico (redirects + SmartForms migration)
+
+**Decisión:** Mr. Lorenzo preguntó "¿cuándo se van a actualizar estos URLs del
+proyecto basado en lo plano arquitectónico que tenemos?" — pregunta válida que
+expuso deuda técnica acumulada. El plano `INFORMATION-ARCHITECTURE.md` declara
+`/dashboard/*` como DEPRECADO desde 2026-05-14 pero el cleanup nunca se ejecutó.
+
+**Diagnóstico:** 85 rutas activas. Categorización:
+- ✅ Canónicas: `/hub/*`, `/case-engine/:caseId`, `/tools/*`, `/admin/*`,
+  public token-based
+- 🔴 Legacy a redirect: 14 rutas `/dashboard/*`, `/case/:id`, `/hub/intelligence`
+- 🟠 Brand viejo: 60+ archivos con tokens `--accent` gold + `--jarvis` cyan
+- 🟠 Anti-pattern: Strategic Packs como rutas paralelas (deberían ser tab)
+
+**Ola 4.1 ejecutada (este commit):**
+
+CAMBIOS estructurales:
+1. **SmartFormsLayout movido a `/hub/formularios`** (canonical)
+   - Antes: SmartFormsLayout en `/dashboard/smart-forms` + redirect inverso
+     `/hub/formularios` → `/dashboard/smart-forms` (decisión Lovable 2026-05-12
+     que invertía el plano)
+   - Ahora: `/hub/formularios` con nested routes (index/new/settings/:id) +
+     redirects de `/dashboard/smart-forms/*` a `/hub/formularios/*`
+   - Justificación: el plano canonical es `/hub/*`. La decisión del 2026-05-12
+     era oportunista; revertimos siguiendo el plano fundacional.
+
+2. **Helper nuevo `RedirectWithParams`** en App.tsx para redirects 301
+   preservando params dinámicos (ej. `/case/:id` → `/case-engine/:id`,
+   `/dashboard/smart-forms/:id` → `/hub/formularios/:id`).
+
+REDIRECTS 301 (client-side via `<Navigate replace>`):
+
+Tools públicos:
+- `/dashboard/affidavit` → `/tools/affidavit`
+- `/dashboard/cspa` → `/tools/cspa`
+- `/dashboard/evidence` → `/tools/evidence`
+- `/dashboard/uscis-analyzer` → `/tools/uscis-analyzer`
+
+Workflows auth:
+- `/dashboard/cases` → `/hub/cases`
+- `/dashboard/settings` → `/hub/settings/office`
+- `/dashboard/smart-forms` → `/hub/formularios` (+ sub-routes)
+
+Otros legacy:
+- `/case/:id` → `/case-engine/:id` (preservando id via RedirectWithParams)
+- `/hub/intelligence` → `/hub/reports`
+
+CLEANUP de imports unused:
+- `CaseReview` y `IntelligenceCenterPage` removidos del top de App.tsx
+  (sus rutas ahora son redirects sin componente)
+
+SIDEBAR ACTUALIZADO:
+- `HubLayout.tsx:34` label "Forms" → `/hub/formularios` (era `/dashboard/smart-forms`)
+- Match preservado para ambos paths durante transición
+
+NO TOCADO EN ESTA OLA (decisión consciente):
+Las siguientes rutas `/dashboard/*` quedan ACTIVAS sin redirect hasta Ola 4.1.5
+donde Mr. Lorenzo decide su destino canonical:
+- `/dashboard/checklist` (ChecklistGenerator)
+- `/dashboard/tracker` (PlaceholderTool)
+- `/dashboard/vawa-screener` + `/dashboard/vawa-checklist`
+- `/dashboard/visa-evaluator` (también existe `/visa-eval/:token` público)
+- `/dashboard/interview-sim` (también existe `/interview-sim/practice`)
+- `/dashboard/workspace-demo` (CaseWorkspace — ¿se mantiene como demo?)
+
+NO tocado pero documentado para Olas futuras:
+- 27 referencias internas `navigate("/dashboard/*")` en componentes:
+  funcionan vía redirects pero con round-trip extra. Cleanup completo en
+  Ola 4.1.5 o cuando se toque cada componente para brand migration.
+
+**Riesgo de Ola 4.1:**
+- Bajo: redirects son reversibles, bookmarks viejos siguen funcionando
+- Build verificado exit 0
+- No tocamos brand tokens todavía (eso es Ola 4.2)
+
+**Próximo:**
+- Ola 4.1.5 — Decision pending: destino canonical de checklist/vawa/interview-sim
+- Ola 4.2 — Brand migration global (60+ archivos con `--accent`/`--jarvis` legacy)
+- Ola 4.3 — Strategic Packs → tab Case Engine
+- Ola 4.4 — Refactor monolitos
+
+---
+
 ## 2026-05-14 (madrugada) — Ola 3.3: Camila + M6 fix + Team Heatmap + applicant.doc
 
 **Decisión:** trabajo autónomo continuo. Después de Lovable confirmar que la

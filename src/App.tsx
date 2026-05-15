@@ -2,7 +2,19 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+
+// Ola 4.1 — helper para redirect 301 client-side preservando params dinámicos.
+// Usado para /case/:id → /case-engine/:caseId y /dashboard/smart-forms/:id → /hub/formularios/:id
+function RedirectWithParams({ to, useParam }: { to: string; useParam?: string }) {
+  const params = useParams();
+  if (useParam && params[useParam]) {
+    return <Navigate to={`${to}/${params[useParam]}`} replace />;
+  }
+  // Default: preserve :id si existe
+  const id = params.id;
+  return <Navigate to={id ? `${to}/${id}` : to} replace />;
+}
 import { ThemeProvider } from "next-themes";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -15,7 +27,7 @@ import PlaceholderTool from "./pages/PlaceholderTool";
 import AffidavitTool from "./pages/AffidavitTool";
 import CspaTool from "./pages/CspaTool";
 import ClientUpload from "./pages/ClientUpload";
-import CaseReview from "./pages/CaseReview";
+// Ola 4.1: CaseReview removido — /case/:id ahora redirect a /case-engine/:caseId
 import Features from "./pages/Features";
 import UscisAnalyzer from "./pages/UscisAnalyzer";
 import SharedAnalysis from "./pages/SharedAnalysis";
@@ -34,7 +46,7 @@ import NotFound from "./pages/NotFound";
 import PdfFieldInspector from "./pages/PdfFieldInspector";
 import CaseWorkspace from "./pages/CaseWorkspace";
 import CaseEnginePage from "./pages/CaseEnginePage";
-import IntelligenceCenterPage from "./pages/IntelligenceCenterPage";
+// Ola 4.1: IntelligenceCenterPage removido — /hub/intelligence ahora redirect a /hub/reports
 import ReportsPage from "./pages/ReportsPage";
 import VisaEvaluatorPage from "./pages/VisaEvaluatorPage";
 import VisaEvalPublic from "./pages/VisaEvalPublic";
@@ -126,35 +138,50 @@ const App = () => (
 
           {/* ═══ PROTECTED ROUTES ═══ */}
           <Route path="/hub" element={<HubPage />} />
-          <Route path="/hub/intelligence" element={<ProtectedRoute><IntelligenceCenterPage /></ProtectedRoute>} />
           <Route path="/hub/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+          {/* Ola 4.1 — /hub/intelligence DEPRECATED, redirect a /hub/reports (canonical post-Ola 2) */}
+          <Route path="/hub/intelligence" element={<Navigate to="/hub/reports" replace />} />
           <Route path="/hub/consultations" element={<ProtectedRoute><ConsultationsPage /></ProtectedRoute>} />
           <Route path="/hub/consultations/:intakeId" element={<ProtectedRoute><ConsultationRoom /></ProtectedRoute>} />
           <Route path="/hub/leads" element={<ProtectedRoute><HubLeadsPage /></ProtectedRoute>} />
           <Route path="/hub/clients" element={<ProtectedRoute><HubClientsPage /></ProtectedRoute>} />
           <Route path="/hub/clients/:id" element={<ProtectedRoute><ClientProfilePage /></ProtectedRoute>} />
           <Route path="/hub/settings/office" element={<ProtectedRoute><OfficeSettingsPage /></ProtectedRoute>} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/dashboard/cases" element={<ProtectedRoute><CasesPage /></ProtectedRoute>} />
-          <Route path="/dashboard/evidence" element={<ProtectedRoute><EvidenceTool /></ProtectedRoute>} />
-          <Route path="/dashboard/affidavit" element={<ProtectedRoute><AffidavitTool /></ProtectedRoute>} />
-          <Route path="/dashboard/cspa" element={<ProtectedRoute><CspaTool /></ProtectedRoute>} />
-          <Route path="/dashboard/tracker" element={<ProtectedRoute><PlaceholderTool tool="tracker" /></ProtectedRoute>} />
-          <Route path="/dashboard/uscis-analyzer" element={<ProtectedRoute><UscisAnalyzer /></ProtectedRoute>} />
-          <Route path="/dashboard/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-          <Route path="/dashboard/checklist" element={<ProtectedRoute><ChecklistGenerator /></ProtectedRoute>} />
-          <Route path="/dashboard/vawa-screener" element={<ProtectedRoute><VawaScreener /></ProtectedRoute>} />
-          <Route path="/dashboard/vawa-checklist" element={<ProtectedRoute><VawaChecklistPage /></ProtectedRoute>} />
-          <Route path="/dashboard/smart-forms" element={<ProtectedRoute><SmartFormsLayout /></ProtectedRoute>}>
+          {/* ═══ SMART FORMS — /hub/formularios CANONICAL (Ola 4.1) ═══ */}
+          {/* Movido desde /dashboard/smart-forms. El namespace /dashboard/* está
+              DEPRECADO según INFORMATION-ARCHITECTURE.md §3. Redirects abajo. */}
+          <Route path="/hub/formularios" element={<ProtectedRoute><SmartFormsLayout /></ProtectedRoute>}>
             <Route index element={<SmartFormsList />} />
             <Route path="new" element={<SmartFormPage />} />
             <Route path="settings" element={<SmartFormsSettings />} />
             <Route path=":id" element={<SmartFormPage />} />
           </Route>
+
+          {/* ═══ /dashboard/* DEPRECATED — redirects a /hub/* o /tools/* (Ola 4.1) ═══ */}
+          {/* Mantenemos /dashboard root para backwards compat de bookmarks generales */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          {/* Tools públicos: redirect a /tools/* (fuente de verdad para tools) */}
+          <Route path="/dashboard/affidavit" element={<Navigate to="/tools/affidavit" replace />} />
+          <Route path="/dashboard/cspa" element={<Navigate to="/tools/cspa" replace />} />
+          <Route path="/dashboard/evidence" element={<Navigate to="/tools/evidence" replace />} />
+          <Route path="/dashboard/uscis-analyzer" element={<Navigate to="/tools/uscis-analyzer" replace />} />
+          {/* Workflows auth: redirect a /hub/* */}
+          <Route path="/dashboard/cases" element={<Navigate to="/hub/cases" replace />} />
+          <Route path="/dashboard/settings" element={<Navigate to="/hub/settings/office" replace />} />
+          <Route path="/dashboard/smart-forms" element={<Navigate to="/hub/formularios" replace />} />
+          <Route path="/dashboard/smart-forms/new" element={<Navigate to="/hub/formularios/new" replace />} />
+          <Route path="/dashboard/smart-forms/settings" element={<Navigate to="/hub/formularios/settings" replace />} />
+          <Route path="/dashboard/smart-forms/:id" element={<RedirectWithParams to="/hub/formularios" />} />
+          {/* Features sin equivalente directo aún — mantener temporalmente bajo /dashboard hasta decision Ola 4.1.5 */}
+          <Route path="/dashboard/tracker" element={<ProtectedRoute><PlaceholderTool tool="tracker" /></ProtectedRoute>} />
+          <Route path="/dashboard/checklist" element={<ProtectedRoute><ChecklistGenerator /></ProtectedRoute>} />
+          <Route path="/dashboard/vawa-screener" element={<ProtectedRoute><VawaScreener /></ProtectedRoute>} />
+          <Route path="/dashboard/vawa-checklist" element={<ProtectedRoute><VawaChecklistPage /></ProtectedRoute>} />
           <Route path="/dashboard/workspace-demo" element={<ProtectedRoute><CaseWorkspace /></ProtectedRoute>} />
           <Route path="/dashboard/visa-evaluator" element={<ProtectedRoute><VisaEvaluatorPage /></ProtectedRoute>} />
           <Route path="/dashboard/interview-sim" element={<ProtectedRoute><InterviewSimulatorPage /></ProtectedRoute>} />
-          <Route path="/case/:id" element={<ProtectedRoute><CaseReview /></ProtectedRoute>} />
+          {/* Legacy /case/:id → redirect a /case-engine/:caseId (Ola 4.1) */}
+          <Route path="/case/:id" element={<RedirectWithParams to="/case-engine" useParam="id" />} />
           <Route path="/case-engine/:caseId" element={<ProtectedRoute><CaseEnginePage /></ProtectedRoute>} />
           <Route path="/b1b2-admin/:cid" element={<ProtectedRoute><B1B2AdminLite /></ProtectedRoute>} />
           <Route path="/b1b2-dashboard" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
@@ -209,8 +236,7 @@ const App = () => (
           <Route path="/hub/cases/:caseId/i765-pack/05-combo-card" element={<ProtectedRoute><PacksGate><I765Doc05ComboCard /></PacksGate></ProtectedRoute>} />
           <Route path="/hub/cases/:caseId/i765-pack/06-packet" element={<ProtectedRoute><PacksGate><I765Doc06Packet /></PacksGate></ProtectedRoute>} />
           <Route path="/hub/cases/:caseId/i765-pack/07-status" element={<ProtectedRoute><PacksGate><I765Doc07Status /></PacksGate></ProtectedRoute>} />
-          {/* /hub/formularios DEPRECATED 2026-05-12 — fuente de verdad única en /dashboard/smart-forms */}
-          <Route path="/hub/formularios" element={<Navigate to="/dashboard/smart-forms" replace />} />
+          {/* /hub/formularios CANONICAL post-Ola 4.1 — definido arriba con SmartFormsLayout */}
           <Route path="/hub/agenda" element={<ProtectedRoute><HubAgendaPage /></ProtectedRoute>} />
           {/* /hub/reports now handled above directly */}
           <Route path="/hub/ai" element={<ProtectedRoute><HubAiPage /></ProtectedRoute>} />
