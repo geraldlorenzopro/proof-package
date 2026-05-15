@@ -41,6 +41,13 @@ export type Database = {
             foreignKeyName: "account_app_access_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "account_app_access_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
           },
@@ -79,6 +86,13 @@ export type Database = {
           notes?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "account_feature_overrides_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "account_feature_overrides_account_id_fkey"
             columns: ["account_id"]
@@ -137,6 +151,13 @@ export type Database = {
             foreignKeyName: "account_members_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "account_members_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
           },
@@ -183,6 +204,13 @@ export type Database = {
           sort_order?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "active_case_types_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "active_case_types_account_id_fkey"
             columns: ["account_id"]
@@ -255,8 +283,22 @@ export type Database = {
             foreignKeyName: "ai_agent_sessions_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "ai_agent_sessions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_agent_sessions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "ai_agent_sessions_case_id_fkey"
@@ -381,8 +423,22 @@ export type Database = {
             foreignKeyName: "ai_credit_transactions_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "ai_credit_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_credit_transactions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "ai_credit_transactions_case_id_fkey"
@@ -435,6 +491,13 @@ export type Database = {
           used_this_month?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_credits_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "ai_credits_account_id_fkey"
             columns: ["account_id"]
@@ -513,6 +576,13 @@ export type Database = {
             foreignKeyName: "app_active_sessions_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "app_active_sessions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
           },
@@ -548,6 +618,13 @@ export type Database = {
           role?: Database["public"]["Enums"]["account_role"]
         }
         Relationships: [
+          {
+            foreignKeyName: "app_role_access_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "app_role_access_account_id_fkey"
             columns: ["account_id"]
@@ -651,8 +728,22 @@ export type Database = {
             foreignKeyName: "appointments_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "appointments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "appointments_case_id_fkey"
@@ -725,6 +816,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "audit_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "audit_logs_account_id_fkey"
             columns: ["account_id"]
@@ -818,8 +916,22 @@ export type Database = {
             foreignKeyName: "case_deadlines_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "case_deadlines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_deadlines_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "case_deadlines_case_id_fkey"
@@ -885,8 +997,22 @@ export type Database = {
             foreignKeyName: "case_documents_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "case_documents_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_documents_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "case_documents_case_id_fkey"
@@ -951,8 +1077,22 @@ export type Database = {
             foreignKeyName: "case_forms_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "case_forms_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_forms_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "case_forms_case_id_fkey"
@@ -1008,8 +1148,22 @@ export type Database = {
             foreignKeyName: "case_notes_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "case_notes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_notes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "case_notes_case_id_fkey"
@@ -1056,8 +1210,22 @@ export type Database = {
             foreignKeyName: "case_questionnaire_answers_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "case_questionnaire_answers_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_questionnaire_answers_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "case_questionnaire_answers_case_id_fkey"
@@ -1114,8 +1282,22 @@ export type Database = {
             foreignKeyName: "case_stage_history_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "case_stage_history_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_stage_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "case_stage_history_case_id_fkey"
@@ -1210,8 +1392,22 @@ export type Database = {
             foreignKeyName: "case_tags_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "case_tags_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_tags_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "case_tags_case_id_fkey"
@@ -1294,8 +1490,22 @@ export type Database = {
             foreignKeyName: "case_tasks_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "case_tasks_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_tasks_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "case_tasks_case_id_fkey"
@@ -1364,8 +1574,22 @@ export type Database = {
             foreignKeyName: "case_tool_outputs_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "case_tool_outputs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_tool_outputs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "case_tool_outputs_case_id_fkey"
@@ -1557,6 +1781,13 @@ export type Database = {
             foreignKeyName: "client_cases_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "client_cases_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
           },
@@ -1731,6 +1962,13 @@ export type Database = {
             foreignKeyName: "client_profiles_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "client_profiles_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
           },
@@ -1771,6 +2009,13 @@ export type Database = {
           sort_order?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "consultation_types_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "consultation_types_account_id_fkey"
             columns: ["account_id"]
@@ -1864,8 +2109,22 @@ export type Database = {
             foreignKeyName: "consultations_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "consultations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "consultations_case_id_fkey"
@@ -2029,8 +2288,22 @@ export type Database = {
             foreignKeyName: "email_logs_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "email_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_logs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "email_logs_case_id_fkey"
@@ -2107,8 +2380,22 @@ export type Database = {
             foreignKeyName: "events_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "events_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "events_case_id_fkey"
@@ -2184,6 +2471,13 @@ export type Database = {
           upload_order?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "evidence_items_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
+          },
           {
             foreignKeyName: "evidence_items_case_id_fkey"
             columns: ["case_id"]
@@ -2381,8 +2675,22 @@ export type Database = {
             foreignKeyName: "form_submissions_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "form_submissions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "form_submissions_case_id_fkey"
@@ -2461,6 +2769,13 @@ export type Database = {
             foreignKeyName: "ghl_sync_log_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: true
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "ghl_sync_log_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
           },
@@ -2504,6 +2819,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ghl_user_mappings_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "ghl_user_mappings_account_id_fkey"
             columns: ["account_id"]
@@ -2678,8 +3000,22 @@ export type Database = {
             foreignKeyName: "intake_sessions_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "intake_sessions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_sessions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
           },
           {
             foreignKeyName: "intake_sessions_case_id_fkey"
@@ -2826,6 +3162,13 @@ export type Database = {
             foreignKeyName: "office_config_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: true
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "office_config_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
           },
@@ -2875,6 +3218,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pipeline_templates_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "pipeline_templates_account_id_fkey"
             columns: ["account_id"]
@@ -3031,6 +3381,13 @@ export type Database = {
             foreignKeyName: "tool_usage_logs_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "tool_usage_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
           },
@@ -3116,6 +3473,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "vawa_cases_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "vawa_cases_account_id_fkey"
             columns: ["account_id"]
@@ -3230,6 +3594,13 @@ export type Database = {
             foreignKeyName: "visa_evaluations_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "visa_evaluations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "ner_accounts"
             referencedColumns: ["id"]
           },
@@ -3244,7 +3615,84 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      case_metrics_daily: {
+        Row: {
+          account_id: string | null
+          assigned_to: string | null
+          case_id: string | null
+          case_type: string | null
+          closed_at: string | null
+          created_at: string | null
+          days_in_stage: number | null
+          days_open: number | null
+          documents_count: number | null
+          is_stale: boolean | null
+          overdue_tasks_count: number | null
+          pending_tasks_count: number | null
+          pipeline_stage: string | null
+          snapshot_date: string | null
+          status: string | null
+          total_days_open: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_cases_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "client_cases_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      firm_metrics_daily: {
+        Row: {
+          account_id: string | null
+          active_cases: number | null
+          active_paralegals: number | null
+          avg_close_days: number | null
+          closed_30d: number | null
+          closed_90d: number | null
+          snapshot_date: string | null
+          stale_cases: number | null
+          total_cases_ever: number | null
+        }
+        Relationships: []
+      }
+      paralegal_metrics_daily: {
+        Row: {
+          account_id: string | null
+          active_cases: number | null
+          avg_close_days: number | null
+          closed_30d: number | null
+          snapshot_date: string | null
+          stale_cases: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_members_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "account_members_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       account_has_feature: {
@@ -3425,6 +3873,7 @@ export type Database = {
         Returns: Json
       }
       is_platform_admin: { Args: never; Returns: boolean }
+      refresh_metrics_mvs: { Args: never; Returns: string }
       release_app_seat: {
         Args: { _app_slug: string; _user_id: string }
         Returns: undefined
