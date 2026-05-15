@@ -5,8 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import HubLayout from "@/components/hub/HubLayout";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 export default function HubAgendaPage() {
+  useTrackPageView("hub.agenda");
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

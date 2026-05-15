@@ -8,6 +8,7 @@ import { ArrowLeft, Mic, Link2, Play, Volume2, RotateCcw, ChevronRight, ChevronL
 import { CONSULAR_QUESTIONS, CATEGORY_LABELS, type ConsularQuestion } from "@/lib/consularInterviewQuestions";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 const CATEGORY_ICONS: Record<string, any> = {
   purpose: Plane,
@@ -18,6 +19,7 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 export default function InterviewSimulatorPage() {
+  useTrackPageView("tools.interview_sim");
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentIndex, setCurrentIndex] = useState(0);

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Loader2, UserRound } from "lucide-react";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 interface User {
   id: string;
@@ -26,6 +27,7 @@ const ROLE_BADGE: Record<string, string> = {
 };
 
 export default function AdminUsersPage() {
+  useTrackPageView("admin.users");
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");

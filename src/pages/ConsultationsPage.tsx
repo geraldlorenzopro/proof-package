@@ -12,6 +12,7 @@ import ChannelLogo from "@/components/intake/ChannelLogo";
 import IntakeWizard from "@/components/intake/IntakeWizard";
 import HubLayout from "@/components/hub/HubLayout";
 import ConsultationKanban, { type KanbanItem, getColumn } from "@/components/hub/ConsultationKanban";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 const TOPIC_LABELS: Record<string, string> = {
   "proceso:familia": "Residencia / Green Card por familia",
@@ -71,6 +72,7 @@ const PERIOD_OPTIONS = [
 const PAGE_SIZE = 20;
 
 export default function ConsultationsPage() {
+  useTrackPageView("hub.consultations");
   const navigate = useNavigate();
   const [accountId, setAccountId] = useState("");
   const [items, setItems] = useState<ConsultationRow[]>([]);

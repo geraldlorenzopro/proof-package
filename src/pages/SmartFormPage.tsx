@@ -14,8 +14,10 @@ import { mapFelixOutputToI765Data } from "@/lib/i765FelixMapper";
 import { mapFelixOutputToI130Data } from "@/lib/i130FelixMapper";
 import { useSmartFormsContext } from "@/components/smartforms/SmartFormsContext";
 import { trackEvent, sanitizeErrorReason } from "@/lib/analytics";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 export default function SmartFormPage() {
+  useTrackPageView("smart_forms.wizard");
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams<{ id: string }>();

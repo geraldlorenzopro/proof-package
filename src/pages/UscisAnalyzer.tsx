@@ -18,6 +18,7 @@ import ToolSplash from "@/components/ToolSplash";
 import CaseToolBanner from "@/components/case-tools/CaseToolBanner";
 import SaveToCaseButton from "@/components/case-tools/SaveToCaseButton";
 import { useCaseContext } from "@/components/case-tools/useCaseContext";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 
 const DOCUMENT_TYPES = [
@@ -118,6 +119,7 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export default function UscisAnalyzer() {
+  useTrackPageView("tools.uscis_analyzer");
   const navigate = useNavigate();
   const { destination: backDest, isHub } = useBackDestination();
   const caseCtx = useCaseContext();

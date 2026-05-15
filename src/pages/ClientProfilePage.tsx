@@ -14,6 +14,7 @@ import ChannelLogo from "@/components/intake/ChannelLogo";
 import HubLayout from "@/components/hub/HubLayout";
 import IntakeWizard from "@/components/intake/IntakeWizard";
 import ClientQuickEditor from "@/components/hub/ClientQuickEditor";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 const TOPIC_LABELS: Record<string, string> = {
   "proceso:familia": "Residencia / Green Card por familia",
@@ -155,6 +156,7 @@ function getDisplayInitials(p: Profile): { text: string; isUnknown: boolean } {
 const TAB_MAP: Record<string, string> = { notas: "notas", tareas: "tareas", consultas: "consultas", casos: "casos", documentos: "documentos", info: "info" };
 
 export default function ClientProfilePage() {
+  useTrackPageView("hub.client_profile");
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

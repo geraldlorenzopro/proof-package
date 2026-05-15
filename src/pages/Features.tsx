@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BarChart3, Calculator, Activity, FileText, CheckCircle, Clock, ChevronDown, Camera, FileCheck, DollarSign, Users, FileSearch, FlaskConical } from 'lucide-react';
 import nerLogo from '@/assets/ner-logo.png';
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 const liveTools = [
   {
@@ -62,6 +63,7 @@ const comingTools = [
 ];
 
 export default function Features() {
+  useTrackPageView("public.features");
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (

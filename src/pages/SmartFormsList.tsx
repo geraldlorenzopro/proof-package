@@ -27,6 +27,7 @@ import { toast } from "@/hooks/use-toast";
 import { generateI765Pdf } from "@/lib/i765PdfGenerator";
 import { I765Data } from "@/components/smartforms/i765Schema";
 import { cn } from "@/lib/utils";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 type Submission = {
   id: string;
@@ -87,6 +88,7 @@ const FORMS_CATALOG: FormCatalogItem[] = [
 const CATEGORIES = [...new Set(FORMS_CATALOG.map(f => f.category))];
 
 export default function SmartFormsList() {
+  useTrackPageView("smart_forms.list");
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);

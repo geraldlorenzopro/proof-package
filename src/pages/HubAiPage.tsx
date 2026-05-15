@@ -9,6 +9,7 @@ import {
   FileText, Clipboard, Globe, Shield, CheckSquare,
   Calculator, FileSearch, Camera, Zap
 } from "lucide-react";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 const TOOLS = [
   { label: "Formularios USCIS", icon: FileText, path: "/dashboard/smart-forms", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
@@ -25,6 +26,7 @@ const TOOLS = [
 ];
 
 export default function HubAiPage() {
+  useTrackPageView("hub.ai");
   const navigate = useNavigate();
 
   useEffect(() => {

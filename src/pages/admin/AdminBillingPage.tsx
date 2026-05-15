@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, TrendingUp, Building2, Loader2, AlertTriangle } from "lucide-react";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 const PLAN_PRICES: Record<string, number> = {
   essential: 147,
@@ -27,6 +28,7 @@ interface Account {
 }
 
 export default function AdminBillingPage() {
+  useTrackPageView("admin.billing");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
 

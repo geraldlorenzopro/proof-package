@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import NewFirmModal from "@/components/admin/NewFirmModal";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 interface Account {
   id: string;
@@ -35,6 +36,7 @@ const PLAN_BADGE: Record<string, string> = {
 };
 
 export default function AdminAccountsPage() {
+  useTrackPageView("admin.firms");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");

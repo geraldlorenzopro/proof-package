@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import HubLayout from "@/components/hub/HubLayout";
 import { trackEvent, sanitizeErrorReason } from "@/lib/analytics";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 const AGENT_ID = "agent_6401kntf2pr7fmevaythhpzhys47";
 
@@ -982,6 +983,7 @@ function HubChatPageInner() {
 }
 
 export default function HubChatPage() {
+  useTrackPageView("hub.chat");
   return (
     <ConversationProvider>
       <HubChatPageInner />

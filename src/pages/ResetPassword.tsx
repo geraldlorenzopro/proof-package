@@ -3,10 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Lock, Eye, EyeOff, ArrowLeft, KeyRound, Loader2, CheckCircle, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 type PageState = 'loading' | 'invalid' | 'mfa' | 'reset' | 'success';
 
 export default function ResetPassword() {
+  useTrackPageView("public.reset_password");
   const [pageState, setPageState] = useState<PageState>('loading');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

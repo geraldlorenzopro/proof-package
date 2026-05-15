@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 // ── Stable Field component (outside render to prevent focus loss) ──
 function SettingsField({ label, value, onChange, placeholder, type = "text" }: {
@@ -20,6 +21,7 @@ function SettingsField({ label, value, onChange, placeholder, type = "text" }: {
 }
 
 export default function SmartFormsSettings() {
+  useTrackPageView("smart_forms.settings");
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

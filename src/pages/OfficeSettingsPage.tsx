@@ -14,6 +14,7 @@ import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Uplo
 import { useTheme } from "next-themes";
 import HubLayout from "@/components/hub/HubLayout";
 import { initializeOfficeConfig, STANDARD_CASE_TYPES, AI_CASE_TYPES, TIMEZONES, US_STATES } from "@/lib/officeSetup";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 interface OfficeConfig {
   id?: string;
@@ -90,6 +91,7 @@ const CHANNELS = [
 const EMOJI_GRID = ['📋','📝','✈️','🏠','👨‍👩‍👧','💼','🎓','💍','⚖️','🛡️','🔑','🌎','📞','🤝','🏥','💳','🔒','🪪','🗂️','📄'];
 
 export default function OfficeSettingsPage() {
+  useTrackPageView("hub.settings_office");
   const [accountId, setAccountId] = useState<string | null>(null);
   const [accountName, setAccountName] = useState("");
   const [staffName, setStaffName] = useState("");

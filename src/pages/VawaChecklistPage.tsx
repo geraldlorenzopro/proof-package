@@ -16,8 +16,10 @@ import { generateChecklist, ChecklistCategory } from "@/components/vawa/vawaChec
 import { VawaAnswers, getDefaultAnswers, evaluateEligibility } from "@/components/vawa/vawaEngine";
 import { generateScreenerPdf } from "@/lib/vawaScreenerPdf";
 import ToolSplash from "@/components/ToolSplash";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 export default function VawaChecklistPage() {
+  useTrackPageView("tools.vawa.checklist");
   const navigate = useNavigate();
   const { destination, isHub } = useBackDestination();
   const [searchParams] = useSearchParams();

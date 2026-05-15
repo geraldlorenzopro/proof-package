@@ -17,6 +17,7 @@ import { es } from "date-fns/locale";
 import NewClientModal from "@/components/workspace/NewClientModal";
 import HubLayout from "@/components/hub/HubLayout";
 import ContactQuickPanel from "@/components/hub/ContactQuickPanel";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 interface ClientProfile {
   id: string;
@@ -83,6 +84,7 @@ function getDisplayInitials(c: ClientProfile): { text: string; isUnknown: boolea
 const PAGE_SIZE_OPTIONS = [15, 30, 45];
 
 export default function HubClientsPage() {
+  useTrackPageView("hub.clients");
   const navigate = useNavigate();
   const [clients, setClients] = useState<ClientProfile[]>([]);
   const [totalCount, setTotalCount] = useState(0);

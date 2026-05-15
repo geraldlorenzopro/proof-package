@@ -11,6 +11,7 @@ import { trackToolUsage } from "@/lib/trackUsage";
 import { supabase } from "@/integrations/supabase/client";
 import { useBackDestination } from "@/hooks/useBackDestination";
 import ToolSplash, { type DisclaimerConfig } from "@/components/ToolSplash";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 interface ChecklistCategory {
   title: string;
@@ -83,6 +84,7 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export default function ChecklistGenerator() {
+  useTrackPageView("tools.checklist");
   const navigate = useNavigate();
   const { destination, isHub } = useBackDestination();
   const [step, setStep] = useState<Step>("splash");

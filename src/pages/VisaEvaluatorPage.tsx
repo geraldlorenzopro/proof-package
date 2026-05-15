@@ -8,8 +8,10 @@ import { ArrowLeft, Shield, Link2, Plus } from "lucide-react";
 import VisaEvaluatorStepper from "@/components/visa-evaluator/VisaEvaluatorStepper";
 import VisaEvaluatorResults from "@/components/visa-evaluator/VisaEvaluatorResults";
 import { evaluateProfile, type VisaEvalAnswers, type EvalResult } from "@/lib/visaAvatarEngine";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 export default function VisaEvaluatorPage() {
+  useTrackPageView("tools.visa_evaluator");
   const navigate = useNavigate();
   
   const { toast } = useToast();

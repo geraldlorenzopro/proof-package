@@ -13,6 +13,7 @@ import VawaTestRunner from "@/components/vawa/VawaTestRunner";
 import VawaCasesList from "@/components/vawa/VawaCasesList";
 import { VawaAnswers, evaluateEligibility, EligibilityResult } from "@/components/vawa/vawaEngine";
 import ToolSplash from "@/components/ToolSplash";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 type Step = "splash" | "home" | "wizard" | "result" | "test";
 
@@ -46,6 +47,7 @@ const VAWA_DISCLAIMER = {
 };
 
 export default function VawaScreener() {
+  useTrackPageView("tools.vawa.screener");
   const navigate = useNavigate();
   const { destination, isHub } = useBackDestination();
   const [step, setStep] = useState<Step>("splash");

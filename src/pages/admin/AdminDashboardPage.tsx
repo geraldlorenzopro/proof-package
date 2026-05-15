@@ -9,6 +9,7 @@ import {
   Loader2, ArrowRight,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 const PLAN_PRICES: Record<string, number> = {
   essential: 147,
@@ -53,6 +54,7 @@ interface Metrics {
 }
 
 export default function AdminDashboardPage() {
+  useTrackPageView("admin.dashboard");
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();

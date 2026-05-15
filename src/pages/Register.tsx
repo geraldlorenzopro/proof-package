@@ -10,8 +10,10 @@ import { Loader2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { initializeOfficeConfig } from "@/lib/officeSetup";
 import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 export default function Register() {
+  useTrackPageView("public.register");
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

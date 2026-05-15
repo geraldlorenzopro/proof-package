@@ -10,6 +10,7 @@ import {
   ArrowLeft, Building2, Users, Briefcase, Loader2, UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 interface Account {
   id: string;
@@ -33,6 +34,7 @@ const PLAN_BADGE: Record<string, string> = {
 };
 
 export default function AdminAccountDetailPage() {
+  useTrackPageView("admin.firm_detail");
   const { accountId } = useParams<{ accountId: string }>();
   const [account, setAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);

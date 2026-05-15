@@ -41,6 +41,7 @@ import SaveToCaseButton from '@/components/case-tools/SaveToCaseButton';
 import { useCaseContext } from '@/components/case-tools/useCaseContext';
 import { useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 const EVIDENCE_DISCLAIMER = {
   title: { es: "Aviso Legal Importante", en: "Important Legal Notice" },
@@ -80,6 +81,7 @@ const STEPS = (lang: Lang) => [
 ];
 
 export default function Index() {
+  useTrackPageView("public.landing");
   const navigate = useNavigate();
   const { destination: backDest, isHub } = useBackDestination();
   const [accepted, setAccepted] = useState(false);

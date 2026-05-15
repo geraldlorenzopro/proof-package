@@ -1,6 +1,8 @@
 import AdminAnalytics from "@/components/AdminAnalytics";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 export default function AdminAnalyticsPage() {
+  useTrackPageView("admin.analytics");
   return (
     <div className="max-w-6xl space-y-6">
       <div>

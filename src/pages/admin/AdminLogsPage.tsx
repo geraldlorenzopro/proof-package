@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Loader2, ScrollText, ChevronDown, ChevronUp } from "lucide-react";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 interface LogEntry {
   id: string;
@@ -24,6 +25,7 @@ interface LogEntry {
 const CRITICAL_ACTIONS = ["admin.impersonate", "admin.account_updated", "auth.login_failed"];
 
 export default function AdminLogsPage() {
+  useTrackPageView("admin.logs");
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");

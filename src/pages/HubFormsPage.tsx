@@ -14,6 +14,7 @@ import HubLayout from "@/components/hub/HubLayout";
 import { useDemoMode, FORM_STATUS_LABELS, DemoForm, FormStatus } from "@/hooks/useDemoData";
 import { useFormsList } from "@/hooks/useFormsList";
 import { cn } from "@/lib/utils";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 // /hub/formularios — vista enfocada en USCIS forms del firm.
 // Por ahora solo data demo (todo demo mode). Para real data: query a smart_forms
@@ -48,6 +49,7 @@ function formatRelative(iso: string | null): string {
 }
 
 export default function HubFormsPage() {
+  useTrackPageView("hub.forms_legacy");
   const navigate = useNavigate();
   const demoMode = useDemoMode();
   const [accountId, setAccountId] = useState<string | null>(null);

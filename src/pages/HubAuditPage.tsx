@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 interface AuditEntry {
   id: string;
@@ -169,6 +170,7 @@ const ACTION_FILTER_OPTIONS = [
 ];
 
 export default function HubAuditPage() {
+  useTrackPageView("hub.audit");
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);

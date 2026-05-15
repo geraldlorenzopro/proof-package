@@ -35,7 +35,7 @@ const NAV_ITEMS: Array<{
   { icon: FileText, label: "Forms", path: "/hub/forms", match: (p: string) => p.startsWith("/hub/forms") || p.startsWith("/hub/formularios") || p.startsWith("/dashboard/smart-forms"), badgeKey: "forms", demoSupported: true },
   { icon: Calendar, label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", demoSupported: false },
   { icon: BarChart3, label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", demoSupported: false },
-  { icon: Bot, label: "Equipo AI", path: "/hub/ai", match: (p: string) => p === "/hub/ai", demoSupported: false },
+  { icon: Bot, label: "Equipo", path: "/hub/ai", match: (p: string) => p === "/hub/ai" || p === "/hub/team", demoSupported: false },
   { icon: BookOpen, label: "Knowledge", path: "/hub/knowledge", match: (p: string) => p === "/hub/knowledge", demoSupported: true },
   { icon: Settings, label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings"), demoSupported: true },
   { icon: ClipboardList, label: "Audit Logs", path: "/hub/audit", match: (p: string) => p === "/hub/audit", demoSupported: false },

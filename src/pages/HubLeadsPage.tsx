@@ -20,6 +20,7 @@ import { es } from "date-fns/locale";
 import HubLayout from "@/components/hub/HubLayout";
 import IntakeWizard from "@/components/intake/IntakeWizard";
 import ContactQuickPanel from "@/components/hub/ContactQuickPanel";
+import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 interface LeadProfile {
   id: string;
@@ -99,6 +100,7 @@ const CHANNEL_DISPLAY: Record<string, string> = {
 const PAGE_SIZE_OPTIONS = [15, 30, 45, 90, 120];
 
 export default function HubLeadsPage() {
+  useTrackPageView("hub.leads");
   const navigate = useNavigate();
   const [leads, setLeads] = useState<LeadProfile[]>([]);
   const [totalCount, setTotalCount] = useState(0);
