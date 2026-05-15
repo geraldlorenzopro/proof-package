@@ -297,7 +297,7 @@ export default function I130PackWorkspace() {
               <FilingTargetWidget
                 target={caseSummary?.filing.target || "Envío USCIS"}
                 daysRemaining={caseSummary?.filing.daysRemaining ?? 30}
-                currentStep={caseSummary?.filing.currentStep || "evidencia"}
+                currentStep={caseSummary?.filing.currentStep || "evidence"}
               />
             </div>
           </div>
