@@ -52,15 +52,28 @@ export default function VirtualOfficeCard({ accountId, isDemo = false }: Props) 
       const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
       const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
 
-      // Query a appointments del día (la tabla canonical de consultations)
-      const { count } = await supabase
+      // Audit fix post-Ola 5: la columna canonical es `appointment_datetime`,
+      // NO `appointment_at` (mi error original). Schema verified en
+      // src/integrations/supabase/types.ts.
+      // Filtrar también not-null porque `appointment_datetime` es nullable.
+      const { count, error } = await supabase
         .from("appointments")
         .select("id", { count: "exact", head: true })
         .eq("account_id", accountId)
-        .gte("appointment_at", todayStart)
-        .lt("appointment_at", todayEnd);
+        .gte("appointment_datetime", todayStart)
+        .lt("appointment_datetime", todayEnd)
+        .not("appointment_datetime", "is", null);
 
-      if (!cancelled) setConsultasHoy(count ?? 0);
+      if (cancelled) return;
+      if (error) {
+        // Silencioso en prod, log en dev. UI muestra "Sin consultas" graciosamente.
+        if (import.meta.env.DEV) {
+          console.warn("[VirtualOfficeCard] appointments query failed:", error.message);
+        }
+        setConsultasHoy(0);
+        return;
+      }
+      setConsultasHoy(count ?? 0);
     })();
 
     return () => { cancelled = true; };
