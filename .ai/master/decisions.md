@@ -52,6 +52,73 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-15 (madrugada) — Ola 4.2.b: Audit HEX hardcoded + dead code cleanup
+
+**Decisión:** Mr. Lorenzo confirmó visualmente que Ola 4.2.a se ve correcto.
+Audit Ola 4.2.b para encontrar HEX hardcoded que escaparon a los tokens CSS
+y rompan el brandbook.
+
+**Resultado del audit:** la migración de tokens (Ola 4.2.a) cubrió 99% del
+brand. **No hay HEX hardcoded que rompan el brandbook.**
+
+**Inventario completo (count por HEX en src/):**
+
+🟢 BRAND-COMPLIANT (no requiere cambios):
+- `#2563EB` (18 usos) — AI Blue ✅
+- `#22D3EE` (9 usos) — Cyan accent ✅
+- `#F3F4F6` (6 usos) — Soft Gray ✅
+- `#0B1F3A` (6 usos) — Deep Navy ✅
+- `#1d4ed8` (6 usos) — AI Blue darker variant ✅
+- `#0f2d52` (5 usos) — Deep Navy variant ✅
+- `#e8edf5` (5 usos) — soft gray light ✅
+
+🟢 FUNCIONALES (status indicators — semánticamente correctos):
+- `#10B981` (4) green success
+- `#F97316`/`#F59E0B`/`#f59e0b` (5) orange warning
+- `#F43F5E`/`#FF0000` (4) red destructive
+- `#6B7280` (4) gray muted
+
+🟢 BRAND THIRD-PARTY (intocables — son brand colors oficiales):
+- `#4285F4` Google blue, `#34A853` Google green, `#FBBC05` Google yellow,
+  `#EA4335` Google red, `#1877F2` Facebook, `#25D366` WhatsApp,
+  `#E1306C` Instagram
+
+🟡 DECORATIVOS MENORES (no rompen brand, no urgent fix):
+- `#8B5CF6`/`#A855F7` (4) purple — accent decorativo
+- `#14B8A6` (2) teal — accent decorativo
+- `bg-[#111]`, `bg-[#0a0a0f]`, `bg-[#0a0a0a]` — dark backgrounds en 3 modales
+  (NewFirmModal, OnboardingWizard, Register). Cerca de near-black, no rompen
+  brand. Podrían usar `bg-background` pero no urgente.
+
+🔴 DEAD CODE encontrado:
+- `src/App.css` — Vite template boilerplate (#646cff vite-blue + #61dafb
+  react-cyan). NO importado en ningún archivo. ELIMINADO en este commit.
+
+**Cambios:**
+- ❌ DELETE `src/App.css` (dead code, 41 LOC)
+
+**Por qué Ola 4.2.b fue chiquita:** la estrategia de Ola 4.2.a (migrar tokens
+CSS en lugar de archivos individuales) fue tan efectiva que no quedó nada
+crítico que arreglar. **Lección validada:** atacar abstracciones > atacar
+periferia.
+
+**Build:** bun run build exit 0. Bundle ahorro mínimo (~1KB de App.css).
+
+**Estado deuda técnica del plano post-Ola 4.2:**
+- ✅ Rutas `/dashboard/*` legacy redirects (Ola 4.1 + 4.1.5)
+- ✅ Brand tokens legacy 94 archivos (Ola 4.2.a)
+- ✅ HEX hardcoded audit (Ola 4.2.b — sin findings críticos)
+- ⚫ Strategic Packs como rutas paralelas (Ola 4.3)
+- ⚫ Refactor monolitos HubDashboard 881 LOC (Ola 4.4)
+
+**Próximo: Ola 4.3 — Strategic Packs → tab del Case Engine**
+- Hoy: 24 rutas paralelas (`/hub/cases/:caseId/{i130,i485,i765}-pack/...`)
+- Plano dice: deben ser tab `?tab=strategy` del Case Engine
+- Trabajo: crear `CaseStrategyPanel.tsx`, mover lógica de 3 workspaces,
+  sub-router interno para los 7 docs, eliminar 24 rutas paralelas
+
+---
+
 ## 2026-05-15 (noche) — Ola 4.2.a: Brand migration GLOBAL vía CSS tokens
 
 **Decisión:** después de cerrar Ola 4.1.5 (rutas canonical), arrancar Ola 4.2 —
