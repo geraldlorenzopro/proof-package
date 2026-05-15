@@ -2041,6 +2041,27 @@ export type Database = {
           },
         ]
       }
+      event_rate_limits: {
+        Row: {
+          count: number
+          key: string
+          last_seen_at: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          last_seen_at?: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          last_seen_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           account_id: string | null
@@ -3250,6 +3271,7 @@ export type Database = {
         Args: { _tool_slug: string; _user_id: string }
         Returns: Json
       }
+      cleanup_event_rate_limits: { Args: never; Returns: number }
       complete_pre_intake: {
         Args: { _data: Json; _token: string }
         Returns: undefined
