@@ -6,6 +6,7 @@ import { getCaseTypeLabel, normalizeClientName } from "@/lib/caseTypeLabels";
 import { logAccess } from "@/lib/auditLog";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { trackEvent } from "@/lib/analytics";
+import CaseStrategyPanel from "@/components/case-engine/CaseStrategyPanel";
 import {
   ArrowLeft, Loader2, AlertTriangle, BarChart3, FileText,
   MessageSquare, ListTodo, Clock, FolderOpen, Sparkles, Mic,
@@ -63,9 +64,9 @@ function ShareCaseButton({ accessToken }: { accessToken: string }) {
   );
 }
 
-type TabId = "resumen" | "consulta" | "equipo" | "documentos" | "formularios" | "tareas" | "historial";
+type TabId = "resumen" | "consulta" | "equipo" | "documentos" | "formularios" | "tareas" | "historial" | "strategy";
 
-const VALID_TABS: TabId[] = ["resumen", "consulta", "equipo", "documentos", "formularios", "tareas", "historial"];
+const VALID_TABS: TabId[] = ["resumen", "consulta", "equipo", "documentos", "formularios", "tareas", "historial", "strategy"];
 
 export default function CaseEnginePage() {
   const { caseId } = useParams<{ caseId: string }>();
@@ -280,8 +281,16 @@ export default function CaseEnginePage() {
     }
   }
 
+  // Ola 4.3.a — Tab "Estrategia" condicional: solo aparece si case_type
+  // tiene Strategic Pack soportado (I-130 / I-485 / I-765). Para otros
+  // case_types (N-400, DS-260, etc.) el tab se esconde hasta que se cree
+  // el pack correspondiente.
+  const caseType = (caseData as any)?.case_type as string | undefined;
+  const hasStrategicPack = !!caseType && /^(i.?130|i.?485|i.?765)/i.test(caseType);
+
   const tabs = [
     { id: "resumen" as const, label: "Resumen", icon: BarChart3 },
+    ...(hasStrategicPack ? [{ id: "strategy" as const, label: "Estrategia", icon: Sparkles }] : []),
     { id: "consulta" as const, label: "Consulta", icon: Mic, liveBadge: true },
     { id: "equipo" as const, label: "Equipo", icon: Users },
     { id: "documentos" as const, label: "Documentos", icon: FolderOpen, count: evidenceCount },
@@ -619,6 +628,17 @@ export default function CaseEnginePage() {
 
           {activeTab === "equipo" && (
             <CaseAgentPanel caseId={caseId!} accountId={caseData.account_id} />
+          )}
+
+          {/* Ola 4.3.a — Tab Estrategia: muestra Strategic Pack del case_type.
+              Solo se renderiza si el tab está disponible (caseType en
+              I-130/I-485/I-765). Click en doc card abre la ruta paralela
+              existente. Ola 4.3.b extraerá contenido inline. */}
+          {activeTab === "strategy" && (
+            <CaseStrategyPanel
+              caseId={caseId!}
+              caseType={caseType}
+            />
           )}
 
           {activeTab === "documentos" && (

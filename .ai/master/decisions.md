@@ -52,6 +52,87 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-15 (madrugada+) — Ola 4.3.a: Strategic Packs → tab Case Engine (additive)
+
+**Decisión:** arrancar Ola 4.3 con sub-paso ADDITIVE — crear nuevo tab
+"Estrategia" en el Case Engine sin tocar las 24 rutas paralelas existentes.
+Implementa el principio del plano §15.1 L626-635: Strategic Packs deben vivir
+como tab `?tab=strategy` del Case Engine, no como rutas paralelas.
+
+**Estrategia conservadora 4.3.a (Zero risk):**
+- CREAR el panel nuevo en paralelo a las rutas viejas
+- Click en doc card → navega a la ruta existente (mismo workflow del paralegal,
+  solo que ahora hay un entry point adicional desde Case Engine)
+- Banner visible "Ola 4.3.a vista preliminar" para que Mr. Lorenzo vea que es
+  WIP intermedio
+- Próximo (4.3.b): extraer contenido de cada Doc0X como componente embebible
+  sin HubLayout/PackChrome → renderizar inline en el tab → eliminar rutas paralelas
+
+**Componente nuevo:** `src/components/case-engine/CaseStrategyPanel.tsx` (180 LOC)
+
+Features:
+- Catalog de packs (PACKS Record) — single source of truth para mapeo
+  case_type → docs. Cuando se agreguen N-400/DS-260/I-751 packs, solo agregar
+  entry al PACKS const.
+- Normalización de case_type: acepta "I-130", "I130", "i-130", "I-130 Cónyuge"
+  → todos resuelven a "i130".
+- Empty state honesto cuando case_type NO tiene pack disponible (muestra los
+  packs disponibles + roadmap).
+- Header con nombre del pack + botón "Ver workspace completo".
+- Grid 2-col de cards con número (01-07), título bilingüe, subtítulo, ArrowRight.
+- Tracking: `case.strategy_doc_opened` con doc_slug + pack.
+- Tracking: `case.strategy_workspace_opened` con pack.
+- A11y: button con focus-visible:ring siguiendo patrón de Ola 3.2.a L3 fix.
+
+**Wire en CaseEnginePage:**
+- Tab nuevo "Estrategia" con icono Sparkles
+- POSICIÓN: segundo tab (después de Resumen) — la estrategia es lo MÁS
+  importante después del overview del caso.
+- CONDICIONAL: solo aparece si `case_type` matchea regex `i.?(130|485|765)`.
+  Para otros case_types el tab se esconde hasta que se cree el pack.
+- VALID_TABS array actualizado para que `?tab=strategy` sea reconocido por
+  el URL sync (sino redirigía a "resumen" automáticamente).
+
+**Tracking events nuevos (en taxonomy de MEASUREMENT-FRAMEWORK §13):**
+- `case.strategy_doc_opened` — Properties: {pack, doc_slug, doc_num}
+- `case.strategy_workspace_opened` — Properties: {pack}
+- (page.view captura `?tab=strategy` automáticamente vía useTrackPageView
+  fix H4 ronda 2 audit Ola 3.2.a — location.search en deps)
+
+**Lo que NO está en Ola 4.3.a:**
+- Eliminar las 24 rutas paralelas (`/hub/cases/:caseId/i130-pack/...`) —
+  sigue activo para no romper bookmarks/links existentes
+- Extraer contenido Doc0X como componente embebible — el contenido sigue
+  en su página standalone con HubLayout propio
+- Sub-router `?tab=strategy&doc=01-cuestionario` — por ahora click navega
+  externo
+
+**Por qué hacerlo additive:**
+- Cero risk de romper algo en producción
+- Mr. Lorenzo puede ver el nuevo flow inmediatamente
+- Si hay regresión cosmética, rollback es trivial (remover 2 cambios en
+  CaseEnginePage.tsx y 1 archivo nuevo)
+- Permite iterar el panel sin presión de eliminar rutas viejas
+- Patrón validado en Olas 1-3 (build first, migrate after confirmation)
+
+**Build:** bun run build exit 0. Bundle +7KB (panel + catalog).
+
+**Próximo Ola 4.3.b:**
+- Refactor de Doc01Cuestionario, Doc02Guia, etc.: extraer contenido `<PackChrome>`
+  como componente sin HubLayout/Chrome → `Doc01CuestionarioContent`
+- CaseStrategyPanel monta el contenido inline cuando hay `?tab=strategy&doc=X`
+- Eliminar las 24 rutas paralelas (redirects a `?tab=strategy&doc=...`)
+- Eliminar I130PackWorkspace, I485PackWorkspace, I765PackWorkspace (workspace
+  hero queda como parte del panel)
+- Trabajo estimado: 4-6 hrs por la complejidad de los Doc0X (cada uno tiene
+  state propio via useI130Pack/useI485Pack/useI765Pack hooks)
+
+**Decisión post-4.3.a:**
+- Testing visual de Mr. Lorenzo del nuevo tab
+- Si visualmente OK + flow funciona, arrancar 4.3.b
+
+---
+
 ## 2026-05-15 (madrugada) — Ola 4.2.b: Audit HEX hardcoded + dead code cleanup
 
 **Decisión:** Mr. Lorenzo confirmó visualmente que Ola 4.2.a se ve correcto.
