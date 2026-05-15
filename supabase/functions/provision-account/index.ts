@@ -251,6 +251,26 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Sprint D #6 — track billing.subscription_created event
+    // (firma nueva = subscription nueva). Insert directo via service_role
+    // bypassa RLS.
+    try {
+      await supabaseAdmin.from("events").insert({
+        account_id: account.id,
+        user_id: userId,
+        event_name: "billing.subscription_created",
+        event_category: "billing",
+        properties: {
+          plan: selectedPlan,
+          seats: defaultSeats[selectedPlan] ?? 1,
+          source: "provision_account",
+        },
+      });
+    } catch (eventErr) {
+      // No bloquear provision si tracking falla
+      console.warn("[provision-account] tracking failed:", eventErr);
+    }
+
     // Return credentials
     const result: Record<string, unknown> = {
       success: true,

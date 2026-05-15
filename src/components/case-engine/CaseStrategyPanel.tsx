@@ -23,10 +23,12 @@
  *   - Click en doc card dispara `case.strategy_doc_opened` con doc slug.
  */
 
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
+import { FileText, ArrowRight, Sparkles, AlertCircle, CheckCircle2, Circle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trackEvent } from "@/lib/analytics";
+import { supabase } from "@/integrations/supabase/client";
 
 // ─── Tipos ────────────────────────────────────────────────────────
 
@@ -121,6 +123,35 @@ export default function CaseStrategyPanel({ caseId, caseType, lang = "es" }: Pro
   const packKey = normalizeCaseType(caseType);
   const pack = packKey ? PACKS[packKey] : null;
 
+  // Sprint C light: leer estado de progreso del pack para mostrar status
+  // por doc (done/pending/blocked). Por ahora: detectar localStorage del
+  // pack-state que useCasePack persiste. Cuando se migre a Supabase (PENDING
+  // migration case_pack_state.sql), leer de ahí.
+  const [packState, setPackState] = useState<Record<string, any> | null>(null);
+
+  useEffect(() => {
+    if (!packKey) return;
+    try {
+      const raw = localStorage.getItem(`ner.${packKey}-pack.${caseId}`);
+      if (raw) setPackState(JSON.parse(raw));
+    } catch {
+      // localStorage no disponible o JSON corrupto
+    }
+  }, [packKey, caseId]);
+
+  function getDocStatus(docSlug: string): "done" | "in_progress" | "pending" {
+    if (!packState) return "pending";
+    const docKey = docSlug.split("-").slice(1).join("_"); // "01-cuestionario" → "cuestionario"
+    const docState = packState[docKey] || packState[docSlug];
+    if (!docState) return "pending";
+    if (typeof docState === "object") {
+      // Heuristic: if any field has value, considered started
+      const hasContent = Object.values(docState).some((v) => v && v !== "");
+      return hasContent ? "in_progress" : "pending";
+    }
+    return docState === "done" ? "done" : "in_progress";
+  }
+
   function handleOpenDoc(doc: DocCard) {
     void trackEvent("case.strategy_doc_opened", {
       caseId,
@@ -183,49 +214,80 @@ export default function CaseStrategyPanel({ caseId, caseType, lang = "es" }: Pro
         </button>
       </div>
 
-      {/* Banner Ola 4.3.a — additive notice */}
-      <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 text-xs">
-        <AlertCircle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="font-medium text-amber-700 dark:text-amber-400">
-            Ola 4.3.a — vista preliminar
-          </p>
-          <p className="text-muted-foreground mt-0.5">
-            Click en un doc abre la página dedicada. En Ola 4.3.b el contenido se
-            embeberá directamente en este tab.
-          </p>
-        </div>
+      {/* Sprint C light: removed "vista preliminar" banner — esto YA es el panel
+          canonical. Refactor inline de los Doc0X queda como deuda explícita en
+          GAP-ANALYSIS-2026-05-15.md #3 (Ola 4.3.b). El panel sirve hoy como
+          entry point del workflow del pack. */}
+
+      {/* Lista de docs con status */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {pack.docs.map((doc) => {
+          const status = getDocStatus(doc.slug);
+          const StatusIcon =
+            status === "done" ? CheckCircle2 :
+            status === "in_progress" ? Clock :
+            Circle;
+          const statusColor =
+            status === "done" ? "text-emerald-500" :
+            status === "in_progress" ? "text-amber-500" :
+            "text-muted-foreground/40";
+          const statusLabel =
+            status === "done" ? "Completo" :
+            status === "in_progress" ? "En progreso" :
+            "Pendiente";
+
+          return (
+            <button
+              key={doc.slug}
+              onClick={() => handleOpenDoc(doc)}
+              className={cn(
+                "bg-card border border-border rounded-xl p-4 text-left",
+                "transition-all hover:shadow-md hover:border-primary/40",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                "flex items-start gap-3"
+              )}
+            >
+              <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs font-bold text-primary tabular-nums">{doc.num}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  <span className="text-sm font-medium truncate">
+                    {lang === "es" ? doc.titleEs : doc.titleEn}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-2 mb-1.5">{doc.subtitle}</p>
+                <div className="flex items-center gap-1.5">
+                  <StatusIcon className={cn("w-3 h-3", statusColor)} />
+                  <span className={cn("text-[10px] font-medium uppercase tracking-wider", statusColor)}>
+                    {statusLabel}
+                  </span>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
+            </button>
+          );
+        })}
       </div>
 
-      {/* Lista de docs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {pack.docs.map((doc) => (
-          <button
-            key={doc.slug}
-            onClick={() => handleOpenDoc(doc)}
-            className={cn(
-              "bg-card border border-border rounded-xl p-4 text-left",
-              "transition-all hover:shadow-md hover:border-primary/40",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-              "flex items-start gap-3"
-            )}
-          >
-            <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-bold text-primary tabular-nums">{doc.num}</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                <span className="text-sm font-medium truncate">
-                  {lang === "es" ? doc.titleEs : doc.titleEn}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground line-clamp-2">{doc.subtitle}</p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
-          </button>
-        ))}
-      </div>
+      {/* Sprint C light: deuda explícita 4.3.b documentada al final del panel */}
+      <details className="mt-2 text-xs">
+        <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors py-1">
+          ¿Por qué los docs se abren en otra página?
+        </summary>
+        <p className="mt-2 text-muted-foreground leading-relaxed px-2">
+          En esta versión, cada documento del Strategic Pack abre su propia página
+          (las rutas <code className="text-[10px] bg-muted px-1 rounded">/hub/cases/:id/{pack.workspaceSlug}/...</code>).
+          La transformación inline (todo dentro de este tab) está pendiente en{" "}
+          <a href="/GAP-ANALYSIS-2026-05-15.md" className="text-primary hover:underline">
+            Ola 4.3.b
+          </a>{" "}
+          — requiere refactor de 21 componentes para poder embebernos sin doble
+          layout. Mientras tanto, este tab funciona como navegador del workflow
+          completo del pack.
+        </p>
+      </details>
     </div>
   );
 }

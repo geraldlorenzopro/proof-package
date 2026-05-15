@@ -158,6 +158,24 @@ Deno.serve(async (req) => {
         .eq("case_id", caseData.id);
     }
 
+    // Sprint D #6 — track billing.payment_confirmed event
+    try {
+      await supabase.from("events").insert({
+        account_id: accountId,
+        user_id: null,
+        case_id: caseId,
+        event_name: "billing.payment_confirmed",
+        event_category: "billing",
+        properties: {
+          amount: amount ?? 0,
+          source: "payment_confirmed_webhook",
+          has_case: !!caseData,
+        },
+      });
+    } catch (eventErr) {
+      console.warn("[payment-confirmed] tracking failed:", eventErr);
+    }
+
     return new Response(JSON.stringify({ success: true, case_id: caseId, emails_sent: 4 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
