@@ -27,6 +27,9 @@ const NAV_ITEMS: Array<{
   // cuando demoMode=true (evita pantallas vacías). En modo real, todos visibles.
   demoSupported?: boolean;
 }> = [
+  // Sidebar canonical según INFORMATION-ARCHITECTURE.md §9.2 — 10 items exactos.
+  // Audit Logs y Knowledge están accesibles via /hub/audit y /hub/knowledge
+  // pero NO aparecen en sidebar (el plano declara solo 10 items principales).
   { icon: Home, label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", demoSupported: true },
   { icon: UserSearch, label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", demoSupported: false },
   { icon: Users, label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), demoSupported: false },
@@ -36,9 +39,7 @@ const NAV_ITEMS: Array<{
   { icon: Calendar, label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", demoSupported: false },
   { icon: BarChart3, label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", demoSupported: false },
   { icon: Bot, label: "Equipo", path: "/hub/ai", match: (p: string) => p === "/hub/ai" || p === "/hub/team", demoSupported: false },
-  { icon: BookOpen, label: "Knowledge", path: "/hub/knowledge", match: (p: string) => p === "/hub/knowledge", demoSupported: true },
-  { icon: Settings, label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings"), demoSupported: true },
-  { icon: ClipboardList, label: "Audit Logs", path: "/hub/audit", match: (p: string) => p === "/hub/audit", demoSupported: false },
+  { icon: Settings, label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings") || p === "/hub/knowledge" || p === "/hub/audit", demoSupported: true },
 ];
 
 const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 hours
