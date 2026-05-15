@@ -1,28 +1,57 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-14 (tarde)
+**Última actualización:** 2026-05-16 (madrugada, post Morning Delivery)
 **Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) + extracción de gaps con scripts de paridad
-**Próximo update:** post auditoría profunda ronda 2 + Ola 3 arranque
+**Próximo update:** cuando Mr. Lorenzo retome desde otra computadora
 
 ---
 
-## 📊 Plan de Medición — Snapshot 2026-05-14
+## 📌 TL;DR Snapshot 2026-05-16
+
+**Score gap-analysis:** ~75% promedio (subió de 55% inicial). Foundation técnica
+sólida + Hub canonical post-Morning-Delivery. Backlog explícito documentado.
+
+**Último commit:** `b10de42` (fix ícono /hub/leads amber → cyan brandbook)
+
+**Estado del Hub:**
+- ✅ /hub canonical W-04 (sin widgets extras agregados por mí en Ola 5)
+- ✅ Sidebar 10 items §9.2 (Knowledge + Audit accesibles vía URL, no en sidebar)
+- ✅ Widgets reubicados: AITeamCard → /hub/ai · MyPerformance → /hub/reports
+  · VirtualOffice → /hub/consultations
+- ✅ 3 pantallas transformadas: /hub/leads, /hub/agenda, /hub/consultations
+
+**Pending crítico (priorizado):**
+1. **OfficeSettings refactor** 1431 LOC — sprint dedicado pending
+2. **Ola 4.3.b Strategic Packs inline** — 4-6h dedicadas con caso I-130 real
+3. **Materialized views apply** — migration `PENDING_metrics_materialized_views.sql` pending Lovable apply
+4. **HubDashboard custom hooks** — solo useHubKpis extraído, falta wire + 2 más
+5. **billing.* completos** — 2/4 wireados (subscription_created + payment_confirmed)
+
+---
+
+## 📊 Olas ejecutadas (2026-05-14 → 2026-05-16)
 
 | Ola | Status | Commit | Entregado |
 |---|:--:|---|---|
-| **Ola 1 — Foundation** | ✅ Live | `0430471` | Tabla `events` + RLS + `useTrackPageView` + 3 páginas instrumentadas |
-| **Ola 2 — `/hub/reports`** | ✅ Live | `01f80bc` | Dashboard Owner: 4 KPIs reales + CasesAtRisk |
-| **Audit Round 1 + Fixes** | ✅ Live | `adb47bf` | 6 fixes: demo mode, multi-firma, errors visibles, session cache, filter syntax, event rename |
-| **Audit Round 2 + Fixes** | ✅ Live | `bec53e1` | 6 fixes: migration no-op, auth listener, PII substring, tab tracking, avg clamp, KPICard a11y |
-| **Ola 3.1 — Hardening** | ✅ Live | `a8ab37f` + follow-up | 2 migrations aplicadas (events RLS strict + closed_at column + trigger + backfill + index). ReportsPage usa `closed_at` directo. |
-| **Ola 3.2.a — Core events** | ✅ Live | TBD | 8 events wired: auth.* + case.* + ai.* (Felix). Frontend only, sin Lovable. |
-| **Ola 3.2.a audits + fixes** | ✅ Live | `2a33619` | 7 fixes: PII Postgres pattern + race conditions + UX freezes |
-| **Ola 3.2.b — Edge fn pre-auth** | ⏳ Pending Lovable apply | TBD | Edge fn + migration rate_limits + frontend client + 3 applicant events wireados |
-| **Ola 3.2.c — AI agents + M5 fix** | ✅ Live | `f63ddd6` | Nina/Max trackeados via CaseAgentPanel + Felix M5 page_unload fix |
-| **Ola 3.3 — Camila + M6 + Team + applicant.doc** | ✅ Live | TBD | Camila chat+voice + auth.session_landed + applicant.doc_uploaded + TeamHeatmap inline en /hub/reports |
-| **Ola 3.4 — Polish + advanced** | ⚫ Next | — | TeamHeatmap drill-down → /hub/reports/team, voice page_unload, sparklines, approval/RFE rates |
-| **Ola 3.3 — Team views** | ⚫ After 3.2 | — | `/hub/reports/team`, heatmap, skill tracking |
-| **Ola 4 — Consolidación** | ⚫ Mes 2+ | — | Strategic Packs → tab Case Engine, deprecar `/dashboard/*` |
+| **Ola 1 — Foundation** | ✅ | `0430471` | Tabla `events` + RLS + `useTrackPageView` + 3 páginas instrumentadas |
+| **Ola 2 — `/hub/reports`** | ✅ | `01f80bc` | Dashboard Owner: 4 KPIs reales + CasesAtRisk |
+| **Audit Round 1+2** | ✅ | `adb47bf`+`bec53e1` | 12 fixes (PII, race, UX, auth listener, etc.) |
+| **Ola 3.1 — Hardening** | ✅ | `a8ab37f`+`d84c42f` | events RLS strict + closed_at column |
+| **Ola 3.2.a — Core events** | ✅ | `36dc5e5`+`2a33619` | 8 events wireados + audits ronda 2 |
+| **Ola 3.2.b — Edge fn pre-auth** | ✅ | `d037bf5` | track-public-event + rate limits |
+| **Ola 3.2.c — AI agents** | ✅ | `f63ddd6` | Nina/Max via CaseAgentPanel + Felix M5 |
+| **Ola 3.3 — Camila + Team** | ✅ | `b2296e6` | Camila chat+voice + auth.session_landed + TeamHeatmap |
+| **Ola 4.1 — Cleanup routes** | ✅ | `22c3f2c`+`dc7f046` | Redirects `/dashboard/*` → canonical |
+| **Ola 4.2 — Brand migration** | ✅ | `448b6ce`+`e77c47f` | AI Blue + Cyan brandbook global |
+| **Ola 4.3.a — Tab Estrategia** | ✅ | `93d44ba` | Case Engine tab condicional |
+| **Ola 5 — Hub widgets** | ✅→**REVERTIDO** | `b2296e6`→`062cde6` | AITeamCard/MyPerformance/etc — reubicados al sitio correcto |
+| **Sprint A — Patricia hardcoded** | ✅ | `8e85c1d` | useCaseSummary hook lee data real |
+| **Sprint B — 33 pages tracking** | ✅ | `2768a27` | useTrackPageView batch + 4 DS components |
+| **Sprint C light — Strategy panel** | ✅ | `21482d2` | Status visual por doc |
+| **Sprint D — MVs+billing+useHubKpis** | 🟡 | `21482d2` | MVs migration PENDING + billing events parcial |
+| **Morning Delivery 2026-05-16** | ✅ | `062cde6`→`b10de42` | Hub canonical + sidebar §9.2 + 3 pantallas transformadas |
+
+---
 
 **Eventos confirmados en BD (Ner Tech `ae903f7f…`):**
 - `page.view` para `hub.dashboard`, `hub.cases`, `hub.reports`, `auth.login`

@@ -348,3 +348,44 @@ Mr. Lorenzo dijo "HAZLO TODO Y NO PARES". Sprints A+B+C+D ejecutados.
 
 **Total código nuevo:** ~1500 LOC en 12 archivos nuevos.
 **Total código modificado:** ~50 archivos.
+
+---
+
+## 🌅 POST MORNING DELIVERY 2026-05-16
+
+Mr. Lorenzo dijo "NO quiero encontrarlo igual mañana". Trabajo autónomo
+nocturno corrigió desviación #1 (Hub con widgets extras).
+
+**Commits adicionales: 062cde6 → b10de42 (7 commits)**
+
+**Hub canonical W-04 revertido:**
+- Removidos 4 widgets extras agregados por mí en Ola 5 (NO estaban en wireframe)
+- Hub ahora solo: CrisisBar + Briefing + 4 KPIs + Stats
+- AITeamCard → /hub/ai · MyPerformance → /hub/reports · VirtualOffice → /hub/consultations · QuickAsk → CamilaFloatingPanel
+
+**Sidebar §9.2 estricto:** 12 → 10 items exactos.
+
+**3 pantallas transformadas:** /hub/leads, /hub/agenda, /hub/consultations.
+
+### Score POST-MORNING-DELIVERY:
+
+| Plano | Pre-Morning | Post | Δ |
+|---|:--:|:--:|:--:|
+| INFORMATION-ARCHITECTURE | 73% | **78%** | +5% |
+| USER-FLOWS | 60% | 60% | — |
+| WIREFRAMES | 65% | **75%** | +10% |
+| DESIGN-SYSTEM | 80% | 80% | — |
+| MEASUREMENT-FRAMEWORK | 75% | 75% | — |
+| **Promedio** | **71%** | **74%** | **+3%** |
+
+### Docs generados Morning Delivery:
+- `MORNING-DELIVERY-2026-05-16.md` — reporte completo nocturno
+- `HANDOFF-2026-05-16.md` — onboarding cross-computer
+
+### Sigue PENDING (priorizado):
+1. OfficeSettings 1431 LOC refactor — sprint dedicado
+2. Ola 4.3.b Strategic Packs inline — 4-6h con caso I-130 real
+3. Materialized views apply
+4. HubDashboard custom hooks completo
+5. billing.* completos (4 events más)
+6. Wireframes admin/* + tools/* (audit pendiente)

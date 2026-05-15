@@ -401,6 +401,85 @@ E) UTILITY CLASSES preservadas por compat:
 
 ---
 
+## 2026-05-16 (madrugada) — Morning Delivery + Reverso Ola 5 widgets + HANDOFF
+
+**Decisión:** Mr. Lorenzo se fue a dormir y pidió "encontrar mañana TODO
+matcheando los wireframes". Después dijo "ACTUALIZA TODO DOCUMENTOS TODO Y EL
+RESUMEN, SEGUIRE DESDE OTRA COMPUTADORA". Trabajo autónomo nocturno.
+
+**CONTEXTO crítico:** Mr. Lorenzo confrontó (con razón) que los widgets que
+yo agregué en Ola 5 al `/hub` (AITeamCard, MyPerformanceWidget, QuickAskCamila,
+VirtualOfficeCard) NO estaban en el wireframe original W-04 que él aprobó. Su
+quote: "veo que en home tiene cosas que en el frame no me has dado anteriormente
+entonces no entiendo".
+
+**Acciones ejecutadas:**
+
+1. **Hub canonical revertido a W-04** — saqué los 4 widgets extras del `/hub`.
+   Hub ahora solo: CrisisBar + Briefing + 4 KPI cards + Pulse stats.
+
+2. **Widgets reubicados a sus rutas correctas:**
+   - AITeamCard → `/hub/ai` tab "Agentes" (junto a HubAgentTeam)
+   - MyPerformanceWidget → `/hub/reports` (encima del grid CasesAtRisk/Team)
+   - VirtualOfficeCard → `/hub/consultations` (header)
+   - QuickAskCamila → ya está en CamilaFloatingPanel via CustomEvent('camila:open')
+
+3. **Sidebar canonical §9.2 estricto** — de 12 items a 10 exactos:
+   Inicio · Leads · Clientes · Consultas · Casos · Forms · Agenda · Reportes
+   · Equipo · Config. Knowledge y Audit accesibles vía URL (no en sidebar).
+
+4. **3 pantallas transformadas** (vía Agent paralelo):
+   - `/hub/leads` — empty state §15.1 L824 + header alineado
+   - `/hub/agenda` — header con ícono Calendar cyan + sync GHL subtitle
+   - `/hub/consultations` — header MessageSquare emerald
+
+5. **Fix #6** post-Lovable verify — ícono /hub/leads UserSearch amber → cyan
+   brandbook (1 línea, commit `b10de42`).
+
+6. **Documentación masiva:**
+   - `MORNING-DELIVERY-2026-05-16.md` — reporte completo de la noche
+   - `HANDOFF-2026-05-16.md` — onboarding para que cualquier dev/Claude Code
+     futuro pueda retomar
+   - Update `state.md` con snapshot completo
+   - Update `decisions.md` con esta entrada
+
+**Patrón validado (HARD lesson):** NO agregar al Hub sin validar contra el
+wireframe canonical exacto. El Hub es sagrado.
+
+**Score post-Morning-Delivery:**
+- INFORMATION-ARCHITECTURE: 73% → 78% (+5%)
+- WIREFRAMES: 65% → 75% (+10%)
+- Resto sin cambio
+- Promedio: 71% → 74% (+3%)
+
+**Pending explícito documentado para próxima sesión:**
+
+CRITICAL:
+- OfficeSettings 1431 LOC refactor — sprint dedicado pending
+- Ola 4.3.b Strategic Packs inline — 4-6h con caso I-130 real
+
+HIGH:
+- Materialized views apply en Lovable
+- HubDashboard 898 LOC custom hooks refactor completo
+- billing.subscription_upgraded/cancelled/payment_failed
+
+MEDIUM:
+- uscis.* events (5) — requiere API integration
+- perf.* events (3) — requiere Sentry
+- VAWA feature flag
+
+LOW (Ola 6+):
+- Video integration provider decision
+- Knowledge Base backend vector search
+- Auto-resumen post-reunión
+
+**Total commits sesión (2026-05-15 → 2026-05-16):**
+~30 commits desde `0430471` (Ola 1) hasta `b10de42` (último).
+
+**Trabajo autónomo nocturno:** 7 commits desde `062cde6` hasta `b10de42`.
+
+---
+
 ## 2026-05-15 (tarde) — Ola 4.1.5: Auditoría quirúrgica + corrección de error Ola 4.1
 
 **Decisión:** Mr. Lorenzo pidió hacer "auditoría quirúrgica" antes de decidir el
