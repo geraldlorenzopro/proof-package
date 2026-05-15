@@ -143,7 +143,7 @@ export default function SmartFormsSettings() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/dashboard/smart-forms')}
+          onClick={() => navigate('/hub/forms')}
           className="gap-1.5 text-muted-foreground hover:text-foreground px-2"
         >
           <ArrowLeft className="w-4 h-4" />

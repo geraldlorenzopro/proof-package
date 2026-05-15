@@ -729,7 +729,7 @@ export default function CaseWorkspace() {
             )}
 
             {caseEngineTab === "formularios" && (
-              <FormsTabContent caseId={activeCaseId} formsCount={caseFormsCount} onNavigate={() => navigate("/dashboard/smart-forms")} />
+              <FormsTabContent caseId={activeCaseId} formsCount={caseFormsCount} onNavigate={() => navigate("/hub/forms")} />
             )}
 
             {caseEngineTab === "decision" && (

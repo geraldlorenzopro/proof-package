@@ -61,7 +61,7 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
 
   function handleCreateForm(formType: string) {
     setShowSelector(false);
-    navigate("/dashboard/smart-forms/new", {
+    navigate("/hub/forms/new", {
       state: {
         fromCase: true,
         caseId,
@@ -73,7 +73,7 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
   }
 
   function handleEditForm(formId: string) {
-    navigate(`/dashboard/smart-forms/${formId}`, {
+    navigate(`/hub/forms/${formId}`, {
       state: {
         fromCase: true,
         caseId,

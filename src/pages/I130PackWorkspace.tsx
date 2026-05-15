@@ -168,7 +168,7 @@ function buildCompactDocs(caseId: string): (CompactDocItem & { href?: string })[
       title: "I-130 Wizard",
       meta: "82% · Felix sugiriendo",
       status: "in_progress",
-      href: `/dashboard/smart-forms`,
+      href: `/hub/forms`,
     },
   ];
 }

@@ -65,7 +65,7 @@ export default function SmartFormPage() {
           .maybeSingle();
         if (error || !sub) {
           toast({ title: "Error", description: "Formulario no encontrado", variant: "destructive" });
-          navigate("/dashboard/smart-forms");
+          navigate("/hub/forms");
           return;
         }
         setSubmissionId(sub.id);
@@ -282,7 +282,7 @@ export default function SmartFormPage() {
         if (inserted) {
           setSubmissionId(inserted.id);
           setShareToken((inserted as any).share_token || null);
-          window.history.replaceState(null, "", `/dashboard/smart-forms/${inserted.id}`);
+          window.history.replaceState(null, "", `/hub/forms/${inserted.id}`);
         }
       }
 
@@ -484,7 +484,7 @@ export default function SmartFormPage() {
             if (inserted) {
               setSubmissionId(inserted.id);
               setShareToken((inserted as any).share_token || null);
-              window.history.replaceState(null, "", `/dashboard/smart-forms/${inserted.id}`);
+              window.history.replaceState(null, "", `/hub/forms/${inserted.id}`);
             }
           }
         }

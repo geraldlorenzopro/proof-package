@@ -167,7 +167,7 @@ function buildCompactDocs(caseId: string): CompactDocItem[] {
       title: "I-485 Wizard",
       meta: "Felix llenando · 760 fields",
       status: "in_progress",
-      href: `/dashboard/smart-forms`,
+      href: `/hub/forms`,
     },
   ];
 }

@@ -133,7 +133,7 @@ export default function HubFormsPage() {
           <div className="flex items-center gap-2 flex-wrap">
             {/* CTA persistente — siempre visible, no solo en empty state */}
             <button
-              onClick={() => navigate("/dashboard/smart-forms")}
+              onClick={() => navigate("/hub/forms")}
               className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -225,7 +225,7 @@ export default function HubFormsPage() {
             </div>
             {allForms.length === 0 && !demoMode && (
               <button
-                onClick={() => navigate("/dashboard/smart-forms")}
+                onClick={() => navigate("/hub/forms")}
                 className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3.5 py-1.5 rounded bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <Sparkles className="w-3.5 h-3.5" />

@@ -112,7 +112,7 @@ function TopNavBar() {
   const caseId = navState?.caseId || null;
 
   const navItems = [
-    { label: "Formularios", path: "/dashboard/smart-forms", icon: List, end: true },
+    { label: "Formularios", path: "/hub/forms", icon: List, end: true },
   ];
 
   const isActive = (path: string, end: boolean) => {
@@ -120,7 +120,7 @@ function TopNavBar() {
     return location.pathname.startsWith(path);
   };
 
-  const isSettingsActive = location.pathname === "/dashboard/smart-forms/settings";
+  const isSettingsActive = location.pathname === "/hub/forms/settings";
 
   const handleBack = () => {
     if (fromCase && caseId) {
@@ -192,7 +192,7 @@ function TopNavBar() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/dashboard/smart-forms/settings")}
+            onClick={() => navigate("/hub/forms/settings")}
             className={cn(
               "w-8 h-8 shrink-0 hover:bg-primary/10",
               isSettingsActive ? "text-primary" : "text-muted-foreground hover:text-primary"

@@ -230,7 +230,7 @@ export default function SmartFormsList() {
 
   const handleProceedToForm = () => {
     setBeneficiaryModalOpen(false);
-    navigate("/dashboard/smart-forms/new", {
+    navigate("/hub/forms/new", {
       state: {
         formType: selectedForm?.slug,
         beneficiaryId: selectedBeneficiaryId,
@@ -240,7 +240,7 @@ export default function SmartFormsList() {
 
   const handleSkipBeneficiary = () => {
     setBeneficiaryModalOpen(false);
-    navigate("/dashboard/smart-forms/new", {
+    navigate("/hub/forms/new", {
       state: {
         formType: selectedForm?.slug,
         beneficiaryId: null,
@@ -394,7 +394,7 @@ export default function SmartFormsList() {
                 <div
                   key={sub.id}
                   className="grid grid-cols-1 md:grid-cols-[1fr_1fr_100px_100px_100px_44px] gap-2 md:gap-4 px-4 py-3 border-t border-border/10 hover:bg-secondary/30 transition-colors items-center cursor-pointer group"
-                  onClick={() => navigate(`/dashboard/smart-forms/${sub.id}`)}
+                  onClick={() => navigate(`/hub/forms/${sub.id}`)}
                 >
                   <div className="min-w-0">
                     <p className="font-medium text-sm truncate">{sub.client_name || "Sin nombre"}</p>
@@ -425,7 +425,7 @@ export default function SmartFormsList() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/dashboard/smart-forms/${sub.id}`)} className="gap-2">
+                        <DropdownMenuItem onClick={() => navigate(`/hub/forms/${sub.id}`)} className="gap-2">
                           <Pencil className="w-3.5 h-3.5" /> Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDuplicate(sub)} className="gap-2">

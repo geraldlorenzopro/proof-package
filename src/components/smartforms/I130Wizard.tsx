@@ -1867,7 +1867,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
         <div className="max-w-2xl w-full mx-auto">
           <button
             type="button"
-            onClick={() => navigate("/dashboard/smart-forms")}
+            onClick={() => navigate("/hub/forms")}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
@@ -1977,7 +1977,7 @@ export default function I130Wizard({ lang, initialData, onSave, onFillUSCIS, sav
               <Button variant="outline" className="flex-1" onClick={() => setSuccessDialogOpen(false)}>
                 {t("Keep editing", "Seguir editando")}
               </Button>
-              <Button className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setSuccessDialogOpen(false); navigate("/dashboard/smart-forms"); }}>
+              <Button className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setSuccessDialogOpen(false); navigate("/hub/forms"); }}>
                 {t("Go to panel", "Ir al panel")}
               </Button>
             </div>

@@ -164,7 +164,7 @@ function buildCompactDocs(caseId: string): CompactDocItem[] {
       title: "I-765 Wizard",
       meta: "Felix llenando (c)(9)",
       status: "in_progress",
-      href: `/dashboard/smart-forms`,
+      href: `/hub/forms`,
     },
   ];
 }

@@ -137,7 +137,7 @@ export default function QuickFormLauncher({ clientId, clientName, existingForms,
         metadata: { form_type: formType },
       });
       onFormCreated?.();
-      navigate(`/dashboard/smart-forms/${submission.id}`);
+      navigate(`/hub/forms/${submission.id}`);
     } catch (err) {
       console.error(err);
       toast.error("Error inesperado");
@@ -168,7 +168,7 @@ export default function QuickFormLauncher({ clientId, clientName, existingForms,
                   key={form.id}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
-                  onClick={() => navigate(`/dashboard/smart-forms/${form.id}`)}
+                  onClick={() => navigate(`/hub/forms/${form.id}`)}
                   className="w-full flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left hover:border-primary/30 transition-all group"
                 >
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400/15 to-primary/10 flex items-center justify-center shrink-0">

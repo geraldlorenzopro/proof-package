@@ -13,8 +13,8 @@ import {
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 const TOOLS = [
-  { label: "Formularios USCIS", icon: FileText, path: "/dashboard/smart-forms", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
-  { label: "NER Smart Forms", icon: Clipboard, path: "/dashboard/smart-forms", color: "text-teal-400", bg: "bg-teal-500/10", border: "border-teal-500/20" },
+  { label: "Formularios USCIS", icon: FileText, path: "/hub/forms", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+  { label: "NER Smart Forms", icon: Clipboard, path: "/hub/forms", color: "text-teal-400", bg: "bg-teal-500/10", border: "border-teal-500/20" },
   { label: "Visa Evaluator B1/B2", icon: Globe, path: "/dashboard/visa-evaluator", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
   { label: "Agente VAWA", icon: Shield, path: "/dashboard/vawa", color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20" },
   { label: "Checklist VAWA", icon: CheckSquare, path: "/dashboard/vawa-checklist", color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/20" },
