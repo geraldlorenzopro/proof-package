@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Send, ExternalLink, Clock, ChevronLeft, ChevronRight, PlusCircle, Plus, X } from "lucide-react";
+import { Search, Send, ExternalLink, Clock, ChevronLeft, ChevronRight, PlusCircle, Plus, X, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import VirtualOfficeCard from "@/components/hub/VirtualOfficeCard";
 import { formatDistanceToNow } from "date-fns";
@@ -314,11 +314,16 @@ export default function ConsultationsPage() {
         {/* Hub Canonical: VirtualOfficeCard movido aquí desde /hub */}
         <VirtualOfficeCard accountId={accountId} />
 
-        {/* Header */}
+        {/* Header — pattern alineado a WIREFRAMES.md §3 sidebar canonical ("💬 Consultas") */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Consultas</h1>
-            <p className="text-sm text-muted-foreground">Pipeline de leads → clientes</p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 flex items-center justify-center">
+              <MessageSquare className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Consultas</h1>
+              <p className="text-xs text-muted-foreground">Pipeline de leads → clientes</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {/* Toggle */}
@@ -421,7 +426,16 @@ export default function ConsultationsPage() {
                 <Clock className="w-5 h-5 animate-spin text-primary" />
               </div>
             ) : filtered.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground text-sm">No se encontraron consultas</div>
+              // Empty state §15 convention
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <MessageSquare className="w-12 h-12 text-muted-foreground/60 mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-1">
+                  {searchQuery ? "Sin resultados" : "Sin consultas"}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery ? "Intenta con otro término." : "Iniciá una consulta nueva o esperá que llegue un lead."}
+                </p>
+              </div>
             ) : (
               <div className="space-y-1.5">
                 {filtered.map((item) => {
