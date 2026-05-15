@@ -229,7 +229,8 @@ const App = () => (
           <Route path="/admin/test-suite" element={<ProtectedRoute><AdminTestSuite /></ProtectedRoute>} />
 
           {/* ═══ REDIRECT ROUTES ═══ */}
-          <Route path="/portfolio" element={<Navigate to="/dashboard/workspace-demo" replace />} />
+          {/* Ola 4.1.5 — apuntar directo a /hub/cases (evita doble redirect via workspace-demo) */}
+          <Route path="/portfolio" element={<Navigate to="/hub/cases" replace />} />
           <Route path="/hub/cases" element={<ProtectedRoute><HubCasesPage /></ProtectedRoute>} />
           {/* ═══ I-130 PACK ═══ */}
           <Route path="/hub/cases/:caseId/i130-pack" element={<ProtectedRoute><PacksGate><I130PackWorkspace /></PacksGate></ProtectedRoute>} />

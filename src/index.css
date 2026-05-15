@@ -2,9 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-/* NER Immigration AI – JARVIS Design System */
+/* NER Immigration AI – AI Blue Brand System (post-Ola 4.2.a)
+ *
+ * Migración 2026-05-15: tokens legacy --accent (gold) y --jarvis (cyan glow
+ * sci-fi) reasignados a Cyan brandbook 20% accent según
+ * INFORMATION-ARCHITECTURE.md + DESIGN-SYSTEM.md.
+ *
+ * Estrategia: cambiar la DEFINICIÓN de los tokens viejos (no los 94 archivos
+ * que los usan). Los componentes siguen funcionando sin code changes — solo
+ * visualmente migran al brandbook.
+ *
+ * Tipografías:
+ * - Orbitron (sci-fi/Jarvis) → REMOVIDA
+ * - Playfair Display (decorativa) → REMOVIDA
+ * - Sora (primary brandbook) → AGREGADA
+ * - Inter (alternative) → MANTENIDA
+ * - IBM Plex Mono (data/métricas) → AGREGADA
+ *
+ * Rollback: ver --accent-legacy-gold y --jarvis-legacy-cyan-sci-fi guardados.
+ */
 
 @layer base {
   :root {
@@ -37,50 +55,58 @@
     --muted: 220 20% 16%;
     --muted-foreground: 210 15% 65%;
 
-    /* Gold accent */
-    --accent: 43 85% 52%;
-    --accent-foreground: 220 60% 6%;
+    /* ─── ACCENT TOKEN (Ola 4.2.a migration) ───
+     * Antes: gold (43 85% 52%) — legacy "Jarvis gold accent".
+     * Ahora: Cyan brandbook (188 86% 53%) según DESIGN-SYSTEM.md.
+     * Los 94 componentes que usan `--accent` heredan el cambio sin code edits. */
+    --accent: 188 86% 53%;              /* AI Cyan brandbook — antes gold */
+    --accent-foreground: 220 70% 14%;   /* Deep Navy texto sobre cyan claro */
+    --accent-legacy-gold: 43 85% 52%;   /* rollback only — deprecated */
 
-    /* Cyan glow for Jarvis effect */
-    --jarvis: 195 100% 50%;
-    --jarvis-dim: 195 80% 30%;
-    --jarvis-glow: 195 100% 60%;
+    /* ─── JARVIS TOKEN (Ola 4.2.a migration) ───
+     * Antes: cyan sci-fi (195 100% 50%) — Jarvis sci-fi glow effect.
+     * Ahora: Cyan brandbook (188 86% 53%) — el cyan accent oficial.
+     * Glow effects existentes siguen funcionando pero con cyan brandbook. */
+    --jarvis: 188 86% 53%;                       /* Cyan brandbook — antes sci-fi */
+    --jarvis-dim: 188 70% 40%;                   /* Cyan dim */
+    --jarvis-glow: 188 86% 63%;                  /* Cyan glow brighter */
+    --jarvis-legacy-cyan-sci-fi: 195 100% 50%;   /* rollback only — deprecated */
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 30% 16%;
     --input: 220 25% 18%;
-    --ring: 195 100% 50%;
+    --ring: 220 83% 53%;                /* Ola 4.2.a: AI Blue (era cyan sci-fi) */
 
     --radius: 0.625rem;
 
-    /* Step indicator colors */
-    --step-active: 195 100% 50%;
-    --step-done: 158 64% 38%;
+    /* Step indicator colors — Ola 4.2.a: AI Blue para active */
+    --step-active: 220 83% 53%;         /* AI Blue */
+    --step-done: 158 64% 38%;           /* Green — mantener */
     --step-pending: 220 15% 30%;
 
-    /* Section tag colors */
-    --tag-photo: 195 100% 50%;
-    --tag-chat: 158 60% 38%;
-    --tag-other: 43 85% 52%;
+    /* Section tag colors — Ola 4.2.a: cyan brandbook para photo/other */
+    --tag-photo: 188 86% 53%;           /* Cyan brandbook */
+    --tag-chat: 158 60% 38%;            /* Green — mantener */
+    --tag-other: 188 86% 53%;           /* Cyan brandbook (era gold) */
 
-    /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(220 60% 12%) 0%, hsl(220 50% 20%) 100%);
-    --gradient-gold: linear-gradient(135deg, hsl(43 85% 52%) 0%, hsl(38 90% 60%) 100%);
-    --gradient-jarvis: linear-gradient(135deg, hsl(195 100% 50% / 0.15) 0%, hsl(220 60% 12%) 50%, hsl(43 85% 52% / 0.1) 100%);
-    --shadow-card: 0 4px 24px -4px hsl(195 100% 50% / 0.08);
-    --shadow-primary: 0 8px 32px -8px hsl(195 100% 50% / 0.2);
-    --shadow-glow: 0 0 20px hsl(195 100% 50% / 0.15);
+    /* Gradients — Ola 4.2.a: AI Blue + Deep Navy + Cyan accent */
+    --gradient-hero: linear-gradient(135deg, hsl(220 70% 14%) 0%, hsl(220 83% 22%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(220 83% 53%) 0%, hsl(188 86% 53%) 100%);
+    --gradient-jarvis: linear-gradient(135deg, hsl(188 86% 53% / 0.15) 0%, hsl(220 70% 14%) 50%, hsl(220 83% 53% / 0.1) 100%);
+    --shadow-card: 0 4px 24px -4px hsl(220 83% 53% / 0.08);
+    --shadow-primary: 0 8px 32px -8px hsl(220 83% 53% / 0.2);
+    --shadow-glow: 0 0 20px hsl(188 86% 53% / 0.15);
 
-    --sidebar-background: 220 30% 8%;
+    --sidebar-background: 220 70% 8%;
     --sidebar-foreground: 210 30% 75%;
-    --sidebar-primary: 43 85% 52%;
-    --sidebar-primary-foreground: 220 60% 6%;
+    --sidebar-primary: 220 83% 53%;     /* Ola 4.2.a: AI Blue (era gold) */
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 30% 14%;
     --sidebar-accent-foreground: 210 30% 90%;
     --sidebar-border: 220 30% 14%;
-    --sidebar-ring: 195 100% 50%;
+    --sidebar-ring: 220 83% 53%;        /* AI Blue */
   }
 
   /* LIGHT MODE — paleta brandbook NER (AI Blue / Soft Gray / Graphite).
@@ -170,30 +196,37 @@
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
+  /* Ola 4.2.a — Sora oficial del brandbook (era Orbitron sci-fi) */
   .font-display {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
   }
+  /* Ola 4.2.a — Inter para secciones serif (era Playfair decorativa) */
   .font-serif {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
   }
 
-  /* Jarvis glow effects */
+  /* Ola 4.2.a — glow effects migrados a Cyan brandbook + AI Blue.
+     Mantenemos las clases por compat con 94 componentes que las usan,
+     pero ahora con paleta brandbook (no sci-fi). */
   .glow-border {
-    border: 1px solid hsl(195 100% 50% / 0.2);
-    box-shadow: inset 0 0 20px hsl(195 100% 50% / 0.03), 0 0 20px hsl(195 100% 50% / 0.05);
+    border: 1px solid hsl(188 86% 53% / 0.2);
+    box-shadow: inset 0 0 20px hsl(188 86% 53% / 0.03), 0 0 20px hsl(188 86% 53% / 0.05);
   }
   .glow-border-gold {
-    border: 1px solid hsl(43 85% 52% / 0.25);
-    box-shadow: inset 0 0 20px hsl(43 85% 52% / 0.03), 0 0 20px hsl(43 85% 52% / 0.05);
+    /* "Gold" name preservado por compat — ahora usa AI Blue (era gold) */
+    border: 1px solid hsl(220 83% 53% / 0.25);
+    box-shadow: inset 0 0 20px hsl(220 83% 53% / 0.03), 0 0 20px hsl(220 83% 53% / 0.05);
   }
   .glow-text {
-    text-shadow: 0 0 10px hsl(195 100% 50% / 0.5);
+    text-shadow: 0 0 10px hsl(188 86% 53% / 0.5);
   }
   .glow-text-gold {
-    text-shadow: 0 0 10px hsl(43 85% 52% / 0.5);
+    text-shadow: 0 0 10px hsl(220 83% 53% / 0.5);
   }
 
-  /* Scan line effect */
+  /* Scan line — Ola 4.2.a: cyan brandbook (era sci-fi). Mantener por compat. */
   .scan-line::after {
     content: '';
     position: absolute;
@@ -201,21 +234,21 @@
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, hsl(195 100% 50% / 0.4), transparent);
+    background: linear-gradient(90deg, transparent, hsl(188 86% 53% / 0.4), transparent);
     animation: scan 3s ease-in-out infinite;
   }
 
-  /* Grid background */
+  /* Grid background — Ola 4.2.a: cyan brandbook */
   .grid-bg {
-    background-image: 
-      linear-gradient(hsl(195 100% 50% / 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(195 100% 50% / 0.03) 1px, transparent 1px);
+    background-image:
+      linear-gradient(hsl(188 86% 53% / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(188 86% 53% / 0.03) 1px, transparent 1px);
     background-size: 40px 40px;
   }
 
-  /* Hex pattern */
+  /* Hex pattern — Ola 4.2.a: cyan brandbook */
   .hex-pattern {
-    background-image: radial-gradient(circle at 25% 25%, hsl(195 100% 50% / 0.04) 1px, transparent 1px);
+    background-image: radial-gradient(circle at 25% 25%, hsl(188 86% 53% / 0.04) 1px, transparent 1px);
     background-size: 30px 30px;
   }
 }
@@ -228,8 +261,9 @@
     border: 1px solid hsl(220 30% 16%);
   }
   .tool-card:hover {
-    border-color: hsl(195 100% 50% / 0.3);
-    box-shadow: 0 0 30px hsl(195 100% 50% / 0.1), inset 0 0 30px hsl(195 100% 50% / 0.02);
+    /* Ola 4.2.a — AI Blue brandbook hover (era cyan sci-fi) */
+    border-color: hsl(220 83% 53% / 0.3);
+    box-shadow: 0 0 30px hsl(220 83% 53% / 0.1), inset 0 0 30px hsl(220 83% 53% / 0.02);
     transform: translateY(-2px);
   }
   .tool-card::before {
@@ -239,7 +273,8 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, hsl(195 100% 50% / 0.5), hsl(43 85% 52% / 0.5), transparent);
+    /* Ola 4.2.a — AI Blue + Cyan accent (era cyan sci-fi + gold) */
+    background: linear-gradient(90deg, transparent, hsl(220 83% 53% / 0.5), hsl(188 86% 53% / 0.5), transparent);
     opacity: 0;
     transition: opacity 0.5s;
   }
@@ -259,8 +294,9 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px hsl(43 85% 52% / 0.3); }
-  50% { box-shadow: 0 0 15px hsl(43 85% 52% / 0.6); }
+  /* Ola 4.2.a — AI Blue brandbook (era gold) */
+  0%, 100% { box-shadow: 0 0 5px hsl(220 83% 53% / 0.3); }
+  50% { box-shadow: 0 0 15px hsl(220 83% 53% / 0.6); }
 }
 
 @keyframes float {

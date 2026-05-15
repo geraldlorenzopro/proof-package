@@ -52,6 +52,91 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-15 (noche) — Ola 4.2.a: Brand migration GLOBAL vía CSS tokens
+
+**Decisión:** después de cerrar Ola 4.1.5 (rutas canonical), arrancar Ola 4.2 —
+brand migration global. Inventario reveló **94 archivos** con tokens legacy
+(`--jarvis` cyan sci-fi + `--accent` gold), más que los 60+ documentados.
+
+**Estrategia inteligente (clave del trabajo):** En lugar de migrar 94 archivos
+1-by-1, **cambiar la DEFINICIÓN de los tokens viejos en index.css** para que
+apunten al brandbook. Los 94 archivos heredan el cambio automáticamente sin
+code edits.
+
+**Razón:** "no hacer trabajo cuando hay una abstracción que lo evita". Los
+tokens CSS son la abstracción; los componentes son la periferia.
+
+**Cambios en `src/index.css`:**
+
+A) HEADER actualizado:
+- Antes: `/* NER Immigration AI – JARVIS Design System */`
+- Ahora: `/* NER Immigration AI – AI Blue Brand System (post-Ola 4.2.a) */`
+- Docstring completa con estrategia + rollback documentado
+
+B) TIPOGRAFÍAS:
+- ❌ Orbitron (sci-fi/Jarvis) — REMOVIDA del @import
+- ❌ Playfair Display (decorativa) — REMOVIDA
+- ✅ Sora (brandbook primary) — AGREGADA
+- ✅ Inter (alternative) — MANTENIDA
+- ✅ IBM Plex Mono (data/métricas) — AGREGADA según brandbook L34 CLAUDE.md
+- Clases `.font-display` y `.font-serif` MANTENIDAS por compat pero apuntan
+  a Sora / Inter (no Orbitron / Playfair).
+
+C) TOKENS reasignados (los 94 archivos heredan):
+- `--accent`: 43 85% 52% (gold) → **188 86% 53% (Cyan brandbook)**
+- `--accent-foreground`: 220 60% 6% (texto sobre gold) → **220 70% 14% (Deep Navy sobre cyan)**
+- `--jarvis`: 195 100% 50% (cyan sci-fi) → **188 86% 53% (Cyan brandbook)**
+- `--jarvis-dim`: 195 80% 30% → **188 70% 40%**
+- `--jarvis-glow`: 195 100% 60% → **188 86% 63%**
+- `--ring`: 195 100% 50% (cyan sci-fi) → **220 83% 53% (AI Blue)**
+- `--step-active`: 195 100% 50% → **220 83% 53% (AI Blue)**
+- `--tag-photo`: 195 100% 50% → **188 86% 53% (Cyan brandbook)**
+- `--tag-other`: 43 85% 52% (gold) → **188 86% 53% (Cyan brandbook)**
+- `--sidebar-primary`: 43 85% 52% (gold) → **220 83% 53% (AI Blue)**
+- `--sidebar-ring`: 195 100% 50% → **220 83% 53% (AI Blue)**
+- Tokens `--accent-legacy-gold` y `--jarvis-legacy-cyan-sci-fi` GUARDADOS
+  para rollback.
+
+D) GRADIENTES + SHADOWS reasignados:
+- `--gradient-hero`: navy + gold → **navy + AI Blue**
+- `--gradient-gold`: gold → gold-orange → **AI Blue → Cyan accent** (nombre
+  preservado por compat)
+- `--gradient-jarvis`: cyan sci-fi + navy + gold → **Cyan brandbook + Navy + AI Blue**
+- `--shadow-card`, `--shadow-primary`, `--shadow-glow` → todos AI Blue
+- `@keyframes pulse-glow` → AI Blue (era gold)
+
+E) UTILITY CLASSES preservadas por compat:
+- `.glow-border`, `.glow-text`, `.glow-border-gold`, `.glow-text-gold`,
+  `.scan-line::after`, `.grid-bg`, `.hex-pattern`, `.tool-card`,
+  `.tool-card:hover`, `.tool-card::before` — todos reasignados a Cyan
+  brandbook + AI Blue.
+
+**Por qué preservar nombres `_gold` legacy:**
+- 94 archivos usan `.glow-border-gold` esperando comportamiento "accent secundario".
+- Renombrar = romper 94 archivos.
+- Mantener nombre + cambiar valor = el "gold" ahora es AI Blue (semántica accent
+  secundario preservada, solo el color cambia).
+
+**RIESGOS:**
+- Hot risk: si algún componente usa `--accent` esperando comportamiento gold
+  específico (ej. badge dorado en CTA marketing), ahora será cyan.
+  Acción: testing visual manual de Mr. Lorenzo.
+- Light mode tiene `--accent: 195 80% 45%` (cyan-ish) en bloque `.light` —
+  no requiere cambio porque ya era cyan-ish.
+- Rollback: cambiar `--accent` y `--jarvis` de vuelta a valores legacy
+  (guardados en `_legacy_*` tokens).
+
+**Build:** bun run build exit 0. Bundle igual (5783KB — sin cambios JS, solo CSS).
+
+**Próximo:**
+- Mr. Lorenzo testing visual del preview
+- Si hay regresiones cosméticas específicas, ajuste fino
+- Ola 4.2.b — Auth.tsx + Settings + Index/landing pages (entry points)
+  con cualquier hardcoded HEX que escape de los tokens (probable que haya
+  algunos `bg-[#22D3EE]` style hardcoded en componentes).
+
+---
+
 ## 2026-05-15 (tarde) — Ola 4.1.5: Auditoría quirúrgica + corrección de error Ola 4.1
 
 **Decisión:** Mr. Lorenzo pidió hacer "auditoría quirúrgica" antes de decidir el
