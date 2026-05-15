@@ -46,14 +46,14 @@ const DEMO_CASE_SUMMARY: PackCaseSummary = {
 
 // Mapeo pipeline_stage → currentStep del PackCaseSummary
 function pipelineStageToFilingStep(pipelineStage: string | null | undefined): FilingStep {
-  if (!pipelineStage) return "evidencia";
+  if (!pipelineStage) return "evidence";
   const stage = pipelineStage.toLowerCase();
-  if (stage.includes("intake") || stage.includes("cuestionario")) return "evidencia";
-  if (stage.includes("evidence") || stage.includes("evidencia")) return "evidencia";
+  if (stage.includes("intake") || stage.includes("cuestionario")) return "evidence";
+  if (stage.includes("evidence") || stage.includes("evidence")) return "evidence";
   if (stage.includes("packet") || stage.includes("forms") || stage.includes("formularios")) return "forms";
   if (stage.includes("review") || stage.includes("revision")) return "review";
   if (stage.includes("filed") || stage.includes("enviado") || stage.includes("uscis")) return "filed";
-  return "evidencia";
+  return "evidence";
 }
 
 function buildPackTypeLabel(caseType: string | null | undefined): string {
