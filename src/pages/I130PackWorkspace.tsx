@@ -24,6 +24,7 @@ import PackHero from "@/components/questionnaire-packs/i130/PackHero";
 import FilingTargetWidget from "@/components/questionnaire-packs/i130/FilingTargetWidget";
 import SortableDocCard from "@/components/questionnaire-packs/shared/SortableDocCard";
 import { useCardOrder } from "@/components/questionnaire-packs/shared/useCardOrder";
+import { useCaseSummary } from "@/components/questionnaire-packs/shared/useCaseSummary";
 import CaseToolsMenu from "@/components/case-tools/CaseToolsMenu";
 import QuickToolButton from "@/components/case-tools/QuickToolButton";
 import CaseOutputsList from "@/components/case-tools/CaseOutputsList";
@@ -41,24 +42,9 @@ import type {
   PackCaseSummary,
 } from "@/components/questionnaire-packs/i130/types";
 
-const CASE_SUMMARY: PackCaseSummary = {
-  caseId: "case-demo",
-  paraNumber: "PA",
-  clientName: "Patricia Alvarado",
-  caseType: "I-130 Cónyuge",
-  petitionerLabel: "USC peticionando",
-  startedAt: "jueves 14 de mayo",
-  tags: [
-    { label: "I-130 family-based", tone: "info" },
-    { label: "Bona fide en construcción", tone: "warning" },
-    { label: "Filing target 9 días", tone: "neutral" },
-  ],
-  filing: {
-    target: "Envío USCIS",
-    daysRemaining: 9,
-    currentStep: "forms",
-  },
-};
+// Sprint A #1 fix: eliminado CASE_SUMMARY hardcoded "Patricia Alvarado".
+// Ahora useCaseSummary(caseId) lee data real del caso desde client_cases.
+// Si caseId === "demo" → usa preset demo intencional (no Patricia hardcoded).
 
 const PACK_TABS: PackTab[] = [
   { id: "resumen", label: "Resumen" },
@@ -243,6 +229,8 @@ export default function I130PackWorkspace() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("cuestionarios");
   const caseId = params.caseId ?? "demo";
+  // Sprint A #1: data real del caso (no hardcoded). Fallback a demo preset.
+  const caseSummary = useCaseSummary(caseId);
   const docCards = buildDocCards(caseId);
   const compactDocs = buildCompactDocs(caseId);
 
@@ -291,19 +279,25 @@ export default function I130PackWorkspace() {
 
           <div className="flex items-stretch gap-3 flex-wrap">
             <div className="flex-1 min-w-[280px] flex items-center">
-              <PackHero data={CASE_SUMMARY} />
+              {caseSummary ? (
+                <PackHero data={caseSummary} />
+              ) : (
+                <div className="px-4 py-3 text-sm text-muted-foreground">
+                  Cargando información del caso…
+                </div>
+              )}
             </div>
             <div className="flex items-start gap-2">
               <CaseToolsMenu
                 caseId={caseId}
                 packType="i130"
-                petitioner={CASE_SUMMARY.petitionerLabel}
-                beneficiary={CASE_SUMMARY.clientName}
+                petitioner={caseSummary?.petitionerLabel || "Peticionario"}
+                beneficiary={caseSummary?.clientName || "Beneficiario"}
               />
               <FilingTargetWidget
-                target={CASE_SUMMARY.filing.target}
-                daysRemaining={CASE_SUMMARY.filing.daysRemaining}
-                currentStep={CASE_SUMMARY.filing.currentStep}
+                target={caseSummary?.filing.target || "Envío USCIS"}
+                daysRemaining={caseSummary?.filing.daysRemaining ?? 30}
+                currentStep={caseSummary?.filing.currentStep || "evidencia"}
               />
             </div>
           </div>

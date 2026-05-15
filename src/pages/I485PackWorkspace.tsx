@@ -24,6 +24,7 @@ import PackHero from "@/components/questionnaire-packs/i130/PackHero";
 import FilingTargetWidget from "@/components/questionnaire-packs/i130/FilingTargetWidget";
 import SortableDocCard from "@/components/questionnaire-packs/shared/SortableDocCard";
 import { useCardOrder } from "@/components/questionnaire-packs/shared/useCardOrder";
+import { useCaseSummary } from "@/components/questionnaire-packs/shared/useCaseSummary";
 import CaseToolsMenu from "@/components/case-tools/CaseToolsMenu";
 import QuickToolButton from "@/components/case-tools/QuickToolButton";
 import CaseOutputsList from "@/components/case-tools/CaseOutputsList";
@@ -48,24 +49,8 @@ import type {
 // 4. Interview Prep (para el final del flow, cuando USCIS agenda)
 const I485_DEFAULT_ORDER = ["inadmissibility", "medical", "packet", "interview"];
 
-const CASE_SUMMARY: PackCaseSummary = {
-  caseId: "case-demo",
-  paraNumber: "PA",
-  clientName: "Patricia Alvarado",
-  caseType: "I-485 Adjustment",
-  petitionerLabel: "Filing concurrente con I-130",
-  startedAt: "jueves 14 de mayo",
-  tags: [
-    { label: "Concurrente con I-130", tone: "info" },
-    { label: "Visa current", tone: "neutral" },
-    { label: "I-693 pendiente", tone: "warning" },
-  ],
-  filing: {
-    target: "Envío USCIS Chicago Lockbox",
-    daysRemaining: 18,
-    currentStep: "evidence",
-  },
-};
+// Sprint A #1 fix: CASE_SUMMARY hardcoded eliminado.
+// useCaseSummary(caseId) lee data real con fallback a demo preset.
 
 const PACK_TABS: PackTab[] = [
   { id: "resumen", label: "Resumen" },
@@ -243,6 +228,8 @@ export default function I485PackWorkspace() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("cuestionarios");
   const caseId = params.caseId ?? "demo";
+  // Sprint A #1: data real del caso (no Patricia hardcoded).
+  const caseSummary = useCaseSummary(caseId);
   const docCards = buildDocCards(caseId);
   const compactDocs = buildCompactDocs(caseId);
 
@@ -290,19 +277,25 @@ export default function I485PackWorkspace() {
 
           <div className="flex items-stretch gap-3 flex-wrap">
             <div className="flex-1 min-w-[280px] flex items-center">
-              <PackHero data={CASE_SUMMARY} />
+              {caseSummary ? (
+                <PackHero data={caseSummary} />
+              ) : (
+                <div className="px-4 py-3 text-sm text-muted-foreground">
+                  Cargando información del caso…
+                </div>
+              )}
             </div>
             <div className="flex items-start gap-2">
               <CaseToolsMenu
                 caseId={caseId}
                 packType="i485"
-                petitioner={CASE_SUMMARY.petitionerLabel}
-                beneficiary={CASE_SUMMARY.clientName}
+                petitioner={caseSummary?.petitionerLabel || "Peticionario"}
+                beneficiary={caseSummary?.clientName || "Beneficiario"}
               />
               <FilingTargetWidget
-                target={CASE_SUMMARY.filing.target}
-                daysRemaining={CASE_SUMMARY.filing.daysRemaining}
-                currentStep={CASE_SUMMARY.filing.currentStep}
+                target={caseSummary?.filing.target || "Envío USCIS"}
+                daysRemaining={caseSummary?.filing.daysRemaining ?? 30}
+                currentStep={caseSummary?.filing.currentStep || "evidencia"}
               />
             </div>
           </div>

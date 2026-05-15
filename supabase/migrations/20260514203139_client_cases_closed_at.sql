@@ -2,12 +2,10 @@
 -- CLIENT_CASES.closed_at COLUMN + TRIGGER — Ola 3.1 (M2 fix audit ronda 2)
 -- ═══════════════════════════════════════════════════════════════════
 --
--- Estado: PENDIENTE DE APROBACIÓN — NO APLICAR HASTA OK DE MR. LORENZO
---
--- Cuando Mr. Lorenzo apruebe:
---   1. Renombrar a 20260514HHMMSS_client_cases_closed_at.sql (timestamp real)
---   2. Pedir a Lovable: "pull main <SHA> y aplicá la migration"
---   3. Regenerar types Supabase (Lovable lo hace auto)
+-- Estado: ✅ APLICADA en producción 2026-05-15 por Lovable.
+-- Header anterior decía "PENDIENTE APROBACIÓN" pero migration ya está
+-- live (verificado en Sprint A #2 del GAP-ANALYSIS-2026-05-15.md).
+-- Header actualizado para evitar confusión futura.
 --
 -- ─── Problema (M2 de audit ronda 2) ──────────────────────────────────
 --
