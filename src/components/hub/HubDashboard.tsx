@@ -17,6 +17,8 @@ import type { FeedItem, FeedItemKind, FeedItemSeverity } from "@/types/feed";
 import IntakeWizard from "../intake/IntakeWizard";
 import HubFocusedWidgets from "./HubFocusedWidgets";
 import HubCrisisBar from "./HubCrisisBar";
+import AITeamCard from "./AITeamCard";
+import MyPerformanceWidget from "./MyPerformanceWidget";
 import { useDemoMode, DEMO_BRIEFING_TEXT, exitDemoMode } from "@/hooks/useDemoData";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -738,8 +740,16 @@ function HubDashboardInner({
           </section>
 
           {/* ═══ ZONA 2 — WIDGETS FOCALIZADOS (responde 4 preguntas del abogado) ═══ */}
-          <section className="flex-1 min-h-0 overflow-y-auto">
+          <section className="flex-1 min-h-0 overflow-y-auto space-y-3">
             <HubFocusedWidgets accountId={accountId} attorneyName={resolvedName || staffName || undefined} />
+
+            {/* Ola 5.a — Widget personal del paralegal (wireframe W-28).
+                Solo cuando NO es demo (en demo data sintética puede confundir). */}
+            {!demoMode && <MyPerformanceWidget accountId={accountId} isDemo={demoMode} />}
+
+            {/* Ola 5.a — Equipo IA prominente (visión "oficina virtual" plano §10).
+                Muestra agents live + planned. Visible en demo y real. */}
+            <AITeamCard />
           </section>
 
           {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}
