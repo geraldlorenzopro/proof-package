@@ -323,7 +323,8 @@ export default function HubLeadsPage() {
              </div>
              <div>
                <div className="flex items-center gap-2">
-                 <h1 className="text-xl font-bold text-foreground">Contactos</h1>
+                 {/* Header alineado a WIREFRAMES.md §3 L142 (sidebar item "Leads") y §15.1 L824 */}
+                 <h1 className="text-xl font-bold text-foreground">Leads</h1>
                  {syncing && (
                    <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
@@ -331,7 +332,7 @@ export default function HubLeadsPage() {
                    </span>
                  )}
                </div>
-               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos registrados</p>
+               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} leads · auto-sync GHL cada 5 min</p>
              </div>
            </div>
 
@@ -424,10 +425,17 @@ export default function HubLeadsPage() {
               {Array.from({ length: 18 }).map((_, i) => <Skeleton key={i} className="h-full min-h-[60px] rounded-lg" />)}
             </div>
           ) : leads.length === 0 ? (
+            // Empty state per WIREFRAMES.md §15.1 L824:
+            //   🔍  Sin leads nuevos
+            //   Auto-sync GHL cada 5 minutos
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <UserSearch className="w-10 h-10 text-muted-foreground mb-3" />
-              <h3 className="text-lg font-semibold text-foreground mb-1">{search ? "Sin resultados" : "Sin contactos"}</h3>
-              <p className="text-sm text-muted-foreground">{search ? "Intenta con otro término." : "Sincroniza contactos desde tu CRM."}</p>
+              <Search className="w-12 h-12 text-muted-foreground/60 mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-1">
+                {search ? "Sin resultados" : "Sin leads nuevos"}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {search ? "Intenta con otro término." : "Auto-sync GHL cada 5 minutos"}
+              </p>
             </div>
           ) : (
             <motion.div
