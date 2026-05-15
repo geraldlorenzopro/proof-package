@@ -4,6 +4,7 @@ import { Mic, Bot, Wrench } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import HubAgentTeam from "@/components/hub/HubAgentTeam";
 import VoiceAIPanel from "@/components/hub/VoiceAIPanel";
+import AITeamCard from "@/components/hub/AITeamCard";
 import HubLayout from "@/components/hub/HubLayout";
 import {
   FileText, Clipboard, Globe, Shield, CheckSquare,
@@ -107,12 +108,14 @@ export default function HubAiPage() {
             <VoiceAIPanel accountId={accountId} />
           </TabsContent>
 
-          <TabsContent value="agents" className="mt-0 h-0 flex-1 min-h-0 overflow-hidden p-6 data-[state=active]:flex data-[state=active]:items-center data-[state=active]:justify-center">
-            <div className="w-full max-w-4xl min-h-0">
-              <div className="mb-4">
+          <TabsContent value="agents" className="mt-0 h-0 flex-1 min-h-0 overflow-y-auto p-6 data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:gap-4">
+            <div className="w-full max-w-5xl mx-auto min-h-0 space-y-4">
+              <div>
                 <h2 className="text-lg font-bold text-foreground">Equipo de Agentes AI</h2>
                 <p className="mt-1 text-sm text-muted-foreground/60">Especialistas digitales que trabajan en tus casos de inmigración.</p>
               </div>
+              {/* Hub Canonical: AITeamCard movido aquí desde /hub */}
+              <AITeamCard />
               <HubAgentTeam accountId={accountId} plan={plan} />
             </div>
           </TabsContent>

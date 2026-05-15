@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Send, ExternalLink, Clock, ChevronLeft, ChevronRight, PlusCircle, Plus, X } from "lucide-react";
 import { toast } from "sonner";
+import VirtualOfficeCard from "@/components/hub/VirtualOfficeCard";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import ChannelLogo from "@/components/intake/ChannelLogo";
@@ -310,6 +311,9 @@ export default function ConsultationsPage() {
   return (
     <HubLayout>
       <div className={`mx-auto px-4 py-6 space-y-5 ${viewMode === "list" ? "max-w-6xl" : ""}`}>
+        {/* Hub Canonical: VirtualOfficeCard movido aquí desde /hub */}
+        <VirtualOfficeCard accountId={accountId} />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

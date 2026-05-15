@@ -17,10 +17,9 @@ import type { FeedItem, FeedItemKind, FeedItemSeverity } from "@/types/feed";
 import IntakeWizard from "../intake/IntakeWizard";
 import HubFocusedWidgets from "./HubFocusedWidgets";
 import HubCrisisBar from "./HubCrisisBar";
-import AITeamCard from "./AITeamCard";
-import MyPerformanceWidget from "./MyPerformanceWidget";
-import QuickAskCamila from "./QuickAskCamila";
-import VirtualOfficeCard from "./VirtualOfficeCard";
+// Hub Canonical: widgets movidos a sus rutas correctas según wireframe.
+// AITeamCard → /hub/ai · MyPerformanceWidget → /hub/reports
+// QuickAskCamila → CamilaFloatingPanel · VirtualOfficeCard → /hub/consultations
 import { useDemoMode, DEMO_BRIEFING_TEXT, exitDemoMode } from "@/hooks/useDemoData";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -742,21 +741,16 @@ function HubDashboardInner({
           </section>
 
           {/* ═══ ZONA 2 — WIDGETS FOCALIZADOS (responde 4 preguntas del abogado) ═══ */}
-          <section className="flex-1 min-h-0 overflow-y-auto space-y-3">
+          {/* Hub Canonical (Morning Delivery 2026-05-16): según wireframe W-04,
+              el Hub debe tener SOLO: CrisisBar + Briefing + 4 KPIs + Stats.
+              Los widgets MyPerformance/VirtualOffice/QuickAsk/AITeam fueron
+              MOVIDOS a sus rutas dedicadas:
+                - AITeamCard → /hub/ai (HubAiPage)
+                - MyPerformanceWidget → /hub/reports
+                - QuickAskCamila → integrado en CamilaFloatingPanel via quick actions
+                - VirtualOfficeCard → /hub/consultations header */}
+          <section className="flex-1 min-h-0 overflow-y-auto">
             <HubFocusedWidgets accountId={accountId} attorneyName={resolvedName || staffName || undefined} />
-
-            {/* Ola 5.a — Widget personal del paralegal (wireframe W-28). */}
-            {!demoMode && <MyPerformanceWidget accountId={accountId} isDemo={demoMode} />}
-
-            {/* Ola 5.d — Oficina virtual (consultas + agenda + reuniones).
-                "Iniciar reunión virtual" es placeholder hasta Ola 6 (video). */}
-            <VirtualOfficeCard accountId={accountId} isDemo={demoMode} />
-
-            {/* Ola 5.b — Quick prompts contextuales que disparan Camila. */}
-            <QuickAskCamila isDemo={demoMode} />
-
-            {/* Ola 5.a — Equipo IA prominente (10 agents live + planned). */}
-            <AITeamCard />
           </section>
 
           {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}

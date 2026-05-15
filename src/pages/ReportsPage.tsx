@@ -25,6 +25,7 @@ import { KPIStrip } from "@/components/reports/KPIStrip";
 import { KPICard } from "@/components/reports/KPICard";
 import { CasesAtRisk } from "@/components/reports/CasesAtRisk";
 import { TeamHeatmap } from "@/components/reports/TeamHeatmap";
+import MyPerformanceWidget from "@/components/hub/MyPerformanceWidget";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { useNerAccountId } from "@/hooks/useNerAccountId";
 import { supabase } from "@/integrations/supabase/client";
@@ -318,6 +319,9 @@ export default function ReportsPage() {
             onClick={() => navigate("/hub/cases")}
           />
         </KPIStrip>
+
+        {/* Mi performance personal (Hub Canonical: movido aquí desde /hub) */}
+        <MyPerformanceWidget accountId={accountId} isDemo={isDemo} />
 
         {/* Cases at risk + Team grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
