@@ -126,7 +126,7 @@ export default function CaseWorkspace() {
   };
 
   const handleBackToDirectory = () => {
-    navigate("/dashboard/workspace-demo", { replace: true });
+    navigate("/hub/cases", { replace: true });
   };
 
   const handleBackToCaseList = () => {

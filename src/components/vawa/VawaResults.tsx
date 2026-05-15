@@ -151,7 +151,7 @@ const VawaResults = forwardRef<HTMLDivElement, ResultsProps>(({ result, answers,
         <Button
           onClick={() => {
             sessionStorage.setItem("vawa_checklist_data", JSON.stringify({ answers, result }));
-            navigate("/dashboard/vawa-checklist");
+            navigate("/tools/vawa/checklist");
           }}
           className="gap-2 gradient-gold text-accent-foreground font-semibold"
         >

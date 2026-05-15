@@ -55,11 +55,11 @@ export default function VawaChecklistPage() {
           sessionStorage.removeItem("vawa_checklist_data");
         } catch {
           setLoading(false);
-          navigate("/dashboard/vawa-screener");
+          navigate("/tools/vawa/screener");
         }
       } else {
         setLoading(false);
-        navigate("/dashboard/vawa-screener");
+        navigate("/tools/vawa/screener");
       }
     }
   }, [caseId]);
@@ -85,7 +85,7 @@ export default function VawaChecklistPage() {
     } catch (err) {
       console.error("Error loading case:", err);
       toast.error(t("Error al cargar el caso", "Error loading case"));
-      navigate("/dashboard/vawa-screener");
+      navigate("/tools/vawa/screener");
     } finally {
       setLoading(false);
     }
@@ -146,7 +146,7 @@ export default function VawaChecklistPage() {
         entity_id: data.id,
         entity_label: clientName.trim(),
       });
-      window.history.replaceState(null, "", `/dashboard/vawa-checklist?case=${data.id}`);
+      window.history.replaceState(null, "", `/tools/vawa/checklist?case=${data.id}`);
     } catch (err: any) {
       console.error("Error creating case:", err);
       toast.error(err.message || t("Error al guardar", "Error saving"));

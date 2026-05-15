@@ -181,7 +181,7 @@ export default function CasesPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate('/dashboard/workspace-demo')}
+              onClick={() => navigate('/hub/cases')}
               className="flex items-center gap-2 border border-primary/30 text-primary font-semibold px-4 py-2.5 rounded-xl hover:bg-primary/10 transition-colors text-sm"
             >
               <Users className="w-4 h-4" />
