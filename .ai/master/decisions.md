@@ -52,6 +52,122 @@ free + UptimeRobot. Escalamos a paid cuando MRR > $5K.
 
 ---
 
+## 2026-05-15 (tarde) — Ola 5 COMPLETA: Hub redesign según wireframes
+
+**Decisión:** Mr. Lorenzo identificó que las Olas 1-4 fueron mayormente
+invisibles (medición + redirects + brand sutil). Su frustración:
+"sigo viendo todo igual desde home". El plano `WIREFRAMES.md` describe
+un Hub mucho más rico que el actual. Llegó el momento de cerrar el gap.
+
+**Estrategia:** saltar 4.3.b + 4.4 (trabajo invisible) e ir directo a
+Ola 5 con TODO de una vez (sin pausar). 4 sub-olas en 4 commits.
+
+**Sub-olas ejecutadas:**
+
+### 5.a — AITeamCard + MyPerformanceWidget (commit 28ce271)
+
+**AITeamCard.tsx (180 LOC):**
+- "Tu equipo IA está listo" — card prominente con TODOS los agents del roadmap
+- 4 LIVE: Camila (voice), Felix (forms), Nina (packets), Max (QA)
+- 6 PLANNED: Pablo, Lucía, Sofía, Rosa, Carmen, Leo (disabled + tooltip)
+- Single source of truth AGENTS const → fácil agregar nuevos agents
+- Tracking `hub.ai_team_clicked`
+
+**MyPerformanceWidget.tsx (180 LOC):**
+- Wireframe W-28 — "Mi performance" inline en Hub Inicio
+- 3 KPIs personales (assigned_to=current_user, NO firma completa):
+  · Casos activos · En riesgo (stale 7d+) · Streak (placeholder MVP)
+- Click drill-down → /hub/cases o /hub/cases?filter=stale
+- Tracking `hub.my_performance_drill_down`
+
+### 5.b — QuickAskCamila (commit 09f65f7)
+
+**QuickAskCamila.tsx (105 LOC):**
+- 4 quick prompts curados: ¿Casos atrasados? / Tareas del día /
+  Próximas entrevistas / RFEs pendientes
+- Click dispara CustomEvent('camila:open', {message}) que
+  CamilaFloatingPanel ya escuchaba (línea 304)
+- NO duplica chat UI — reusa infraestructura existente
+- Tracking `hub.quick_ask_clicked`
+
+### 5.c — HubKnowledgePage (commit 0b6a060)
+
+**HubKnowledgePage.tsx (200 LOC) — nueva ruta `/hub/knowledge`:**
+- 6 fuentes oficiales clicables: INA, 8 CFR, USCIS PM, 9 FAM, AAO, BIA
+- Search bar placeholder MVP (Ola 5.c.2 wire a edge fn vector search)
+- Agent Leo card "coming soon"
+- Sidebar HubLayout: nuevo item "Knowledge" con icono BookOpen
+- CTA al final: "usá Camila chat por ahora" (CustomEvent)
+- Tracking `knowledge.source_opened` + `knowledge.search_attempted`
+
+### 5.d — VirtualOfficeCard (commit pending — este)
+
+**VirtualOfficeCard.tsx (130 LOC):**
+- Widget "Oficina virtual" en Hub Inicio
+- Counter de consultas hoy (query appointments table)
+- 3 CTAs: Consultas · Reunión virtual (placeholder Ola 6) · Agenda
+- Video integration real (Zoom/Daily) diferida a Ola 6 — requiere
+  decisión de provider + API keys
+- Tracking `hub.virtual_office_action`
+
+**Estructura final del Hub Inicio (post Ola 5):**
+
+```
+HubDashboard
+├── Hero (briefing Camila + greeting + chips)             [existing]
+├── HubFocusedWidgets (4 cards Para firmar/revisar/etc)    [existing]
+├── MyPerformanceWidget [NEW Ola 5.a]
+├── VirtualOfficeCard   [NEW Ola 5.d]
+├── QuickAskCamila      [NEW Ola 5.b]
+├── AITeamCard          [NEW Ola 5.a]
+└── Pulse stats inferiores (mini KPIs + recursos)         [existing]
+```
+
+**Eventos tracking nuevos (todos en taxonomy MEASUREMENT-FRAMEWORK §13):**
+- `hub.ai_team_clicked` — Ola 5.a
+- `hub.my_performance_drill_down` — Ola 5.a
+- `hub.quick_ask_clicked` — Ola 5.b
+- `knowledge.source_opened` — Ola 5.c
+- `knowledge.search_attempted` — Ola 5.c
+- `hub.virtual_office_action` — Ola 5.d
+
+**Lo que NO está en Ola 5 (Olas 6+):**
+- Video integration real (Zoom/Daily.co)
+- Knowledge Base con vector search real (cargas de INA + 8 CFR + USCIS PM
+  en pgvector) — solo placeholder UI hoy
+- Leo agent wireado (edge fn camila-knowledge-leo)
+- Auto-resumen post-reunión vía agent-summary
+- Calendar sync bidireccional GHL completo
+- Streak calculation real (basado en overdue events stream)
+
+**Backlog explícito que YA NO se ejecutó por priorizar Ola 5:**
+- Ola 4.3.b — Extraer 21 Doc0X como componentes embebibles + eliminar
+  24 rutas paralelas (4-6 hr, requería caso I-130/485/765 real para verify)
+- Ola 4.4 — Refactor monolitos (HubDashboard 881 LOC → custom hooks;
+  OfficeSettingsPage 1387 LOC → split). Se hace cuando alguna firma reporte
+  performance issue.
+
+**Build acumulado Ola 5:** +25KB bundle (4 componentes nuevos + 1 página
++ ~810 LOC totales).
+
+**Por qué saltamos 4.3.b/4.4:**
+1. Mr. Lorenzo necesitaba ver progreso visible — motivación
+2. 4.3.b sin caso I-130 real era trabajo a ciegas (no verificable)
+3. 4.4 era optimización, no transformación visual
+4. Ola 5 transforma el producto que él muestra a clientes/prospects
+5. Olas 1-4 ya construyeron foundation suficientemente sólida
+6. Patrón "atacar abstracciones > periferia" validado en Olas 1-4 →
+   ahora podemos atacar features visibles sobre esa base
+
+**Próximos pasos (post Mr. Lorenzo testing visual):**
+- Si visualmente OK → Ola 6 puede ser: video integration, vector search
+  para Knowledge, refactor monolitos pendiente
+- Si hay regresiones cosméticas → fix puntual antes de Ola 6
+- Decisión Mr. Lorenzo: cuál de los items pending (4.3.b, 4.4, 6 video,
+  Knowledge real backend) priorizar primero
+
+---
+
 ## 2026-05-15 (madrugada+) — Ola 4.3.a: Strategic Packs → tab Case Engine (additive)
 
 **Decisión:** arrancar Ola 4.3 con sub-paso ADDITIVE — crear nuevo tab

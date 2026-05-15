@@ -20,6 +20,7 @@ import HubCrisisBar from "./HubCrisisBar";
 import AITeamCard from "./AITeamCard";
 import MyPerformanceWidget from "./MyPerformanceWidget";
 import QuickAskCamila from "./QuickAskCamila";
+import VirtualOfficeCard from "./VirtualOfficeCard";
 import { useDemoMode, DEMO_BRIEFING_TEXT, exitDemoMode } from "@/hooks/useDemoData";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -744,17 +745,17 @@ function HubDashboardInner({
           <section className="flex-1 min-h-0 overflow-y-auto space-y-3">
             <HubFocusedWidgets accountId={accountId} attorneyName={resolvedName || staffName || undefined} />
 
-            {/* Ola 5.a — Widget personal del paralegal (wireframe W-28).
-                Solo cuando NO es demo (en demo data sintética puede confundir). */}
+            {/* Ola 5.a — Widget personal del paralegal (wireframe W-28). */}
             {!demoMode && <MyPerformanceWidget accountId={accountId} isDemo={demoMode} />}
 
-            {/* Ola 5.b — Quick prompts contextuales que disparan Camila
-                con preguntas pre-cargadas. Reusa CustomEvent 'camila:open'
-                que el FloatingPanel ya escucha. */}
+            {/* Ola 5.d — Oficina virtual (consultas + agenda + reuniones).
+                "Iniciar reunión virtual" es placeholder hasta Ola 6 (video). */}
+            <VirtualOfficeCard accountId={accountId} isDemo={demoMode} />
+
+            {/* Ola 5.b — Quick prompts contextuales que disparan Camila. */}
             <QuickAskCamila isDemo={demoMode} />
 
-            {/* Ola 5.a — Equipo IA prominente (visión "oficina virtual" plano §10).
-                Muestra agents live + planned. Visible en demo y real. */}
+            {/* Ola 5.a — Equipo IA prominente (10 agents live + planned). */}
             <AITeamCard />
           </section>
 
