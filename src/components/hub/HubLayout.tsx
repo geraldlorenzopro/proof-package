@@ -185,10 +185,13 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             <div className="flex flex-col items-center gap-0.5">
               {NAV_ITEMS.filter(item => !demoMode || item.demoSupported).map((item) => {
                 const isActive = item.match(currentPath);
-                const badge = item.badgeKey && demoMode ? DEMO_SIDEBAR_BADGES[item.badgeKey] : null;
+                const badge = item.badgeKey
+                  ? (demoMode ? DEMO_SIDEBAR_BADGES[item.badgeKey] : realBadges[item.badgeKey])
+                  : null;
                 const badgeColor =
                   item.badgeKey === "cases" ? "bg-amber-500" :
-                  item.badgeKey === "forms" ? "bg-cyan-accent text-deep-navy" :
+                  item.badgeKey === "forms" ? "bg-purple-500" :
+                  item.badgeKey === "leads" ? "bg-cyan-accent text-deep-navy" :
                   "bg-rose-500";
                 return (
                   <button
