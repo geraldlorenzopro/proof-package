@@ -166,6 +166,7 @@ function HubDashboardInner({
   const [pendingTasks, setPendingTasks] = useState(0);
   const [closedThisWeek, setClosedThisWeek] = useState(0);
   const [tasksDoneRatio, setTasksDoneRatio] = useState(0);
+  const [approvalRate30d, setApprovalRate30d] = useState(0);
 
 
   // Hub v7 — datos contables para micro-briefing
@@ -362,7 +363,8 @@ function HubDashboardInner({
     try {
       const todayStr = new Date().toISOString().split("T")[0];
       const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().split("T")[0];
-      const [activeRes, todayApptsRes, pendingTasksRes, completedTasksRes, closedRes] = await Promise.all([
+      const monthAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+      const [activeRes, todayApptsRes, pendingTasksRes, completedTasksRes, closedRes, approvedRes, deniedRes] = await Promise.all([
         supabase.from("client_cases").select("id", { count: "exact", head: true })
           .eq("account_id", accountId).not("status", "eq", "completed"),
         supabase.from("appointments").select("id", { count: "exact", head: true })
@@ -373,14 +375,23 @@ function HubDashboardInner({
           .eq("account_id", accountId).eq("status", "completed").gte("updated_at", weekAgo),
         supabase.from("client_cases").select("id", { count: "exact", head: true })
           .eq("account_id", accountId).eq("status", "completed").gte("updated_at", weekAgo),
+        supabase.from("client_cases").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).eq("process_stage", "aprobado").gte("updated_at", monthAgo),
+        supabase.from("client_cases").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).in("process_stage", ["negado", "denegado"]).gte("updated_at", monthAgo),
       ]);
       const totalTasks = (pendingTasksRes.count || 0) + (completedTasksRes.count || 0);
       const ratio = totalTasks > 0 ? Math.round(((completedTasksRes.count || 0) / totalTasks) * 100) : 0;
+      const approved = approvedRes.count || 0;
+      const denied = deniedRes.count || 0;
+      const totalDecided = approved + denied;
+      const approvalRate = totalDecided > 0 ? Math.round((approved / totalDecided) * 100) : 0;
       setActiveCases(activeRes.count || 0);
       setTodayAppointmentsCount(todayApptsRes.count || 0);
       setPendingTasks(pendingTasksRes.count || 0);
       setClosedThisWeek(closedRes.count || 0);
       setTasksDoneRatio(ratio);
+      setApprovalRate30d(approvalRate);
     } catch (err) {
       console.error("KPI load error:", err);
     }
@@ -618,11 +629,13 @@ function HubDashboardInner({
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">casos activos</span>
               </button>
               <div className="w-px h-5 bg-border/30" />
-              <button onClick={() => navigate("/hub/cases")} className="flex items-baseline gap-1.5 hover:opacity-80 transition" title={`${pendingTasks} tareas pendientes${pendingTasks > 99 ? " — considerá archivar las muy viejas" : ""}`}>
-                <span className="text-base font-semibold text-amber-400 tabular-nums">
-                  {pendingTasks.toLocaleString("es-ES")}
+              <button onClick={() => navigate("/hub/reports")} className="flex items-baseline gap-1.5 hover:opacity-80 transition" title="Tasa de aprobación últimos 30 días">
+                <span className="text-base font-display font-semibold text-emerald-300 tabular-nums">
+                  {approvalRate30d}<span className="text-[10px] text-slate-400">%</span>
                 </span>
-                <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">tareas pend.</span>
+                <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">
+                  aprobación 30d
+                </span>
               </button>
             </div>
 
