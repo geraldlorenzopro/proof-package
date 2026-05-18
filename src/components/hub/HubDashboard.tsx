@@ -363,7 +363,8 @@ function HubDashboardInner({
     try {
       const todayStr = new Date().toISOString().split("T")[0];
       const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().split("T")[0];
-      const [activeRes, todayApptsRes, pendingTasksRes, completedTasksRes, closedRes] = await Promise.all([
+      const monthAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+      const [activeRes, todayApptsRes, pendingTasksRes, completedTasksRes, closedRes, approvedRes, deniedRes] = await Promise.all([
         supabase.from("client_cases").select("id", { count: "exact", head: true })
           .eq("account_id", accountId).not("status", "eq", "completed"),
         supabase.from("appointments").select("id", { count: "exact", head: true })
@@ -374,14 +375,23 @@ function HubDashboardInner({
           .eq("account_id", accountId).eq("status", "completed").gte("updated_at", weekAgo),
         supabase.from("client_cases").select("id", { count: "exact", head: true })
           .eq("account_id", accountId).eq("status", "completed").gte("updated_at", weekAgo),
+        supabase.from("client_cases").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).eq("process_stage", "aprobado").gte("updated_at", monthAgo),
+        supabase.from("client_cases").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).in("process_stage", ["negado", "denegado"]).gte("updated_at", monthAgo),
       ]);
       const totalTasks = (pendingTasksRes.count || 0) + (completedTasksRes.count || 0);
       const ratio = totalTasks > 0 ? Math.round(((completedTasksRes.count || 0) / totalTasks) * 100) : 0;
+      const approved = approvedRes.count || 0;
+      const denied = deniedRes.count || 0;
+      const totalDecided = approved + denied;
+      const approvalRate = totalDecided > 0 ? Math.round((approved / totalDecided) * 100) : 0;
       setActiveCases(activeRes.count || 0);
       setTodayAppointmentsCount(todayApptsRes.count || 0);
       setPendingTasks(pendingTasksRes.count || 0);
       setClosedThisWeek(closedRes.count || 0);
       setTasksDoneRatio(ratio);
+      setApprovalRate30d(approvalRate);
     } catch (err) {
       console.error("KPI load error:", err);
     }
