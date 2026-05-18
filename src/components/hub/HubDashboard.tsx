@@ -592,7 +592,6 @@ function HubDashboardInner({
                 <p className="text-[9px] text-muted-foreground/60 leading-tight w-full text-right">
                   El micrófono dicta al texto · no llama por voz
                 </p>
-                </div>
                 {isVoiceActive && (
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
