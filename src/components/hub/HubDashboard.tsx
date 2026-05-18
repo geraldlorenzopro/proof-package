@@ -176,6 +176,7 @@ function HubDashboardInner({
   const { appointments: todayAppts } = useTodayAppointments(accountId);
   const { cases: riskCases } = useRiskCases(accountId, 3);
   const { total: myActionsTotal } = useMyActions(accountId, userId);
+  const { totalCount: eventsCount } = useWeekendEvents(accountId);
 
 
   // Chat input
