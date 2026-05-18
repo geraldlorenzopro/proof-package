@@ -235,9 +235,13 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
 
             {/* CRED widget (créditos AI) — verde emerald per mockup v6.1 */}
             {accountId && (
-              <div className="mb-2 px-1.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center gap-0.5 w-[60px]">
-                <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-300/80">CRED</span>
-                <HubCreditsWidget accountId={accountId} />
+              <div className="mb-2 px-2 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 w-[60px]">
+                <div className="text-[8px] uppercase tracking-wider text-emerald-400/80 font-mono font-bold text-center">
+                  Cred
+                </div>
+                <div className="text-[10px] font-bold text-emerald-300 text-center tabular-nums">
+                  {creditBalance != null ? creditBalance.toLocaleString("es-ES") : "—"}
+                </div>
               </div>
             )}
 
