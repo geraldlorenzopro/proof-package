@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  Signature, Eye, Calendar, Landmark, AlertCircle, ArrowRight, ChevronRight, Sparkles,
+  Signature, Eye, Calendar, Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import HubTeamWidget from "./HubTeamWidget";
