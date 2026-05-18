@@ -520,11 +520,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
 
         {/* ENTREVISTAS PRÓXIMAS (7d) */}
         <Widget
-          icon={<Landmark className="w-4 h-4 text-orange-400" />}
-          iconBg="bg-orange-500/15 border border-orange-500/40"
+          icon={<Landmark className="w-4 h-4 text-orange-300" />}
+          iconBg="bg-orange-500/15 border border-orange-500/30"
           title="Entrevistas (7d)"
           count={interviews.length}
-          countColor="text-orange-400"
+          countColor="text-orange-300"
           onSeeAll={() => navigate("/hub/cases")}
           emptyText="Sin entrevistas esta semana"
           emptyHint="USCIS biometrics, NVC y Embajadas aparecerán aquí"
