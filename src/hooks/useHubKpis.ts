@@ -52,11 +52,12 @@ export function useHubKpis(accountId: string | null): HubKpis {
     void (async () => {
       const today = new Date();
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString();
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
       const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
       const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
 
-      const [activeRes, closedRes, pendingTasksRes, monthTasksTotalRes, monthTasksDoneRes, todayApptsRes] =
+      const [activeRes, closedRes, pendingTasksRes, monthTasksTotalRes, monthTasksDoneRes, todayApptsRes, approvedRes, deniedRes] =
         await Promise.all([
           supabase
             .from("client_cases")
@@ -97,6 +98,20 @@ export function useHubKpis(accountId: string | null): HubKpis {
             .gte("appointment_datetime", todayStart)
             .lt("appointment_datetime", todayEnd)
             .not("appointment_datetime", "is", null),
+
+          supabase
+            .from("client_cases")
+            .select("id", { count: "exact", head: true })
+            .eq("account_id", accountId)
+            .eq("process_stage", "aprobado")
+            .gte("updated_at", monthAgo),
+
+          supabase
+            .from("client_cases")
+            .select("id", { count: "exact", head: true })
+            .eq("account_id", accountId)
+            .in("process_stage", ["negado", "denegado"])
+            .gte("updated_at", monthAgo),
         ]);
 
       if (cancelled) return;
@@ -105,12 +120,20 @@ export function useHubKpis(accountId: string | null): HubKpis {
       const monthDone = monthTasksDoneRes.count ?? 0;
       const ratio = monthTotal > 0 ? Math.round((monthDone / monthTotal) * 100) : 0;
 
+      const approvedCount = approvedRes.count ?? 0;
+      const deniedCount = deniedRes.count ?? 0;
+      const totalDecided = approvedCount + deniedCount;
+      const approvalRate30d = totalDecided > 0
+        ? Math.round((approvedCount / totalDecided) * 100)
+        : 0;
+
       setState({
         activeCases: activeRes.count ?? 0,
         closedThisWeek: closedRes.count ?? 0,
         pendingTasks: pendingTasksRes.count ?? 0,
         todayAppointmentsCount: todayApptsRes.count ?? 0,
         tasksDoneRatio: ratio,
+        approvalRate30d,
         loading: false,
       });
     })();
