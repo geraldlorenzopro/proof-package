@@ -432,11 +432,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
         {/* PARA FIRMAR */}
         <Widget
-          icon={<Signature className="w-4 h-4 text-purple-400" />}
-          iconBg="bg-purple-500/15 border border-purple-500/40"
+          icon={<Signature className="w-4 h-4 text-purple-300" />}
+          iconBg="bg-purple-500/15 border border-purple-500/30"
           title="Para firmar"
           count={signatures.length}
-          countColor="text-purple-400"
+          countColor="text-purple-300"
           onSeeAll={() => navigate("/hub/cases")}
           emptyText="Nada esperando tu firma"
           emptyHint="Cuando tu equipo termine un packet, aparecerá aquí"
@@ -463,11 +463,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
 
         {/* PARA REVISAR */}
         <Widget
-          icon={<Eye className="w-4 h-4 text-amber-400" />}
-          iconBg="bg-amber-500/15 border border-amber-500/40"
+          icon={<Eye className="w-4 h-4 text-amber-300" />}
+          iconBg="bg-amber-500/15 border border-amber-500/30"
           title="Para revisar"
           count={reviews.length}
-          countColor="text-amber-400"
+          countColor="text-amber-300"
           onSeeAll={() => navigate("/hub/cases")}
           emptyText="Sin RFEs ni revisiones pendientes"
           emptyHint="RFEs drafted por tu equipo aparecerán aquí"
@@ -495,11 +495,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
 
         {/* CONSULTAS HOY */}
         <Widget
-          icon={<Calendar className="w-4 h-4 text-blue-400" />}
-          iconBg="bg-blue-500/15 border border-blue-500/40"
+          icon={<Calendar className="w-4 h-4 text-cyan-accent" />}
+          iconBg="bg-cyan-accent/15 border border-cyan-accent/30"
           title="Consultas hoy"
           count={consultations.length}
-          countColor="text-blue-400"
+          countColor="text-cyan-accent"
           onSeeAll={() => navigate("/hub/agenda")}
           emptyText="Sin consultas agendadas"
           emptyHint="Tus citas del día aparecerán aquí"
@@ -509,7 +509,7 @@ export default function HubFocusedWidgets({ accountId }: Props) {
               key={c.id}
               className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-muted/40"
             >
-              <span className="text-[10px] text-blue-400 font-semibold tabular-nums shrink-0">{c.time}</span>
+              <span className="text-[10px] text-cyan-accent font-semibold tabular-nums shrink-0 font-mono">{c.time}</span>
               <span className="text-[11px] truncate flex-1">
                 {c.client_name}
                 <span className="text-muted-foreground"> · {c.title}</span>
@@ -520,11 +520,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
 
         {/* ENTREVISTAS PRÓXIMAS (7d) */}
         <Widget
-          icon={<Landmark className="w-4 h-4 text-orange-400" />}
-          iconBg="bg-orange-500/15 border border-orange-500/40"
+          icon={<Landmark className="w-4 h-4 text-orange-300" />}
+          iconBg="bg-orange-500/15 border border-orange-500/30"
           title="Entrevistas (7d)"
           count={interviews.length}
-          countColor="text-orange-400"
+          countColor="text-orange-300"
           onSeeAll={() => navigate("/hub/cases")}
           emptyText="Sin entrevistas esta semana"
           emptyHint="USCIS biometrics, NVC y Embajadas aparecerán aquí"
@@ -589,11 +589,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
             {news.map((n, i) => (
               <div key={i} className="flex items-center gap-2 text-[11px]">
                 <span className={cn(
-                  "inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider min-w-[56px] text-center shrink-0",
-                  n.source === "USCIS" && "bg-blue-500/20 text-blue-300",
-                  n.source === "NVC" && "bg-amber-500/20 text-amber-300",
-                  n.source === "Embajada" && "bg-orange-500/20 text-orange-300",
-                  n.source === "AI" && "bg-purple-500/20 text-purple-300",
+                  "inline-block px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider min-w-[60px] text-center shrink-0 font-mono",
+                  n.source === "USCIS" && "bg-blue-500/15 text-blue-300 border border-blue-500/30",
+                  n.source === "NVC" && "bg-amber-500/15 text-amber-300 border border-amber-500/30",
+                  n.source === "Embajada" && "bg-orange-500/15 text-orange-300 border border-orange-500/30",
+                  n.source === "AI" && "bg-cyan-accent/15 text-cyan-accent border border-cyan-accent/30",
                 )}>
                   {n.source === "AI" ? "Equipo IA" : n.source}
                 </span>
@@ -634,14 +634,14 @@ function Widget({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-card border border-border rounded-xl p-3 flex flex-col min-h-[200px]">
+    <div className="bg-white/[0.03] border border-white/[0.08] hover:border-cyan-accent/20 rounded-xl p-3 flex flex-col min-h-[200px] transition-colors">
       {/* Header centrado — Mr. Lorenzo prefiere headers centrados (acción/label) */}
-      <div className="flex items-center justify-center gap-2 pb-2 mb-2 border-b border-border/60 relative">
-        <div className={cn("w-7 h-7 rounded-md flex items-center justify-center shrink-0", iconBg)}>
+      <div className="flex items-center justify-center gap-2 pb-2 mb-2 border-b border-white/[0.06] relative">
+        <div className={cn("w-8 h-8 rounded-md flex items-center justify-center shrink-0", iconBg)}>
           {icon}
         </div>
-        <div className="text-[12px] font-semibold text-foreground">{title}</div>
-        <div className={cn("absolute right-0 text-[20px] font-bold tabular-nums leading-none", countColor)}>
+        <div className="text-[12px] font-semibold text-foreground font-sora">{title}</div>
+        <div className={cn("absolute right-0 text-[24px] font-bold tabular-nums leading-none font-sora", countColor)}>
           {count}
         </div>
       </div>
@@ -676,10 +676,10 @@ function Widget({
 function PulseMetric({ value, label, valueColor, onClick }: { value: string | number; label: string; valueColor?: string; onClick?: () => void }) {
   const content = (
     <>
-      <div className={cn("text-[15px] font-bold tabular-nums leading-none", valueColor || "text-foreground")}>
+      <div className={cn("text-[15px] font-bold tabular-nums leading-none font-sora", valueColor || "text-foreground")}>
         {value}
       </div>
-      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+      <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-mono">
         {label}
       </div>
     </>
