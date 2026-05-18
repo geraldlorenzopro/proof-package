@@ -33,15 +33,11 @@ export default function HubPipelineWidget({ accountId }: Props) {
   return (
     <section className="rounded-2xl border border-cyan-accent/15 bg-card/30 backdrop-blur-sm p-3">
       <div className="flex items-end justify-between mb-2 gap-2 flex-wrap">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-accent/80 font-mono font-semibold mb-0.5">
-            Pipeline · {totalActive} casos activos
-          </p>
-          <h3 className="text-sm font-bold flex items-center gap-2 text-foreground font-sora">
-            <BarChart3 className="w-4 h-4 text-cyan-accent" />
-            Tu negocio de un vistazo
-          </h3>
-        </div>
+        <h3 className="text-sm font-bold flex items-center gap-2 text-foreground font-sora">
+          <BarChart3 className="w-4 h-4 text-cyan-accent" />
+          Pipeline
+          <span className="text-cyan-accent/90 font-mono text-[12px] font-semibold">· {totalActive} casos activos</span>
+        </h3>
         <button
           onClick={() => navigate("/hub/cases?view=kanban")}
           className="text-[10px] font-semibold text-cyan-accent/80 hover:text-cyan-accent"

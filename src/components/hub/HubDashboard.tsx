@@ -607,18 +607,18 @@ function HubDashboardInner({
             </div>
           </section>
 
-          {/* ═══ ZONA 4.5 — EVENTOS DEL WEEKEND (Fase D) ═══ */}
-          <HubEventsFeed accountId={accountId} />
-
-          {/* ═══ ZONA 5 — PIPELINE HORIZONTAL ═══ */}
-          <HubPipelineWidget accountId={accountId} />
-
-          {/* ═══ ZONA 6 — MIS ACCIONES + DINERO + EQUIPO ═══ */}
+          {/* ═══ ZONA 4 — MIS ACCIONES + DINERO + EQUIPO (subido: acción antes de contexto) ═══ */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-2 shrink-0">
             <HubMyActionsCard accountId={accountId} userId={userId} />
             <HubMoneyCard accountId={accountId} />
             <HubTeamWidget />
           </section>
+
+          {/* ═══ ZONA 5 — PIPELINE HORIZONTAL ═══ */}
+          <HubPipelineWidget accountId={accountId} />
+
+          {/* ═══ ZONA 6 — EVENTOS DEL WEEKEND ═══ */}
+          <HubEventsFeed accountId={accountId} />
 
 
           {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}
