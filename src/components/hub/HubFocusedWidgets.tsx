@@ -553,31 +553,7 @@ export default function HubFocusedWidgets({ accountId }: Props) {
 
 
 
-      {/* PULSE — métricas completas del portfolio. Métricas clickeables navegan a página relevante. */}
-      {pulse.active === 0 && pulse.newLeads === 0 ? (
-        // Empty state global del pulse: firma sin actividad todavía
-        <div className="flex items-center justify-center gap-3 px-4 py-3 bg-card/40 border border-border rounded-lg">
-          <Sparkles className="w-4 h-4 text-emerald-400/60" />
-          <div className="text-center">
-            <p className="text-[12px] font-medium text-foreground">Tu firma está lista para empezar</p>
-            <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-              Las métricas aparecerán cuando crees tu primer caso o conectes GHL.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-center gap-5 px-4 py-2 bg-card/40 border border-border rounded-lg flex-wrap">
-          <PulseMetric value={pulse.active} label="Casos activos" onClick={() => navigate("/hub/cases")} />
-          {pulse.zombies > 0 && <><PulseDivider /><PulseMetric value={pulse.zombies} label="Zombies +30d" valueColor="text-amber-400" onClick={() => navigate("/hub/cases?filter=zombies")} /></>}
-          {pulse.orphans > 0 && <><PulseDivider /><PulseMetric value={pulse.orphans} label="Sin supervisor" valueColor="text-rose-400" onClick={() => navigate("/hub/cases?filter=no-supervisor")} /></>}
-          <PulseDivider />
-          <PulseMetric value={pulse.newLeads} label="Leads hoy" valueColor="text-blue-400" onClick={() => navigate("/hub/leads")} />
-          <PulseDivider />
-          <PulseMetric value={`${pulse.approvalRate}%`} label="Aprobación 30d" valueColor="text-emerald-400" onClick={() => navigate("/hub/reports")} />
-          {pulse.teamActive && (<><PulseDivider /><PulseMetric value={pulse.teamActive} label="Equipo activo" valueColor="text-emerald-400" onClick={() => navigate("/hub/settings/office")} /></>)}
-          {pulse.mrr && (<><PulseDivider /><PulseMetric value={pulse.mrr} label="MRR firma" onClick={() => navigate("/admin/billing")} /></>)}
-        </div>
-      )}
+      {/* PULSE interno removido (Bug 1 fix 2026-05-18) — el pulse único vive en HubDashboard.tsx footer */}
 
       {/* NEWS TICKER — solo cuando hay items (demo o news scrape futuro) */}
       {news.length > 0 && (
