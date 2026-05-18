@@ -597,7 +597,7 @@ export default function HubFocusedWidgets({ accountId }: Props) {
 }
 
 function Widget({
-  icon, iconBg, title, count, countColor, onSeeAll, emptyText, emptyHint, children,
+  icon, iconBg, title, count, countColor, onSeeAll, emptyText, children,
 }: {
   icon: React.ReactNode;
   iconBg: string;
@@ -610,68 +610,41 @@ function Widget({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white/[0.03] border border-white/[0.08] hover:border-cyan-accent/20 rounded-xl p-3 flex flex-col min-h-[200px] transition-colors">
-      {/* Header centrado — Mr. Lorenzo prefiere headers centrados (acción/label) */}
-      <div className="flex items-center justify-center gap-2 pb-2 mb-2 border-b border-white/[0.06] relative">
-        <div className={cn("w-8 h-8 rounded-md flex items-center justify-center shrink-0", iconBg)}>
-          {icon}
-        </div>
-        <div className="text-[12px] font-semibold text-foreground font-sora">{title}</div>
-        <div className={cn("absolute right-0 text-[24px] font-bold tabular-nums leading-none font-sora", countColor)}>
-          {count}
-        </div>
-      </div>
-      {count === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-2 gap-1.5">
-          <div className={cn("w-9 h-9 rounded-full flex items-center justify-center opacity-50", iconBg)}>
+    <div className="bg-white/[0.03] border border-white/[0.08] hover:border-cyan-accent/20 rounded-xl p-4 flex flex-col transition-colors cursor-pointer">
+      {/* Header horizontal: icon box + uppercase title left, count right */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={cn("w-8 h-8 rounded-md flex items-center justify-center shrink-0", iconBg)}>
             {icon}
           </div>
-          <div className="text-[11px] font-medium text-muted-foreground">{emptyText}</div>
-          {emptyHint && (
-            <div className="text-[10px] text-muted-foreground/60 italic leading-tight">{emptyHint}</div>
-          )}
+          <span className="text-[11px] font-sora font-semibold text-foreground uppercase tracking-wider truncate">
+            {title}
+          </span>
         </div>
+        <span className={cn("text-[24px] font-sora font-bold tabular-nums leading-none shrink-0", countColor)}>
+          {count}
+        </span>
+      </div>
+
+      {/* Lista compacta o empty state one-liner */}
+      {count === 0 ? (
+        <p className="text-[10px] text-muted-foreground/60 py-1">{emptyText}</p>
       ) : (
-        <ul className="flex-1 space-y-0.5 overflow-hidden">
-          {children}
-        </ul>
+        <ul className="space-y-1 overflow-hidden">{children}</ul>
       )}
-      {count > 0 && (
-        <button
-          onClick={onSeeAll}
-          className="mt-2 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[10px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors border border-border"
-        >
-          Ver todos
-          <ChevronRight className="w-3 h-3" />
-        </button>
-      )}
+
+      {/* Footer link en color del widget */}
+      <button
+        onClick={onSeeAll}
+        className={cn(
+          "mt-3 pt-2.5 border-t border-white/5 w-full text-[10px] font-semibold text-left transition-colors hover:opacity-80",
+          countColor,
+        )}
+      >
+        Ver todos →
+      </button>
     </div>
   );
-}
-
-function PulseMetric({ value, label, valueColor, onClick }: { value: string | number; label: string; valueColor?: string; onClick?: () => void }) {
-  const content = (
-    <>
-      <div className={cn("text-[15px] font-bold tabular-nums leading-none font-sora", valueColor || "text-foreground")}>
-        {value}
-      </div>
-      <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-mono">
-        {label}
-      </div>
-    </>
-  );
-  if (onClick) {
-    return (
-      <button onClick={onClick} className="flex flex-col gap-0.5 hover:opacity-80 transition-opacity cursor-pointer text-left" title={`Ver ${label}`}>
-        {content}
-      </button>
-    );
-  }
-  return <div className="flex flex-col gap-0.5">{content}</div>;
-}
-
-function PulseDivider() {
-  return <div className="w-px h-6 bg-border" />;
 }
 
 function formatTime(iso: string): string {
