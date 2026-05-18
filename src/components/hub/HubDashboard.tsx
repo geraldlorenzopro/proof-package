@@ -1,30 +1,37 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Send, Mic, MicOff, Calendar,
   ChevronRight,
   X, AlertCircle, FolderOpen,
-  AlertTriangle, ExternalLink,
+  Phone, PhoneOff, AlertTriangle, ListTodo, ExternalLink,
   Clock, FileText, CheckSquare, Sparkles, RefreshCw, BookOpen
 } from "lucide-react";
+import { toast } from "sonner";
+import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
-import { useFeed } from "@/hooks/useFeed";
-import { useHubKpis } from "@/hooks/useHubKpis";
-import { useMorningBriefing } from "@/hooks/useMorningBriefing";
+
 import type { FeedItemKind, FeedItemSeverity } from "@/types/feed";
 import IntakeWizard from "../intake/IntakeWizard";
-import HubFocusedWidgets from "./HubFocusedWidgets";
 import HubCrisisBar from "./HubCrisisBar";
+import HubAgendaWidget from "./HubAgendaWidget";
+import HubRiskWidget from "./HubRiskWidget";
+import HubPipelineWidget from "./HubPipelineWidget";
+import HubMyActionsCard from "./HubMyActionsCard";
+import HubMoneyCard from "./HubMoneyCard";
 import HubTeamWidget from "./HubTeamWidget";
-// Hub Canonical W-04: widgets movidos a sus rutas dedicadas.
-// AITeamCard → /hub/ai · MyPerformanceWidget → /hub/reports
-// VirtualOfficeCard → /hub/consultations
-// Voice call inline eliminado 2026-05-18: ElevenLabs siempre-on era ~$3.6k/mes
-// con 8 firmas. Voice queda solo para grabar consultas presenciales en
-// /hub/consultations/:id. Mic del briefing es STT (Web Speech API gratis).
-import { useDemoMode, DEMO_BRIEFING_TEXT } from "@/hooks/useDemoData";
+import HubEventsFeed from "./HubEventsFeed";
+import { useTodayAppointments } from "@/hooks/useTodayAppointments";
+import { useRiskCases } from "@/hooks/useRiskCases";
+import { useMyActions } from "@/hooks/useMyActions";
+import { useWeekendEvents } from "@/hooks/useWeekendEvents";
+import { useDemoMode } from "@/hooks/useDemoData";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+
+const ELEVENLABS_AGENT_ID =
+  import.meta.env.VITE_ELEVENLABS_CAMILA_AGENT_ID ||
+  "agent_6401kntf2pr7fmevaythhpzhys47";
 
 // Recursos oficiales — 4 primarios visibles + 4 secundarios en dropdown "+4"
 const PRIMARY_RESOURCES = [
@@ -83,32 +90,94 @@ const SEVERITY_STYLES: Record<FeedItemSeverity, {
   },
 };
 
+async function fetchSignedUrl() {
+  const { data, error } = await supabase.functions.invoke(
+    "elevenlabs-conversation-token",
+    { body: { agent_id: ELEVENLABS_AGENT_ID } },
+  );
+  if (error) throw new Error(error.message || "No se pudo iniciar la sesión de voz.");
+  if (!data?.signed_url) throw new Error(data?.error || "No se recibió signed_url.");
+  return data.signed_url;
+}
+
+async function fetchOfficeContextLite(accountId: string) {
+  const [
+    { data: officeConfig },
+    { count: activeCasesCount },
+    { count: pendingTasksCount },
+    { count: clientsCount },
+  ] = await Promise.all([
+    supabase.from("office_config" as any).select("firm_name, attorney_name").eq("account_id", accountId).maybeSingle(),
+    supabase.from("client_cases").select("*", { count: "exact", head: true }).eq("account_id", accountId).in("status", ["active", "pending", "in_progress"]),
+    supabase.from("case_tasks").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("status", "pending"),
+    supabase.from("client_profiles").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("is_test", false),
+  ]);
+  const office = (officeConfig as any) || {};
+  const ownerFirstName = (office.attorney_name || "Jefe").split(" ")[0];
+  const dayName = new Date().toLocaleDateString("es-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  return {
+    ownerFirstName,
+    context: [
+      `El usuario se llama "${ownerFirstName}".`,
+      `Firma: ${office.firm_name || "Sin nombre"}`,
+      `Casos activos: ${activeCasesCount ?? 0}`,
+      `Tareas pendientes: ${pendingTasksCount ?? 0}`,
+      `Clientes: ${clientsCount ?? 0}`,
+      `Fecha: ${dayName}`,
+    ].join("\n"),
+  };
+}
+
+function unlockAudioContext() {
+  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtx) return;
+  const ctx = new AudioCtx();
+  if (ctx.state === "suspended") void ctx.resume();
+  const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start(0);
+}
+
+const FAREWELL_PATTERNS = /\b(hasta luego|hasta pronto|nos vemos|que tengas buen día|que tengas buenas noches|fue un placer atenderte|cuídate mucho|chao|adiós)\b/i;
+
 interface Props {
   accountId: string;
   accountName: string;
   staffName?: string;
+  plan: string;
+  apps: any[];
   userRole?: string | null;
   canAccessApp?: (slug: string) => boolean;
+  stats?: any;
   showOnboardingBanner?: boolean;
   onTriggerOnboarding?: () => void;
 }
 
-export default function HubDashboard({
+function HubDashboardInner({
   accountId, accountName, staffName, showOnboardingBanner, onTriggerOnboarding
 }: Props) {
   const navigate = useNavigate();
   const [resolvedName, setResolvedName] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
-  // KPIs derivados — useHubKpis (Sprint D #9 quick win, wired Fase 3 cleanup 2026-05-18)
-  const { activeCases, todayAppointmentsCount, pendingTasks, closedThisWeek, tasksDoneRatio } = useHubKpis(accountId);
+  // KPIs derivados
+  const [activeCases, setActiveCases] = useState(0);
+  const [todayAppointmentsCount, setTodayAppointmentsCount] = useState(0);
+  const [pendingTasks, setPendingTasks] = useState(0);
+  const [closedThisWeek, setClosedThisWeek] = useState(0);
+  const [tasksDoneRatio, setTasksDoneRatio] = useState(0);
+  const [approvalRate30d, setApprovalRate30d] = useState(0);
 
-  // Feed (zona 2A)
-  const { data: feedData, isLoading: feedLoading, refetch: refetchFeed, isRefetching: feedRefetching } = useFeed(accountId);
 
-  // Morning briefing inteligente (Camila + Claude) — el wow factor.
-  // Si falla o no llega, fallback al briefing v1 derivado de KPIs (más abajo).
-  const { data: morningBriefing } = useMorningBriefing(accountId);
+  // Hub v7 — datos contables para micro-briefing
+  const [userId, setUserId] = useState<string | null>(null);
+  const { appointments: todayAppts } = useTodayAppointments(accountId);
+  const { cases: riskCases } = useRiskCases(accountId, 3);
+  const { total: myActionsTotal } = useMyActions(accountId, userId);
+  const { totalCount: eventsCount } = useWeekendEvents(accountId);
+
 
   // Chat input
   const [input, setInput] = useState("");
@@ -145,17 +214,192 @@ export default function HubDashboard({
     };
   }, [showSecondaryResources]);
 
-  // Resolver nombre del usuario
+  // Voice call (ElevenLabs WebSocket)
+  const [voiceConnecting, setVoiceConnecting] = useState(false);
+  const [callEnded, setCallEnded] = useState(false);
+  const [callMessages, setCallMessages] = useState<{id: string; role: "user" | "assistant"; content: string}[]>([]);
+  const voiceTranscriptRef = useRef<{role: string; text: string}[]>([]);
+  const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const callScrollRef = useRef<HTMLDivElement>(null);
+  const isEndingSessionRef = useRef(false);
+  const callStartTimeRef = useRef<number | null>(null);
+  const conversationStatusRef = useRef("disconnected");
+
+  useEffect(() => {
+    if (callScrollRef.current) {
+      callScrollRef.current.scrollTop = callScrollRef.current.scrollHeight;
+    }
+  }, [callMessages]);
+
+  const pushCallMessage = useCallback((role: "user" | "assistant", text: string) => {
+    const prefix = role === "user" ? "🎙️ " : "🔊 ";
+    setCallMessages(prev => [...prev, { id: Date.now().toString() + Math.random(), role, content: prefix + text }]);
+  }, []);
+
+  const conversation = useConversation({
+    onConnect: () => {
+      setVoiceConnecting(false);
+      callStartTimeRef.current = Date.now();
+    },
+    onDisconnect: () => {
+      callStartTimeRef.current = null;
+      if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+      const msgs = voiceTranscriptRef.current;
+      if (msgs.length > 0) {
+        try { localStorage.setItem("camila_last_call_transcript", JSON.stringify(msgs)); } catch {}
+        setCallEnded(true);
+        setTimeout(() => setCallEnded(false), 8000);
+      }
+    },
+    onMessage: (message: any) => {
+      let text: string | undefined;
+      let source: "user" | "assistant" = "assistant";
+      if (message.message && typeof message.message === "string") {
+        text = message.message;
+        source = (message.source === "user" || message.role === "user") ? "user" : "assistant";
+      } else if (message.type === "user_transcript") {
+        text = message.user_transcription_event?.user_transcript; source = "user";
+      } else if (message.type === "agent_response") {
+        text = message.agent_response_event?.agent_response; source = "assistant";
+      } else if (message.type === "agent_response_correction") {
+        text = message.agent_response_correction_event?.corrected_agent_response; source = "assistant";
+      } else if (message.transcript) {
+        text = message.transcript; source = message.source === "user" ? "user" : "assistant";
+      } else if (message.text) {
+        text = message.text; source = message.source === "user" ? "user" : "assistant";
+      }
+      if (!text?.trim()) return;
+      const eventId = message.event_id;
+      if (eventId != null) {
+        const isDuplicate = voiceTranscriptRef.current.some((m: any) => m.eventId === eventId);
+        if (isDuplicate) return;
+        voiceTranscriptRef.current.push({ role: source, text: text.trim(), eventId } as any);
+      } else {
+        voiceTranscriptRef.current.push({ role: source, text: text.trim() });
+      }
+      pushCallMessage(source, text.trim());
+      if (source === "assistant" && FAREWELL_PATTERNS.test(text)) {
+        const callDuration = callStartTimeRef.current ? Date.now() - callStartTimeRef.current : 0;
+        if (callDuration > 10000) {
+          if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
+          autoEndTimerRef.current = setTimeout(() => {
+            if (!isEndingSessionRef.current) {
+              isEndingSessionRef.current = true;
+              try { conversation.endSession(); } catch {}
+            }
+          }, 5000);
+        }
+      }
+    },
+    onUserTranscript: ((text: string) => {
+      if (text?.trim()) pushCallMessage("user", text.trim());
+    }) as any,
+    onAgentResponse: ((text: string) => {
+      if (text?.trim()) pushCallMessage("assistant", text.trim());
+    }) as any,
+    onAgentResponseCorrection: (() => {}) as any,
+    onError: (err: any) => {
+      toast.error(typeof err === "string" ? err : err?.message || "Error de conexión.");
+      setVoiceConnecting(false);
+    },
+  } as any);
+
+  const isVoiceActive = conversation.status === "connected";
+
+  const startVoiceCall = useCallback(async () => {
+    setVoiceConnecting(true);
+    setCallEnded(false);
+    setCallMessages([]);
+    voiceTranscriptRef.current = [];
+    unlockAudioContext();
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const [signedUrl, officeData] = await Promise.all([
+        fetchSignedUrl(),
+        fetchOfficeContextLite(accountId),
+      ]);
+      await conversation.startSession({
+        signedUrl,
+        connectionType: "websocket",
+        dynamicVariables: {
+          info_oficina: officeData.context,
+          nombre_usuario: officeData.ownerFirstName,
+        },
+      } as any);
+    } catch (err: any) {
+      const msg = String(err?.message || err || "");
+      toast.error(msg.includes("Permission") || msg.includes("NotAllowed")
+        ? "Se necesita permiso de micrófono."
+        : `No se pudo conectar: ${msg}`);
+      setVoiceConnecting(false);
+    }
+  }, [conversation, accountId]);
+
+  const stopVoiceCall = useCallback(async () => {
+    if (isEndingSessionRef.current) return;
+    isEndingSessionRef.current = true;
+    try { await conversation.endSession(); } catch {}
+    setTimeout(() => { isEndingSessionRef.current = false; }, 2000);
+  }, [conversation]);
+
+  useEffect(() => { conversationStatusRef.current = conversation.status; }, [conversation.status]);
+
+  // Resolver nombre + userId del usuario
   useEffect(() => {
     (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        setUserId(user.id);
         const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
         setResolvedName(profile?.full_name || user.user_metadata?.full_name as string || user.email?.split("@")[0] || null);
       } catch {}
     })();
   }, []);
+
+  useEffect(() => {
+    if (accountId) loadKpis();
+  }, [accountId]);
+
+
+  async function loadKpis() {
+    try {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().split("T")[0];
+      const monthAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+      const [activeRes, todayApptsRes, pendingTasksRes, completedTasksRes, closedRes, approvedRes, deniedRes] = await Promise.all([
+        supabase.from("client_cases").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).not("status", "eq", "completed"),
+        supabase.from("appointments").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).eq("appointment_date", todayStr).neq("status", "cancelled"),
+        supabase.from("case_tasks").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).eq("status", "pending"),
+        supabase.from("case_tasks").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).eq("status", "completed").gte("updated_at", weekAgo),
+        supabase.from("client_cases").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).eq("status", "completed").gte("updated_at", weekAgo),
+        supabase.from("client_cases").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).eq("process_stage", "aprobado").gte("updated_at", monthAgo),
+        supabase.from("client_cases").select("id", { count: "exact", head: true })
+          .eq("account_id", accountId).in("process_stage", ["negado", "denegado"]).gte("updated_at", monthAgo),
+      ]);
+      const totalTasks = (pendingTasksRes.count || 0) + (completedTasksRes.count || 0);
+      const ratio = totalTasks > 0 ? Math.round(((completedTasksRes.count || 0) / totalTasks) * 100) : 0;
+      const approved = approvedRes.count || 0;
+      const denied = deniedRes.count || 0;
+      const totalDecided = approved + denied;
+      const approvalRate = totalDecided > 0 ? Math.round((approved / totalDecided) * 100) : 0;
+      setActiveCases(activeRes.count || 0);
+      setTodayAppointmentsCount(todayApptsRes.count || 0);
+      setPendingTasks(pendingTasksRes.count || 0);
+      setClosedThisWeek(closedRes.count || 0);
+      setTasksDoneRatio(ratio);
+      setApprovalRate30d(approvalRate);
+    } catch (err) {
+      console.error("KPI load error:", err);
+    }
+  }
+
 
   const demoMode = useDemoMode();
   // En demo mode: fuerza nombre del attorney del demo, ignora session real
@@ -169,76 +413,36 @@ export default function HubDashboard({
     return "Buenas noches";
   }, []);
 
-  // Briefing inteligente — prioridad 1: Claude/Camila (hub-morning-briefing
-  // edge fn con prosa narrativa que menciona clientes por nombre).
-  // Si la edge fn aún no respondió o falló, fallback al v1 derivado de KPIs.
-  const briefingText = useMemo(() => {
-    // DEMO MODE: usar briefing fijo realista de Méndez Immigration Law
-    if (demoMode) return DEMO_BRIEFING_TEXT;
-    // Prioridad 1: briefing inteligente Claude (con nombres de clientes)
-    if (morningBriefing?.briefing_text && !morningBriefing.meta.fallback_used) {
-      return morningBriefing.briefing_text;
+  // Hub v7 — micro-briefing data-driven (no prosa)
+  const microBriefing = useMemo(() => {
+    const parts: { label: string; color: string }[] = [];
+    if (todayAppts.length > 0) {
+      parts.push({
+        label: `${todayAppts.length} ${todayAppts.length === 1 ? "cita" : "citas"}`,
+        color: "text-cyan-accent",
+      });
     }
-
-    // Fallback v1 — derivado de feed + KPIs sin LLM
-    const items = feedData?.items || [];
-    const critical = items.filter(i => i.severity === "critical").length;
-    const high = items.filter(i => i.severity === "high").length;
-    const tasksAreSane = pendingTasks > 0 && pendingTasks <= 100;
-
-    if (pendingTasks > 100 && critical === 0 && high === 0) {
-      return `Sin urgencias hoy. Tu cola tiene ${pendingTasks} tareas pendientes — considera archivar las muy viejas para mantenerla limpia.`;
+    if (myActionsTotal > 0) {
+      parts.push({
+        label: `${myActionsTotal} ${myActionsTotal === 1 ? "acción pendiente" : "acciones pendientes"}`,
+        color: "text-purple-300",
+      });
     }
-
-    const parts: string[] = [];
-    if (critical > 0) parts.push(`${critical} ${critical === 1 ? "asunto crítico" : "asuntos críticos"}`);
-    if (high > 0) parts.push(`${high} ${high === 1 ? "urgente" : "urgentes"}`);
-    if (todayAppointmentsCount > 0) parts.push(`${todayAppointmentsCount} ${todayAppointmentsCount === 1 ? "cita hoy" : "citas hoy"}`);
-    if (tasksAreSane && parts.length < 3) parts.push(`${pendingTasks} ${pendingTasks === 1 ? "tarea pendiente" : "tareas pendientes"}`);
-
-    if (parts.length === 0) {
-      return "Todo al día. Sin urgencias por ahora.";
+    if (riskCases.length > 0) {
+      parts.push({
+        label: `${riskCases.length} ${riskCases.length === 1 ? "caso en riesgo" : "casos en riesgo"}`,
+        color: "text-amber-300",
+      });
     }
-    return `Hoy tienes ${parts.join(", ")}.`;
-  }, [demoMode, morningBriefing, feedData, todayAppointmentsCount, pendingTasks]);
-
-  // Action chips: prioridad al briefing Claude (chips contextuales con
-  // nombre del cliente). Si no llegó, fallback al feed top-3.
-  const briefingChips = useMemo(() => {
-    if (morningBriefing?.chips && morningBriefing.chips.length > 0) {
-      return morningBriefing.chips.map((c, idx) => ({
-        id: `briefing_${idx}`,
-        label: c.label,
-        sublabel: undefined,
-        severity: c.severity,
-        href: c.href,
-        kind: undefined,
-      }));
+    if (eventsCount > 0) {
+      parts.push({
+        label: `${eventsCount} ${eventsCount === 1 ? "evento" : "eventos"} del weekend`,
+        color: "text-emerald-300",
+      });
     }
-    return null;
-  }, [morningBriefing]);
+    return parts;
+  }, [todayAppts.length, myActionsTotal, riskCases.length, eventsCount]);
 
-  // Top 3 chips de acción contextual.
-  // Prioridad 1: chips del briefing Claude (mencionan cliente por nombre).
-  // Prioridad 2: top 3 items del feed.
-  const actionChips = useMemo(() => {
-    if (demoMode) return []; // demo: suprime chips (action contextual va vía HubFocusedWidgets)
-    if (briefingChips && briefingChips.length > 0) return briefingChips;
-    const items = (feedData?.items || []).slice(0, 3);
-    return items.map(item => ({
-      id: item.id,
-      label: item.title,
-      sublabel: item.actionLabel,
-      severity: item.severity,
-      href: item.actionHref,
-      kind: item.kind,
-    }));
-  }, [demoMode, briefingChips, feedData]);
-
-  // Resto del feed (items 4+) para la cola priorizada
-  const queueItems = useMemo(() => {
-    return (feedData?.items || []).slice(0, 4);
-  }, [feedData]);
 
   function sendMessage(text?: string) {
     const msg = (text || input).trim();
@@ -291,168 +495,159 @@ export default function HubDashboard({
         )}
 
         {/* Main content — 3 zonas verticales */}
-        <div className="flex-1 min-h-0 flex flex-col gap-3 px-8 py-4 max-w-[1400px] w-full mx-auto">
+        <div className="flex-1 min-h-0 lg:overflow-hidden overflow-y-auto flex flex-col gap-2 px-6 py-3 max-w-[1400px] w-full mx-auto">
 
           {/* ═══ ZONA 0 — CRISIS BAR (rojo arriba antes que prosa larga) ═══ */}
           {/* Decisión 2026-05-11 post-debate con Mr. Lorenzo: los ojos del abogado
               buscan rojo instintivamente. Crisis va PRIMERO, briefing después. */}
           <HubCrisisBar accountId={accountId} />
 
-          {/* ═══ ZONA 1 — BRIEFING HERO (60% del peso visual) ═══ */}
-          <section className="shrink-0 rounded-2xl px-7 py-5 border border-jarvis/20 bg-gradient-to-br from-jarvis/5 via-card/60 to-card/40 shadow-lg shadow-jarvis/5 backdrop-blur-sm">
-            <div className="flex items-start justify-between gap-6">
-              {/* Camila + briefing */}
-              <div className="flex items-start gap-4 flex-1 min-w-0">
+          {/* ═══ ZONA 1 — MICRO-BRIEFING (datos contables, no prosa) ═══ */}
+          <section className="shrink-0 rounded-2xl px-4 py-2.5 border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.05] via-cyan-accent/[0.03] to-card/40 shadow-lg shadow-ai-blue/5 backdrop-blur-sm">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
                 <div className="relative shrink-0">
                   <div
-                    className="w-12 h-12 rounded-full bg-gradient-to-br from-jarvis-glow via-jarvis to-jarvis-dim shadow-lg shadow-jarvis/40 animate-pulse"
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-accent via-ai-blue to-cyan-accent/60 shadow-lg shadow-cyan-accent/30 animate-pulse"
                     style={{ animationDuration: "3s" }}
                   />
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-background" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap mb-1.5">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-jarvis/80 font-semibold">Camila · briefing del día</p>
-                    <span className="text-[10px] text-muted-foreground/50 font-mono">
-                      {format(new Date(), "EEEE d 'de' MMMM", { locale: es })}
+                  <div className="flex items-center gap-3 flex-wrap mb-1">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-accent/80 font-semibold font-mono">
+                      Camila · briefing
+                    </p>
+                    <span className="text-[10px] text-muted-foreground/60 font-mono">
+                      {format(new Date(), "EEEE d 'de' MMMM · HH:mm", { locale: es })}
                     </span>
                   </div>
-                  <h2 className="text-xl font-bold text-foreground tracking-tight mb-2">
-                    {demoMode
-                      ? <>{greeting}, <span className="text-jarvis">Pablo</span>.</>
-                      : (morningBriefing?.greeting
-                          ? (() => {
-                              const parts = morningBriefing.greeting.split(",");
-                              if (parts.length >= 2) {
-                                return <>{parts[0]}, <span className="text-jarvis">{parts.slice(1).join(",").trim()}</span>.</>;
-                              }
-                              return <>{morningBriefing.greeting}.</>;
-                            })()
-                          : <>{greeting}{firstName ? <>, <span className="text-jarvis">{firstName}</span></> : ""}.</>)
-                    }
-                  </h2>
-                  <p className="text-[13px] text-foreground/85 leading-relaxed">{briefingText}</p>
+                  <p className="text-[13px] font-semibold text-foreground/95 leading-snug font-sora">
+                    {greeting}, <span className="bg-gradient-to-r from-ai-blue to-cyan-accent bg-clip-text text-transparent">{firstName || "Jefe"}</span>.
+                    {microBriefing.length > 0 ? (
+                      <>
+                        {" "}Tu día tiene{" "}
+                        {microBriefing.map((p, i) => (
+                          <span key={i}>
+                            <span className={`font-bold ${p.color}`}>{p.label}</span>
+                            {i < microBriefing.length - 1 ? " · " : "."}
+                          </span>
+                        ))}
+                      </>
+                    ) : (
+                      <> Tu día está despejado. Aprovechá para adelantar trabajo del miércoles.</>
+                    )}
+                  </p>
                 </div>
               </div>
 
-              {/* Camila input — chat de texto + dictado (STT). Sin voice call. */}
-              <div className="shrink-0 flex flex-col items-end gap-1.5 self-start min-w-[300px]">
-                <div className="flex items-center gap-1.5 bg-card/80 border border-border/40 focus-within:border-jarvis/40 rounded-xl px-3 py-2 transition-all w-full">
+              {/* Camila input — voz + chat */}
+              <div className="shrink-0 flex flex-col items-end gap-1.5 self-start min-w-[260px]">
+                <div className={`flex items-center gap-1.5 bg-card/80 border rounded-xl px-3 py-2 transition-all w-full ${
+                  isVoiceActive
+                    ? "border-emerald-400/40 ring-1 ring-emerald-400/20"
+                    : "border-cyan-accent/20 focus-within:border-cyan-accent/50"
+                }`}>
                   <input
                     ref={inputRef}
                     type="text"
-                    placeholder="Pregúntale a Camila..."
-                    className="flex-1 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground/40"
+                    placeholder={isVoiceActive ? "En llamada..." : "Pregúntale a Camila..."}
+                    className="flex-1 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground/40 disabled:opacity-50 font-inter"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                    disabled={isVoiceActive}
                   />
-                  <button
-                    onClick={toggleSTT}
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                      isListening
-                        ? "bg-red-500/20 text-red-400"
-                        : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/40"
-                    }`}
-                    title="Dictar texto al campo"
-                    aria-label="Dictar texto al campo"
-                  >
-                    {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                  </button>
-                  <button
-                    onClick={() => sendMessage()}
-                    disabled={!input.trim()}
-                    className="w-7 h-7 rounded-lg bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30"
-                    title="Enviar"
-                    aria-label="Enviar"
-                  >
-                    <Send className="w-3.5 h-3.5 text-jarvis" />
+                  {!isVoiceActive && (
+                    <button onClick={toggleSTT} className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                      isListening ? "bg-red-500/20 text-red-400" : "text-muted-foreground/50 hover:text-cyan-accent hover:bg-cyan-accent/10"
+                    }`} title="Dictar al texto">
+                      {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
+                  <button onClick={() => sendMessage()} disabled={!input.trim()} className="w-7 h-7 rounded-lg bg-cyan-accent/15 hover:bg-cyan-accent/25 flex items-center justify-center transition-all disabled:opacity-30" title="Enviar">
+                    <Send className="w-3.5 h-3.5 text-cyan-accent" />
                   </button>
                 </div>
-                <span className="text-[10px] text-muted-foreground/50 font-medium">
-                  El micrófono dicta al texto · no llama por voz
-                </span>
+                {isVoiceActive && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[9px] text-emerald-400/80 font-semibold uppercase tracking-wider">En llamada</span>
+                  </div>
+                )}
+                {callEnded && !isVoiceActive && (
+                  <button onClick={() => navigate("/hub/chat", { state: { accountId, accountName, staffName } })} className="text-[10px] text-cyan-accent hover:text-cyan-accent/80 font-medium">
+                    Ver historial →
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* 3 chips de acción contextual del briefing */}
-            <div className="mt-4 flex items-center gap-2 flex-wrap">
-              {feedLoading && (
-                <div className="text-[11px] text-muted-foreground/40">Camila está priorizando tu día...</div>
-              )}
-              {!demoMode && !feedLoading && actionChips.length === 0 && (
-                <button
-                  onClick={() => setIntakeOpen(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-jarvis/30 bg-jarvis/10 text-[11px] font-medium text-jarvis hover:bg-jarvis/15 transition"
-                >
-                  <Sparkles className="w-3 h-3" /> Iniciar consulta nueva
-                </button>
-              )}
-              {actionChips.map(chip => {
-                const styles = SEVERITY_STYLES[chip.severity];
-                return (
-                  <button
-                    key={chip.id}
-                    onClick={() => navigate(chip.href)}
-                    className={`group flex items-center gap-2 px-3 py-1.5 rounded-lg border ${styles.border} ${styles.bg} text-[11px] font-medium ${styles.iconColor} hover:scale-[1.02] transition-all`}
-                  >
-                    <span className="truncate max-w-[180px]">{chip.label}</span>
-                    <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                );
-              })}
-              {feedData && feedData.totalPotential > actionChips.length && (
-                <button
-                  onClick={() => refetchFeed()}
-                  disabled={feedRefetching}
-                  className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-foreground transition disabled:opacity-50"
-                  title="Refrescar feed"
-                >
-                  <RefreshCw className={`w-3 h-3 ${feedRefetching ? "animate-spin" : ""}`} />
-                </button>
-              )}
+            {/* Live transcript inline en hero (si voice activo) */}
+            {isVoiceActive && callMessages.length > 0 && (
+              <div ref={callScrollRef} className="mt-3 max-h-24 overflow-y-auto rounded-lg border border-emerald-500/20 bg-card/60 p-2 space-y-1">
+                {callMessages.map(msg => (
+                  <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[80%] px-2 py-1 rounded text-[10px] leading-relaxed ${
+                      msg.role === "user" ? "bg-cyan-accent/15 text-foreground border border-cyan-accent/20" : "bg-muted/40 text-foreground border border-border/20"
+                    }`}>{msg.content}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ═══ ZONA 3+4 — AGENDA HÉROE (60%) + RIESGO (40%) ═══ */}
+          <section className="grid grid-cols-1 lg:grid-cols-5 gap-2 shrink-0 min-h-0">
+            <div className="lg:col-span-3">
+              <HubAgendaWidget accountId={accountId} />
             </div>
-
+            <div className="lg:col-span-2">
+              <HubRiskWidget accountId={accountId} />
+            </div>
           </section>
 
-          {/* ═══ ZONA 2 — 4 KPI CARDS (acción primero) ═══ */}
-          {/* Hub Canonical W-04 (Morning Delivery 2026-05-16): el Hub tiene SOLO
-              CrisisBar + Briefing + 4 KPIs + Equipo + Stats. Widgets MyPerformance /
-              VirtualOffice / AITeam fueron movidos a sus rutas dedicadas
-              (/hub/reports, /hub/consultations, /hub/ai). */}
-          <section className="flex-1 min-h-0 overflow-y-auto space-y-3">
-            <HubFocusedWidgets accountId={accountId} attorneyName={resolvedName || staffName || undefined} />
-
-            {/* ═══ ZONA 3 — WIDGET TU EQUIPO NER (decisión 2026-05-18, ver mockup v6.1) ═══ */}
-            {/* Acción inmediata arriba, equipo como soporte abajo. Patrón Linear/Stripe. */}
-            {!demoMode && <HubTeamWidget accountId={accountId} />}
+          {/* ═══ ZONA 4 — MIS ACCIONES + DINERO + EQUIPO (subido: acción antes de contexto) ═══ */}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-2 shrink-0">
+            <HubMyActionsCard accountId={accountId} userId={userId} />
+            <HubMoneyCard accountId={accountId} />
+            <HubTeamWidget />
           </section>
 
-          {/* ═══ ZONA 4 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}
+          {/* ═══ ZONA 5 — PIPELINE HORIZONTAL ═══ */}
+          <HubPipelineWidget accountId={accountId} />
+
+          {/* ═══ ZONA 6 — EVENTOS DEL WEEKEND ═══ */}
+          <HubEventsFeed accountId={accountId} />
+
+
+          {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}
           {!demoMode && (
-          <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-4 py-2.5 flex items-center gap-5 flex-wrap">
+          <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-3 py-2 flex items-center gap-5 flex-wrap">
             {/* Pulse mini KPIs */}
             <div className="flex items-center gap-4 flex-1 min-w-0">
               <button onClick={() => navigate("/hub/cases?filter=closed")} className="flex items-baseline gap-1.5 hover:opacity-80 transition">
-                <span className="text-base font-semibold text-foreground tabular-nums">{closedThisWeek}</span>
+                <span className="text-[14px] font-semibold text-foreground tabular-nums">{closedThisWeek}</span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">cerrados sem.</span>
               </button>
               <div className="w-px h-5 bg-border/30" />
               <div className="flex items-baseline gap-1.5">
-                <span className="text-base font-semibold text-foreground tabular-nums">{tasksDoneRatio}<span className="text-[10px]">%</span></span>
+                <span className="text-[14px] font-semibold text-foreground tabular-nums">{tasksDoneRatio}<span className="text-[10px]">%</span></span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">tareas hechas</span>
               </div>
               <div className="w-px h-5 bg-border/30" />
               <button onClick={() => navigate("/hub/cases")} className="flex items-baseline gap-1.5 hover:opacity-80 transition">
-                <span className="text-base font-semibold text-foreground tabular-nums">{activeCases}</span>
+                <span className="text-[14px] font-semibold text-foreground tabular-nums">{activeCases}</span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">casos activos</span>
               </button>
               <div className="w-px h-5 bg-border/30" />
-              <button onClick={() => navigate("/hub/cases")} className="flex items-baseline gap-1.5 hover:opacity-80 transition" title={`${pendingTasks} tareas pendientes${pendingTasks > 99 ? " — considerá archivar las muy viejas" : ""}`}>
-                <span className="text-base font-semibold text-amber-400 tabular-nums">
-                  {pendingTasks.toLocaleString("es-ES")}
+              <button onClick={() => navigate("/hub/reports")} className="flex items-baseline gap-1.5 hover:opacity-80 transition" title="Tasa de aprobación últimos 30 días">
+                <span className="text-[14px] font-display font-semibold text-emerald-300 tabular-nums">
+                  {approvalRate30d}<span className="text-[10px] text-slate-400">%</span>
                 </span>
-                <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">tareas pend.</span>
+                <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">
+                  aprobación 30d
+                </span>
               </button>
             </div>
 
@@ -558,3 +753,10 @@ export default function HubDashboard({
   );
 }
 
+export default function HubDashboard(props: Props) {
+  return (
+    <ConversationProvider>
+      <HubDashboardInner {...props} />
+    </ConversationProvider>
+  );
+}

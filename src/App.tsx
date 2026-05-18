@@ -117,10 +117,8 @@ const App = () => (
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           {/* ═══ PUBLIC ROUTES ═══ */}
-          {/* / = landing público (futuro: marketing site nerimmigration.com)
-              /features = entry point GHL custom menu link — paralegales abren
-              tour de capacidades desde su GHL. Alias intencional, NO duplicado. */}
           <Route path="/" element={<Features />} />
+          {/* /features — entry point para GHL custom menu links. NO eliminar. */}
           <Route path="/features" element={<Features />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/register" element={<Register />} />
@@ -215,17 +213,15 @@ const App = () => (
           <Route path="/b1b2-dashboard" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
           <Route path="/b1b2-dashboard/:accountCid" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
           {/* /interview-sim/practice removed Ola 4.1.5 — redirect declarado arriba */}
-          {/* Dev-only — gated by Vite DEV flag (tree-shaken in production) */}
+          {/* Dev-only routes — NOT accessible in production (Vite tree-shakes when DEV=false) */}
           {import.meta.env.DEV && (
-            <Route path="/debug/pdf-fields" element={<ProtectedRoute><PdfFieldInspector /></ProtectedRoute>} />
-          )}
-          {/* Dev-only route — NOT accessible in production (Vite tree-shakes when DEV=false) */}
-          {import.meta.env.DEV && (
-            <Route path="/dev/splash-preview" element={<SplashPreview />} />
+            <>
+              <Route path="/debug/pdf-fields" element={<ProtectedRoute><PdfFieldInspector /></ProtectedRoute>} />
+              <Route path="/dev/splash-preview" element={<SplashPreview />} />
+            </>
           )}
 
           {/* ═══ ADMIN ROUTES (auth + platform_admin check inside AdminLayout) ═══ */}
-          {/* /admin redirect a /admin/dashboard (canonical) — evita duplicar componente */}
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<ProtectedRoute><AdminLayout><AdminDashboardPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/firms" element={<ProtectedRoute><AdminLayout><AdminAccountsPage /></AdminLayout></ProtectedRoute>} />
@@ -235,7 +231,6 @@ const App = () => (
           <Route path="/admin/billing" element={<ProtectedRoute><AdminLayout><AdminBillingPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/analytics" element={<ProtectedRoute><AdminLayout><AdminAnalyticsPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/logs" element={<ProtectedRoute><AdminLayout><AdminLogsPage /></AdminLayout></ProtectedRoute>} />
-          {/* /admin/settings eliminado (era placeholder "Coming soon") — reactivar cuando exista pantalla real */}
           <Route path="/admin/test-suite" element={<ProtectedRoute><AdminTestSuite /></ProtectedRoute>} />
 
           {/* ═══ REDIRECT ROUTES ═══ */}

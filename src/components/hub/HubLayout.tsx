@@ -7,9 +7,9 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import HubCreditsWidget from "./HubCreditsWidget";
 import CamilaFloatingPanel from "./CamilaFloatingPanel";
 import { useDemoMode, exitDemoMode, DEMO_SIDEBAR_BADGES } from "@/hooks/useDemoData";
+import { useSidebarBadges } from "@/hooks/useSidebarBadges";
 import { trackEvent } from "@/lib/analytics";
 interface Props {
   children: ReactNode;
@@ -20,26 +20,23 @@ interface Props {
 }
 
 const NAV_ITEMS: Array<{
-  icon: any; label: string; path: string;
+  emoji: string; label: string; path: string;
   match: (p: string) => boolean;
   badgeKey?: "cases" | "leads" | "consultations" | "forms";
-  // demoSupported = item tiene data demo. Si false, se oculta del sidebar
-  // cuando demoMode=true (evita pantallas vacías). En modo real, todos visibles.
   demoSupported?: boolean;
 }> = [
   // Sidebar canonical según INFORMATION-ARCHITECTURE.md §9.2 — 10 items exactos.
-  // Audit Logs y Knowledge están accesibles via /hub/audit y /hub/knowledge
-  // pero NO aparecen en sidebar (el plano declara solo 10 items principales).
-  { icon: Home, label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", demoSupported: true },
-  { icon: UserSearch, label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", demoSupported: false },
-  { icon: Users, label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), demoSupported: false },
-  { icon: MessageSquare, label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", demoSupported: false },
-  { icon: FolderOpen, label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", demoSupported: true },
-  { icon: FileText, label: "Forms", path: "/hub/forms", match: (p: string) => p.startsWith("/hub/forms") || p.startsWith("/hub/formularios") || p.startsWith("/dashboard/smart-forms"), badgeKey: "forms", demoSupported: true },
-  { icon: Calendar, label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", demoSupported: false },
-  { icon: BarChart3, label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", demoSupported: false },
-  { icon: Bot, label: "Equipo", path: "/hub/ai", match: (p: string) => p === "/hub/ai" || p === "/hub/team", demoSupported: false },
-  { icon: Settings, label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings") || p === "/hub/knowledge" || p === "/hub/audit", demoSupported: true },
+  // Iconos emoji para coincidir con mockup NER-HUB-INICIO-V6 (3D colored icons).
+  { emoji: "🏠", label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", demoSupported: true },
+  { emoji: "🔍", label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", demoSupported: false },
+  { emoji: "👥", label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), demoSupported: false },
+  { emoji: "💬", label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", demoSupported: false },
+  { emoji: "📁", label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", demoSupported: true },
+  { emoji: "📋", label: "Forms", path: "/hub/forms", match: (p: string) => p.startsWith("/hub/forms") || p.startsWith("/hub/formularios") || p.startsWith("/dashboard/smart-forms"), badgeKey: "forms", demoSupported: true },
+  { emoji: "📅", label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", demoSupported: false },
+  { emoji: "📊", label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", demoSupported: false },
+  { emoji: "🤖", label: "Equipo", path: "/hub/ai", match: (p: string) => p === "/hub/ai" || p === "/hub/team", demoSupported: false },
+  { emoji: "⚙️", label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings") || p === "/hub/knowledge" || p === "/hub/audit", demoSupported: true },
 ];
 
 const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 hours
@@ -48,6 +45,25 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   const navigate = useNavigate();
   const location = useLocation();
   const demoMode = useDemoMode();
+  const accountIdEarly = (() => {
+    try {
+      const raw = sessionStorage.getItem("ner_hub_data");
+      return raw ? JSON.parse(raw).account_id : null;
+    } catch { return null; }
+  })();
+  const realBadges = useSidebarBadges(demoMode ? null : accountIdEarly);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  useEffect(() => {
+    if (!accountIdEarly) return;
+    let cancelled = false;
+    void supabase
+      .from("ai_credits")
+      .select("balance")
+      .eq("account_id", accountIdEarly)
+      .maybeSingle()
+      .then(({ data }) => { if (!cancelled) setCreditBalance((data as any)?.balance ?? 0); });
+    return () => { cancelled = true; };
+  }, [accountIdEarly]);
 
   // ═══ Inactivity timeout ═══
   useEffect(() => {
@@ -158,34 +174,41 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
         {isHubSection && (
           <aside className="hidden lg:flex flex-col items-center w-[72px] border-r border-border/20 bg-card/30 py-4 shrink-0">
             {/* Logo */}
-            <div className="w-10 h-10 rounded-xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center mb-4">
-              <span className="text-jarvis font-display font-extrabold text-sm">N</span>
+            <div className="w-10 h-10 flex items-center justify-center mb-4">
+              <img src="/brand/ner-logo-mark-light.svg" alt="NER" className="w-9 h-9 object-contain" />
             </div>
 
             {/* Nav items — en demo, solo los items con demoSupported=true (evita pantallas vacías) */}
             <div className="flex flex-col items-center gap-0.5">
               {NAV_ITEMS.filter(item => !demoMode || item.demoSupported).map((item) => {
                 const isActive = item.match(currentPath);
-                const badge = item.badgeKey && demoMode ? DEMO_SIDEBAR_BADGES[item.badgeKey] : null;
+                const badge = item.badgeKey
+                  ? (demoMode ? DEMO_SIDEBAR_BADGES[item.badgeKey] : realBadges[item.badgeKey])
+                  : null;
+                const badgeColor =
+                  item.badgeKey === "cases" ? "bg-amber-500" :
+                  item.badgeKey === "forms" ? "bg-purple-500" :
+                  item.badgeKey === "leads" ? "bg-cyan-accent text-deep-navy" :
+                  "bg-rose-500";
                 return (
                   <button
                     key={item.path}
                     onClick={() => navigate(item.path)}
                     className={`w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all duration-150 relative ${
                       isActive
-                        ? "bg-jarvis/15 text-jarvis"
+                        ? "bg-cyan-accent/10 text-cyan-accent"
                         : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-muted/40"
                     }`}
                   >
                     {isActive && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-jarvis rounded-r" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[22px] bg-cyan-accent rounded-r-[2px]" />
                     )}
                     {badge !== null && badge !== undefined && badge > 0 && (
-                      <span className="absolute top-1 right-2 bg-rose-500 text-white text-[8px] font-bold rounded-full px-1 min-w-[14px] h-[14px] flex items-center justify-center leading-none">
+                      <span className={`absolute top-1 right-2 ${badgeColor} text-white text-[8px] font-bold rounded-full px-1 min-w-[14px] h-[14px] flex items-center justify-center leading-none`}>
                         {badge > 99 ? "99+" : badge}
                       </span>
                     )}
-                    <item.icon className="w-4 h-4" />
+                    <span className="text-xl leading-none" style={{ filter: isActive ? "none" : "grayscale(0.15) opacity(0.9)" }}>{item.emoji}</span>
                     <span className="text-[9px] font-medium leading-none">{item.label}</span>
                   </button>
                 );
@@ -207,17 +230,22 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             {/* Spacer */}
             <div className="flex-1" />
 
-            {/* Credits Widget */}
+            {/* CRED widget (créditos AI) — verde emerald per mockup v6.1 */}
             {accountId && (
-              <div className="mb-1">
-                <HubCreditsWidget accountId={accountId} />
+              <div className="mb-2 px-2 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 w-[60px]">
+                <div className="text-[8px] uppercase tracking-wider text-emerald-400/80 font-mono font-bold text-center">
+                  Cred
+                </div>
+                <div className="text-[10px] font-bold text-emerald-300 text-center tabular-nums">
+                  {creditBalance != null ? creditBalance.toLocaleString("es-ES") : "—"}
+                </div>
               </div>
             )}
 
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all duration-150"
+              className="w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl text-muted-foreground/40 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-150"
             >
               <LogOut className="w-4 h-4" />
               <span className="text-[9px] font-medium leading-none">Salir</span>
