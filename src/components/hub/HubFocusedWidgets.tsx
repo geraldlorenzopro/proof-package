@@ -676,10 +676,10 @@ function Widget({
 function PulseMetric({ value, label, valueColor, onClick }: { value: string | number; label: string; valueColor?: string; onClick?: () => void }) {
   const content = (
     <>
-      <div className={cn("text-[15px] font-bold tabular-nums leading-none", valueColor || "text-foreground")}>
+      <div className={cn("text-[15px] font-bold tabular-nums leading-none font-sora", valueColor || "text-foreground")}>
         {value}
       </div>
-      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+      <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-mono">
         {label}
       </div>
     </>
