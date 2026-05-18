@@ -495,11 +495,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
 
         {/* CONSULTAS HOY */}
         <Widget
-          icon={<Calendar className="w-4 h-4 text-blue-400" />}
-          iconBg="bg-blue-500/15 border border-blue-500/40"
+          icon={<Calendar className="w-4 h-4 text-cyan-accent" />}
+          iconBg="bg-cyan-accent/15 border border-cyan-accent/30"
           title="Consultas hoy"
           count={consultations.length}
-          countColor="text-blue-400"
+          countColor="text-cyan-accent"
           onSeeAll={() => navigate("/hub/agenda")}
           emptyText="Sin consultas agendadas"
           emptyHint="Tus citas del día aparecerán aquí"
@@ -509,7 +509,7 @@ export default function HubFocusedWidgets({ accountId }: Props) {
               key={c.id}
               className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-muted/40"
             >
-              <span className="text-[10px] text-blue-400 font-semibold tabular-nums shrink-0">{c.time}</span>
+              <span className="text-[10px] text-cyan-accent font-semibold tabular-nums shrink-0 font-mono">{c.time}</span>
               <span className="text-[11px] truncate flex-1">
                 {c.client_name}
                 <span className="text-muted-foreground"> · {c.title}</span>
