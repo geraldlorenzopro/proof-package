@@ -399,76 +399,30 @@ function HubDashboardInner({
     return "Buenas noches";
   }, []);
 
-  // Briefing inteligente — prioridad 1: Claude/Camila (hub-morning-briefing
-  // edge fn con prosa narrativa que menciona clientes por nombre).
-  // Si la edge fn aún no respondió o falló, fallback al v1 derivado de KPIs.
-  const briefingText = useMemo(() => {
-    // DEMO MODE: usar briefing fijo realista de Méndez Immigration Law
-    if (demoMode) return DEMO_BRIEFING_TEXT;
-    // Prioridad 1: briefing inteligente Claude (con nombres de clientes)
-    if (morningBriefing?.briefing_text && !morningBriefing.meta.fallback_used) {
-      return morningBriefing.briefing_text;
+  // Hub v7 — micro-briefing data-driven (no prosa)
+  const microBriefing = useMemo(() => {
+    const parts: { label: string; color: string }[] = [];
+    if (todayAppts.length > 0) {
+      parts.push({
+        label: `${todayAppts.length} ${todayAppts.length === 1 ? "cita" : "citas"}`,
+        color: "text-cyan-accent",
+      });
     }
-
-    // Fallback v1 — derivado de feed + KPIs sin LLM
-    const items = feedData?.items || [];
-    const critical = items.filter(i => i.severity === "critical").length;
-    const high = items.filter(i => i.severity === "high").length;
-    const tasksAreSane = pendingTasks > 0 && pendingTasks <= 100;
-
-    if (pendingTasks > 100 && critical === 0 && high === 0) {
-      return `Sin urgencias hoy. Tu cola tiene ${pendingTasks} tareas pendientes — considera archivar las muy viejas para mantenerla limpia.`;
+    if (myActionsTotal > 0) {
+      parts.push({
+        label: `${myActionsTotal} ${myActionsTotal === 1 ? "acción pendiente" : "acciones pendientes"}`,
+        color: "text-purple-300",
+      });
     }
-
-    const parts: string[] = [];
-    if (critical > 0) parts.push(`${critical} ${critical === 1 ? "asunto crítico" : "asuntos críticos"}`);
-    if (high > 0) parts.push(`${high} ${high === 1 ? "urgente" : "urgentes"}`);
-    if (todayAppointmentsCount > 0) parts.push(`${todayAppointmentsCount} ${todayAppointmentsCount === 1 ? "cita hoy" : "citas hoy"}`);
-    if (tasksAreSane && parts.length < 3) parts.push(`${pendingTasks} ${pendingTasks === 1 ? "tarea pendiente" : "tareas pendientes"}`);
-
-    if (parts.length === 0) {
-      return "Todo al día. Sin urgencias por ahora.";
+    if (riskCases.length > 0) {
+      parts.push({
+        label: `${riskCases.length} ${riskCases.length === 1 ? "caso en riesgo" : "casos en riesgo"}`,
+        color: "text-amber-300",
+      });
     }
-    return `Hoy tienes ${parts.join(", ")}.`;
-  }, [demoMode, morningBriefing, feedData, todayAppointmentsCount, pendingTasks]);
+    return parts;
+  }, [todayAppts.length, myActionsTotal, riskCases.length]);
 
-  // Action chips: prioridad al briefing Claude (chips contextuales con
-  // nombre del cliente). Si no llegó, fallback al feed top-3.
-  const briefingChips = useMemo(() => {
-    if (morningBriefing?.chips && morningBriefing.chips.length > 0) {
-      return morningBriefing.chips.map((c, idx) => ({
-        id: `briefing_${idx}`,
-        label: c.label,
-        sublabel: undefined,
-        severity: c.severity,
-        href: c.href,
-        kind: undefined,
-      }));
-    }
-    return null;
-  }, [morningBriefing]);
-
-  // Top 3 chips de acción contextual.
-  // Prioridad 1: chips del briefing Claude (mencionan cliente por nombre).
-  // Prioridad 2: top 3 items del feed.
-  const actionChips = useMemo(() => {
-    if (demoMode) return []; // demo: suprime chips (action contextual va vía HubFocusedWidgets)
-    if (briefingChips && briefingChips.length > 0) return briefingChips;
-    const items = (feedData?.items || []).slice(0, 3);
-    return items.map(item => ({
-      id: item.id,
-      label: item.title,
-      sublabel: item.actionLabel,
-      severity: item.severity,
-      href: item.actionHref,
-      kind: item.kind,
-    }));
-  }, [demoMode, briefingChips, feedData]);
-
-  // Resto del feed (items 4+) para la cola priorizada
-  const queueItems = useMemo(() => {
-    return (feedData?.items || []).slice(0, 4);
-  }, [feedData]);
 
   function sendMessage(text?: string) {
     const msg = (text || input).trim();
