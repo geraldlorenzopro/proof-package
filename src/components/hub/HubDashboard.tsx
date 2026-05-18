@@ -503,12 +503,12 @@ function HubDashboardInner({
           <HubCrisisBar accountId={accountId} />
 
           {/* ═══ ZONA 1 — MICRO-BRIEFING (datos contables, no prosa) ═══ */}
-          <section className="shrink-0 rounded-2xl px-6 py-4 border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.05] via-cyan-accent/[0.03] to-card/40 shadow-lg shadow-ai-blue/5 backdrop-blur-sm">
-            <div className="flex items-start justify-between gap-6 flex-wrap">
-              <div className="flex items-start gap-4 flex-1 min-w-0">
+          <section className="shrink-0 rounded-2xl px-4 py-2.5 border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.05] via-cyan-accent/[0.03] to-card/40 shadow-lg shadow-ai-blue/5 backdrop-blur-sm">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
                 <div className="relative shrink-0">
                   <div
-                    className="w-11 h-11 rounded-full bg-gradient-to-br from-cyan-accent via-ai-blue to-cyan-accent/60 shadow-lg shadow-cyan-accent/30 animate-pulse"
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-accent via-ai-blue to-cyan-accent/60 shadow-lg shadow-cyan-accent/30 animate-pulse"
                     style={{ animationDuration: "3s" }}
                   />
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-background" />
@@ -522,7 +522,7 @@ function HubDashboardInner({
                       {format(new Date(), "EEEE d 'de' MMMM · HH:mm", { locale: es })}
                     </span>
                   </div>
-                  <p className="text-[15px] font-semibold text-foreground/95 leading-snug font-sora">
+                  <p className="text-[13px] font-semibold text-foreground/95 leading-snug font-sora">
                     {greeting}, <span className="bg-gradient-to-r from-ai-blue to-cyan-accent bg-clip-text text-transparent">{firstName || "Jefe"}</span>.
                     {microBriefing.length > 0 ? (
                       <>
