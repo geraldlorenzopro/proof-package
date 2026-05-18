@@ -1,8 +1,24 @@
 # NER Immigration AI — Roadmap End-to-End
 
-**Última actualización:** 2026-05-11
+**Última actualización:** 2026-05-18 (Hub Inicio v7 side quest)
 **Owner:** Mr. Lorenzo (Founder/CEO)
-**Próximo update:** post-demo 2026-05-12 (8 firmas pagantes)
+**Próximo update:** post-validación Hub v7 cockpit estático
+
+## 🆕 Side quest 2026-05-18 — Hub Inicio v7 (DESVÍO DEL ROADMAP)
+
+**No estaba planeado.** Surgió cuando Mr. Lorenzo cuestionó la utilidad del
+Hub Inicio: *"Si yo fuera abogado de inmigración y entro a mi oficina virtual
+el lunes 9am, ¿esto es lo primero que querría ver?"* — la respuesta fue NO.
+
+Es trabajo de UX core que afecta uso diario, justificado pero técnicamente
+fuera de Fase 0 / Fase 1 originales. Ver decisión completa en
+`.ai/master/decisions.md` 2026-05-18.
+
+**Status:** ~80% completo. Pending: PROMPT 5 (cockpit estático) + validación
+visual final + cleanup data seed.
+
+**Impacto en cronograma:** ~2-3 días adicionales agregados a Fase 0. Fase 1
+(Pipeline Dashboard) sigue siendo la siguiente prioridad después.
 
 ## 🆕 Cambios desde 2026-05-10
 

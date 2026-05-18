@@ -813,10 +813,92 @@ Total: 48 archivos .tsx
 #### `NavLink.tsx` — component auxiliar
 - Link wrapper con active state styling.
 
-### Dashboard & KPIs (7)
+### Dashboard & KPIs (Hub Inicio v7 — 2026-05-18)
 
-#### `HubDashboard.tsx` — main dashboard
-- Cards KPIs, recent activity, firm metrics, alerts.
+> **Rediseño completo 2026-05-18.** El Hub Inicio pasó de "dashboard
+> decorativo" a "panel operativo" (cockpit estático sin scroll). 6
+> componentes nuevos + 5 hooks nuevos. Ver `.ai/master/hub-inicio-v7-spec.md`.
+
+#### `HubDashboard.tsx` — main dashboard (refactored v7)
+- Layout 7 zonas estático: Crisis → Briefing → Agenda+Riesgo → Eventos →
+  Pipeline → MisAcciones+Dinero+Equipo → Pulse footer.
+- Imports los 6 componentes hub v7 + 5 hooks v7 + useHubKpis.
+- Voice ElevenLabs eliminado (decisión 2026-05-18, ahorro ~$3.6k/mes).
+- Mic en briefing = STT puro (Web Speech API).
+
+#### `HubAgendaWidget.tsx` 🆕 (Zona 3 héroe)
+- Citas del día con horarios prominentes, badge "EN VIVO" si aplica.
+- Hook: `useTodayAppointments`. Limit 4 visibles.
+
+#### `HubRiskWidget.tsx` 🆕 (Zona 4)
+- Top 3 casos en riesgo (RFE deadline / silent client / USCIS deadline).
+- Hook: `useRiskCases`. Severity color-coded (rosa/amber/yellow).
+
+#### `HubPipelineWidget.tsx` 🆕 (Zona 6)
+- 6 stages horizontal con barras + counts (intake/consulta/contrato/uscis/rfe/aprobado).
+- Hook: `usePipelineStats`. Click → /hub/cases?stage=X.
+
+#### `HubEventsFeed.tsx` 🆕 (Zona 5 — Fase D)
+- "12 cosas pasaron mientras no estuviste" desde viernes 5pm o últimas 24h.
+- 6 mini-cards: leads/USCIS updates/RFEs/docs/messages/money.
+- Hook: `useWeekendEvents`. Queries multi-tabla paralelas.
+
+#### `HubMyActionsCard.tsx` 🆕 (Zona 7A)
+- Top 3 buckets (firmar/RFE/llamadas) de tasks asignadas al user actual.
+- Hook: `useMyActions`. Filtra por `assigned_to=userId AND task_type=X`.
+
+#### `HubMoneyCard.tsx` 🆕 (Zona 7B)
+- 3 stats: cobrado hoy / pendiente / contratos por firmar.
+- Hook: `useMoneyToday`. Stub si `ghl_invoices` no existe (GHL Invisible Fase 4).
+
+#### `HubTeamWidget.tsx` 🔄 modified (Zona 7C — versión MINI)
+- v6.1 era protagonista 1/3 pantalla. v7: card de 3 cols de 12 grid.
+- 4 dots con avatares de Camila/Felix/Nina/Max. Sin créditos visibles, sin descripciones.
+
+#### `HubCrisisBar.tsx` 🔄 extended v7
+- Prioriza `client_cases.rfe_deadline <= today+3d` (campo nuevo Fase A).
+- Fallback a `case_tasks` con `task_type='rfe_response'` o `title ILIKE '%rfe%'`.
+
+#### `HubFocusedWidgets.tsx` ⚫ DEPRECATED 2026-05-18
+- Reemplazado por composición v7 (Agenda + Risk + Pipeline + MyActions + Money).
+- Sigue en repo como huérfano. Cleanup posterior post-validación.
+
+#### `QuickAskCamila.tsx` ⚫ ZOMBIE
+- Eliminado en commit `10ae24b`, resucitado por Lovable en `f33cd0c`.
+- No se importa de ningún lado del Hub. Cleanup pendiente.
+
+### Hooks v7 — `src/hooks/*` (5 nuevos 2026-05-18)
+
+#### `useTodayAppointments.ts` 🆕
+- Citas del día (00:00-23:59 local time).
+- Query: `appointments` filtrado por `appointment_date = today`.
+- Return: `{ appointments: TodayAppointment[], loading, error }`.
+
+#### `useRiskCases.ts` 🆕
+- Top N casos en riesgo (3 categorías combinadas).
+- Query: OR sobre `rfe_deadline<=3d`, `uscis_response_deadline<=14d`, `last_client_activity_at<=-10d`.
+- Return: `{ cases: RiskCase[], loading, error }`. RiskReason: rfe_deadline/uscis_deadline/client_silent.
+
+#### `usePipelineStats.ts` 🆕
+- Counts por bucket (intake/consulta/contrato/uscis/rfe/aprobado).
+- Query: GROUP BY pipeline_stage (o process_stage fallback) sobre casos activos.
+- Return: `{ stats: PipelineStat[], totalActive, loading }`.
+
+#### `useMyActions.ts` 🆕
+- Tasks asignadas al user logueado, agrupadas por `task_type` ENUM.
+- Buckets: firmar/rfe/llamadas/revisar/documentos.
+- Return: `{ buckets: ActionBucket[], total, loading }`.
+
+#### `useMoneyToday.ts` 🆕
+- Cobrado/pendiente/contratos por firmar. Stub si `ghl_invoices` no existe.
+- Return: `{ collectedToday, pendingToday, contractsToday, loading, stub }`.
+
+#### `useWeekendEvents.ts` 🆕 (Fase D)
+- 6 categorías de eventos desde la última sesión (viernes 5pm o -24h).
+- Queries paralelas: client_profiles, client_cases, case_documents.
+- Return: `{ events: WeekendEvent[], totalCount, sinceLabel, loading }`.
+
+### Dashboard legacy & KPIs (7)
 
 #### `HubAnalyticsCards.tsx` — 4 KPI cards
 - Cases in progress, completion rate, avg timeline, client satisfaction.

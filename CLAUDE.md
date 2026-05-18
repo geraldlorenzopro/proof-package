@@ -300,6 +300,34 @@ fallback location `NgaxlyDdwg93PvQb5KCw` (Mr Visa).
 
 ## Standing decisions (Mr. Lorenzo decided once — do NOT ask again)
 
+**Hub Inicio v7 (decidido 2026-05-18 — supersedes v6.1 y anteriores):**
+
+El Hub Inicio (`/hub`) es **panel operativo**, NO saludo decorativo.
+Responde 7 de las 8 preguntas del paralegal el lunes 9am:
+1. ¿Qué tengo hoy? → Agenda héroe
+2. ¿Qué pasó desde la última vez? → Feed eventos del weekend
+3. ¿Qué está en peligro? → Casos en riesgo
+4. ¿En qué etapa está cada caso? → Pipeline horizontal
+5. ¿Qué tengo que firmar yo? → Mis acciones
+6. ¿Cómo va el dinero? → Card Dinero hoy
+7. ¿Cuántos casos manejo? → Pulse footer
+8. ¿Qué hizo mi equipo IA? → Fase D futura
+
+**Reglas del Hub Inicio:**
+- ❌ Frases motivacionales decorativas ("La excelencia legal se construye…")
+- ❌ KPIs en cero sin contexto (mejor mostrar agenda real)
+- ❌ Voice ElevenLabs always-on (costo ~$3.6k/mes, mantener solo en consultas)
+- ❌ Equipo IA protagonista de pantalla (es soporte, no contenido)
+- ✅ Datos contables en el briefing ("4 citas · 8 acciones · 3 riesgos")
+- ✅ Cockpit estático sin scroll vertical en desktop ≥1024px
+- ✅ Mic en briefing = STT puro (Web Speech API, gratis)
+- ✅ task_type ENUM tipado, NO string matching en títulos
+
+Specs y mockup canonical:
+- `mockups/NER-HUB-INICIO-V7.html`
+- `.ai/master/hub-inicio-v7-spec.md`
+- `.ai/master/hub-inicio-kpi-actions.md`
+
 **Brand (from official brandbook 2026-05-02 — supersedes earlier decisions):**
 
 **Tagline:** *"Legal Intelligence. Human Strategy."*

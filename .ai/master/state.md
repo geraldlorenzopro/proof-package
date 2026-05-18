@@ -1,31 +1,67 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-16 (madrugada, post Morning Delivery)
-**Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) + extracción de gaps con scripts de paridad
-**Próximo update:** cuando Mr. Lorenzo retome desde otra computadora
+**Última actualización:** 2026-05-18 (Hub Inicio v7 rediseño completo)
+**Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) + Mr. Lorenzo UX validation
+**Próximo update:** post-validación Hub v7 cockpit estático
 
 ---
 
-## 📌 TL;DR Snapshot 2026-05-16
+## 📌 TL;DR Snapshot 2026-05-18
 
-**Score gap-analysis:** ~75% promedio (subió de 55% inicial). Foundation técnica
-sólida + Hub canonical post-Morning-Delivery. Backlog explícito documentado.
+**Sprint en curso:** Hub Inicio v7 — rediseño completo de `/hub` (panel
+operativo vs decorativo). Score UX subió de 1.5/8 → 7/8 preguntas del
+paralegal respondidas.
 
-**Último commit:** `b10de42` (fix ícono /hub/leads amber → cyan brandbook)
+**Último commit (main):** `cc8349a` (Lovable) — Hub v7 PROMPT 4: 6 bugs
+fixeados (CrisisBar lee rfe_deadline, useMyActions wired, pipeline aprobados
+in_progress, timezone agenda, HubEventsFeed Fase D implementada).
 
-**Estado del Hub:**
-- ✅ /hub canonical W-04 (sin widgets extras agregados por mí en Ola 5)
-- ✅ Sidebar 10 items §9.2 (Knowledge + Audit accesibles vía URL, no en sidebar)
-- ✅ Widgets reubicados: AITeamCard → /hub/ai · MyPerformance → /hub/reports
-  · VirtualOffice → /hub/consultations
-- ✅ 3 pantallas transformadas: /hub/leads, /hub/agenda, /hub/consultations
+**Estado del Hub Inicio (`/hub`):**
+- ✅ Migrations aplicadas: `task_type` ENUM + 3 campos riesgo en `client_cases`
+- ✅ 5 hooks nuevos: useTodayAppointments, useRiskCases, usePipelineStats,
+  useMyActions, useMoneyToday, useWeekendEvents
+- ✅ 6 componentes nuevos: HubAgendaWidget, HubRiskWidget, HubPipelineWidget,
+  HubEventsFeed, HubMyActionsCard, HubMoneyCard
+- ✅ HubTeamWidget reducido a versión mini (era protagonista en v6.1)
+- ✅ Voice ElevenLabs eliminado del briefing diario (ahorro ~$3.6k/mes)
+- ✅ Seed demo aplicado (`is_test=true`): 7 clientes + 40 casos placeholder
+- ⚠️ Cockpit estático pending: PROMPT 5 a Lovable (overflow-y-auto → hidden)
+- ⚠️ HubFocusedWidgets huérfano (deprecado pero no eliminado)
+- ⚠️ QuickAskCamila huérfano (zombie resucitado por Lovable, no usado)
+
+**Mockups y specs Hub v7:**
+- `mockups/NER-HUB-INICIO-V7.html` (commit 00b01ce)
+- `.ai/master/hub-inicio-v7-spec.md` (commit cb993f9)
+- `.ai/master/hub-inicio-kpi-actions.md` (commit 60545fd)
 
 **Pending crítico (priorizado):**
-1. **OfficeSettings refactor** 1431 LOC — sprint dedicado pending
-2. **Ola 4.3.b Strategic Packs inline** — 4-6h dedicadas con caso I-130 real
-3. **Materialized views apply** — migration `PENDING_metrics_materialized_views.sql` pending Lovable apply
-4. **HubDashboard custom hooks** — solo useHubKpis extraído, falta wire + 2 más
-5. **billing.* completos** — 2/4 wireados (subscription_created + payment_confirmed)
+1. **Hub v7 cockpit estático** — PROMPT 5 a Lovable (eliminar scroll vertical)
+2. **Validación visual final** Hub v7 con data demo
+3. **Cleanup script** `scripts/cleanup-hub-v7-demo.sql` (ejecutar cuando Mr. Lorenzo apruebe)
+4. **OfficeSettings refactor** 1431 LOC — sprint dedicado pending (pre-Hub-v7)
+5. **Ola 4.3.b Strategic Packs inline** — 4-6h dedicadas con caso I-130 real
+6. **Materialized views apply** — migration `PENDING_metrics_materialized_views.sql` pending Lovable apply
+7. **Eliminar HubFocusedWidgets + QuickAskCamila huérfanos** post-validación v7
+
+---
+
+## 🚀 Sprint Hub Inicio v7 (2026-05-18)
+
+**Contexto:** side quest crítico no planeado. Mr. Lorenzo preguntó *"¿Esto es
+lo que querría ver un abogado el lunes 9am?"*. Respuesta: NO.
+
+**Plan ejecutado en 5 prompts secuenciales a Lovable:**
+
+| Prompt | Commit | Status | Contenido |
+|---|---|---|---|
+| 1 | `edb7ca8` | ✅ | Migrations (task_type ENUM, risk fields) + 5 hooks |
+| 2 | (parte de cc8349a) | ✅ | 5 componentes UI + refactor HubDashboard + HubTeamWidget mini |
+| 3 | (combinado) | ✅ | Fix pulse footer aprobación 30d + seed demo (7+40 casos) |
+| 4 | `cc8349a` | ✅ | 6 bugs: CrisisBar/useMyActions/aprobados/timezone/HubEventsFeed/briefing |
+| 5 | ⏳ pending | 🛑 | Cockpit estático (overflow-hidden + comprimir paddings) |
+
+**Decisión core:** datos > frases. El Hub debe responder *"¿qué hago ahora?"*
+no *"buen día, todo está al día"*.
 
 ---
 

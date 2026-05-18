@@ -6,6 +6,102 @@ pasadas — agregar nueva decisión que las supersede si cambian.**
 
 ---
 
+## 2026-05-18 — Hub Inicio v7 rediseño completo + voice elimination + task_type ENUM
+
+**Decisión:** Rediseñar el Hub Inicio (`/hub`) de "saludo decorativo + 4 KPIs en
+0 + equipo IA protagonista" → **panel operativo** que responde 7 de las 8
+preguntas del paralegal el lunes 9 AM.
+
+**Quién decidió:** Mr. Lorenzo, después de validar v6.1 en producción y
+preguntar: *"Si yo fuera abogado de inmigración y entro a mi oficina virtual
+el lunes 9am, ¿esto es lo primero que querría ver?"*. Respuesta: NO.
+
+**Score UX:** v6.1 → 1.5/8 preguntas respondidas. v7 → 7/8.
+
+**Las 8 preguntas del paralegal:**
+1. ¿Qué tengo hoy? → Agenda héroe
+2. ¿Qué pasó desde la última vez? → Feed "12 cosas pasaron desde viernes 5pm"
+3. ¿Qué está en peligro? → Casos en riesgo (top 3)
+4. ¿En qué etapa está cada caso? → Pipeline horizontal 6 stages
+5. ¿Qué tengo que firmar yo? → Mis acciones (firmar/RFE/llamadas)
+6. ¿Cómo va el dinero? → Card "Dinero hoy"
+7. ¿Cuántos casos manejo? → Pulse footer
+8. ¿Qué hizo mi equipo IA? → ⚫ Fase D futura
+
+**Layout v7 (7 zonas):** CrisisBar → Micro-briefing → Agenda+Riesgo → Eventos
+weekend → Pipeline → MisAcciones+Dinero+Equipo → Pulse footer.
+
+**Sub-decisiones locked:**
+
+1. **Voice ElevenLabs eliminado del briefing diario.** Cálculo: 8 firmas ×
+   5 paralegales × 20 abre-hub/día × 30s = ~$3,600/mes. Mantener voice SOLO
+   para grabar consultas presenciales. Mic del briefing pasa a STT (Web
+   Speech API, gratis).
+
+2. **task_type ENUM agregado** a `case_tasks`. Resuelve string matching
+   frágil (`title ILIKE '%firm%'`). Valores: general, signature_required,
+   review_required, rfe_response, document_upload, client_contact,
+   deadline_external.
+
+3. **client_cases gana 3 campos:** `rfe_deadline`, `uscis_response_deadline`,
+   `last_client_activity_at`. Permite detección automática de casos en riesgo.
+
+4. **Equipo IA reducido a card mini.** En v6.1 ocupaba 1/3 de pantalla. Ahora
+   3 cols de 12 grid. El equipo es soporte, no contenido protagonista.
+
+5. **Briefing data-driven (no decorativo).** Frases motivacionales rechazadas.
+   Microcopy: "Tu día tiene 4 citas · 3 firmas pendientes · 3 casos en riesgo
+   · 12 eventos del weekend". Fallback cuando todo en cero: *"Tu día está
+   despejado. Aprovecha para adelantar trabajo del miércoles."*
+
+6. **Hub Inicio es cockpit estático.** Desktop ≥1024px: NO scroll vertical.
+   Todo cabe en ~740px (1366×768 mínimo soportado). Mobile <1024px: scroll
+   permitido (secciones apiladas).
+
+7. **Seed data demo con `is_test=true`.** 7 clientes detallados + 40
+   placeholder = 47 casos activos. Cleanup script `scripts/cleanup-hub-v7-demo.sql`
+   NO ejecutado — Mr. Lorenzo lo activa cuando valide.
+
+8. **HubFocusedWidgets deprecado**, no eliminado todavía. Reemplazado por
+   nueva composición. Cleanup posterior.
+
+9. **6 componentes nuevos:** HubAgendaWidget, HubRiskWidget, HubPipelineWidget,
+   HubEventsFeed, HubMyActionsCard, HubMoneyCard. HubTeamWidget modificado
+   a versión mini.
+
+10. **5 hooks nuevos:** useTodayAppointments, useRiskCases, usePipelineStats,
+    useMyActions, useMoneyToday, useWeekendEvents.
+
+**Side quest vs roadmap:** este rediseño NO estaba en el roadmap original.
+Surgió cuando Mr. Lorenzo cuestionó la utilidad del Hub. Justificado porque
+mejora UX core. Roadmap actualizado con "Hub Inicio v7" insertado como
+side-quest paralela a Fase 0.
+
+**Alternativas rechazadas:**
+
+- Mantener v6.1 con polish visual solo: problema es estructural, no estético.
+- 1 prompt a Lovable: riesgo improvisación. Dividido en 5 prompts secuenciales.
+- Voice always-on: $3.6k/mes sin valor diario claro.
+
+**Mockups y specs:**
+- Mockup v6.1: `mockups/NER-HUB-INICIO-V6.html` (commit cb8799f)
+- Mockup v7: `mockups/NER-HUB-INICIO-V7.html` (commit 00b01ce)
+- Spec arquitectónico: `.ai/master/hub-inicio-v7-spec.md`
+- Plan KPIs: `.ai/master/hub-inicio-kpi-actions.md`
+
+**Lecciones de proceso:**
+
+- **Honestidad UX gana sobre estética.** Cuestionar "¿esto sirve al usuario?"
+  más importante que "¿se ve bonito?". v6.1 era bonito pero inútil.
+- **Datos > frases.** Microcopy motivacional ("La excelencia legal se
+  construye en los días tranquilos") es ruido sin contenido.
+- **Equipo IA como soporte, no protagonista.** Wow inicial en el splash —
+  no en uso diario.
+- **String matching frágil = deuda técnica.** Migración a ENUMs tipados es
+  inversión que paga rápido (queries 10x más rápidas, menos bugs).
+
+---
+
 ## 2026-05-14 — 5° plano fundacional MEASUREMENT-FRAMEWORK + Olas 1-2 deploy
 
 **Decisión:** "todo debe ser medible hasta lo más mínimo" — agregamos un 5°

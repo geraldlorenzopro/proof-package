@@ -1,7 +1,30 @@
 # NER — Catálogo de Features con Flags
 
-**Última actualización:** 2026-05-11
+**Última actualización:** 2026-05-18 (Hub Inicio v7)
 **Owner:** Mr. Lorenzo (admin via `/admin/features`)
+
+## 🆕 Features Hub Inicio v7 (2026-05-18)
+
+### Hub Inicio rediseño (side quest aprobado 2026-05-18)
+- `hub-v7-cockpit-layout` 🟡 BETA — Layout 7 zonas estático sin scroll vertical (pending PROMPT 5)
+- `hub-v7-microbriefing-datadriven` 🟢 LIVE — Briefing con datos contables (no frases motivacionales)
+- `hub-v7-agenda-widget` 🟢 LIVE — HubAgendaWidget con citas día y badge EN VIVO
+- `hub-v7-risk-widget` 🟢 LIVE — HubRiskWidget detecta 3 categorías (RFE/USCIS/silent)
+- `hub-v7-pipeline-horizontal` 🟢 LIVE — HubPipelineWidget 6 stages con barras
+- `hub-v7-events-feed` 🟢 LIVE — HubEventsFeed "12 cosas pasaron desde viernes" (Fase D)
+- `hub-v7-my-actions-card` 🟢 LIVE — HubMyActionsCard tasks por user
+- `hub-v7-money-card` 🟡 STUB — espera tabla ghl_invoices (GHL Invisible Fase 4)
+- `hub-v7-team-widget-mini` 🟢 LIVE — HubTeamWidget reducido (era protagonista en v6.1)
+- `hub-v7-voice-removed` 🟢 LIVE — ElevenLabs voice eliminado del briefing diario
+- `case-tasks-task-type-enum` 🟢 LIVE — ENUM tipado reemplaza string matching frágil
+- `client-cases-risk-fields` 🟢 LIVE — rfe_deadline + uscis_response_deadline + last_client_activity_at
+- `hub-v7-pulse-approval-rate-30d` 🟢 LIVE — 4to stat del pulse footer (era "tareas pend.")
+
+### Hub Inicio v6.1 (deprecadas por v7)
+- `hub-signature-pending-widget` ⚫ DEPRECATED → hub-v7-my-actions-card
+- `hub-review-pending-widget` ⚫ DEPRECATED → hub-v7-my-actions-card
+- `hub-decision-pending-widget` ⚫ DEPRECATED → out of scope v7
+- `feed-types-extended` ⚫ DEPRECATED → hub-v7-events-feed
 
 ## 🆕 Features añadidas/actualizadas 2026-05-11
 
