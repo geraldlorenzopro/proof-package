@@ -63,14 +63,14 @@ export default function HubRiskWidget({ accountId }: Props) {
           <p className="text-[10px] text-muted-foreground/60 mt-1">Bien hecho.</p>
         </div>
       ) : (
-        <div className="space-y-2 flex-1">
+        <div className="space-y-1.5 flex-1">
           {cases.map(c => {
             const sev = severityClasses(c.daysLeft);
             return (
               <button
                 key={c.id}
                 onClick={() => navigate(`/case-engine/${c.id}`)}
-                className={`w-full text-left ${sev.card} border rounded-lg p-2.5 transition-all`}
+                className={`w-full text-left ${sev.card} border rounded-lg p-2 transition-all`}
               >
                 <div className="flex items-center justify-between gap-2 mb-0.5">
                   <span className="text-[12px] font-semibold text-foreground truncate">
