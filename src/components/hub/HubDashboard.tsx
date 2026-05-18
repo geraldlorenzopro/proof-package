@@ -382,43 +382,6 @@ function HubDashboardInner({
     }
   }
 
-  async function loadTodayAppointments() {
-    try {
-      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
-      const { data } = await supabase
-        .from("appointments")
-        .select("id, title, start_date, status, client_id")
-        .eq("account_id", accountId)
-        .gte("start_date", todayStart.toISOString())
-        .lte("start_date", todayEnd.toISOString())
-        .neq("status", "cancelled")
-        .order("start_date", { ascending: true })
-        .limit(4);
-      if (!data) return;
-      // Resolver nombres de clientes (best-effort)
-      const clientIds = data.map(a => (a as any).client_id).filter(Boolean);
-      const clientNames: Record<string, string> = {};
-      if (clientIds.length > 0) {
-        const { data: clients } = await supabase
-          .from("client_profiles")
-          .select("id, first_name, last_name")
-          .in("id", clientIds);
-        clients?.forEach((c: any) => {
-          clientNames[c.id] = [c.first_name, c.last_name].filter(Boolean).join(" ");
-        });
-      }
-      setTodayAppointments(data.map((a: any) => ({
-        id: a.id,
-        title: a.title || "Cita",
-        start_date: a.start_date,
-        status: a.status,
-        client_name: clientNames[a.client_id],
-      })));
-    } catch (err) {
-      console.error("Today appts load error:", err);
-    }
-  }
 
   const demoMode = useDemoMode();
   // En demo mode: fuerza nombre del attorney del demo, ignora session real
