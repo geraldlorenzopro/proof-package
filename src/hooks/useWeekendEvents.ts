@@ -7,6 +7,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode } from "./useDemoData";
 
 export interface WeekendEvent {
   type: "leads_new" | "uscis_updates" | "rfe_received" | "docs_uploaded" | "messages_unread" | "money_collected";
@@ -37,11 +38,16 @@ function getLastSessionStart(): { date: Date; label: string } {
 }
 
 export function useWeekendEvents(accountId: string | null): State {
+  const demoMode = useDemoMode();
   const [state, setState] = useState<State>({
     events: [], totalCount: 0, sinceLabel: "", loading: true,
   });
 
   useEffect(() => {
+    if (demoMode) {
+      setState({ events: [], totalCount: 0, sinceLabel: "últimas 24h", loading: false });
+      return;
+    }
     if (!accountId) {
       setState({ events: [], totalCount: 0, sinceLabel: "", loading: false });
       return;
@@ -116,7 +122,7 @@ export function useWeekendEvents(accountId: string | null): State {
     })();
 
     return () => { cancelled = true; };
-  }, [accountId]);
+  }, [accountId, demoMode]);
 
   return state;
 }

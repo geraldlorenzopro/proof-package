@@ -6,7 +6,9 @@
  * appointment_datetime (interpretado como UTC por Postgres y desfasa horas).
  */
 import { useEffect, useState } from "react";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode } from "./useDemoData";
 
 export interface TodayAppointment {
   id: string;
@@ -26,6 +28,7 @@ interface State {
 }
 
 export function useTodayAppointments(accountId: string | null): State {
+  const demoMode = useDemoMode();
   const [state, setState] = useState<State>({
     appointments: [],
     loading: true,
@@ -33,6 +36,12 @@ export function useTodayAppointments(accountId: string | null): State {
   });
 
   useEffect(() => {
+    if (demoMode) {
+      // Demo: no queries reales. El briefing global del HubDashboard
+      // ya muestra agenda mock para presentación.
+      setState({ appointments: [], loading: false, error: null });
+      return;
+    }
     if (!accountId) {
       setState({ appointments: [], loading: false, error: null });
       return;
@@ -40,7 +49,10 @@ export function useTodayAppointments(accountId: string | null): State {
 
     let cancelled = false;
     void (async () => {
-      const todayStr = new Date().toISOString().slice(0, 10);
+      // Bug fix: toISOString() devuelve UTC. A las 9 PM EST (UTC = mañana)
+      // el query pedía la agenda del día siguiente. Usamos zona local del
+      // browser (que típicamente coincide con la zona del paralegal).
+      const todayStr = format(new Date(), "yyyy-MM-dd");
 
       const { data, error } = await supabase
         .from("appointments")
@@ -80,7 +92,7 @@ export function useTodayAppointments(accountId: string | null): State {
     })();
 
     return () => { cancelled = true; };
-  }, [accountId]);
+  }, [accountId, demoMode]);
 
   return state;
 }

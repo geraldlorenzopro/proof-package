@@ -344,6 +344,23 @@ function HubDashboardInner({
 
   useEffect(() => { conversationStatusRef.current = conversation.status; }, [conversation.status]);
 
+  // Bug fix: si el paralegal navega fuera de /hub mientras Camila está
+  // hablando, la sesión ElevenLabs quedaba colgada en background → voice
+  // minutes facturados sin UI visible. Cleanup al unmount cierra la sesión
+  // si está conectada y limpia el auto-end timer.
+  useEffect(() => {
+    return () => {
+      if (autoEndTimerRef.current) {
+        clearTimeout(autoEndTimerRef.current);
+        autoEndTimerRef.current = null;
+      }
+      if (conversationStatusRef.current === "connected") {
+        try { void conversation.endSession(); } catch {}
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Resolver nombre + userId del usuario
   useEffect(() => {
     (async () => {
@@ -364,7 +381,9 @@ function HubDashboardInner({
 
   async function loadKpis() {
     try {
-      const todayStr = new Date().toISOString().split("T")[0];
+      // Bug fix: fecha local del browser, no UTC. Crítico para
+      // eq("appointment_date", todayStr) que requiere match exacto.
+      const todayStr = format(new Date(), "yyyy-MM-dd");
       const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().split("T")[0];
       const monthAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
       const [activeRes, todayApptsRes, pendingTasksRes, completedTasksRes, closedRes, approvedRes, deniedRes] = await Promise.all([

@@ -7,6 +7,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode } from "./useDemoData";
 
 export type ActionKind = "firmar" | "rfe" | "llamadas" | "revisar" | "documentos";
 
@@ -31,9 +32,14 @@ const MAP: Record<ActionKind, { label: string; types: string[] }> = {
 };
 
 export function useMyActions(accountId: string | null, userId: string | null): State {
+  const demoMode = useDemoMode();
   const [state, setState] = useState<State>({ buckets: [], total: 0, loading: true });
 
   useEffect(() => {
+    if (demoMode) {
+      setState({ buckets: [], total: 0, loading: false });
+      return;
+    }
     if (!accountId || !userId) {
       setState({ buckets: [], total: 0, loading: false });
       return;
@@ -79,7 +85,7 @@ export function useMyActions(accountId: string | null, userId: string | null): S
     })();
 
     return () => { cancelled = true; };
-  }, [accountId, userId]);
+  }, [accountId, userId, demoMode]);
 
   return state;
 }

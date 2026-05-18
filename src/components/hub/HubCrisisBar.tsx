@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
@@ -42,8 +43,10 @@ export default function HubCrisisBar({ accountId }: Props) {
   }, [accountId, demoMode]);
 
   async function loadCrisis() {
-    const today = new Date().toISOString().slice(0, 10);
-    const in3d = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+    // Bug fix: fechas en zona local del browser (no UTC) para que el
+    // cutoff "vence en 3 días" no salte un día en franja noche EST.
+    const today = format(new Date(), "yyyy-MM-dd");
+    const in3d = format(new Date(Date.now() + 3 * 86400000), "yyyy-MM-dd");
 
     // Fuente 1: client_cases con rfe_deadline próximo o vencido (PREFERIDA)
     const { data: caseRfes } = await supabase

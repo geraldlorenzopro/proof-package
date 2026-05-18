@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode, DEMO_SIDEBAR_BADGES } from "./useDemoData";
 
 export interface SidebarBadges {
   consultations: number;
@@ -20,9 +21,19 @@ export interface SidebarBadges {
 const EMPTY: SidebarBadges = { consultations: 0, cases: 0, leads: 0, forms: 0 };
 
 export function useSidebarBadges(accountId: string | null): SidebarBadges {
+  const demoMode = useDemoMode();
   const [badges, setBadges] = useState<SidebarBadges>(EMPTY);
 
   useEffect(() => {
+    if (demoMode) {
+      setBadges({
+        consultations: DEMO_SIDEBAR_BADGES.consultations_today,
+        cases: DEMO_SIDEBAR_BADGES.cases,
+        leads: DEMO_SIDEBAR_BADGES.leads,
+        forms: DEMO_SIDEBAR_BADGES.forms,
+      });
+      return;
+    }
     if (!accountId) {
       setBadges(EMPTY);
       return;
@@ -37,12 +48,17 @@ export function useSidebarBadges(accountId: string | null): SidebarBadges {
       // Note: `leads` and `pre_intakes` tables do not exist; mapped to
       // `consultations` (status pending) and `client_profiles` (last 24h).
       // `case_deadlines` column is `deadline_date`, not `due_date`.
+      // Bug fix: el CHECK constraint de consultations.status solo permite
+      // 'active','completed','abandoned'. Antes filtrábamos por valores
+      // que NO existen en el ENUM ('pending','scheduled','in_review') → 0
+      // garantizado. Ahora usamos 'active' (consulta iniciada pero sin
+      // ended_at) que es la semántica real de "pendiente".
       const [consultRes, casesRes, leadsRes, formsRes] = await Promise.all([
         supabase
           .from("consultations" as any)
           .select("id", { count: "exact", head: true })
           .eq("account_id", accountId)
-          .in("status", ["pending", "scheduled", "in_review"]),
+          .eq("status", "active"),
 
         supabase
           .from("case_deadlines" as any)
@@ -76,7 +92,7 @@ export function useSidebarBadges(accountId: string | null): SidebarBadges {
     })();
 
     return () => { cancelled = true; };
-  }, [accountId]);
+  }, [accountId, demoMode]);
 
   return badges;
 }

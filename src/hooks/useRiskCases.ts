@@ -9,7 +9,9 @@
  * Devuelve top N (default 5) ordenados por urgencia (días restantes asc).
  */
 import { useEffect, useState } from "react";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode } from "./useDemoData";
 
 export type RiskReason = "rfe_deadline" | "uscis_deadline" | "client_silent";
 
@@ -32,9 +34,14 @@ interface State {
 const DAY_MS = 86400000;
 
 export function useRiskCases(accountId: string | null, limit = 5): State {
+  const demoMode = useDemoMode();
   const [state, setState] = useState<State>({ cases: [], loading: true, error: null });
 
   useEffect(() => {
+    if (demoMode) {
+      setState({ cases: [], loading: false, error: null });
+      return;
+    }
     if (!accountId) {
       setState({ cases: [], loading: false, error: null });
       return;
@@ -43,8 +50,10 @@ export function useRiskCases(accountId: string | null, limit = 5): State {
     let cancelled = false;
     void (async () => {
       const now = Date.now();
-      const rfeCutoff = new Date(now + 7 * DAY_MS).toISOString().slice(0, 10);
-      const uscisCutoff = new Date(now + 14 * DAY_MS).toISOString().slice(0, 10);
+      // Bug fix: toISOString() devuelve UTC. Los cutoffs deben anclarse
+      // a fecha local del paralegal sino saltan un día en franja noche EST.
+      const rfeCutoff = format(new Date(now + 7 * DAY_MS), "yyyy-MM-dd");
+      const uscisCutoff = format(new Date(now + 14 * DAY_MS), "yyyy-MM-dd");
       const silentCutoff = new Date(now - 10 * DAY_MS).toISOString();
 
       const { data, error } = await supabase
@@ -110,7 +119,7 @@ export function useRiskCases(accountId: string | null, limit = 5): State {
     })();
 
     return () => { cancelled = true; };
-  }, [accountId, limit]);
+  }, [accountId, limit, demoMode]);
 
   return state;
 }

@@ -18,6 +18,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode, DEMO_PULSE } from "./useDemoData";
 
 export interface HubKpis {
   activeCases: number;
@@ -32,6 +33,7 @@ export interface HubKpis {
 const CLOSED_FILTER = "(completed,archived,cancelled)";
 
 export function useHubKpis(accountId: string | null): HubKpis {
+  const demoMode = useDemoMode();
   const [state, setState] = useState<HubKpis>({
     activeCases: 0,
     closedThisWeek: 0,
@@ -43,6 +45,18 @@ export function useHubKpis(accountId: string | null): HubKpis {
   });
 
   useEffect(() => {
+    if (demoMode) {
+      setState({
+        activeCases: DEMO_PULSE.active_cases,
+        closedThisWeek: 0,
+        pendingTasks: 0,
+        todayAppointmentsCount: 0,
+        tasksDoneRatio: 0,
+        approvalRate30d: DEMO_PULSE.approval_rate_30d,
+        loading: false,
+      });
+      return;
+    }
     if (!accountId) {
       setState((s) => ({ ...s, loading: false }));
       return;
@@ -139,7 +153,7 @@ export function useHubKpis(accountId: string | null): HubKpis {
     })();
 
     return () => { cancelled = true; };
-  }, [accountId]);
+  }, [accountId, demoMode]);
 
   return state;
 }

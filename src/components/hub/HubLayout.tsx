@@ -64,7 +64,14 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
       .select("balance")
       .eq("account_id", accountIdEarly)
       .maybeSingle()
-      .then(({ data }) => { if (!cancelled) setCreditBalance((data as any)?.balance ?? 0); });
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        // Bug fix: silenciar error implícito convertía RLS deny / network fail
+        // en "Cred: 0", indistinguible de "saldo cero real". Ahora dejamos
+        // null para que la UI muestre "—" en error.
+        if (error) { setCreditBalance(null); return; }
+        setCreditBalance((data as any)?.balance ?? 0);
+      });
     return () => { cancelled = true; };
   }, [accountIdEarly]);
 
