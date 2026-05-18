@@ -598,7 +598,7 @@ function HubDashboardInner({
           </section>
 
           {/* ═══ ZONA 3+4 — AGENDA HÉROE (60%) + RIESGO (40%) ═══ */}
-          <section className="grid grid-cols-1 lg:grid-cols-5 gap-3 shrink-0">
+          <section className="grid grid-cols-1 lg:grid-cols-5 gap-2 shrink-0 min-h-0">
             <div className="lg:col-span-3">
               <HubAgendaWidget accountId={accountId} />
             </div>
@@ -614,7 +614,7 @@ function HubDashboardInner({
           <HubPipelineWidget accountId={accountId} />
 
           {/* ═══ ZONA 6 — MIS ACCIONES + DINERO + EQUIPO ═══ */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-3 shrink-0">
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-2 shrink-0">
             <HubMyActionsCard accountId={accountId} userId={userId} />
             <HubMoneyCard accountId={accountId} />
             <HubTeamWidget />
