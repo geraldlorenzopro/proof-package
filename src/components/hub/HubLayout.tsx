@@ -175,7 +175,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
       <div className="flex flex-1 min-h-0">
         {/* ═══ SIDEBAR — 72px fixed ═══ */}
         {isHubSection && (
-          <aside className="hidden lg:flex flex-col items-center w-[72px] border-r border-border/20 bg-card/30 py-4 shrink-0">
+          <aside className="hidden lg:flex flex-col items-center w-[88px] border-r border-border/20 bg-card/30 py-4 shrink-0">
             {/* Logo */}
             <div className="w-10 h-10 flex items-center justify-center mb-4">
               <img src="/brand/ner-logo-mark-light.svg" alt="NER" className="w-9 h-9 object-contain" />
@@ -199,7 +199,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                     key={item.path}
                     onClick={() => navigate(item.path)}
                     title={!sectionEnabled ? `${item.label} — próximamente` : undefined}
-                    className={`w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all duration-150 relative ${
+                    className={`w-[72px] flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all duration-150 relative ${
                       isActive
                         ? "bg-cyan-accent/10 text-cyan-accent"
                         : sectionEnabled
@@ -211,7 +211,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[22px] bg-cyan-accent rounded-r-[2px]" />
                     )}
                     {!sectionEnabled && (
-                      <span className="absolute -top-0.5 right-0.5 bg-cyan-accent/90 text-deep-navy text-[7px] font-bold rounded px-1 py-px leading-none tracking-wider">
+                      <span className="absolute -top-1 -right-1 bg-cyan-accent text-deep-navy text-[8px] font-bold rounded px-1 py-px leading-none tracking-wider shadow-sm">
                         PRONTO
                       </span>
                     )}
