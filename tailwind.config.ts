@@ -52,6 +52,10 @@ export default {
           dim: "hsl(var(--jarvis-dim))",
           glow: "hsl(var(--jarvis-glow))",
         },
+        "ai-blue": "hsl(var(--ai-blue))",
+        "cyan-accent": "hsl(var(--cyan-accent))",
+        "deep-navy": "hsl(var(--deep-navy))",
+        graphite: "hsl(var(--graphite))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
