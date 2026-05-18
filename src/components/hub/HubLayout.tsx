@@ -48,6 +48,25 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   const navigate = useNavigate();
   const location = useLocation();
   const demoMode = useDemoMode();
+  const accountIdEarly = (() => {
+    try {
+      const raw = sessionStorage.getItem("ner_hub_data");
+      return raw ? JSON.parse(raw).account_id : null;
+    } catch { return null; }
+  })();
+  const realBadges = useSidebarBadges(demoMode ? null : accountIdEarly);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  useEffect(() => {
+    if (!accountIdEarly) return;
+    let cancelled = false;
+    void supabase
+      .from("ai_credits")
+      .select("balance")
+      .eq("account_id", accountIdEarly)
+      .maybeSingle()
+      .then(({ data }) => { if (!cancelled) setCreditBalance((data as any)?.balance ?? 0); });
+    return () => { cancelled = true; };
+  }, [accountIdEarly]);
 
   // ═══ Inactivity timeout ═══
   useEffect(() => {
