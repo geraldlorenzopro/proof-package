@@ -150,15 +150,6 @@ interface Props {
   onTriggerOnboarding?: () => void;
 }
 
-interface TodayAppointment {
-  id: string;
-  title: string;
-  start_date: string;
-  status: string;
-  client_name?: string;
-  meeting_link?: string;
-}
-
 function HubDashboardInner({
   accountId, accountName, staffName, showOnboardingBanner, onTriggerOnboarding
 }: Props) {
