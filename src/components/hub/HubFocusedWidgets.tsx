@@ -634,14 +634,14 @@ function Widget({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-card border border-border rounded-xl p-3 flex flex-col min-h-[200px]">
+    <div className="bg-white/[0.03] border border-white/[0.08] hover:border-cyan-accent/20 rounded-xl p-3 flex flex-col min-h-[200px] transition-colors">
       {/* Header centrado — Mr. Lorenzo prefiere headers centrados (acción/label) */}
-      <div className="flex items-center justify-center gap-2 pb-2 mb-2 border-b border-border/60 relative">
-        <div className={cn("w-7 h-7 rounded-md flex items-center justify-center shrink-0", iconBg)}>
+      <div className="flex items-center justify-center gap-2 pb-2 mb-2 border-b border-white/[0.06] relative">
+        <div className={cn("w-8 h-8 rounded-md flex items-center justify-center shrink-0", iconBg)}>
           {icon}
         </div>
-        <div className="text-[12px] font-semibold text-foreground">{title}</div>
-        <div className={cn("absolute right-0 text-[20px] font-bold tabular-nums leading-none", countColor)}>
+        <div className="text-[12px] font-semibold text-foreground font-sora">{title}</div>
+        <div className={cn("absolute right-0 text-[24px] font-bold tabular-nums leading-none font-sora", countColor)}>
           {count}
         </div>
       </div>
