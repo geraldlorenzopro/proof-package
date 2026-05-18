@@ -118,6 +118,7 @@ const App = () => (
         <Routes>
           {/* ═══ PUBLIC ROUTES ═══ */}
           <Route path="/" element={<Features />} />
+          {/* /features — entry point para GHL custom menu links. NO eliminar. */}
           <Route path="/features" element={<Features />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/register" element={<Register />} />
@@ -212,14 +213,16 @@ const App = () => (
           <Route path="/b1b2-dashboard" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
           <Route path="/b1b2-dashboard/:accountCid" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
           {/* /interview-sim/practice removed Ola 4.1.5 — redirect declarado arriba */}
-          <Route path="/debug/pdf-fields" element={<ProtectedRoute><PdfFieldInspector /></ProtectedRoute>} />
-          {/* Dev-only route — NOT accessible in production (Vite tree-shakes when DEV=false) */}
+          {/* Dev-only routes — NOT accessible in production (Vite tree-shakes when DEV=false) */}
           {import.meta.env.DEV && (
-            <Route path="/dev/splash-preview" element={<SplashPreview />} />
+            <>
+              <Route path="/debug/pdf-fields" element={<ProtectedRoute><PdfFieldInspector /></ProtectedRoute>} />
+              <Route path="/dev/splash-preview" element={<SplashPreview />} />
+            </>
           )}
 
           {/* ═══ ADMIN ROUTES (auth + platform_admin check inside AdminLayout) ═══ */}
-          <Route path="/admin" element={<ProtectedRoute><AdminLayout><AdminDashboardPage /></AdminLayout></ProtectedRoute>} />
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<ProtectedRoute><AdminLayout><AdminDashboardPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/firms" element={<ProtectedRoute><AdminLayout><AdminAccountsPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/accounts" element={<Navigate to="/admin/firms" replace />} />
@@ -228,7 +231,6 @@ const App = () => (
           <Route path="/admin/billing" element={<ProtectedRoute><AdminLayout><AdminBillingPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/analytics" element={<ProtectedRoute><AdminLayout><AdminAnalyticsPage /></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/logs" element={<ProtectedRoute><AdminLayout><AdminLogsPage /></AdminLayout></ProtectedRoute>} />
-          <Route path="/admin/settings" element={<ProtectedRoute><AdminLayout><div className="text-white">Configuración — Coming soon</div></AdminLayout></ProtectedRoute>} />
           <Route path="/admin/test-suite" element={<ProtectedRoute><AdminTestSuite /></ProtectedRoute>} />
 
           {/* ═══ REDIRECT ROUTES ═══ */}
