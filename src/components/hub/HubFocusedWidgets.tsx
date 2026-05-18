@@ -547,6 +547,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
         </Widget>
       </div>
 
+      {/* EQUIPO NER · Listo hoy — Camila/Felix/Nina/Max debajo de los 4 KPIs */}
+      <HubTeamWidget />
+
+
+
       {/* PULSE — métricas completas del portfolio. Métricas clickeables navegan a página relevante. */}
       {pulse.active === 0 && pulse.newLeads === 0 ? (
         // Empty state global del pulse: firma sin actividad todavía
