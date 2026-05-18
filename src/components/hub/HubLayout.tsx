@@ -199,7 +199,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                     key={item.path}
                     onClick={() => navigate(item.path)}
                     title={!sectionEnabled ? `${item.label} — próximamente` : undefined}
-                    className={`w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all duration-150 relative ${
+                    className={`w-[72px] flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all duration-150 relative ${
                       isActive
                         ? "bg-cyan-accent/10 text-cyan-accent"
                         : sectionEnabled
