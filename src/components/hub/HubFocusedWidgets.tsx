@@ -432,11 +432,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
         {/* PARA FIRMAR */}
         <Widget
-          icon={<Signature className="w-4 h-4 text-purple-400" />}
-          iconBg="bg-purple-500/15 border border-purple-500/40"
+          icon={<Signature className="w-4 h-4 text-purple-300" />}
+          iconBg="bg-purple-500/15 border border-purple-500/30"
           title="Para firmar"
           count={signatures.length}
-          countColor="text-purple-400"
+          countColor="text-purple-300"
           onSeeAll={() => navigate("/hub/cases")}
           emptyText="Nada esperando tu firma"
           emptyHint="Cuando tu equipo termine un packet, aparecerá aquí"
