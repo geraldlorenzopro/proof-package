@@ -589,9 +589,6 @@ function HubDashboardInner({
                     <Send className="w-3.5 h-3.5 text-cyan-accent" />
                   </button>
                 </div>
-                <p className="text-[9px] text-muted-foreground/60 leading-tight w-full text-right font-mono">
-                  El micrófono dicta al texto · no llama por voz
-                </p>
                 {isVoiceActive && (
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

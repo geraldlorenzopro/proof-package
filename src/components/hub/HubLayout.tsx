@@ -174,8 +174,8 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
         {isHubSection && (
           <aside className="hidden lg:flex flex-col items-center w-[72px] border-r border-border/20 bg-card/30 py-4 shrink-0">
             {/* Logo */}
-            <div className="w-10 h-10 rounded-xl bg-cyan-accent/10 border border-cyan-accent/20 flex items-center justify-center mb-4">
-              <span className="text-cyan-accent font-sora font-extrabold text-sm">N</span>
+            <div className="w-10 h-10 flex items-center justify-center mb-4">
+              <img src="/brand/ner-logo-mark-light.svg" alt="NER" className="w-9 h-9 object-contain" />
             </div>
 
             {/* Nav items — en demo, solo los items con demoSupported=true (evita pantallas vacías) */}
