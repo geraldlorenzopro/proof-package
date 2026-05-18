@@ -168,12 +168,12 @@ function HubDashboardInner({
   const [tasksDoneRatio, setTasksDoneRatio] = useState(0);
 
 
-  // Feed (zona 2A)
-  const { data: feedData, isLoading: feedLoading, refetch: refetchFeed, isRefetching: feedRefetching } = useFeed(accountId);
+  // Hub v7 — datos contables para micro-briefing
+  const [userId, setUserId] = useState<string | null>(null);
+  const { appointments: todayAppts } = useTodayAppointments(accountId);
+  const { cases: riskCases } = useRiskCases(accountId, 3);
+  const { total: myActionsTotal } = useMyActions(accountId, userId);
 
-  // Morning briefing inteligente (Camila + Claude) — el wow factor.
-  // Si falla o no llega, fallback al briefing v1 derivado de KPIs (más abajo).
-  const { data: morningBriefing } = useMorningBriefing(accountId);
 
   // Chat input
   const [input, setInput] = useState("");
