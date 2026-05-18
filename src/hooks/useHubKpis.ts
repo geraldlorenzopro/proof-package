@@ -25,6 +25,7 @@ export interface HubKpis {
   pendingTasks: number;
   todayAppointmentsCount: number;
   tasksDoneRatio: number;
+  approvalRate30d: number;
   loading: boolean;
 }
 
