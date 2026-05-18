@@ -211,7 +211,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[22px] bg-cyan-accent rounded-r-[2px]" />
                     )}
                     {!sectionEnabled && (
-                      <span className="absolute -top-0.5 right-0.5 bg-cyan-accent/90 text-deep-navy text-[7px] font-bold rounded px-1 py-px leading-none tracking-wider">
+                      <span className="absolute -top-1 -right-1 bg-cyan-accent text-deep-navy text-[8px] font-bold rounded px-1 py-px leading-none tracking-wider shadow-sm">
                         PRONTO
                       </span>
                     )}
