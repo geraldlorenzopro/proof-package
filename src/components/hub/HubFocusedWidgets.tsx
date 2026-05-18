@@ -589,11 +589,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
             {news.map((n, i) => (
               <div key={i} className="flex items-center gap-2 text-[11px]">
                 <span className={cn(
-                  "inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider min-w-[56px] text-center shrink-0",
-                  n.source === "USCIS" && "bg-blue-500/20 text-blue-300",
-                  n.source === "NVC" && "bg-amber-500/20 text-amber-300",
-                  n.source === "Embajada" && "bg-orange-500/20 text-orange-300",
-                  n.source === "AI" && "bg-purple-500/20 text-purple-300",
+                  "inline-block px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider min-w-[60px] text-center shrink-0 font-mono",
+                  n.source === "USCIS" && "bg-blue-500/15 text-blue-300 border border-blue-500/30",
+                  n.source === "NVC" && "bg-amber-500/15 text-amber-300 border border-amber-500/30",
+                  n.source === "Embajada" && "bg-orange-500/15 text-orange-300 border border-orange-500/30",
+                  n.source === "AI" && "bg-cyan-accent/15 text-cyan-accent border border-cyan-accent/30",
                 )}>
                   {n.source === "AI" ? "Equipo IA" : n.source}
                 </span>
