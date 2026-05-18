@@ -623,26 +623,26 @@ function HubDashboardInner({
 
           {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}
           {!demoMode && (
-          <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-4 py-2.5 flex items-center gap-5 flex-wrap">
+          <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-3 py-2 flex items-center gap-5 flex-wrap">
             {/* Pulse mini KPIs */}
             <div className="flex items-center gap-4 flex-1 min-w-0">
               <button onClick={() => navigate("/hub/cases?filter=closed")} className="flex items-baseline gap-1.5 hover:opacity-80 transition">
-                <span className="text-base font-semibold text-foreground tabular-nums">{closedThisWeek}</span>
+                <span className="text-[14px] font-semibold text-foreground tabular-nums">{closedThisWeek}</span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">cerrados sem.</span>
               </button>
               <div className="w-px h-5 bg-border/30" />
               <div className="flex items-baseline gap-1.5">
-                <span className="text-base font-semibold text-foreground tabular-nums">{tasksDoneRatio}<span className="text-[10px]">%</span></span>
+                <span className="text-[14px] font-semibold text-foreground tabular-nums">{tasksDoneRatio}<span className="text-[10px]">%</span></span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">tareas hechas</span>
               </div>
               <div className="w-px h-5 bg-border/30" />
               <button onClick={() => navigate("/hub/cases")} className="flex items-baseline gap-1.5 hover:opacity-80 transition">
-                <span className="text-base font-semibold text-foreground tabular-nums">{activeCases}</span>
+                <span className="text-[14px] font-semibold text-foreground tabular-nums">{activeCases}</span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">casos activos</span>
               </button>
               <div className="w-px h-5 bg-border/30" />
               <button onClick={() => navigate("/hub/reports")} className="flex items-baseline gap-1.5 hover:opacity-80 transition" title="Tasa de aprobación últimos 30 días">
-                <span className="text-base font-display font-semibold text-emerald-300 tabular-nums">
+                <span className="text-[14px] font-display font-semibold text-emerald-300 tabular-nums">
                   {approvalRate30d}<span className="text-[10px] text-slate-400">%</span>
                 </span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">
