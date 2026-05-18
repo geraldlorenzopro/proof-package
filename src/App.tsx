@@ -213,10 +213,12 @@ const App = () => (
           <Route path="/b1b2-dashboard" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
           <Route path="/b1b2-dashboard/:accountCid" element={<ProtectedRoute><B1B2Dashboard /></ProtectedRoute>} />
           {/* /interview-sim/practice removed Ola 4.1.5 — redirect declarado arriba */}
-          <Route path="/debug/pdf-fields" element={<ProtectedRoute><PdfFieldInspector /></ProtectedRoute>} />
-          {/* Dev-only route — NOT accessible in production (Vite tree-shakes when DEV=false) */}
+          {/* Dev-only routes — NOT accessible in production (Vite tree-shakes when DEV=false) */}
           {import.meta.env.DEV && (
-            <Route path="/dev/splash-preview" element={<SplashPreview />} />
+            <>
+              <Route path="/debug/pdf-fields" element={<ProtectedRoute><PdfFieldInspector /></ProtectedRoute>} />
+              <Route path="/dev/splash-preview" element={<SplashPreview />} />
+            </>
           )}
 
           {/* ═══ ADMIN ROUTES (auth + platform_admin check inside AdminLayout) ═══ */}
