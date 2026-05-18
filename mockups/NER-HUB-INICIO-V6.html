@@ -212,27 +212,23 @@ h1, h2, h3, h4, .font-display { font-family: 'Sora', system-ui, sans-serif; }
             </div>
           </div>
 
-          <!-- Camila input -->
-          <div class="shrink-0 flex flex-col items-end gap-2 self-start min-w-[300px]">
+          <!-- Camila input: chat de texto + dictado (STT). NO voice call. -->
+          <div class="shrink-0 flex flex-col items-end gap-2 self-start min-w-[320px]">
             <div class="flex items-center gap-1.5 bg-black/30 border border-white/8 hover:border-cyan-accent/40 focus-within:border-cyan-accent/50 rounded-xl px-3 py-2 transition-all w-full">
               <input
                 type="text"
                 placeholder="Pregúntale a Camila…"
                 class="flex-1 bg-transparent outline-none text-xs text-white placeholder:text-slate-500"
               />
-              <button class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-cyan-accent hover:bg-cyan-accent/10 transition-all" title="Dictar">
+              <button class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-cyan-accent hover:bg-cyan-accent/10 transition-all" title="Dictar texto al campo">
                 <span class="text-sm">🎙️</span>
-              </button>
-              <button class="w-7 h-7 rounded-lg flex items-center justify-center bg-cyan-accent/10 hover:bg-cyan-accent/20 text-cyan-accent border border-cyan-accent/20 transition-all" title="Llamar">
-                <span class="text-sm">📞</span>
               </button>
               <button class="w-7 h-7 rounded-lg flex items-center justify-center bg-ai-blue/15 hover:bg-ai-blue/25 text-cyan-accent border border-ai-blue/20 transition-all" title="Enviar">
                 <span class="text-sm">↗</span>
               </button>
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span>
-              <span class="text-[10px] text-emerald-400/80 font-semibold uppercase tracking-wider">Camila escuchando</span>
+              <span class="text-[10px] text-slate-500 font-medium">El micrófono dicta al texto · no llama por voz</span>
             </div>
           </div>
         </div>
@@ -258,114 +254,7 @@ h1, h2, h3, h4, .font-display { font-family: 'Sora', system-ui, sans-serif; }
         </div>
       </section>
 
-      <!-- ═══ ZONA 2 — WIDGET EQUIPO NER ═══ -->
-      <section class="glass-team rounded-2xl px-6 py-5">
-        <div class="flex items-end justify-between mb-4 flex-wrap gap-2">
-          <div>
-            <p class="text-[10px] uppercase tracking-[0.2em] text-cyan-accent/80 font-mono font-semibold mb-1">Equipo NER · Listo hoy</p>
-            <h3 class="text-base font-display font-bold flex items-center gap-2">
-              👥 Tu equipo está disponible
-            </h3>
-          </div>
-          <div class="flex items-center gap-2 text-[11px] text-emerald-400">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
-            <span class="font-semibold">4 agentes en línea</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-
-          <!-- Camila -->
-          <button class="text-left bg-white/3 border border-cyan-accent/15 hover:border-cyan-accent/40 hover:bg-cyan-accent/5 rounded-xl p-3 transition-all card-hover group">
-            <div class="flex items-start justify-between mb-2">
-              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-accent to-ai-blue flex items-center justify-center text-lg shadow-md shadow-cyan-accent/15">
-                🎙️
-              </div>
-              <span class="w-2 h-2 rounded-full bg-emerald-400 mt-1.5"></span>
-            </div>
-            <div class="font-display font-bold text-sm text-white">Camila</div>
-            <div class="text-[10px] text-cyan-accent uppercase tracking-wider font-mono font-semibold mt-0.5">Voice AI</div>
-            <p class="text-[10px] text-slate-400 mt-1.5 leading-snug">
-              Graba consultas, transcribe y resume. Asigna tareas automáticamente.
-            </p>
-            <div class="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
-              <span class="text-[9px] font-mono text-amber-300/70">450 cred · voice</span>
-              <span class="text-[10px] text-cyan-accent opacity-0 group-hover:opacity-100 transition-opacity">Abrir →</span>
-            </div>
-          </button>
-
-          <!-- Felix -->
-          <button class="text-left bg-white/3 border border-cyan-accent/15 hover:border-cyan-accent/40 hover:bg-cyan-accent/5 rounded-xl p-3 transition-all card-hover group">
-            <div class="flex items-start justify-between mb-2">
-              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-lg shadow-md shadow-blue-500/15">
-                📝
-              </div>
-              <span class="w-2 h-2 rounded-full bg-emerald-400 mt-1.5"></span>
-            </div>
-            <div class="font-display font-bold text-sm text-white">Felix</div>
-            <div class="text-[10px] text-cyan-accent uppercase tracking-wider font-mono font-semibold mt-0.5">Forms Filler</div>
-            <p class="text-[10px] text-slate-400 mt-1.5 leading-snug">
-              Llena formularios USCIS leyendo el expediente. I-130 + I-765 listos.
-            </p>
-            <div class="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
-              <span class="text-[9px] font-mono text-amber-300/70">5 cred / uso</span>
-              <span class="text-[10px] text-cyan-accent opacity-0 group-hover:opacity-100 transition-opacity">Abrir →</span>
-            </div>
-          </button>
-
-          <!-- Nina -->
-          <button class="text-left bg-white/3 border border-cyan-accent/15 hover:border-cyan-accent/40 hover:bg-cyan-accent/5 rounded-xl p-3 transition-all card-hover group">
-            <div class="flex items-start justify-between mb-2">
-              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-lg shadow-md shadow-purple-500/15">
-                📦
-              </div>
-              <span class="w-2 h-2 rounded-full bg-emerald-400 mt-1.5"></span>
-            </div>
-            <div class="font-display font-bold text-sm text-white">Nina</div>
-            <div class="text-[10px] text-cyan-accent uppercase tracking-wider font-mono font-semibold mt-0.5">Packet Builder</div>
-            <p class="text-[10px] text-slate-400 mt-1.5 leading-snug">
-              Ensambla el packet completo: cover letter, exhibits, orden correcto.
-            </p>
-            <div class="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
-              <span class="text-[9px] font-mono text-amber-300/70">10 cred / uso</span>
-              <span class="text-[10px] text-cyan-accent opacity-0 group-hover:opacity-100 transition-opacity">Abrir →</span>
-            </div>
-          </button>
-
-          <!-- Max -->
-          <button class="text-left bg-white/3 border border-cyan-accent/15 hover:border-cyan-accent/40 hover:bg-cyan-accent/5 rounded-xl p-3 transition-all card-hover group">
-            <div class="flex items-start justify-between mb-2">
-              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center text-lg shadow-md shadow-emerald-500/15">
-                ✓
-              </div>
-              <span class="w-2 h-2 rounded-full bg-emerald-400 mt-1.5"></span>
-            </div>
-            <div class="font-display font-bold text-sm text-white">Max</div>
-            <div class="text-[10px] text-cyan-accent uppercase tracking-wider font-mono font-semibold mt-0.5">Quality Assurance</div>
-            <p class="text-[10px] text-slate-400 mt-1.5 leading-snug">
-              Revisa el packet antes de envío. Detecta errores y valida documentos.
-            </p>
-            <div class="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
-              <span class="text-[9px] font-mono text-amber-300/70">10 cred / uso</span>
-              <span class="text-[10px] text-cyan-accent opacity-0 group-hover:opacity-100 transition-opacity">Abrir →</span>
-            </div>
-          </button>
-        </div>
-
-        <!-- Ask team input -->
-        <div class="mt-4 pt-4 border-t border-white/5 flex items-center gap-3 bg-black/30 rounded-xl px-3 py-2 border border-white/5">
-          <span class="text-cyan-accent text-base">💬</span>
-          <input
-            class="flex-1 bg-transparent outline-none text-[12px] text-white placeholder:text-slate-500"
-            placeholder="Pregúntale al equipo: &ldquo;Camila, ¿qué se acordó con García en la consulta?&rdquo;"
-          />
-          <button class="bg-cyan-accent/15 hover:bg-cyan-accent/25 border border-cyan-accent/30 text-cyan-accent rounded-md px-3 py-1.5 text-[11px] font-semibold transition-all">
-            Preguntar →
-          </button>
-        </div>
-      </section>
-
-      <!-- ═══ ZONA 3 — 4 KPI CARDS ═══ -->
+      <!-- ═══ ZONA 2 — 4 KPI CARDS ═══ -->
       <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
         <!-- KPI 1: Para firmar -->
@@ -482,6 +371,110 @@ h1, h2, h3, h4, .font-display { font-family: 'Sora', system-ui, sans-serif; }
           </p>
           <button class="mt-2.5 pt-2 border-t border-white/5 w-full text-[10px] font-semibold text-orange-300/80 hover:text-orange-200 transition-colors text-left">
             Ver agenda →
+          </button>
+        </div>
+      </section>
+
+      <!-- ═══ ZONA 3 — WIDGET EQUIPO NER ═══ -->
+      <section class="glass-team rounded-2xl px-6 py-5">
+        <div class="flex items-end justify-between mb-4 flex-wrap gap-2">
+          <div>
+            <p class="text-[10px] uppercase tracking-[0.2em] text-cyan-accent/80 font-mono font-semibold mb-1">Equipo NER · Listo hoy</p>
+            <h3 class="text-base font-display font-bold flex items-center gap-2">
+              👥 Tu equipo está disponible
+            </h3>
+          </div>
+          <div class="flex items-center gap-2 text-[11px] text-emerald-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+            <span class="font-semibold">4 agentes en línea</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+
+          <!-- Camila -->
+          <button class="text-left bg-white/3 border border-cyan-accent/15 hover:border-cyan-accent/40 hover:bg-cyan-accent/5 rounded-xl p-3 transition-all card-hover group">
+            <div class="flex items-start justify-between mb-2">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-accent to-ai-blue flex items-center justify-center text-lg shadow-md shadow-cyan-accent/15">
+                🎙️
+              </div>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 mt-1.5"></span>
+            </div>
+            <div class="font-display font-bold text-sm text-white">Camila</div>
+            <div class="text-[10px] text-cyan-accent uppercase tracking-wider font-mono font-semibold mt-0.5">Voice AI</div>
+            <p class="text-[10px] text-slate-400 mt-1.5 leading-snug">
+              Graba consultas, transcribe y resume. Asigna tareas automáticamente.
+            </p>
+            <div class="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
+              <span class="text-[9px] font-mono text-amber-300/70">450 cred · voice</span>
+              <span class="text-[10px] text-cyan-accent opacity-0 group-hover:opacity-100 transition-opacity">Abrir →</span>
+            </div>
+          </button>
+
+          <!-- Felix -->
+          <button class="text-left bg-white/3 border border-cyan-accent/15 hover:border-cyan-accent/40 hover:bg-cyan-accent/5 rounded-xl p-3 transition-all card-hover group">
+            <div class="flex items-start justify-between mb-2">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-lg shadow-md shadow-blue-500/15">
+                📝
+              </div>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 mt-1.5"></span>
+            </div>
+            <div class="font-display font-bold text-sm text-white">Felix</div>
+            <div class="text-[10px] text-cyan-accent uppercase tracking-wider font-mono font-semibold mt-0.5">Forms Filler</div>
+            <p class="text-[10px] text-slate-400 mt-1.5 leading-snug">
+              Llena formularios USCIS leyendo el expediente. I-130 + I-765 listos.
+            </p>
+            <div class="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
+              <span class="text-[9px] font-mono text-amber-300/70">5 cred / uso</span>
+              <span class="text-[10px] text-cyan-accent opacity-0 group-hover:opacity-100 transition-opacity">Abrir →</span>
+            </div>
+          </button>
+
+          <!-- Nina -->
+          <button class="text-left bg-white/3 border border-cyan-accent/15 hover:border-cyan-accent/40 hover:bg-cyan-accent/5 rounded-xl p-3 transition-all card-hover group">
+            <div class="flex items-start justify-between mb-2">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-lg shadow-md shadow-purple-500/15">
+                📦
+              </div>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 mt-1.5"></span>
+            </div>
+            <div class="font-display font-bold text-sm text-white">Nina</div>
+            <div class="text-[10px] text-cyan-accent uppercase tracking-wider font-mono font-semibold mt-0.5">Packet Builder</div>
+            <p class="text-[10px] text-slate-400 mt-1.5 leading-snug">
+              Ensambla el packet completo: cover letter, exhibits, orden correcto.
+            </p>
+            <div class="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
+              <span class="text-[9px] font-mono text-amber-300/70">10 cred / uso</span>
+              <span class="text-[10px] text-cyan-accent opacity-0 group-hover:opacity-100 transition-opacity">Abrir →</span>
+            </div>
+          </button>
+
+          <!-- Max -->
+          <button class="text-left bg-white/3 border border-cyan-accent/15 hover:border-cyan-accent/40 hover:bg-cyan-accent/5 rounded-xl p-3 transition-all card-hover group">
+            <div class="flex items-start justify-between mb-2">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center text-lg shadow-md shadow-emerald-500/15">
+                ✓
+              </div>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 mt-1.5"></span>
+            </div>
+            <div class="font-display font-bold text-sm text-white">Max</div>
+            <div class="text-[10px] text-cyan-accent uppercase tracking-wider font-mono font-semibold mt-0.5">Quality Assurance</div>
+            <p class="text-[10px] text-slate-400 mt-1.5 leading-snug">
+              Revisa el packet antes de envío. Detecta errores y valida documentos.
+            </p>
+            <div class="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
+              <span class="text-[9px] font-mono text-amber-300/70">10 cred / uso</span>
+              <span class="text-[10px] text-cyan-accent opacity-0 group-hover:opacity-100 transition-opacity">Abrir →</span>
+            </div>
+          </button>
+        </div>
+        <!-- Footer minimalista: link a gestión del equipo -->
+        <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
+          <p class="text-[11px] text-slate-400">
+            Pídele cualquier cosa a Camila desde el campo de arriba — ella deriva a Felix, Nina o Max según convenga.
+          </p>
+          <button class="text-[11px] font-semibold text-cyan-accent/80 hover:text-cyan-accent transition-colors">
+            Gestionar equipo →
           </button>
         </div>
       </section>
