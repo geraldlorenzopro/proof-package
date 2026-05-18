@@ -340,12 +340,13 @@ function HubDashboardInner({
 
   useEffect(() => { conversationStatusRef.current = conversation.status; }, [conversation.status]);
 
-  // Resolver nombre del usuario
+  // Resolver nombre + userId del usuario
   useEffect(() => {
     (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        setUserId(user.id);
         const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
         setResolvedName(profile?.full_name || user.user_metadata?.full_name as string || user.email?.split("@")[0] || null);
       } catch {}
