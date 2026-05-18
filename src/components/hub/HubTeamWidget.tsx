@@ -123,7 +123,7 @@ export default function HubTeamWidget({ accountId: _accountId }: Props) {
 
       <div className="mt-4 pt-3 border-t border-border/30 flex items-center justify-between gap-3 flex-wrap">
         <p className="text-[11px] text-muted-foreground/80">
-          Tu equipo NER está listo — pedile lo que necesites.
+          Tu equipo NER está listo — pídele lo que necesites.
         </p>
         <button
           onClick={() => navigate("/hub/ai")}
