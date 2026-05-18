@@ -20,8 +20,8 @@ const AGENTS: Agent[] = [
 export default function HubTeamWidget() {
   const navigate = useNavigate();
   return (
-    <section className="rounded-2xl border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.04] to-cyan-accent/[0.04] backdrop-blur-sm p-3 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-2.5">
+    <section className="rounded-2xl border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.04] to-cyan-accent/[0.04] backdrop-blur-sm p-2.5 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-bold flex items-center gap-1.5 text-foreground font-sora">
           <Bot className="w-3.5 h-3.5 text-cyan-accent" />
           Mi equipo
