@@ -99,17 +99,17 @@ export default function HubCrisisBar({ accountId }: Props) {
   }
 
   return (
-    <div className="bg-rose-500/10 border border-rose-500/40 border-l-4 border-l-rose-500 rounded-lg px-4 py-3 flex items-center gap-3 mb-3">
-      <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center shrink-0">
-        <AlertTriangle className="w-4 h-4 text-rose-400" />
+    <div className="bg-gradient-to-r from-rose-500/12 to-rose-500/[0.03] border border-rose-500/30 border-l-4 border-l-rose-500 rounded-lg px-4 py-3 flex items-center gap-3 mb-3 backdrop-blur-sm">
+      <div className="w-8 h-8 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center shrink-0">
+        <AlertTriangle className="w-4 h-4 text-rose-300" />
       </div>
-      <div className="flex-1 text-[12px] leading-relaxed">
-        <strong className="text-rose-300">{crisis.title}</strong>
+      <div className="flex-1 text-[12px] leading-relaxed font-inter">
+        <strong className="text-rose-300 font-sora">{crisis.title}</strong>
         <span className="text-muted-foreground"> — {crisis.subtitle}</span>
       </div>
       <button
         onClick={handleViewCase}
-        className="text-[11px] font-semibold px-3.5 py-1.5 rounded bg-rose-500 hover:bg-rose-600 text-white transition-colors shrink-0"
+        className="text-[11px] font-semibold px-3.5 py-1.5 rounded text-rose-300 hover:text-rose-200 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-500/50 transition-colors shrink-0 font-sora"
       >
         Ver caso
       </button>
