@@ -611,19 +611,19 @@ function HubDashboardInner({
               {!demoMode && !feedLoading && actionChips.length === 0 && (() => {
                 const MOTIVATION_PHRASES = [
                   "Cada caso, una estrategia. Cada decisión, basada en datos.",
-                  "Menos errores. Más aprobaciones. Esa es la ruta.",
-                  "Hoy no hay urgencias. Aprovechá para adelantar lo importante.",
+                  "Menos errores, más aprobaciones. Así se gana.",
+                  "Hoy está tranquilo — aprovecha y adelanta lo que viene.",
                   "Tu mejor herramienta es la claridad. Camila te respalda.",
-                  "Inmigración no es suerte. Es preparación rigurosa.",
-                  "Un día sin RFEs es un día para construir el siguiente caso.",
-                  "Decisiones migratorias basadas en inteligencia, no intuición.",
-                  "El detalle que vos cuides hoy, evita un NOID mañana.",
-                  "Automatiza. Optimiza. Aprueba. En ese orden.",
-                  "La estrategia ganadora empieza antes del primer formulario.",
+                  "Inmigración no es suerte, mi gente. Es preparación.",
+                  "Un día sin RFEs es un día para armar el próximo caso.",
+                  "Decisiones migratorias con inteligencia, no con corazonada.",
+                  "El detalle que cuidas hoy te evita un NOID mañana.",
+                  "Automatiza, optimiza, aprueba. En ese orden.",
+                  "La estrategia ganadora arranca antes del primer formulario.",
                   "Cada expediente bien armado es un cliente que vuelve.",
-                  "Hoy es buen día para revisar lo que ya tenés en camino.",
-                  "Tu equipo NER está listo — pedile lo que necesites.",
+                  "Buen día para revisar lo que ya tienes en camino.",
                   "La excelencia legal se construye en los días tranquilos.",
+                  "Paso a paso, caso por caso. Así se hace.",
                 ];
                 const dayOfYear = Math.floor(
                   (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
