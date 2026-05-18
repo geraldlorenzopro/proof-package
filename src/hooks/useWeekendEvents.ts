@@ -85,14 +85,6 @@ export function useWeekendEvents(accountId: string | null): State {
           color: "blue",
         },
         {
-          type: "rfe_received",
-          count: rfeRes.count ?? 0,
-          display: `${rfeRes.count ?? 0}`,
-          detail: (rfeRes.count ?? 0) === 1 ? "RFE recibido" : "RFEs recibidos",
-          href: "/hub/cases?filter=at-risk",
-          color: "rose",
-        },
-        {
           type: "docs_uploaded",
           count: docsRes.count ?? 0,
           display: `${docsRes.count ?? 0}`,
