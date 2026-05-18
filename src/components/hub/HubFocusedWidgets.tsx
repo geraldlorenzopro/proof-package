@@ -6,6 +6,7 @@ import {
   Signature, Eye, Calendar, Landmark, AlertCircle, ArrowRight, ChevronRight, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import HubTeamWidget from "./HubTeamWidget";
 import {
   useDemoMode, DEMO_SIGNATURES, DEMO_REVIEWS, DEMO_CONSULTATIONS, DEMO_INTERVIEWS,
   DEMO_PULSE, DEMO_CRISIS, DEMO_NEWS,
@@ -546,6 +547,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
           ))}
         </Widget>
       </div>
+
+      {/* EQUIPO NER · Listo hoy — Camila/Felix/Nina/Max debajo de los 4 KPIs */}
+      <HubTeamWidget />
+
+
 
       {/* PULSE — métricas completas del portfolio. Métricas clickeables navegan a página relevante. */}
       {pulse.active === 0 && pulse.newLeads === 0 ? (

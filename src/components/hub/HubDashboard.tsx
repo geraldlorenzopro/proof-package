@@ -585,26 +585,13 @@ function HubDashboardInner({
                       {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
                     </button>
                   )}
-                  <button
-                    onClick={isVoiceActive ? stopVoiceCall : startVoiceCall}
-                    disabled={voiceConnecting}
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                      isVoiceActive
-                        ? "bg-red-500/15 text-red-400 border border-red-400/30"
-                        : voiceConnecting
-                        ? "bg-jarvis/10 text-jarvis border border-jarvis/20 animate-pulse"
-                        : "bg-jarvis/10 hover:bg-jarvis/20 text-jarvis border border-jarvis/20"
-                    }`}
-                    title={isVoiceActive ? "Finalizar llamada" : "Llamar a Camila"}
-                  >
-                    {isVoiceActive ? <PhoneOff className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
+                  <button onClick={() => sendMessage()} disabled={!input.trim()} className="w-7 h-7 rounded-lg bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30" title="Enviar">
+                    <Send className="w-3.5 h-3.5 text-jarvis" />
                   </button>
-                  {!isVoiceActive && (
-                    <button onClick={() => sendMessage()} disabled={!input.trim()} className="w-7 h-7 rounded-lg bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30" title="Enviar">
-                      <Send className="w-3.5 h-3.5 text-jarvis" />
-                    </button>
-                  )}
                 </div>
+                <p className="text-[9px] text-muted-foreground/60 leading-tight w-full text-right">
+                  El micrófono dicta al texto · no llama por voz
+                </p>
                 {isVoiceActive && (
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
