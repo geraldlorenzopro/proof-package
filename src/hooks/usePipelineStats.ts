@@ -30,7 +30,7 @@ const BUCKETS: { bucket: PipelineBucket; label: string }[] = [
   { bucket: "contrato", label: "CONTRATO" },
   { bucket: "uscis", label: "USCIS" },
   { bucket: "rfe", label: "RFE" },
-  { bucket: "aprobado", label: "APROBADO" },
+  { bucket: "aprobado", label: "APROB. 30D" },
 ];
 
 function classify(stage: string | null): PipelineBucket | null {
@@ -56,25 +56,42 @@ export function usePipelineStats(accountId: string | null): State {
 
     let cancelled = false;
     void (async () => {
-      const { data, error } = await supabase
-        .from("client_cases")
-        .select("pipeline_stage, process_stage, status")
-        .eq("account_id", accountId)
-        .not("status", "in", "(completed,archived,cancelled)");
+      const monthAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+      const [activeRes, approvedRes] = await Promise.all([
+        supabase
+          .from("client_cases")
+          .select("pipeline_stage, process_stage, status")
+          .eq("account_id", accountId)
+          .not("status", "in", "(completed,archived,cancelled)"),
+        supabase
+          .from("client_cases")
+          .select("id", { count: "exact", head: true })
+          .eq("account_id", accountId)
+          .eq("process_stage", "aprobado")
+          .gte("updated_at", monthAgo),
+      ]);
 
       if (cancelled) return;
 
       const counts = new Map<PipelineBucket, number>(BUCKETS.map(b => [b.bucket, 0]));
-      if (!error && data) {
-        for (const row of data as any[]) {
+      if (!activeRes.error && activeRes.data) {
+        for (const row of activeRes.data as any[]) {
           const b = classify(row.pipeline_stage ?? row.process_stage);
-          if (b) counts.set(b, (counts.get(b) ?? 0) + 1);
+          // No contamos "aprobado" del set activo — esa columna se llena con 30d
+          if (b && b !== "aprobado") counts.set(b, (counts.get(b) ?? 0) + 1);
         }
       }
+      counts.set("aprobado", approvedRes.count ?? 0);
+
+      const activeData = activeRes.data ?? [];
+      const totalActive = activeData.filter((r: any) => {
+        const b = classify(r.pipeline_stage ?? r.process_stage);
+        return b !== "aprobado";
+      }).length;
 
       setState({
         stats: BUCKETS.map(b => ({ ...b, count: counts.get(b.bucket) ?? 0 })),
-        totalActive: (data ?? []).length,
+        totalActive,
         loading: false,
       });
     })();
