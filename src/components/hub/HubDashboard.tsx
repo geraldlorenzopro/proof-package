@@ -495,7 +495,7 @@ function HubDashboardInner({
         )}
 
         {/* Main content — 3 zonas verticales */}
-        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 px-8 py-4 max-w-[1400px] w-full mx-auto">
+        <div className="flex-1 min-h-0 lg:overflow-hidden overflow-y-auto flex flex-col gap-2 px-6 py-3 max-w-[1400px] w-full mx-auto">
 
           {/* ═══ ZONA 0 — CRISIS BAR (rojo arriba antes que prosa larga) ═══ */}
           {/* Decisión 2026-05-11 post-debate con Mr. Lorenzo: los ojos del abogado
@@ -503,12 +503,12 @@ function HubDashboardInner({
           <HubCrisisBar accountId={accountId} />
 
           {/* ═══ ZONA 1 — MICRO-BRIEFING (datos contables, no prosa) ═══ */}
-          <section className="shrink-0 rounded-2xl px-6 py-4 border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.05] via-cyan-accent/[0.03] to-card/40 shadow-lg shadow-ai-blue/5 backdrop-blur-sm">
-            <div className="flex items-start justify-between gap-6 flex-wrap">
-              <div className="flex items-start gap-4 flex-1 min-w-0">
+          <section className="shrink-0 rounded-2xl px-4 py-2.5 border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.05] via-cyan-accent/[0.03] to-card/40 shadow-lg shadow-ai-blue/5 backdrop-blur-sm">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
                 <div className="relative shrink-0">
                   <div
-                    className="w-11 h-11 rounded-full bg-gradient-to-br from-cyan-accent via-ai-blue to-cyan-accent/60 shadow-lg shadow-cyan-accent/30 animate-pulse"
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-accent via-ai-blue to-cyan-accent/60 shadow-lg shadow-cyan-accent/30 animate-pulse"
                     style={{ animationDuration: "3s" }}
                   />
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-background" />
@@ -522,7 +522,7 @@ function HubDashboardInner({
                       {format(new Date(), "EEEE d 'de' MMMM · HH:mm", { locale: es })}
                     </span>
                   </div>
-                  <p className="text-[15px] font-semibold text-foreground/95 leading-snug font-sora">
+                  <p className="text-[13px] font-semibold text-foreground/95 leading-snug font-sora">
                     {greeting}, <span className="bg-gradient-to-r from-ai-blue to-cyan-accent bg-clip-text text-transparent">{firstName || "Jefe"}</span>.
                     {microBriefing.length > 0 ? (
                       <>
@@ -598,7 +598,7 @@ function HubDashboardInner({
           </section>
 
           {/* ═══ ZONA 3+4 — AGENDA HÉROE (60%) + RIESGO (40%) ═══ */}
-          <section className="grid grid-cols-1 lg:grid-cols-5 gap-3 shrink-0">
+          <section className="grid grid-cols-1 lg:grid-cols-5 gap-2 shrink-0 min-h-0">
             <div className="lg:col-span-3">
               <HubAgendaWidget accountId={accountId} />
             </div>
@@ -614,7 +614,7 @@ function HubDashboardInner({
           <HubPipelineWidget accountId={accountId} />
 
           {/* ═══ ZONA 6 — MIS ACCIONES + DINERO + EQUIPO ═══ */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-3 shrink-0">
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-2 shrink-0">
             <HubMyActionsCard accountId={accountId} userId={userId} />
             <HubMoneyCard accountId={accountId} />
             <HubTeamWidget />
@@ -623,26 +623,26 @@ function HubDashboardInner({
 
           {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}
           {!demoMode && (
-          <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-4 py-2.5 flex items-center gap-5 flex-wrap">
+          <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-3 py-2 flex items-center gap-5 flex-wrap">
             {/* Pulse mini KPIs */}
             <div className="flex items-center gap-4 flex-1 min-w-0">
               <button onClick={() => navigate("/hub/cases?filter=closed")} className="flex items-baseline gap-1.5 hover:opacity-80 transition">
-                <span className="text-base font-semibold text-foreground tabular-nums">{closedThisWeek}</span>
+                <span className="text-[14px] font-semibold text-foreground tabular-nums">{closedThisWeek}</span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">cerrados sem.</span>
               </button>
               <div className="w-px h-5 bg-border/30" />
               <div className="flex items-baseline gap-1.5">
-                <span className="text-base font-semibold text-foreground tabular-nums">{tasksDoneRatio}<span className="text-[10px]">%</span></span>
+                <span className="text-[14px] font-semibold text-foreground tabular-nums">{tasksDoneRatio}<span className="text-[10px]">%</span></span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">tareas hechas</span>
               </div>
               <div className="w-px h-5 bg-border/30" />
               <button onClick={() => navigate("/hub/cases")} className="flex items-baseline gap-1.5 hover:opacity-80 transition">
-                <span className="text-base font-semibold text-foreground tabular-nums">{activeCases}</span>
+                <span className="text-[14px] font-semibold text-foreground tabular-nums">{activeCases}</span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">casos activos</span>
               </button>
               <div className="w-px h-5 bg-border/30" />
               <button onClick={() => navigate("/hub/reports")} className="flex items-baseline gap-1.5 hover:opacity-80 transition" title="Tasa de aprobación últimos 30 días">
-                <span className="text-base font-display font-semibold text-emerald-300 tabular-nums">
+                <span className="text-[14px] font-display font-semibold text-emerald-300 tabular-nums">
                   {approvalRate30d}<span className="text-[10px] text-slate-400">%</span>
                 </span>
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">

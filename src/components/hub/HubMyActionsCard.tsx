@@ -22,8 +22,8 @@ export default function HubMyActionsCard({ accountId, userId }: Props) {
   const visible = buckets.filter(b => b.count > 0).slice(0, 3);
 
   return (
-    <section className="rounded-2xl border border-white/8 bg-card/30 backdrop-blur-sm p-3 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-2.5">
+    <section className="rounded-2xl border border-white/8 bg-card/30 backdrop-blur-sm p-2.5 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-bold flex items-center gap-1.5 text-foreground font-sora">
           <Hand className="w-3.5 h-3.5 text-cyan-accent" />
           Mis acciones · {loading ? "—" : total}

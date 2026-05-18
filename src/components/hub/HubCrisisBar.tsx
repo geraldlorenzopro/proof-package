@@ -121,9 +121,9 @@ export default function HubCrisisBar({ accountId }: Props) {
   }
 
   return (
-    <div className="bg-gradient-to-r from-rose-500/12 to-rose-500/[0.03] border border-rose-500/30 border-l-4 border-l-rose-500 rounded-lg px-4 py-3 flex items-center gap-3 mb-3 backdrop-blur-sm">
-      <div className="w-8 h-8 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center shrink-0">
-        <AlertTriangle className="w-4 h-4 text-rose-300" />
+    <div className="bg-gradient-to-r from-rose-500/12 to-rose-500/[0.03] border border-rose-500/30 border-l-4 border-l-rose-500 rounded-lg px-3 py-1.5 flex items-center gap-3 mb-2 backdrop-blur-sm">
+      <div className="w-5 h-5 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center shrink-0">
+        <AlertTriangle className="w-3 h-3 text-rose-300" />
       </div>
       <div className="flex-1 text-[12px] leading-relaxed font-inter">
         <strong className="text-rose-300 font-sora">{crisis.title}</strong>

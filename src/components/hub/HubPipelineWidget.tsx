@@ -31,8 +31,8 @@ export default function HubPipelineWidget({ accountId }: Props) {
   const maxCount = Math.max(1, ...stats.map(s => s.count));
 
   return (
-    <section className="rounded-2xl border border-cyan-accent/15 bg-card/30 backdrop-blur-sm p-4">
-      <div className="flex items-end justify-between mb-3 gap-2 flex-wrap">
+    <section className="rounded-2xl border border-cyan-accent/15 bg-card/30 backdrop-blur-sm p-3">
+      <div className="flex items-end justify-between mb-2 gap-2 flex-wrap">
         <div>
           <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-accent/80 font-mono font-semibold mb-0.5">
             Pipeline · {totalActive} casos activos
@@ -58,7 +58,7 @@ export default function HubPipelineWidget({ accountId }: Props) {
             <button
               key={s.bucket}
               onClick={() => navigate(`/hub/cases?stage=${s.bucket}`)}
-              className="text-left bg-white/[0.02] hover:bg-white/[0.05] border border-white/8 hover:border-white/15 rounded-lg p-2.5 transition-all"
+              className="text-left bg-white/[0.02] hover:bg-white/[0.05] border border-white/8 hover:border-white/15 rounded-lg p-2 transition-all"
             >
               <div className="flex items-baseline justify-between mb-1.5">
                 <span className={`text-lg font-bold tabular-nums ${BUCKET_TEXT[s.bucket]}`}>

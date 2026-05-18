@@ -16,8 +16,8 @@ export default function HubMoneyCard({ accountId }: Props) {
   const m = useMoneyToday(accountId);
 
   return (
-    <section className="rounded-2xl border border-white/8 bg-card/30 backdrop-blur-sm p-3 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-2.5">
+    <section className="rounded-2xl border border-white/8 bg-card/30 backdrop-blur-sm p-2.5 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-bold flex items-center gap-1.5 text-foreground font-sora">
           <DollarSign className="w-3.5 h-3.5 text-emerald-300" />
           Dinero hoy

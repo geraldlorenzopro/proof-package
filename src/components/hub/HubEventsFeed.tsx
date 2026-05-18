@@ -18,8 +18,8 @@ export default function HubEventsFeed({ accountId }: Props) {
   const { events, totalCount, sinceLabel, loading } = useWeekendEvents(accountId);
 
   return (
-    <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-4 py-3">
-      <div className="flex items-center justify-between mb-2.5">
+    <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-3 py-2">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 font-semibold font-mono">
             Eventos · {sinceLabel}
@@ -44,9 +44,9 @@ export default function HubEventsFeed({ accountId }: Props) {
             <button
               key={e.type}
               onClick={() => navigate(e.href)}
-              className={`text-left bg-white/[0.03] hover:bg-cyan-accent/5 border border-white/10 ${c.border} rounded-lg p-2.5 transition-all`}
+              className={`text-left bg-white/[0.03] hover:bg-cyan-accent/5 border border-white/10 ${c.border} rounded-lg p-2 transition-all`}
             >
-              <div className={`text-lg font-bold font-sora tabular-nums ${c.text}`}>
+              <div className={`text-[16px] font-bold font-sora tabular-nums ${c.text}`}>
                 {loading ? "—" : e.display}
               </div>
               <div className="text-[9px] text-muted-foreground/70 leading-tight whitespace-pre-line mt-0.5">

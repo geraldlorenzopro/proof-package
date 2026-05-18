@@ -32,8 +32,8 @@ export default function HubRiskWidget({ accountId }: Props) {
   const { cases, loading } = useRiskCases(accountId, 3);
 
   return (
-    <section className="rounded-2xl border border-rose-500/20 bg-gradient-to-br from-rose-500/[0.04] to-card/30 backdrop-blur-sm p-4 h-full flex flex-col">
-      <div className="flex items-end justify-between mb-3 gap-2">
+    <section className="rounded-2xl border border-rose-500/20 bg-gradient-to-br from-rose-500/[0.04] to-card/30 backdrop-blur-sm p-3 h-full flex flex-col">
+      <div className="flex items-end justify-between mb-2 gap-2">
         <div>
           <p className="text-[10px] uppercase tracking-[0.2em] text-rose-300/80 font-mono font-semibold mb-0.5">
             Atención requerida
@@ -63,14 +63,14 @@ export default function HubRiskWidget({ accountId }: Props) {
           <p className="text-[10px] text-muted-foreground/60 mt-1">Bien hecho.</p>
         </div>
       ) : (
-        <div className="space-y-2 flex-1">
+        <div className="space-y-1.5 flex-1">
           {cases.map(c => {
             const sev = severityClasses(c.daysLeft);
             return (
               <button
                 key={c.id}
                 onClick={() => navigate(`/case-engine/${c.id}`)}
-                className={`w-full text-left ${sev.card} border rounded-lg p-2.5 transition-all`}
+                className={`w-full text-left ${sev.card} border rounded-lg p-2 transition-all`}
               >
                 <div className="flex items-center justify-between gap-2 mb-0.5">
                   <span className="text-[12px] font-semibold text-foreground truncate">
