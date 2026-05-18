@@ -1437,6 +1437,7 @@ export type Database = {
           priority: string
           recurring_interval: string | null
           status: string
+          task_type: Database["public"]["Enums"]["case_task_type"]
           title: string
           updated_at: string
           visibility: string
@@ -1459,6 +1460,7 @@ export type Database = {
           priority?: string
           recurring_interval?: string | null
           status?: string
+          task_type?: Database["public"]["Enums"]["case_task_type"]
           title: string
           updated_at?: string
           visibility?: string
@@ -1481,6 +1483,7 @@ export type Database = {
           priority?: string
           recurring_interval?: string | null
           status?: string
+          task_type?: Database["public"]["Enums"]["case_task_type"]
           title?: string
           updated_at?: string
           visibility?: string
@@ -1642,6 +1645,7 @@ export type Database = {
           interview_date: string | null
           interview_time: string | null
           interview_type: string | null
+          last_client_activity_at: string | null
           notes: string | null
           nvc_cas_email: string | null
           nvc_cas_password: string | null
@@ -1654,6 +1658,7 @@ export type Database = {
           process_stage: string | null
           process_type: string | null
           professional_id: string
+          rfe_deadline: string | null
           stage_entered_at: string | null
           status: string
           updated_at: string
@@ -1661,6 +1666,7 @@ export type Database = {
           uscis_password: string | null
           uscis_receipt_numbers: Json | null
           uscis_recovery_codes: string | null
+          uscis_response_deadline: string | null
           visa_category: string | null
           webhook_url: string | null
         }
@@ -1698,6 +1704,7 @@ export type Database = {
           interview_date?: string | null
           interview_time?: string | null
           interview_type?: string | null
+          last_client_activity_at?: string | null
           notes?: string | null
           nvc_cas_email?: string | null
           nvc_cas_password?: string | null
@@ -1710,6 +1717,7 @@ export type Database = {
           process_stage?: string | null
           process_type?: string | null
           professional_id: string
+          rfe_deadline?: string | null
           stage_entered_at?: string | null
           status?: string
           updated_at?: string
@@ -1717,6 +1725,7 @@ export type Database = {
           uscis_password?: string | null
           uscis_receipt_numbers?: Json | null
           uscis_recovery_codes?: string | null
+          uscis_response_deadline?: string | null
           visa_category?: string | null
           webhook_url?: string | null
         }
@@ -1754,6 +1763,7 @@ export type Database = {
           interview_date?: string | null
           interview_time?: string | null
           interview_type?: string | null
+          last_client_activity_at?: string | null
           notes?: string | null
           nvc_cas_email?: string | null
           nvc_cas_password?: string | null
@@ -1766,6 +1776,7 @@ export type Database = {
           process_stage?: string | null
           process_type?: string | null
           professional_id?: string
+          rfe_deadline?: string | null
           stage_entered_at?: string | null
           status?: string
           updated_at?: string
@@ -1773,6 +1784,7 @@ export type Database = {
           uscis_password?: string | null
           uscis_receipt_numbers?: Json | null
           uscis_recovery_codes?: string | null
+          uscis_response_deadline?: string | null
           visa_category?: string | null
           webhook_url?: string | null
         }
@@ -3934,6 +3946,14 @@ export type Database = {
         | "paralegal"
         | "assistant"
         | "readonly"
+      case_task_type:
+        | "general"
+        | "signature_required"
+        | "review_required"
+        | "rfe_response"
+        | "document_upload"
+        | "client_contact"
+        | "deadline_external"
       ner_plan: "essential" | "professional" | "elite" | "enterprise"
     }
     CompositeTypes: {
@@ -4070,6 +4090,15 @@ export const Constants = {
         "paralegal",
         "assistant",
         "readonly",
+      ],
+      case_task_type: [
+        "general",
+        "signature_required",
+        "review_required",
+        "rfe_response",
+        "document_upload",
+        "client_contact",
+        "deadline_external",
       ],
       ner_plan: ["essential", "professional", "elite", "enterprise"],
     },
