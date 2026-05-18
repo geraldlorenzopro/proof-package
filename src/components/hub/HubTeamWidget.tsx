@@ -123,7 +123,7 @@ export default function HubTeamWidget({ accountId: _accountId }: Props) {
 
       <div className="mt-4 pt-3 border-t border-border/30 flex items-center justify-between gap-3 flex-wrap">
         <p className="text-[11px] text-muted-foreground/80">
-          Pídele cualquier cosa a Camila desde el campo de arriba — ella deriva a Felix, Nina o Max según convenga.
+          Tu equipo NER está listo — pedile lo que necesites.
         </p>
         <button
           onClick={() => navigate("/hub/ai")}
