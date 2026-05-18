@@ -534,6 +534,8 @@ export default function HubPage() {
         accountId={data.account_id}
         accountName={data.account_name}
         staffName={data.staff_info?.display_name}
+        plan={data.plan}
+        apps={availableAppSlugs}
         userRole={userRole}
         canAccessApp={canAccess}
         showOnboardingBanner={showOnboarding === true}
