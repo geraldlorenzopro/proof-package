@@ -11,14 +11,15 @@ import { toast } from "sonner";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFeed } from "@/hooks/useFeed";
+import { useHubKpis } from "@/hooks/useHubKpis";
 import { useMorningBriefing } from "@/hooks/useMorningBriefing";
 import type { FeedItem, FeedItemKind, FeedItemSeverity } from "@/types/feed";
 import IntakeWizard from "../intake/IntakeWizard";
 import HubFocusedWidgets from "./HubFocusedWidgets";
 import HubCrisisBar from "./HubCrisisBar";
-// Hub Canonical: widgets movidos a sus rutas correctas según wireframe.
+// Hub Canonical W-04: widgets movidos a sus rutas dedicadas.
 // AITeamCard → /hub/ai · MyPerformanceWidget → /hub/reports
-// QuickAskCamila → CamilaFloatingPanel · VirtualOfficeCard → /hub/consultations
+// VirtualOfficeCard → /hub/consultations
 import { useDemoMode, DEMO_BRIEFING_TEXT, exitDemoMode } from "@/hooks/useDemoData";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -140,11 +141,8 @@ interface Props {
   accountId: string;
   accountName: string;
   staffName?: string;
-  plan: string;
-  apps: any[];
   userRole?: string | null;
   canAccessApp?: (slug: string) => boolean;
-  stats?: any;
   showOnboardingBanner?: boolean;
   onTriggerOnboarding?: () => void;
 }
@@ -156,12 +154,8 @@ function HubDashboardInner({
   const [resolvedName, setResolvedName] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
-  // KPIs derivados
-  const [activeCases, setActiveCases] = useState(0);
-  const [todayAppointmentsCount, setTodayAppointmentsCount] = useState(0);
-  const [pendingTasks, setPendingTasks] = useState(0);
-  const [closedThisWeek, setClosedThisWeek] = useState(0);
-  const [tasksDoneRatio, setTasksDoneRatio] = useState(0);
+  // KPIs derivados — useHubKpis (Sprint D #9 quick win, wired Fase 3 cleanup 2026-05-18)
+  const { activeCases, todayAppointmentsCount, pendingTasks, closedThisWeek, tasksDoneRatio } = useHubKpis(accountId);
 
   // Feed (zona 2A)
   const { data: feedData, isLoading: feedLoading, refetch: refetchFeed, isRefetching: feedRefetching } = useFeed(accountId);
@@ -346,38 +340,6 @@ function HubDashboardInner({
       } catch {}
     })();
   }, []);
-
-  useEffect(() => {
-    if (accountId) loadKpis();
-  }, [accountId]);
-
-  async function loadKpis() {
-    try {
-      const todayStr = new Date().toISOString().split("T")[0];
-      const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().split("T")[0];
-      const [activeRes, todayApptsRes, pendingTasksRes, completedTasksRes, closedRes] = await Promise.all([
-        supabase.from("client_cases").select("id", { count: "exact", head: true })
-          .eq("account_id", accountId).not("status", "eq", "completed"),
-        supabase.from("appointments").select("id", { count: "exact", head: true })
-          .eq("account_id", accountId).eq("appointment_date", todayStr).neq("status", "cancelled"),
-        supabase.from("case_tasks").select("id", { count: "exact", head: true })
-          .eq("account_id", accountId).eq("status", "pending"),
-        supabase.from("case_tasks").select("id", { count: "exact", head: true })
-          .eq("account_id", accountId).eq("status", "completed").gte("updated_at", weekAgo),
-        supabase.from("client_cases").select("id", { count: "exact", head: true })
-          .eq("account_id", accountId).eq("status", "completed").gte("updated_at", weekAgo),
-      ]);
-      const totalTasks = (pendingTasksRes.count || 0) + (completedTasksRes.count || 0);
-      const ratio = totalTasks > 0 ? Math.round(((completedTasksRes.count || 0) / totalTasks) * 100) : 0;
-      setActiveCases(activeRes.count || 0);
-      setTodayAppointmentsCount(todayApptsRes.count || 0);
-      setPendingTasks(pendingTasksRes.count || 0);
-      setClosedThisWeek(closedRes.count || 0);
-      setTasksDoneRatio(ratio);
-    } catch (err) {
-      console.error("KPI load error:", err);
-    }
-  }
 
   const demoMode = useDemoMode();
   // En demo mode: fuerza nombre del attorney del demo, ignora session real
@@ -668,14 +630,10 @@ function HubDashboardInner({
           </section>
 
           {/* ═══ ZONA 2 — WIDGETS FOCALIZADOS (responde 4 preguntas del abogado) ═══ */}
-          {/* Hub Canonical (Morning Delivery 2026-05-16): según wireframe W-04,
-              el Hub debe tener SOLO: CrisisBar + Briefing + 4 KPIs + Stats.
-              Los widgets MyPerformance/VirtualOffice/QuickAsk/AITeam fueron
-              MOVIDOS a sus rutas dedicadas:
-                - AITeamCard → /hub/ai (HubAiPage)
-                - MyPerformanceWidget → /hub/reports
-                - QuickAskCamila → integrado en CamilaFloatingPanel via quick actions
-                - VirtualOfficeCard → /hub/consultations header */}
+          {/* Hub Canonical W-04 (Morning Delivery 2026-05-16): el Hub tiene SOLO
+              CrisisBar + Briefing + 4 KPIs + Stats. Los widgets MyPerformance /
+              VirtualOffice / AITeam fueron movidos a sus rutas dedicadas
+              (/hub/reports, /hub/consultations, /hub/ai). */}
           <section className="flex-1 min-h-0 overflow-y-auto">
             <HubFocusedWidgets accountId={accountId} attorneyName={resolvedName || staffName || undefined} />
           </section>

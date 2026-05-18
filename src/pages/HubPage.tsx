@@ -45,12 +45,6 @@ interface HubData {
   } | null;
 }
 
-interface HubStats {
-  totalClients: number;
-  activeForms: number;
-  recentActivity: number;
-}
-
 function getCachedHubData() {
   try {
     const hasResolveParams = typeof window !== "undefined" && ["cid", "sig", "ts"].some((key) => new URLSearchParams(window.location.search).has(key));
@@ -78,7 +72,6 @@ export default function HubPage() {
     const cached = getCachedHubData();
     return cached ? !cached.auth_token : false;
   });
-  const [stats, setStats] = useState<HubStats>({ totalClients: 0, activeForms: 0, recentActivity: 0 });
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [showSplash, setShowSplash] = useState<boolean>(() => {
     try {
@@ -299,29 +292,6 @@ export default function HubPage() {
       setError("Enlace inválido o incompleto. Por favor usa el enlace desde tu CRM.");
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    if (!authReady) return;
-    if (demoMode) {
-      // demo mode: stats sintéticas (no toques BD)
-      setStats({ totalClients: 147, activeForms: 22, recentActivity: 9 });
-      return;
-    }
-    loadStats();
-  }, [authReady, demoMode]);
-
-  async function loadStats() {
-    const [clientsRes, formsRes, activityRes] = await Promise.all([
-      supabase.from("client_profiles").select("id", { count: "exact", head: true }),
-      supabase.from("form_submissions").select("id", { count: "exact", head: true }).eq("status", "draft"),
-      supabase.from("tool_usage_logs").select("id", { count: "exact", head: true }),
-    ]);
-    setStats({
-      totalClients: clientsRes.count || 0,
-      activeForms: formsRes.count || 0,
-      recentActivity: activityRes.count || 0,
-    });
   }
 
   async function establishSession(authToken: { access_token: string; refresh_token: string }) {
@@ -564,11 +534,8 @@ export default function HubPage() {
         accountId={data.account_id}
         accountName={data.account_name}
         staffName={data.staff_info?.display_name}
-        plan={data.plan}
-        apps={data.apps}
         userRole={userRole}
         canAccessApp={canAccess}
-        stats={stats}
         showOnboardingBanner={showOnboarding === true}
         onTriggerOnboarding={() => setShowOnboarding(true)}
       />
