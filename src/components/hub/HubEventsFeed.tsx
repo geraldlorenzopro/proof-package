@@ -18,8 +18,8 @@ export default function HubEventsFeed({ accountId }: Props) {
   const { events, totalCount, sinceLabel, loading } = useWeekendEvents(accountId);
 
   return (
-    <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-4 py-3">
-      <div className="flex items-center justify-between mb-2.5">
+    <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-3 py-2">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 font-semibold font-mono">
             Eventos · {sinceLabel}
