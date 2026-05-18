@@ -38,6 +38,7 @@ export function useHubKpis(accountId: string | null): HubKpis {
     pendingTasks: 0,
     todayAppointmentsCount: 0,
     tasksDoneRatio: 0,
+    approvalRate30d: 0,
     loading: true,
   });
 
