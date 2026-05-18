@@ -7,9 +7,9 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import HubCreditsWidget from "./HubCreditsWidget";
 import CamilaFloatingPanel from "./CamilaFloatingPanel";
 import { useDemoMode, exitDemoMode, DEMO_SIDEBAR_BADGES } from "@/hooks/useDemoData";
+import { useSidebarBadges } from "@/hooks/useSidebarBadges";
 import { trackEvent } from "@/lib/analytics";
 interface Props {
   children: ReactNode;
@@ -48,6 +48,25 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
   const navigate = useNavigate();
   const location = useLocation();
   const demoMode = useDemoMode();
+  const accountIdEarly = (() => {
+    try {
+      const raw = sessionStorage.getItem("ner_hub_data");
+      return raw ? JSON.parse(raw).account_id : null;
+    } catch { return null; }
+  })();
+  const realBadges = useSidebarBadges(demoMode ? null : accountIdEarly);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  useEffect(() => {
+    if (!accountIdEarly) return;
+    let cancelled = false;
+    void supabase
+      .from("ai_credits")
+      .select("balance")
+      .eq("account_id", accountIdEarly)
+      .maybeSingle()
+      .then(({ data }) => { if (!cancelled) setCreditBalance((data as any)?.balance ?? 0); });
+    return () => { cancelled = true; };
+  }, [accountIdEarly]);
 
   // ═══ Inactivity timeout ═══
   useEffect(() => {
@@ -166,10 +185,13 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             <div className="flex flex-col items-center gap-0.5">
               {NAV_ITEMS.filter(item => !demoMode || item.demoSupported).map((item) => {
                 const isActive = item.match(currentPath);
-                const badge = item.badgeKey && demoMode ? DEMO_SIDEBAR_BADGES[item.badgeKey] : null;
+                const badge = item.badgeKey
+                  ? (demoMode ? DEMO_SIDEBAR_BADGES[item.badgeKey] : realBadges[item.badgeKey])
+                  : null;
                 const badgeColor =
                   item.badgeKey === "cases" ? "bg-amber-500" :
-                  item.badgeKey === "forms" ? "bg-cyan-accent text-deep-navy" :
+                  item.badgeKey === "forms" ? "bg-purple-500" :
+                  item.badgeKey === "leads" ? "bg-cyan-accent text-deep-navy" :
                   "bg-rose-500";
                 return (
                   <button
@@ -213,9 +235,13 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
 
             {/* CRED widget (créditos AI) — verde emerald per mockup v6.1 */}
             {accountId && (
-              <div className="mb-2 px-1.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center gap-0.5 w-[60px]">
-                <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-300/80">CRED</span>
-                <HubCreditsWidget accountId={accountId} />
+              <div className="mb-2 px-2 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 w-[60px]">
+                <div className="text-[8px] uppercase tracking-wider text-emerald-400/80 font-mono font-bold text-center">
+                  Cred
+                </div>
+                <div className="text-[10px] font-bold text-emerald-300 text-center tabular-nums">
+                  {creditBalance != null ? creditBalance.toLocaleString("es-ES") : "—"}
+                </div>
               </div>
             )}
 
