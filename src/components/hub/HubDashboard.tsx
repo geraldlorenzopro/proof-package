@@ -566,13 +566,13 @@ function HubDashboardInner({
                 <div className={`flex items-center gap-1.5 bg-card/80 border rounded-xl px-3 py-2 transition-all w-full ${
                   isVoiceActive
                     ? "border-emerald-400/40 ring-1 ring-emerald-400/20"
-                    : "border-border/40 focus-within:border-jarvis/40"
+                    : "border-cyan-accent/20 focus-within:border-cyan-accent/50"
                 }`}>
                   <input
                     ref={inputRef}
                     type="text"
                     placeholder={isVoiceActive ? "En llamada..." : "Pregúntale a Camila..."}
-                    className="flex-1 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground/40 disabled:opacity-50"
+                    className="flex-1 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground/40 disabled:opacity-50 font-inter"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
@@ -580,16 +580,16 @@ function HubDashboardInner({
                   />
                   {!isVoiceActive && (
                     <button onClick={toggleSTT} className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                      isListening ? "bg-red-500/20 text-red-400" : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/40"
+                      isListening ? "bg-red-500/20 text-red-400" : "text-muted-foreground/50 hover:text-cyan-accent hover:bg-cyan-accent/10"
                     }`} title="Dictar">
                       {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
                     </button>
                   )}
-                  <button onClick={() => sendMessage()} disabled={!input.trim()} className="w-7 h-7 rounded-lg bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30" title="Enviar">
-                    <Send className="w-3.5 h-3.5 text-jarvis" />
+                  <button onClick={() => sendMessage()} disabled={!input.trim()} className="w-7 h-7 rounded-lg bg-cyan-accent/15 hover:bg-cyan-accent/25 flex items-center justify-center transition-all disabled:opacity-30" title="Enviar">
+                    <Send className="w-3.5 h-3.5 text-cyan-accent" />
                   </button>
                 </div>
-                <p className="text-[9px] text-muted-foreground/60 leading-tight w-full text-right">
+                <p className="text-[9px] text-muted-foreground/60 leading-tight w-full text-right font-mono">
                   El micrófono dicta al texto · no llama por voz
                 </p>
                 {isVoiceActive && (
