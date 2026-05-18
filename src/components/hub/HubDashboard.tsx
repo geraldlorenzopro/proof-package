@@ -607,6 +607,9 @@ function HubDashboardInner({
             </div>
           </section>
 
+          {/* ═══ ZONA 4.5 — EVENTOS DEL WEEKEND (Fase D) ═══ */}
+          <HubEventsFeed accountId={accountId} />
+
           {/* ═══ ZONA 5 — PIPELINE HORIZONTAL ═══ */}
           <HubPipelineWidget accountId={accountId} />
 
