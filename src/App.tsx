@@ -118,6 +118,7 @@ const App = () => (
         <Routes>
           {/* ═══ PUBLIC ROUTES ═══ */}
           <Route path="/" element={<Features />} />
+          {/* /features — entry point para GHL custom menu links. NO eliminar. */}
           <Route path="/features" element={<Features />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/register" element={<Register />} />
