@@ -19,7 +19,16 @@ export default function HubMyActionsCard({ accountId, userId }: Props) {
   const navigate = useNavigate();
   const { buckets, total, loading } = useMyActions(accountId, userId);
 
-  const visible = buckets.filter(b => b.count > 0).slice(0, 3);
+  const visible = buckets.filter(b => b.count > 0);
+  const gridColsClass = (
+    {
+      1: "grid-cols-1",
+      2: "grid-cols-2",
+      3: "grid-cols-3",
+      4: "grid-cols-4",
+      5: "grid-cols-5",
+    } as Record<number, string>
+  )[visible.length] ?? "grid-cols-3";
 
   return (
     <section className="rounded-2xl border border-white/8 bg-card/30 backdrop-blur-sm p-2.5 h-full flex flex-col">
@@ -40,7 +49,7 @@ export default function HubMyActionsCard({ accountId, userId }: Props) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-1.5 flex-1">
+        <div className={`grid ${gridColsClass} gap-1.5 flex-1`}>
           {visible.map(b => {
             const c = KIND_COLORS[b.kind];
             return (
