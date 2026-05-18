@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
-import { speakAsCamila } from "@/lib/camilaTTS";
+
 import { useFeed } from "@/hooks/useFeed";
 import { useMorningBriefing } from "@/hooks/useMorningBriefing";
 import type { FeedItem, FeedItemKind, FeedItemSeverity } from "@/types/feed";
