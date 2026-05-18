@@ -58,7 +58,7 @@ export default function HubPipelineWidget({ accountId }: Props) {
             <button
               key={s.bucket}
               onClick={() => navigate(`/hub/cases?stage=${s.bucket}`)}
-              className="text-left bg-white/[0.02] hover:bg-white/[0.05] border border-white/8 hover:border-white/15 rounded-lg p-2.5 transition-all"
+              className="text-left bg-white/[0.02] hover:bg-white/[0.05] border border-white/8 hover:border-white/15 rounded-lg p-2 transition-all"
             >
               <div className="flex items-baseline justify-between mb-1.5">
                 <span className={`text-lg font-bold tabular-nums ${BUCKET_TEXT[s.bucket]}`}>
