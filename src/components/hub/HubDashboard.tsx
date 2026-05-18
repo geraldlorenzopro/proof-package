@@ -11,16 +11,19 @@ import { toast } from "sonner";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
 
-import { useFeed } from "@/hooks/useFeed";
-import { useMorningBriefing } from "@/hooks/useMorningBriefing";
-import type { FeedItem, FeedItemKind, FeedItemSeverity } from "@/types/feed";
+import type { FeedItemKind, FeedItemSeverity } from "@/types/feed";
 import IntakeWizard from "../intake/IntakeWizard";
-import HubFocusedWidgets from "./HubFocusedWidgets";
 import HubCrisisBar from "./HubCrisisBar";
-// Hub Canonical: widgets movidos a sus rutas correctas según wireframe.
-// AITeamCard → /hub/ai · MyPerformanceWidget → /hub/reports
-// QuickAskCamila → CamilaFloatingPanel · VirtualOfficeCard → /hub/consultations
-import { useDemoMode, DEMO_BRIEFING_TEXT, exitDemoMode } from "@/hooks/useDemoData";
+import HubAgendaWidget from "./HubAgendaWidget";
+import HubRiskWidget from "./HubRiskWidget";
+import HubPipelineWidget from "./HubPipelineWidget";
+import HubMyActionsCard from "./HubMyActionsCard";
+import HubMoneyCard from "./HubMoneyCard";
+import HubTeamWidget from "./HubTeamWidget";
+import { useTodayAppointments } from "@/hooks/useTodayAppointments";
+import { useRiskCases } from "@/hooks/useRiskCases";
+import { useMyActions } from "@/hooks/useMyActions";
+import { useDemoMode } from "@/hooks/useDemoData";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
