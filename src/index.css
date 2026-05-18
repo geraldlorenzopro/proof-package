@@ -111,7 +111,7 @@
 
   /* LIGHT MODE — paleta brandbook NER (AI Blue / Soft Gray / Graphite).
      Para alternar: <html class="light"> activa estos valores.
-     NOTA: algunos componentes (HubFocusedWidgets, CaseTable, HubDashboard hero)
+     NOTA: algunos componentes (CaseTable, HubDashboard hero)
      usan colores rgba hardcoded — esos NO responden automáticamente a light
      mode hasta refactor (sprint 2). El toggle queda funcional para 90% del UI. */
   .light {

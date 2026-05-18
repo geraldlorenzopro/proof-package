@@ -11,6 +11,7 @@ import CamilaFloatingPanel from "./CamilaFloatingPanel";
 import { useDemoMode, exitDemoMode, DEMO_SIDEBAR_BADGES } from "@/hooks/useDemoData";
 import { useSidebarBadges } from "@/hooks/useSidebarBadges";
 import { trackEvent } from "@/lib/analytics";
+import { HUB_SECTIONS, HubSectionKey } from "@/lib/hubSections";
 interface Props {
   children: ReactNode;
   accountName?: string;
@@ -23,20 +24,22 @@ const NAV_ITEMS: Array<{
   emoji: string; label: string; path: string;
   match: (p: string) => boolean;
   badgeKey?: "cases" | "leads" | "consultations" | "forms";
+  sectionKey: HubSectionKey;
   demoSupported?: boolean;
 }> = [
   // Sidebar canonical según INFORMATION-ARCHITECTURE.md §9.2 — 10 items exactos.
+  // Estado enabled/disabled vive en src/lib/hubSections.ts (fuente de verdad única).
   // Iconos emoji para coincidir con mockup NER-HUB-INICIO-V6 (3D colored icons).
-  { emoji: "🏠", label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", demoSupported: true },
-  { emoji: "🔍", label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", demoSupported: false },
-  { emoji: "👥", label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), demoSupported: false },
-  { emoji: "💬", label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", demoSupported: false },
-  { emoji: "📁", label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", demoSupported: true },
-  { emoji: "📋", label: "Forms", path: "/hub/forms", match: (p: string) => p.startsWith("/hub/forms") || p.startsWith("/hub/formularios") || p.startsWith("/dashboard/smart-forms"), badgeKey: "forms", demoSupported: true },
-  { emoji: "📅", label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", demoSupported: false },
-  { emoji: "📊", label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", demoSupported: false },
-  { emoji: "🤖", label: "Equipo", path: "/hub/ai", match: (p: string) => p === "/hub/ai" || p === "/hub/team", demoSupported: false },
-  { emoji: "⚙️", label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings") || p === "/hub/knowledge" || p === "/hub/audit", demoSupported: true },
+  { emoji: "🏠", label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", sectionKey: "inicio", demoSupported: true },
+  { emoji: "🔍", label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", sectionKey: "leads", demoSupported: false },
+  { emoji: "👥", label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), sectionKey: "clientes", demoSupported: false },
+  { emoji: "💬", label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", sectionKey: "consultas", demoSupported: false },
+  { emoji: "📁", label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", sectionKey: "casos", demoSupported: true },
+  { emoji: "📋", label: "Forms", path: "/hub/forms", match: (p: string) => p.startsWith("/hub/forms") || p.startsWith("/hub/formularios") || p.startsWith("/dashboard/smart-forms"), badgeKey: "forms", sectionKey: "forms", demoSupported: true },
+  { emoji: "📅", label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", sectionKey: "agenda", demoSupported: false },
+  { emoji: "📊", label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", sectionKey: "reportes", demoSupported: false },
+  { emoji: "🤖", label: "Equipo", path: "/hub/ai", match: (p: string) => p === "/hub/ai" || p === "/hub/team", sectionKey: "equipo", demoSupported: false },
+  { emoji: "⚙️", label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings") || p === "/hub/knowledge" || p === "/hub/audit", sectionKey: "config", demoSupported: true },
 ];
 
 const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 hours
@@ -182,7 +185,8 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             <div className="flex flex-col items-center gap-0.5">
               {NAV_ITEMS.filter(item => !demoMode || item.demoSupported).map((item) => {
                 const isActive = item.match(currentPath);
-                const badge = item.badgeKey
+                const sectionEnabled = HUB_SECTIONS[item.sectionKey].enabled;
+                const badge = item.badgeKey && sectionEnabled
                   ? (demoMode ? DEMO_SIDEBAR_BADGES[item.badgeKey] : realBadges[item.badgeKey])
                   : null;
                 const badgeColor =
@@ -194,21 +198,40 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                   <button
                     key={item.path}
                     onClick={() => navigate(item.path)}
+                    title={!sectionEnabled ? `${item.label} — próximamente` : undefined}
                     className={`w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all duration-150 relative ${
                       isActive
                         ? "bg-cyan-accent/10 text-cyan-accent"
-                        : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-muted/40"
+                        : sectionEnabled
+                          ? "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-muted/40"
+                          : "text-muted-foreground/25 hover:text-muted-foreground/50 hover:bg-muted/30"
                     }`}
                   >
                     {isActive && (
                       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[22px] bg-cyan-accent rounded-r-[2px]" />
+                    )}
+                    {!sectionEnabled && (
+                      <span className="absolute -top-0.5 right-0.5 bg-cyan-accent/90 text-deep-navy text-[7px] font-bold rounded px-1 py-px leading-none tracking-wider">
+                        PRONTO
+                      </span>
                     )}
                     {badge !== null && badge !== undefined && badge > 0 && (
                       <span className={`absolute top-1 right-2 ${badgeColor} text-white text-[8px] font-bold rounded-full px-1 min-w-[14px] h-[14px] flex items-center justify-center leading-none`}>
                         {badge > 99 ? "99+" : badge}
                       </span>
                     )}
-                    <span className="text-xl leading-none" style={{ filter: isActive ? "none" : "grayscale(0.15) opacity(0.9)" }}>{item.emoji}</span>
+                    <span
+                      className="text-xl leading-none"
+                      style={{
+                        filter: isActive
+                          ? "none"
+                          : sectionEnabled
+                            ? "grayscale(0.15) opacity(0.9)"
+                            : "grayscale(0.85) opacity(0.5)",
+                      }}
+                    >
+                      {item.emoji}
+                    </span>
                     <span className="text-[9px] font-medium leading-none">{item.label}</span>
                   </button>
                 );

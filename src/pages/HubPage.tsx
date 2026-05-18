@@ -12,8 +12,8 @@ import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { trackEvent } from "@/lib/analytics";
 
 // Datos sintéticos para demo mode — bypassa auth completo, permite mostrar
-// el hub a prospectos sin cuenta. SIN tocar BD: los hooks (HubFocusedWidgets,
-// useCasePipeline) detectan demoMode y retornan mock data realista.
+// el hub a prospectos sin cuenta. SIN tocar BD: los hooks detectan demoMode
+// (useCasePipeline, etc.) y retornan mock data realista.
 const DEMO_HUB_DATA: HubData = {
   account_id: "demo-account-mendez",
   account_name: DEMO_FIRM_NAME,

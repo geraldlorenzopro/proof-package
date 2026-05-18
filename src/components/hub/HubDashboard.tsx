@@ -621,7 +621,7 @@ function HubDashboardInner({
           <HubEventsFeed accountId={accountId} />
 
 
-          {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}
+          {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo */}
           {!demoMode && (
           <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-3 py-2 flex items-center gap-5 flex-wrap">
             {/* Pulse mini KPIs */}

@@ -103,6 +103,7 @@ import HubAiPage from "./pages/HubAiPage";
 import HubChatPage from "./pages/HubChatPage";
 import HubLeadsPage from "./pages/HubLeadsPage";
 import ConsultationRoom from "./components/hub/ConsultationRoom";
+import HubSectionGate from "./components/hub/HubSectionGate";
 import HubAuditPage from "./pages/HubAuditPage";
 
 
@@ -149,22 +150,22 @@ const App = () => (
 
           {/* ═══ PROTECTED ROUTES ═══ */}
           <Route path="/hub" element={<HubPage />} />
-          <Route path="/hub/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+          <Route path="/hub/reports" element={<ProtectedRoute><HubSectionGate sectionKey="reportes"><ReportsPage /></HubSectionGate></ProtectedRoute>} />
           {/* Ola 5.c — Knowledge Base */}
           <Route path="/hub/knowledge" element={<ProtectedRoute><HubKnowledgePage /></ProtectedRoute>} />
           {/* Ola 4.1 — /hub/intelligence DEPRECATED, redirect a /hub/reports (canonical post-Ola 2) */}
           <Route path="/hub/intelligence" element={<Navigate to="/hub/reports" replace />} />
-          <Route path="/hub/consultations" element={<ProtectedRoute><ConsultationsPage /></ProtectedRoute>} />
-          <Route path="/hub/consultations/:intakeId" element={<ProtectedRoute><ConsultationRoom /></ProtectedRoute>} />
-          <Route path="/hub/leads" element={<ProtectedRoute><HubLeadsPage /></ProtectedRoute>} />
-          <Route path="/hub/clients" element={<ProtectedRoute><HubClientsPage /></ProtectedRoute>} />
-          <Route path="/hub/clients/:id" element={<ProtectedRoute><ClientProfilePage /></ProtectedRoute>} />
-          <Route path="/hub/settings/office" element={<ProtectedRoute><OfficeSettingsPage /></ProtectedRoute>} />
+          <Route path="/hub/consultations" element={<ProtectedRoute><HubSectionGate sectionKey="consultas"><ConsultationsPage /></HubSectionGate></ProtectedRoute>} />
+          <Route path="/hub/consultations/:intakeId" element={<ProtectedRoute><HubSectionGate sectionKey="consultas"><ConsultationRoom /></HubSectionGate></ProtectedRoute>} />
+          <Route path="/hub/leads" element={<ProtectedRoute><HubSectionGate sectionKey="leads"><HubLeadsPage /></HubSectionGate></ProtectedRoute>} />
+          <Route path="/hub/clients" element={<ProtectedRoute><HubSectionGate sectionKey="clientes"><HubClientsPage /></HubSectionGate></ProtectedRoute>} />
+          <Route path="/hub/clients/:id" element={<ProtectedRoute><HubSectionGate sectionKey="clientes"><ClientProfilePage /></HubSectionGate></ProtectedRoute>} />
+          <Route path="/hub/settings/office" element={<ProtectedRoute><HubSectionGate sectionKey="config"><OfficeSettingsPage /></HubSectionGate></ProtectedRoute>} />
           {/* ═══ SMART FORMS — /hub/forms CANONICAL (Ola 4.1.5) ═══ */}
           {/* Plano §3.1 L100 + §15.1 L620 declara /hub/forms canonical
               (consistente con /hub/cases, /hub/leads — namespace inglés).
               Movido desde /dashboard/smart-forms y /hub/formularios. */}
-          <Route path="/hub/forms" element={<ProtectedRoute><SmartFormsLayout /></ProtectedRoute>}>
+          <Route path="/hub/forms" element={<ProtectedRoute><HubSectionGate sectionKey="forms"><SmartFormsLayout /></HubSectionGate></ProtectedRoute>}>
             <Route index element={<SmartFormsList />} />
             <Route path="new" element={<SmartFormPage />} />
             <Route path="settings" element={<SmartFormsSettings />} />
@@ -236,7 +237,7 @@ const App = () => (
           {/* ═══ REDIRECT ROUTES ═══ */}
           {/* Ola 4.1.5 — apuntar directo a /hub/cases (evita doble redirect via workspace-demo) */}
           <Route path="/portfolio" element={<Navigate to="/hub/cases" replace />} />
-          <Route path="/hub/cases" element={<ProtectedRoute><HubCasesPage /></ProtectedRoute>} />
+          <Route path="/hub/cases" element={<ProtectedRoute><HubSectionGate sectionKey="casos"><HubCasesPage /></HubSectionGate></ProtectedRoute>} />
           {/* ═══ I-130 PACK ═══ */}
           <Route path="/hub/cases/:caseId/i130-pack" element={<ProtectedRoute><PacksGate><I130PackWorkspace /></PacksGate></ProtectedRoute>} />
           <Route path="/hub/cases/:caseId/i130-pack/01-cuestionario" element={<ProtectedRoute><PacksGate><I130Doc01Cuestionario /></PacksGate></ProtectedRoute>} />
@@ -265,9 +266,9 @@ const App = () => (
           <Route path="/hub/cases/:caseId/i765-pack/06-packet" element={<ProtectedRoute><PacksGate><I765Doc06Packet /></PacksGate></ProtectedRoute>} />
           <Route path="/hub/cases/:caseId/i765-pack/07-status" element={<ProtectedRoute><PacksGate><I765Doc07Status /></PacksGate></ProtectedRoute>} />
           {/* /hub/formularios CANONICAL post-Ola 4.1 — definido arriba con SmartFormsLayout */}
-          <Route path="/hub/agenda" element={<ProtectedRoute><HubAgendaPage /></ProtectedRoute>} />
+          <Route path="/hub/agenda" element={<ProtectedRoute><HubSectionGate sectionKey="agenda"><HubAgendaPage /></HubSectionGate></ProtectedRoute>} />
           {/* /hub/reports now handled above directly */}
-          <Route path="/hub/ai" element={<ProtectedRoute><HubAiPage /></ProtectedRoute>} />
+          <Route path="/hub/ai" element={<ProtectedRoute><HubSectionGate sectionKey="equipo"><HubAiPage /></HubSectionGate></ProtectedRoute>} />
           <Route path="/hub/chat" element={<ProtectedRoute><HubChatPage /></ProtectedRoute>} />
           <Route path="/hub/audit" element={<ProtectedRoute><HubAuditPage /></ProtectedRoute>} />
 

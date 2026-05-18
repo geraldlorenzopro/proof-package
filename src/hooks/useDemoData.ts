@@ -13,11 +13,10 @@ import { useLocation } from "react-router-dom";
 // salir, click "Salir de demo" o cierra la pestaña.
 //
 // Cuando este hook decide que estamos en demo, los componentes que lo usan
-// (HubFocusedWidgets, useCasePipeline, HubDashboard briefing) devuelven data
-// mock realista de la firma "Méndez Immigration Law" (Pablo Méndez).
+// (useCasePipeline, HubDashboard briefing) devuelven data mock realista de
+// la firma "Méndez Immigration Law" (Pablo Méndez).
 //
 // Para eliminar TODO el demo mode después: borrar este archivo + las refs en:
-//   - src/components/hub/HubFocusedWidgets.tsx
 //   - src/hooks/useCasePipeline.ts
 //   - src/components/hub/HubDashboard.tsx (briefing fallback)
 
