@@ -525,39 +525,39 @@ function HubDashboardInner({
           <HubCrisisBar accountId={accountId} />
 
           {/* ═══ ZONA 1 — BRIEFING HERO (60% del peso visual) ═══ */}
-          <section className="shrink-0 rounded-2xl px-7 py-5 border border-jarvis/20 bg-gradient-to-br from-jarvis/5 via-card/60 to-card/40 shadow-lg shadow-jarvis/5 backdrop-blur-sm">
+          <section className="shrink-0 rounded-2xl px-7 py-5 border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.05] via-cyan-accent/[0.03] to-card/40 shadow-lg shadow-ai-blue/5 backdrop-blur-sm">
             <div className="flex items-start justify-between gap-6">
               {/* Camila + briefing */}
               <div className="flex items-start gap-4 flex-1 min-w-0">
                 <div className="relative shrink-0">
                   <div
-                    className="w-12 h-12 rounded-full bg-gradient-to-br from-jarvis-glow via-jarvis to-jarvis-dim shadow-lg shadow-jarvis/40 animate-pulse"
+                    className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-accent via-ai-blue to-cyan-accent/60 shadow-lg shadow-cyan-accent/30 animate-pulse"
                     style={{ animationDuration: "3s" }}
                   />
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-background" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 flex-wrap mb-1.5">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-jarvis/80 font-semibold">Camila · briefing del día</p>
-                    <span className="text-[10px] text-muted-foreground/50 font-mono">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-accent/80 font-semibold font-mono">Camila · briefing del día</p>
+                    <span className="text-[10px] text-muted-foreground/60 font-mono">
                       {format(new Date(), "EEEE d 'de' MMMM", { locale: es })}
                     </span>
                   </div>
-                  <h2 className="text-xl font-bold text-foreground tracking-tight mb-2">
+                  <h2 className="text-xl font-bold text-foreground tracking-tight mb-2 font-sora">
                     {demoMode
-                      ? <>{greeting}, <span className="text-jarvis">Pablo</span>.</>
+                      ? <>{greeting}, <span className="bg-gradient-to-r from-ai-blue to-cyan-accent bg-clip-text text-transparent">Pablo</span>.</>
                       : (morningBriefing?.greeting
                           ? (() => {
                               const parts = morningBriefing.greeting.split(",");
                               if (parts.length >= 2) {
-                                return <>{parts[0]}, <span className="text-jarvis">{parts.slice(1).join(",").trim()}</span>.</>;
+                                return <>{parts[0]}, <span className="bg-gradient-to-r from-ai-blue to-cyan-accent bg-clip-text text-transparent">{parts.slice(1).join(",").trim()}</span>.</>;
                               }
                               return <>{morningBriefing.greeting}.</>;
                             })()
-                          : <>{greeting}{firstName ? <>, <span className="text-jarvis">{firstName}</span></> : ""}.</>)
+                          : <>{greeting}{firstName ? <>, <span className="bg-gradient-to-r from-ai-blue to-cyan-accent bg-clip-text text-transparent">{firstName}</span></> : ""}.</>)
                     }
                   </h2>
-                  <p className="text-[13px] text-foreground/85 leading-relaxed">{briefingText}</p>
+                  <p className="text-[13px] text-foreground/85 leading-relaxed font-inter">{briefingText}</p>
                 </div>
               </div>
 
