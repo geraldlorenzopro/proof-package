@@ -351,7 +351,6 @@ function HubDashboardInner({
 
   useEffect(() => {
     if (accountId) loadKpis();
-    if (accountId) loadTodayAppointments();
   }, [accountId]);
 
   // Auto-greet TTS — solo 1 vez por día
