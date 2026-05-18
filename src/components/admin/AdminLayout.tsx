@@ -3,19 +3,18 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Building2, Users, CreditCard, BarChart3,
-  ScrollText, ArrowLeft, Shield, Settings,
+  ScrollText, ArrowLeft, Shield,
 } from "lucide-react";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
+  { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Firmas", path: "/admin/firms", icon: Building2 },
   { label: "Usuarios", path: "/admin/users", icon: Users },
   { label: "Billing", path: "/admin/billing", icon: CreditCard },
   { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
   { label: "Logs", path: "/admin/logs", icon: ScrollText },
-  { label: "Configuración", path: "/admin/settings", icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
