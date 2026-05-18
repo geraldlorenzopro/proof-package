@@ -17,6 +17,7 @@ interface Crisis {
   case_id: string;
   title: string;
   subtitle: string;
+  severity?: "overdue" | "urgent" | "warning";
 }
 
 interface Props {
