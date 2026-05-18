@@ -6,6 +6,78 @@ pasadas — agregar nueva decisión que las supersede si cambian.**
 
 ---
 
+## 2026-05-18 (tarde) — Plan arquitectónico Camino A + sistema Coming Soon por sección
+
+**Decisión:** trabajar el producto **una sección del sidebar a la vez**.
+El resto queda "PRONTO" con pantalla preview. Cuando una sección está
+funcional + cerrada, se habilita y pasamos a la siguiente.
+
+**Quién decidió:** Mr. Lorenzo, después de ver el screenshot post-cambios
+A/B/C del Hub v7 funcionando: *"vamos en orden y siguiendo un plan, por
+secciones. Pongamos en modo transparente lo que no vamos a trabajar y que
+diga COMING SOON. Solo dejemos habilitado lo que vamos a trabajar."*
+
+**Orden definitivo (Camino A — por madurez técnica):**
+
+```
+Inicio (LIVE en pulido) → Casos → Forms → Clientes → Consultas → Leads
+→ Reportes → Equipo → Agenda → Config
+```
+
+**Razón del orden:** habilitamos primero lo que ya tiene MVP/código sólido
+para llegar a producto demostrable rápido. Casos tiene Pipeline MVP desde
+2026-05-11. Forms tiene I-130 + I-765 cerrados con playbook. Clientes
+tiene Cliente 360 con 6 tabs. Consultas tiene Kanban + Room robusto.
+
+**Alternativas rechazadas:**
+
+- **Camino B — Por funnel del paralegal** (Leads → Clientes → Consultas
+  → Casos). Más natural para storytelling pero arranca por la sección
+  menos madura técnicamente. Demos más débiles al inicio.
+- **Camino C — Por valor diferencial** (Forms primero porque Felix llena
+  USCIS auto es el diferenciador). Forms es valor pero Casos es necesario
+  para CUALQUIER trabajo. Casos primero garantiza utilidad.
+- **Habilitar todo a la vez:** rechazado. Mr. Lorenzo: *"hagamos las cosas
+  en orden"*. Una sección a la vez para validar cada una completa antes
+  de pasar a la siguiente.
+
+**Sistema Coming Soon (implementación):**
+
+3 archivos nuevos + 1 modificado + 1 eliminado:
+
+| Archivo | Tipo | Propósito |
+|---|---|---|
+| `src/lib/hubSections.ts` | nuevo | Fuente de verdad: 10 secciones con enabled + metadata Coming Soon (título, descripción, bullets, ETA) |
+| `src/components/hub/HubComingSoonPage.tsx` | nuevo | Pantalla preview con badge cola, descripción, 5 bullets, ETA, CTA |
+| `src/components/hub/HubSectionGate.tsx` | nuevo | Wrapper 8 líneas: enabled→children real, disabled→ComingSoonPage |
+| `src/components/hub/HubLayout.tsx` | modify | Sidebar lee enabled del config. Disabled: opacity 50% + grayscale + badge "PRONTO" cyan |
+| `src/App.tsx` | modify | Wrappea 9 rutas hub no-Inicio con `<HubSectionGate sectionKey="X">` |
+| `src/components/hub/HubFocusedWidgets.tsx` | DELETED | Huérfano v6.1 (671 LOC). Lovable dejó de importarlo en HubDashboard v7. |
+
+**Para activar una sección:** cambiar `enabled: true` en `hubSections.ts`.
+Mr. Lorenzo confirmó: una sección a la vez, validar antes de habilitar.
+
+**Rutas NO gateadas (acceso por URL directa, no por sidebar):**
+
+- `/hub/knowledge` — Knowledge Base (acceso admin)
+- `/hub/audit` — Audit logs (acceso admin)
+- `/hub/chat` — Camila chat (944 LOC, no en sidebar)
+- `/hub/intelligence` — redirect a /hub/reports
+- Pack routes (`/hub/cases/:id/i130-pack/*`) — accesibles si tienen URL directa
+- Redirects legacy `/dashboard/*`
+
+**Compromiso operativo:** ningún sprint nuevo arranca sin cerrar la sección
+anterior. Anti-multitarea: una sección a la vez.
+
+**Próximos pasos:**
+
+1. Validar Coming Soon UI en Lovable (preview post-pull)
+2. Cerrar Inicio: fix Mis acciones = 0 (SQL reasignar tasks del seed) +
+   cleanup data seed cuando Mr. Lorenzo apruebe
+3. Activar `casos.enabled = true` cuando estemos listos para arrancar Sprint Casos
+
+---
+
 ## 2026-05-18 — Hub Inicio v7 rediseño completo + voice elimination + task_type ENUM
 
 **Decisión:** Rediseñar el Hub Inicio (`/hub`) de "saludo decorativo + 4 KPIs en

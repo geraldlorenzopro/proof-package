@@ -1,20 +1,30 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-18 (Hub Inicio v7 rediseño completo)
+**Última actualización:** 2026-05-18 (tarde — plan arquitectónico Camino A + Coming Soon system)
 **Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) + Mr. Lorenzo UX validation
-**Próximo update:** post-validación Hub v7 cockpit estático
+**Próximo update:** post-validación Coming Soon UI + arranque Sprint Casos
 
 ---
 
-## 📌 TL;DR Snapshot 2026-05-18
+## 📌 TL;DR Snapshot 2026-05-18 (tarde)
 
-**Sprint en curso:** Hub Inicio v7 — rediseño completo de `/hub` (panel
-operativo vs decorativo). Score UX subió de 1.5/8 → 7/8 preguntas del
-paralegal respondidas.
+**Plan arquitectónico LOCKED:** trabajar una sección del sidebar a la vez.
+Resto queda "PRONTO" con pantalla preview. Orden Camino A (madurez técnica):
 
-**Último commit (main):** `cc8349a` (Lovable) — Hub v7 PROMPT 4: 6 bugs
-fixeados (CrisisBar lee rfe_deadline, useMyActions wired, pipeline aprobados
-in_progress, timezone agenda, HubEventsFeed Fase D implementada).
+```
+Inicio (LIVE) → Casos → Forms → Clientes → Consultas → Leads
+→ Reportes → Equipo → Agenda → Config
+```
+
+**Sistema Coming Soon implementado:**
+- ✅ `src/lib/hubSections.ts` — fuente de verdad enabled + metadata
+- ✅ `HubComingSoonPage.tsx` — pantalla preview (título, bullets, ETA, CTA)
+- ✅ `HubSectionGate.tsx` — wrapper de routing
+- ✅ HubLayout sidebar: items disabled con opacity 50% + grayscale + badge "PRONTO" cyan
+- ✅ App.tsx wrappea 9 rutas hub no-Inicio
+- ✅ HubFocusedWidgets (671 LOC) eliminado — era huérfano post-v7
+
+**Para activar una sección:** cambiar `enabled: true` en `hubSections.ts` (1 línea).
 
 **Estado del Hub Inicio (`/hub`):**
 - ✅ Migrations aplicadas: `task_type` ENUM + 3 campos riesgo en `client_cases`
@@ -25,23 +35,25 @@ in_progress, timezone agenda, HubEventsFeed Fase D implementada).
 - ✅ HubTeamWidget reducido a versión mini (era protagonista en v6.1)
 - ✅ Voice ElevenLabs eliminado del briefing diario (ahorro ~$3.6k/mes)
 - ✅ Seed demo aplicado (`is_test=true`): 7 clientes + 40 casos placeholder
-- ⚠️ Cockpit estático pending: PROMPT 5 a Lovable (overflow-y-auto → hidden)
-- ⚠️ HubFocusedWidgets huérfano (deprecado pero no eliminado)
-- ⚠️ QuickAskCamila huérfano (zombie resucitado por Lovable, no usado)
+- ✅ Cockpit estático aplicado por Lovable (commit `951902e`)
+- ✅ 3 cambios A/B/C aplicados: Pipeline title + APROB.30D + reorden zonas
+- ⚠️ Mis acciones = 0 — bug del seed (tasks asignadas a otro user_id)
 
 **Mockups y specs Hub v7:**
 - `mockups/NER-HUB-INICIO-V7.html` (commit 00b01ce)
 - `.ai/master/hub-inicio-v7-spec.md` (commit cb993f9)
 - `.ai/master/hub-inicio-kpi-actions.md` (commit 60545fd)
 
-**Pending crítico (priorizado):**
-1. **Hub v7 cockpit estático** — PROMPT 5 a Lovable (eliminar scroll vertical)
-2. **Validación visual final** Hub v7 con data demo
+**Pending para cerrar Inicio antes de pasar a Casos:**
+1. **Validar Coming Soon UI** en Lovable preview post-pull
+2. **Fix Mis acciones = 0** — SQL reasignar tasks del seed al user logueado
 3. **Cleanup script** `scripts/cleanup-hub-v7-demo.sql` (ejecutar cuando Mr. Lorenzo apruebe)
-4. **OfficeSettings refactor** 1431 LOC — sprint dedicado pending (pre-Hub-v7)
-5. **Ola 4.3.b Strategic Packs inline** — 4-6h dedicadas con caso I-130 real
-6. **Materialized views apply** — migration `PENDING_metrics_materialized_views.sql` pending Lovable apply
-7. **Eliminar HubFocusedWidgets + QuickAskCamila huérfanos** post-validación v7
+4. **Briefing inteligente fallback** si pulse = 0% (frase "tu día está despejado")
+
+**Pending no-bloqueante (post-Casos):**
+5. **OfficeSettings refactor** 1431 LOC — antes de activar Config
+6. **Ola 4.3.b Strategic Packs inline** — 4-6h dedicadas con caso I-130 real
+7. **Materialized views apply** — migration `PENDING_metrics_materialized_views.sql`
 
 ---
 

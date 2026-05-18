@@ -300,6 +300,27 @@ fallback location `NgaxlyDdwg93PvQb5KCw` (Mr Visa).
 
 ## Standing decisions (Mr. Lorenzo decided once — do NOT ask again)
 
+**Plan arquitectónico por sección (decidido 2026-05-18 tarde):**
+
+Trabajar **una sección del sidebar a la vez**. El resto queda "PRONTO" con
+pantalla preview. Cuando una sección está cerrada → habilitar → siguiente.
+
+Orden Camino A (madurez técnica):
+```
+Inicio (LIVE) → Casos → Forms → Clientes → Consultas → Leads
+→ Reportes → Equipo → Agenda → Config
+```
+
+**Fuente única de verdad:** [`src/lib/hubSections.ts`](src/lib/hubSections.ts).
+Cada sección tiene `enabled: boolean` + metadata Coming Soon (título,
+descripción, 5 bullets, ETA). Para activar una sección: cambiar `enabled: true`.
+
+**Sistema implementado:**
+- `HubSectionGate.tsx` wrappea las 9 rutas hub no-Inicio en `App.tsx`
+- `HubComingSoonPage.tsx` pantalla preview con badge cola + bullets + CTA
+- Sidebar (`HubLayout.tsx`): items disabled con opacity 50% + grayscale + badge "PRONTO" cyan
+- **Anti-multitarea:** ningún sprint nuevo arranca sin cerrar el anterior
+
 **Hub Inicio v7 (decidido 2026-05-18 — supersedes v6.1 y anteriores):**
 
 El Hub Inicio (`/hub`) es **panel operativo**, NO saludo decorativo.
