@@ -353,26 +353,6 @@ function HubDashboardInner({
     if (accountId) loadKpis();
   }, [accountId]);
 
-  // Auto-greet TTS — solo 1 vez por día
-  useEffect(() => {
-    if (!resolvedName || !accountId) return;
-    const todayKey = `camila_greeted_${accountId}_${new Date().toISOString().split("T")[0]}`;
-    const alreadyGreeted = sessionStorage.getItem(todayKey);
-    if (alreadyGreeted) return;
-    sessionStorage.setItem(todayKey, "1");
-    const fn = resolvedName.split(" ")[0];
-    const localHour = parseInt(
-      new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        hour12: false,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      }).format(new Date())
-    );
-    const saludo = localHour < 12 ? "Buenos días" : localHour < 18 ? "Buenas tardes" : "Buenas noches";
-    setTimeout(() => {
-      speakAsCamila(`${saludo}, ${fn}. ¿Qué hacemos hoy?`);
-    }, 2000);
-  }, [resolvedName, accountId]);
 
   async function loadKpis() {
     try {
