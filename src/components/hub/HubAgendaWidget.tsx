@@ -69,7 +69,7 @@ export default function HubAgendaWidget({ accountId }: Props) {
           </button>
         </div>
       ) : (
-        <div className="space-y-1.5 flex-1 overflow-y-auto">
+        <div className="space-y-1 flex-1 overflow-y-auto">
           {visible.map((a, idx) => {
             const live = isLiveNow(a.datetime);
             const cardCls = live
@@ -80,9 +80,9 @@ export default function HubAgendaWidget({ accountId }: Props) {
               <button
                 key={a.id}
                 onClick={() => (a.caseId ? navigate(`/case-engine/${a.caseId}`) : navigate("/hub/agenda"))}
-                className={`w-full text-left ${cardCls} border rounded-lg px-3 py-2 flex items-center gap-3 transition-all group`}
+                className={`w-full text-left ${cardCls} border rounded-lg px-3 py-1.5 flex items-center gap-3 transition-all group`}
               >
-                <div className="shrink-0 w-14 text-center">
+                <div className="shrink-0 w-11 text-center">
                   <div className="text-[13px] font-bold text-foreground tabular-nums font-mono">
                     {formatTime(a.datetime)}
                   </div>
@@ -91,7 +91,7 @@ export default function HubAgendaWidget({ accountId }: Props) {
                   </div>
                 </div>
 
-                <div className="w-px h-8 bg-border/30" />
+                <div className="w-px h-6 bg-border/30" />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -119,6 +119,14 @@ export default function HubAgendaWidget({ accountId }: Props) {
               </button>
             );
           })}
+          {extra > 0 && (
+            <button
+              onClick={() => navigate("/hub/agenda")}
+              className="w-full text-[10px] text-cyan-accent/80 hover:text-cyan-accent text-center py-1"
+            >
+              +{extra} más →
+            </button>
+          )}
         </div>
       )}
     </section>
