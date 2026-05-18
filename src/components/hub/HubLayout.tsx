@@ -208,7 +208,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                         {badge > 99 ? "99+" : badge}
                       </span>
                     )}
-                    <item.icon className="w-4 h-4" />
+                    <span className="text-xl leading-none" style={{ filter: isActive ? "none" : "grayscale(0.15) opacity(0.9)" }}>{item.emoji}</span>
                     <span className="text-[9px] font-medium leading-none">{item.label}</span>
                   </button>
                 );
