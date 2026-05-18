@@ -463,11 +463,11 @@ export default function HubFocusedWidgets({ accountId }: Props) {
 
         {/* PARA REVISAR */}
         <Widget
-          icon={<Eye className="w-4 h-4 text-amber-400" />}
-          iconBg="bg-amber-500/15 border border-amber-500/40"
+          icon={<Eye className="w-4 h-4 text-amber-300" />}
+          iconBg="bg-amber-500/15 border border-amber-500/30"
           title="Para revisar"
           count={reviews.length}
-          countColor="text-amber-400"
+          countColor="text-amber-300"
           onSeeAll={() => navigate("/hub/cases")}
           emptyText="Sin RFEs ni revisiones pendientes"
           emptyHint="RFEs drafted por tu equipo aparecerán aquí"
