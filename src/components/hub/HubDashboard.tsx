@@ -164,8 +164,6 @@ function HubDashboardInner({
   const [closedThisWeek, setClosedThisWeek] = useState(0);
   const [tasksDoneRatio, setTasksDoneRatio] = useState(0);
 
-  // Today's appointments (zona 2B)
-  const [todayAppointments, setTodayAppointments] = useState<TodayAppointment[]>([]);
 
   // Feed (zona 2A)
   const { data: feedData, isLoading: feedLoading, refetch: refetchFeed, isRefetching: feedRefetching } = useFeed(accountId);
