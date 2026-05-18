@@ -182,7 +182,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
             </div>
 
             {/* Nav items — en demo, solo los items con demoSupported=true (evita pantallas vacías) */}
-            <div className="flex flex-col items-center gap-0.5">
+            <div className="flex flex-col items-center gap-2.5">
               {NAV_ITEMS.filter(item => !demoMode || item.demoSupported).map((item) => {
                 const isActive = item.match(currentPath);
                 const sectionEnabled = HUB_SECTIONS[item.sectionKey].enabled;
