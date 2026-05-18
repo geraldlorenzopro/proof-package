@@ -34,22 +34,25 @@ export function useSidebarBadges(accountId: string | null): SidebarBadges {
       const in7d = new Date(Date.now() + 7 * 86400000).toISOString();
       const last24h = new Date(Date.now() - 24 * 3600000).toISOString();
 
+      // Note: `leads` and `pre_intakes` tables do not exist; mapped to
+      // `consultations` (status pending) and `client_profiles` (last 24h).
+      // `case_deadlines` column is `deadline_date`, not `due_date`.
       const [consultRes, casesRes, leadsRes, formsRes] = await Promise.all([
         supabase
-          .from("pre_intakes" as any)
+          .from("consultations" as any)
           .select("id", { count: "exact", head: true })
           .eq("account_id", accountId)
-          .in("status", ["pending", "submitted", "in_review"]),
+          .in("status", ["pending", "scheduled", "in_review"]),
 
         supabase
           .from("case_deadlines" as any)
           .select("id", { count: "exact", head: true })
           .eq("account_id", accountId)
-          .gte("due_date", now.toISOString())
-          .lte("due_date", in7d),
+          .gte("deadline_date", now.toISOString())
+          .lte("deadline_date", in7d),
 
         supabase
-          .from("leads" as any)
+          .from("client_profiles" as any)
           .select("id", { count: "exact", head: true })
           .eq("account_id", accountId)
           .gte("created_at", last24h),
@@ -65,10 +68,10 @@ export function useSidebarBadges(accountId: string | null): SidebarBadges {
       if (cancelled) return;
 
       setBadges({
-        consultations: consultRes.count ?? 0,
-        cases: casesRes.count ?? 0,
-        leads: leadsRes.count ?? 0,
-        forms: formsRes.count ?? 0,
+        consultations: consultRes.error ? 0 : (consultRes.count ?? 0),
+        cases: casesRes.error ? 0 : (casesRes.count ?? 0),
+        leads: leadsRes.error ? 0 : (leadsRes.count ?? 0),
+        forms: formsRes.error ? 0 : (formsRes.count ?? 0),
       });
     })();
 
