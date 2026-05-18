@@ -482,45 +482,47 @@ function HubDashboardInner({
               buscan rojo instintivamente. Crisis va PRIMERO, briefing después. */}
           <HubCrisisBar accountId={accountId} />
 
-          {/* ═══ ZONA 1 — BRIEFING HERO (60% del peso visual) ═══ */}
-          <section className="shrink-0 rounded-2xl px-7 py-5 border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.05] via-cyan-accent/[0.03] to-card/40 shadow-lg shadow-ai-blue/5 backdrop-blur-sm">
-            <div className="flex items-start justify-between gap-6">
-              {/* Camila + briefing */}
+          {/* ═══ ZONA 1 — MICRO-BRIEFING (datos contables, no prosa) ═══ */}
+          <section className="shrink-0 rounded-2xl px-6 py-4 border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.05] via-cyan-accent/[0.03] to-card/40 shadow-lg shadow-ai-blue/5 backdrop-blur-sm">
+            <div className="flex items-start justify-between gap-6 flex-wrap">
               <div className="flex items-start gap-4 flex-1 min-w-0">
                 <div className="relative shrink-0">
                   <div
-                    className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-accent via-ai-blue to-cyan-accent/60 shadow-lg shadow-cyan-accent/30 animate-pulse"
+                    className="w-11 h-11 rounded-full bg-gradient-to-br from-cyan-accent via-ai-blue to-cyan-accent/60 shadow-lg shadow-cyan-accent/30 animate-pulse"
                     style={{ animationDuration: "3s" }}
                   />
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-background" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap mb-1.5">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-accent/80 font-semibold font-mono">Camila · briefing del día</p>
+                  <div className="flex items-center gap-3 flex-wrap mb-1">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-accent/80 font-semibold font-mono">
+                      Camila · briefing
+                    </p>
                     <span className="text-[10px] text-muted-foreground/60 font-mono">
-                      {format(new Date(), "EEEE d 'de' MMMM", { locale: es })}
+                      {format(new Date(), "EEEE d 'de' MMMM · HH:mm", { locale: es })}
                     </span>
                   </div>
-                  <h2 className="text-xl font-bold text-foreground tracking-tight mb-2 font-sora">
-                    {demoMode
-                      ? <>{greeting}, <span className="bg-gradient-to-r from-ai-blue to-cyan-accent bg-clip-text text-transparent">Pablo</span>.</>
-                      : (morningBriefing?.greeting
-                          ? (() => {
-                              const parts = morningBriefing.greeting.split(",");
-                              if (parts.length >= 2) {
-                                return <>{parts[0]}, <span className="bg-gradient-to-r from-ai-blue to-cyan-accent bg-clip-text text-transparent">{parts.slice(1).join(",").trim()}</span>.</>;
-                              }
-                              return <>{morningBriefing.greeting}.</>;
-                            })()
-                          : <>{greeting}{firstName ? <>, <span className="bg-gradient-to-r from-ai-blue to-cyan-accent bg-clip-text text-transparent">{firstName}</span></> : ""}.</>)
-                    }
-                  </h2>
-                  <p className="text-[13px] text-foreground/85 leading-relaxed font-inter">{briefingText}</p>
+                  <p className="text-[15px] font-semibold text-foreground/95 leading-snug font-sora">
+                    {greeting}, <span className="bg-gradient-to-r from-ai-blue to-cyan-accent bg-clip-text text-transparent">{firstName || "Jefe"}</span>.
+                    {microBriefing.length > 0 ? (
+                      <>
+                        {" "}Tu día tiene{" "}
+                        {microBriefing.map((p, i) => (
+                          <span key={i}>
+                            <span className={`font-bold ${p.color}`}>{p.label}</span>
+                            {i < microBriefing.length - 1 ? " · " : "."}
+                          </span>
+                        ))}
+                      </>
+                    ) : (
+                      <> Tu día está despejado. Aprovechá para adelantar trabajo del miércoles.</>
+                    )}
+                  </p>
                 </div>
               </div>
 
               {/* Camila input — voz + chat */}
-              <div className="shrink-0 flex flex-col items-end gap-1.5 self-start min-w-[280px]">
+              <div className="shrink-0 flex flex-col items-end gap-1.5 self-start min-w-[260px]">
                 <div className={`flex items-center gap-1.5 bg-card/80 border rounded-xl px-3 py-2 transition-all w-full ${
                   isVoiceActive
                     ? "border-emerald-400/40 ring-1 ring-emerald-400/20"
@@ -539,7 +541,7 @@ function HubDashboardInner({
                   {!isVoiceActive && (
                     <button onClick={toggleSTT} className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
                       isListening ? "bg-red-500/20 text-red-400" : "text-muted-foreground/50 hover:text-cyan-accent hover:bg-cyan-accent/10"
-                    }`} title="Dictar">
+                    }`} title="Dictar al texto">
                       {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
                     </button>
                   )}
@@ -554,68 +556,11 @@ function HubDashboardInner({
                   </div>
                 )}
                 {callEnded && !isVoiceActive && (
-                  <button onClick={() => navigate("/hub/chat", { state: { accountId, accountName, staffName } })} className="text-[10px] text-jarvis hover:text-jarvis/80 font-medium">
+                  <button onClick={() => navigate("/hub/chat", { state: { accountId, accountName, staffName } })} className="text-[10px] text-cyan-accent hover:text-cyan-accent/80 font-medium">
                     Ver historial →
                   </button>
                 )}
               </div>
-            </div>
-
-            {/* 3 chips de acción contextual del briefing */}
-            <div className="mt-4 flex items-center gap-2 flex-wrap">
-              {feedLoading && (
-                <div className="text-[11px] text-muted-foreground/40">Camila está priorizando tu día...</div>
-              )}
-              {!demoMode && !feedLoading && actionChips.length === 0 && (() => {
-                const MOTIVATION_PHRASES = [
-                  "Cada caso, una estrategia. Cada decisión, basada en datos.",
-                  "Menos errores, más aprobaciones. Así se gana.",
-                  "Hoy está tranquilo — aprovecha y adelanta lo que viene.",
-                  "Tu mejor herramienta es la claridad. Camila te respalda.",
-                  "Inmigración no es suerte, mi gente. Es preparación.",
-                  "Un día sin RFEs es un día para armar el próximo caso.",
-                  "Decisiones migratorias con inteligencia, no con corazonada.",
-                  "El detalle que cuidas hoy te evita un NOID mañana.",
-                  "Automatiza, optimiza, aprueba. En ese orden.",
-                  "La estrategia ganadora arranca antes del primer formulario.",
-                  "Cada expediente bien armado es un cliente que vuelve.",
-                  "Buen día para revisar lo que ya tienes en camino.",
-                  "La excelencia legal se construye en los días tranquilos.",
-                  "Paso a paso, caso por caso. Así se hace.",
-                ];
-                const dayOfYear = Math.floor(
-                  (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
-                );
-                const phrase = MOTIVATION_PHRASES[dayOfYear % MOTIVATION_PHRASES.length];
-                return (
-                  <p className="text-[12px] italic text-cyan-accent/70 font-sora leading-relaxed">
-                    “{phrase}”
-                  </p>
-                );
-              })()}
-              {actionChips.map(chip => {
-                const styles = SEVERITY_STYLES[chip.severity];
-                return (
-                  <button
-                    key={chip.id}
-                    onClick={() => navigate(chip.href)}
-                    className={`group flex items-center gap-2 px-3 py-1.5 rounded-lg border ${styles.border} ${styles.bg} text-[11px] font-medium ${styles.iconColor} hover:scale-[1.02] transition-all`}
-                  >
-                    <span className="truncate max-w-[180px]">{chip.label}</span>
-                    <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                );
-              })}
-              {feedData && feedData.totalPotential > actionChips.length && (
-                <button
-                  onClick={() => refetchFeed()}
-                  disabled={feedRefetching}
-                  className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-foreground transition disabled:opacity-50"
-                  title="Refrescar feed"
-                >
-                  <RefreshCw className={`w-3 h-3 ${feedRefetching ? "animate-spin" : ""}`} />
-                </button>
-              )}
             </div>
 
             {/* Live transcript inline en hero (si voice activo) */}
@@ -624,7 +569,7 @@ function HubDashboardInner({
                 {callMessages.map(msg => (
                   <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[80%] px-2 py-1 rounded text-[10px] leading-relaxed ${
-                      msg.role === "user" ? "bg-jarvis/15 text-foreground border border-jarvis/20" : "bg-muted/40 text-foreground border border-border/20"
+                      msg.role === "user" ? "bg-cyan-accent/15 text-foreground border border-cyan-accent/20" : "bg-muted/40 text-foreground border border-border/20"
                     }`}>{msg.content}</div>
                   </div>
                 ))}
@@ -632,18 +577,26 @@ function HubDashboardInner({
             )}
           </section>
 
-          {/* ═══ ZONA 2 — WIDGETS FOCALIZADOS (responde 4 preguntas del abogado) ═══ */}
-          {/* Hub Canonical (Morning Delivery 2026-05-16): según wireframe W-04,
-              el Hub debe tener SOLO: CrisisBar + Briefing + 4 KPIs + Stats.
-              Los widgets MyPerformance/VirtualOffice/QuickAsk/AITeam fueron
-              MOVIDOS a sus rutas dedicadas:
-                - AITeamCard → /hub/ai (HubAiPage)
-                - MyPerformanceWidget → /hub/reports
-                - QuickAskCamila → integrado en CamilaFloatingPanel via quick actions
-                - VirtualOfficeCard → /hub/consultations header */}
-          <section className="flex-1 min-h-0 overflow-y-auto">
-            <HubFocusedWidgets accountId={accountId} attorneyName={resolvedName || staffName || undefined} />
+          {/* ═══ ZONA 3+4 — AGENDA HÉROE (60%) + RIESGO (40%) ═══ */}
+          <section className="grid grid-cols-1 lg:grid-cols-5 gap-3 shrink-0">
+            <div className="lg:col-span-3">
+              <HubAgendaWidget accountId={accountId} />
+            </div>
+            <div className="lg:col-span-2">
+              <HubRiskWidget accountId={accountId} />
+            </div>
           </section>
+
+          {/* ═══ ZONA 5 — PIPELINE HORIZONTAL ═══ */}
+          <HubPipelineWidget accountId={accountId} />
+
+          {/* ═══ ZONA 6 — MIS ACCIONES + DINERO + EQUIPO ═══ */}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-3 shrink-0">
+            <HubMyActionsCard accountId={accountId} userId={userId} />
+            <HubMoneyCard accountId={accountId} />
+            <HubTeamWidget />
+          </section>
+
 
           {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}
           {!demoMode && (
