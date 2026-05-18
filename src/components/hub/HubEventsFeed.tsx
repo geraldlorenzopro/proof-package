@@ -44,9 +44,9 @@ export default function HubEventsFeed({ accountId }: Props) {
             <button
               key={e.type}
               onClick={() => navigate(e.href)}
-              className={`text-left bg-white/[0.03] hover:bg-cyan-accent/5 border border-white/10 ${c.border} rounded-lg p-2.5 transition-all`}
+              className={`text-left bg-white/[0.03] hover:bg-cyan-accent/5 border border-white/10 ${c.border} rounded-lg p-2 transition-all`}
             >
-              <div className={`text-lg font-bold font-sora tabular-nums ${c.text}`}>
+              <div className={`text-[16px] font-bold font-sora tabular-nums ${c.text}`}>
                 {loading ? "—" : e.display}
               </div>
               <div className="text-[9px] text-muted-foreground/70 leading-tight whitespace-pre-line mt-0.5">
