@@ -17,6 +17,7 @@ interface Crisis {
   case_id: string;
   title: string;
   subtitle: string;
+  severity?: "overdue" | "urgent" | "warning";
 }
 
 interface Props {
@@ -41,47 +42,68 @@ export default function HubCrisisBar({ accountId }: Props) {
   }, [accountId, demoMode]);
 
   async function loadCrisis() {
-    // Detectar la TAREA más crítica: RFE/revisión vencida o ≤2 días
     const today = new Date().toISOString().slice(0, 10);
-    const in2d = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
+    const in3d = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
 
-    const { data } = await supabase
-      .from("case_tasks")
-      .select("id, case_id, title, due_date, created_by_name, status, case_id")
+    // Fuente 1: client_cases con rfe_deadline próximo o vencido (PREFERIDA)
+    const { data: caseRfes } = await supabase
+      .from("client_cases")
+      .select("id, client_name, case_type, rfe_deadline, last_client_activity_at")
       .eq("account_id", accountId)
-      .neq("status", "completed")
-      .neq("status", "archived")
-      .or("title.ilike.%rfe%,title.ilike.%revis%,title.ilike.%review%,priority.eq.critical")
-      .lte("due_date", in2d)
-      .order("due_date", { ascending: true, nullsFirst: false })
+      .not("rfe_deadline", "is", null)
+      .lte("rfe_deadline", in3d)
+      .not("status", "in", "(completed,archived,cancelled)")
+      .order("rfe_deadline", { ascending: true })
       .limit(1);
 
-    const worst = data?.[0];
-    if (!worst) {
-      setCrisis(null);
+    if (caseRfes && caseRfes.length > 0) {
+      const c: any = caseRfes[0];
+      const deadline = c.rfe_deadline as string;
+      const days = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000);
+      const daysText = days < 0
+        ? `venció hace ${Math.abs(days)}d`
+        : days === 0 ? "vence HOY"
+        : `vence en ${days}d`;
+
+      setCrisis({
+        case_id: c.id,
+        title: `${c.client_name} · ${c.case_type || "Caso"}`,
+        subtitle: `RFE ${daysText}. Respuesta pendiente.`,
+        severity: days <= 0 ? "overdue" : (days <= 3 ? "urgent" : "warning"),
+      });
       return;
     }
 
-    // Cargar nombre del cliente
+    // Fuente 2 (fallback): tasks RFE-tagged con due_date próximo
+    const { data: taskRfes } = await supabase
+      .from("case_tasks")
+      .select("id, case_id, title, due_date")
+      .eq("account_id", accountId)
+      .neq("status", "completed")
+      .neq("status", "archived")
+      .or("task_type.eq.rfe_response,title.ilike.%rfe%,priority.eq.critical")
+      .lte("due_date", in3d)
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .limit(1);
+
+    const worst = taskRfes?.[0];
+    if (!worst) { setCrisis(null); return; }
+
     const { data: caseData } = await supabase
       .from("client_cases")
-      .select("client_name")
-      .eq("id", worst.case_id)
-      .maybeSingle();
+      .select("client_name").eq("id", worst.case_id).maybeSingle();
 
-    const isOverdue = worst.due_date && worst.due_date < today;
-    const daysText = worst.due_date
-      ? (isOverdue
-          ? `venció hace ${Math.abs(daysBetween(worst.due_date, today))}d`
-          : (worst.due_date === today
-              ? "vence HOY"
-              : `vence en ${daysBetween(today, worst.due_date)}d`))
-      : "sin fecha de vencimiento";
+    const days = worst.due_date
+      ? Math.ceil((new Date(worst.due_date).getTime() - Date.now()) / 86400000)
+      : null;
 
     setCrisis({
       case_id: worst.case_id,
-      title: `${worst.title}${caseData?.client_name ? ` — ${caseData.client_name}` : ""}`,
-      subtitle: `${daysText}${worst.created_by_name ? ` · drafted por ${worst.created_by_name}` : " · sin empezar"}`,
+      title: `${caseData?.client_name || "Caso"} · ${worst.title}`,
+      subtitle: days !== null
+        ? (days < 0 ? `Venció hace ${Math.abs(days)}d` : days === 0 ? "Vence HOY" : `Vence en ${days}d`)
+        : "Sin fecha — atender",
+      severity: days !== null && days <= 0 ? "overdue" : "urgent",
     });
   }
 

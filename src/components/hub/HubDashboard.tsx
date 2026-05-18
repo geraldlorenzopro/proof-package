@@ -20,9 +20,11 @@ import HubPipelineWidget from "./HubPipelineWidget";
 import HubMyActionsCard from "./HubMyActionsCard";
 import HubMoneyCard from "./HubMoneyCard";
 import HubTeamWidget from "./HubTeamWidget";
+import HubEventsFeed from "./HubEventsFeed";
 import { useTodayAppointments } from "@/hooks/useTodayAppointments";
 import { useRiskCases } from "@/hooks/useRiskCases";
 import { useMyActions } from "@/hooks/useMyActions";
+import { useWeekendEvents } from "@/hooks/useWeekendEvents";
 import { useDemoMode } from "@/hooks/useDemoData";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -174,6 +176,7 @@ function HubDashboardInner({
   const { appointments: todayAppts } = useTodayAppointments(accountId);
   const { cases: riskCases } = useRiskCases(accountId, 3);
   const { total: myActionsTotal } = useMyActions(accountId, userId);
+  const { totalCount: eventsCount } = useWeekendEvents(accountId);
 
 
   // Chat input
@@ -431,8 +434,14 @@ function HubDashboardInner({
         color: "text-amber-300",
       });
     }
+    if (eventsCount > 0) {
+      parts.push({
+        label: `${eventsCount} ${eventsCount === 1 ? "evento" : "eventos"} del weekend`,
+        color: "text-emerald-300",
+      });
+    }
     return parts;
-  }, [todayAppts.length, myActionsTotal, riskCases.length]);
+  }, [todayAppts.length, myActionsTotal, riskCases.length, eventsCount]);
 
 
   function sendMessage(text?: string) {
@@ -597,6 +606,9 @@ function HubDashboardInner({
               <HubRiskWidget accountId={accountId} />
             </div>
           </section>
+
+          {/* ═══ ZONA 4.5 — EVENTOS DEL WEEKEND (Fase D) ═══ */}
+          <HubEventsFeed accountId={accountId} />
 
           {/* ═══ ZONA 5 — PIPELINE HORIZONTAL ═══ */}
           <HubPipelineWidget accountId={accountId} />

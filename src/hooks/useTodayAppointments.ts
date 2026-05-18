@@ -1,8 +1,9 @@
 /**
  * useTodayAppointments — Hub Inicio v7 Zona 3
  *
- * Lista las citas del día actual ordenadas por hora, con info para renderizar
- * las cards del widget "Hoy tenés N citas".
+ * Lista las citas del día actual ordenadas por hora.
+ * Prefiere appointment_date + appointment_time (timezone-free) sobre
+ * appointment_datetime (interpretado como UTC por Postgres y desfasa horas).
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,18 +40,14 @@ export function useTodayAppointments(accountId: string | null): State {
 
     let cancelled = false;
     void (async () => {
-      const today = new Date();
-      const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-      const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+      const todayStr = new Date().toISOString().slice(0, 10);
 
       const { data, error } = await supabase
         .from("appointments")
-        .select("id, client_name, appointment_type, status, appointment_datetime, notes, case_id, intake_session_id")
+        .select("id, client_name, appointment_type, status, appointment_date, appointment_time, appointment_datetime, notes, case_id, intake_session_id")
         .eq("account_id", accountId)
-        .gte("appointment_datetime", start)
-        .lt("appointment_datetime", end)
-        .not("appointment_datetime", "is", null)
-        .order("appointment_datetime", { ascending: true });
+        .eq("appointment_date", todayStr)
+        .order("appointment_time", { ascending: true, nullsFirst: false });
 
       if (cancelled) return;
 
@@ -60,16 +57,23 @@ export function useTodayAppointments(accountId: string | null): State {
       }
 
       setState({
-        appointments: (data ?? []).map((r: any) => ({
-          id: r.id,
-          clientName: r.client_name ?? "Sin nombre",
-          appointmentType: r.appointment_type,
-          status: r.status,
-          datetime: r.appointment_datetime,
-          notes: r.notes,
-          caseId: r.case_id,
-          intakeSessionId: r.intake_session_id,
-        })),
+        appointments: (data ?? []).map((r: any) => {
+          // Preferir date+time (timezone-free) sobre datetime (UTC)
+          let datetime: string | null = r.appointment_datetime;
+          if (r.appointment_date && r.appointment_time) {
+            datetime = `${r.appointment_date}T${r.appointment_time}`;
+          }
+          return {
+            id: r.id,
+            clientName: r.client_name ?? "Sin nombre",
+            appointmentType: r.appointment_type,
+            status: r.status,
+            datetime,
+            notes: r.notes,
+            caseId: r.case_id,
+            intakeSessionId: r.intake_session_id,
+          };
+        }),
         loading: false,
         error: null,
       });
