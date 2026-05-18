@@ -166,6 +166,7 @@ function HubDashboardInner({
   const [pendingTasks, setPendingTasks] = useState(0);
   const [closedThisWeek, setClosedThisWeek] = useState(0);
   const [tasksDoneRatio, setTasksDoneRatio] = useState(0);
+  const [approvalRate30d, setApprovalRate30d] = useState(0);
 
 
   // Hub v7 — datos contables para micro-briefing
