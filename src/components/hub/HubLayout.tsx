@@ -20,26 +20,23 @@ interface Props {
 }
 
 const NAV_ITEMS: Array<{
-  icon: any; label: string; path: string;
+  emoji: string; label: string; path: string;
   match: (p: string) => boolean;
   badgeKey?: "cases" | "leads" | "consultations" | "forms";
-  // demoSupported = item tiene data demo. Si false, se oculta del sidebar
-  // cuando demoMode=true (evita pantallas vacías). En modo real, todos visibles.
   demoSupported?: boolean;
 }> = [
   // Sidebar canonical según INFORMATION-ARCHITECTURE.md §9.2 — 10 items exactos.
-  // Audit Logs y Knowledge están accesibles via /hub/audit y /hub/knowledge
-  // pero NO aparecen en sidebar (el plano declara solo 10 items principales).
-  { icon: Home, label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", demoSupported: true },
-  { icon: UserSearch, label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", demoSupported: false },
-  { icon: Users, label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), demoSupported: false },
-  { icon: MessageSquare, label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", demoSupported: false },
-  { icon: FolderOpen, label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", demoSupported: true },
-  { icon: FileText, label: "Forms", path: "/hub/forms", match: (p: string) => p.startsWith("/hub/forms") || p.startsWith("/hub/formularios") || p.startsWith("/dashboard/smart-forms"), badgeKey: "forms", demoSupported: true },
-  { icon: Calendar, label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", demoSupported: false },
-  { icon: BarChart3, label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", demoSupported: false },
-  { icon: Bot, label: "Equipo", path: "/hub/ai", match: (p: string) => p === "/hub/ai" || p === "/hub/team", demoSupported: false },
-  { icon: Settings, label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings") || p === "/hub/knowledge" || p === "/hub/audit", demoSupported: true },
+  // Iconos emoji para coincidir con mockup NER-HUB-INICIO-V6 (3D colored icons).
+  { emoji: "🏠", label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", demoSupported: true },
+  { emoji: "🔍", label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", demoSupported: false },
+  { emoji: "👥", label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), demoSupported: false },
+  { emoji: "💬", label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", demoSupported: false },
+  { emoji: "📁", label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", demoSupported: true },
+  { emoji: "📋", label: "Forms", path: "/hub/forms", match: (p: string) => p.startsWith("/hub/forms") || p.startsWith("/hub/formularios") || p.startsWith("/dashboard/smart-forms"), badgeKey: "forms", demoSupported: true },
+  { emoji: "📅", label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", demoSupported: false },
+  { emoji: "📊", label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", demoSupported: false },
+  { emoji: "🤖", label: "Equipo", path: "/hub/ai", match: (p: string) => p === "/hub/ai" || p === "/hub/team", demoSupported: false },
+  { emoji: "⚙️", label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings") || p === "/hub/knowledge" || p === "/hub/audit", demoSupported: true },
 ];
 
 const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 hours
@@ -211,7 +208,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                         {badge > 99 ? "99+" : badge}
                       </span>
                     )}
-                    <item.icon className="w-4 h-4" />
+                    <span className="text-xl leading-none" style={{ filter: isActive ? "none" : "grayscale(0.15) opacity(0.9)" }}>{item.emoji}</span>
                     <span className="text-[9px] font-medium leading-none">{item.label}</span>
                   </button>
                 );
