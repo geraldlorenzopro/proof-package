@@ -69,8 +69,7 @@ export function useMyActions(accountId: string | null, userId: string | null): S
       const ordered: ActionKind[] = ["firmar", "rfe", "llamadas", "revisar", "documentos"];
       const buckets = ordered
         .map(k => ({ kind: k, label: MAP[k].label, count: counts[k] }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 3);
+        .sort((a, b) => b.count - a.count);
 
       setState({
         buckets,
