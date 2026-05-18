@@ -611,14 +611,33 @@ function HubDashboardInner({
               {feedLoading && (
                 <div className="text-[11px] text-muted-foreground/40">Camila está priorizando tu día...</div>
               )}
-              {!demoMode && !feedLoading && actionChips.length === 0 && (
-                <button
-                  onClick={() => setIntakeOpen(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-jarvis/30 bg-jarvis/10 text-[11px] font-medium text-jarvis hover:bg-jarvis/15 transition"
-                >
-                  <Sparkles className="w-3 h-3" /> Iniciar consulta nueva
-                </button>
-              )}
+              {!demoMode && !feedLoading && actionChips.length === 0 && (() => {
+                const MOTIVATION_PHRASES = [
+                  "Cada caso, una estrategia. Cada decisión, basada en datos.",
+                  "Menos errores. Más aprobaciones. Esa es la ruta.",
+                  "Hoy no hay urgencias. Aprovechá para adelantar lo importante.",
+                  "Tu mejor herramienta es la claridad. Camila te respalda.",
+                  "Inmigración no es suerte. Es preparación rigurosa.",
+                  "Un día sin RFEs es un día para construir el siguiente caso.",
+                  "Decisiones migratorias basadas en inteligencia, no intuición.",
+                  "El detalle que vos cuides hoy, evita un NOID mañana.",
+                  "Automatiza. Optimiza. Aprueba. En ese orden.",
+                  "La estrategia ganadora empieza antes del primer formulario.",
+                  "Cada expediente bien armado es un cliente que vuelve.",
+                  "Hoy es buen día para revisar lo que ya tenés en camino.",
+                  "Tu equipo NER está listo — pedile lo que necesites.",
+                  "La excelencia legal se construye en los días tranquilos.",
+                ];
+                const dayOfYear = Math.floor(
+                  (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
+                );
+                const phrase = MOTIVATION_PHRASES[dayOfYear % MOTIVATION_PHRASES.length];
+                return (
+                  <p className="text-[12px] italic text-cyan-accent/70 font-sora leading-relaxed">
+                    “{phrase}”
+                  </p>
+                );
+              })()}
               {actionChips.map(chip => {
                 const styles = SEVERITY_STYLES[chip.severity];
                 return (
