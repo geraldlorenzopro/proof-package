@@ -7,9 +7,9 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import HubCreditsWidget from "./HubCreditsWidget";
 import CamilaFloatingPanel from "./CamilaFloatingPanel";
 import { useDemoMode, exitDemoMode, DEMO_SIDEBAR_BADGES } from "@/hooks/useDemoData";
+import { useSidebarBadges } from "@/hooks/useSidebarBadges";
 import { trackEvent } from "@/lib/analytics";
 interface Props {
   children: ReactNode;
