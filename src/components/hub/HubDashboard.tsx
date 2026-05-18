@@ -1,32 +1,30 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Send, Mic, MicOff, Calendar,
   ChevronRight,
   X, AlertCircle, FolderOpen,
-  Phone, PhoneOff, AlertTriangle, ListTodo, ExternalLink,
+  AlertTriangle, ExternalLink,
   Clock, FileText, CheckSquare, Sparkles, RefreshCw, BookOpen
 } from "lucide-react";
-import { toast } from "sonner";
-import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFeed } from "@/hooks/useFeed";
 import { useHubKpis } from "@/hooks/useHubKpis";
 import { useMorningBriefing } from "@/hooks/useMorningBriefing";
-import type { FeedItem, FeedItemKind, FeedItemSeverity } from "@/types/feed";
+import type { FeedItemKind, FeedItemSeverity } from "@/types/feed";
 import IntakeWizard from "../intake/IntakeWizard";
 import HubFocusedWidgets from "./HubFocusedWidgets";
 import HubCrisisBar from "./HubCrisisBar";
+import HubTeamWidget from "./HubTeamWidget";
 // Hub Canonical W-04: widgets movidos a sus rutas dedicadas.
 // AITeamCard → /hub/ai · MyPerformanceWidget → /hub/reports
 // VirtualOfficeCard → /hub/consultations
-import { useDemoMode, DEMO_BRIEFING_TEXT, exitDemoMode } from "@/hooks/useDemoData";
+// Voice call inline eliminado 2026-05-18: ElevenLabs siempre-on era ~$3.6k/mes
+// con 8 firmas. Voice queda solo para grabar consultas presenciales en
+// /hub/consultations/:id. Mic del briefing es STT (Web Speech API gratis).
+import { useDemoMode, DEMO_BRIEFING_TEXT } from "@/hooks/useDemoData";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-
-const ELEVENLABS_AGENT_ID =
-  import.meta.env.VITE_ELEVENLABS_CAMILA_AGENT_ID ||
-  "agent_6401kntf2pr7fmevaythhpzhys47";
 
 // Recursos oficiales — 4 primarios visibles + 4 secundarios en dropdown "+4"
 const PRIMARY_RESOURCES = [
@@ -85,58 +83,6 @@ const SEVERITY_STYLES: Record<FeedItemSeverity, {
   },
 };
 
-async function fetchSignedUrl() {
-  const { data, error } = await supabase.functions.invoke(
-    "elevenlabs-conversation-token",
-    { body: { agent_id: ELEVENLABS_AGENT_ID } },
-  );
-  if (error) throw new Error(error.message || "No se pudo iniciar la sesión de voz.");
-  if (!data?.signed_url) throw new Error(data?.error || "No se recibió signed_url.");
-  return data.signed_url;
-}
-
-async function fetchOfficeContextLite(accountId: string) {
-  const [
-    { data: officeConfig },
-    { count: activeCasesCount },
-    { count: pendingTasksCount },
-    { count: clientsCount },
-  ] = await Promise.all([
-    supabase.from("office_config" as any).select("firm_name, attorney_name").eq("account_id", accountId).maybeSingle(),
-    supabase.from("client_cases").select("*", { count: "exact", head: true }).eq("account_id", accountId).in("status", ["active", "pending", "in_progress"]),
-    supabase.from("case_tasks").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("status", "pending"),
-    supabase.from("client_profiles").select("*", { count: "exact", head: true }).eq("account_id", accountId).eq("is_test", false),
-  ]);
-  const office = (officeConfig as any) || {};
-  const ownerFirstName = (office.attorney_name || "Jefe").split(" ")[0];
-  const dayName = new Date().toLocaleDateString("es-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  return {
-    ownerFirstName,
-    context: [
-      `El usuario se llama "${ownerFirstName}".`,
-      `Firma: ${office.firm_name || "Sin nombre"}`,
-      `Casos activos: ${activeCasesCount ?? 0}`,
-      `Tareas pendientes: ${pendingTasksCount ?? 0}`,
-      `Clientes: ${clientsCount ?? 0}`,
-      `Fecha: ${dayName}`,
-    ].join("\n"),
-  };
-}
-
-function unlockAudioContext() {
-  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-  if (!AudioCtx) return;
-  const ctx = new AudioCtx();
-  if (ctx.state === "suspended") void ctx.resume();
-  const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
-  const src = ctx.createBufferSource();
-  src.buffer = buf;
-  src.connect(ctx.destination);
-  src.start(0);
-}
-
-const FAREWELL_PATTERNS = /\b(hasta luego|hasta pronto|nos vemos|que tengas buen día|que tengas buenas noches|fue un placer atenderte|cuídate mucho|chao|adiós)\b/i;
-
 interface Props {
   accountId: string;
   accountName: string;
@@ -147,7 +93,7 @@ interface Props {
   onTriggerOnboarding?: () => void;
 }
 
-function HubDashboardInner({
+export default function HubDashboard({
   accountId, accountName, staffName, showOnboardingBanner, onTriggerOnboarding
 }: Props) {
   const navigate = useNavigate();
@@ -198,136 +144,6 @@ function HubDashboardInner({
       clearTimeout(t);
     };
   }, [showSecondaryResources]);
-
-  // Voice call (ElevenLabs WebSocket)
-  const [voiceConnecting, setVoiceConnecting] = useState(false);
-  const [callEnded, setCallEnded] = useState(false);
-  const [callMessages, setCallMessages] = useState<{id: string; role: "user" | "assistant"; content: string}[]>([]);
-  const voiceTranscriptRef = useRef<{role: string; text: string}[]>([]);
-  const autoEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const callScrollRef = useRef<HTMLDivElement>(null);
-  const isEndingSessionRef = useRef(false);
-  const callStartTimeRef = useRef<number | null>(null);
-  const conversationStatusRef = useRef("disconnected");
-
-  useEffect(() => {
-    if (callScrollRef.current) {
-      callScrollRef.current.scrollTop = callScrollRef.current.scrollHeight;
-    }
-  }, [callMessages]);
-
-  const pushCallMessage = useCallback((role: "user" | "assistant", text: string) => {
-    const prefix = role === "user" ? "🎙️ " : "🔊 ";
-    setCallMessages(prev => [...prev, { id: Date.now().toString() + Math.random(), role, content: prefix + text }]);
-  }, []);
-
-  const conversation = useConversation({
-    onConnect: () => {
-      setVoiceConnecting(false);
-      callStartTimeRef.current = Date.now();
-    },
-    onDisconnect: () => {
-      callStartTimeRef.current = null;
-      if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
-      const msgs = voiceTranscriptRef.current;
-      if (msgs.length > 0) {
-        try { localStorage.setItem("camila_last_call_transcript", JSON.stringify(msgs)); } catch {}
-        setCallEnded(true);
-        setTimeout(() => setCallEnded(false), 8000);
-      }
-    },
-    onMessage: (message: any) => {
-      let text: string | undefined;
-      let source: "user" | "assistant" = "assistant";
-      if (message.message && typeof message.message === "string") {
-        text = message.message;
-        source = (message.source === "user" || message.role === "user") ? "user" : "assistant";
-      } else if (message.type === "user_transcript") {
-        text = message.user_transcription_event?.user_transcript; source = "user";
-      } else if (message.type === "agent_response") {
-        text = message.agent_response_event?.agent_response; source = "assistant";
-      } else if (message.type === "agent_response_correction") {
-        text = message.agent_response_correction_event?.corrected_agent_response; source = "assistant";
-      } else if (message.transcript) {
-        text = message.transcript; source = message.source === "user" ? "user" : "assistant";
-      } else if (message.text) {
-        text = message.text; source = message.source === "user" ? "user" : "assistant";
-      }
-      if (!text?.trim()) return;
-      const eventId = message.event_id;
-      if (eventId != null) {
-        const isDuplicate = voiceTranscriptRef.current.some((m: any) => m.eventId === eventId);
-        if (isDuplicate) return;
-        voiceTranscriptRef.current.push({ role: source, text: text.trim(), eventId } as any);
-      } else {
-        voiceTranscriptRef.current.push({ role: source, text: text.trim() });
-      }
-      pushCallMessage(source, text.trim());
-      if (source === "assistant" && FAREWELL_PATTERNS.test(text)) {
-        const callDuration = callStartTimeRef.current ? Date.now() - callStartTimeRef.current : 0;
-        if (callDuration > 10000) {
-          if (autoEndTimerRef.current) clearTimeout(autoEndTimerRef.current);
-          autoEndTimerRef.current = setTimeout(() => {
-            if (!isEndingSessionRef.current) {
-              isEndingSessionRef.current = true;
-              try { conversation.endSession(); } catch {}
-            }
-          }, 5000);
-        }
-      }
-    },
-    onUserTranscript: ((text: string) => {
-      if (text?.trim()) pushCallMessage("user", text.trim());
-    }) as any,
-    onAgentResponse: ((text: string) => {
-      if (text?.trim()) pushCallMessage("assistant", text.trim());
-    }) as any,
-    onAgentResponseCorrection: (() => {}) as any,
-    onError: (err: any) => {
-      toast.error(typeof err === "string" ? err : err?.message || "Error de conexión.");
-      setVoiceConnecting(false);
-    },
-  } as any);
-
-  const isVoiceActive = conversation.status === "connected";
-
-  const startVoiceCall = useCallback(async () => {
-    setVoiceConnecting(true);
-    setCallEnded(false);
-    setCallMessages([]);
-    voiceTranscriptRef.current = [];
-    unlockAudioContext();
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-      const [signedUrl, officeData] = await Promise.all([
-        fetchSignedUrl(),
-        fetchOfficeContextLite(accountId),
-      ]);
-      await conversation.startSession({
-        signedUrl,
-        connectionType: "websocket",
-        dynamicVariables: {
-          info_oficina: officeData.context,
-          nombre_usuario: officeData.ownerFirstName,
-        },
-      } as any);
-    } catch (err: any) {
-      const msg = String(err?.message || err || "");
-      toast.error(msg.includes("Permission") || msg.includes("NotAllowed")
-        ? "Se necesita permiso de micrófono."
-        : `No se pudo conectar: ${msg}`);
-      setVoiceConnecting(false);
-    }
-  }, [conversation, accountId]);
-
-  const stopVoiceCall = useCallback(async () => {
-    if (isEndingSessionRef.current) return;
-    isEndingSessionRef.current = true;
-    try { await conversation.endSession(); } catch {}
-    setTimeout(() => { isEndingSessionRef.current = false; }, 2000);
-  }, [conversation]);
-
-  useEffect(() => { conversationStatusRef.current = conversation.status; }, [conversation.status]);
 
   // Resolver nombre del usuario
   useEffect(() => {
@@ -519,61 +335,43 @@ function HubDashboardInner({
                 </div>
               </div>
 
-              {/* Camila input — voz + chat */}
-              <div className="shrink-0 flex flex-col items-end gap-1.5 self-start min-w-[280px]">
-                <div className={`flex items-center gap-1.5 bg-card/80 border rounded-xl px-3 py-2 transition-all w-full ${
-                  isVoiceActive
-                    ? "border-emerald-400/40 ring-1 ring-emerald-400/20"
-                    : "border-border/40 focus-within:border-jarvis/40"
-                }`}>
+              {/* Camila input — chat de texto + dictado (STT). Sin voice call. */}
+              <div className="shrink-0 flex flex-col items-end gap-1.5 self-start min-w-[300px]">
+                <div className="flex items-center gap-1.5 bg-card/80 border border-border/40 focus-within:border-jarvis/40 rounded-xl px-3 py-2 transition-all w-full">
                   <input
                     ref={inputRef}
                     type="text"
-                    placeholder={isVoiceActive ? "En llamada..." : "Pregúntale a Camila..."}
-                    className="flex-1 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground/40 disabled:opacity-50"
+                    placeholder="Pregúntale a Camila..."
+                    className="flex-1 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground/40"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                    disabled={isVoiceActive}
                   />
-                  {!isVoiceActive && (
-                    <button onClick={toggleSTT} className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                      isListening ? "bg-red-500/20 text-red-400" : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/40"
-                    }`} title="Dictar">
-                      {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                    </button>
-                  )}
                   <button
-                    onClick={isVoiceActive ? stopVoiceCall : startVoiceCall}
-                    disabled={voiceConnecting}
+                    onClick={toggleSTT}
                     className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                      isVoiceActive
-                        ? "bg-red-500/15 text-red-400 border border-red-400/30"
-                        : voiceConnecting
-                        ? "bg-jarvis/10 text-jarvis border border-jarvis/20 animate-pulse"
-                        : "bg-jarvis/10 hover:bg-jarvis/20 text-jarvis border border-jarvis/20"
+                      isListening
+                        ? "bg-red-500/20 text-red-400"
+                        : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/40"
                     }`}
-                    title={isVoiceActive ? "Finalizar llamada" : "Llamar a Camila"}
+                    title="Dictar texto al campo"
+                    aria-label="Dictar texto al campo"
                   >
-                    {isVoiceActive ? <PhoneOff className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
+                    {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
                   </button>
-                  {!isVoiceActive && (
-                    <button onClick={() => sendMessage()} disabled={!input.trim()} className="w-7 h-7 rounded-lg bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30" title="Enviar">
-                      <Send className="w-3.5 h-3.5 text-jarvis" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => sendMessage()}
+                    disabled={!input.trim()}
+                    className="w-7 h-7 rounded-lg bg-jarvis/15 hover:bg-jarvis/25 flex items-center justify-center transition-all disabled:opacity-30"
+                    title="Enviar"
+                    aria-label="Enviar"
+                  >
+                    <Send className="w-3.5 h-3.5 text-jarvis" />
+                  </button>
                 </div>
-                {isVoiceActive && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[9px] text-emerald-400/80 font-semibold uppercase tracking-wider">En llamada</span>
-                  </div>
-                )}
-                {callEnded && !isVoiceActive && (
-                  <button onClick={() => navigate("/hub/chat", { state: { accountId, accountName, staffName } })} className="text-[10px] text-jarvis hover:text-jarvis/80 font-medium">
-                    Ver historial →
-                  </button>
-                )}
+                <span className="text-[10px] text-muted-foreground/50 font-medium">
+                  El micrófono dicta al texto · no llama por voz
+                </span>
               </div>
             </div>
 
@@ -615,30 +413,22 @@ function HubDashboardInner({
               )}
             </div>
 
-            {/* Live transcript inline en hero (si voice activo) */}
-            {isVoiceActive && callMessages.length > 0 && (
-              <div ref={callScrollRef} className="mt-3 max-h-24 overflow-y-auto rounded-lg border border-emerald-500/20 bg-card/60 p-2 space-y-1">
-                {callMessages.map(msg => (
-                  <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[80%] px-2 py-1 rounded text-[10px] leading-relaxed ${
-                      msg.role === "user" ? "bg-jarvis/15 text-foreground border border-jarvis/20" : "bg-muted/40 text-foreground border border-border/20"
-                    }`}>{msg.content}</div>
-                  </div>
-                ))}
-              </div>
-            )}
           </section>
 
-          {/* ═══ ZONA 2 — WIDGETS FOCALIZADOS (responde 4 preguntas del abogado) ═══ */}
+          {/* ═══ ZONA 2 — 4 KPI CARDS (acción primero) ═══ */}
           {/* Hub Canonical W-04 (Morning Delivery 2026-05-16): el Hub tiene SOLO
-              CrisisBar + Briefing + 4 KPIs + Stats. Los widgets MyPerformance /
+              CrisisBar + Briefing + 4 KPIs + Equipo + Stats. Widgets MyPerformance /
               VirtualOffice / AITeam fueron movidos a sus rutas dedicadas
               (/hub/reports, /hub/consultations, /hub/ai). */}
-          <section className="flex-1 min-h-0 overflow-y-auto">
+          <section className="flex-1 min-h-0 overflow-y-auto space-y-3">
             <HubFocusedWidgets accountId={accountId} attorneyName={resolvedName || staffName || undefined} />
+
+            {/* ═══ ZONA 3 — WIDGET TU EQUIPO NER (decisión 2026-05-18, ver mockup v6.1) ═══ */}
+            {/* Acción inmediata arriba, equipo como soporte abajo. Patrón Linear/Stripe. */}
+            {!demoMode && <HubTeamWidget accountId={accountId} />}
           </section>
 
-          {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}
+          {/* ═══ ZONA 4 — PULSO + RECURSOS (10%) ═══ — ocultar en demo (HubFocusedWidgets ya muestra pulse + news + resources) */}
           {!demoMode && (
           <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-4 py-2.5 flex items-center gap-5 flex-wrap">
             {/* Pulse mini KPIs */}
@@ -768,10 +558,3 @@ function HubDashboardInner({
   );
 }
 
-export default function HubDashboard(props: Props) {
-  return (
-    <ConversationProvider>
-      <HubDashboardInner {...props} />
-    </ConversationProvider>
-  );
-}
