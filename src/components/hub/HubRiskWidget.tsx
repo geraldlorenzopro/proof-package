@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import { useRiskCases, RiskCase } from "@/hooks/useRiskCases";
+import { useDemoMode } from "@/hooks/useDemoData";
 
 interface Props {
   accountId: string;
@@ -29,7 +31,19 @@ function badgeLabel(c: RiskCase): string {
 
 export default function HubRiskWidget({ accountId }: Props) {
   const navigate = useNavigate();
+  const demoMode = useDemoMode();
   const { cases, loading } = useRiskCases(accountId, 3);
+
+  function handleCaseClick(caseId: string) {
+    if (demoMode) {
+      toast.info("Vista demo · navegación a caso desactivada", {
+        description: "En producción, este click abre el case engine completo.",
+        duration: 3000,
+      });
+      return;
+    }
+    navigate(`/case-engine/${caseId}`);
+  }
 
   return (
     <section className="rounded-2xl border border-rose-500/20 bg-gradient-to-br from-rose-500/[0.04] to-card/30 backdrop-blur-sm p-3 h-full flex flex-col">
@@ -69,7 +83,7 @@ export default function HubRiskWidget({ accountId }: Props) {
             return (
               <button
                 key={c.id}
-                onClick={() => navigate(`/case-engine/${c.id}`)}
+                onClick={() => handleCaseClick(c.id)}
                 className={`w-full text-left ${sev.card} border rounded-lg p-2 transition-all`}
               >
                 <div className="flex items-center justify-between gap-2 mb-0.5">

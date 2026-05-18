@@ -36,7 +36,7 @@ const NAV_ITEMS: Array<{
   { emoji: "💬", label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", sectionKey: "consultas", demoSupported: false },
   { emoji: "📁", label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", sectionKey: "casos", demoSupported: true },
   { emoji: "📋", label: "Forms", path: "/hub/forms", match: (p: string) => p.startsWith("/hub/forms") || p.startsWith("/hub/formularios") || p.startsWith("/dashboard/smart-forms"), badgeKey: "forms", sectionKey: "forms", demoSupported: true },
-  { emoji: "📅", label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", sectionKey: "agenda", demoSupported: false },
+  { emoji: "🗓️", label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", sectionKey: "agenda", demoSupported: false },
   { emoji: "📊", label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", sectionKey: "reportes", demoSupported: false },
   { emoji: "🤖", label: "Equipo", path: "/hub/ai", match: (p: string) => p === "/hub/ai" || p === "/hub/team", sectionKey: "equipo", demoSupported: false },
   { emoji: "⚙️", label: "Config", path: "/hub/settings/office", match: (p: string) => p.startsWith("/hub/settings") || p === "/hub/knowledge" || p === "/hub/audit", sectionKey: "config", demoSupported: true },
