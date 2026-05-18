@@ -434,8 +434,14 @@ function HubDashboardInner({
         color: "text-amber-300",
       });
     }
+    if (eventsCount > 0) {
+      parts.push({
+        label: `${eventsCount} ${eventsCount === 1 ? "evento" : "eventos"} del weekend`,
+        color: "text-emerald-300",
+      });
+    }
     return parts;
-  }, [todayAppts.length, myActionsTotal, riskCases.length]);
+  }, [todayAppts.length, myActionsTotal, riskCases.length, eventsCount]);
 
 
   function sendMessage(text?: string) {
