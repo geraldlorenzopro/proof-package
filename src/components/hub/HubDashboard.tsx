@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
-import { speakAsCamila } from "@/lib/camilaTTS";
+
 import { useFeed } from "@/hooks/useFeed";
 import { useMorningBriefing } from "@/hooks/useMorningBriefing";
 import type { FeedItem, FeedItemKind, FeedItemSeverity } from "@/types/feed";
@@ -150,15 +150,6 @@ interface Props {
   onTriggerOnboarding?: () => void;
 }
 
-interface TodayAppointment {
-  id: string;
-  title: string;
-  start_date: string;
-  status: string;
-  client_name?: string;
-  meeting_link?: string;
-}
-
 function HubDashboardInner({
   accountId, accountName, staffName, showOnboardingBanner, onTriggerOnboarding
 }: Props) {
@@ -173,8 +164,6 @@ function HubDashboardInner({
   const [closedThisWeek, setClosedThisWeek] = useState(0);
   const [tasksDoneRatio, setTasksDoneRatio] = useState(0);
 
-  // Today's appointments (zona 2B)
-  const [todayAppointments, setTodayAppointments] = useState<TodayAppointment[]>([]);
 
   // Feed (zona 2A)
   const { data: feedData, isLoading: feedLoading, refetch: refetchFeed, isRefetching: feedRefetching } = useFeed(accountId);
@@ -362,29 +351,8 @@ function HubDashboardInner({
 
   useEffect(() => {
     if (accountId) loadKpis();
-    if (accountId) loadTodayAppointments();
   }, [accountId]);
 
-  // Auto-greet TTS — solo 1 vez por día
-  useEffect(() => {
-    if (!resolvedName || !accountId) return;
-    const todayKey = `camila_greeted_${accountId}_${new Date().toISOString().split("T")[0]}`;
-    const alreadyGreeted = sessionStorage.getItem(todayKey);
-    if (alreadyGreeted) return;
-    sessionStorage.setItem(todayKey, "1");
-    const fn = resolvedName.split(" ")[0];
-    const localHour = parseInt(
-      new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        hour12: false,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      }).format(new Date())
-    );
-    const saludo = localHour < 12 ? "Buenos días" : localHour < 18 ? "Buenas tardes" : "Buenas noches";
-    setTimeout(() => {
-      speakAsCamila(`${saludo}, ${fn}. ¿Qué hacemos hoy?`);
-    }, 2000);
-  }, [resolvedName, accountId]);
 
   async function loadKpis() {
     try {
@@ -414,43 +382,6 @@ function HubDashboardInner({
     }
   }
 
-  async function loadTodayAppointments() {
-    try {
-      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
-      const { data } = await supabase
-        .from("appointments")
-        .select("id, title, start_date, status, client_id")
-        .eq("account_id", accountId)
-        .gte("start_date", todayStart.toISOString())
-        .lte("start_date", todayEnd.toISOString())
-        .neq("status", "cancelled")
-        .order("start_date", { ascending: true })
-        .limit(4);
-      if (!data) return;
-      // Resolver nombres de clientes (best-effort)
-      const clientIds = data.map(a => (a as any).client_id).filter(Boolean);
-      const clientNames: Record<string, string> = {};
-      if (clientIds.length > 0) {
-        const { data: clients } = await supabase
-          .from("client_profiles")
-          .select("id, first_name, last_name")
-          .in("id", clientIds);
-        clients?.forEach((c: any) => {
-          clientNames[c.id] = [c.first_name, c.last_name].filter(Boolean).join(" ");
-        });
-      }
-      setTodayAppointments(data.map((a: any) => ({
-        id: a.id,
-        title: a.title || "Cita",
-        start_date: a.start_date,
-        status: a.status,
-        client_name: clientNames[a.client_id],
-      })));
-    } catch (err) {
-      console.error("Today appts load error:", err);
-    }
-  }
 
   const demoMode = useDemoMode();
   // En demo mode: fuerza nombre del attorney del demo, ignora session real
