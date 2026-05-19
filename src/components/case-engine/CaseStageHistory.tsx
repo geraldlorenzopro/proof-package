@@ -24,7 +24,7 @@ export default function CaseStageHistory({ history, stageLabels }: Props) {
 
   return (
     <div className="relative pl-8 space-y-3">
-      <div className="absolute left-[13px] top-3 bottom-3 w-px bg-gradient-to-b from-jarvis/30 via-border to-transparent" />
+      <div className="absolute left-[13px] top-3 bottom-3 w-px bg-gradient-to-b from-cyan-accent/30 via-border to-transparent" />
 
       {history.map((item, i) => (
         <motion.div
@@ -34,8 +34,8 @@ export default function CaseStageHistory({ history, stageLabels }: Props) {
           transition={{ delay: i * 0.04 }}
           className="relative"
         >
-          <div className="absolute -left-[22px] top-3 w-4 h-4 rounded-full border-2 border-jarvis bg-jarvis/20 flex items-center justify-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-jarvis" />
+          <div className="absolute -left-[22px] top-3 w-4 h-4 rounded-full border-2 border-cyan-accent bg-cyan-accent/20 flex items-center justify-center">
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-accent" />
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
@@ -45,7 +45,7 @@ export default function CaseStageHistory({ history, stageLabels }: Props) {
                   <span className="text-xs font-medium text-muted-foreground">
                     {stageLabels[item.from_stage] || item.from_stage}
                   </span>
-                  <ArrowRight className="w-3 h-3 text-jarvis shrink-0" />
+                  <ArrowRight className="w-3 h-3 text-cyan-accent shrink-0" />
                 </>
               )}
               <span className="text-xs font-semibold text-foreground">

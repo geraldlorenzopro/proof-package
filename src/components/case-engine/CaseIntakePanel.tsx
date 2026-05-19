@@ -90,7 +90,7 @@ export function IntakeBadge({ caseId }: { caseId: string }) {
       .then(({ data }) => setHas(!!(data && data.length > 0)));
   }, [caseId]);
   if (!has) return null;
-  return <Badge variant="outline" className="text-[10px] border-jarvis/30 text-jarvis gap-1">📋 Intake completado</Badge>;
+  return <Badge variant="outline" className="text-[10px] border-cyan-accent/30 text-cyan-accent gap-1">📋 Intake completado</Badge>;
 }
 
 interface CaseIntakePanelProps {
@@ -195,7 +195,7 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-jarvis" />
+        <Sparkles className="w-4 h-4 text-cyan-accent" />
         Datos del Intake
       </h3>
 
@@ -290,8 +290,8 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
         </div>
 
         {/* CARD 3 — Análisis AI */}
-        <div className="rounded-xl border border-jarvis/20 bg-jarvis/5 p-4 space-y-2.5">
-          <p className="text-xs font-semibold text-jarvis uppercase tracking-wider flex items-center gap-1.5">
+        <div className="rounded-xl border border-cyan-accent/20 bg-cyan-accent/5 p-4 space-y-2.5">
+          <p className="text-xs font-semibold text-cyan-accent uppercase tracking-wider flex items-center gap-1.5">
             <Brain className="w-3.5 h-3.5" /> Análisis AI
           </p>
           <div className="space-y-2 text-sm">
@@ -306,7 +306,7 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
                       onValueChange={handleTypeChange}
                       disabled={saving}
                     >
-                      <SelectTrigger className="h-7 text-[10px] w-[180px] border-jarvis/30">
+                      <SelectTrigger className="h-7 text-[10px] w-[180px] border-cyan-accent/30">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -327,12 +327,12 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
                           <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground line-through">
                             {getCaseTypeLabel(aiType)}
                           </Badge>
-                          <Badge variant="outline" className="text-[10px] border-jarvis/30 text-jarvis">
+                          <Badge variant="outline" className="text-[10px] border-cyan-accent/30 text-cyan-accent">
                             {getCaseTypeLabel(correctedType!)}
                           </Badge>
                         </div>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] border-jarvis/30 text-jarvis">
+                        <Badge variant="outline" className="text-[10px] border-cyan-accent/30 text-cyan-accent">
                           {getCaseTypeLabel(displayType || '')}
                         </Badge>
                       )}
@@ -340,7 +340,7 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-jarvis"
+                          className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-cyan-accent"
                           onClick={() => setEditing(true)}
                         >
                           <Pencil className="w-3 h-3 mr-0.5" /> Cambiar
@@ -350,7 +350,7 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
                   )}
                 </div>
                 {wasCorrected && (
-                  <Badge variant="outline" className="text-[9px] border-accent/30 text-accent">
+                  <Badge variant="outline" className="text-[9px] border-ai-blue/30 text-ai-blue">
                     🔄 Corregido por preparador
                   </Badge>
                 )}
@@ -360,9 +360,9 @@ export default function CaseIntakePanel({ caseId, currentCaseType, accountId, us
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground text-xs">Confianza:</span>
-                  <span className="text-xs font-bold text-jarvis">{confidence}%</span>
+                  <span className="text-xs font-bold text-cyan-accent">{confidence}%</span>
                 </div>
-                <Progress value={confidence} className="h-1.5 bg-border [&>div]:bg-jarvis" />
+                <Progress value={confidence} className="h-1.5 bg-border [&>div]:bg-cyan-accent" />
               </div>
             )}
             {intake.ai_reasoning && (
@@ -467,7 +467,7 @@ function CasePrioritySection({ caseId, caseData, canEdit, onCaseDataChanged }: {
   return (
     <div className="mt-4 pt-4 border-t border-border">
       <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-2 w-full text-left">
-        <FileText className="w-4 h-4 text-jarvis" />
+        <FileText className="w-4 h-4 text-cyan-accent" />
         <h3 className="text-sm font-bold text-foreground flex-1">Información del Caso</h3>
         {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
       </button>
@@ -613,7 +613,7 @@ function ReceiptNumbersSection({ caseId, caseData, canEdit, onCaseDataChanged }:
   return (
     <div className="mt-4 pt-4 border-t border-border">
       <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-2 w-full text-left">
-        <Hash className="w-4 h-4 text-jarvis" />
+        <Hash className="w-4 h-4 text-cyan-accent" />
         <h3 className="text-sm font-bold text-foreground flex-1">Números de Recibo USCIS</h3>
         {receipts.length > 0 && (
           <Badge variant="outline" className="text-[10px] mr-2">{receipts.length}</Badge>
@@ -635,7 +635,7 @@ function ReceiptNumbersSection({ caseId, caseData, canEdit, onCaseDataChanged }:
                     href="https://egov.uscis.gov/casestatus/landing.do"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs font-mono font-bold text-jarvis hover:underline flex items-center gap-1"
+                    className="text-xs font-mono font-bold text-cyan-accent hover:underline flex items-center gap-1"
                   >
                     {r.receipt_number}
                     <ExternalLink className="w-3 h-3" />
@@ -772,7 +772,7 @@ function CaseRolesSection({ caseId, caseData, canEdit, onCaseDataChanged }: {
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-2 w-full text-left"
       >
-        <Users className="w-4 h-4 text-jarvis" />
+        <Users className="w-4 h-4 text-cyan-accent" />
         <h3 className="text-sm font-bold text-foreground flex-1">Partes del Caso</h3>
         {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
       </button>
@@ -808,7 +808,7 @@ function CaseRolesSection({ caseId, caseData, canEdit, onCaseDataChanged }: {
                       saveField("co_sponsor_name", null);
                     }
                   }}
-                  className="text-[10px] text-jarvis hover:underline"
+                  className="text-[10px] text-cyan-accent hover:underline"
                 >
                   {showCoSponsor ? "Quitar" : "+ Agregar"}
                 </button>
@@ -834,7 +834,7 @@ function CaseRolesSection({ caseId, caseData, canEdit, onCaseDataChanged }: {
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Household Members</p>
               {canEdit && (
-                <button onClick={addMember} className="text-[10px] text-jarvis hover:underline flex items-center gap-0.5">
+                <button onClick={addMember} className="text-[10px] text-cyan-accent hover:underline flex items-center gap-0.5">
                   <Plus className="w-3 h-3" /> Agregar
                 </button>
               )}

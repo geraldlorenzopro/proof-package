@@ -172,7 +172,7 @@ export default function CaseDocumentsPanel({ caseId, accountId }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 text-jarvis animate-spin" />
+        <Loader2 className="w-6 h-6 text-cyan-accent animate-spin" />
       </div>
     );
   }
@@ -181,7 +181,7 @@ export default function CaseDocumentsPanel({ caseId, accountId }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FolderOpen className="w-4 h-4 text-jarvis" />
+          <FolderOpen className="w-4 h-4 text-cyan-accent" />
           <h3 className="text-sm font-bold text-foreground">Documentos del Caso</h3>
           <Badge variant="outline" className="text-[9px]">{docs.length}</Badge>
         </div>
@@ -233,7 +233,7 @@ export default function CaseDocumentsPanel({ caseId, accountId }: Props) {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
-                className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 hover:border-jarvis/20 transition-all group"
+                className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 hover:border-cyan-accent/20 transition-all group"
               >
                 <div className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
                   <FileIcon className="w-4 h-4 text-muted-foreground" />

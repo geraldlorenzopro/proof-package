@@ -40,8 +40,8 @@ export default function CaseDecisionPanel({ currentStage, stageEnteredAt, ballIn
   const isBlocked = slaStatus === "overdue" || hasEscalation;
 
   const ownerMap = {
-    team: { label: "Equipo Interno", icon: Users, color: "text-jarvis" },
-    client: { label: "Cliente", icon: User, color: "text-accent" },
+    team: { label: "Equipo Interno", icon: Users, color: "text-cyan-accent" },
+    client: { label: "Cliente", icon: User, color: "text-ai-blue" },
     uscis: { label: "USCIS", icon: Shield, color: "text-emerald-400" },
     admin: { label: "Administración", icon: AlertTriangle, color: "text-destructive" },
   };
@@ -53,15 +53,15 @@ export default function CaseDecisionPanel({ currentStage, stageEnteredAt, ballIn
       {/* Semáforo principal */}
       <div className={`rounded-xl border p-5 ${
         isBlocked ? "border-destructive/30 bg-destructive/5" :
-        slaStatus === "warning" ? "border-accent/30 bg-accent/5" :
+        slaStatus === "warning" ? "border-ai-blue/30 bg-ai-blue/5" :
         "border-emerald-500/20 bg-emerald-500/[0.03]"
       }`}>
         <div className="flex items-center gap-3 mb-3">
           <div className={`w-3 h-3 rounded-full ${
-            isBlocked ? "bg-destructive animate-pulse" : slaStatus === "warning" ? "bg-accent" : "bg-emerald-400"
+            isBlocked ? "bg-destructive animate-pulse" : slaStatus === "warning" ? "bg-ai-blue" : "bg-emerald-400"
           }`} />
           <span className={`text-sm font-bold ${
-            isBlocked ? "text-destructive" : slaStatus === "warning" ? "text-accent" : "text-emerald-400"
+            isBlocked ? "text-destructive" : slaStatus === "warning" ? "text-ai-blue" : "text-emerald-400"
           }`}>
             {isBlocked ? "Bloqueado / Riesgo" : slaStatus === "warning" ? "Atención Requerida" : "En Curso"}
           </span>
@@ -77,8 +77,8 @@ export default function CaseDecisionPanel({ currentStage, stageEnteredAt, ballIn
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Tiempo en etapa</p>
-            <span className={`text-sm font-bold font-display ${
-              slaStatus === "overdue" ? "text-destructive" : slaStatus === "warning" ? "text-accent" : "text-foreground"
+            <span className={`text-sm font-bold font-sora ${
+              slaStatus === "overdue" ? "text-destructive" : slaStatus === "warning" ? "text-ai-blue" : "text-foreground"
             }`}>
               {daysInStage > 0 ? `${daysInStage}d ${hoursInStage % 24}h` : `${hoursInStage}h`}
             </span>
@@ -94,7 +94,7 @@ export default function CaseDecisionPanel({ currentStage, stageEnteredAt, ballIn
             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${
-                  slaStatus === "overdue" ? "bg-destructive" : slaStatus === "warning" ? "bg-accent" : "bg-emerald-400"
+                  slaStatus === "overdue" ? "bg-destructive" : slaStatus === "warning" ? "bg-ai-blue" : "bg-emerald-400"
                 }`}
                 style={{ width: `${Math.min(slaPct, 100)}%` }}
               />
@@ -107,7 +107,7 @@ export default function CaseDecisionPanel({ currentStage, stageEnteredAt, ballIn
       {nextStage && (
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 mb-2">
-            <ArrowRight className="w-3.5 h-3.5 text-jarvis" />
+            <ArrowRight className="w-3.5 h-3.5 text-cyan-accent" />
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Siguiente paso</span>
           </div>
           <p className="text-sm font-semibold text-foreground">{nextStage.label}</p>
@@ -119,13 +119,13 @@ export default function CaseDecisionPanel({ currentStage, stageEnteredAt, ballIn
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-border bg-card p-3">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Tareas abiertas</p>
-          <p className={`text-lg font-display font-bold ${openTaskCount > 0 ? "text-accent" : "text-emerald-400"}`}>
+          <p className={`text-lg font-sora font-bold ${openTaskCount > 0 ? "text-ai-blue" : "text-emerald-400"}`}>
             {openTaskCount}
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-3">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Tags activos</p>
-          <p className="text-lg font-display font-bold text-jarvis">{activeTags.length}</p>
+          <p className="text-lg font-sora font-bold text-cyan-accent">{activeTags.length}</p>
         </div>
       </div>
 
@@ -140,8 +140,8 @@ export default function CaseDecisionPanel({ currentStage, stageEnteredAt, ballIn
                 variant="outline"
                 className={`text-[9px] font-mono ${
                   t.tag.toLowerCase().includes("escalar") ? "border-destructive/30 text-destructive bg-destructive/5" :
-                  t.tag.toLowerCase().includes("plazo") ? "border-accent/30 text-accent bg-accent/5" :
-                  "border-jarvis/20 text-jarvis bg-jarvis/5"
+                  t.tag.toLowerCase().includes("plazo") ? "border-ai-blue/30 text-ai-blue bg-ai-blue/5" :
+                  "border-cyan-accent/20 text-cyan-accent bg-cyan-accent/5"
                 }`}
               >
                 {t.tag}
@@ -159,9 +159,9 @@ export default function CaseDecisionPanel({ currentStage, stageEnteredAt, ballIn
         </div>
       )}
       {hasExtension && !hasEscalation && (
-        <div className="flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2">
-          <Clock className="w-4 h-4 text-accent shrink-0" />
-          <span className="text-xs text-accent font-medium">Extensión activa — plazo de 7 días</span>
+        <div className="flex items-center gap-2 rounded-lg border border-ai-blue/30 bg-ai-blue/5 px-3 py-2">
+          <Clock className="w-4 h-4 text-ai-blue shrink-0" />
+          <span className="text-xs text-ai-blue font-medium">Extensión activa — plazo de 7 días</span>
         </div>
       )}
     </div>

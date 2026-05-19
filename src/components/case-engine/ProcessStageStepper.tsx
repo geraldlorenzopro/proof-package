@@ -160,15 +160,15 @@ export default function ProcessStageStepper({ caseId, currentStage, onStageChang
 
       {/* AI suggestion */}
       {suggestion && (
-        <div className="flex items-center gap-2 text-[11px] bg-jarvis/5 border border-jarvis/15 rounded-lg px-3 py-1.5">
-          <Bot className="w-3.5 h-3.5 text-jarvis shrink-0" />
+        <div className="flex items-center gap-2 text-[11px] bg-cyan-accent/5 border border-cyan-accent/15 rounded-lg px-3 py-1.5">
+          <Bot className="w-3.5 h-3.5 text-cyan-accent shrink-0" />
           <span className="text-muted-foreground">
-            AI sugiere: <strong className="text-jarvis">{ALL_STAGES.find(s => s.key === suggestion.stage)?.label}</strong> — {suggestion.reason}
+            AI sugiere: <strong className="text-cyan-accent">{ALL_STAGES.find(s => s.key === suggestion.stage)?.label}</strong> — {suggestion.reason}
           </span>
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 text-[10px] text-jarvis hover:text-jarvis ml-auto shrink-0 gap-1"
+            className="h-6 text-[10px] text-cyan-accent hover:text-cyan-accent ml-auto shrink-0 gap-1"
             onClick={() => handleClick(suggestion.stage)}
           >
             <Sparkles className="w-3 h-3" />

@@ -25,8 +25,8 @@ interface Props {
 }
 
 const ownerConfig: Record<string, { label: string; icon: typeof Users; color: string; bg: string; border: string; ring: string; dot: string }> = {
-  team: { label: "Equipo", icon: Users, color: "text-jarvis", bg: "bg-jarvis/10", border: "border-jarvis/30", ring: "ring-jarvis/40", dot: "bg-jarvis" },
-  client: { label: "Cliente", icon: User, color: "text-accent", bg: "bg-accent/10", border: "border-accent/30", ring: "ring-accent/40", dot: "bg-accent" },
+  team: { label: "Equipo", icon: Users, color: "text-cyan-accent", bg: "bg-cyan-accent/10", border: "border-cyan-accent/30", ring: "ring-cyan-accent/40", dot: "bg-cyan-accent" },
+  client: { label: "Cliente", icon: User, color: "text-ai-blue", bg: "bg-ai-blue/10", border: "border-ai-blue/30", ring: "ring-ai-blue/40", dot: "bg-ai-blue" },
   uscis: { label: "USCIS", icon: Shield, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", ring: "ring-emerald-500/40", dot: "bg-emerald-400" },
   nvc: { label: "NVC", icon: Shield, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30", ring: "ring-blue-500/40", dot: "bg-blue-400" },
   embassy: { label: "Embajada", icon: Shield, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", ring: "ring-amber-500/40", dot: "bg-amber-400" },
@@ -67,7 +67,7 @@ export default function CasePipelineTracker({ stages, currentStage, stageEntered
                     ) : isCurrent ? (
                       <CircleDot className={`w-3.5 h-3.5 ${sla === "overdue" ? "text-destructive" : owner.color} ${sla !== "overdue" ? "animate-pulse" : ""}`} />
                     ) : (
-                      <span className="text-[8px] font-display font-bold text-muted-foreground">{i + 1}</span>
+                      <span className="text-[8px] font-sora font-bold text-muted-foreground">{i + 1}</span>
                     )}
                   </div>
                   {i < stages.length - 1 && (
@@ -133,7 +133,7 @@ export default function CasePipelineTracker({ stages, currentStage, stageEntered
               ) : isCurrent ? (
                 <CircleDot className={`w-4 h-4 ${sla === "overdue" ? "text-destructive" : owner.color} animate-pulse`} />
               ) : (
-                <span className="text-[10px] font-display font-bold text-muted-foreground">{i + 1}</span>
+                <span className="text-[10px] font-sora font-bold text-muted-foreground">{i + 1}</span>
               )}
             </div>
 
@@ -161,7 +161,7 @@ export default function CasePipelineTracker({ stages, currentStage, stageEntered
             {/* SLA indicator */}
             {isCurrent && stage.sla_hours && (
               <div className={`text-[9px] font-mono font-bold shrink-0 ${
-                sla === "overdue" ? "text-destructive" : sla === "warning" ? "text-accent" : "text-emerald-400"
+                sla === "overdue" ? "text-destructive" : sla === "warning" ? "text-ai-blue" : "text-emerald-400"
               }`}>
                 {stage.sla_hours}h SLA
               </div>
