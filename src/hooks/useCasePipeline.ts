@@ -35,6 +35,8 @@ export interface PipelineCase {
   overdue_tasks_count?: number;
   days_in_stage?: number;
   next_due_date?: string | null;
+  rfe_deadline?: string | null;
+  last_client_activity_at?: string | null;
 }
 
 export interface PipelineColumn {
