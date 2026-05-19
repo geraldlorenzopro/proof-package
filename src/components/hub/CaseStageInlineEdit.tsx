@@ -11,7 +11,7 @@
 import { useState, useRef, useEffect } from "react";
 import { PIPELINE_COLUMNS } from "@/hooks/useCasePipeline";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
-import type { PipelineCase } from "@/hooks/useCasePipeline";
+import type { PipelineCase, PipelineStageKey } from "@/hooks/useCasePipeline";
 
 interface Props {
   c: PipelineCase;
