@@ -301,17 +301,17 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
 
         {/* Camila avatar */}
         <div className="relative mb-10">
-          <div className="w-24 h-24 rounded-3xl bg-jarvis/10 border border-jarvis/20 flex items-center justify-center animate-pulse">
-            <Sparkles className="w-12 h-12 text-jarvis" />
+          <div className="w-24 h-24 rounded-3xl bg-cyan-accent/10 border border-cyan-accent/20 flex items-center justify-center animate-pulse">
+            <Sparkles className="w-12 h-12 text-cyan-accent" />
           </div>
-          <div className="absolute -inset-4 rounded-[2rem] bg-jarvis/5 animate-ping" style={{ animationDuration: "3s" }} />
+          <div className="absolute -inset-4 rounded-[2rem] bg-cyan-accent/5 animate-ping" style={{ animationDuration: "3s" }} />
         </div>
 
         {/* Typewriter text */}
         <div className="max-w-lg text-center mb-12">
           <p className="text-white/90 text-xl leading-relaxed font-light">
             {typewriterText}
-            {!typewriterDone && <span className="inline-block w-0.5 h-5 bg-jarvis ml-1 animate-pulse" />}
+            {!typewriterDone && <span className="inline-block w-0.5 h-5 bg-cyan-accent ml-1 animate-pulse" />}
           </p>
         </div>
 
@@ -319,7 +319,7 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
         {typewriterDone && (
           <Button
             onClick={() => goTo("firma")}
-            className="bg-jarvis hover:bg-jarvis/90 text-black font-bold text-lg px-10 py-6 rounded-2xl animate-in fade-in slide-in-from-bottom-4 duration-500"
+            className="bg-cyan-accent hover:bg-cyan-accent/90 text-black font-bold text-lg px-10 py-6 rounded-2xl animate-in fade-in slide-in-from-bottom-4 duration-500"
           >
             Vamos <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
@@ -336,8 +336,8 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
         <div className="px-6 pt-6 pb-4 border-b border-border/20">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-jarvis/10 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-jarvis" />
+              <div className="w-8 h-8 rounded-xl bg-cyan-accent/10 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-cyan-accent" />
               </div>
               <span className="font-semibold text-foreground text-sm">Configuración inicial</span>
             </div>
@@ -350,10 +350,10 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
           <div className="flex items-center gap-2 mb-2">
             {STEP_LABELS.map((label, i) => (
               <div key={label} className="flex items-center gap-2 flex-1">
-                <div className={`flex items-center gap-1.5 ${i <= stepIndex - 1 ? "text-jarvis" : "text-muted-foreground/40"}`}>
+                <div className={`flex items-center gap-1.5 ${i <= stepIndex - 1 ? "text-cyan-accent" : "text-muted-foreground/40"}`}>
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border ${
-                    i < stepIndex - 1 ? "bg-jarvis border-jarvis text-black" :
-                    i === stepIndex - 1 ? "border-jarvis text-jarvis" :
+                    i < stepIndex - 1 ? "bg-cyan-accent border-cyan-accent text-black" :
+                    i === stepIndex - 1 ? "border-cyan-accent text-cyan-accent" :
                     "border-border/30 text-muted-foreground/30"
                   }`}>
                     {i < stepIndex - 1 ? <Check className="w-3.5 h-3.5" /> : i + 1}
@@ -361,7 +361,7 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
                   <span className="text-xs font-medium hidden sm:inline">{label}</span>
                 </div>
                 {i < STEP_LABELS.length - 1 && (
-                  <div className={`flex-1 h-px ${i < stepIndex - 1 ? "bg-jarvis/40" : "bg-border/20"}`} />
+                  <div className={`flex-1 h-px ${i < stepIndex - 1 ? "bg-cyan-accent/40" : "bg-border/20"}`} />
                 )}
               </div>
             ))}
@@ -406,7 +406,7 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
                 </div>
                 <div>
                   <Label>Logo de la firma (opcional)</Label>
-                  <div className="mt-1 border-2 border-dashed border-border/30 rounded-xl p-4 text-center cursor-pointer hover:border-jarvis/30 transition-colors"
+                  <div className="mt-1 border-2 border-dashed border-border/30 rounded-xl p-4 text-center cursor-pointer hover:border-cyan-accent/30 transition-colors"
                     onClick={() => document.getElementById("logo-upload")?.click()}>
                     {logoFile ? (
                       <p className="text-sm text-foreground">{logoFile.name}</p>
@@ -424,7 +424,7 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
 
               <div className="flex justify-end pt-2">
                 <Button onClick={saveFirmAndContinue} disabled={!firmName.trim() || saving}
-                  className="bg-jarvis hover:bg-jarvis/90 text-black font-semibold px-6">
+                  className="bg-cyan-accent hover:bg-cyan-accent/90 text-black font-semibold px-6">
                   {saving ? "Guardando..." : "Continuar"} <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -443,20 +443,20 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
                 <button
                   onClick={() => setClientMode("real")}
                   className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                    clientMode === "real" ? "border-jarvis bg-jarvis/5" : "border-border/20 hover:border-border/40"
+                    clientMode === "real" ? "border-cyan-accent bg-cyan-accent/5" : "border-border/20 hover:border-border/40"
                   }`}
                 >
-                  <UserPlus className={`w-8 h-8 mb-2 ${clientMode === "real" ? "text-jarvis" : "text-muted-foreground/40"}`} />
+                  <UserPlus className={`w-8 h-8 mb-2 ${clientMode === "real" ? "text-cyan-accent" : "text-muted-foreground/40"}`} />
                   <p className="font-semibold text-sm text-foreground">Agregar un cliente real</p>
                   <p className="text-xs text-muted-foreground mt-1">Ingresa los datos de un cliente existente</p>
                 </button>
                 <button
                   onClick={() => setClientMode("demo")}
                   className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                    clientMode === "demo" ? "border-jarvis bg-jarvis/5" : "border-border/20 hover:border-border/40"
+                    clientMode === "demo" ? "border-cyan-accent bg-cyan-accent/5" : "border-border/20 hover:border-border/40"
                   }`}
                 >
-                  <Users className={`w-8 h-8 mb-2 ${clientMode === "demo" ? "text-jarvis" : "text-muted-foreground/40"}`} />
+                  <Users className={`w-8 h-8 mb-2 ${clientMode === "demo" ? "text-cyan-accent" : "text-muted-foreground/40"}`} />
                   <p className="font-semibold text-sm text-foreground">Usar datos de demostración</p>
                   <p className="text-xs text-muted-foreground mt-1">3 clientes, 2 casos y 1 cita de ejemplo</p>
                 </button>
@@ -497,7 +497,7 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
                   Saltar por ahora
                 </button>
                 <Button onClick={handleClientStep} disabled={saving || (!clientMode)}
-                  className="bg-jarvis hover:bg-jarvis/90 text-black font-semibold px-6">
+                  className="bg-cyan-accent hover:bg-cyan-accent/90 text-black font-semibold px-6">
                   {saving ? "Guardando..." : "Continuar"} <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -551,7 +551,7 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
                   Lo hago después
                 </button>
                 <Button onClick={() => goTo("listo")}
-                  className="bg-jarvis hover:bg-jarvis/90 text-black font-semibold px-6">
+                  className="bg-cyan-accent hover:bg-cyan-accent/90 text-black font-semibold px-6">
                   Continuar <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -563,9 +563,9 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
             <div className="text-center py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Animated checkmark */}
               <div className="relative w-20 h-20 mx-auto mb-6">
-                <div className="absolute inset-0 rounded-full bg-jarvis/10 animate-ping" style={{ animationDuration: "2s" }} />
-                <div className="relative w-20 h-20 rounded-full bg-jarvis/20 border-2 border-jarvis flex items-center justify-center">
-                  <Check className="w-10 h-10 text-jarvis animate-in zoom-in duration-500" />
+                <div className="absolute inset-0 rounded-full bg-cyan-accent/10 animate-ping" style={{ animationDuration: "2s" }} />
+                <div className="relative w-20 h-20 rounded-full bg-cyan-accent/20 border-2 border-cyan-accent flex items-center justify-center">
+                  <Check className="w-10 h-10 text-cyan-accent animate-in zoom-in duration-500" />
                 </div>
               </div>
 
@@ -580,15 +580,15 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
                 <button
                   onClick={() => handleFinish("/hub")}
                   disabled={saving}
-                  className="p-4 rounded-2xl border border-border/20 hover:border-jarvis/30 hover:bg-jarvis/5 transition-all group"
+                  className="p-4 rounded-2xl border border-border/20 hover:border-cyan-accent/30 hover:bg-cyan-accent/5 transition-all group"
                 >
-                  <Building2 className="w-6 h-6 text-jarvis mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  <Building2 className="w-6 h-6 text-cyan-accent mx-auto mb-2 group-hover:scale-110 transition-transform" />
                   <p className="text-xs font-semibold text-foreground">Ver mi dashboard</p>
                 </button>
                 <button
                   onClick={() => handleFinish("/hub/cases")}
                   disabled={saving}
-                  className="p-4 rounded-2xl border border-border/20 hover:border-jarvis/30 hover:bg-jarvis/5 transition-all group"
+                  className="p-4 rounded-2xl border border-border/20 hover:border-cyan-accent/30 hover:bg-cyan-accent/5 transition-all group"
                 >
                   <FolderOpen className="w-6 h-6 text-violet-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
                   <p className="text-xs font-semibold text-foreground">Agregar caso</p>
@@ -596,7 +596,7 @@ export default function OnboardingWizard({ accountId, accountName, onComplete }:
                 <button
                   onClick={() => handleFinish("/hub/ai")}
                   disabled={saving}
-                  className="p-4 rounded-2xl border border-border/20 hover:border-jarvis/30 hover:bg-jarvis/5 transition-all group"
+                  className="p-4 rounded-2xl border border-border/20 hover:border-cyan-accent/30 hover:bg-cyan-accent/5 transition-all group"
                 >
                   <Bot className="w-6 h-6 text-emerald-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
                   <p className="text-xs font-semibold text-foreground">Hablar con Camila</p>

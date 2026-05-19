@@ -293,7 +293,7 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                   className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
                 >
                   <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-                  <Shield className="w-3.5 h-3.5 text-jarvis" />
+                  <Shield className="w-3.5 h-3.5 text-cyan-accent" />
                   <span className="font-medium">Hub</span>
                 </button>
                 <div className="flex items-center gap-3">

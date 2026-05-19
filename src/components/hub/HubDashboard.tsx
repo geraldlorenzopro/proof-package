@@ -754,8 +754,8 @@ function HubDashboardInner({
       {openingResource && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setOpeningResource(null)}>
           <div className="bg-card border border-border/40 rounded-2xl p-6 shadow-2xl flex flex-col items-center gap-4 w-[320px] text-center" onClick={e => e.stopPropagation()}>
-            <div className="w-14 h-14 rounded-full bg-jarvis/10 border border-jarvis/20 flex items-center justify-center">
-              <ExternalLink className="w-6 h-6 text-jarvis" />
+            <div className="w-14 h-14 rounded-full bg-cyan-accent/10 border border-cyan-accent/20 flex items-center justify-center">
+              <ExternalLink className="w-6 h-6 text-cyan-accent" />
             </div>
             <div className="flex flex-col gap-1">
               <p className="text-sm font-semibold text-foreground">Saliendo de NER momentáneamente</p>
@@ -763,7 +763,7 @@ function HubDashboardInner({
             </div>
             <div className="flex gap-2 w-full">
               <button onClick={() => setOpeningResource(null)} className="flex-1 py-2 rounded-xl border border-border/40 text-xs text-muted-foreground hover:bg-muted/20 transition-all">Cancelar</button>
-              <button onClick={() => { window.open(openingResource.url, "_blank", "noopener,noreferrer"); setOpeningResource(null); }} className="flex-1 py-2 rounded-xl bg-jarvis/15 border border-jarvis/20 text-xs font-medium text-jarvis hover:bg-jarvis/25 transition-all">Abrir ↗</button>
+              <button onClick={() => { window.open(openingResource.url, "_blank", "noopener,noreferrer"); setOpeningResource(null); }} className="flex-1 py-2 rounded-xl bg-cyan-accent/15 border border-cyan-accent/20 text-xs font-medium text-cyan-accent hover:bg-cyan-accent/25 transition-all">Abrir ↗</button>
             </div>
           </div>
         </div>
