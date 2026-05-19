@@ -42,7 +42,7 @@ export default function SidebarCommsCompact({ caseId, accountId, clientEmail, cl
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Mail className="w-4 h-4 text-jarvis" />
+          <Mail className="w-4 h-4 text-cyan-accent" />
           <span className="text-xs font-bold text-foreground">Comunicaciones</span>
           {emails.length > 0 && <Badge variant="outline" className="text-[9px]">{emails.length}</Badge>}
         </div>

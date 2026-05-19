@@ -162,10 +162,10 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ListTodo className="w-4 h-4 text-accent" />
+          <ListTodo className="w-4 h-4 text-ai-blue" />
           <span className="text-xs font-bold text-foreground">Tareas</span>
           {pending.length > 0 && (
-            <Badge variant="outline" className="text-[9px] bg-accent/10 text-accent border-accent/20">{pending.length}</Badge>
+            <Badge variant="outline" className="text-[9px] bg-ai-blue/10 text-ai-blue border-ai-blue/20">{pending.length}</Badge>
           )}
         </div>
         <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={openCreate} title="Nueva tarea">
@@ -183,7 +183,7 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
             return (
               <div key={task.id} className="flex items-start gap-2 p-2 rounded-lg border border-border bg-card/50 group">
                 <button onClick={() => toggleTask(task.id, task.status)} className="mt-0.5 shrink-0">
-                  <Circle className="w-3.5 h-3.5 text-muted-foreground hover:text-accent transition-colors" />
+                  <Circle className="w-3.5 h-3.5 text-muted-foreground hover:text-ai-blue transition-colors" />
                 </button>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-medium text-foreground leading-tight truncate">{task.title}</p>
@@ -209,7 +209,7 @@ export default function SidebarTasksCompact({ tasks, caseId, accountId, onTaskCh
             );
           })}
           {remaining > 0 && onViewAll && (
-            <button onClick={onViewAll} className="w-full text-center text-[10px] text-jarvis hover:underline py-1">
+            <button onClick={onViewAll} className="w-full text-center text-[10px] text-cyan-accent hover:underline py-1">
               Ver todas ({pending.length})
             </button>
           )}

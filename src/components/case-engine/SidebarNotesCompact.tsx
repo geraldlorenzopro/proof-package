@@ -113,7 +113,7 @@ export default function SidebarNotesCompact({ notes, caseId, accountId, onNoteAd
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-jarvis" />
+          <MessageSquare className="w-4 h-4 text-cyan-accent" />
           <span className="text-xs font-bold text-foreground">Notas</span>
           <Badge variant="outline" className="text-[9px]">{notes.length}</Badge>
         </div>
@@ -126,7 +126,7 @@ export default function SidebarNotesCompact({ notes, caseId, accountId, onNoteAd
       <AnimatePresence>
         {adding && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="rounded-lg border border-jarvis/20 bg-card p-3 space-y-2">
+            <div className="rounded-lg border border-cyan-accent/20 bg-card p-3 space-y-2">
               <div className="flex gap-1 flex-wrap">
                 {Object.entries(typeConfig).map(([key, cfg]) => {
                   const Icon = cfg.icon;
@@ -178,7 +178,7 @@ export default function SidebarNotesCompact({ notes, caseId, accountId, onNoteAd
                       <span className="text-[9px] text-muted-foreground">{note.author_name || "Staff"}</span>
                       <span className="text-[9px] text-muted-foreground">·</span>
                       <span className="text-[9px] text-muted-foreground">{format(new Date(note.created_at), "d MMM", { locale: es })}</span>
-                      {note.is_pinned && <Pin className="w-2.5 h-2.5 text-jarvis" />}
+                      {note.is_pinned && <Pin className="w-2.5 h-2.5 text-cyan-accent" />}
                       <div className="ml-auto flex gap-0.5">
                         <button onClick={() => { setEditingId(note.id); setEditContent(note.content); }}
                           className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" title="Editar">
@@ -196,7 +196,7 @@ export default function SidebarNotesCompact({ notes, caseId, accountId, onNoteAd
             );
           })}
           {remaining > 0 && onViewAll && (
-            <button onClick={onViewAll} className="w-full text-center text-[10px] text-jarvis hover:underline py-1">
+            <button onClick={onViewAll} className="w-full text-center text-[10px] text-cyan-accent hover:underline py-1">
               Ver todas ({sorted.length})
             </button>
           )}
