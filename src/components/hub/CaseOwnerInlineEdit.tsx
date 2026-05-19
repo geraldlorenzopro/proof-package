@@ -82,15 +82,17 @@ export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwn
       newValue: newId,
       oldValue: oldId,
       onOptimistic: (v) => {
-        setOwnerId(v as string | null);
-        setOwnerName(newName);
-        onOwnerChange(v as string | null, newName);
+        const id = v as string | null;
+        // Si el optimistic update revertió al oldId (= API error path),
+        // restauramos el nombre original también. Sin esto el ID rollbackea
+        // pero el name quedaba stale hasta el próximo re-render del parent.
+        const matchedName = id === oldId ? oldName : newName;
+        setOwnerId(id);
+        setOwnerName(matchedName);
+        onOwnerChange(id, matchedName);
       },
       successMessage: newName ? `Asignado a ${newName}` : "Sin asignar",
     });
-    if (oldName !== newName) {
-      // rollback name si error fue capturado por toast
-    }
   }
 
   const grad = ownerGradient(ownerId);
