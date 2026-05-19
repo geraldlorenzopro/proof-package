@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, LayoutGrid, Table as TableIcon, AlertCircle, FolderPlus } from "lucide-react";
+import { Search, LayoutGrid, Table as TableIcon, AlertCircle, FolderPlus, SlidersHorizontal, ArrowUpDown, Users, FolderTree, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -10,9 +10,12 @@ import { Button } from "@/components/ui/button";
 import HubLayout from "@/components/hub/HubLayout";
 import CaseTable from "@/components/hub/CaseTable";
 import CaseKanban from "@/components/hub/CaseKanban";
+import CaseKpiStrip from "@/components/hub/CaseKpiStrip";
+import CaseViewTabs from "@/components/hub/CaseViewTabs";
 import { useCasePipeline, PIPELINE_COLUMNS } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
+import { useCaseViews, filterCasesByView } from "@/hooks/useCaseViews";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "tabla" | "kanban";
@@ -36,6 +39,17 @@ export default function HubCasesPage() {
   const [search, setSearch] = useState("");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
+  const [userId, setUserId] = useState<string | null>(null);
+  const { activeView, setActiveView } = useCaseViews();
+
+  // Resolver userId logueado (necesario para "Mis casos" / "Pte acción mía")
+  useEffect(() => {
+    if (demoMode) {
+      setUserId("demo-user-paralegal");
+      return;
+    }
+    void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, [demoMode]);
 
   useEffect(() => {
     // Demo mode: inyectar staffNames desde DEMO_CASES (los UUIDs demo no existen en BD)
@@ -66,7 +80,8 @@ export default function HubCasesPage() {
     try { localStorage.setItem("ner_cases_view", next); } catch {}
   }
 
-  const filteredCases = useMemo(() => {
+  // Filtro por search + owner (paso 1)
+  const searchFilteredCases = useMemo(() => {
     const q = search.trim().toLowerCase();
     return cases.filter(c => {
       if (ownerFilter !== "all" && c.assigned_to !== ownerFilter) return false;
@@ -75,8 +90,6 @@ export default function HubCasesPage() {
       if (c.client_name?.toLowerCase().includes(q)) return true;
       if (c.file_number?.toLowerCase().includes(q)) return true;
       if (c.case_type?.toLowerCase().includes(q)) return true;
-      // A-number (alien_number) viene en case_tags_array o se busca en raw — el hook no lo trae
-      // pero podemos buscar en file_number también si el preparador lo guardó ahí.
       if (c.nvc_case_number?.toLowerCase().includes(q)) return true;
       // USCIS receipt numbers (array)
       const receipts = c.uscis_receipt_numbers;
@@ -87,6 +100,21 @@ export default function HubCasesPage() {
       return false;
     });
   }, [cases, search, ownerFilter]);
+
+  // Filtro adicional por vista activa (mis-casos / urgentes / pte-accion / cerrados / todos)
+  const filteredCases = useMemo(
+    () => filterCasesByView(searchFilteredCases, activeView, userId),
+    [searchFilteredCases, activeView, userId]
+  );
+
+  // Counts por vista (para badges en tabs)
+  const viewCounts = useMemo(() => ({
+    "mis-casos":      filterCasesByView(searchFilteredCases, "mis-casos", userId).length,
+    "urgentes":       filterCasesByView(searchFilteredCases, "urgentes", userId).length,
+    "pte-accion-mia": filterCasesByView(searchFilteredCases, "pte-accion-mia", userId).length,
+    "cerrados-30d":   filterCasesByView(searchFilteredCases, "cerrados-30d", userId).length,
+    "todos":          searchFilteredCases.length,
+  }), [searchFilteredCases, userId]);
 
   const filteredColumns = useMemo(() => {
     return PIPELINE_COLUMNS.map(col => ({
@@ -125,19 +153,14 @@ export default function HubCasesPage() {
 
   return (
     <HubLayout>
-      <div className="max-w-[1400px] mx-auto px-4 py-5 space-y-4">
-        {/* Header */}
-        <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="px-5 py-4 space-y-3">
+
+        {/* ═══ Header + Search global ═══ (paridad mockup v2) */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-xl font-bold text-foreground">Pipeline de casos</h1>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {filteredCases.length} {filteredCases.length === 1 ? "caso activo" : "casos activos"}
-              {totalOverdue > 0 && (
-                <span className="ml-2 inline-flex items-center gap-1 text-rose-400 font-semibold">
-                  <AlertCircle className="w-3 h-3" />
-                  {totalOverdue} vencida{totalOverdue === 1 ? "" : "s"}
-                </span>
-              )}
+            <h1 className="text-lg font-bold font-sora text-foreground">Pipeline de casos</h1>
+            <p className="text-[11px] text-muted-foreground">
+              Tu vista · {cases.length} casos totales
               {unclassifiedCount > 0 && (
                 <span className="ml-2 text-muted-foreground/50">
                   · {unclassifiedCount} sin clasificar
@@ -146,36 +169,74 @@ export default function HubCasesPage() {
             </p>
           </div>
 
-          {/* Toolbar */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60 pointer-events-none" />
-              <Input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Buscar cliente, expediente, recibo USCIS o NVC…"
-                className="h-8 w-80 pl-8 text-[11px] bg-card/60"
-              />
-            </div>
+          {/* Search global SIEMPRE visible (separado de filtros, ⌘K shortcut) */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60 pointer-events-none" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar por nombre, teléfono, A-number, receipt USCIS/NVC…"
+              className="h-9 pl-9 pr-16 text-[12px] bg-white/[0.04] border-white/10 focus-visible:border-cyan-accent/50"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-0.5 text-[9px] font-mono text-muted-foreground/50 border border-white/10 rounded px-1 py-0.5">⌘K</span>
+          </div>
+        </div>
 
-            {uniqueOwners.length > 0 && (
-              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                <SelectTrigger className="h-8 w-40 text-[11px] bg-card/60">
-                  <SelectValue placeholder="Todo el equipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todo el equipo</SelectItem>
-                  {uniqueOwners.map(uid => (
-                    <SelectItem key={uid} value={uid}>{staffNames[uid] || "Staff"}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+        {/* ═══ KPI Strip (4 boxes sin culpa) ═══ */}
+        <CaseKpiStrip accountId={accountId} userId={userId} />
 
-            <div className="flex items-center bg-card/60 border border-border rounded-md p-0.5">
-              <ViewButton active={view === "tabla"} onClick={() => changeView("tabla")} icon={<TableIcon className="w-3.5 h-3.5" />} label="Tabla" />
-              <ViewButton active={view === "kanban"} onClick={() => changeView("kanban")} icon={<LayoutGrid className="w-3.5 h-3.5" />} label="Kanban" />
-            </div>
+        {/* ═══ Tabs guardables (4 + Todos) ═══ */}
+        <CaseViewTabs
+          activeView={activeView}
+          onChange={setActiveView}
+          counts={viewCounts}
+        />
+
+        {/* ═══ Toolbar (filtros separados de search) ═══ */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            disabled
+            title="Próximamente: filtros avanzados"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] bg-white/[0.04] border border-white/10 rounded-md text-muted-foreground/60 cursor-not-allowed"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            Filtros
+          </button>
+          <button
+            type="button"
+            disabled
+            title="Próximamente: sort por columna"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] bg-white/[0.04] border border-white/10 rounded-md text-muted-foreground/60 cursor-not-allowed"
+          >
+            <ArrowUpDown className="w-3.5 h-3.5" />
+            Ordenar
+          </button>
+          {uniqueOwners.length > 0 && (
+            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+              <SelectTrigger className="h-8 w-auto px-3 text-[11px] bg-white/[0.04] border-white/10 gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                <SelectValue placeholder="Persona" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo el equipo</SelectItem>
+                {uniqueOwners.map(uid => (
+                  <SelectItem key={uid} value={uid}>{staffNames[uid] || "Staff"}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <button
+            type="button"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] bg-cyan-accent/10 border border-cyan-accent/30 text-cyan-accent rounded-md"
+            title="Vista agrupada por etapa del caso"
+          >
+            <FolderTree className="w-3.5 h-3.5" />
+            Agrupar: Stage
+          </button>
+          <div className="ml-auto flex items-center bg-white/[0.04] border border-white/10 rounded-md p-0.5">
+            <ViewButton active={view === "tabla"} onClick={() => changeView("tabla")} icon={<TableIcon className="w-3.5 h-3.5" />} label="Tabla" />
+            <ViewButton active={view === "kanban"} onClick={() => changeView("kanban")} icon={<LayoutGrid className="w-3.5 h-3.5" />} label="Kanban" />
           </div>
         </div>
 
