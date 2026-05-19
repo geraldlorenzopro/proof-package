@@ -158,7 +158,7 @@ export default function CaseTagsSelector({ caseId, tags, onTagsChanged }: Props)
                       onClick={() => toggleTag(def.tag_key)}
                       className={cn(
                         "w-full text-left px-2 py-1 rounded-md text-[11px] flex items-center justify-between transition-colors",
-                        active ? "bg-jarvis/10 text-jarvis font-semibold" : "text-foreground hover:bg-secondary/50"
+                        active ? "bg-cyan-accent/10 text-cyan-accent font-semibold" : "text-foreground hover:bg-secondary/50"
                       )}
                     >
                       <span className="flex items-center gap-1.5">

@@ -59,7 +59,7 @@ export default function CaseAgentHistory({ caseId }: Props) {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-        <Cpu className="w-4 h-4 text-jarvis" />
+        <Cpu className="w-4 h-4 text-cyan-accent" />
         Actividad de Agentes AI ({sessions.length})
       </h3>
       {sessions.map((s) => {

@@ -64,7 +64,7 @@ export default function CaseEmailHistory({ caseId }: Props) {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-        <Mail className="w-4 h-4 text-jarvis" />
+        <Mail className="w-4 h-4 text-cyan-accent" />
         Emails enviados ({emails.length})
       </h3>
       {emails.map((email) => {

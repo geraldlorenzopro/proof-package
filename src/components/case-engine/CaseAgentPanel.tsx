@@ -218,7 +218,7 @@ export default function CaseAgentPanel({ caseId, accountId }: { caseId: string; 
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-jarvis animate-spin" /></div>;
+    return <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-cyan-accent animate-spin" /></div>;
   }
 
   return (
@@ -227,7 +227,7 @@ export default function CaseAgentPanel({ caseId, accountId }: { caseId: string; 
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Bot className="w-4 h-4 text-jarvis" />
+            <Bot className="w-4 h-4 text-cyan-accent" />
             Equipo trabajando en este caso
           </h3>
         </div>
@@ -243,9 +243,9 @@ export default function CaseAgentPanel({ caseId, accountId }: { caseId: string; 
         <motion.div
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-jarvis/20 bg-jarvis/5 p-5 text-center"
+          className="rounded-xl border border-cyan-accent/20 bg-cyan-accent/5 p-5 text-center"
         >
-          <Loader2 className="w-8 h-8 text-jarvis animate-spin mx-auto mb-3" />
+          <Loader2 className="w-8 h-8 text-cyan-accent animate-spin mx-auto mb-3" />
           <p className="text-sm font-semibold text-foreground">{loadingMsg}</p>
         </motion.div>
       )}

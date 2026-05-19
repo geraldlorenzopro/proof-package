@@ -130,7 +130,7 @@ export default function PortalTrackingPanel({ caseId, caseData, onCaseDataChange
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-        <Globe className="w-4 h-4 text-jarvis" />
+        <Globe className="w-4 h-4 text-cyan-accent" />
         Portal de Seguimiento
       </h3>
 
@@ -145,7 +145,7 @@ export default function PortalTrackingPanel({ caseId, caseData, onCaseDataChange
               s.completed
                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 cursor-default"
                 : activeSection === s.key
-                  ? "bg-jarvis/10 text-jarvis border border-jarvis/20"
+                  ? "bg-cyan-accent/10 text-cyan-accent border border-cyan-accent/20"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
             )}
           >

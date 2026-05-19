@@ -372,7 +372,7 @@ export default function ConsultationPanel({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-jarvis" />
+        <Loader2 className="w-6 h-6 animate-spin text-cyan-accent" />
       </div>
     );
   }
@@ -384,7 +384,7 @@ export default function ConsultationPanel({
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Mic className="w-4 h-4 text-jarvis" />
+              <Mic className="w-4 h-4 text-cyan-accent" />
               Consulta — {clientName}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">{caseType}</p>
@@ -415,7 +415,7 @@ export default function ConsultationPanel({
 
           <div>
             {!active && (
-              <Button size="sm" onClick={startConsultation} className="bg-jarvis hover:bg-jarvis/90 text-white gap-1.5">
+              <Button size="sm" onClick={startConsultation} className="bg-cyan-accent hover:bg-cyan-accent/90 text-white gap-1.5">
                 <Play className="w-3.5 h-3.5" /> Iniciar consulta
               </Button>
             )}
@@ -432,7 +432,7 @@ export default function ConsultationPanel({
       {active && (
         <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
           <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <FileText className="w-4 h-4 text-jarvis" />
+            <FileText className="w-4 h-4 text-cyan-accent" />
             Notas de la consulta
           </h4>
 
@@ -477,7 +477,7 @@ export default function ConsultationPanel({
         <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Users className="w-4 h-4 text-jarvis" />
+              <Users className="w-4 h-4 text-cyan-accent" />
               Derivados ({derivatives.length})
             </h4>
             {!active.ended_at && (
@@ -494,7 +494,7 @@ export default function ConsultationPanel({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {derivatives.map(d => (
               <div key={d.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-secondary/30">
-                <div className="w-9 h-9 rounded-full bg-jarvis/10 text-jarvis flex items-center justify-center text-xs font-bold shrink-0">
+                <div className="w-9 h-9 rounded-full bg-cyan-accent/10 text-cyan-accent flex items-center justify-center text-xs font-bold shrink-0">
                   {d.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -560,7 +560,7 @@ export default function ConsultationPanel({
       {active && (aiLoading || aiResult) && (
         <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
           <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-jarvis" />
+            <Sparkles className="w-4 h-4 text-cyan-accent" />
             Análisis AI
           </h4>
 
@@ -571,8 +571,8 @@ export default function ConsultationPanel({
               className="flex flex-col items-center py-8 gap-4"
             >
               <div className="relative">
-                <div className="w-12 h-12 rounded-full border-2 border-jarvis/20 border-t-jarvis animate-spin" />
-                <Sparkles className="w-5 h-5 text-jarvis absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                <div className="w-12 h-12 rounded-full border-2 border-cyan-accent/20 border-t-cyan-accent animate-spin" />
+                <Sparkles className="w-5 h-5 text-cyan-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
               </div>
               <AnimatePresence mode="wait">
                 <motion.p
@@ -653,7 +653,7 @@ export default function ConsultationPanel({
       {active?.ended_at && active.status !== "completed" && (
         <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
           <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Scale className="w-4 h-4 text-jarvis" />
+            <Scale className="w-4 h-4 text-cyan-accent" />
             ¿Cuál fue el resultado?
           </h4>
 
@@ -701,7 +701,7 @@ export default function ConsultationPanel({
           )}
 
           {selectedDecision && (
-            <Button onClick={confirmDecision} disabled={decidingLoading} className="w-full bg-jarvis hover:bg-jarvis/90 text-white">
+            <Button onClick={confirmDecision} disabled={decidingLoading} className="w-full bg-cyan-accent hover:bg-cyan-accent/90 text-white">
               {decidingLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
               Confirmar decisión
             </Button>
@@ -740,7 +740,7 @@ export default function ConsultationPanel({
       {pastConsultations.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
           <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Clock className="w-4 h-4 text-jarvis" />
+            <Clock className="w-4 h-4 text-cyan-accent" />
             Consultas anteriores ({pastConsultations.length})
           </h4>
 
