@@ -72,7 +72,7 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
       newValue: stageKey,
       oldValue: old,
       onOptimistic: (v) => {
-        setCurrentStage(v as string);
+        setCurrentStage(v as PipelineStageKey);
         onStageChange(v as string);
       },
       successMessage: `Etapa actualizada → ${stageKey}`,
