@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NER · Casos · Fase C · Pipeline de Casos</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sora: ['Sora', 'system-ui', 'sans-serif'],
+        inter: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'ui-monospace', 'monospace'],
+      },
+      colors: {
+        'ai-blue': '#2563EB',
+        'deep-navy': '#0B1F3A',
+        'cyan-accent': '#22D3EE',
+        'soft-gray': '#F3F4F6',
+        'graphite': '#1F2937',
+      }
+    }
+  }
+}
+</script>
+<style>
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #0a1428;
+  color: #e2e8f0;
+}
+h1, h2, h3, h4, .font-display { font-family: 'Sora', system-ui, sans-serif; }
+.glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); }
+.sidebar-item { transition: all 120ms; position: relative; }
+.sidebar-item.active { background: rgba(37,99,235,0.10); color: #22D3EE; }
+.sidebar-item.active::before {
+  content: ''; position: absolute; left: 0; top: 50%;
+  transform: translateY(-50%); width: 2px; height: 22px;
+  background: #22D3EE; border-radius: 0 2px 2px 0;
+}
+.sidebar-item.disabled { opacity: 0.5; filter: grayscale(40%); }
+.badge-pronto {
+  font-size: 7px; padding: 1px 4px; border-radius: 3px;
+  background: rgba(34,211,238,0.15); border: 1px solid rgba(34,211,238,0.25);
+  color: #67e8f9; letter-spacing: 0.5px;
+  position: absolute; top: 4px; right: 4px;
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+.tabular { font-variant-numeric: tabular-nums; }
+.stage-bar { height: 4px; border-radius: 2px; }
+.row-hover:hover { background: rgba(255,255,255,0.02); }
+.toggle-active { background: rgba(34,211,238,0.12); color: #22D3EE; border: 1px solid rgba(34,211,238,0.25); }
+.toggle-inactive { background: transparent; color: #94a3b8; border: 1px solid transparent; }
+.toggle-inactive:hover { background: rgba(255,255,255,0.04); color: #cbd5e1; }
+</style>
+</head>
+<body class="min-h-screen overflow-hidden">
+
+<div class="flex h-screen">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="hidden lg:flex flex-col items-center w-[72px] border-r border-white/5 bg-black/20 py-3 shrink-0">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-ai-blue to-cyan-accent flex items-center justify-center mb-4 shadow-lg shadow-ai-blue/20">
+      <span class="text-white font-extrabold font-display text-sm">N</span>
+    </div>
+    <nav class="flex flex-col items-center gap-0.5 w-full">
+      <button class="sidebar-item w-[60px] flex flex-col items-center gap-1 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5">
+        <span class="text-base">🏠</span><span class="text-[9px] font-semibold">Inicio</span>
+      </button>
+      <button class="sidebar-item disabled w-[60px] flex flex-col items-center gap-1 py-2 rounded-xl text-slate-400">
+        <span class="badge-pronto">PRONTO</span>
+        <span class="text-base">🔍</span><span class="text-[9px] font-semibold">Leads</span>
+      </button>
+      <button class="sidebar-item disabled w-[60px] flex flex-col items-center gap-1 py-2 rounded-xl text-slate-400">
+        <span class="badge-pronto">PRONTO</span>
+        <span class="text-base">👥</span><span class="text-[9px] font-semibold">Clientes</span>
+      </button>
+      <button class="sidebar-item disabled w-[60px] flex flex-col items-center gap-1 py-2 rounded-xl text-slate-400">
+        <span class="badge-pronto">PRONTO</span>
+        <span class="text-base">💬</span><span class="text-[9px] font-semibold">Consultas</span>
+      </button>
+
+      <!-- ✨ CASOS — Activo (Fase C aplicada) -->
+      <button class="sidebar-item active w-[60px] flex flex-col items-center gap-1 py-2 rounded-xl">
+        <span class="text-base">📁</span><span class="text-[9px] font-semibold">Casos</span>
+      </button>
+
+      <button class="sidebar-item disabled w-[60px] flex flex-col items-center gap-1 py-2 rounded-xl text-slate-400">
+        <span class="badge-pronto">PRONTO</span>
+        <span class="text-base">📋</span><span class="text-[9px] font-semibold">Forms</span>
+      </button>
+      <button class="sidebar-item disabled w-[60px] flex flex-col items-center gap-1 py-2 rounded-xl text-slate-400">
+        <span class="badge-pronto">PRONTO</span>
+        <span class="text-base">🗓️</span><span class="text-[9px] font-semibold">Agenda</span>
+      </button>
+      <button class="sidebar-item disabled w-[60px] flex flex-col items-center gap-1 py-2 rounded-xl text-slate-400">
+        <span class="badge-pronto">PRONTO</span>
+        <span class="text-base">📊</span><span class="text-[9px] font-semibold">Reportes</span>
+      </button>
+      <button class="sidebar-item disabled w-[60px] flex flex-col items-center gap-1 py-2 rounded-xl text-slate-400">
+        <span class="badge-pronto">PRONTO</span>
+        <span class="text-base">🤖</span><span class="text-[9px] font-semibold">Equipo</span>
+      </button>
+      <button class="sidebar-item disabled w-[60px] flex flex-col items-center gap-1 py-2 rounded-xl text-slate-400">
+        <span class="badge-pronto">PRONTO</span>
+        <span class="text-base">⚙️</span><span class="text-[9px] font-semibold">Config</span>
+      </button>
+    </nav>
+    <div class="mt-auto flex flex-col items-center gap-2">
+      <div class="px-2 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 w-[60px] text-center">
+        <div class="text-[8px] font-mono font-bold text-emerald-400/80 uppercase">Cred</div>
+        <div class="text-[10px] font-bold text-emerald-300 tabular">300</div>
+      </div>
+      <button class="w-[60px] flex flex-col items-center gap-0.5 py-2 rounded-xl text-slate-500 hover:text-rose-400">
+        <span class="text-sm">⎋</span><span class="text-[9px]">Salir</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <main class="flex-1 overflow-y-auto">
+    <div class="max-w-[1400px] mx-auto px-4 py-5 space-y-4">
+
+      <!-- ═══ HEADER ═══ -->
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="text-xl font-bold text-white font-display">Pipeline de casos</h1>
+          <p class="text-[11px] text-slate-400 mt-0.5">
+            48 casos activos
+            <span class="ml-2 inline-flex items-center gap-1 text-rose-400 font-semibold">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+              12 vencidas
+            </span>
+            <span class="ml-2 text-slate-500">· 4 sin clasificar</span>
+          </p>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Search -->
+          <div class="relative">
+            <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" placeholder="Buscar cliente, expediente, recibo USCIS o NVC…" class="h-8 w-80 pl-8 pr-3 text-[11px] bg-white/[0.04] border border-white/10 rounded-md focus:outline-none focus:border-cyan-accent/50 placeholder:text-slate-500">
+          </div>
+          <!-- Owner filter -->
+          <select class="h-8 w-40 text-[11px] bg-white/[0.04] border border-white/10 rounded-md px-2 focus:outline-none focus:border-cyan-accent/50">
+            <option>Todo el equipo</option>
+            <option>Gerald Lorenzo</option>
+            <option>María Paralegal</option>
+          </select>
+          <!-- View toggle -->
+          <div class="flex items-center bg-white/[0.04] border border-white/10 rounded-md p-0.5">
+            <button class="toggle-active flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              Tabla
+            </button>
+            <button class="toggle-inactive flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+              Kanban
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ PIPELINE TABLA (agrupada por stages) ═══ -->
+      <div class="space-y-2">
+
+        <!-- ── STAGE: USCIS (azul) ── -->
+        <div class="rounded-xl border border-white/8 bg-white/[0.02] overflow-hidden">
+          <div class="px-4 py-2.5 flex items-center justify-between bg-gradient-to-r from-ai-blue/15 to-transparent border-b border-white/5">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">🏛️</span>
+              <div>
+                <h3 class="text-[12px] font-bold text-white font-display">USCIS</h3>
+                <p class="text-[9px] text-slate-400">Petición en proceso</p>
+              </div>
+              <span class="text-[10px] font-mono text-white tabular bg-ai-blue/15 border border-ai-blue/30 px-1.5 py-0.5 rounded">18</span>
+            </div>
+            <div class="stage-bar w-32 bg-white/5">
+              <div class="stage-bar bg-ai-blue/80" style="width:62%"></div>
+            </div>
+          </div>
+          <!-- column headers -->
+          <div class="grid grid-cols-[minmax(220px,2fr)_minmax(140px,1fr)_120px_70px_90px_100px_minmax(120px,1fr)] gap-3 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5">
+            <div>Cliente</div><div>Tipo</div><div>Expediente</div><div class="text-center">Días</div><div class="text-center">Tareas</div><div>Próximo</div><div>Owner</div>
+          </div>
+          <!-- rows -->
+          <button class="row-hover w-full grid grid-cols-[minmax(220px,2fr)_minmax(140px,1fr)_120px_70px_90px_100px_minmax(120px,1fr)] gap-3 px-4 py-2 border-t border-white/5 text-left items-center">
+            <div class="flex items-center gap-2"><div class="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-[10px] font-semibold text-slate-300">MG</div><span class="text-[13px] font-medium text-white">María García</span></div>
+            <div class="text-[11px] text-slate-400">I-130 (Esposa)</div>
+            <div class="text-[10px] font-mono text-slate-500">MSC2326501234</div>
+            <div class="text-[11px] font-semibold text-center tabular text-rose-400 flex items-center justify-center gap-1"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>87d</div>
+            <div class="flex items-center justify-center gap-1 text-[11px] text-rose-400 font-semibold"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>3</div>
+            <div class="text-[11px] text-rose-400 font-semibold tabular">RFE 3d</div>
+            <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded-full bg-ai-blue/30 flex items-center justify-center text-[8px] font-bold text-cyan-accent">GL</div><span class="text-[11px] text-slate-400">Gerald</span></div>
+          </button>
+          <button class="row-hover w-full grid grid-cols-[minmax(220px,2fr)_minmax(140px,1fr)_120px_70px_90px_100px_minmax(120px,1fr)] gap-3 px-4 py-2 border-t border-white/5 text-left items-center">
+            <div class="flex items-center gap-2"><div class="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-[10px] font-semibold text-slate-300">AL</div><span class="text-[13px] font-medium text-white">Ana López</span></div>
+            <div class="text-[11px] text-slate-400">I-485 (AOS)</div>
+            <div class="text-[10px] font-mono text-slate-500">MSC2326507789</div>
+            <div class="text-[11px] font-semibold text-center tabular text-amber-300 flex items-center justify-center gap-1"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>62d</div>
+            <div class="flex items-center justify-center gap-1 text-[11px] text-slate-300 tabular">5</div>
+            <div class="text-[11px] text-amber-300 font-semibold tabular">USCIS 5d</div>
+            <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded-full bg-ai-blue/30 flex items-center justify-center text-[8px] font-bold text-cyan-accent">GL</div><span class="text-[11px] text-slate-400">Gerald</span></div>
+          </button>
+          <button class="row-hover w-full grid grid-cols-[minmax(220px,2fr)_minmax(140px,1fr)_120px_70px_90px_100px_minmax(120px,1fr)] gap-3 px-4 py-2 border-t border-white/5 text-left items-center">
+            <div class="flex items-center gap-2"><div class="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-[10px] font-semibold text-slate-300">CM</div><span class="text-[13px] font-medium text-white">Carlos Méndez</span></div>
+            <div class="text-[11px] text-slate-400">I-485 (AOS)</div>
+            <div class="text-[10px] font-mono text-slate-500">MSC2326504456</div>
+            <div class="text-[11px] font-semibold text-center tabular text-slate-300 flex items-center justify-center gap-1"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>34d</div>
+            <div class="flex items-center justify-center gap-1 text-[11px] text-slate-300 tabular">2</div>
+            <div class="text-[11px] text-slate-400 tabular">—</div>
+            <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold text-slate-300">MP</div><span class="text-[11px] text-slate-400">María</span></div>
+          </button>
+          <div class="px-4 py-1.5 text-[10px] text-slate-500 border-t border-white/5">+ 15 casos más en USCIS</div>
+        </div>
+
+        <!-- ── STAGE: NVC (amber) ── -->
+        <div class="rounded-xl border border-white/8 bg-white/[0.02] overflow-hidden">
+          <div class="px-4 py-2.5 flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-transparent border-b border-white/5">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">📋</span>
+              <div>
+                <h3 class="text-[12px] font-bold text-white font-display">NVC</h3>
+                <p class="text-[9px] text-slate-400">Visa Center</p>
+              </div>
+              <span class="text-[10px] font-mono text-white tabular bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded">6</span>
+            </div>
+            <div class="stage-bar w-32 bg-white/5">
+              <div class="stage-bar bg-amber-500/70" style="width:25%"></div>
+            </div>
+          </div>
+          <div class="grid grid-cols-[minmax(220px,2fr)_minmax(140px,1fr)_120px_70px_90px_100px_minmax(120px,1fr)] gap-3 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5">
+            <div>Cliente</div><div>Tipo</div><div>Expediente</div><div class="text-center">Días</div><div class="text-center">Tareas</div><div>Próximo</div><div>Owner</div>
+          </div>
+          <button class="row-hover w-full grid grid-cols-[minmax(220px,2fr)_minmax(140px,1fr)_120px_70px_90px_100px_minmax(120px,1fr)] gap-3 px-4 py-2 border-t border-white/5 text-left items-center">
+            <div class="flex items-center gap-2"><div class="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-[10px] font-semibold text-slate-300">JP</div><span class="text-[13px] font-medium text-white">Juan Pérez</span></div>
+            <div class="text-[11px] text-slate-400">CR-1 (Esposa)</div>
+            <div class="text-[10px] font-mono text-slate-500">CDJ2026123456</div>
+            <div class="text-[11px] font-semibold text-center tabular text-emerald-400 flex items-center justify-center gap-1"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>12d</div>
+            <div class="flex items-center justify-center gap-1 text-[11px] text-slate-300 tabular">1</div>
+            <div class="text-[11px] text-cyan-accent tabular">DS-260 ready</div>
+            <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded-full bg-ai-blue/30 flex items-center justify-center text-[8px] font-bold text-cyan-accent">GL</div><span class="text-[11px] text-slate-400">Gerald</span></div>
+          </button>
+          <div class="px-4 py-1.5 text-[10px] text-slate-500 border-t border-white/5">+ 5 casos más en NVC</div>
+        </div>
+
+        <!-- ── STAGE: Embajada (orange) ── -->
+        <div class="rounded-xl border border-white/8 bg-white/[0.02] overflow-hidden">
+          <div class="px-4 py-2.5 flex items-center justify-between bg-gradient-to-r from-orange-500/10 to-transparent border-b border-white/5">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">🏛️</span>
+              <div>
+                <h3 class="text-[12px] font-bold text-white font-display">Embajada</h3>
+                <p class="text-[9px] text-slate-400">Entrevista consular</p>
+              </div>
+              <span class="text-[10px] font-mono text-white tabular bg-orange-500/15 border border-orange-500/30 px-1.5 py-0.5 rounded">3</span>
+            </div>
+            <div class="stage-bar w-32 bg-white/5">
+              <div class="stage-bar bg-orange-500/70" style="width:18%"></div>
+            </div>
+          </div>
+          <div class="grid grid-cols-[minmax(220px,2fr)_minmax(140px,1fr)_120px_70px_90px_100px_minmax(120px,1fr)] gap-3 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5">
+            <div>Cliente</div><div>Tipo</div><div>Expediente</div><div class="text-center">Días</div><div class="text-center">Tareas</div><div>Próximo</div><div>Owner</div>
+          </div>
+          <button class="row-hover w-full grid grid-cols-[minmax(220px,2fr)_minmax(140px,1fr)_120px_70px_90px_100px_minmax(120px,1fr)] gap-3 px-4 py-2 border-t border-white/5 text-left items-center">
+            <div class="flex items-center gap-2"><div class="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-[10px] font-semibold text-slate-300">RC</div><span class="text-[13px] font-medium text-white">Roberto Castro</span></div>
+            <div class="text-[11px] text-slate-400">N-400</div>
+            <div class="text-[10px] font-mono text-slate-500">NBC2026003344</div>
+            <div class="text-[11px] font-semibold text-center tabular text-slate-300 flex items-center justify-center gap-1"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>8d</div>
+            <div class="flex items-center justify-center gap-1 text-[11px] text-slate-300 tabular">3</div>
+            <div class="text-[11px] text-cyan-accent tabular">Cita 14/06</div>
+            <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded-full bg-ai-blue/30 flex items-center justify-center text-[8px] font-bold text-cyan-accent">GL</div><span class="text-[11px] text-slate-400">Gerald</span></div>
+          </button>
+          <div class="px-4 py-1.5 text-[10px] text-slate-500 border-t border-white/5">+ 2 casos más en Embajada</div>
+        </div>
+
+        <!-- ── STAGE: Aprobado (emerald) ── -->
+        <div class="rounded-xl border border-white/8 bg-white/[0.02] overflow-hidden">
+          <div class="px-4 py-2.5 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 to-transparent border-b border-white/5">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">✅</span>
+              <div>
+                <h3 class="text-[12px] font-bold text-white font-display">Aprobado</h3>
+                <p class="text-[9px] text-slate-400">Decisión positiva últimos 30d</p>
+              </div>
+              <span class="text-[10px] font-mono text-white tabular bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded">11</span>
+            </div>
+            <div class="stage-bar w-32 bg-white/5">
+              <div class="stage-bar bg-emerald-500/70" style="width:38%"></div>
+            </div>
+          </div>
+          <div class="px-4 py-2 text-[11px] text-slate-400 italic">11 casos cerrados con aprobación en los últimos 30 días</div>
+        </div>
+
+        <!-- ── STAGE: Negado (collapsed por default) ── -->
+        <div class="rounded-xl border border-white/8 bg-white/[0.02] overflow-hidden">
+          <div class="px-4 py-2.5 flex items-center justify-between bg-gradient-to-r from-rose-500/8 to-transparent">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">❌</span>
+              <div>
+                <h3 class="text-[12px] font-bold text-white font-display">Negado</h3>
+                <p class="text-[9px] text-slate-400">Decisión negativa últimos 30d</p>
+              </div>
+              <span class="text-[10px] font-mono text-white tabular bg-rose-500/15 border border-rose-500/30 px-1.5 py-0.5 rounded">2</span>
+            </div>
+            <button class="text-[10px] text-slate-400 hover:text-cyan-accent">Expandir ↓</button>
+          </div>
+        </div>
+
+        <!-- ── STAGE: Admin Processing ── -->
+        <div class="rounded-xl border border-white/8 bg-white/[0.02] overflow-hidden">
+          <div class="px-4 py-2.5 flex items-center justify-between bg-gradient-to-r from-violet-500/8 to-transparent">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">⏸️</span>
+              <div>
+                <h3 class="text-[12px] font-bold text-white font-display">Admin Processing</h3>
+                <p class="text-[9px] text-slate-400">221(g) / FBI namecheck</p>
+              </div>
+              <span class="text-[10px] font-mono text-white tabular bg-violet-500/15 border border-violet-500/30 px-1.5 py-0.5 rounded">4</span>
+            </div>
+            <button class="text-[10px] text-slate-400 hover:text-cyan-accent">Expandir ↓</button>
+          </div>
+        </div>
+
+        <!-- ── STAGE: Sin clasificar ── -->
+        <div class="rounded-xl border border-amber-500/20 bg-amber-500/[0.03] overflow-hidden">
+          <div class="px-4 py-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">⚠️</span>
+              <div>
+                <h3 class="text-[12px] font-bold text-amber-200 font-display">Sin clasificar</h3>
+                <p class="text-[9px] text-amber-300/60">Necesitan asignar process_stage manualmente</p>
+              </div>
+              <span class="text-[10px] font-mono text-amber-200 tabular bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded">4</span>
+            </div>
+            <button class="text-[10px] text-amber-300 hover:text-amber-200">Asignar etapa →</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer / breakdown -->
+      <div class="rounded-xl border border-white/8 bg-white/[0.02] px-4 py-2.5 flex items-center justify-between text-[10px] text-slate-400">
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-ai-blue"></span> 18 USCIS</span>
+          <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 6 NVC</span>
+          <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span> 3 Embajada</span>
+          <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 11 Aprobado</span>
+          <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> 2 Negado</span>
+          <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> 4 Admin</span>
+        </div>
+        <div class="text-cyan-accent">Click cualquier row → /case-engine/&lt;case_id&gt;</div>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<!-- Footer informativo del mockup (no parte del producto) -->
+<div class="fixed bottom-4 right-4 max-w-md text-[10px] text-slate-500 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg px-3 py-2 leading-snug">
+  <p class="text-white/80 font-semibold mb-1">📌 Mockup Fase C — Activación Casos</p>
+  <p>Esto es lo que va a ver el paralegal cuando flippeemos <code class="text-cyan-accent">casos.enabled = true</code> en <code class="text-cyan-accent">hubSections.ts</code>.</p>
+  <p class="mt-1 text-amber-300/80">Realidad: <code>HubCasesPage.tsx</code> (244 LOC) ya construido con tabla + kanban toggle. Solo falta flip + Lovable hard refresh.</p>
+</div>
+
+</body>
+</html>
