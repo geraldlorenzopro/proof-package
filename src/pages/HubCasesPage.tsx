@@ -48,7 +48,8 @@ export default function HubCasesPage() {
   // Resolver userId logueado (necesario para "Mis casos" / "Pte acción mía")
   useEffect(() => {
     if (demoMode) {
-      setUserId("demo-user-paralegal");
+      // Vanessa Rivera = canonical paralegal persona (matches DEMO_CASES assigned_to)
+      setUserId("demo-u-vanessa");
       return;
     }
     void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
