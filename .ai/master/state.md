@@ -1,8 +1,8 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-19 (auditoría E2E Hub Inicio cerrada · gate temporal case-engine aplicado · próximo Sprint B brand-align)
+**Última actualización:** 2026-05-19 (Sprint B Fase B CERRADO · 147 leaks migrados · 5043 LOC dead eliminadas · listo para Fase C activar Casos)
 **Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) + Mr. Lorenzo UX validation
-**Próximo update:** post-Sprint B (brand-align case-engine + paneles) → activar Casos
+**Próximo update:** post-Fase C (activar Casos) → arrancar Forms (paso 3 Camino A)
 
 ---
 
@@ -67,18 +67,27 @@ Auditoría E2E del Hub Inicio detectó:
 
 **Sprint B plan:**
 - ✅ **Fase A:** Gate temporal con `HUB_SECTIONS.casos.enabled` check
-  en HubCrisisBar + HubAgendaWidget + HubRiskWidget (commit en proceso)
-- ⏳ **Fase B (3-4 días):** Brand-align case-engine + 18 paneles:
-  - `--jarvis` → `--cyan-accent` (74 occ)
-  - `--accent` gold → `--ai-blue` (28 occ)
-  - `font-display` → `font-sora` (6 occ)
-  - Anti-flash 3-capas para `/case-engine/*`
-  - Botón "Volver" del case-engine: `/hub/cases` → `/hub` mientras Casos PRONTO
-  - Fix 2 leaks legacy del Hub Inicio (HubLayout + modal recursos)
-- ⚫ **Fase C:** Flip `casos.enabled=true` en `hubSections.ts` + remover
-  gate temporal. HubCasesPage existente (tabla + kanban + filtros)
-  queda accesible. Sprint pendiente del ROADMAP (status legal +
-  ball-in-court + export CSV) queda separado.
+  en HubCrisisBar + HubAgendaWidget + HubRiskWidget (commit 51ac43b)
+- ✅ **Fase B CERRADA (2026-05-19):** Brand-align Hub Inicio + case-engine
+  completos. Resultado vs estimación original (3-4 días → ~1 día con
+  Lovable validando entre lotes):
+  - Lote 1: HubLayout + HubDashboard + OnboardingWizard (14 leaks)
+  - Lote 1.5: Camila + ClientEditor migrados + 842 LOC dead deleted
+    (HubAuditLog + OperativeFeed + HubToolPermissions)
+  - Lote 2: CaseEnginePage (18 leaks) + botón Volver dinámico
+  - Lote 3: 3 sidebars compactos (9 leaks)
+  - Lote 4: 6 paneles principales (51 leaks)
+  - Lote 5: 6 paneles secundarios (21 leaks)
+  - Lote 5.5: 4201 LOC dead deleted (CaseWorkspace + 7 deps legacy
+    arquitectónicas de /dashboard/case-workspace/* migrado en commits
+    75a9d4e + 95e5e69 pero nunca limpiadas)
+  - Lote 6: Anti-flash navy pre-paint para `/case-engine/*` en index.html
+  - **Total: 147 leaks migrados + 5043 LOC eliminadas**
+  - VoiceAIPanel + NerVoiceOrb diferidos (sprint cuando active Equipo)
+- ⚫ **Fase C — próxima:** Flip `casos.enabled=true` en `hubSections.ts`
+  + remover gate temporal. HubCasesPage existente (tabla + kanban +
+  filtros) queda accesible. Sprint pendiente del ROADMAP (status legal +
+  ball-in-court + export CSV + Sprint 2 drag-drop) queda separado.
 4. **Briefing inteligente fallback** si pulse = 0% (frase "tu día está despejado")
 
 **Pending no-bloqueante (post-Casos):**

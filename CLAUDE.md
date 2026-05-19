@@ -373,9 +373,9 @@ Specs y mockup canonical:
 - `--primary` reasignado en `index.css` a AI Blue (`220 83% 53%`) — antes era navy legacy
 - Tokens nuevos agregados: `--ai-blue`, `--deep-navy`, `--cyan-accent`, `--soft-gray`, `--graphite`
 - Módulo Smart Forms (9 archivos, 218 usos) migrado a Variante A cyan 18%
-- **Deuda técnica:** 60+ archivos del repo siguen con `--accent` gold legacy + `--jarvis` cyan glow legacy (CSPACalculator, AffidavitCalculator, Auth, Settings, Dashboard, Index, etc.). Sprint dedicado "Brandbook Compliance Global" pendiente (~10-12h).
-- `index.css` línea 7 todavía dice "JARVIS Design System" — actualizar cuando se haga el cleanup global.
-- **Sprint B activo (2026-05-19):** primer slice del cleanup global es **case-engine + 18 paneles**. Auditoría detectó 74 occ `jarvis` + 28 occ `accent` gold + 6 occ `font-display` + 0 occ tokens nuevos / Sora. Bloquea activación de Fase 1 (Casos). Ver `decisions.md` 2026-05-19 + `state.md` para plan. Mientras tanto, gate temporal aplicado en 3 widgets del Hub Inicio (`HUB_SECTIONS.casos.enabled` check + toast "Próximamente").
+- **Deuda técnica restante:** Hub + case-engine ya migrados (Sprint B Fase B). Resto del repo: ~40 archivos siguen con `--accent` gold legacy + `--jarvis` cyan glow legacy (CSPACalculator, AffidavitCalculator, Auth, Settings, Dashboard, Index, etc.). Sprint global pendiente para fase posterior.
+- `index.css` header ya dice "NER Immigration AI – AI Blue Brand System" (post-Ola 4.2.a). Comentarios `JARVIS TOKEN` y similares en bloque de tokens son **históricos** — documentan que los tokens `--jarvis` están reasignados a Cyan brandbook 188 86% 53%. No tocar (docs útiles para futuras lecturas).
+- **Sprint B Fase B CERRADO (2026-05-19):** Hub Inicio + case-engine 100% brand-compliant. 147 leaks migrados (jarvis→cyan-accent, accent gold→ai-blue, font-display→font-sora). 5043 LOC dead code eliminadas (HubAuditLog + OperativeFeed + HubToolPermissions del Hub; CaseWorkspace + 7 deps arquitectónicas del case-engine). Anti-flash 3-capas aplicado a `/case-engine/*`. Gate temporal en 3 widgets Hub Inicio (HUB_SECTIONS.casos.enabled) preparado para activar Fase 1. VoiceAIPanel + NerVoiceOrb diferidos (sprint cuando active Equipo). Ver `decisions.md` 2026-05-19 + `state.md` para detalles.
 
 **Tipografía oficial:**
 - **Sora** (primary) — moderna, digital-first
