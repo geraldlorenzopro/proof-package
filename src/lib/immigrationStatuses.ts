@@ -1,6 +1,6 @@
 /**
  * Single source of truth for immigration status values.
- * Used in: ClientProfileEditor (dropdown), CaseWorkspace (badge), any future reference.
+ * Used in: ClientProfilePage, intake forms, case display badges.
  */
 
 export interface ImmigrationStatus {

@@ -44,7 +44,6 @@ import SmartFormsLayout from "./components/smartforms/SmartFormsLayout";
 import ClientQuestionnaire from "./pages/ClientQuestionnaire";
 import NotFound from "./pages/NotFound";
 import PdfFieldInspector from "./pages/PdfFieldInspector";
-import CaseWorkspace from "./pages/CaseWorkspace";
 import CaseEnginePage from "./pages/CaseEnginePage";
 // Ola 4.1: IntelligenceCenterPage removido — /hub/intelligence ahora redirect a /hub/reports
 import ReportsPage from "./pages/ReportsPage";
