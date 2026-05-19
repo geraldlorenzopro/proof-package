@@ -12,6 +12,7 @@ import CaseTable from "@/components/hub/CaseTable";
 import CaseKanban from "@/components/hub/CaseKanban";
 import CaseKpiStrip from "@/components/hub/CaseKpiStrip";
 import CaseViewTabs from "@/components/hub/CaseViewTabs";
+import CasePeekPanel from "@/components/hub/CasePeekPanel";
 import { useCasePipeline, PIPELINE_COLUMNS } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
@@ -39,7 +40,9 @@ export default function HubCasesPage() {
   const [search, setSearch] = useState("");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
+  const [team, setTeam] = useState<Array<{ user_id: string; full_name: string }>>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [peekCaseId, setPeekCaseId] = useState<string | null>(null);
   const { activeView, setActiveView } = useCaseViews();
 
   // Resolver userId logueado (necesario para "Mis casos" / "Pte acción mía")
@@ -55,10 +58,15 @@ export default function HubCasesPage() {
     // Demo mode: inyectar staffNames desde DEMO_CASES (los UUIDs demo no existen en BD)
     if (demoMode) {
       const map: Record<string, string> = {};
+      const teamList: Array<{ user_id: string; full_name: string }> = [];
       DEMO_CASES.forEach(c => {
-        if (c.assigned_to) map[c.assigned_to] = c.assigned_to_name;
+        if (c.assigned_to && !map[c.assigned_to]) {
+          map[c.assigned_to] = c.assigned_to_name;
+          teamList.push({ user_id: c.assigned_to, full_name: c.assigned_to_name });
+        }
       });
       setStaffNames(map);
+      setTeam(teamList);
       return;
     }
     if (!accountId) return;
@@ -68,10 +76,16 @@ export default function HubCasesPage() {
       .eq("account_id", accountId)
       .then(({ data }) => {
         const map: Record<string, string> = {};
+        const teamList: Array<{ user_id: string; full_name: string }> = [];
         (data || []).forEach((m: any) => {
-          if (m.user_id) map[m.user_id] = m.profiles?.full_name || "Staff";
+          if (m.user_id) {
+            const name = m.profiles?.full_name || "Staff";
+            map[m.user_id] = name;
+            teamList.push({ user_id: m.user_id, full_name: name });
+          }
         });
         setStaffNames(map);
+        setTeam(teamList);
       });
   }, [accountId, demoMode]);
 
@@ -279,11 +293,27 @@ export default function HubCasesPage() {
             )}
           </div>
         ) : view === "tabla" ? (
-          <CaseTable columns={filteredColumns} staffNames={staffNames} />
+          <CaseTable
+            columns={filteredColumns}
+            staffNames={staffNames}
+            team={team}
+            activeCaseId={peekCaseId}
+            onRowClick={(id) => setPeekCaseId(id)}
+          />
         ) : (
           <CaseKanban columns={filteredColumns} staffNames={staffNames} />
         )}
       </div>
+
+      {/* Peek panel lateral — click row → abre acá, NO navega al case-engine */}
+      <CasePeekPanel
+        c={peekCaseId ? filteredCases.find(c => c.id === peekCaseId) || null : null}
+        ownerName={peekCaseId ? staffNames[filteredCases.find(c => c.id === peekCaseId)?.assigned_to || ""] || null : null}
+        onClose={() => setPeekCaseId(null)}
+        onOpenCase={() => {
+          if (peekCaseId) navigate(`/case-engine/${peekCaseId}`);
+        }}
+      />
     </HubLayout>
   );
 }

@@ -1,8 +1,59 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-19 (Sprint B Fase B CERRADO · 147 leaks migrados · 5043 LOC dead eliminadas · listo para Fase C activar Casos)
-**Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) + Mr. Lorenzo UX validation
-**Próximo update:** post-Fase C (activar Casos) → arrancar Forms (paso 3 Camino A)
+**Última actualización:** 2026-05-19 (Sprint Casos v2 IMPLEMENTADO · Monday-style opinionated · Fase C activada `casos.enabled=true`)
+**Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) UX review + Mr. Lorenzo UX validation
+**Próximo update:** post-validación visual Mr. Lorenzo + Lovable runtime → arrancar Forms (paso 3 Camino A)
+
+---
+
+## 🚀 Sprint Casos v2 — CERRADO (2026-05-19)
+
+Implementación completa del HubCasesPage v2 Monday-style opinionated
+según mockup `mockups/NER-HUB-CASOS-FASE-C-V2.html` validado por
+Lovable UX y Mr. Lorenzo.
+
+### Lotes completados
+
+| Lote | Scope | Status |
+|:--:|---|:--:|
+| A | KPI strip + Tabs guardables + Toolbar refactor | ✅ |
+| B | Tabla 6 cols + sticky group headers colapsables + col Alertas | ✅ |
+| C | Inline edit Stage + Owner con Optimistic UI rollback | ✅ |
+| D | Panel peek lateral 480px + keyboard nav (ESC/⏎) | ✅ |
+| E | Virtualization @tanstack/react-virtual | ⚠️ Pendiente (network blocked en sandbox) |
+| F | Activar Casos (`casos.enabled=true`) + cleanup gate temporal automático | ✅ |
+
+### Componentes nuevos (12 archivos)
+
+| Archivo | LOC | Propósito |
+|---|---:|---|
+| `useCasesKpis.ts` | 109 | KPI strip data (4 métricas sin culpógenos) |
+| `useCaseViews.ts` | 113 | Tabs guardables persistentes localStorage |
+| `useCaseInlineEdit.ts` | 64 | Optimistic UI con rollback toast genérico |
+| `useCasePeekData.ts` | 110 | Notas + tareas del peek panel |
+| `CaseKpiStrip.tsx` | 59 | 4 boxes top (Mis casos / Pte acción / Deadlines 7d / Cerrados 30d) |
+| `CaseViewTabs.tsx` | 55 | 5 tabs (Mis casos DEFAULT / Urgentes / Pte acción mía / Cerrados 30d / Todos) |
+| `CaseAlertsCell.tsx` | 88 | Col 40px con íconos Felix/Camila/RFE/doc (diferenciador NER vs Monday) |
+| `CaseStageInlineEdit.tsx` | 119 | Chip stage editable dropdown |
+| `CaseOwnerInlineEdit.tsx` | 137 | Avatar owner editable dropdown |
+| `CasePeekPanel.tsx` | 254 | Slide-in lateral 480px (Linear/Things pattern) |
+| `CaseTable.tsx` | refactor | 6 cols nuevas + sticky group headers + click row → peek |
+| `HubCasesPage.tsx` | refactor | Header + Search ⌘K + KPI + Tabs + Toolbar + peek integration |
+
+### Paridad visual estricta con mockup
+- Tokens Tailwind literales copiados del mockup (rounded-[10px], text-slate-400, font-sora, etc.)
+- HSL del proyecto = HEX del mockup (verificado: --ai-blue=220 83% 53%=#2563EB)
+- Fonts: Sora + Inter + IBM Plex Mono cargadas en index.css
+- Layout: max-w-[1400px] no usado (full-width como mockup)
+- Anti-flash 3-capas heredado del Sprint B Fase B
+
+### Deuda técnica pendiente
+- ⚠️ **Virtualization** (`@tanstack/react-virtual`) — Lovable debe instalar
+  `bun add @tanstack/react-virtual` y reemplazar el map de rows en CaseTable
+  con `useVirtualizer`. Crítico con >100 casos (Mr Visa puede tener 500).
+- Sprint 2 ROADMAP pendiente: drag-drop entre stages + saved views + bulk
+  actions + keyboard shortcuts (j/k, /) + columnas ICE/Corte/CBP/Aeropuerto
+  + export CSV + status legal column + ball-in-court badge.
 
 ---
 

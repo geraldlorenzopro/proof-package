@@ -43,7 +43,7 @@ export const HUB_SECTIONS: Record<HubSectionKey, HubSectionMeta> = {
     key: "casos",
     label: "Casos",
     path: "/hub/cases",
-    enabled: false,
+    enabled: true,
     order: 1,
     comingSoon: {
       title: "Pipeline de casos — vertical inmigración",
