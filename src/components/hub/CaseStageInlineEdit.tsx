@@ -9,6 +9,7 @@
  * directo; Sprint 2 puede agregar confirmación modal.
  */
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { PIPELINE_COLUMNS } from "@/hooks/useCasePipeline";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
 import type { PipelineCase, PipelineStageKey } from "@/hooks/useCasePipeline";
@@ -32,11 +33,22 @@ const STAGE_CHIP: Record<string, string> = {
 export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
   const [open, setOpen] = useState(false);
   const [currentStage, setCurrentStage] = useState(c.process_stage || "sin-clasificar");
+  const [popPos, setPopPos] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const { saving, edit } = useCaseInlineEdit();
 
   useEffect(() => { setCurrentStage(c.process_stage || "sin-clasificar"); }, [c.process_stage]);
+
+  // Cuando abre, calcular posición del trigger para renderizar via Portal.
+  // Necesario porque el virtualizer (CaseTable Lote E) usa transform:translateY
+  // en cada row, lo cual crea contexto de stacking aislado que corta cualquier
+  // position:absolute interno.
+  useEffect(() => {
+    if (!open) return;
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) setPopPos({ top: rect.bottom + 4, left: rect.left });
+  }, [open]);
 
   // Click outside cierra
   useEffect(() => {
@@ -93,10 +105,11 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
         <span className="text-[8px] ml-0.5 opacity-70">▾</span>
       </button>
 
-      {open && (
+      {open && popPos && typeof document !== "undefined" && createPortal(
         <div
           ref={popoverRef}
-          className="absolute z-50 top-full left-0 mt-1 w-[220px] rounded-lg border border-cyan-accent/30 bg-deep-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 p-1"
+          style={{ position: "fixed", top: popPos.top, left: popPos.left, zIndex: 9999 }}
+          className="w-[220px] rounded-lg border border-cyan-accent/30 bg-deep-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 p-1"
           onClick={(e) => e.stopPropagation()}
         >
           <p className="text-[9px] uppercase tracking-wider text-slate-500 px-2 py-1.5 font-semibold">Mover a etapa…</p>
@@ -114,7 +127,8 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

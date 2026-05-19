@@ -5,6 +5,7 @@
  * select → optimistic update con rollback si falla.
  */
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
 
 interface TeamMember {
@@ -44,11 +45,21 @@ export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwn
   const [open, setOpen] = useState(false);
   const [ownerId, setOwnerId] = useState(currentOwnerId);
   const [ownerName, setOwnerName] = useState(currentOwnerName);
+  const [popPos, setPopPos] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const { saving, edit } = useCaseInlineEdit();
 
   useEffect(() => { setOwnerId(currentOwnerId); setOwnerName(currentOwnerName); }, [currentOwnerId, currentOwnerName]);
+
+  // Cuando abre, calcular posición del trigger. Necesario para renderizar
+  // vía Portal — el virtualizer del CaseTable corta cualquier dropdown
+  // interno por su transform:translateY (contexto de stacking aislado).
+  useEffect(() => {
+    if (!open) return;
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) setPopPos({ top: rect.bottom + 4, left: rect.left });
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -120,10 +131,11 @@ export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwn
         )}
       </button>
 
-      {open && (
+      {open && popPos && typeof document !== "undefined" && createPortal(
         <div
           ref={popoverRef}
-          className="absolute z-50 top-full left-0 mt-1 w-[220px] rounded-lg border border-cyan-accent/30 bg-deep-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 p-1"
+          style={{ position: "fixed", top: popPos.top, left: popPos.left, zIndex: 9999 }}
+          className="w-[220px] rounded-lg border border-cyan-accent/30 bg-deep-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 p-1"
           onClick={(e) => e.stopPropagation()}
         >
           <p className="text-[9px] uppercase tracking-wider text-slate-500 px-2 py-1.5 font-semibold">Asignar a…</p>
@@ -150,7 +162,8 @@ export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwn
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
