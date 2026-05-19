@@ -425,12 +425,20 @@ function HubDashboardInner({
   const firstName = demoMode
     ? "Pablo"
     : ((resolvedName || staffName || "").split(" ")[0] || "");
+
+  // Reloj vivo — re-render cada 30s para mantener HH:mm actualizado en el briefing
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const greeting = useMemo(() => {
-    const lh = parseInt(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false }).format(new Date()));
+    const lh = parseInt(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false }).format(now));
     if (lh < 12) return "Buenos días";
     if (lh < 18) return "Buenas tardes";
     return "Buenas noches";
-  }, []);
+  }, [now]);
 
   // Hub v7 — micro-briefing data-driven (no prosa)
   const microBriefing = useMemo(() => {
