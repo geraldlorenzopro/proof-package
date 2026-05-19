@@ -546,7 +546,7 @@ function HubDashboardInner({
                       Camila · briefing
                     </p>
                     <span className="text-[10px] text-muted-foreground/60 font-mono">
-                      {format(new Date(), "EEEE d 'de' MMMM · HH:mm", { locale: es })}
+                      {format(now, "EEEE d 'de' MMMM · HH:mm", { locale: es })}
                     </span>
                   </div>
                   <p className="text-[13px] font-semibold text-foreground/95 leading-snug font-sora">
