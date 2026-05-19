@@ -11,7 +11,7 @@
 import { useState, useRef, useEffect } from "react";
 import { PIPELINE_COLUMNS } from "@/hooks/useCasePipeline";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
-import type { PipelineCase } from "@/hooks/useCasePipeline";
+import type { PipelineCase, PipelineStageKey } from "@/hooks/useCasePipeline";
 
 interface Props {
   c: PipelineCase;
@@ -72,7 +72,7 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
       newValue: stageKey,
       oldValue: old,
       onOptimistic: (v) => {
-        setCurrentStage(v as string);
+        setCurrentStage(v as PipelineStageKey);
         onStageChange(v as string);
       },
       successMessage: `Etapa actualizada → ${stageKey}`,

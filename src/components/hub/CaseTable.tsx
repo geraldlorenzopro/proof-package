@@ -1,5 +1,5 @@
 /**
- * CaseTable — Pipeline de Casos v2 (Lote B).
+ * CaseTable — Pipeline de Casos v2 (Lote B + Lote E virtualization).
  *
  * Refactor Sprint Casos v2 sobre la versión anterior:
  *   - 6 cols: Cliente | Tipo | Status | Owner | Próximo | Alertas
@@ -8,13 +8,19 @@
  *   - Notas = popover (Lote C, no col propia)
  *   - Última actividad = peek lateral (Lote D, no col)
  *   - Alertas (40px) = nueva col diferenciadora vs Monday
- *   - Sticky group headers colapsables con persistencia localStorage por user
+ *   - Group headers colapsables con persistencia localStorage por user
+ *   - Lote E: virtualización con @tanstack/react-virtual (soporta 500+ casos sin jank)
  *
  * Paridad visual estricta con mockup NER-HUB-CASOS-FASE-C-V2.html.
+ *
+ * NOTA Lote E: con virtualización los group headers ya no son `sticky` porque
+ * el scroll es interno al virtualizer y los items absolutamente posicionados
+ * no se llevan bien con position:sticky. Trade-off aceptado para escala.
  */
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronDown } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import type { PipelineColumn, PipelineCase } from "@/hooks/useCasePipeline";
 import CaseAlertsCell from "./CaseAlertsCell";
@@ -36,6 +42,8 @@ interface Props {
   onRowClick?: (caseId: string) => void;
   /** Case actualmente abierto en el peek (para highlight). */
   activeCaseId?: string | null;
+  /** Altura máxima del viewport virtualizado. Default 'calc(100vh - 280px)'. */
+  maxHeight?: string;
 }
 
 // Map stage key → emoji + accent gradient + chip color del mockup
@@ -86,8 +94,30 @@ function formatNextDue(iso: string | null | undefined): { label: string; tone: s
   return { label: `${ddmm} (${diffDays}d)`, tone: "text-slate-300" };
 }
 
-export default function CaseTable({ columns, staffNames, team = [], onCaseChange, onRowClick, activeCaseId }: Props) {
+// Flat item types para el virtualizer
+type FlatItem =
+  | { kind: "header"; key: string; col: PipelineColumn; collapsed: boolean; isFirst: boolean; size: number }
+  | { kind: "colheader"; key: string; size: number }
+  | { kind: "row"; key: string; c: PipelineCase; size: number }
+  | { kind: "empty"; key: string; size: number };
+
+const SIZE_HEADER = 44;
+const SIZE_COLHEADER = 28;
+const SIZE_ROW = 48; // h-12
+const SIZE_EMPTY = 32;
+
+export default function CaseTable({
+  columns,
+  staffNames,
+  team = [],
+  onCaseChange,
+  onRowClick,
+  activeCaseId,
+  maxHeight = "calc(100vh - 280px)",
+}: Props) {
   const navigate = useNavigate();
+  const parentRef = useRef<HTMLDivElement>(null);
+
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
     try {
       const raw = typeof window !== "undefined" ? localStorage.getItem(COLLAPSED_KEY) : null;
@@ -113,69 +143,129 @@ export default function CaseTable({ columns, staffNames, team = [], onCaseChange
     setCollapsed(prev => ({ ...prev, [key]: !isCollapsed(key) }));
   }
 
+  // Flatten columns → items array for virtualization
+  const items = useMemo<FlatItem[]>(() => {
+    const out: FlatItem[] = [];
+    columns.forEach((col, idx) => {
+      const collapsedNow = isCollapsed(col.key);
+      out.push({ kind: "header", key: `h:${col.key}`, col, collapsed: collapsedNow, isFirst: idx === 0, size: SIZE_HEADER });
+      if (!collapsedNow) {
+        if (col.cases.length > 0) {
+          out.push({ kind: "colheader", key: `ch:${col.key}`, size: SIZE_COLHEADER });
+          col.cases.forEach(c => {
+            out.push({ kind: "row", key: `r:${c.id}`, c, size: SIZE_ROW });
+          });
+        } else {
+          out.push({ kind: "empty", key: `e:${col.key}`, size: SIZE_EMPTY });
+        }
+      }
+    });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columns, collapsed]);
+
+  const virtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (i) => items[i].size,
+    overscan: 8,
+    getItemKey: (i) => items[i].key,
+  });
+
   return (
     <div className="rounded-xl border border-white/[0.08] bg-white/[0.015] overflow-hidden">
-      {columns.map((col, idx) => {
-        const meta = STAGE_META[col.key] || { emoji: "📁", accentClass: "from-slate-500/10", chipClass: "bg-slate-500/15 border-slate-500/30 text-slate-200" };
-        const collapsedNow = isCollapsed(col.key);
-        const isFirst = idx === 0;
-
-        return (
-          <div key={col.key}>
-            {/* Sticky group header */}
-            <button
-              onClick={() => toggle(col.key)}
-              className={`sticky top-0 z-10 backdrop-blur-md w-full bg-gradient-to-r ${meta.accentClass} to-transparent ${isFirst ? "" : "border-t-2 border-white/5"} border-b border-white/5 px-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors`}
-            >
-              <div className="flex items-center gap-2.5">
-                {collapsedNow
-                  ? <ChevronRight className="w-3 h-3 text-slate-500" />
-                  : <ChevronDown className="w-3 h-3 text-cyan-accent" />
-                }
-                <span className="text-base">{meta.emoji}</span>
-                <h3 className="text-[12px] font-bold text-white font-sora">{col.label}</h3>
-                <span className="text-[9px] text-slate-500">{meta.subtitle || col.description}</span>
-                <span className={`text-[10px] font-mono tabular-nums border px-1.5 py-0.5 rounded ${meta.chipClass}`}>
-                  {col.cases.length}
-                </span>
-              </div>
-            </button>
-
-            {/* Body: column headers + rows */}
-            {!collapsedNow && col.cases.length > 0 && (
-              <>
-                <div className="grid grid-cols-[minmax(220px,2fr)_140px_140px_100px_120px_60px] gap-3 px-4 py-2 text-[9px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
-                  <div>Cliente</div>
-                  <div>Tipo</div>
-                  <div>Status</div>
-                  <div>Owner</div>
-                  <div>Próximo</div>
-                  <div className="text-center">Alertas</div>
-                </div>
-                {col.cases.map(c => (
+      <div ref={parentRef} style={{ maxHeight, overflow: "auto" }}>
+        <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
+          {virtualizer.getVirtualItems().map(vi => {
+            const item = items[vi.index];
+            return (
+              <div
+                key={vi.key}
+                data-index={vi.index}
+                ref={virtualizer.measureElement}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  transform: `translateY(${vi.start}px)`,
+                }}
+              >
+                {item.kind === "header" && (
+                  <GroupHeader
+                    col={item.col}
+                    collapsed={item.collapsed}
+                    isFirst={item.isFirst}
+                    onToggle={() => toggle(item.col.key)}
+                  />
+                )}
+                {item.kind === "colheader" && <ColumnHeaderRow />}
+                {item.kind === "row" && (
                   <CaseRow
-                    key={c.id}
-                    c={c}
+                    c={item.c}
                     staffNames={staffNames}
                     team={team}
                     onCaseChange={onCaseChange}
-                    active={c.id === activeCaseId}
+                    active={item.c.id === activeCaseId}
                     onClick={() => {
-                      if (onRowClick) onRowClick(c.id);
-                      else navigate(`/case-engine/${c.id}`);
+                      if (onRowClick) onRowClick(item.c.id);
+                      else navigate(`/case-engine/${item.c.id}`);
                     }}
                   />
-                ))}
-              </>
-            )}
-            {!collapsedNow && col.cases.length === 0 && (
-              <div className="px-12 py-2 text-[11px] text-slate-500 italic">
-                Sin casos en esta etapa
+                )}
+                {item.kind === "empty" && (
+                  <div className="px-12 py-2 text-[11px] text-slate-500 italic">
+                    Sin casos en esta etapa
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GroupHeader({
+  col, collapsed, isFirst, onToggle,
+}: {
+  col: PipelineColumn;
+  collapsed: boolean;
+  isFirst: boolean;
+  onToggle: () => void;
+}) {
+  const meta = STAGE_META[col.key] || { emoji: "📁", accentClass: "from-slate-500/10", chipClass: "bg-slate-500/15 border-slate-500/30 text-slate-200" };
+  return (
+    <button
+      onClick={onToggle}
+      className={`backdrop-blur-md w-full bg-gradient-to-r ${meta.accentClass} to-transparent ${isFirst ? "" : "border-t-2 border-white/5"} border-b border-white/5 px-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors`}
+    >
+      <div className="flex items-center gap-2.5">
+        {collapsed
+          ? <ChevronRight className="w-3 h-3 text-slate-500" />
+          : <ChevronDown className="w-3 h-3 text-cyan-accent" />
+        }
+        <span className="text-base">{meta.emoji}</span>
+        <h3 className="text-[12px] font-bold text-white font-sora">{col.label}</h3>
+        <span className="text-[9px] text-slate-500">{meta.subtitle || col.description}</span>
+        <span className={`text-[10px] font-mono tabular-nums border px-1.5 py-0.5 rounded ${meta.chipClass}`}>
+          {col.cases.length}
+        </span>
+      </div>
+    </button>
+  );
+}
+
+function ColumnHeaderRow() {
+  return (
+    <div className="grid grid-cols-[minmax(220px,2fr)_140px_140px_100px_120px_60px] gap-3 px-4 py-2 text-[9px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
+      <div>Cliente</div>
+      <div>Tipo</div>
+      <div>Status</div>
+      <div>Owner</div>
+      <div>Próximo</div>
+      <div className="text-center">Alertas</div>
     </div>
   );
 }
