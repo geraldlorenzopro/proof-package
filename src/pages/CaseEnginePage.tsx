@@ -6,6 +6,7 @@ import { getCaseTypeLabel, normalizeClientName } from "@/lib/caseTypeLabels";
 import { logAccess } from "@/lib/auditLog";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { trackEvent } from "@/lib/analytics";
+import { HUB_SECTIONS } from "@/lib/hubSections";
 import CaseStrategyPanel from "@/components/case-engine/CaseStrategyPanel";
 import {
   ArrowLeft, Loader2, AlertTriangle, BarChart3, FileText,
@@ -57,7 +58,7 @@ function ShareCaseButton({ accessToken }: { accessToken: string }) {
   };
 
   return (
-    <Button variant="outline" size="sm" className="h-9 text-xs gap-1.5 border-accent/20" onClick={handleCopy}>
+    <Button variant="outline" size="sm" className="h-9 text-xs gap-1.5 border-ai-blue/20" onClick={handleCopy}>
       {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
       {copied ? "Copiado" : "Enviar al cliente"}
     </Button>
@@ -319,7 +320,7 @@ export default function CaseEnginePage() {
     return (
       <Wrapper>
         <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-jarvis animate-spin" />
+          <Loader2 className="w-8 h-8 text-cyan-accent animate-spin" />
         </div>
       </Wrapper>
     );
@@ -349,16 +350,18 @@ export default function CaseEnginePage() {
         {/* Header */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
           <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => navigate('/hub/cases')} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={() => navigate(HUB_SECTIONS.casos.enabled ? '/hub/cases' : '/hub')} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="h-4 w-px bg-border" />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Volver a Casos</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              {HUB_SECTIONS.casos.enabled ? "Volver a Casos" : "Volver al Inicio"}
+            </span>
           </div>
 
           {/* Hero card */}
-          <div className="relative overflow-hidden rounded-2xl border border-jarvis/15 bg-gradient-to-br from-card via-card to-jarvis/[0.03]">
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-jarvis/50 to-accent/50" />
+          <div className="relative overflow-hidden rounded-2xl border border-cyan-accent/15 bg-gradient-to-br from-card via-card to-cyan-accent/[0.03]">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-accent/50 to-ai-blue/50" />
             <div className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -366,7 +369,7 @@ export default function CaseEnginePage() {
                     {caseData.client_profile_id ? (
                       <span
                         onClick={() => navigate(`/hub/clients/${caseData.client_profile_id}`)}
-                        className="hover:text-jarvis transition-colors cursor-pointer underline decoration-jarvis/30 underline-offset-4"
+                        className="hover:text-cyan-accent transition-colors cursor-pointer underline decoration-cyan-accent/30 underline-offset-4"
                       >{normalizeClientName(caseData.client_name)}</span>
                     ) : normalizeClientName(caseData.client_name)}
                   </h1>
@@ -404,7 +407,7 @@ export default function CaseEnginePage() {
                               }}
                               className="cursor-pointer"
                             >
-                              <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[10px] font-semibold hover:bg-jarvis/20 transition-colors">
+                              <Badge className="bg-cyan-accent/10 text-cyan-accent border-cyan-accent/20 text-[10px] font-semibold hover:bg-cyan-accent/20 transition-colors">
                                 {processLabel}
                                 <Pencil className="w-2.5 h-2.5 ml-1 opacity-50" />
                               </Badge>
@@ -414,7 +417,7 @@ export default function CaseEnginePage() {
                         </Tooltip>
                       </TooltipProvider>
                     ) : (
-                      <Badge className="bg-jarvis/10 text-jarvis border-jarvis/20 text-[10px] font-semibold">{processLabel}</Badge>
+                      <Badge className="bg-cyan-accent/10 text-cyan-accent border-cyan-accent/20 text-[10px] font-semibold">{processLabel}</Badge>
                     )}
                     {caseData.priority_date && (
                       <Badge variant="outline" className="text-[10px] font-mono bg-blue-500/10 text-blue-400 border-blue-500/20">
@@ -424,7 +427,7 @@ export default function CaseEnginePage() {
                     <Badge variant="outline" className="text-[10px]">{daysText}</Badge>
                     <IntakeBadge caseId={caseId!} />
                     {caseData.assigned_to && (
-                      <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent border-accent/20">
+                      <Badge variant="outline" className="text-[10px] bg-ai-blue/5 text-ai-blue border-ai-blue/20">
                         <Users className="w-3 h-3 mr-1" />
                         Asignado
                       </Badge>
@@ -442,7 +445,7 @@ export default function CaseEnginePage() {
                   {/* Stage changer */}
                   {stages.length > 0 && (
                     <Select value={currentStageSlug} onValueChange={handleStageChange}>
-                      <SelectTrigger className="w-[240px] h-9 text-xs border-jarvis/20 bg-jarvis/5">
+                      <SelectTrigger className="w-[240px] h-9 text-xs border-cyan-accent/20 bg-cyan-accent/5">
                         <SelectValue placeholder="Cambiar etapa" />
                       </SelectTrigger>
                       <SelectContent>
@@ -450,7 +453,7 @@ export default function CaseEnginePage() {
                           <SelectItem key={s.slug} value={s.slug} className="text-xs">
                             <span className="flex items-center gap-2">
                               <span className={`w-2 h-2 rounded-full ${
-                                s.owner === "team" ? "bg-jarvis" : s.owner === "client" ? "bg-accent" : "bg-emerald-400"
+                                s.owner === "team" ? "bg-cyan-accent" : s.owner === "client" ? "bg-ai-blue" : "bg-emerald-400"
                               }`} />
                               {s.label}
                             </span>
@@ -508,7 +511,7 @@ export default function CaseEnginePage() {
                 {tab.label}
                 {(tab as any).liveBadge && caseId && <ConsultationLiveBadge caseId={caseId} />}
                 {tab.count !== undefined && tab.count > 0 && (
-                  <span className="text-[9px] bg-jarvis/10 text-jarvis px-1.5 py-0.5 rounded-full">{tab.count}</span>
+                  <span className="text-[9px] bg-cyan-accent/10 text-cyan-accent px-1.5 py-0.5 rounded-full">{tab.count}</span>
                 )}
               </button>
             ))}
@@ -549,7 +552,7 @@ export default function CaseEnginePage() {
                 {stages.length > 0 && (
                   <div className="rounded-2xl border border-border bg-card p-5">
                     <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-jarvis" />
+                      <BarChart3 className="w-4 h-4 text-cyan-accent" />
                       Pipeline del Caso
                     </h3>
                     <CasePipelineTracker
@@ -680,8 +683,8 @@ export default function CaseEnginePage() {
         <div className="mt-10 pt-6 border-t border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-jarvis/40" />
-              <span className="text-[10px] text-muted-foreground/50 tracking-wider uppercase font-display">Case Engine</span>
+              <Sparkles className="w-3.5 h-3.5 text-cyan-accent/40" />
+              <span className="text-[10px] text-muted-foreground/50 tracking-wider uppercase font-sora">Case Engine</span>
             </div>
             <span className="text-[10px] text-muted-foreground/30 font-mono">Powered by NER AI</span>
           </div>
