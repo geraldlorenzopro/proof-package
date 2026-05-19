@@ -753,6 +753,10 @@ function HubDashboardInner({
           </section>
           )}
 
+          {/* Spacer: absorbe espacio vertical sobrante en desktop para que el cockpit
+              llene la altura del viewport en lugar de "encogerse" cuando hay pocos datos */}
+          <div className="hidden lg:block flex-1 min-h-0" aria-hidden="true" />
+
         </div>
       </div>
 
