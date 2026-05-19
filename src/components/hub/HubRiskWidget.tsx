@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useRiskCases, RiskCase } from "@/hooks/useRiskCases";
 import { useDemoMode } from "@/hooks/useDemoData";
+import { HUB_SECTIONS } from "@/lib/hubSections";
 
 interface Props {
   accountId: string;
@@ -38,6 +39,15 @@ export default function HubRiskWidget({ accountId }: Props) {
     if (demoMode) {
       toast.info("Vista demo · navegación a caso desactivada", {
         description: "En producción, este click abre el case engine completo.",
+        duration: 3000,
+      });
+      return;
+    }
+    // Gate temporal (2026-05-18): mientras Casos esté disabled, bloquear
+    // atajo al case-engine para mantener coherencia con sidebar PRONTO.
+    if (!HUB_SECTIONS.casos.enabled) {
+      toast.info("Próximamente", {
+        description: "Los detalles del caso llegan con el módulo de Casos.",
         duration: 3000,
       });
       return;

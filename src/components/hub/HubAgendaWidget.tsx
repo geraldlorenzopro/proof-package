@@ -1,6 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Calendar, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 import { useTodayAppointments } from "@/hooks/useTodayAppointments";
+import { useDemoMode } from "@/hooks/useDemoData";
+import { HUB_SECTIONS } from "@/lib/hubSections";
 
 interface Props {
   accountId: string;
@@ -31,6 +34,33 @@ function isLiveNow(iso: string | null): boolean {
 
 export default function HubAgendaWidget({ accountId }: Props) {
   const navigate = useNavigate();
+  const demoMode = useDemoMode();
+
+  // Gate temporal (2026-05-18): mientras Casos esté disabled en hubSections,
+  // los atajos a /case-engine quedan bloqueados con toast "Próximamente".
+  // Mantiene coherencia con el sidebar PRONTO. Cuando casos.enabled = true,
+  // este check se vuelve no-op y los atajos fluyen libres.
+  function handleCardClick(caseId: string | null) {
+    if (demoMode) {
+      toast.info("Vista demo · navegación a caso desactivada", {
+        description: "En producción, este click abre el case engine completo.",
+        duration: 3000,
+      });
+      return;
+    }
+    if (!caseId) {
+      navigate("/hub/agenda");
+      return;
+    }
+    if (!HUB_SECTIONS.casos.enabled) {
+      toast.info("Próximamente", {
+        description: "Los detalles del caso llegan con el módulo de Casos.",
+        duration: 3000,
+      });
+      return;
+    }
+    navigate(`/case-engine/${caseId}`);
+  }
   const { appointments, loading } = useTodayAppointments(accountId);
   const visible = appointments.slice(0, 4);
   const extra = Math.max(0, appointments.length - visible.length);
@@ -79,7 +109,7 @@ export default function HubAgendaWidget({ accountId }: Props) {
             return (
               <button
                 key={a.id}
-                onClick={() => (a.caseId ? navigate(`/case-engine/${a.caseId}`) : navigate("/hub/agenda"))}
+                onClick={() => handleCardClick(a.caseId)}
                 className={`w-full text-left ${cardCls} border rounded-lg px-3 py-1.5 flex items-center gap-3 transition-all group`}
               >
                 <div className="shrink-0 w-11 text-center">

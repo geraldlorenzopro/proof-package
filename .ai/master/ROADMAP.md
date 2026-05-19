@@ -38,6 +38,26 @@ visual final + cleanup data seed.
 - 🛑 Pendiente OK Mr. Lorenzo (mockup v3): columna Status legal + ball-in-court badge + export CSV
 - ⚫ Sprint 2: drag-drop entre columnas, saved views, bulk actions, keyboard shortcuts, columnas reales ICE/Corte/CBP/Aeropuerto
 
+**🚧 Pre-requisito Fase 1 bloqueado por Sprint B (decidido 2026-05-19):**
+- Auditoría E2E del Hub Inicio detectó que `case-engine` (página accedida
+  vía atajos desde Hub) viola brandbook 2026-05-02 masivamente:
+  74 occ `jarvis` + 28 occ `accent` gold + 6 occ `font-display` + 0 occ
+  tokens nuevos / Sora. Activar Casos sin alinear case-engine = exponer
+  estética rechazada al cliente.
+- **Sprint B (3-4 días) bloquea activación Fase 1:**
+  - Gate temporal en 3 widgets del Hub Inicio (HubCrisisBar, HubAgendaWidget,
+    HubRiskWidget) con check `HUB_SECTIONS.casos.enabled` → toast
+    "Próximamente" mientras dura el sprint. ✅ aplicado 2026-05-19
+  - Migrar 18 archivos `src/components/case-engine/*` + `CaseEnginePage.tsx`
+    a tokens brandbook. ⏳ pendiente
+  - Fix 2 leaks legacy adicionales en Hub Inicio (HubLayout:296 +
+    HubDashboard modal recursos)
+  - Anti-flash 3-capas para `/case-engine/*`
+- Cuando Sprint B cierre: flip `casos.enabled=true` → Fase 1 activa,
+  Sprint 2 (drag-drop + status legal + CSV) queda como sprint separado.
+- Ver `decisions.md` 2026-05-19 entry "Gate temporal + Sprint brand-align"
+  para historia completa.
+
 **🚨 Refactor nuevo identificado (2026-05-11):**
 - **Hub Dashboard (`/hub`)** NO responde la pregunta del abogado principal "¿qué requiere mi firma/revisión?". Refactor crítico antes de demo: 3 widgets explícitos (Para firmar / Para revisar / Consultas hoy). Backend: agregar tipos `signature_pending` y `review_pending` en `feed-builder` edge function.
 

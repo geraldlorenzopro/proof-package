@@ -2750,6 +2750,112 @@ virtual completa".
 
 ---
 
+## 2026-05-19 — Gate temporal case-engine + Sprint brand-align Fase B
+
+**Decisión:** Bloquear los 3 atajos del Hub Inicio al `/case-engine/*`
+mediante check `HUB_SECTIONS.casos.enabled` (toast "Próximamente") hasta
+que el case-engine respete el brandbook 2026-05-02. Después, sprint
+dedicado de migración tokens Jarvis legacy → brandbook nuevo en
+case-engine + paneles. Cuando termine, activar `casos.enabled=true` y
+remover el gate temporal (los atajos vuelven a fluir libres).
+
+**Quién decidió:** Mr. Lorenzo (decisión explícita 2026-05-19 tras
+auditoría E2E del Hub Inicio).
+
+**Contexto:** Mr. Lorenzo identificó que aunque "Casos" del sidebar
+estaba marcada PRONTO, había 3 botones en el Hub Inicio que saltaban
+el gate directo al case-engine (HubCrisisBar "Ver caso", HubAgendaWidget
+cards con caseId, HubRiskWidget cards). Su frase exacta: *"no hemos
+terminado con la página de inicio si tenemos eso ahí"*. Agent de
+auditoría confirmó:
+- 3 atajos reales identificados (resto de widgets correctamente gateados)
+- Case-engine **funcional end-to-end** (8 tabs, 20 paneles, audit log,
+  share token, URL-synced)
+- Case-engine VIOLA brandbook MASIVAMENTE:
+  - 74 ocurrencias `jarvis` legacy en 18 archivos
+  - 28 ocurrencias `accent` gold legacy en 8 archivos
+  - 6 ocurrencias `font-display` Orbitron-style
+  - **0 ocurrencias** de tokens nuevos brandbook (`ai-blue`, `cyan-accent`,
+    `deep-navy`, `soft-gray`, `graphite`)
+  - **0 ocurrencias** de `font-sora` / `font-inter`
+  - Loading state crudo sin alineación con splash navy (potencial flash)
+  - Botón "Volver a Casos" del case-engine vuelve a `/hub/cases` →
+    Coming Soon mientras esté gateado (UX rota)
+- Bonus: 2 leaks legacy en el propio Hub Inicio "v7 cerrado":
+  `HubLayout.tsx:296` (`text-jarvis` back-header) y
+  `HubDashboard.tsx:757-766` (modal recursos oficiales usa
+  `bg-jarvis/border-jarvis/text-jarvis`)
+
+**Alternativas consideradas:**
+
+1. **Coherencia laxa** — aceptar que el case-engine es independiente
+   del gate de Pipeline. Click en banner rojo abre el caso aunque
+   "Casos" diga PRONTO. **Rechazada:** el botón "Volver" del
+   case-engine vuelve a `/hub/cases` que muestra Coming Soon — UX
+   rota. Además expone estética Jarvis legacy al cliente.
+
+2. **Activar Casos sin sprint de brand-align** — flip de
+   `casos.enabled=true` ahora, dejar case-engine con tokens legacy.
+   **Rechazada:** contradice el brandbook 2026-05-02 que Mr. Lorenzo
+   aprobó. Exponer estética rechazada al cliente paga es regresión.
+
+3. **Camino elegido: Sprint primero, gate después** — bloquear atajos
+   temporalmente, hacer sprint de brand-align en case-engine + paneles,
+   después activar Casos. Mantiene coherencia + entrega calidad de
+   brand al cliente cuando la ve por primera vez.
+
+**Razón:**
+- El sprint "Brandbook Compliance Global pendiente ~10-12h" ya
+  estaba listado como deuda técnica en CLAUDE.md desde 2026-05-11.
+  Elevamos a prioridad ahora porque es pre-requisito de Casos.
+- El gate temporal son 30-45 min de código (3 widgets, mismo patrón
+  demo guard ya existente). Riesgo mínimo, reversible.
+- El sprint de brand-align (3-4 días) es predecible — replace
+  mecánico de tokens via grep + replace + tsc verify.
+- Match natural con el orden del roadmap Camino A: Inicio → Casos.
+  Cerrar el case-engine con brandbook **es parte de cerrar Casos**.
+
+**Implicación:**
+
+*Inmediato (commit 5077b6b ya pusheado earlier + gate temporal commit
+en proceso):*
+- 3 archivos del Hub Inicio agregan check `HUB_SECTIONS.casos.enabled`
+  con toast "Próximamente":
+  - `src/components/hub/HubAgendaWidget.tsx`
+  - `src/components/hub/HubCrisisBar.tsx`
+  - `src/components/hub/HubRiskWidget.tsx`
+- Patrón importable desde `@/lib/hubSections`. Reusable cuando se
+  habilite otra sección dependiente.
+- Cuando `casos.enabled=true`, los checks se vuelven no-op
+  automáticamente. NO requiere borrar el código del gate.
+
+*Sprint B siguiente (3-4 días, antes de habilitar Casos):*
+- Migrar 18 archivos `src/components/case-engine/*` + `CaseEnginePage.tsx`:
+  - `--jarvis` → `--cyan-accent` (74 occurrences)
+  - `--accent` gold → `--ai-blue` (28 occurrences)
+  - `font-display` → `font-sora` (6 occurrences)
+- Anti-flash 3-capas para `/case-engine/*` (script pre-paint en
+  `index.html` + opacity 1 + cleanup loading)
+- Botón "Volver" case-engine: cambiar destino a `/hub` mientras Casos
+  PRONTO. Cuando se active, volver a `/hub/cases`.
+- Bonus: fix los 2 leaks legacy del Hub Inicio
+  (HubLayout:296 + HubDashboard modal recursos).
+
+*Tras Sprint B:*
+- Flip `casos.enabled=true` en `src/lib/hubSections.ts`
+- HubCasesPage ya existente (244 líneas con tabla + kanban + filtros +
+  USCIS receipt search) queda accesible
+- Atajos del Hub Inicio fluyen libres a case-engine brand-compliant
+- Sprint 2 de Casos pendiente del ROADMAP (status legal + ball-in-court
+  + export CSV + drag-drop) queda como sprint separado posterior
+
+**Riesgo:**
+- Sprint de brand-align toca 18 archivos → riesgo de regresión visual
+  en case-engine. Mitigación: hacer commits por lote (5-6 archivos),
+  Lovable valida cada lote en preview antes de avanzar.
+
+---
+
 ## Plantilla para nueva decisión
 
 ```markdown

@@ -375,6 +375,7 @@ Specs y mockup canonical:
 - Módulo Smart Forms (9 archivos, 218 usos) migrado a Variante A cyan 18%
 - **Deuda técnica:** 60+ archivos del repo siguen con `--accent` gold legacy + `--jarvis` cyan glow legacy (CSPACalculator, AffidavitCalculator, Auth, Settings, Dashboard, Index, etc.). Sprint dedicado "Brandbook Compliance Global" pendiente (~10-12h).
 - `index.css` línea 7 todavía dice "JARVIS Design System" — actualizar cuando se haga el cleanup global.
+- **Sprint B activo (2026-05-19):** primer slice del cleanup global es **case-engine + 18 paneles**. Auditoría detectó 74 occ `jarvis` + 28 occ `accent` gold + 6 occ `font-display` + 0 occ tokens nuevos / Sora. Bloquea activación de Fase 1 (Casos). Ver `decisions.md` 2026-05-19 + `state.md` para plan. Mientras tanto, gate temporal aplicado en 3 widgets del Hub Inicio (`HUB_SECTIONS.casos.enabled` check + toast "Próximamente").
 
 **Tipografía oficial:**
 - **Sora** (primary) — moderna, digital-first

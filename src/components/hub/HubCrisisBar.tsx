@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { useDemoMode, DEMO_CRISIS } from "@/hooks/useDemoData";
+import { HUB_SECTIONS } from "@/lib/hubSections";
 
 // HubCrisisBar — Alerta única más urgente del día. Va ANTES del briefing
 // porque los ojos del abogado buscan rojo instintivamente al entrar.
@@ -116,6 +117,15 @@ export default function HubCrisisBar({ accountId }: Props) {
     if (demoMode) {
       toast.info("Vista demo · navegación a caso desactivada", {
         description: "En producción, este click abre el case engine completo.",
+        duration: 3000,
+      });
+      return;
+    }
+    // Gate temporal (2026-05-18): mientras Casos esté disabled, bloquear
+    // atajo al case-engine para mantener coherencia con sidebar PRONTO.
+    if (!HUB_SECTIONS.casos.enabled) {
+      toast.info("Próximamente", {
+        description: "Los detalles del caso llegan con el módulo de Casos.",
         duration: 3000,
       });
       return;

@@ -1,8 +1,8 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-18 (tarde — plan arquitectónico Camino A + Coming Soon system)
+**Última actualización:** 2026-05-19 (auditoría E2E Hub Inicio cerrada · gate temporal case-engine aplicado · próximo Sprint B brand-align)
 **Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) + Mr. Lorenzo UX validation
-**Próximo update:** post-validación Coming Soon UI + arranque Sprint Casos
+**Próximo update:** post-Sprint B (brand-align case-engine + paneles) → activar Casos
 
 ---
 
@@ -45,9 +45,40 @@ Inicio (LIVE) → Casos → Forms → Clientes → Consultas → Leads
 - `.ai/master/hub-inicio-kpi-actions.md` (commit 60545fd)
 
 **Pending para cerrar Inicio antes de pasar a Casos:**
-1. **Validar Coming Soon UI** en Lovable preview post-pull
-2. **Fix Mis acciones = 0** — SQL reasignar tasks del seed al user logueado
-3. **Cleanup script** `scripts/cleanup-hub-v7-demo.sql` (ejecutar cuando Mr. Lorenzo apruebe)
+1. ✅ ~~Validar Coming Soon UI~~ — done (Lovable valid 2026-05-18)
+2. ✅ ~~Fix Mis acciones = 0~~ — done (reasign demo tasks vía SQL)
+3. ⏳ **Cleanup script** `scripts/cleanup-hub-v7-demo.sql` (ejecutar cuando Mr. Lorenzo apruebe)
+
+**Sprint B en curso (decidido 2026-05-19 — ver `decisions.md`):**
+
+Auditoría E2E del Hub Inicio detectó:
+- 3 atajos al `/case-engine/*` saltaban el gate de Casos (HubCrisisBar,
+  HubAgendaWidget cards, HubRiskWidget cards)
+- Case-engine VIOLA brandbook 2026-05-02:
+  - 74 ocurrencias `jarvis` legacy en 18 archivos
+  - 28 ocurrencias `accent` gold en 8 archivos
+  - 6 ocurrencias `font-display` Orbitron-style
+  - 0 ocurrencias tokens nuevos (ai-blue, cyan-accent, etc.)
+  - 0 ocurrencias `font-sora`/`font-inter`
+- 2 leaks legacy en Hub Inicio "ya cerrado":
+  HubLayout:296 + HubDashboard modal recursos (text-jarvis)
+- 25 bugs adicionales detectados por bug-hunt agent — Tier 1 (5 críticos)
+  ya aplicados commit 0dde94c
+
+**Sprint B plan:**
+- ✅ **Fase A:** Gate temporal con `HUB_SECTIONS.casos.enabled` check
+  en HubCrisisBar + HubAgendaWidget + HubRiskWidget (commit en proceso)
+- ⏳ **Fase B (3-4 días):** Brand-align case-engine + 18 paneles:
+  - `--jarvis` → `--cyan-accent` (74 occ)
+  - `--accent` gold → `--ai-blue` (28 occ)
+  - `font-display` → `font-sora` (6 occ)
+  - Anti-flash 3-capas para `/case-engine/*`
+  - Botón "Volver" del case-engine: `/hub/cases` → `/hub` mientras Casos PRONTO
+  - Fix 2 leaks legacy del Hub Inicio (HubLayout + modal recursos)
+- ⚫ **Fase C:** Flip `casos.enabled=true` en `hubSections.ts` + remover
+  gate temporal. HubCasesPage existente (tabla + kanban + filtros)
+  queda accesible. Sprint pendiente del ROADMAP (status legal +
+  ball-in-court + export CSV) queda separado.
 4. **Briefing inteligente fallback** si pulse = 0% (frase "tu día está despejado")
 
 **Pending no-bloqueante (post-Casos):**
