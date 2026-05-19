@@ -425,12 +425,20 @@ function HubDashboardInner({
   const firstName = demoMode
     ? "Pablo"
     : ((resolvedName || staffName || "").split(" ")[0] || "");
+
+  // Reloj vivo — re-render cada 30s para mantener HH:mm actualizado en el briefing
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const greeting = useMemo(() => {
-    const lh = parseInt(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false }).format(new Date()));
+    const lh = parseInt(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false }).format(now));
     if (lh < 12) return "Buenos días";
     if (lh < 18) return "Buenas tardes";
     return "Buenas noches";
-  }, []);
+  }, [now]);
 
   // Hub v7 — micro-briefing data-driven (no prosa)
   const microBriefing = useMemo(() => {
@@ -538,7 +546,7 @@ function HubDashboardInner({
                       Camila · briefing
                     </p>
                     <span className="text-[10px] text-muted-foreground/60 font-mono">
-                      {format(new Date(), "EEEE d 'de' MMMM · HH:mm", { locale: es })}
+                      {format(now, "EEEE d 'de' MMMM · HH:mm", { locale: es })}
                     </span>
                   </div>
                   <p className="text-[13px] font-semibold text-foreground/95 leading-snug font-sora">
@@ -744,6 +752,10 @@ function HubDashboardInner({
             </div>
           </section>
           )}
+
+          {/* Spacer: absorbe espacio vertical sobrante en desktop para que el cockpit
+              llene la altura del viewport en lugar de "encogerse" cuando hay pocos datos */}
+          <div className="hidden lg:block flex-1 min-h-0" aria-hidden="true" />
 
         </div>
       </div>
