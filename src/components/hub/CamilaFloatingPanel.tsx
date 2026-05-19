@@ -556,7 +556,7 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
             className="fixed bottom-6 right-6 z-[100] w-14 h-14 rounded-2xl bg-gradient-to-br from-[hsl(195,100%,50%)] to-[hsl(195,80%,30%)] shadow-[0_0_30px_hsl(195_100%_50%/0.4),0_8px_32px_rgba(0,0,0,0.4)] flex items-center justify-center hover:shadow-[0_0_40px_hsl(195_100%_50%/0.6),0_8px_32px_rgba(0,0,0,0.5)] transition-shadow group"
           >
             {(pulseRing || isVoiceActive) && (
-              <span className="absolute inset-0 rounded-2xl animate-ping bg-jarvis/30" />
+              <span className="absolute inset-0 rounded-2xl animate-ping bg-cyan-accent/30" />
             )}
             <Sparkles className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
           </motion.button>
@@ -587,19 +587,19 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                   borderBottom: "1px solid hsl(195 100% 50% / 0.12)",
                 }}
               >
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-jarvis/60 to-transparent" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-cyan-accent/60 to-transparent" />
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-jarvis/20 to-jarvis/5 border border-jarvis/30 flex items-center justify-center">
-                        <Sparkles className="w-5 h-5 text-jarvis" />
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-accent/20 to-cyan-accent/5 border border-cyan-accent/30 flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-cyan-accent" />
                       </div>
                       <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${isVoiceActive ? "bg-emerald-400 animate-pulse" : "bg-emerald-400"}`} />
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-foreground tracking-tight">Camila</h3>
-                      <p className="text-[10px] text-jarvis/60 font-mono uppercase tracking-[0.2em]">
+                      <p className="text-[10px] text-cyan-accent/60 font-mono uppercase tracking-[0.2em]">
                         {isVoiceActive
                           ? isCamilaSpeaking ? "🔊 Respondiendo..." : "🎙️ Escuchando..."
                           : isConnecting ? "Conectando..."
@@ -624,7 +624,7 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                       <button
                         onClick={startVoiceConversation}
                         disabled={isConnecting}
-                        className="w-8 h-8 rounded-xl flex items-center justify-center transition-all text-jarvis bg-jarvis/10 border border-jarvis/20 hover:bg-jarvis/20 disabled:opacity-50"
+                        className="w-8 h-8 rounded-xl flex items-center justify-center transition-all text-cyan-accent bg-cyan-accent/10 border border-cyan-accent/20 hover:bg-cyan-accent/20 disabled:opacity-50"
                         title="Conversar por voz"
                       >
                         <Phone className="w-3.5 h-3.5" />
@@ -647,7 +647,7 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                 >
                   <div className="relative w-12 h-12 shrink-0">
                     <div className={`absolute inset-0 rounded-full border transition-all duration-500 ${
-                      isCamilaSpeaking ? "border-emerald-400/30 animate-pulse" : "border-jarvis/30 animate-pulse"
+                      isCamilaSpeaking ? "border-emerald-400/30 animate-pulse" : "border-cyan-accent/30 animate-pulse"
                     }`} />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <motion.div
@@ -656,7 +656,7 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                         className={`w-8 h-8 rounded-full transition-colors duration-500 ${
                           isCamilaSpeaking
                             ? "bg-gradient-to-br from-emerald-400 to-teal-400/70 shadow-[0_0_20px_hsl(150_60%_50%/0.4)]"
-                            : "bg-gradient-to-br from-jarvis to-cyan-400/70 shadow-[0_0_20px_hsl(195_100%_50%/0.4)]"
+                            : "bg-gradient-to-br from-cyan-accent to-cyan-400/70 shadow-[0_0_20px_hsl(195_100%_50%/0.4)]"
                         }`}
                       />
                     </div>
@@ -685,10 +685,10 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                 {messages.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-4">
                     <div className="relative w-20 h-20">
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-jarvis/20 to-transparent border border-jarvis/20 animate-pulse" />
-                      <div className="absolute inset-2 rounded-full bg-gradient-to-br from-jarvis/10 to-transparent border border-jarvis/10" />
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-accent/20 to-transparent border border-cyan-accent/20 animate-pulse" />
+                      <div className="absolute inset-2 rounded-full bg-gradient-to-br from-cyan-accent/10 to-transparent border border-cyan-accent/10" />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <Sparkles className="w-8 h-8 text-jarvis/60" />
+                        <Sparkles className="w-8 h-8 text-cyan-accent/60" />
                       </div>
                     </div>
                     <div>
@@ -702,7 +702,7 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                         <button
                           key={q}
                           onClick={() => send(q)}
-                          className="text-[11px] text-left px-3 py-2 rounded-xl border border-jarvis/10 bg-jarvis/5 text-jarvis/70 hover:bg-jarvis/10 hover:text-jarvis hover:border-jarvis/20 transition-all"
+                          className="text-[11px] text-left px-3 py-2 rounded-xl border border-cyan-accent/10 bg-cyan-accent/5 text-cyan-accent/70 hover:bg-cyan-accent/10 hover:text-cyan-accent hover:border-cyan-accent/20 transition-all"
                         >
                           {q}
                         </button>
@@ -716,8 +716,8 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                     <div
                       className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed ${
                         m.role === "user"
-                          ? "bg-jarvis/15 text-foreground border border-jarvis/20 rounded-br-md"
-                          : "bg-card/80 text-foreground/90 border border-jarvis/30 shadow-[0_0_8px_hsl(var(--jarvis)/0.1)] rounded-bl-md"
+                          ? "bg-cyan-accent/15 text-foreground border border-cyan-accent/20 rounded-br-md"
+                          : "bg-card/80 text-foreground/90 border border-cyan-accent/30 shadow-[0_0_8px_hsl(var(--cyan-accent)/0.1)] rounded-bl-md"
                       }`}
                     >
                       {m.role === "assistant" ? (
@@ -735,9 +735,9 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                   <div className="flex justify-start">
                     <div className="bg-card/80 border border-border/30 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
                       <div className="flex gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-jarvis/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-jarvis/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-jarvis/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-accent/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-accent/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-accent/60 animate-bounce" style={{ animationDelay: "300ms" }} />
                       </div>
                     </div>
                   </div>
@@ -753,7 +753,7 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                     background: "linear-gradient(180deg, hsl(220 25% 8%) 0%, hsl(220 25% 7%) 100%)",
                   }}
                 >
-                  <div className="flex items-end gap-2 rounded-xl border border-jarvis/15 bg-background/50 px-3 py-2 focus-within:border-jarvis/30 transition-colors">
+                  <div className="flex items-end gap-2 rounded-xl border border-cyan-accent/15 bg-background/50 px-3 py-2 focus-within:border-cyan-accent/30 transition-colors">
                     <textarea
                       ref={inputRef}
                       value={input}
@@ -770,7 +770,7 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
                           isListening
                             ? "bg-red-500/20 text-red-400 border border-red-400/40 animate-pulse"
-                            : "text-muted-foreground/40 hover:text-jarvis hover:bg-jarvis/10"
+                            : "text-muted-foreground/40 hover:text-cyan-accent hover:bg-cyan-accent/10"
                         }`}
                         title={isListening ? "Detener grabación" : "Dictar"}
                       >
@@ -779,7 +779,7 @@ function CamilaFloatingPanelInner({ accountId }: Props) {
                       <button
                         onClick={() => send(input)}
                         disabled={!input.trim() || isLoading}
-                        className="w-8 h-8 rounded-lg bg-jarvis/20 text-jarvis flex items-center justify-center hover:bg-jarvis/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        className="w-8 h-8 rounded-lg bg-cyan-accent/20 text-cyan-accent flex items-center justify-center hover:bg-cyan-accent/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                       >
                         <Send className="w-4 h-4" />
                       </button>

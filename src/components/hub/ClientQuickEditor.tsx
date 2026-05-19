@@ -164,12 +164,12 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-10">
-        <Loader2 className="w-5 h-5 text-jarvis animate-spin" />
+        <Loader2 className="w-5 h-5 text-cyan-accent animate-spin" />
       </div>
     );
   }
 
-  const fieldClass = "bg-muted/50 border-border focus:border-jarvis/50 text-sm h-9";
+  const fieldClass = "bg-muted/50 border-border focus:border-cyan-accent/50 text-sm h-9";
 
   return (
     <div className="space-y-4">
@@ -265,7 +265,7 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Notas</Label>
         <Textarea
-          className="bg-muted/50 border-border focus:border-jarvis/50 text-sm min-h-[100px] resize-y"
+          className="bg-muted/50 border-border focus:border-cyan-accent/50 text-sm min-h-[100px] resize-y"
           value={data.notes}
           onChange={(e) => set("notes", e.target.value)}
           placeholder="Notas sobre este contacto..."
@@ -276,7 +276,7 @@ export default function ClientQuickEditor({ clientId, onUpdated }: Props) {
       <Button
         onClick={handleSave}
         disabled={saving}
-        className="w-full bg-jarvis hover:bg-jarvis/90 gap-2"
+        className="w-full bg-cyan-accent hover:bg-cyan-accent/90 gap-2"
       >
         {saving ? (
           <Loader2 className="w-4 h-4 animate-spin" />
