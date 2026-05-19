@@ -188,9 +188,9 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
               <img src="/brand/ner-logo-mark-light.svg" alt="NER" className="w-9 h-9 object-contain" />
             </div>
 
-            {/* Nav items — en demo, solo los items con demoSupported=true (evita pantallas vacías) */}
+            {/* Nav items — TODOS los items siempre visibles (las secciones disabled muestran ComingSoonPage). */}
             <div className="flex flex-col items-center gap-2.5">
-              {NAV_ITEMS.filter(item => !demoMode || item.demoSupported).map((item) => {
+              {NAV_ITEMS.map((item) => {
                 const isActive = item.match(currentPath);
                 const sectionEnabled = HUB_SECTIONS[item.sectionKey].enabled;
                 const badge = item.badgeKey && sectionEnabled
