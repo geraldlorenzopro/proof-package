@@ -9,10 +9,15 @@
  *
  * Trampa que mata tablas B2B: inline edit + API falla silenciosa →
  * paralegal sigue trabajando 20 min creyendo que guardó.
+ *
+ * Demo mode: skipea la query a Supabase porque los caseIds del seed
+ * demo (DEMO_CASES "demo-c-001"…) no son UUIDs válidos. Solo aplica el
+ * optimistic local para que la UX se sienta real en presentaciones.
  */
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode } from "./useDemoData";
 
 interface EditOptions<TValue> {
   caseId: string;
@@ -31,7 +36,12 @@ export interface InlineEditState {
   edit: <TValue>(opts: EditOptions<TValue>) => Promise<void>;
 }
 
+// UUID v4-ish detection — los caseIds demo son strings tipo "demo-c-001"
+// que NO matchean este regex, así que skipeamos Supabase para ellos.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function useCaseInlineEdit(): InlineEditState {
+  const demoMode = useDemoMode();
   const [saving, setSaving] = useState(false);
 
   const edit = useCallback(async <TValue,>(opts: EditOptions<TValue>) => {
@@ -39,6 +49,16 @@ export function useCaseInlineEdit(): InlineEditState {
 
     // 1. Optimistic
     onOptimistic(newValue);
+
+    // Demo mode (o caseId no-UUID) → skipear Supabase. Mantiene la UX fluida
+    // en presentaciones sin disparar errores UUID-format.
+    if (demoMode || !UUID_RE.test(caseId)) {
+      if (successMessage) {
+        toast.success(successMessage, { duration: 1500, description: demoMode ? "Modo demo · cambio no persistido" : undefined });
+      }
+      return;
+    }
+
     setSaving(true);
 
     // 2. Background save
@@ -69,7 +89,8 @@ export function useCaseInlineEdit(): InlineEditState {
     if (successMessage) {
       toast.success(successMessage, { duration: 2000 });
     }
-  }, []);
+  }, [demoMode]);
 
   return { saving, edit };
 }
+
