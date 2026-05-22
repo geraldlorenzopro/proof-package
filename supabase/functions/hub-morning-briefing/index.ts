@@ -412,7 +412,7 @@ Output: "Tienes dos RFEs de aquí al jueves — el más urgente es el de José G
     console.error("[hub-morning-briefing] error:", error);
     return new Response(
       JSON.stringify({
-        error: (error as Error).message,
+        error: "internal_error",
         greeting: "Hola",
         briefing_text: "Bienvenido a tu hub.",
         chips: [],
@@ -421,4 +421,5 @@ Output: "Tienes dos RFEs de aquí al jueves — el más urgente es el de José G
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
+
 });
