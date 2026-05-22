@@ -518,6 +518,9 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
             </>
           )}
 
+          {/* Live caption preview (debounced 200ms) */}
+          <CaptionPreview item={item} lang={lang} />
+
         </div>
       </div>
     </>
