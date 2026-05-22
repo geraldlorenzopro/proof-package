@@ -1,10 +1,35 @@
 import { EvidenceType } from '@/types/evidence';
 
+const ACCEPTED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'pdf'];
+const REJECTED_EXTS = ['tiff', 'tif', 'raw', 'bmp', 'gif', 'svg', 'ico', 'cr2', 'nef', 'arw'];
+
+export function getFileExtension(file: File): string {
+  const m = file.name.toLowerCase().match(/\.([a-z0-9]+)$/);
+  return m ? m[1] : '';
+}
+
+export function isHeicFile(file: File): boolean {
+  const ext = getFileExtension(file);
+  const type = file.type.toLowerCase();
+  return ext === 'heic' || ext === 'heif' || type === 'image/heic' || type === 'image/heif';
+}
+
+export function validateFileFormat(
+  file: File,
+): { ok: true } | { ok: false; reason: 'rejected' | 'unknown'; ext: string } {
+  const ext = getFileExtension(file);
+  const type = file.type.toLowerCase();
+  if (REJECTED_EXTS.includes(ext)) return { ok: false, reason: 'rejected', ext };
+  if (ACCEPTED_EXTS.includes(ext)) return { ok: true };
+  if (type.startsWith('image/') || type === 'application/pdf') return { ok: true };
+  return { ok: false, reason: 'unknown', ext: ext || type || 'unknown' };
+}
+
 export function classifyFile(file: File): EvidenceType {
   const name = file.name.toLowerCase();
   const type = file.type.toLowerCase();
 
-  if (type.startsWith('image/')) {
+  if (type.startsWith('image/') || isHeicFile(file)) {
     const chatKeywords = ['chat', 'whatsapp', 'instagram', 'facebook', 'imessage', 'sms', 'msg', 'message', 'screenshot', 'captura', 'screen'];
     if (chatKeywords.some(kw => name.includes(kw))) {
       return 'chat';

@@ -254,11 +254,18 @@ export interface GeneratePDFOptions {
   skipDownload?: boolean;
 }
 
+export interface ImageFailure {
+  itemId: string;
+  exhibitNumber: string;
+  reason: string;
+}
+
 export interface GeneratePDFResult {
   blob: Blob;
   filename: string;
   translationStatus: TranslationStatus;
   failedItemIds: string[];
+  imageFailures: ImageFailure[];
 }
 
 export async function generateEvidencePDF(
@@ -275,6 +282,7 @@ export async function generateEvidencePDF(
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   let pageNum = 1;
+  const imageFailures: ImageFailure[] = [];
 
   const photos = translatedItems.filter(i => i.type === 'photo');
   const chats = translatedItems.filter(i => i.type === 'chat');
@@ -427,7 +435,7 @@ export async function generateEvidencePDF(
         onProgress?.(`Rendering ${itemIdx}/${totalItems}…`);
         doc.addPage();
         pageNum++;
-        await renderPhotoGrid(doc, pageItems, caseInfo.compiled_date, pageNum, W, H);
+        await renderPhotoGrid(doc, pageItems, caseInfo.compiled_date, pageNum, W, H, imageFailures);
       }
     } else {
       for (let i = 0; i < sec.items.length; i += 2) {
@@ -436,7 +444,7 @@ export async function generateEvidencePDF(
         onProgress?.(`Rendering ${itemIdx}/${totalItems}…`);
         doc.addPage();
         pageNum++;
-        await renderStackedItems(doc, pageItems, caseInfo.compiled_date, pageNum, W, H);
+        await renderStackedItems(doc, pageItems, caseInfo.compiled_date, pageNum, W, H, imageFailures);
       }
     }
   }
@@ -453,7 +461,7 @@ export async function generateEvidencePDF(
   }
 
   onProgress?.('');
-  return { blob, filename, translationStatus, failedItemIds };
+  return { blob, filename, translationStatus, failedItemIds, imageFailures };
 }
 
 // ── Render 4 photos in 2x2 grid ─────────────────────────────────────────────
@@ -465,6 +473,7 @@ async function renderPhotoGrid(
   pageNum: number,
   W: number,
   H: number,
+  imageFailures: ImageFailure[],
 ) {
   const MARGIN = 15;
   const GAP = 6;
@@ -516,7 +525,12 @@ async function renderPhotoGrid(
         doc.rect(imgX - 0.3, y - 0.3, imgW + 0.6, imgH + 0.6);
         doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
         y += imgH + 2;
-      } catch {
+      } catch (err) {
+        imageFailures.push({
+          itemId: item.id,
+          exhibitNumber: item.exhibit_number,
+          reason: err instanceof Error ? err.message : 'Image load failed',
+        });
         doc.setFillColor(...LIGHT);
         doc.rect(pos.x, y, COL_W, 25, 'F');
         doc.setFontSize(7);
@@ -556,6 +570,7 @@ async function renderStackedItems(
   pageNum: number,
   W: number,
   H: number,
+  imageFailures: ImageFailure[],
 ) {
   const MARGIN = 18;
   const CONTENT_W = W - MARGIN * 2;
@@ -603,7 +618,12 @@ async function renderStackedItems(
         doc.rect(imgX - 0.3, y - 0.3, imgW + 0.6, imgH + 0.6);
         doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
         y += imgH + 3;
-      } catch {
+      } catch (err) {
+        imageFailures.push({
+          itemId: item.id,
+          exhibitNumber: item.exhibit_number,
+          reason: err instanceof Error ? err.message : 'Image load failed',
+        });
         doc.setFillColor(...LIGHT);
         doc.rect(MARGIN, y, CONTENT_W, 25, 'F');
         doc.setFontSize(8);
@@ -664,6 +684,9 @@ function imageToJpegDataUrl(
       canvas.height = Math.round(img.naturalHeight * scale);
       const ctx = canvas.getContext('2d');
       if (!ctx) { if (created) URL.revokeObjectURL(src); reject(new Error('Canvas not available')); return; }
+      // White background so PNG transparency doesn't show black in JPEG.
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
       if (created) URL.revokeObjectURL(src);

@@ -206,6 +206,19 @@ export default function Index() {
           );
         }
       }
+
+      // Surface image render failures (corrupted/unsupported) as a warning.
+      if (result.imageFailures && result.imageFailures.length > 0) {
+        const exNums = result.imageFailures.map(f => f.exhibitNumber).filter(Boolean).join(', ');
+        const count = result.imageFailures.length;
+        const { toast } = await import('sonner');
+        toast.warning(
+          lang === 'es'
+            ? `⚠️ ${count} imagen(es) no se pudieron procesar y aparecen como cajas grises en el PDF: ${exNums || '—'}. Revisá que sean JPG o PNG válidos.`
+            : `⚠️ ${count} image(s) could not be processed and appear as gray boxes in the PDF: ${exNums || '—'}. Please ensure they are valid JPG or PNG files.`,
+          { duration: 15000 },
+        );
+      }
     } finally {
       setGenerating(false);
       setPdfStatus('');
