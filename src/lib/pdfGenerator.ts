@@ -4,53 +4,174 @@ import { buildCaption, generateExhibitNumber } from './evidenceUtils';
 import { supabase } from '@/integrations/supabase/client';
 
 // ── AI Translation (Gemini) ──────────────────────────────────
-async function translateItems(items: EvidenceItem[]): Promise<EvidenceItem[]> {
-  const texts: Record<string, string> = {};
-  for (const item of items) {
-    if (item.caption) texts[`${item.id}__caption`] = item.caption;
-    if (item.participants) texts[`${item.id}__participants`] = item.participants;
-    if (item.location) texts[`${item.id}__location`] = item.location;
-    if (item.notes) texts[`${item.id}__notes`] = item.notes;
-  }
 
-  if (Object.keys(texts).length === 0) return items;
+export type TranslationStatus = 'success' | 'partial' | 'failed';
 
-  console.log('[translate] Sending texts for translation:', Object.keys(texts).length, 'fields');
+export interface TranslateItemsResult {
+  items: EvidenceItem[];
+  translationStatus: TranslationStatus;
+  failedItemIds: string[];
+}
 
+const CHUNK_SIZE = 25;
+const MAX_CONCURRENCY = 3;
+const RETRY_DELAY_MS = 1500;
+
+/** Concurrency-limited pool. Runs `tasks` with at most `limit` in parallel.
+ *  Preserves input order in the returned array. */
+async function runWithConcurrency<T>(tasks: (() => Promise<T>)[], limit: number): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, tasks.length) }, async () => {
+    while (true) {
+      const i = cursor++;
+      if (i >= tasks.length) return;
+      results[i] = await tasks[i]();
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+function isTransientError(status: number | null, errMsg: string | null): boolean {
+  if (status === 429) return true;
+  if (status !== null && status >= 500) return true;
+  if (errMsg && /rate.?limit|timeout|network|fetch|temporar/i.test(errMsg)) return true;
+  if (status === null && errMsg) return true; // network/fetch failure
+  return false;
+}
+
+async function translateChunk(
+  chunkEntries: [string, string][],
+  caseInfo: CaseInfo,
+  attempt: number = 1,
+): Promise<{ ok: true; translated: Record<string, string> } | { ok: false; reason: string }> {
+  const texts: Record<string, string> = Object.fromEntries(chunkEntries);
   try {
-    const { data, error } = await supabase.functions.invoke('translate-evidence', { body: { texts } });
-    
-    console.log('[translate] Response:', { data, error });
+    const { data, error } = await supabase.functions.invoke('translate-evidence', {
+      body: {
+        texts,
+        account_id: (caseInfo as { account_id?: string }).account_id ?? null,
+        petitioner: caseInfo.petitioner_name ?? null,
+      },
+    });
+
+    // supabase-js v2 attaches HTTP status on FunctionsHttpError context
+    const httpStatus: number | null =
+      (error as { context?: { status?: number } } | null)?.context?.status ?? null;
+    const errMsg: string | null = error ? (error.message ?? String(error)) : null;
 
     if (error) {
-      console.error('[translate] Edge function error:', error);
-      return items;
+      // 4xx (except 429) = client bug, don't retry
+      const isClient4xx = httpStatus !== null && httpStatus >= 400 && httpStatus < 500 && httpStatus !== 429;
+      if (!isClient4xx && attempt === 1 && isTransientError(httpStatus, errMsg)) {
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+        return translateChunk(chunkEntries, caseInfo, 2);
+      }
+      return { ok: false, reason: `edge_error: ${errMsg ?? 'unknown'} (status=${httpStatus})` };
     }
 
     if (data?.error) {
-      console.warn('[translate] Translation service error:', data.error);
+      // Edge returned 200 with error body (legacy rate-limit/credits compat)
+      const reason = String(data.error);
+      if (attempt === 1 && /rate.?limit|credit|exhaust|temporar/i.test(reason)) {
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+        return translateChunk(chunkEntries, caseInfo, 2);
+      }
+      return { ok: false, reason: `data_error: ${reason}` };
     }
 
     const translated: Record<string, string> = data?.translated || {};
-    const translatedCount = Object.keys(translated).length;
-    console.log('[translate] Received translations:', translatedCount, '/', Object.keys(texts).length);
-
-    if (translatedCount === 0) {
-      console.warn('[translate] No translations returned — using originals');
-      return items;
+    if (Object.keys(translated).length === 0) {
+      return { ok: false, reason: 'empty_translation_map' };
     }
-
-    return items.map(item => ({
-      ...item,
-      caption: translated[`${item.id}__caption`] || item.caption,
-      participants: translated[`${item.id}__participants`] || item.participants,
-      location: item.location ? (translated[`${item.id}__location`] || item.location) : item.location,
-      notes: item.notes ? (translated[`${item.id}__notes`] || item.notes) : item.notes,
-    }));
+    return { ok: true, translated };
   } catch (err) {
-    console.error('[translate] Exception during translation:', err);
-    return items; // fallback to originals on error
+    const msg = err instanceof Error ? err.message : String(err);
+    if (attempt === 1) {
+      await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+      return translateChunk(chunkEntries, caseInfo, 2);
+    }
+    return { ok: false, reason: `exception: ${msg}` };
   }
+}
+
+async function translateItems(items: EvidenceItem[], caseInfo: CaseInfo): Promise<TranslateItemsResult> {
+  // Collect all candidate (key, value) pairs
+  const allEntries: [string, string][] = [];
+  for (const item of items) {
+    if (item.caption) allEntries.push([`${item.id}__caption`, item.caption]);
+    if (item.participants) allEntries.push([`${item.id}__participants`, item.participants]);
+    if (item.location) allEntries.push([`${item.id}__location`, item.location]);
+    if (item.notes) allEntries.push([`${item.id}__notes`, item.notes]);
+  }
+
+  // FILTRADO PREVIO: empty / whitespace-only strings → keep as "" (don't send)
+  const preTranslated: Record<string, string> = {};
+  const entriesToSend: [string, string][] = [];
+  for (const [k, v] of allEntries) {
+    if (/^\s*$/.test(v)) {
+      preTranslated[k] = '';
+    } else {
+      entriesToSend.push([k, v]);
+    }
+  }
+
+  if (entriesToSend.length === 0) {
+    return { items, translationStatus: 'success', failedItemIds: [] };
+  }
+
+  // Build chunks
+  const chunks: [string, string][][] = [];
+  for (let i = 0; i < entriesToSend.length; i += CHUNK_SIZE) {
+    chunks.push(entriesToSend.slice(i, i + CHUNK_SIZE));
+  }
+  console.log('[translate] Chunking:', {
+    totalKeys: entriesToSend.length,
+    chunks: chunks.length,
+    chunkSize: CHUNK_SIZE,
+    concurrency: MAX_CONCURRENCY,
+  });
+
+  const tasks = chunks.map(chunk => () => translateChunk(chunk, caseInfo));
+  const chunkResults = await runWithConcurrency(tasks, MAX_CONCURRENCY);
+
+  const translated: Record<string, string> = { ...preTranslated };
+  const failedItemIdSet = new Set<string>();
+  let successChunks = 0;
+  let failedChunks = 0;
+
+  for (let idx = 0; idx < chunkResults.length; idx++) {
+    const res = chunkResults[idx];
+    if (res.ok === true) {
+      successChunks++;
+      Object.assign(translated, res.translated);
+    } else {
+      failedChunks++;
+      const failedIds = Array.from(new Set(chunks[idx].map(([k]) => k.split('__')[0])));
+      failedIds.forEach(id => failedItemIdSet.add(id));
+      console.warn('[translate] Chunk failed, items fell back to original:', failedIds, 'reason:', res.reason);
+    }
+  }
+
+  let translationStatus: TranslationStatus;
+  if (failedChunks === 0) translationStatus = 'success';
+  else if (successChunks === 0) translationStatus = 'failed';
+  else translationStatus = 'partial';
+
+  const remappedItems = items.map(item => ({
+    ...item,
+    caption: translated[`${item.id}__caption`] ?? item.caption,
+    participants: translated[`${item.id}__participants`] ?? item.participants,
+    location: item.location ? (translated[`${item.id}__location`] ?? item.location) : item.location,
+    notes: item.notes ? (translated[`${item.id}__notes`] ?? item.notes) : item.notes,
+  }));
+
+  return {
+    items: remappedItems,
+    translationStatus,
+    failedItemIds: Array.from(failedItemIdSet),
+  };
 }
 
 // ── Color palette ───────────────────────────────────────────────────────────
@@ -118,6 +239,8 @@ export interface GeneratePDFOptions {
 export interface GeneratePDFResult {
   blob: Blob;
   filename: string;
+  translationStatus: TranslationStatus;
+  failedItemIds: string[];
 }
 
 export async function generateEvidencePDF(
@@ -127,7 +250,7 @@ export async function generateEvidencePDF(
   options?: GeneratePDFOptions,
 ): Promise<GeneratePDFResult> {
   onProgress?.('Translating to English…');
-  const translatedItems = await translateItems(items);
+  const { items: translatedItems, translationStatus, failedItemIds } = await translateItems(items, caseInfo);
   onProgress?.('Building PDF…');
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
@@ -312,7 +435,7 @@ export async function generateEvidencePDF(
   }
 
   onProgress?.('');
-  return { blob, filename };
+  return { blob, filename, translationStatus, failedItemIds };
 }
 
 // ── Render 4 photos in 2x2 grid ─────────────────────────────────────────────
