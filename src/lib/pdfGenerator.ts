@@ -473,6 +473,7 @@ async function renderPhotoGrid(
   pageNum: number,
   W: number,
   H: number,
+  imageFailures: ImageFailure[],
 ) {
   const MARGIN = 15;
   const GAP = 6;
