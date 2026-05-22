@@ -444,7 +444,7 @@ export async function generateEvidencePDF(
         onProgress?.(`Rendering ${itemIdx}/${totalItems}…`);
         doc.addPage();
         pageNum++;
-        await renderStackedItems(doc, pageItems, caseInfo.compiled_date, pageNum, W, H);
+        await renderStackedItems(doc, pageItems, caseInfo.compiled_date, pageNum, W, H, imageFailures);
       }
     }
   }
