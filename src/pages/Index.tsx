@@ -623,6 +623,22 @@ export default function Index() {
             <div className="space-y-4">
               {numberedItems.map(item => (
                 <div key={item.id} className="relative">
+                  {item.needsReupload && (
+                    <div className="mb-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>
+                        {lang === 'es'
+                          ? `Archivo pendiente de re-subir: ${item.file.name || '(sin nombre)'} — los datos están guardados, solo falta volver a subir el archivo.`
+                          : `File pending re-upload: ${item.file.name || '(no name)'} — your data is preserved, just re-upload the file.`}
+                      </span>
+                      <button
+                        onClick={() => setStep(2)}
+                        className="ml-auto underline font-semibold"
+                      >
+                        {lang === 'es' ? 'Re-subir' : 'Re-upload'}
+                      </button>
+                    </div>
+                  )}
                   <EvidenceForm item={item} onChange={handleItemChange} lang={lang} />
                   <button
                     onClick={() => removeItem(item.id)}
