@@ -340,14 +340,51 @@ export default function Index() {
     setGenerating(true);
     setShowConfirm(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    trackToolUsage("evidence-organizer", "generate_pdf", { itemCount: numberedItems.length });
+
+    const itemCount = numberedItems.length;
+    const photoCount = numberedItems.filter(i => i.type === 'photo').length;
+    const chatCount = numberedItems.filter(i => i.type === 'chat').length;
+    const otherCount = numberedItems.filter(i => i.type === 'other').length;
+    const startedAt = performance.now();
+
     try {
       const result = await generateEvidencePDF(numberedItems, caseInfo, (status) => setPdfStatus(status));
+      const elapsedMs = Math.round(performance.now() - startedAt);
+      const { translationStatus, failedItemIds, imageFailures, blob } = result;
+
       // Capturar el Blob para que SaveToCaseButton lo suba al bucket case-outputs
       setGeneratedPdf({ blob: result.blob, filename: result.filename });
 
+      // ── Telemetría rica post-generación ────────────────────────────────────
+      trackToolUsage("evidence-organizer", "generate_pdf", {
+        itemCount,
+        photoCount,
+        chatCount,
+        otherCount,
+        translationStatus,
+        itemsWithoutTranslation: failedItemIds.length,
+        imagesFailedToRender: imageFailures.length,
+        pdfSizeKB: Math.round(blob.size / 1024),
+        elapsedMs,
+        hasHEIC: numberedItems.some(i => /\.(heic|heif)$/i.test(i.file?.name || '')),
+        hasPDFEvidence: numberedItems.some(i => i.file?.type === 'application/pdf'),
+        caseHadAccountId: !!(caseInfo as unknown as { account_id?: string }).account_id,
+      });
+
+      if (translationStatus !== 'success' || imageFailures.length > 0) {
+        trackToolUsage("evidence-organizer", "generate_pdf_degraded", {
+          translationStatus,
+          failedItemIds: failedItemIds.slice(0, 20),
+          imageFailureReasons: imageFailures.map(f => f.reason).slice(0, 20),
+        });
+      }
+
+      // ── Cleanup sessionStorage on clean success ────────────────────────────
+      if (translationStatus === 'success' && imageFailures.length === 0) {
+        clearPersisted();
+      }
+
       // Surface translation failures AFTER the PDF was saved/downloaded.
-      const { translationStatus, failedItemIds } = result;
       if (translationStatus === 'partial' || translationStatus === 'failed') {
         const failedExhibits = numberedItems
           .filter(i => failedItemIds.includes(i.id))
@@ -387,9 +424,9 @@ export default function Index() {
       }
 
       // Surface image render failures (corrupted/unsupported) as a warning.
-      if (result.imageFailures && result.imageFailures.length > 0) {
-        const exNums = result.imageFailures.map(f => f.exhibitNumber).filter(Boolean).join(', ');
-        const count = result.imageFailures.length;
+      if (imageFailures.length > 0) {
+        const exNums = imageFailures.map(f => f.exhibitNumber).filter(Boolean).join(', ');
+        const count = imageFailures.length;
         const { toast } = await import('sonner');
         toast.warning(
           lang === 'es'
@@ -398,6 +435,18 @@ export default function Index() {
           { duration: 15000 },
         );
       }
+    } catch (err) {
+      trackToolUsage("evidence-organizer", "generate_pdf_failed", {
+        errorMessage: String(err).slice(0, 200),
+        itemCount,
+        stage: 'unknown',
+      });
+      const { toast } = await import('sonner');
+      toast.error(
+        lang === 'es'
+          ? 'No se pudo generar el PDF. Por favor, reintentá.'
+          : 'Could not generate the PDF. Please try again.',
+      );
     } finally {
       setGenerating(false);
       setPdfStatus('');
