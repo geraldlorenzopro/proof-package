@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useStepHistory } from '@/hooks/useStepHistory';
 import { useNavigate } from 'react-router-dom';
 import { useBackDestination } from '@/hooks/useBackDestination';
@@ -13,7 +13,7 @@ import { t } from '@/lib/i18n';
 import nerLogo from '@/assets/ner-logo.png';
 import {
   FileText, Upload, ClipboardList, Download, Scale, Shield, Clock,
-  ListChecks, AlertTriangle, X, Loader2, ChevronRight, Camera, ArrowLeft
+  ListChecks, AlertTriangle, X, Loader2, ChevronRight, Camera, ArrowLeft, RotateCcw
 } from 'lucide-react';
 import { LangToggle } from '@/components/LangToggle';
 import { trackToolUsage } from '@/lib/trackUsage';
