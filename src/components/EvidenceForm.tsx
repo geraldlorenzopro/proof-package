@@ -159,6 +159,7 @@ function DatePickerField({
   onApproxChange,
   approxLabel,
   itemId,
+  lang,
 }: {
   value: string;
   isApprox: boolean;
@@ -166,6 +167,7 @@ function DatePickerField({
   onApproxChange: (val: boolean) => void;
   approxLabel: string;
   itemId: string;
+  lang: Lang;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -189,9 +191,13 @@ function DatePickerField({
     }
   }
 
+  const placeholder = lang === 'es'
+    ? '📅 Selecciona fecha del evento'
+    : '📅 Select event date';
+
   const displayValue = selectedDate
     ? format(selectedDate, 'MMM d, yyyy')
-    : value || '—';
+    : placeholder;
 
   return (
     <div className="space-y-2">
@@ -216,6 +222,7 @@ function DatePickerField({
             initialFocus
             className={cn("p-3 pointer-events-auto")}
             disabled={(date) => date > new Date()}
+            defaultMonth={selectedDate || new Date(2024, 0, 1)}
           />
         </PopoverContent>
       </Popover>
@@ -375,6 +382,7 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
                   onApproxChange={(val) => update({ date_is_approximate: val })}
                   approxLabel={L.approxLabel}
                   itemId={item.id}
+                  lang={lang}
                 />
               </Question>
             </>
@@ -419,6 +427,7 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
                   onApproxChange={(val) => update({ date_is_approximate: val })}
                   approxLabel={L.approxLabel}
                   itemId={item.id}
+                  lang={lang}
                 />
               </Question>
             </>
@@ -453,6 +462,7 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
                   onApproxChange={(val) => update({ date_is_approximate: val })}
                   approxLabel={L.approxLabel}
                   itemId={item.id}
+                  lang={lang}
                 />
               </Question>
             </>
