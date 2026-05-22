@@ -684,6 +684,9 @@ function imageToJpegDataUrl(
       canvas.height = Math.round(img.naturalHeight * scale);
       const ctx = canvas.getContext('2d');
       if (!ctx) { if (created) URL.revokeObjectURL(src); reject(new Error('Canvas not available')); return; }
+      // White background so PNG transparency doesn't show black in JPEG.
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
       if (created) URL.revokeObjectURL(src);
