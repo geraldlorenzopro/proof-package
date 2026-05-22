@@ -938,7 +938,7 @@ function WebhookLeadsSection({ accountId, isAdmin }: { accountId: string | null;
 }
 
 // ── GHL Integration Card ──
-function GhlIntegrationCard({ accountId, config }: { accountId: string | null; config: OfficeConfig | null }) {
+function GhlIntegrationCard({ accountId, config, isAdmin }: { accountId: string | null; config: OfficeConfig | null; isAdmin: boolean }) {
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>((config as any)?.ghl_last_sync || null);
   const [contactsSynced, setContactsSynced] = useState<number>((config as any)?.ghl_contacts_synced || 0);
@@ -957,34 +957,46 @@ function GhlIntegrationCard({ accountId, config }: { accountId: string | null; c
   // Load GHL config + stats
   useEffect(() => {
     if (!accountId) return;
-    Promise.all([
+    const queries: Promise<any>[] = [
       supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId).eq("is_test", false),
       supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId).not("ghl_contact_id", "is", null),
-      supabase.from("office_config").select("ghl_api_key, ghl_location_id, ghl_last_sync, ghl_contacts_synced, ghl_appointments_synced").eq("account_id", accountId).single(),
-    ]).then(([totalRes, linkedRes, configRes]) => {
+      supabase.from("office_config").select("ghl_location_id, ghl_last_sync, ghl_contacts_synced, ghl_appointments_synced").eq("account_id", accountId).maybeSingle(),
+    ];
+    if (isAdmin) {
+      queries.push(supabase.from("office_secrets").select("ghl_api_key").eq("account_id", accountId).maybeSingle());
+    }
+    Promise.all(queries).then((results) => {
+      const [totalRes, linkedRes, configRes, secretsRes] = results;
       setTotalNer(totalRes.count || 0);
       setGhlLinked(linkedRes.count || 0);
       const d = configRes.data as any;
+      const s = (secretsRes?.data as any) || null;
       if (d) {
         setGhlLocationId(d.ghl_location_id || "");
-        setGhlApiKey(d.ghl_api_key || "");
-        setIsGhlConnected(!!d.ghl_api_key && !!d.ghl_location_id);
         if (d.ghl_last_sync) setLastSync(d.ghl_last_sync);
         if (d.ghl_contacts_synced) setContactsSynced(d.ghl_contacts_synced);
         if (d.ghl_appointments_synced) setAppointmentsSynced(d.ghl_appointments_synced);
       }
+      if (s) {
+        setGhlApiKey(s.ghl_api_key || "");
+      }
+      setIsGhlConnected(!!(s?.ghl_api_key) && !!(d?.ghl_location_id));
     });
-  }, [accountId]);
+  }, [accountId, isAdmin]);
 
   async function saveGHLConfig() {
-    if (!ghlLocationId || !ghlApiKey || !accountId) return;
+    if (!ghlLocationId || !ghlApiKey || !accountId || !isAdmin) return;
     setSavingGhl(true);
     try {
-      const { error } = await supabase
+      const { error: cfgErr } = await supabase
         .from("office_config")
-        .update({ ghl_location_id: ghlLocationId, ghl_api_key: ghlApiKey } as any)
+        .update({ ghl_location_id: ghlLocationId } as any)
         .eq("account_id", accountId);
-      if (error) throw error;
+      if (cfgErr) throw cfgErr;
+      const { error: secErr } = await supabase
+        .from("office_secrets")
+        .upsert({ account_id: accountId, ghl_api_key: ghlApiKey } as any, { onConflict: 'account_id' });
+      if (secErr) throw secErr;
       setIsGhlConnected(true);
       toast.success("Configuración GHL guardada ✅");
     } catch {
