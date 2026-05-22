@@ -282,6 +282,7 @@ export async function generateEvidencePDF(
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   let pageNum = 1;
+  const imageFailures: ImageFailure[] = [];
 
   const photos = translatedItems.filter(i => i.type === 'photo');
   const chats = translatedItems.filter(i => i.type === 'chat');
