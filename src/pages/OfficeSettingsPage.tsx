@@ -957,7 +957,7 @@ function GhlIntegrationCard({ accountId, config, isAdmin }: { accountId: string 
   // Load GHL config + stats
   useEffect(() => {
     if (!accountId) return;
-    const queries: Promise<any>[] = [
+    const queries: any[] = [
       supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId).eq("is_test", false),
       supabase.from("client_profiles").select("id", { count: "exact", head: true }).eq("account_id", accountId).not("ghl_contact_id", "is", null),
       supabase.from("office_config").select("ghl_location_id, ghl_last_sync, ghl_contacts_synced, ghl_appointments_synced").eq("account_id", accountId).maybeSingle(),
