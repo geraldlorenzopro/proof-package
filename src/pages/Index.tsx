@@ -453,7 +453,7 @@ export default function Index() {
     }
   }
 
-  const allComplete = numberedItems.length > 0 && numberedItems.every(i => i.formComplete);
+  const allComplete = numberedItems.length > 0 && numberedItems.every(i => i.formComplete && !i.needsReupload);
   const caseComplete = !!(caseInfo.petitioner_name && caseInfo.beneficiary_name);
   const pendingCount = numberedItems.filter(i => !i.formComplete).length;
   const completedCount = numberedItems.filter(i => i.formComplete).length;
