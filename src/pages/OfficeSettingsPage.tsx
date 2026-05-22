@@ -725,12 +725,12 @@ export default function OfficeSettingsPage() {
 
           {/* ═══════ TAB 6: GHL ═══════ */}
           <TabsContent value="ghl" className="mt-4 space-y-4">
-            <GhlIntegrationCard accountId={accountId} config={config} />
+            <GhlIntegrationCard accountId={accountId} config={config} isAdmin={isAdmin} />
           </TabsContent>
 
           {/* ═══════ TAB 7: WEBHOOK LEADS ═══════ */}
           <TabsContent value="webhook" className="mt-4 space-y-4">
-            <WebhookLeadsSection accountId={accountId} />
+            <WebhookLeadsSection accountId={accountId} isAdmin={isAdmin} />
           </TabsContent>
         </Tabs>
       </div>
