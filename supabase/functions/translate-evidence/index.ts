@@ -28,7 +28,11 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { texts } = body as { texts: Record<string, string> };
+    const { texts, account_id, petitioner } = body as {
+      texts: Record<string, string>;
+      account_id?: string | null;
+      petitioner?: string | null;
+    };
 
     if (!texts || typeof texts !== 'object' || Array.isArray(texts)) {
       return new Response(JSON.stringify({ translated: {}, error: 'Invalid input: texts must be an object' }), {
@@ -38,6 +42,15 @@ Deno.serve(async (req) => {
     }
 
     const keys = Object.keys(texts);
+    const totalChars = Object.values(texts).reduce((acc, v) => acc + (typeof v === 'string' ? v.length : 0), 0);
+    console.log('[translate-evidence] Request:', {
+      keyCount: keys.length,
+      totalChars,
+      account_id: account_id ?? null,
+      petitioner: petitioner ?? null,
+      timestamp: new Date().toISOString(),
+    });
+
     if (keys.length === 0) {
       return new Response(JSON.stringify({ translated: {} }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
