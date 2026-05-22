@@ -80,13 +80,95 @@ const STEPS = (lang: Lang) => [
   { id: 4, label: t('step4', lang), icon: Download },
 ];
 
+// ── Auto-save (sessionStorage) ────────────────────────────────────────────────
+const SS_ITEMS = 'evidence-organizer:wip:items';
+const SS_CASE = 'evidence-organizer:wip:caseInfo';
+const SS_STEP = 'evidence-organizer:wip:step';
+
+interface PersistedItem {
+  id: string;
+  type: EvidenceItem['type'];
+  exhibit_number: string;
+  event_date: string;
+  date_is_approximate: boolean;
+  caption: string;
+  participants: string;
+  location?: string;
+  platform?: string;
+  demonstrates?: string;
+  notes?: string;
+  formComplete: boolean;
+  fileName: string;
+  fileSize: number;
+}
+
+function serializeItems(items: EvidenceItem[]): PersistedItem[] {
+  return items.map((i) => ({
+    id: i.id,
+    type: i.type,
+    exhibit_number: i.exhibit_number,
+    event_date: i.event_date,
+    date_is_approximate: i.date_is_approximate,
+    caption: i.caption,
+    participants: i.participants,
+    location: i.location,
+    platform: i.platform,
+    demonstrates: i.demonstrates,
+    notes: i.notes,
+    formComplete: i.formComplete,
+    fileName: i.file?.name ?? '',
+    fileSize: i.file?.size ?? 0,
+  }));
+}
+
+function deserializeItems(persisted: PersistedItem[]): EvidenceItem[] {
+  return persisted.map((p) => ({
+    id: p.id,
+    // Empty File stub — needsReupload triggers the re-attach UX.
+    file: new File([], p.fileName || 'pending'),
+    previewUrl: '',
+    type: p.type,
+    exhibit_number: p.exhibit_number,
+    event_date: p.event_date,
+    date_is_approximate: p.date_is_approximate,
+    caption: p.caption,
+    location: p.location,
+    participants: p.participants,
+    platform: p.platform,
+    demonstrates: p.demonstrates,
+    notes: p.notes,
+    formComplete: false, // forced incomplete until re-upload
+    needsReupload: true,
+  }));
+}
+
+function readPersisted(): { items: PersistedItem[]; caseInfo: CaseInfo | null; step: number | null } {
+  try {
+    const items = JSON.parse(sessionStorage.getItem(SS_ITEMS) || '[]') as PersistedItem[];
+    const caseInfo = JSON.parse(sessionStorage.getItem(SS_CASE) || 'null') as CaseInfo | null;
+    const step = Number(sessionStorage.getItem(SS_STEP) || '0') || null;
+    return { items: Array.isArray(items) ? items : [], caseInfo, step };
+  } catch {
+    return { items: [], caseInfo: null, step: null };
+  }
+}
+
+function clearPersisted() {
+  try {
+    sessionStorage.removeItem(SS_ITEMS);
+    sessionStorage.removeItem(SS_CASE);
+    sessionStorage.removeItem(SS_STEP);
+  } catch { /* ignore */ }
+}
+
 export default function Index() {
-  useTrackPageView("public.landing");
+  useTrackPageView("tools.evidence");
   const navigate = useNavigate();
   const { destination: backDest, isHub } = useBackDestination();
   const [accepted, setAccepted] = useState(false);
   const [lang, setLang] = useState<Lang>('es');
   const [step, setStepRaw] = useState(1);
+  const [restorePrompt, setRestorePrompt] = useState<{ count: number; step: number } | null>(null);
   const { goNext: stepForward, goBack: stepBackward } = useStepHistory(step - 1, (s) => {
     if (typeof s === 'function') {
       setStepRaw(prev => (s as (p: number) => number)(prev - 1) + 1);
