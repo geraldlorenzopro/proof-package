@@ -94,5 +94,6 @@ export function buildCaption(item: {
     return `${item.platform || 'Chat'} message screenshot between ${participants}.${dateInfo} Demonstrates: ${purpose}.${extra}`;
   }
 
-  return `${item.caption}.${dateInfo} Participants: ${participants}.`;
+  const participantsLine = item.participants?.trim() ? ` Participants: ${participants}.` : '';
+  return `${item.caption}.${dateInfo}${participantsLine}`;
 }

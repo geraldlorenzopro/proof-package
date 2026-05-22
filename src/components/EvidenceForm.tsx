@@ -353,6 +353,16 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
                   className={inputCls}
                 />
               </Question>
+              <Question question={L.dateQ} hint={L.dateHint} required>
+                <DatePickerField
+                  value={item.event_date}
+                  isApprox={item.date_is_approximate}
+                  onDateChange={(val) => update({ event_date: val })}
+                  onApproxChange={(val) => update({ date_is_approximate: val })}
+                  approxLabel={L.approxLabel}
+                  itemId={item.id}
+                />
+              </Question>
             </>
           )}
 
@@ -387,6 +397,16 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
                   className={inputCls + " resize-none"}
                 />
               </Question>
+              <Question question={L.dateQ} hint={L.dateHint} required>
+                <DatePickerField
+                  value={item.event_date}
+                  isApprox={item.date_is_approximate}
+                  onDateChange={(val) => update({ event_date: val })}
+                  onApproxChange={(val) => update({ date_is_approximate: val })}
+                  approxLabel={L.approxLabel}
+                  itemId={item.id}
+                />
+              </Question>
             </>
           )}
 
@@ -409,6 +429,16 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
                   value={item.participants}
                   onChange={e => update({ participants: e.target.value })}
                   className={inputCls}
+                />
+              </Question>
+              <Question question={L.dateQ} hint={L.dateHint} required>
+                <DatePickerField
+                  value={item.event_date}
+                  isApprox={item.date_is_approximate}
+                  onDateChange={(val) => update({ event_date: val })}
+                  onApproxChange={(val) => update({ date_is_approximate: val })}
+                  approxLabel={L.approxLabel}
+                  itemId={item.id}
                 />
               </Question>
             </>
