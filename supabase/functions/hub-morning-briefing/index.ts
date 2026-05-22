@@ -50,6 +50,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { account_id } = await req.json();
     if (!account_id) {
       return new Response(
@@ -64,24 +72,41 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Auth — extraer user del JWT
-    const authHeader = req.headers.get("Authorization");
-    let userName = "";
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user } } = await supabase.auth.getUser(token);
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        userName = (profile?.full_name as string)?.split(" ")[0]
-          || (user.user_metadata?.full_name as string)?.split(" ")[0]
-          || (user.email as string)?.split("@")[0]
-          || "";
-      }
+    // Auth — verify user + account membership
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user } } = await supabaseUser.auth.getUser();
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: "unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+    const { verifyAccountMembership } = await import("../_shared/auth-tenant.ts");
+    const isMember = await verifyAccountMembership(supabase, user.id, account_id);
+    if (!isMember) {
+      return new Response(
+        JSON.stringify({ error: "forbidden" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let userName = "";
+    {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      userName = (profile?.full_name as string)?.split(" ")[0]
+        || (user.user_metadata?.full_name as string)?.split(" ")[0]
+        || (user.email as string)?.split("@")[0]
+        || "";
+    }
+
 
     // ─── Fetch contexto rico en paralelo ─────────────────────────────────
     const todayIso = new Date().toISOString().split("T")[0];
