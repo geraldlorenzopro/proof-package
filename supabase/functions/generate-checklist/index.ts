@@ -50,7 +50,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // SECURITY: origin allowlist prevents direct curl abuse of LOVABLE_API_KEY
+  // SECURITY: require Origin header (blocks curl/server-to-server abuse of
+  // LOVABLE_API_KEY) + origin allowlist. Public tool route keeps working.
+  const origin = req.headers.get("Origin");
+  if (!origin) {
+    return new Response(
+      JSON.stringify({ error: "forbidden", reason: "missing_origin" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
   const originCheck = checkOrigin(req);
   if (originCheck.blocked) {
     return new Response(
