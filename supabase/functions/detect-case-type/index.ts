@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { verifyAccountMembership } from "../_shared/auth-tenant.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,8 +34,23 @@ serve(async (req) => {
       current_documents, client_goal, urgency_level, has_pending_deadline, account_id,
     } = body;
 
+    if (!account_id) {
+      return new Response(JSON.stringify({ error: "account_id required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Get active case types for the account
     const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // SECURITY: verify user belongs to the requested account (tenant isolation)
+    const isMember = await verifyAccountMembership(adminClient, user.id, account_id);
+    if (!isMember) {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: caseTypes } = await adminClient
       .from("active_case_types")
       .select("case_type, display_name, description")
