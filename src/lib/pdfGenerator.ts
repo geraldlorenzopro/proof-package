@@ -678,6 +678,51 @@ async function renderStackedItems(
         doc.text('[Image error]', W / 2, y + 13, { align: 'center' });
         y += 28;
       }
+    } else if (isPdfItem(item)) {
+      try {
+        const { dataUrl, width: natW, height: natH, numPages } = await pdfFirstPageToJpegDataUrl(item.file);
+        const ratio = natH / natW;
+        let imgW = CONTENT_W;
+        let imgH = imgW * ratio;
+        // Reserve a line for the multi-page indicator when needed.
+        const reserved = numPages > 1 ? 6 : 0;
+        if (imgH > IMG_MAX_H - reserved) {
+          imgH = IMG_MAX_H - reserved;
+          imgW = imgH / ratio;
+        }
+        const imgX = MARGIN + (CONTENT_W - imgW) / 2;
+
+        doc.setDrawColor(200, 205, 215);
+        doc.setLineWidth(0.2);
+        doc.rect(imgX - 0.3, y - 0.3, imgW + 0.6, imgH + 0.6);
+        doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
+        y += imgH + 3;
+
+        if (numPages > 1) {
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(...GRAY);
+          doc.text(
+            `Page 1 of ${numPages}. Full ${numPages}-page document available in case file.`,
+            W / 2,
+            y + 2,
+            { align: 'center' },
+          );
+          y += 5;
+        }
+      } catch (err) {
+        imageFailures.push({
+          itemId: item.id,
+          exhibitNumber: item.exhibit_number,
+          reason: 'pdf_render_failed: ' + (err instanceof Error ? err.message : 'unknown'),
+        });
+        doc.setFillColor(...LIGHT);
+        doc.rect(MARGIN, y, CONTENT_W, 20, 'F');
+        doc.setFontSize(8);
+        doc.setTextColor(...GRAY);
+        doc.text(`[PDF could not be rendered: ${item.file.name}]`, W / 2, y + 12, { align: 'center' });
+        y += 24;
+      }
     } else {
       doc.setFillColor(...LIGHT);
       doc.rect(MARGIN, y, CONTENT_W, 20, 'F');
