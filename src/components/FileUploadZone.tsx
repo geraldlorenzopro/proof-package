@@ -136,7 +136,7 @@ export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUpload
         onDrop={e => {
           e.preventDefault();
           setDragOver(false);
-          processFiles(e.dataTransfer.files);
+          void processFiles(e.dataTransfer.files);
         }}
       >
         <input
