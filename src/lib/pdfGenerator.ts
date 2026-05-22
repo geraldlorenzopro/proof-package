@@ -525,7 +525,12 @@ async function renderPhotoGrid(
         doc.rect(imgX - 0.3, y - 0.3, imgW + 0.6, imgH + 0.6);
         doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
         y += imgH + 2;
-      } catch {
+      } catch (err) {
+        imageFailures.push({
+          itemId: item.id,
+          exhibitNumber: item.exhibit_number,
+          reason: err instanceof Error ? err.message : 'Image load failed',
+        });
         doc.setFillColor(...LIGHT);
         doc.rect(pos.x, y, COL_W, 25, 'F');
         doc.setFontSize(7);
