@@ -451,8 +451,8 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
 }
 
 function checkComplete(item: EvidenceItem): boolean {
-  if (item.type === 'photo') return !!(item.caption && item.participants);
-  if (item.type === 'chat') return !!(item.participants && item.demonstrates);
-  if (item.type === 'other') return !!item.caption;
+  if (item.type === 'photo') return !!(item.caption && item.participants && item.event_date);
+  if (item.type === 'chat') return !!(item.participants && item.demonstrates && item.event_date);
+  if (item.type === 'other') return !!(item.caption && item.event_date);
   return false;
 }
