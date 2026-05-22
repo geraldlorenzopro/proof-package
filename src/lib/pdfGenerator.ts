@@ -141,8 +141,9 @@ async function translateItems(items: EvidenceItem[], caseInfo: CaseInfo): Promis
   let successChunks = 0;
   let failedChunks = 0;
 
-  chunkResults.forEach((res, idx) => {
-    if (res.ok) {
+  for (let idx = 0; idx < chunkResults.length; idx++) {
+    const res = chunkResults[idx];
+    if (res.ok === true) {
       successChunks++;
       Object.assign(translated, res.translated);
     } else {
@@ -151,7 +152,7 @@ async function translateItems(items: EvidenceItem[], caseInfo: CaseInfo): Promis
       failedIds.forEach(id => failedItemIdSet.add(id));
       console.warn('[translate] Chunk failed, items fell back to original:', failedIds, 'reason:', res.reason);
     }
-  });
+  }
 
   let translationStatus: TranslationStatus;
   if (failedChunks === 0) translationStatus = 'success';
