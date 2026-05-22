@@ -336,7 +336,7 @@ export default function Index() {
             >
               {allComplete
                 ? t('reviewAndGenerate', lang)
-                : `${lang === 'es' ? 'Completa todas las fotos' : 'Complete all photos'} (${completedCount}/${numberedItems.length})`
+                : `${lang === 'es' ? 'Completa info y fechas' : 'Complete info and dates'} (${completedCount}/${numberedItems.length})`
               }
             </button>
           </div>
