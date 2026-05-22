@@ -435,7 +435,7 @@ export async function generateEvidencePDF(
         onProgress?.(`Rendering ${itemIdx}/${totalItems}…`);
         doc.addPage();
         pageNum++;
-        await renderPhotoGrid(doc, pageItems, caseInfo.compiled_date, pageNum, W, H);
+        await renderPhotoGrid(doc, pageItems, caseInfo.compiled_date, pageNum, W, H, imageFailures);
       }
     } else {
       for (let i = 0; i < sec.items.length; i += 2) {
