@@ -31,7 +31,7 @@ export const T = {
     es: 'o haz clic para seleccionar fotos, capturas de chat, comprobantes',
     en: 'or click to select photos, chat screenshots, receipts',
   },
-  uploadFormats: { es: 'Soporta: JPG, PNG, WEBP, PDF', en: 'Supports: JPG, PNG, WEBP, PDF' },
+  uploadFormats: { es: 'Soporta: JPG, PNG, WEBP, HEIC (iPhone), PDF', en: 'Supports: JPG, PNG, WEBP, HEIC (iPhone), PDF' },
   confirmClassify: { es: 'Confirma la clasificación de cada archivo:', en: 'Confirm the classification of each file:' },
   orFromDrive: { es: 'o importa desde Google Drive', en: 'or import from Google Drive' },
 
