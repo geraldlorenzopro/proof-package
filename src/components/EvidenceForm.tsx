@@ -241,6 +241,55 @@ function DatePickerField({
   );
 }
 
+// ── Caption preview (debounced) ───────────────────────────────────────────────
+
+function CaptionPreview({ item, lang }: { item: EvidenceItem; lang: Lang }) {
+  const [debouncedItem, setDebouncedItem] = useState(item);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedItem(item), 200);
+    return () => clearTimeout(t);
+  }, [item]);
+
+  const hasAny =
+    !!(debouncedItem.caption?.trim() ||
+      debouncedItem.participants?.trim() ||
+      debouncedItem.event_date ||
+      debouncedItem.demonstrates);
+
+  const label = lang === 'es'
+    ? 'Vista previa de cómo aparecerá en el PDF'
+    : 'Preview of how this will appear in the PDF';
+  const empty = lang === 'es'
+    ? 'Llená los campos arriba para ver la vista previa'
+    : 'Fill the fields above to see the preview';
+  const footnote = lang === 'es'
+    ? 'Este texto se traducirá automáticamente al inglés al generar el PDF.'
+    : 'This text will be translated to English when generating the PDF.';
+
+  const previewText = hasAny ? buildCaption(debouncedItem) : '';
+
+  return (
+    <div className="mt-2 rounded-lg border border-border/60 bg-muted/50 p-4">
+      <div className="flex items-center gap-1.5 mb-2">
+        <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+      </div>
+      {hasAny ? (
+        <p className="font-serif text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+          {previewText}
+        </p>
+      ) : (
+        <p className="text-sm italic text-muted-foreground/70">{empty}</p>
+      )}
+      <p className="mt-3 text-[10px] italic text-muted-foreground/70 leading-snug">
+        {footnote}
+      </p>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
