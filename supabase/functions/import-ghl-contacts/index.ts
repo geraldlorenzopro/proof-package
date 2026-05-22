@@ -248,8 +248,9 @@ Deno.serve(async (req) => {
   } catch (err: any) {
     console.error("Import error:", err);
     return new Response(
-      JSON.stringify({ error: "Internal server error", detail: err.message }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
+
 });
