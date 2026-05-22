@@ -306,11 +306,13 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
     const updated = { ...item, ...partial };
     updated.formComplete = checkComplete(updated);
     if ('event_date' in partial) {
-      console.log('[date-debug] EvidenceForm.update event_date', {
-        itemId: item.id,
-        partialEventDate: partial.event_date,
-        fullItemAfterUpdate: updated,
-      });
+      if (import.meta.env.DEV) {
+        console.log('[date-debug] EvidenceForm.update event_date', {
+          itemId: item.id,
+          partialEventDate: partial.event_date,
+          fullItemAfterUpdate: updated,
+        });
+      }
     }
     onChange(updated);
   }
