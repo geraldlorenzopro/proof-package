@@ -70,16 +70,6 @@ async function translateChunk(
       (error as { context?: { status?: number } } | null)?.context?.status ?? null;
     const errMsg: string | null = error ? (error.message ?? String(error)) : null;
 
-    // ── DIAGNOSTIC LOG (temporary — remove after confirming status path) ──
-    console.log('[translate-debug]', {
-      hasError: !!error,
-      httpStatus,
-      errorKeys: error ? Object.keys(error) : null,
-      errorContextType: error?.context ? typeof error.context : null,
-      errorContextKeys: error?.context && typeof error.context === 'object' ? Object.keys(error.context) : null,
-      errorStatusDirect: (error as any)?.status ?? null,
-    });
-    // ── END DIAGNOSTIC LOG ──
 
     if (error) {
       if (attempt === 1 && shouldRetry(httpStatus, errMsg)) {
