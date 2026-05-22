@@ -134,12 +134,14 @@ async function translateItems(items: EvidenceItem[], caseInfo: CaseInfo): Promis
   for (let i = 0; i < entriesToSend.length; i += CHUNK_SIZE) {
     chunks.push(entriesToSend.slice(i, i + CHUNK_SIZE));
   }
-  console.log('[translate] Chunking:', {
-    totalKeys: entriesToSend.length,
-    chunks: chunks.length,
-    chunkSize: CHUNK_SIZE,
-    concurrency: MAX_CONCURRENCY,
-  });
+  if (import.meta.env.DEV) {
+    console.log('[translate] Chunking:', {
+      totalKeys: entriesToSend.length,
+      chunks: chunks.length,
+      chunkSize: CHUNK_SIZE,
+      concurrency: MAX_CONCURRENCY,
+    });
+  }
 
   const tasks = chunks.map(chunk => () => translateChunk(chunk, caseInfo));
   const chunkResults = await runWithConcurrency(tasks, MAX_CONCURRENCY);

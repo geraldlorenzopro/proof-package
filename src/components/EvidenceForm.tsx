@@ -181,12 +181,14 @@ function DatePickerField({
   function handleSelect(date: Date | undefined) {
     if (date) {
       const newDate = format(date, 'yyyy-MM-dd');
-      console.log('[date-debug] DatePickerField.handleSelect', {
-        itemId,
-        rawDate: date,
-        newDate,
-        previousValue: value,
-      });
+      if (import.meta.env.DEV) {
+        console.log('[date-debug] DatePickerField.handleSelect', {
+          itemId,
+          rawDate: date,
+          newDate,
+          previousValue: value,
+        });
+      }
       onDateChange(newDate);
       setOpen(false);
     }
@@ -304,11 +306,13 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
     const updated = { ...item, ...partial };
     updated.formComplete = checkComplete(updated);
     if ('event_date' in partial) {
-      console.log('[date-debug] EvidenceForm.update event_date', {
-        itemId: item.id,
-        partialEventDate: partial.event_date,
-        fullItemAfterUpdate: updated,
-      });
+      if (import.meta.env.DEV) {
+        console.log('[date-debug] EvidenceForm.update event_date', {
+          itemId: item.id,
+          partialEventDate: partial.event_date,
+          fullItemAfterUpdate: updated,
+        });
+      }
     }
     onChange(updated);
   }
