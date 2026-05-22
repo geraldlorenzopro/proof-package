@@ -475,8 +475,33 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Restore-session banner (sessionStorage auto-save) */}
+      {restorePrompt && (
+        <div className="bg-accent/10 border-b border-accent/30">
+          <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-start gap-2 flex-1">
+              <RotateCcw className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-foreground">
+                {lang === 'es'
+                  ? `¿Continuar con tu sesión anterior? Tenías ${restorePrompt.count} item${restorePrompt.count !== 1 ? 's' : ''} en progreso.`
+                  : `Resume your previous session? You had ${restorePrompt.count} item${restorePrompt.count !== 1 ? 's' : ''} in progress.`}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="ghost" onClick={handleDiscardRestore}>
+                {lang === 'es' ? 'Empezar de nuevo' : 'Start fresh'}
+              </Button>
+              <Button size="sm" onClick={handleRestore} className="gradient-gold text-accent-foreground">
+                {lang === 'es' ? 'Continuar' : 'Resume'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Case context banner — additive, solo aparece si ?case_id=X presente */}
       <CaseToolBanner toolLabel="Photo Evidence Organizer" />
+
 
       {/* Sticky header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
