@@ -33,11 +33,20 @@ async function runWithConcurrency<T>(tasks: (() => Promise<T>)[], limit: number)
   return results;
 }
 
-function isTransientError(status: number | null, errMsg: string | null): boolean {
-  if (status === 429) return true;
+/** Decide retry policy per HTTP status code. Per spec:
+ *  - 429 (rate limit): NO retry (won't heal in 1.5s)
+ *  - 402 (credits exhausted): NO retry (credits don't recharge alone)
+ *  - 5xx (incl. 502 from gateway): retry once (likely transient)
+ *  - null status + error msg: network/fetch failure → retry once
+ *  - 4xx other (400/403/404): NO retry (client bug, our fault)
+ */
+function shouldRetry(status: number | null, errMsg: string | null): boolean {
+  if (status === 429) return false;
+  if (status === 402) return false;
   if (status !== null && status >= 500) return true;
-  if (errMsg && /rate.?limit|timeout|network|fetch|temporar/i.test(errMsg)) return true;
-  if (status === null && errMsg) return true; // network/fetch failure
+  if (status !== null && status >= 400) return false; // other 4xx = client bug
+  // status === null → network/fetch/timeout error
+  if (errMsg) return true;
   return false;
 }
 
@@ -62,9 +71,8 @@ async function translateChunk(
     const errMsg: string | null = error ? (error.message ?? String(error)) : null;
 
     if (error) {
-      // 4xx (except 429) = client bug, don't retry
-      const isClient4xx = httpStatus !== null && httpStatus >= 400 && httpStatus < 500 && httpStatus !== 429;
-      if (!isClient4xx && attempt === 1 && isTransientError(httpStatus, errMsg)) {
+      if (attempt === 1 && shouldRetry(httpStatus, errMsg)) {
+        console.warn('[translate] Retrying chunk after transient error', { httpStatus, errMsg });
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
         return translateChunk(chunkEntries, caseInfo, 2);
       }
@@ -72,12 +80,9 @@ async function translateChunk(
     }
 
     if (data?.error) {
-      // Edge returned 200 with error body (legacy rate-limit/credits compat)
+      // Edge returned 200 with error body (legacy compat path).
+      // Rate-limit / credit errors won't heal — DO NOT retry per spec.
       const reason = String(data.error);
-      if (attempt === 1 && /rate.?limit|credit|exhaust|temporar/i.test(reason)) {
-        await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
-        return translateChunk(chunkEntries, caseInfo, 2);
-      }
       return { ok: false, reason: `data_error: ${reason}` };
     }
 
@@ -87,8 +92,10 @@ async function translateChunk(
     }
     return { ok: true, translated };
   } catch (err) {
+    // Likely network/fetch exception — transient, retry once.
     const msg = err instanceof Error ? err.message : String(err);
     if (attempt === 1) {
+      console.warn('[translate] Retrying chunk after exception:', msg);
       await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
       return translateChunk(chunkEntries, caseInfo, 2);
     }
