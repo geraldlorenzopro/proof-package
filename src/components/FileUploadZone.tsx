@@ -142,10 +142,16 @@ export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUpload
         <input
           type="file"
           multiple
-          accept="image/*,.pdf"
+          accept="image/*,.heic,.heif,.pdf"
           className="hidden"
-          onChange={e => e.target.files && processFiles(e.target.files)}
+          onChange={e => { if (e.target.files) void processFiles(e.target.files); }}
         />
+        {converting > 0 && (
+          <p className="text-xs text-primary flex items-center gap-1 -mt-2">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            {lang === 'es' ? `Convirtiendo ${converting} foto(s) de iPhone…` : `Converting ${converting} iPhone photo(s)…`}
+          </p>
+        )}
         <div className="flex flex-col items-center gap-3 text-center px-6">
           <div className="w-14 h-14 rounded-full gradient-hero flex items-center justify-center shadow-primary">
             <Upload className="w-6 h-6 text-primary-foreground" />
