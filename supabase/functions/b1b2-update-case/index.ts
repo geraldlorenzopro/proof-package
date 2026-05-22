@@ -4,7 +4,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 /**
  * b1b2-update-case
  * Updates status/stage of a B1/B2 case identified by account_cid + case_id.
- * No auth required — called from the standalone B1/B2 dashboard.
+ * Requires authenticated NER member belonging to the resolved account.
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
