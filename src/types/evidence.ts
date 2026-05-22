@@ -17,6 +17,9 @@ export interface EvidenceItem {
   notes?: string;
   // Status
   formComplete: boolean;
+  // When restoring a session from sessionStorage we can't bring blobs back —
+  // the user has to re-upload. Metadata is preserved and re-attached by filename.
+  needsReupload?: boolean;
 }
 
 export interface CaseInfo {
