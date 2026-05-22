@@ -103,6 +103,7 @@ import HubChatPage from "./pages/HubChatPage";
 import HubLeadsPage from "./pages/HubLeadsPage";
 import ConsultationRoom from "./components/hub/ConsultationRoom";
 import HubSectionGate from "./components/hub/HubSectionGate";
+import { RequireRole } from "@/components/auth/RequireRole";
 import HubAuditPage from "./pages/HubAuditPage";
 
 
