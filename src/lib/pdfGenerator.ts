@@ -209,6 +209,53 @@ function isImageItem(item: EvidenceItem): boolean {
   return false;
 }
 
+function isPdfItem(item: EvidenceItem): boolean {
+  const ext = item.file.name?.split('.').pop()?.toLowerCase() || '';
+  return ext === 'pdf' || item.file.type === 'application/pdf';
+}
+
+// Lazy-loaded PDF.js singleton — keeps the heavy worker out of the initial bundle.
+let pdfjsLibPromise: Promise<typeof import('pdfjs-dist')> | null = null;
+async function loadPdfjs() {
+  if (!pdfjsLibPromise) {
+    pdfjsLibPromise = (async () => {
+      const pdfjs = await import('pdfjs-dist');
+      // Bundle worker locally via Vite ?url import — no CDN/CORS dependency.
+      const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
+      pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+      return pdfjs;
+    })();
+  }
+  return pdfjsLibPromise;
+}
+
+/** Render page 1 of a PDF to a JPEG data URL. Returns numPages for multi-page indicator. */
+async function pdfFirstPageToJpegDataUrl(
+  file: File,
+): Promise<{ dataUrl: string; width: number; height: number; numPages: number }> {
+  const pdfjs = await loadPdfjs();
+  const url = URL.createObjectURL(file);
+  try {
+    const pdfDoc = await pdfjs.getDocument({ url }).promise;
+    const numPages = pdfDoc.numPages;
+    const page = await pdfDoc.getPage(1);
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(viewport.width);
+    canvas.height = Math.round(viewport.height);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not available');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // pdfjs v5 render() takes { canvasContext, viewport, canvas? }
+    await page.render({ canvasContext: ctx, viewport, canvas } as Parameters<typeof page.render>[0]).promise;
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    return { dataUrl, width: canvas.width, height: canvas.height, numPages };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 function formatDateForPDF(date: string, isApprox: boolean): string {
   if (!date) return 'Date not specified';
   const parts = date.split('-');
@@ -630,6 +677,51 @@ async function renderStackedItems(
         doc.setTextColor(...GRAY);
         doc.text('[Image error]', W / 2, y + 13, { align: 'center' });
         y += 28;
+      }
+    } else if (isPdfItem(item)) {
+      try {
+        const { dataUrl, width: natW, height: natH, numPages } = await pdfFirstPageToJpegDataUrl(item.file);
+        const ratio = natH / natW;
+        let imgW = CONTENT_W;
+        let imgH = imgW * ratio;
+        // Reserve a line for the multi-page indicator when needed.
+        const reserved = numPages > 1 ? 6 : 0;
+        if (imgH > IMG_MAX_H - reserved) {
+          imgH = IMG_MAX_H - reserved;
+          imgW = imgH / ratio;
+        }
+        const imgX = MARGIN + (CONTENT_W - imgW) / 2;
+
+        doc.setDrawColor(200, 205, 215);
+        doc.setLineWidth(0.2);
+        doc.rect(imgX - 0.3, y - 0.3, imgW + 0.6, imgH + 0.6);
+        doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
+        y += imgH + 3;
+
+        if (numPages > 1) {
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(...GRAY);
+          doc.text(
+            `Page 1 of ${numPages}. Full ${numPages}-page document available in case file.`,
+            W / 2,
+            y + 2,
+            { align: 'center' },
+          );
+          y += 5;
+        }
+      } catch (err) {
+        imageFailures.push({
+          itemId: item.id,
+          exhibitNumber: item.exhibit_number,
+          reason: 'pdf_render_failed: ' + (err instanceof Error ? err.message : 'unknown'),
+        });
+        doc.setFillColor(...LIGHT);
+        doc.rect(MARGIN, y, CONTENT_W, 20, 'F');
+        doc.setFontSize(8);
+        doc.setTextColor(...GRAY);
+        doc.text(`[PDF could not be rendered: ${item.file.name}]`, W / 2, y + 12, { align: 'center' });
+        y += 24;
       }
     } else {
       doc.setFillColor(...LIGHT);
