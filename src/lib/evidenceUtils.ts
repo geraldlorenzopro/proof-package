@@ -90,7 +90,8 @@ export function buildCaption(item: {
 
   if (item.type === 'chat') {
     const purpose = toEnglish(item.demonstrates || '') || 'ongoing communication';
-    return `${item.platform || 'Chat'} message screenshot between ${participants}.${dateInfo} Demonstrates: ${purpose}.`;
+    const extra = item.caption?.trim() ? ` Additional context: ${item.caption.trim()}.` : '';
+    return `${item.platform || 'Chat'} message screenshot between ${participants}.${dateInfo} Demonstrates: ${purpose}.${extra}`;
   }
 
   return `${item.caption}.${dateInfo} Participants: ${participants}.`;
