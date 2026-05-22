@@ -90,6 +90,21 @@ Deno.serve(async (req) => {
       );
     }
 
+    // SECURITY: ensure caller belongs to this account (tenant isolation)
+    const { data: callerMembership } = await supabaseAdmin
+      .from("account_members")
+      .select("user_id")
+      .eq("account_id", account.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!callerMembership) {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
+
     // Get an owner/admin user for professional_id
     const { data: member } = await supabaseAdmin
       .from("account_members")
