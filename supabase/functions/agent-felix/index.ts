@@ -323,6 +323,7 @@ Genera un JSON con esta estructura exacta:
     });
   } catch (err) {
     console.error("agent-felix error:", err);
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "internal_error" }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: "internal_error" }), { status: 500, headers: corsHeaders });
   }
+
 });
