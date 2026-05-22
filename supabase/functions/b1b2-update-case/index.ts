@@ -75,6 +75,19 @@ Deno.serve(async (req) => {
       );
     }
 
+    // SECURITY: ensure caller belongs to this account (tenant isolation)
+    const { data: callerMembership } = await supabaseAdmin
+      .from("account_members")
+      .select("user_id")
+      .eq("account_id", account.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!callerMembership) {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Build update payload
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (status) updates.status = status;
