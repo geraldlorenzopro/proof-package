@@ -23,15 +23,24 @@ Deno.serve(async (req) => {
     // ═══════════════════════════════════════════════════════════════════════
     // 1. Get all offices with GHL configured
     // ═══════════════════════════════════════════════════════════════════════
-    const { data: offices } = await supabase
-      .from("office_config")
-      .select("account_id, ghl_location_id, ghl_api_key")
-      .not("ghl_location_id", "is", null);
+    const [{ data: offices }, { data: secrets }] = await Promise.all([
+      supabase
+        .from("office_config")
+        .select("account_id, ghl_location_id")
+        .not("ghl_location_id", "is", null),
+      supabase
+        .from("office_secrets")
+        .select("account_id, ghl_api_key"),
+    ]);
+
+    const secretMap = new Map<string, string | null>(
+      (secrets || []).map((s: any) => [s.account_id, s.ghl_api_key])
+    );
 
     const resolvedOffices = (offices || [])
-      .map((o) => ({
+      .map((o: any) => ({
         ...o,
-        ghl_api_key: o.ghl_api_key || Deno.env.get("MRVISA_API_KEY") || null,
+        ghl_api_key: secretMap.get(o.account_id) || Deno.env.get("MRVISA_API_KEY") || null,
       }))
       .filter((o) => o.ghl_api_key !== null);
 

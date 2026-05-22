@@ -3186,6 +3186,30 @@ export type Database = {
           },
         ]
       }
+      office_secrets: {
+        Row: {
+          account_id: string
+          created_at: string
+          ghl_api_key: string | null
+          updated_at: string
+          webhook_api_key: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          ghl_api_key?: string | null
+          updated_at?: string
+          webhook_api_key?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          ghl_api_key?: string | null
+          updated_at?: string
+          webhook_api_key?: string | null
+        }
+        Relationships: []
+      }
       pipeline_templates: {
         Row: {
           account_id: string | null

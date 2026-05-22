@@ -103,6 +103,7 @@ import HubChatPage from "./pages/HubChatPage";
 import HubLeadsPage from "./pages/HubLeadsPage";
 import ConsultationRoom from "./components/hub/ConsultationRoom";
 import HubSectionGate from "./components/hub/HubSectionGate";
+import { RequireRole } from "@/components/auth/RequireRole";
 import HubAuditPage from "./pages/HubAuditPage";
 
 
@@ -159,7 +160,7 @@ const App = () => (
           <Route path="/hub/leads" element={<ProtectedRoute><HubSectionGate sectionKey="leads"><HubLeadsPage /></HubSectionGate></ProtectedRoute>} />
           <Route path="/hub/clients" element={<ProtectedRoute><HubSectionGate sectionKey="clientes"><HubClientsPage /></HubSectionGate></ProtectedRoute>} />
           <Route path="/hub/clients/:id" element={<ProtectedRoute><HubSectionGate sectionKey="clientes"><ClientProfilePage /></HubSectionGate></ProtectedRoute>} />
-          <Route path="/hub/settings/office" element={<ProtectedRoute><HubSectionGate sectionKey="config"><OfficeSettingsPage /></HubSectionGate></ProtectedRoute>} />
+          <Route path="/hub/settings/office" element={<ProtectedRoute><HubSectionGate sectionKey="config"><RequireRole roles={['owner', 'admin']}><OfficeSettingsPage /></RequireRole></HubSectionGate></ProtectedRoute>} />
           {/* ═══ SMART FORMS — /hub/forms CANONICAL (Ola 4.1.5) ═══ */}
           {/* Plano §3.1 L100 + §15.1 L620 declara /hub/forms canonical
               (consistente con /hub/cases, /hub/leads — namespace inglés).
