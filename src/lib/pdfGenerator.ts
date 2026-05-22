@@ -565,6 +565,7 @@ async function renderStackedItems(
   pageNum: number,
   W: number,
   H: number,
+  imageFailures: ImageFailure[],
 ) {
   const MARGIN = 18;
   const CONTENT_W = W - MARGIN * 2;
