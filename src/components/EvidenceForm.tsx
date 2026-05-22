@@ -177,7 +177,14 @@ function DatePickerField({
 
   function handleSelect(date: Date | undefined) {
     if (date) {
-      onDateChange(format(date, 'yyyy-MM-dd'));
+      const newDate = format(date, 'yyyy-MM-dd');
+      console.log('[date-debug] DatePickerField.handleSelect', {
+        itemId,
+        rawDate: date,
+        newDate,
+        previousValue: value,
+      });
+      onDateChange(newDate);
       setOpen(false);
     }
   }
