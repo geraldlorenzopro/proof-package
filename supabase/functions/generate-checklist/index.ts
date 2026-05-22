@@ -50,6 +50,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // SECURITY: origin allowlist prevents direct curl abuse of LOVABLE_API_KEY
+  const originCheck = checkOrigin(req);
+  if (originCheck.blocked) {
+    return new Response(
+      JSON.stringify({ error: "forbidden" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   try {
     const body = await req.json();
     const { files } = body;
