@@ -209,6 +209,53 @@ function isImageItem(item: EvidenceItem): boolean {
   return false;
 }
 
+function isPdfItem(item: EvidenceItem): boolean {
+  const ext = item.file.name?.split('.').pop()?.toLowerCase() || '';
+  return ext === 'pdf' || item.file.type === 'application/pdf';
+}
+
+// Lazy-loaded PDF.js singleton — keeps the heavy worker out of the initial bundle.
+let pdfjsLibPromise: Promise<typeof import('pdfjs-dist')> | null = null;
+async function loadPdfjs() {
+  if (!pdfjsLibPromise) {
+    pdfjsLibPromise = (async () => {
+      const pdfjs = await import('pdfjs-dist');
+      // Bundle worker locally via Vite ?url import — no CDN/CORS dependency.
+      const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
+      pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+      return pdfjs;
+    })();
+  }
+  return pdfjsLibPromise;
+}
+
+/** Render page 1 of a PDF to a JPEG data URL. Returns numPages for multi-page indicator. */
+async function pdfFirstPageToJpegDataUrl(
+  file: File,
+): Promise<{ dataUrl: string; width: number; height: number; numPages: number }> {
+  const pdfjs = await loadPdfjs();
+  const url = URL.createObjectURL(file);
+  try {
+    const pdfDoc = await pdfjs.getDocument({ url }).promise;
+    const numPages = pdfDoc.numPages;
+    const page = await pdfDoc.getPage(1);
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(viewport.width);
+    canvas.height = Math.round(viewport.height);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not available');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // pdfjs v5 render() takes { canvasContext, viewport, canvas? }
+    await page.render({ canvasContext: ctx, viewport, canvas } as Parameters<typeof page.render>[0]).promise;
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    return { dataUrl, width: canvas.width, height: canvas.height, numPages };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 function formatDateForPDF(date: string, isApprox: boolean): string {
   if (!date) return 'Date not specified';
   const parts = date.split('-');
