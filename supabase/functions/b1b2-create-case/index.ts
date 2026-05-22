@@ -4,7 +4,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 /**
  * b1b2-create-case
  * Creates a new B1/B2 case for an account identified by external_crm_id.
- * No auth required — called from the standalone B1/B2 dashboard.
+ * Requires authenticated NER member belonging to the resolved account.
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
