@@ -239,6 +239,8 @@ export interface GeneratePDFOptions {
 export interface GeneratePDFResult {
   blob: Blob;
   filename: string;
+  translationStatus: TranslationStatus;
+  failedItemIds: string[];
 }
 
 export async function generateEvidencePDF(
@@ -248,7 +250,7 @@ export async function generateEvidencePDF(
   options?: GeneratePDFOptions,
 ): Promise<GeneratePDFResult> {
   onProgress?.('Translating to English…');
-  const translatedItems = await translateItems(items);
+  const { items: translatedItems, translationStatus, failedItemIds } = await translateItems(items, caseInfo);
   onProgress?.('Building PDF…');
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
