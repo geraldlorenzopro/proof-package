@@ -216,6 +216,63 @@ export default function Index() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [generatedPdf, setGeneratedPdf] = useState<{ blob: Blob; filename: string } | null>(null);
 
+  // ── Detect a previous WIP session on mount and offer restore ────────────────
+  const checkedRestoreRef = useRef(false);
+  useEffect(() => {
+    if (checkedRestoreRef.current) return;
+    checkedRestoreRef.current = true;
+    const { items: persisted, step: persistedStep } = readPersisted();
+    if (persisted.length > 0) {
+      setRestorePrompt({ count: persisted.length, step: persistedStep ?? 3 });
+    }
+  }, []);
+
+  function handleRestore() {
+    const { items: persisted, caseInfo: persistedCase } = readPersisted();
+    if (persisted.length === 0) {
+      setRestorePrompt(null);
+      return;
+    }
+    setItems(deserializeItems(persisted));
+    if (persistedCase) setCaseInfo(persistedCase);
+    // Force re-upload flow → land on step 2 so the user re-attaches files.
+    setStepRaw(2);
+    setRestorePrompt(null);
+  }
+
+  function handleDiscardRestore() {
+    clearPersisted();
+    setRestorePrompt(null);
+  }
+
+  // ── Debounced persistence (500ms) ────────────────────────────────────────────
+  useEffect(() => {
+    if (items.length === 0) return;
+    const t = setTimeout(() => {
+      try {
+        sessionStorage.setItem(SS_ITEMS, JSON.stringify(serializeItems(items)));
+      } catch (err) {
+        console.warn('[evidence] Could not persist items:', err);
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [items]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        sessionStorage.setItem(SS_CASE, JSON.stringify(caseInfo));
+      } catch (err) {
+        console.warn('[evidence] Could not persist caseInfo:', err);
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [caseInfo]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(SS_STEP, String(step)); } catch { /* ignore */ }
+  }, [step]);
+
   const steps = STEPS(lang);
 
   const numberedItems = useMemo(() => {
@@ -227,7 +284,47 @@ export default function Index() {
   }, [items]);
 
   function handleFilesAdded(newItems: EvidenceItem[]) {
-    setItems(prev => [...prev, ...newItems]);
+    setItems(prev => {
+      const orphans = prev.filter(i => i.needsReupload);
+      if (orphans.length === 0) return [...prev, ...newItems];
+
+      const consumed = new Set<string>();
+      const updated = prev.map(i => ({ ...i }));
+      const trulyNew: EvidenceItem[] = [];
+
+      for (const incoming of newItems) {
+        const exact = updated.find(o =>
+          o.needsReupload && !consumed.has(o.id) &&
+          o.file.name === incoming.file.name && o.file.size === incoming.file.size);
+        const nameOnly = !exact
+          ? updated.find(o => o.needsReupload && !consumed.has(o.id) && o.file.name === incoming.file.name)
+          : null;
+        const match = exact || nameOnly;
+        if (match) {
+          consumed.add(match.id);
+          if (nameOnly && !exact) {
+            import('sonner').then(({ toast }) => {
+              toast.warning(
+                lang === 'es'
+                  ? `El tamaño de "${incoming.file.name}" no coincide con el original. Lo asociamos igual; revisalo si no es el mismo archivo.`
+                  : `Size of "${incoming.file.name}" doesn't match the original. We associated it anyway; please review if this isn't the same file.`,
+                { duration: 8000 },
+              );
+            });
+          }
+          const idx = updated.findIndex(u => u.id === match.id);
+          updated[idx] = {
+            ...updated[idx],
+            file: incoming.file,
+            previewUrl: incoming.previewUrl,
+            needsReupload: false,
+          };
+        } else {
+          trulyNew.push(incoming);
+        }
+      }
+      return [...updated, ...trulyNew];
+    });
     setStep(3);
   }
 
