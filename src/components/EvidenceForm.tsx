@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EvidenceItem, EvidenceType, Lang } from '@/types/evidence';
 import { cn } from '@/lib/utils';
-import { FileImage, MessageSquare, FileText, CheckCircle, AlertCircle, ZoomIn, X, CalendarIcon } from 'lucide-react';
+import { FileImage, MessageSquare, FileText, CheckCircle, AlertCircle, ZoomIn, X, CalendarIcon, Eye } from 'lucide-react';
 import { format, parse, isValid } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
+import { buildCaption } from '@/lib/evidenceUtils';
 
 interface EvidenceFormProps {
   item: EvidenceItem;
