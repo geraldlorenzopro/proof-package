@@ -166,6 +166,46 @@ export default function Index() {
       const result = await generateEvidencePDF(numberedItems, caseInfo, (status) => setPdfStatus(status));
       // Capturar el Blob para que SaveToCaseButton lo suba al bucket case-outputs
       setGeneratedPdf({ blob: result.blob, filename: result.filename });
+
+      // Surface translation failures AFTER the PDF was saved/downloaded.
+      const { translationStatus, failedItemIds } = result;
+      if (translationStatus === 'partial' || translationStatus === 'failed') {
+        const failedExhibits = numberedItems
+          .filter(i => failedItemIds.includes(i.id))
+          .map(i => i.exhibit_number)
+          .join(', ');
+        const count = failedItemIds.length;
+        const { toast } = await import('sonner');
+        if (translationStatus === 'partial') {
+          toast.warning(
+            lang === 'es'
+              ? `Atención: ${count} items no se pudieron traducir al inglés y aparecen en español en el PDF.`
+              : `Warning: ${count} items could not be translated to English and appear in Spanish in the PDF.`,
+            {
+              description: (lang === 'es' ? 'Items afectados: ' : 'Affected items: ') + (failedExhibits || '—') + (lang === 'es' ? '. Recomendamos regenerar.' : '. We recommend regenerating.'),
+              duration: 15000,
+              action: {
+                label: lang === 'es' ? 'Regenerar PDF' : 'Regenerate PDF',
+                onClick: () => handleGeneratePDF(),
+              },
+            },
+          );
+        } else {
+          toast.error(
+            lang === 'es'
+              ? 'La traducción al inglés falló. El PDF está en español y no es apto para USCIS.'
+              : 'English translation failed. The PDF is in Spanish and not suitable for USCIS.',
+            {
+              description: lang === 'es' ? 'Por favor, reintenta.' : 'Please retry.',
+              duration: 20000,
+              action: {
+                label: lang === 'es' ? 'Reintentar' : 'Retry',
+                onClick: () => handleGeneratePDF(),
+              },
+            },
+          );
+        }
+      }
     } finally {
       setGenerating(false);
       setPdfStatus('');
