@@ -49,11 +49,12 @@ export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUpload
     const valid: File[] = [];
     for (const f of arr) {
       const v = validateFileFormat(f);
-      if (!v.ok) {
+      if (v.ok === false) {
+        const ext = v.ext;
         toast.error(
           lang === 'es'
-            ? `Formato no soportado: ${v.ext}. Usá JPG o PNG.`
-            : `Unsupported format: ${v.ext}. Please use JPG or PNG.`,
+            ? `Formato no soportado: ${ext}. Usá JPG o PNG.`
+            : `Unsupported format: ${ext}. Please use JPG or PNG.`,
         );
         continue;
       }
