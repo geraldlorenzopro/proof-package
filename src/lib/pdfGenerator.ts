@@ -618,7 +618,12 @@ async function renderStackedItems(
         doc.rect(imgX - 0.3, y - 0.3, imgW + 0.6, imgH + 0.6);
         doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
         y += imgH + 3;
-      } catch {
+      } catch (err) {
+        imageFailures.push({
+          itemId: item.id,
+          exhibitNumber: item.exhibit_number,
+          reason: err instanceof Error ? err.message : 'Image load failed',
+        });
         doc.setFillColor(...LIGHT);
         doc.rect(MARGIN, y, CONTENT_W, 25, 'F');
         doc.setFontSize(8);
