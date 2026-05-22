@@ -122,20 +122,20 @@ Return ONLY lines in this exact format (no extra text):
         model: 'google/gemini-3-flash-preview',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
-        max_tokens: 1500,
+        max_tokens: 4000,
       }),
     });
 
     if (response.status === 429) {
       return new Response(JSON.stringify({ translated: {}, error: 'Rate limit exceeded. Please try again in a moment.' }), {
-        status: 200,
+        status: 429,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     if (response.status === 402) {
       return new Response(JSON.stringify({ translated: {}, error: 'AI credits exhausted.' }), {
-        status: 200,
+        status: 402,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -143,7 +143,10 @@ Return ONLY lines in this exact format (no extra text):
     if (!response.ok) {
       const errText = await response.text();
       console.error('AI gateway error:', response.status, errText);
-      throw new Error(`AI gateway error: ${response.status}`);
+      return new Response(JSON.stringify({ translated: {}, error: `AI gateway error: ${response.status}` }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
