@@ -435,7 +435,7 @@ export async function generateEvidencePDF(
   }
 
   onProgress?.('');
-  return { blob, filename };
+  return { blob, filename, translationStatus, failedItemIds };
 }
 
 // ── Render 4 photos in 2x2 grid ─────────────────────────────────────────────
