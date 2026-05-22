@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Upload, FileImage, MessageSquare, FileText, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Upload, FileImage, MessageSquare, FileText, X, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { EvidenceItem, EvidenceType, Lang } from '@/types/evidence';
-import { classifyFile } from '@/lib/evidenceUtils';
+import { classifyFile, validateFileFormat, isHeicFile } from '@/lib/evidenceUtils';
 import { t } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { EVIDENCE_LIMIT_PER_CASE } from '@/lib/imageCompression';
