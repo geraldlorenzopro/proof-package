@@ -809,7 +809,7 @@ export default function OfficeSettingsPage() {
 }
 
 // ── Webhook Leads Section ──
-function WebhookLeadsSection({ accountId }: { accountId: string | null }) {
+function WebhookLeadsSection({ accountId, isAdmin }: { accountId: string | null; isAdmin: boolean }) {
   const [webhookApiKey, setWebhookApiKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -818,24 +818,24 @@ function WebhookLeadsSection({ accountId }: { accountId: string | null }) {
 
   useEffect(() => {
     if (!accountId) return;
+    if (!isAdmin) { setLoading(false); return; }
     (async () => {
       const { data } = await supabase
-        .from('office_config')
+        .from('office_secrets')
         .select('webhook_api_key')
         .eq('account_id', accountId)
-        .single();
+        .maybeSingle();
       setWebhookApiKey((data as any)?.webhook_api_key || null);
       setLoading(false);
     })();
-  }, [accountId]);
+  }, [accountId, isAdmin]);
 
   async function generateKey() {
-    if (!accountId) return;
+    if (!accountId || !isAdmin) return;
     const newKey = 'ner_live_' + Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
     const { error } = await supabase
-      .from('office_config')
-      .update({ webhook_api_key: newKey } as any)
-      .eq('account_id', accountId);
+      .from('office_secrets')
+      .upsert({ account_id: accountId, webhook_api_key: newKey } as any, { onConflict: 'account_id' });
     if (error) { toast.error("Error al generar clave"); return; }
     setWebhookApiKey(newKey);
     toast.success("Nueva API Key generada");
@@ -844,6 +844,19 @@ function WebhookLeadsSection({ accountId }: { accountId: string | null }) {
   function copyToClipboard(text: string, label: string) {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copiado ✅`);
+  }
+
+  if (!isAdmin) {
+    return (
+      <Card className="bg-card/60 border-border/30 p-6">
+        <div className="flex items-center gap-3">
+          <Eye className="w-5 h-5 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            Solo los administradores pueden ver las API keys.
+          </p>
+        </div>
+      </Card>
+    );
   }
 
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-jarvis" /></div>;
