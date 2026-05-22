@@ -254,11 +254,18 @@ export interface GeneratePDFOptions {
   skipDownload?: boolean;
 }
 
+export interface ImageFailure {
+  itemId: string;
+  exhibitNumber: string;
+  reason: string;
+}
+
 export interface GeneratePDFResult {
   blob: Blob;
   filename: string;
   translationStatus: TranslationStatus;
   failedItemIds: string[];
+  imageFailures: ImageFailure[];
 }
 
 export async function generateEvidencePDF(
