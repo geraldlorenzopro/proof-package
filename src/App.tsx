@@ -17,7 +17,6 @@ function RedirectWithParams({ to, useParam }: { to: string; useParam?: string })
 }
 import { ThemeProvider } from "next-themes";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import TestDatePicker from "@/pages/TestDatePicker";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SplashPreview from "./pages/dev/SplashPreview";
