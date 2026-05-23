@@ -70,22 +70,30 @@ export function toEnglish(value: string): string {
   return DEMONSTRATES_EN_MAP[value] || value;
 }
 
-// Human-readable date for captions (same logic as PDF)
-function formatDateHuman(date: string, isApprox: boolean): string {
+// Human-readable date for captions (same logic as PDF). Always English for USCIS.
+function formatDateHuman(date: string, isApprox: boolean, precision: 'exact' | 'month' | 'year' = 'exact'): string {
   if (!date) return 'Date not specified';
-  const parts = date.split('-');
-  if (parts.length === 3) {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
-    const monthIdx = parseInt(parts[1], 10) - 1;
-    const day = parseInt(parts[2], 10);
-    const year = parts[0];
-    if (monthIdx >= 0 && monthIdx < 12) {
-      const formatted = `${months[monthIdx]} ${day}, ${year}`;
-      return isApprox ? `${formatted} (approx.)` : formatted;
-    }
+  const parts = date.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) {
+    return isApprox ? `${date} (approximate)` : date;
   }
-  return isApprox ? `${date} (approx.)` : date;
+  const [year, month, day] = parts;
+
+  // Legacy items (no precision) that were flagged approximate fall back to year.
+  if (precision === 'year' || (isApprox && precision === 'exact' && (!month || !day))) {
+    return `${year} (approximate)`;
+  }
+
+  if (precision === 'month') {
+    const monthName = new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+    return `${monthName} ${year} (approximate)`;
+  }
+
+  // precision === 'exact'
+  const formatted = new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+  return isApprox ? `${formatted} (approximate)` : formatted;
 }
 
 // Strip leading "between"/"entre" from participants to avoid "between Between..."
