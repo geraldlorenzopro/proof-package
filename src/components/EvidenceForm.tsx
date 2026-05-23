@@ -585,10 +585,8 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
               <Question question={L.dateQ} hint={L.dateHint} required>
                 <DatePickerField
                   value={item.event_date}
-                  isApprox={item.date_is_approximate}
-                  onDateChange={(val) => update({ event_date: val })}
-                  onApproxChange={(val) => update({ date_is_approximate: val })}
-                  approxLabel={L.approxLabel}
+                  precision={item.date_precision || 'exact'}
+                  onChange={(partial) => update(partial)}
                   itemId={item.id}
                   lang={lang}
                 />
