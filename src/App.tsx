@@ -140,6 +140,7 @@ const App = () => (
           <Route path="/tools/uscis-analyzer" element={<UscisAnalyzer />} />
           {/* Ola 4.1.5 — tools canonical agregados (antes solo en /dashboard/*) */}
           <Route path="/tools/checklist" element={<ChecklistGenerator />} />
+          <Route path="/test-date-picker" element={<TestDatePicker />} />
           <Route path="/tools/interview-sim" element={<InterviewSimulatorPage />} />
           <Route path="/tools/visa-evaluator" element={<ProtectedRoute><VisaEvaluatorPage /></ProtectedRoute>} />
           {/* VAWA — público pero pending feature flag vawa-tools (no existe todavía,
