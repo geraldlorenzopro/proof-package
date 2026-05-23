@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { EvidenceItem, EvidenceType, Lang } from '@/types/evidence';
+import { EvidenceItem, EvidenceType, Lang, DatePrecision } from '@/types/evidence';
 import { cn } from '@/lib/utils';
 import { FileImage, MessageSquare, FileText, CheckCircle, AlertCircle, ZoomIn, X, CalendarIcon, Eye } from 'lucide-react';
 import { format, parse, isValid } from 'date-fns';
