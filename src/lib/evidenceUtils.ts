@@ -107,11 +107,12 @@ export function buildCaption(item: {
   caption: string;
   event_date: string;
   date_is_approximate: boolean;
+  date_precision?: 'exact' | 'month' | 'year';
   location?: string;
   platform?: string;
   demonstrates?: string;
 }): string {
-  const dateStr = formatDateHuman(item.event_date, item.date_is_approximate);
+  const dateStr = formatDateHuman(item.event_date, item.date_is_approximate, item.date_precision || 'exact');
   const participants = item.participants ? cleanParticipants(item.participants) : '—';
 
   const dateInfo = item.event_date ? ` Date: ${dateStr}.` : '';
