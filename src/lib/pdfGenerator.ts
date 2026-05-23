@@ -447,7 +447,7 @@ export async function generateEvidencePDF(
       const desc = item.caption.length > 55 ? item.caption.substring(0, 55) + '…' : item.caption;
       doc.text(`  ${item.exhibit_number}  ${desc}`, 20, tocY);
       if (item.event_date) {
-        doc.text(formatDateForPDF(item.event_date, item.date_is_approximate), W - 20, tocY, { align: 'right' });
+        doc.text(formatDateForPDF(item.event_date, item.date_is_approximate, item.date_precision || 'exact'), W - 20, tocY, { align: 'right' });
       }
       tocY += 6;
     });
