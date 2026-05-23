@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { EvidenceItem, EvidenceType, Lang } from '@/types/evidence';
+import { EvidenceItem, EvidenceType, Lang, DatePrecision } from '@/types/evidence';
 import { cn } from '@/lib/utils';
 import { FileImage, MessageSquare, FileText, CheckCircle, AlertCircle, ZoomIn, X, CalendarIcon, Eye } from 'lucide-react';
 import { format, parse, isValid } from 'date-fns';
@@ -153,92 +153,246 @@ function Question({
 const inputCls =
   "w-full text-sm border border-border rounded-md px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all";
 
+const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
 function DatePickerField({
   value,
-  isApprox,
-  onDateChange,
-  onApproxChange,
-  approxLabel,
+  precision: precisionProp,
+  onChange,
   itemId,
   lang,
 }: {
   value: string;
-  isApprox: boolean;
-  onDateChange: (val: string) => void;
-  onApproxChange: (val: boolean) => void;
-  approxLabel: string;
+  precision: DatePrecision;
+  onChange: (partial: { event_date: string; date_is_approximate: boolean; date_precision: DatePrecision }) => void;
   itemId: string;
   lang: Lang;
 }) {
   const [open, setOpen] = useState(false);
+  const precision = precisionProp || 'exact';
 
-  let selectedDate: Date | undefined = undefined;
+  // Parse current value
+  const parts = value ? value.split('-').map(Number) : [];
+  const curYear = parts[0] && !isNaN(parts[0]) ? parts[0] : undefined;
+  const curMonth = parts[1] && !isNaN(parts[1]) ? parts[1] : undefined; // 1-12
+  const curDay = parts[2] && !isNaN(parts[2]) ? parts[2] : undefined;
+
+  let selectedDate: Date | undefined;
   if (value) {
     const parsed = parse(value, 'yyyy-MM-dd', new Date());
     if (isValid(parsed)) selectedDate = parsed;
   }
 
-  function handleSelect(date: Date | undefined) {
+  const currentYear = new Date().getFullYear();
+  const years: number[] = [];
+  for (let y = currentYear; y >= 2000; y--) years.push(y);
+  const months = lang === 'es' ? MONTHS_ES : MONTHS_EN;
+
+  function setPrecision(next: DatePrecision) {
+    if (next === precision) return;
+    // Downgrade preserves compatible parts; upgrade clears.
+    if (next === 'exact') {
+      onChange({ event_date: '', date_is_approximate: false, date_precision: 'exact' });
+    } else if (next === 'month') {
+      if (precision === 'exact' && curYear && curMonth) {
+        onChange({
+          event_date: `${curYear}-${String(curMonth).padStart(2,'0')}-01`,
+          date_is_approximate: true,
+          date_precision: 'month',
+        });
+      } else {
+        // year → month: clear month
+        onChange({ event_date: '', date_is_approximate: true, date_precision: 'month' });
+      }
+    } else if (next === 'year') {
+      if (curYear) {
+        onChange({
+          event_date: `${curYear}-01-01`,
+          date_is_approximate: true,
+          date_precision: 'year',
+        });
+      } else {
+        onChange({ event_date: '', date_is_approximate: true, date_precision: 'year' });
+      }
+    }
+  }
+
+  function handleSelectExact(date: Date | undefined) {
     if (date) {
       const newDate = format(date, 'yyyy-MM-dd');
-      if (import.meta.env.DEV) {
-        console.log('[date-debug] DatePickerField.handleSelect', {
-          itemId,
-          rawDate: date,
-          newDate,
-          previousValue: value,
-        });
-      }
-      onDateChange(newDate);
+      onChange({ event_date: newDate, date_is_approximate: false, date_precision: 'exact' });
       setOpen(false);
     }
   }
 
-  const placeholder = lang === 'es'
-    ? '📅 Selecciona fecha del evento'
-    : '📅 Select event date';
+  function handleMonthChange(monthStr: string) {
+    const m = parseInt(monthStr, 10);
+    if (!m || !curYear) {
+      // need year first; store partial in state? We only commit when both present.
+      // If user picks month but no year, do nothing yet.
+      if (!curYear) return;
+    }
+    onChange({
+      event_date: `${curYear}-${String(m).padStart(2,'0')}-01`,
+      date_is_approximate: true,
+      date_precision: 'month',
+    });
+  }
 
-  const displayValue = selectedDate
+  function handleYearChangeForMonth(yearStr: string) {
+    const y = parseInt(yearStr, 10);
+    if (!y) return;
+    const m = curMonth || 1;
+    const useMonth = curMonth ? curMonth : null;
+    if (useMonth) {
+      onChange({
+        event_date: `${y}-${String(m).padStart(2,'0')}-01`,
+        date_is_approximate: true,
+        date_precision: 'month',
+      });
+    } else {
+      // Store year placeholder; event_date stays empty until month chosen.
+      onChange({
+        event_date: `${y}-01-01`,
+        date_is_approximate: true,
+        date_precision: 'month',
+      });
+    }
+  }
+
+  function handleYearOnly(yearStr: string) {
+    const y = parseInt(yearStr, 10);
+    if (!y) return;
+    onChange({
+      event_date: `${y}-01-01`,
+      date_is_approximate: true,
+      date_precision: 'year',
+    });
+  }
+
+  const placeholders = {
+    exact: lang === 'es' ? '📅 Selecciona fecha del evento' : '📅 Select event date',
+    month: lang === 'es' ? '📆 Selecciona mes y año' : '📆 Select month and year',
+    year:  lang === 'es' ? '🗓️ Selecciona año' : '🗓️ Select year',
+  };
+
+  const labels = {
+    exact: lang === 'es' ? '📅 Fecha exacta' : '📅 Exact date',
+    month: lang === 'es' ? '📆 Solo mes y año' : '📆 Month and year only',
+    year:  lang === 'es' ? '🗓️ Solo año' : '🗓️ Year only',
+  };
+
+  // Preview text (always English, for PDF parity)
+  let previewText = '';
+  if (precision === 'exact' && selectedDate) {
+    previewText = format(selectedDate, 'MMMM d, yyyy');
+  } else if (precision === 'month' && curYear && curMonth) {
+    previewText = `Selected: ${MONTHS_EN[curMonth - 1]} ${curYear} (approximate)`;
+  } else if (precision === 'year' && curYear) {
+    previewText = `Selected: ${curYear} (approximate)`;
+  }
+
+  const displayValue = selectedDate && precision === 'exact'
     ? format(selectedDate, 'MMM d, yyyy')
-    : placeholder;
+    : placeholders.exact;
 
   return (
     <div className="space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
+      {/* Precision selector */}
+      <div className="inline-flex rounded-md border border-border bg-muted/40 p-0.5 gap-0.5 w-full">
+        {(['exact','month','year'] as DatePrecision[]).map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setPrecision(p)}
             className={cn(
-              "w-full justify-start text-left font-normal text-sm h-10",
-              !value && "text-muted-foreground"
+              'flex-1 text-xs font-medium px-2 py-1.5 rounded transition-all',
+              precision === p
+                ? 'bg-background text-foreground shadow-sm border border-border'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0 text-primary" />
-            <span className="truncate text-base">{displayValue}</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 z-[200]" align="start">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleSelect}
-            initialFocus
-            className={cn("p-3 pointer-events-auto")}
-            disabled={(date) => date > new Date()}
-            defaultMonth={selectedDate || new Date(2024, 0, 1)}
-          />
-        </PopoverContent>
-      </Popover>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          id={`approx-${itemId}`}
-          checked={isApprox}
-          onChange={e => onApproxChange(e.target.checked)}
-          className="rounded w-4 h-4"
-        />
-        <span className="text-xs text-muted-foreground">{approxLabel}</span>
-      </label>
+            {labels[p]}
+          </button>
+        ))}
+      </div>
+
+      {/* Mode: exact → Calendar */}
+      {precision === 'exact' && (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                'w-full justify-start text-left font-normal text-sm h-10',
+                !value && 'text-muted-foreground'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0 text-primary" />
+              <span className="truncate text-base">{displayValue}</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 z-[200]" align="start">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleSelectExact}
+              initialFocus
+              className={cn('p-3 pointer-events-auto')}
+              disabled={(date) => date > new Date()}
+              defaultMonth={selectedDate || new Date(2024, 0, 1)}
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {/* Mode: month → month + year dropdowns */}
+      {precision === 'month' && (
+        <div className="grid grid-cols-2 gap-2">
+          <select
+            value={curMonth ?? ''}
+            onChange={(e) => handleMonthChange(e.target.value)}
+            className="text-sm border border-border rounded-md px-3 py-2 bg-background h-10 focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">{lang === 'es' ? 'Mes' : 'Month'}</option>
+            {months.map((m, i) => (
+              <option key={m} value={i + 1}>{m}</option>
+            ))}
+          </select>
+          <select
+            value={curYear ?? ''}
+            onChange={(e) => handleYearChangeForMonth(e.target.value)}
+            className="text-sm border border-border rounded-md px-3 py-2 bg-background h-10 focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">{lang === 'es' ? 'Año' : 'Year'}</option>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Mode: year → year dropdown */}
+      {precision === 'year' && (
+        <select
+          value={curYear ?? ''}
+          onChange={(e) => handleYearOnly(e.target.value)}
+          className="w-full text-sm border border-border rounded-md px-3 py-2 bg-background h-10 focus:outline-none focus:ring-2 focus:ring-primary/30"
+        >
+          <option value="">{placeholders.year}</option>
+          {years.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      )}
+
+      {/* Preview */}
+      {previewText && (
+        <p className="text-xs italic text-muted-foreground" data-item-id={itemId}>
+          {previewText}
+        </p>
+      )}
     </div>
   );
 }
@@ -431,10 +585,8 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
               <Question question={L.dateQ} hint={L.dateHint} required>
                 <DatePickerField
                   value={item.event_date}
-                  isApprox={item.date_is_approximate}
-                  onDateChange={(val) => update({ event_date: val })}
-                  onApproxChange={(val) => update({ date_is_approximate: val })}
-                  approxLabel={L.approxLabel}
+                  precision={item.date_precision || 'exact'}
+                  onChange={(partial) => update(partial)}
                   itemId={item.id}
                   lang={lang}
                 />
@@ -476,10 +628,8 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
               <Question question={L.dateQ} hint={L.dateHint} required>
                 <DatePickerField
                   value={item.event_date}
-                  isApprox={item.date_is_approximate}
-                  onDateChange={(val) => update({ event_date: val })}
-                  onApproxChange={(val) => update({ date_is_approximate: val })}
-                  approxLabel={L.approxLabel}
+                  precision={item.date_precision || 'exact'}
+                  onChange={(partial) => update(partial)}
                   itemId={item.id}
                   lang={lang}
                 />
@@ -511,10 +661,8 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
               <Question question={L.dateQ} hint={L.dateHint} required>
                 <DatePickerField
                   value={item.event_date}
-                  isApprox={item.date_is_approximate}
-                  onDateChange={(val) => update({ event_date: val })}
-                  onApproxChange={(val) => update({ date_is_approximate: val })}
-                  approxLabel={L.approxLabel}
+                  precision={item.date_precision || 'exact'}
+                  onChange={(partial) => update(partial)}
                   itemId={item.id}
                   lang={lang}
                 />

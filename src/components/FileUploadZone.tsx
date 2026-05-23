@@ -103,6 +103,7 @@ export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUpload
       exhibit_number: '',
       event_date: '',
       date_is_approximate: false,
+      date_precision: 'exact',
       caption: '',
       participants: '',
       source_location: '',
