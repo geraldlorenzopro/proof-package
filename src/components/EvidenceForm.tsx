@@ -278,9 +278,9 @@ function DatePickerField({
   };
 
   const labels = {
-    exact: lang === 'es' ? '📅 Fecha exacta' : '📅 Exact date',
-    month: lang === 'es' ? '📆 Solo mes y año' : '📆 Month and year only',
-    year:  lang === 'es' ? '🗓️ Solo año' : '🗓️ Year only',
+    exact: lang === 'es' ? '📅 Exacta' : '📅 Exact',
+    month: lang === 'es' ? '📆 Mes y año' : '📆 Month + year',
+    year:  lang === 'es' ? '🗓️ Año' : '🗓️ Year',
   };
 
   // Preview text (always English, for PDF parity)
