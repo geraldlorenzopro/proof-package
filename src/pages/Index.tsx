@@ -91,6 +91,7 @@ interface PersistedItem {
   exhibit_number: string;
   event_date: string;
   date_is_approximate: boolean;
+  date_precision?: EvidenceItem['date_precision'];
   caption: string;
   participants: string;
   location?: string;
@@ -109,6 +110,7 @@ function serializeItems(items: EvidenceItem[]): PersistedItem[] {
     exhibit_number: i.exhibit_number,
     event_date: i.event_date,
     date_is_approximate: i.date_is_approximate,
+    date_precision: i.date_precision ?? 'exact',
     caption: i.caption,
     participants: i.participants,
     location: i.location,
@@ -131,6 +133,7 @@ function deserializeItems(persisted: PersistedItem[]): EvidenceItem[] {
     exhibit_number: p.exhibit_number,
     event_date: p.event_date,
     date_is_approximate: p.date_is_approximate,
+    date_precision: p.date_precision ?? 'exact',
     caption: p.caption,
     location: p.location,
     participants: p.participants,
