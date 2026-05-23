@@ -248,21 +248,38 @@ async function pdfFirstPageToJpegDataUrl(
   }
 }
 
-function formatDateForPDF(date: string, isApprox: boolean): string {
+function formatDateForPDF(
+  date: string,
+  isApprox: boolean,
+  precision: 'exact' | 'month' | 'year' = 'exact',
+): string {
   if (!date) return 'Date not specified';
-  const parts = date.split('-');
-  if (parts.length === 3) {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
-    const monthIdx = parseInt(parts[1], 10) - 1;
-    const day = parseInt(parts[2], 10);
-    const year = parts[0];
-    if (monthIdx >= 0 && monthIdx < 12) {
-      const formatted = `${months[monthIdx]} ${day}, ${year}`;
-      return isApprox ? `${formatted} (approx.)` : formatted;
-    }
+  const parts = date.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) {
+    return isApprox ? `${date} (approximate)` : date;
   }
-  return isApprox ? `${date} (approx.)` : date;
+  const [year, month, day] = parts;
+  const months = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+  // Legacy: approximate flag without precision falls back to year-only display
+  if (precision === 'year' || (isApprox && precision === 'exact' && (!month || !day))) {
+    return `${year} (approximate)`;
+  }
+
+  if (precision === 'month') {
+    if (month >= 1 && month <= 12) {
+      return `${months[month - 1]} ${year} (approximate)`;
+    }
+    return `${year} (approximate)`;
+  }
+
+  // precision === 'exact'
+  if (month >= 1 && month <= 12) {
+    const formatted = `${months[month - 1]} ${day}, ${year}`;
+    return isApprox ? `${formatted} (approximate)` : formatted;
+  }
+  return isApprox ? `${date} (approximate)` : date;
 }
 
 function addPageFooter(doc: jsPDF, compiledDate: string, pageNum: number) {
