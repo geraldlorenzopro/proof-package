@@ -84,6 +84,10 @@ function formatDateHuman(date: string, isApprox: boolean, precision: 'exact' | '
     return `${year} (approximate)`;
   }
 
+  if (precision === 'month' && (month < 1 || month > 12)) {
+    return `${year} (approximate)`;
+  }
+
   if (precision === 'month') {
     const monthName = new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long' });
     return `${monthName} ${year} (approximate)`;
