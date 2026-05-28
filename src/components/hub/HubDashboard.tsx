@@ -637,11 +637,11 @@ function HubDashboardInner({
             )}
           </section>
 
-          {/* ═══ MAIN 2-PANE Hub v8.2 (2026-05-28 redistribución whitespace) ═══ */}
-          {/* Cambios v8.2: Pipeline + Activity movidos al right rail.
-              Pulse 4 KPIs movido al main horizontal. Mis acciones colapsa
-              a 1 línea si empty. Agenda+Risk min-h-[220px] fijo.
-              Resultado: zero huecos verticales, actividad SIEMPRE visible. */}
+          {/* ═══ MAIN 2-PANE Hub v8.3 (2026-05-28 reorg per Mr. Lorenzo) ═══ */}
+          {/* Cambios v8.3 vs v8.2:
+              - Right rail = SOLO Actividad reciente (full height absorbe)
+              - Quick Add + Recursos oficiales → footer horizontal centrado
+                debajo del grid. Más profesional, anclados visualmente. */}
           <section className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3 flex-1 min-h-0 overflow-hidden">
 
             {/* ─── LEFT PANE (1fr, sin scroll interno) ─── */}
@@ -659,29 +659,30 @@ function HubDashboardInner({
               {/* Mis acciones — fila compacta cuando empty */}
               <HubMyActionsCard accountId={accountId} userId={userId} />
 
-              {/* Pulse 4 KPIs horizontal (movido del rail) */}
+              {/* Pulse 4 KPIs horizontal */}
               <HubPulseTiles
                 kpis={{ closedThisWeek, tasksDoneRatio, activeCases, approvalRate30d }}
               />
 
-              {/* Pipeline 6 buckets — termina el main */}
+              {/* Pipeline 6 buckets */}
               <HubPipelineWidget accountId={accountId} />
             </div>
 
-            {/* ─── RIGHT RAIL (380px, último child Activity absorbe flex-1) ─── */}
-            <aside className="hidden lg:flex flex-col gap-2 min-h-0 overflow-hidden">
-              <HubQuickAdd />
-              <HubResourcesRail
-                primaryResources={PRIMARY_RESOURCES}
-                secondaryResources={SECONDARY_RESOURCES}
-                onOpenResource={setOpeningResource}
-              />
-              {/* Activity stream — flex-1 absorbe TODO el resto del viewport */}
-              <div className="flex-1 min-h-0">
-                <HubActivityStream accountId={accountId} />
-              </div>
+            {/* ─── RIGHT RAIL · SOLO ACTIVIDAD RECIENTE (full height) ─── */}
+            <aside className="hidden lg:flex flex-col min-h-0 overflow-hidden">
+              <HubActivityStream accountId={accountId} />
             </aside>
           </section>
+
+          {/* ═══ FOOTER · Acción rápida + Recursos oficiales centrados ═══ */}
+          <div className="flex flex-col gap-2 shrink-0 mt-2">
+            <HubQuickAdd />
+            <HubResourcesRail
+              primaryResources={PRIMARY_RESOURCES}
+              secondaryResources={SECONDARY_RESOURCES}
+              onOpenResource={setOpeningResource}
+            />
+          </div>
 
 
           {/* Pulse footer + recursos oficiales movidos al right rail (Hub v8 2026-05-28).

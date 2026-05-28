@@ -33,42 +33,41 @@ export default function HubQuickAdd() {
 
   return (
     <>
-      <section className="rounded-2xl border border-cyan-accent/15 bg-gradient-to-br from-ai-blue/[0.05] to-card/30 backdrop-blur-sm p-3">
-        <div className="flex items-center justify-between mb-2.5">
-          <h4 className="text-[11px] font-bold flex items-center gap-1.5 text-foreground font-sora">
+      {/* Layout v8.3 (2026-05-28): horizontal centrado abajo del main pane.
+          4 botones inline lado a lado en row central. */}
+      <section className="rounded-2xl border border-cyan-accent/15 bg-gradient-to-br from-ai-blue/[0.05] to-card/30 backdrop-blur-sm px-4 py-2.5 shrink-0">
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          <h4 className="text-[11px] font-bold flex items-center gap-1.5 text-foreground font-sora shrink-0">
             <Plus className="w-3.5 h-3.5 text-cyan-accent" />
             Acción rápida
+            <span className="text-[9px] text-muted-foreground/50 font-mono uppercase tracking-wider ml-1">⌘N</span>
           </h4>
-          <span className="text-[9px] text-muted-foreground/60 font-mono uppercase tracking-wider">
-            ⌘N
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <QuickActionButton
-            icon={<UserPlus className="w-3.5 h-3.5" />}
-            label="Cliente"
-            tone="cyan"
-            onClick={() => setNewClientOpen(true)}
-          />
-          <QuickActionButton
-            icon={<ListPlus className="w-3.5 h-3.5" />}
-            label="Tarea"
-            tone="purple"
-            onClick={() => setNewTaskOpen(true)}
-          />
-          <QuickActionButton
-            icon={<MessageSquarePlus className="w-3.5 h-3.5" />}
-            label="Consulta"
-            tone="amber"
-            onClick={() => setIntakeOpen(true)}
-          />
-          <QuickActionButton
-            icon={<FileText className="w-3.5 h-3.5" />}
-            label="Nota"
-            tone="slate"
-            onClick={() => setNewNoteOpen(true)}
-          />
+          <div className="flex items-center gap-2 flex-wrap">
+            <QuickActionButton
+              icon={<UserPlus className="w-3.5 h-3.5" />}
+              label="Cliente"
+              tone="cyan"
+              onClick={() => setNewClientOpen(true)}
+            />
+            <QuickActionButton
+              icon={<ListPlus className="w-3.5 h-3.5" />}
+              label="Tarea"
+              tone="purple"
+              onClick={() => setNewTaskOpen(true)}
+            />
+            <QuickActionButton
+              icon={<MessageSquarePlus className="w-3.5 h-3.5" />}
+              label="Consulta"
+              tone="amber"
+              onClick={() => setIntakeOpen(true)}
+            />
+            <QuickActionButton
+              icon={<FileText className="w-3.5 h-3.5" />}
+              label="Nota"
+              tone="slate"
+              onClick={() => setNewNoteOpen(true)}
+            />
+          </div>
         </div>
       </section>
 

@@ -28,7 +28,6 @@ const FILTER_OPTIONS: Array<{ key: ActivityCategory | "all"; label: string; icon
   { key: "client", label: "Cliente", icon: "👤" },
   { key: "team",   label: "Equipo",  icon: "👥" },
   { key: "ai",     label: "IA",      icon: "🤖" },
-  { key: "money",  label: "Dinero",  icon: "💰" },
   { key: "lead",   label: "Leads",   icon: "✨" },
 ];
 
