@@ -23,6 +23,7 @@ import ContactQuickPanel from "@/components/hub/ContactQuickPanel";
 import NewClientModal from "@/components/workspace/NewClientModal";
 import ConvertLeadToCaseModal from "@/components/hub/ConvertLeadToCaseModal";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
+import { useNerAccountId } from "@/hooks/useNerAccountId";
 
 interface LeadProfile {
   id: string;
@@ -121,14 +122,22 @@ export default function HubLeadsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [sortBy, setSortBy] = useState<"recent" | "name_asc" | "name_desc" | "oldest">("recent");
 
-  const accountId = (() => {
+  // Resolver accountId: prefiere impersonation > cache sessionStorage > query account_members.
+  // Bug fix 2026-05-28: entrando directo a /hub/leads sin pasar por /hub
+  // dejaba sessionStorage vacío → accountId null → fetchPage nunca disparaba.
+  // useNerAccountId hace fallback a RPC `user_account_id(auth.uid())`.
+  const impersonateAccountId = (() => {
     try {
       const imp = sessionStorage.getItem("ner_impersonate");
-      if (imp) { const p = JSON.parse(imp); if (new Date(p.expires_at) > new Date()) return p.account_id; }
-      const raw = sessionStorage.getItem("ner_hub_data");
-      return raw ? JSON.parse(raw).account_id : null;
-    } catch { return null; }
+      if (imp) {
+        const p = JSON.parse(imp);
+        if (new Date(p.expires_at) > new Date()) return p.account_id as string;
+      }
+    } catch {}
+    return null;
   })();
+  const { accountId: resolvedAccountId } = useNerAccountId();
+  const accountId = impersonateAccountId || resolvedAccountId;
 
   // Reset page when filters change
   useEffect(() => { setCurrentPage(0); }, [search, channelFilter, pageSize, sortBy]);
