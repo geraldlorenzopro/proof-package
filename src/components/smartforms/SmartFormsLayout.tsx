@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { FileText, List, Plus, ArrowLeft, CheckCircle2, Shield, Settings, AlertTriangle } from "lucide-react";
+import { FileText, Plus, ArrowLeft, CheckCircle2, AlertTriangle } from "lucide-react";
 import { LangToggle } from "@/components/LangToggle";
 import { useBackDestination } from "@/hooks/useBackDestination";
 import { Button } from "@/components/ui/button";
@@ -105,23 +105,12 @@ function TopNavBar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { wizardNav, lang, setLang } = useSmartFormsContext();
-  const { destination: backDest, isHub } = useBackDestination();
+  const { destination: backDest } = useBackDestination();
 
   // Check if coming from a case
   const navState = location.state as { fromCase?: boolean; caseId?: string } | null;
   const fromCase = navState?.fromCase || false;
   const caseId = navState?.caseId || null;
-
-  const navItems = [
-    { label: "Formularios", path: "/hub/forms", icon: List, end: true },
-  ];
-
-  const isActive = (path: string, end: boolean) => {
-    if (end) return location.pathname === path;
-    return location.pathname.startsWith(path);
-  };
-
-  const isSettingsActive = location.pathname === "/hub/forms/settings";
 
   const handleBack = () => {
     if (fromCase && caseId) {
@@ -131,78 +120,36 @@ function TopNavBar() {
     }
   };
 
+  // v8.6 (2026-05-28): top-nav simplificada por Mr. Lorenzo.
+  // Eliminados: branding "Smart Forms" + nav tabs (sidebar Hub ya marca
+  // Forms activo) + settings gear (mergeado a /hub/settings/office).
+  // Conservado: back button solo si wizardNav (volver al caso/Hub),
+  // LangToggle solo en wizard. Si no hay wizard activo NO renderiza
+  // header (la lista ya tiene su propio header).
+  if (!wizardNav) {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-30">
-      {/* Top nav row */}
-      <div className="relative flex items-center justify-center h-12 px-3 gap-2 border-b border-border/40 bg-card/80 backdrop-blur-sm">
-        {/* Back button — override ghost hover (era gold legacy) */}
+      <div className="relative flex items-center justify-between h-10 px-3 border-b border-border/40 bg-card/80 backdrop-blur-sm">
         <Button
           variant="ghost"
           size="sm"
           onClick={handleBack}
-          className="gap-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary shrink-0 px-2 absolute left-3"
+          className="gap-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary shrink-0 px-2"
         >
           <ArrowLeft className="w-4 h-4" />
           {fromCase && caseId ? (
             <span className="text-xs flex items-center gap-1">
               <FileText className="w-3.5 h-3.5 text-primary" /> Volver al caso
             </span>
-          ) : isHub ? (
-            <span className="text-xs flex items-center gap-1">
-              <Shield className="w-3.5 h-3.5 text-primary" /> Hub
-            </span>
           ) : (
-            <span className="text-xs">Dashboard</span>
+            <span className="text-xs">Volver a Formularios</span>
           )}
         </Button>
 
-        {/* Center: Branding + Nav tabs */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <FileText className="w-4 h-4 text-primary" />
-            <span className="font-bold text-sm hidden sm:inline">Smart Forms</span>
-          </div>
-          <div className="w-px h-5 bg-border/60 shrink-0" />
-          <nav className="flex items-center gap-0.5">
-            {navItems.map((item) => (
-              <Button
-                key={item.path}
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(item.path)}
-                className={cn(
-                  "gap-1.5 text-xs px-3 h-8 rounded-lg transition-all",
-                  isActive(item.path, item.end)
-                    ? "bg-primary/15 text-primary font-semibold hover:bg-primary/20"
-                    : "text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                )}
-              >
-                <item.icon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{item.label}</span>
-              </Button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Right side controls — positioned absolutely */}
-        <div className="absolute right-3 flex items-center gap-1">
-          {/* Lang toggle (only in wizard) */}
-          {wizardNav && <LangToggle lang={lang} setLang={setLang} />}
-
-          {/* Settings gear */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/hub/forms/settings")}
-            className={cn(
-              "w-8 h-8 shrink-0 hover:bg-primary/10",
-              isSettingsActive ? "text-primary" : "text-muted-foreground hover:text-primary"
-            )}
-            title="Configuración"
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
-        </div>
+        <LangToggle lang={lang} setLang={setLang} />
       </div>
 
       {/* Wizard progress — clickable step navigator */}

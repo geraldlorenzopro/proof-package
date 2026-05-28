@@ -149,12 +149,26 @@ export default function SmartFormsList() {
     searchTimeoutRef.current = setTimeout(async () => {
       setSearchLoading(true);
       const q = clientSearch.trim().toLowerCase();
+      // Filtro anti-staff: excluir client_profiles que están vinculados a
+      // un user_id que es member del account (paralegales, attorney,
+      // admin del equipo). Solo mostrar CLIENTES reales.
+      // Mr. Lorenzo 2026-05-28: "Lorenzo, Gerald aparece como cliente — NO".
+      const { data: staffMembers } = await supabase
+        .from("account_members")
+        .select("user_id")
+        .eq("account_id", accountIdRef);
+      const staffIds = (staffMembers || []).map((m: any) => m.user_id);
+
       let query = supabase
         .from("client_profiles")
         .select("id, first_name, last_name, email")
         .eq("account_id", accountIdRef)
+        .eq("is_test", false)
         .order("last_name", { ascending: true })
         .limit(50);
+      if (staffIds.length > 0) {
+        query = query.not("id", "in", `(${staffIds.map(id => `"${id}"`).join(",")})`);
+      }
       if (q) {
         query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`);
       }

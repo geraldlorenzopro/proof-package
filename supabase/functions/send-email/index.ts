@@ -453,11 +453,50 @@ Deno.serve(async (req) => {
       fileNumber = caseData?.file_number || null;
     }
 
-    // 4. Send via GHL or queue as pending
+    // 4. Send via Resend (primary) → fallback a GHL si Resend no configurado
+    // Mr. Lorenzo 2026-05-28: split GHL/NER — Resend para transactional NER,
+    // GHL solo para comms conversacionales (no transactional).
+    //
+    // Requiere: RESEND_API_KEY en Supabase Secrets + domain verificado
+    // en Resend (nerimmigration.ai). Reply-to = firm_email del config
+    // para que el cliente conteste al equipo legal.
     let status = "pending";
-    let ghlMessageId: string | null = null;
+    let providerMessageId: string | null = null;
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const replyTo = (config as any)?.firm_email || (config as any)?.attorney_email || undefined;
 
-    if (ghlApiKey && (config as any)?.ghl_location_id) {
+    if (resendApiKey) {
+      try {
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: `${vars.firm_name || "NER Immigration AI"} <noreply@nerimmigration.ai>`,
+            to: [to_email],
+            subject,
+            html,
+            reply_to: replyTo,
+          }),
+        });
+
+        if (resendRes.ok) {
+          const resendData = await resendRes.json();
+          status = "sent";
+          providerMessageId = resendData.id || null;
+        } else {
+          const errText = await resendRes.text();
+          console.error("Resend send error:", resendRes.status, errText);
+          status = "failed";
+        }
+      } catch (err) {
+        console.error("Resend send exception:", err);
+        status = "failed";
+      }
+    } else if (ghlApiKey && (config as any)?.ghl_location_id) {
+      // Fallback: GHL Conversations API si Resend no configurado
       try {
         const ghlRes = await fetch("https://services.leadconnectorhq.com/conversations/messages/outbound", {
           method: "POST",
@@ -480,7 +519,7 @@ Deno.serve(async (req) => {
         if (ghlRes.ok) {
           const ghlData = await ghlRes.json();
           status = "sent";
-          ghlMessageId = ghlData.messageId || ghlData.id || null;
+          providerMessageId = ghlData.messageId || ghlData.id || null;
         } else {
           const errText = await ghlRes.text();
           console.error("GHL send error:", ghlRes.status, errText);
@@ -491,9 +530,10 @@ Deno.serve(async (req) => {
         status = "failed";
       }
     } else {
-      console.log("GHL_API_KEY or ghl_location_id not configured, queuing as pending");
+      console.log("Neither RESEND_API_KEY nor GHL configured, queuing as pending");
       status = "pending";
     }
+    const ghlMessageId = providerMessageId; // alias backward-compat con email_logs schema
 
     // 5. Log to email_logs
     await supabase.from("email_logs").insert({
