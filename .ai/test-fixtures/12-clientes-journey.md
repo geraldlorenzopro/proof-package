@@ -1,20 +1,52 @@
-# Test Fixture — 12 clientes journey completo
+# Test Fixture — 12 clientes journey completo + 5 team members
 
 **Fecha:** 2026-05-28
-**Propósito:** validar TODAS las pantallas del Hub + flows construidos esta semana antes de entregar a las 5 firmas activas.
+**Propósito:** validar TODAS las pantallas del Hub + flows construidos esta semana antes de entregar a las 5 firmas activas. Incluye 5 team members para validar SaaS multi-tenant (assignment + visibility tier).
 
-## Cómo aplicar
+## Cómo aplicar (orden importa)
 
-1. Lovable: abrir Supabase SQL Editor del proyecto NER.
-2. Pegar el contenido de [`supabase/seeds/test-fixture-12-clients.sql`](../../supabase/seeds/test-fixture-12-clients.sql)
-3. Ejecutar (el bloque `DO $$ ... $$` es atómico, falla todo si algo falla)
+### Paso 1: Crear 5 team members (edge function)
+
+Invocar `seed-team-members` desde Supabase Functions UI o curl, autenticado como owner/admin:
+
+```bash
+curl -X POST https://<tu-supabase-url>/functions/v1/seed-team-members \
+  -H "Authorization: Bearer <tu-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"account_id": "ae903f7f-1c0a-4c9c-8c5d-4aa770da839d"}'
+```
+
+Crea 5 auth.users + profiles + account_members:
+
+| Nombre | Rol | Visibility tier |
+|---|---|:---:|
+| Pablo Méndez | attorney | team + attorney_only |
+| Carmen Báez | admin | team + attorney_only + admin_only |
+| Vanessa Rivera | paralegal | team |
+| Daniela Pérez | paralegal | team |
+| Sofía Restrepo | assistant | team (limitado) |
+
+Idempotente: si existen, los reusa.
+
+### Paso 2: Aplicar SQL seed
+
+1. Supabase SQL Editor
+2. Pegar [`supabase/seeds/test-fixture-12-clients.sql`](../../supabase/seeds/test-fixture-12-clients.sql)
+3. Ejecutar (`DO $$ ... $$` atómico)
 4. Verificar log: `NOTICE: Seed test fixture OK · 12 profiles · 10 cases · 17 tasks · 14 notes`
+
+El SQL resuelve los UUIDs del equipo automáticamente y asigna tasks de forma realista (Pablo revisa I-129F + RFE + bond memo; Vanessa hace traducciones + cliente contacts; Daniela arma packets; Carmen coordina logística; Sofía soporte). Si no se corrió el Paso 1, fallback al owner para todas.
 
 ## Cleanup post-test
 
 ```sql
+-- Clientes test
 DELETE FROM client_profiles WHERE email LIKE '%@demo.test';
 -- cascadea a client_cases (vía client_profile_id FK), case_tasks, case_notes, intake_sessions
+
+-- Team members test (si Mr. Lorenzo quiere remover el equipo demo)
+DELETE FROM auth.users WHERE email LIKE '%@team.demo.test';
+-- cascadea a profiles + account_members
 ```
 
 ## Los 12 clientes — quién es quién y por qué existe
