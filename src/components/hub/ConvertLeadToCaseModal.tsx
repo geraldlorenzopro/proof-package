@@ -1,22 +1,11 @@
 /**
- * ConvertLeadToCaseModal — Convierte un lead (client_profiles row con
- * contact_stage='lead') en un caso activo (client_cases insert) +
- * actualiza el lead a contact_stage='client'.
+ * ConvertLeadToCaseModal — Convierte un lead en un caso activo.
  *
- * Pipeline picker: USCIS / NVC / Consular / Court / ICE.
- * Mapea a process_stage validado por trigger `validate_process_stage`
- * (migration 20260528170000_process_stage_court_ice.sql que extiende
- * el ENUM con court + ice).
- *
- * Case type picker: 75+ tipos del catálogo `caseTypes.ts` (la misma
- * fuente que CaseTypeInlineEdit). Searchable por label / shortLabel /
- * formNumber / searchTerms.
- *
- * Patrón INSERT replicado de ConsultationRoom.tsx:380-397 — campos
- * required: account_id, professional_id, client_email, client_name,
- * case_type, status. Adicionales: client_profile_id, assigned_to,
- * process_stage (locked al picker), pipeline_stage="caso-activado",
- * ball_in_court="team".
+ * Soporta 2 modos:
+ *  - "simple": 1 caso con 1 form principal (flow original)
+ *  - "smart":  1 caso con N forms (Smart Process template). Inserta rows en
+ *              case_forms por cada form marcado como requerido. case_type se
+ *              setea al nombre del template.
  */
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -25,13 +14,30 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Briefcase, Search } from "lucide-react";
+import { Loader2, Briefcase, Search, Sparkles, FileText, Check } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/auditLog";
 import { CASE_TYPES, CATEGORY_LABELS, type CaseTypeMeta, type CaseTypeCategory } from "@/lib/caseTypes";
 import { getPrimaryFormForCaseType, getFormsForCaseType } from "@/lib/caseTypeToForms";
 
 type ProcessStage = "uscis" | "nvc" | "embajada" | "court" | "ice";
+type CreationMode = "simple" | "smart";
+
+interface TemplateForm {
+  form_type: string;
+  required: boolean;
+  sort_order: number;
+}
+
+interface SmartTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  color: string;
+  account_id: string | null; // null = global NER
+  forms_included: TemplateForm[];
+}
 
 const PIPELINE_OPTIONS: Array<{ value: ProcessStage; label: string; description: string; chipClass: string }> = [
   { value: "uscis",    label: "USCIS",        description: "Petición / ajuste / EAD",       chipClass: "bg-blue-500/10 border-blue-500/30 text-blue-300" },
@@ -66,8 +72,18 @@ interface Props {
 export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCreated }: Props) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<CreationMode>("simple");
+
+  // Simple mode state
   const [caseTypeKey, setCaseTypeKey] = useState<string>("");
   const [caseTypeSearch, setCaseTypeSearch] = useState("");
+
+  // Smart mode state
+  const [templates, setTemplates] = useState<SmartTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [enabledForms, setEnabledForms] = useState<Record<string, boolean>>({});
+
+  // Shared
   const [processStage, setProcessStage] = useState<ProcessStage>("uscis");
   const [assignedTo, setAssignedTo] = useState<string>("");
   const [notes, setNotes] = useState("");
@@ -76,14 +92,17 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
   // Reset al abrir
   useEffect(() => {
     if (open) {
+      setMode("simple");
       setCaseTypeKey("");
       setCaseTypeSearch("");
+      setSelectedTemplateId("");
+      setEnabledForms({});
       setProcessStage("uscis");
       setNotes("");
     }
   }, [open]);
 
-  // Cargar equipo de la firma para el picker "asignar a"
+  // Cargar equipo
   useEffect(() => {
     if (!open || !lead?.account_id) return;
     (async () => {
@@ -99,7 +118,6 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
           full_name: m.profiles?.full_name || null,
         }));
         setTeam(members);
-        // Default: el current user si está en el equipo
         const { data: { user } } = await supabase.auth.getUser();
         if (user && members.some(m => m.user_id === user.id)) {
           setAssignedTo(user.id);
@@ -108,7 +126,38 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
     })();
   }, [open, lead?.account_id]);
 
-  // Filtrado + agrupado del catálogo
+  // Cargar Smart Process templates (globales + de la firma)
+  useEffect(() => {
+    if (!open || !lead?.account_id) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("smart_process_templates" as any)
+        .select("id, name, description, icon, color, account_id, forms_included")
+        .eq("is_active", true)
+        .or(`account_id.is.null,account_id.eq.${lead.account_id}`)
+        .order("sort_order", { ascending: true });
+      if (error) {
+        console.warn("[smart-templates]", error);
+        return;
+      }
+      setTemplates((data as any) || []);
+    })();
+  }, [open, lead?.account_id]);
+
+  // Cuando seleccionás un template, pre-marcar todos los forms como activos
+  useEffect(() => {
+    if (!selectedTemplateId) {
+      setEnabledForms({});
+      return;
+    }
+    const tpl = templates.find(t => t.id === selectedTemplateId);
+    if (!tpl) return;
+    const next: Record<string, boolean> = {};
+    for (const f of tpl.forms_included) next[f.form_type] = true;
+    setEnabledForms(next);
+  }, [selectedTemplateId, templates]);
+
+  // Filtrado + agrupado del catálogo (simple mode)
   const filteredTypes = useMemo(() => {
     const q = caseTypeSearch.toLowerCase().trim();
     let list = CASE_TYPES;
@@ -130,19 +179,25 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
   }, [caseTypeSearch]);
 
   const selectedType = CASE_TYPES.find(t => t.key === caseTypeKey);
+  const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
+  const enabledFormCount = Object.values(enabledForms).filter(Boolean).length;
 
   const clientName = useMemo(() => {
     if (!lead) return "";
     return [lead.first_name, lead.last_name].filter(Boolean).join(" ") || lead.email || lead.phone || "Sin nombre";
   }, [lead]);
 
+  const canSubmit = useMemo(() => {
+    if (mode === "simple") return !!caseTypeKey;
+    return !!selectedTemplateId && enabledFormCount > 0;
+  }, [mode, caseTypeKey, selectedTemplateId, enabledFormCount]);
+
   async function handleConvert() {
     if (!lead) return;
-    if (!caseTypeKey) {
-      toast.error("Seleccioná el tipo de caso");
+    if (!canSubmit) {
+      toast.error(mode === "simple" ? "Seleccioná el tipo de caso" : "Seleccioná un Smart Process y al menos 1 form");
       return;
     }
-    if (!selectedType) return;
     if (!lead.email && !lead.phone) {
       toast.error("Este lead no tiene email ni teléfono. Editalo antes de convertir.");
       return;
@@ -157,7 +212,10 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
         return;
       }
 
-      // INSERT en client_cases — patrón de ConsultationRoom.tsx:380-397
+      const caseTypeLabel = mode === "simple" ? selectedType!.shortLabel : selectedTemplate!.name;
+      const processTypeKey = mode === "simple" ? selectedType!.key : (selectedTemplate!.case_type || selectedTemplate!.name.toLowerCase().replace(/\s+/g, "-"));
+
+      // INSERT en client_cases
       const { data: caseRow, error: caseErr } = await supabase
         .from("client_cases")
         .insert({
@@ -167,8 +225,8 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
           assigned_to: assignedTo || user.id,
           client_name: clientName,
           client_email: lead.email || "",
-          case_type: selectedType.shortLabel,
-          process_type: selectedType.key,
+          case_type: caseTypeLabel,
+          process_type: processTypeKey,
           process_stage: processStage,
           pipeline_stage: "caso-activado",
           status: "active",
@@ -185,64 +243,83 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
         return;
       }
 
-      // UPDATE lead → contact_stage='client'
+      // Branch por modo
+      if (mode === "smart" && selectedTemplate) {
+        // Insertar 1 row por form activo en case_forms
+        const rows = selectedTemplate.forms_included
+          .filter(f => enabledForms[f.form_type])
+          .map(f => ({
+            case_id: caseRow.id,
+            account_id: lead.account_id,
+            form_type: f.form_type,
+            status: "pending",
+            sort_order: f.sort_order,
+          }));
+        if (rows.length > 0) {
+          const { error: formsErr } = await supabase.from("case_forms" as any).insert(rows as any);
+          if (formsErr) console.warn("[smart-process] case_forms insert", formsErr);
+        }
+      } else if (mode === "simple") {
+        // Form draft principal (flow original)
+        const primaryFormType = getPrimaryFormForCaseType(selectedType!.key);
+        if (primaryFormType) {
+          try {
+            await supabase
+              .from("form_submissions")
+              .insert({
+                account_id: lead.account_id,
+                case_id: caseRow.id,
+                user_id: user.id,
+                form_type: primaryFormType,
+                form_version: primaryFormType === "i-130" ? "04/01/24" : "08/21/25",
+                status: "draft",
+                client_name: clientName,
+                client_email: lead.email || "",
+                form_data: {},
+                notes: `Borrador auto-creado al abrir expediente · ${selectedType!.shortLabel}`,
+              } as any);
+          } catch (formErr) {
+            console.warn("[convert-lead] form auto-draft skipped:", formErr);
+          }
+        }
+      }
+
+      // UPDATE lead → client
       await supabase
         .from("client_profiles")
         .update({ contact_stage: "client", updated_at: new Date().toISOString() } as any)
         .eq("id", lead.id);
 
-      // Auto-INSERT form_submissions DRAFT del formulario principal según
-      // case_type. Si no hay mapeo en caseTypeToForms, skip silencioso.
-      // Esto hace que el tab Formularios del case engine ya aparezca con
-      // borrador esperando, no vacío.
-      const primaryFormType = getPrimaryFormForCaseType(selectedType.key);
-      if (primaryFormType) {
-        try {
-          await supabase
-            .from("form_submissions")
-            .insert({
-              account_id: lead.account_id,
-              case_id: caseRow.id,
-              user_id: user.id,
-              form_type: primaryFormType,
-              form_version: primaryFormType === "i-130" ? "04/01/24" : "08/21/25",
-              status: "draft",
-              client_name: clientName,
-              client_email: lead.email || "",
-              form_data: {},
-              notes: `Borrador auto-creado al abrir expediente · ${selectedType.shortLabel}`,
-            } as any);
-        } catch (formErr) {
-          // No bloquear el flow si form_submission falla
-          console.warn("[convert-lead] form auto-draft skipped:", formErr);
-        }
-      }
-
       logAudit({
         action: "case.created" as any,
         entity_type: "case",
         entity_id: caseRow.id,
-        entity_label: `${clientName} · ${selectedType.shortLabel}`,
+        entity_label: `${clientName} · ${caseTypeLabel}`,
         metadata: {
           process_stage: processStage,
-          case_type_key: selectedType.key,
+          mode,
+          template_id: mode === "smart" ? selectedTemplateId : null,
+          forms_count: mode === "smart" ? enabledFormCount : 1,
           from_lead: lead.id,
-          auto_form: primaryFormType,
         },
       });
 
-      const suggestionCount = getFormsForCaseType(selectedType.key).length;
+      const descSuffix = mode === "smart"
+        ? `${enabledFormCount} formulario${enabledFormCount === 1 ? "" : "s"} preparado${enabledFormCount === 1 ? "" : "s"}`
+        : (() => {
+            const c = getFormsForCaseType(selectedType!.key).length;
+            return c > 0
+              ? `${selectedType!.shortLabel} · ${c} formulario${c === 1 ? "" : "s"} sugerido${c === 1 ? "" : "s"}`
+              : `${selectedType!.shortLabel} · ${PIPELINE_OPTIONS.find(p => p.value === processStage)?.label}`;
+          })();
+
       toast.success(`Expediente abierto · ${clientName}`, {
-        description: suggestionCount > 0
-          ? `${selectedType.shortLabel} · ${suggestionCount} formulario${suggestionCount === 1 ? "" : "s"} sugerido${suggestionCount === 1 ? "" : "s"}`
-          : `${selectedType.shortLabel} · ${PIPELINE_OPTIONS.find(p => p.value === processStage)?.label}`,
+        description: descSuffix,
         duration: 4000,
       });
 
       onOpenChange(false);
       onCreated?.(caseRow.id);
-      // Aterrizar directo en tab Formularios — el paralegal ya tiene el
-      // borrador esperando. Sin pasar por tab Resumen vacío.
       navigate(`/case-engine/${caseRow.id}?tab=formularios`);
     } catch (err: any) {
       console.error(err);
@@ -270,7 +347,35 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
         </DialogHeader>
 
         <div className="space-y-5 py-4">
-          {/* 1. Pipeline picker */}
+          {/* MODE SWITCHER */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-white/[0.03] border border-white/10 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setMode("simple")}
+              className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-semibold font-sora transition-all ${
+                mode === "simple"
+                  ? "bg-cyan-accent/15 text-cyan-accent ring-1 ring-cyan-accent/40"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" /> Caso simple
+              <span className="text-[9px] uppercase tracking-wider opacity-70 hidden sm:inline">1 form</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("smart")}
+              className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-semibold font-sora transition-all ${
+                mode === "smart"
+                  ? "bg-cyan-accent/15 text-cyan-accent ring-1 ring-cyan-accent/40"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Smart Process
+              <span className="text-[9px] uppercase tracking-wider opacity-70 hidden sm:inline">N forms</span>
+            </button>
+          </div>
+
+          {/* 1. Pipeline picker (always visible) */}
           <div className="space-y-2">
             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               1. ¿En qué etapa está el caso?
@@ -299,66 +404,163 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
             </div>
           </div>
 
-          {/* 2. Case type picker (searchable) */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              2. Tipo de caso
-            </Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-              <Input
-                placeholder="Buscar por formulario (I-130), tipo (esposa, asilo, EB-2)..."
-                value={caseTypeSearch}
-                onChange={e => setCaseTypeSearch(e.target.value)}
-                className="pl-9 text-sm"
-              />
-            </div>
-            {selectedType && (
-              <div className="rounded-lg border border-cyan-accent/30 bg-cyan-accent/5 px-3 py-2">
-                <p className="text-xs font-bold text-cyan-accent font-sora">{selectedType.shortLabel}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{selectedType.description}</p>
+          {/* 2. SIMPLE MODE: Case type picker */}
+          {mode === "simple" && (
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                2. Tipo de caso
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                <Input
+                  placeholder="Buscar por formulario (I-130), tipo (esposa, asilo, EB-2)..."
+                  value={caseTypeSearch}
+                  onChange={e => setCaseTypeSearch(e.target.value)}
+                  className="pl-9 text-sm"
+                />
               </div>
-            )}
-            <div className="max-h-[280px] overflow-y-auto rounded-lg border border-border/40 bg-card/30">
-              {Array.from(filteredTypes.entries()).map(([category, types]) => (
-                <div key={category}>
-                  <div className="sticky top-0 bg-background/95 backdrop-blur-sm px-3 py-1.5 border-b border-border/30 z-10">
-                    <span className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground/70 font-semibold">
-                      {CATEGORY_LABELS[category]}
-                    </span>
+              {selectedType && (
+                <div className="rounded-lg border border-cyan-accent/30 bg-cyan-accent/5 px-3 py-2">
+                  <p className="text-xs font-bold text-cyan-accent font-sora">{selectedType.shortLabel}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{selectedType.description}</p>
+                </div>
+              )}
+              <div className="max-h-[280px] overflow-y-auto rounded-lg border border-border/40 bg-card/30">
+                {Array.from(filteredTypes.entries()).map(([category, types]) => (
+                  <div key={category}>
+                    <div className="sticky top-0 bg-background/95 backdrop-blur-sm px-3 py-1.5 border-b border-border/30 z-10">
+                      <span className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground/70 font-semibold">
+                        {CATEGORY_LABELS[category]}
+                      </span>
+                    </div>
+                    {types.map(t => {
+                      const active = caseTypeKey === t.key;
+                      return (
+                        <button
+                          key={t.key}
+                          type="button"
+                          onClick={() => setCaseTypeKey(t.key)}
+                          className={`w-full text-left px-3 py-2 border-b border-border/20 transition-colors ${
+                            active ? "bg-cyan-accent/10" : "hover:bg-white/[0.03]"
+                          }`}
+                        >
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className={`text-xs font-semibold font-sora ${active ? "text-cyan-accent" : "text-foreground/90"}`}>
+                              {t.shortLabel}
+                            </span>
+                            <span className="text-[9px] uppercase tracking-wider text-muted-foreground/50 font-mono shrink-0">
+                              {t.formNumber}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">{t.description}</p>
+                        </button>
+                      );
+                    })}
                   </div>
-                  {types.map(t => {
-                    const active = caseTypeKey === t.key;
+                ))}
+                {filteredTypes.size === 0 && (
+                  <div className="px-4 py-8 text-center">
+                    <p className="text-xs text-muted-foreground">Sin resultados para "{caseTypeSearch}"</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 2. SMART MODE: Template picker + form checklist */}
+          {mode === "smart" && (
+            <div className="space-y-3">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                2. Elegí un Smart Process
+              </Label>
+              {templates.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border/40 px-4 py-6 text-center">
+                  <Sparkles className="w-5 h-5 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">No hay templates disponibles todavía.</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    Creá uno desde Configuración → Smart Processes.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
+                  {templates.map(tpl => {
+                    const active = selectedTemplateId === tpl.id;
                     return (
                       <button
-                        key={t.key}
+                        key={tpl.id}
                         type="button"
-                        onClick={() => setCaseTypeKey(t.key)}
-                        className={`w-full text-left px-3 py-2 border-b border-border/20 transition-colors ${
-                          active ? "bg-cyan-accent/10" : "hover:bg-white/[0.03]"
+                        onClick={() => setSelectedTemplateId(tpl.id)}
+                        className={`flex items-start gap-2 text-left px-3 py-2.5 rounded-lg border transition-all ${
+                          active
+                            ? "border-cyan-accent/50 bg-cyan-accent/5 ring-1 ring-cyan-accent/30"
+                            : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05]"
                         }`}
                       >
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span className={`text-xs font-semibold font-sora ${active ? "text-cyan-accent" : "text-foreground/90"}`}>
-                            {t.shortLabel}
-                          </span>
-                          <span className="text-[9px] uppercase tracking-wider text-muted-foreground/50 font-mono shrink-0">
-                            {t.formNumber}
-                          </span>
+                        <span className="text-base leading-none mt-0.5">{tpl.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className={`text-xs font-semibold font-sora truncate ${active ? "text-cyan-accent" : "text-foreground/90"}`}>
+                              {tpl.name}
+                            </p>
+                            {tpl.account_id === null && (
+                              <span className="text-[8px] uppercase tracking-wider text-muted-foreground/60 font-mono shrink-0">NER</span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                            {tpl.forms_included.length} formulario{tpl.forms_included.length === 1 ? "" : "s"}
+                            {tpl.description ? ` · ${tpl.description.slice(0, 40)}${tpl.description.length > 40 ? "…" : ""}` : ""}
+                          </p>
                         </div>
-                        <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">{t.description}</p>
                       </button>
                     );
                   })}
                 </div>
-              ))}
-              {filteredTypes.size === 0 && (
-                <div className="px-4 py-8 text-center">
-                  <p className="text-xs text-muted-foreground">Sin resultados para "{caseTypeSearch}"</p>
+              )}
+
+              {/* Form checklist */}
+              {selectedTemplate && (
+                <div className="rounded-lg border border-cyan-accent/30 bg-cyan-accent/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] uppercase tracking-wider font-mono text-cyan-accent font-semibold">
+                      Formularios incluidos ({enabledFormCount})
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/70">Destildá los que no apliquen</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                    {selectedTemplate.forms_included
+                      .slice()
+                      .sort((a, b) => a.sort_order - b.sort_order)
+                      .map(f => {
+                        const checked = !!enabledForms[f.form_type];
+                        return (
+                          <button
+                            key={f.form_type}
+                            type="button"
+                            onClick={() =>
+                              setEnabledForms(prev => ({ ...prev, [f.form_type]: !prev[f.form_type] }))
+                            }
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-all ${
+                              checked
+                                ? "bg-cyan-accent/10 text-foreground"
+                                : "bg-white/[0.02] text-muted-foreground/60 line-through"
+                            }`}
+                          >
+                            <span
+                              className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                                checked ? "bg-cyan-accent border-cyan-accent" : "border-border/60"
+                              }`}
+                            >
+                              {checked && <Check className="w-3 h-3 text-deep-navy" strokeWidth={3} />}
+                            </span>
+                            <span className="text-xs font-mono font-semibold">{f.form_type}</span>
+                          </button>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
             </div>
-          </div>
+          )}
 
           {/* 3. Asignado a */}
           <div className="space-y-2">
@@ -399,7 +601,7 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
           </Button>
           <Button
             onClick={handleConvert}
-            disabled={loading || !caseTypeKey}
+            disabled={loading || !canSubmit}
             className="bg-cyan-accent hover:bg-cyan-accent/90 text-deep-navy font-semibold gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
