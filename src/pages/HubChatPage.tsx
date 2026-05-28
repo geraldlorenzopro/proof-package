@@ -27,9 +27,11 @@ function sanitize(t: string) {
 async function streamChat({ messages, accountId, onDelta, onDone, signal }: {
   messages: Msg[]; accountId: string; onDelta: (t: string) => void; onDone: () => void; signal?: AbortSignal;
 }) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const accessToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const resp = await fetch(CHAT_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
     body: JSON.stringify({ messages, account_id: accountId }),
     signal,
   });
