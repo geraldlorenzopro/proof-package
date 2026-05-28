@@ -529,31 +529,45 @@ function HubDashboardInner({
               buscan rojo instintivamente. Crisis va PRIMERO, briefing después. */}
           <HubCrisisBar accountId={accountId} />
 
-          {/* ═══ ZONA 1 — MICRO-BRIEFING (datos contables, no prosa) ═══ */}
-          <section className="shrink-0 rounded-2xl px-4 py-2.5 border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.05] via-cyan-accent/[0.03] to-card/40 shadow-lg shadow-ai-blue/5 backdrop-blur-sm">
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
+          {/* ═══ ZONA 1 — BRIEFING CAMILA (presence-first Hub v8.1) ═══ */}
+          {/* Bigger Camila avatar + larger greeting. Validated by Mr. Lorenzo
+              2026-05-28: la versión compacta hacía que Camila pasara
+              desapercibida. Sora bold, 17-18px greeting, 56px avatar con ring. */}
+          <section className="shrink-0 rounded-2xl px-5 py-4 border border-cyan-accent/25 bg-gradient-to-br from-ai-blue/[0.07] via-cyan-accent/[0.04] to-card/50 shadow-lg shadow-ai-blue/10 backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="relative shrink-0">
+                  {/* Ring exterior animado para presence */}
+                  <div className="absolute inset-0 -m-1 rounded-full bg-gradient-to-br from-cyan-accent/40 via-ai-blue/30 to-transparent animate-pulse" style={{ animationDuration: "2.4s" }} />
                   <div
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-accent via-ai-blue to-cyan-accent/60 shadow-lg shadow-cyan-accent/30 animate-pulse"
-                    style={{ animationDuration: "3s" }}
-                  />
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-background" />
+                    className="relative w-14 h-14 rounded-full bg-gradient-to-br from-cyan-accent via-ai-blue to-cyan-accent/60 shadow-lg shadow-cyan-accent/40 flex items-center justify-center"
+                  >
+                    <Sparkles className="w-6 h-6 text-white drop-shadow" />
+                  </div>
+                  {/* Status dot grande con pulse */}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-400 border-2 border-background shadow-md shadow-emerald-400/40">
+                    <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap mb-1">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-accent/80 font-semibold font-mono">
-                      Camila · briefing
-                    </p>
-                    <span className="text-[10px] text-muted-foreground/60 font-mono">
-                      {format(now, "EEEE d 'de' MMMM · HH:mm", { locale: es })}
+                  <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                    <span className="text-[11px] uppercase tracking-[0.22em] text-cyan-accent font-bold font-mono">
+                      Camila
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                      Activa
+                    </span>
+                    <span className="text-[11px] text-muted-foreground/60 font-mono">
+                      · {format(now, "EEEE d 'de' MMMM · HH:mm", { locale: es })}
                     </span>
                   </div>
-                  <p className="text-[13px] font-semibold text-foreground/95 leading-snug font-sora">
-                    {greeting}, <span className="bg-gradient-to-r from-ai-blue to-cyan-accent bg-clip-text text-transparent">{firstName || "Jefe"}</span>.
+                  <p className="text-[17px] sm:text-[18px] font-bold text-foreground leading-snug font-sora">
+                    {greeting}, <span className="bg-gradient-to-r from-ai-blue via-cyan-accent to-ai-blue bg-clip-text text-transparent">{firstName || "Jefe"}</span>.
+                  </p>
+                  <p className="text-[13px] text-foreground/85 leading-snug mt-1 font-inter">
                     {microBriefing.length > 0 ? (
                       <>
-                        {" "}Tu día tiene{" "}
+                        Tu día tiene{" "}
                         {microBriefing.map((p, i) => (
                           <span key={i}>
                             <span className={`font-bold ${p.color}`}>{p.label}</span>
@@ -562,38 +576,38 @@ function HubDashboardInner({
                         ))}
                       </>
                     ) : (
-                      <> Tu día está despejado. Aprovechá para adelantar trabajo del miércoles.</>
+                      <>Tu día está despejado. Aprovechá para adelantar trabajo del miércoles.</>
                     )}
                   </p>
                 </div>
               </div>
 
               {/* Camila input — voz + chat */}
-              <div className="shrink-0 flex flex-col items-end gap-1.5 self-start min-w-[260px]">
-                <div className={`flex items-center gap-1.5 bg-card/80 border rounded-xl px-3 py-2 transition-all w-full ${
+              <div className="shrink-0 flex flex-col items-end gap-1.5 self-center min-w-[280px]">
+                <div className={`flex items-center gap-1.5 bg-card/80 border rounded-xl px-3 py-2.5 transition-all w-full ${
                   isVoiceActive
                     ? "border-emerald-400/40 ring-1 ring-emerald-400/20"
-                    : "border-cyan-accent/20 focus-within:border-cyan-accent/50"
+                    : "border-cyan-accent/30 focus-within:border-cyan-accent/60 focus-within:ring-1 focus-within:ring-cyan-accent/20"
                 }`}>
                   <input
                     ref={inputRef}
                     type="text"
                     placeholder={isVoiceActive ? "En llamada..." : "Pregúntale a Camila..."}
-                    className="flex-1 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground/40 disabled:opacity-50 font-inter"
+                    className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50 font-inter"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                     disabled={isVoiceActive}
                   />
                   {!isVoiceActive && (
-                    <button onClick={toggleSTT} className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                    <button onClick={toggleSTT} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
                       isListening ? "bg-red-500/20 text-red-400" : "text-muted-foreground/50 hover:text-cyan-accent hover:bg-cyan-accent/10"
                     }`} title="Dictar al texto">
-                      {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                     </button>
                   )}
-                  <button onClick={() => sendMessage()} disabled={!input.trim()} className="w-7 h-7 rounded-lg bg-cyan-accent/15 hover:bg-cyan-accent/25 flex items-center justify-center transition-all disabled:opacity-30" title="Enviar">
-                    <Send className="w-3.5 h-3.5 text-cyan-accent" />
+                  <button onClick={() => sendMessage()} disabled={!input.trim()} className="w-8 h-8 rounded-lg bg-cyan-accent/15 hover:bg-cyan-accent/25 flex items-center justify-center transition-all disabled:opacity-30" title="Enviar">
+                    <Send className="w-4 h-4 text-cyan-accent" />
                   </button>
                 </div>
                 {isVoiceActive && (

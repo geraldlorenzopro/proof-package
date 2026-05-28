@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { useDemoMode } from "./useDemoData";
+import { useDemoMode, DEMO_CASES } from "./useDemoData";
 
 export type RiskReason = "rfe_deadline" | "uscis_deadline" | "client_silent";
 
@@ -39,7 +39,42 @@ export function useRiskCases(accountId: string | null, limit = 5): State {
 
   useEffect(() => {
     if (demoMode) {
-      setState({ cases: [], loading: false, error: null });
+      const now = Date.now();
+      const risks: RiskCase[] = [];
+      for (const c of DEMO_CASES) {
+        if (c.next_due_iso) {
+          const days = Math.ceil((new Date(c.next_due_iso).getTime() - now) / DAY_MS);
+          if (c.overdue_tasks > 0 && days <= 7) {
+            risks.push({
+              id: c.id,
+              clientName: c.client_name,
+              caseType: c.case_type,
+              fileNumber: c.file_number,
+              reason: "rfe_deadline",
+              daysLeft: days,
+              detail: days < 0 ? `${c.legal_status} · vencido ${Math.abs(days)}d` : `${c.legal_status} · vence en ${days}d`,
+            });
+            continue;
+          }
+        }
+        if (c.days_since_activity >= 10 && c.ball_in_court === "client") {
+          risks.push({
+            id: c.id,
+            clientName: c.client_name,
+            caseType: c.case_type,
+            fileNumber: c.file_number,
+            reason: "client_silent",
+            daysLeft: c.days_since_activity,
+            detail: `Sin respuesta hace ${c.days_since_activity}d`,
+          });
+        }
+      }
+      risks.sort((a, b) => {
+        const wa = a.reason === "client_silent" ? 999 : a.daysLeft;
+        const wb = b.reason === "client_silent" ? 999 : b.daysLeft;
+        return wa - wb;
+      });
+      setState({ cases: risks.slice(0, limit), loading: false, error: null });
       return;
     }
     if (!accountId) {

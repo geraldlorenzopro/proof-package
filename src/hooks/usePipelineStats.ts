@@ -9,6 +9,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode, DEMO_PULSE } from "./useDemoData";
 
 export type PipelineBucket = "intake" | "consulta" | "contrato" | "uscis" | "rfe" | "aprobado";
 
@@ -46,9 +47,24 @@ function classify(stage: string | null): PipelineBucket | null {
 }
 
 export function usePipelineStats(accountId: string | null): State {
+  const demoMode = useDemoMode();
   const [state, setState] = useState<State>({ stats: [], totalActive: 0, loading: true });
 
   useEffect(() => {
+    if (demoMode) {
+      const demoCounts: Record<PipelineBucket, number> = {
+        intake: DEMO_PULSE.leads_today,
+        consulta: 6,
+        contrato: 11,
+        uscis: 98,
+        rfe: 7,
+        aprobado: 14,
+      };
+      const stats = BUCKETS.map(b => ({ ...b, count: demoCounts[b.bucket] }));
+      const totalActive = DEMO_PULSE.active_cases;
+      setState({ stats, totalActive, loading: false });
+      return;
+    }
     if (!accountId) {
       setState({ stats: BUCKETS.map(b => ({ ...b, count: 0 })), totalActive: 0, loading: false });
       return;
@@ -97,7 +113,7 @@ export function usePipelineStats(accountId: string | null): State {
     })();
 
     return () => { cancelled = true; };
-  }, [accountId]);
+  }, [accountId, demoMode]);
 
   return state;
 }

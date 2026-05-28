@@ -7,7 +7,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useDemoMode } from "./useDemoData";
+import { useDemoMode, DEMO_SIGNATURES, DEMO_REVIEWS } from "./useDemoData";
 
 export type ActionKind = "firmar" | "rfe" | "llamadas" | "revisar" | "documentos";
 
@@ -37,7 +37,22 @@ export function useMyActions(accountId: string | null, userId: string | null): S
 
   useEffect(() => {
     if (demoMode) {
-      setState({ buckets: [], total: 0, loading: false });
+      const counts: Record<ActionKind, number> = {
+        firmar: DEMO_SIGNATURES.length,
+        rfe: DEMO_REVIEWS.length,
+        llamadas: 3,
+        revisar: 4,
+        documentos: 6,
+      };
+      const ordered: ActionKind[] = ["firmar", "rfe", "llamadas", "revisar", "documentos"];
+      const buckets = ordered
+        .map(k => ({ kind: k, label: MAP[k].label, count: counts[k] }))
+        .sort((a, b) => b.count - a.count);
+      setState({
+        buckets,
+        total: Object.values(counts).reduce((a, b) => a + b, 0),
+        loading: false,
+      });
       return;
     }
     if (!accountId || !userId) {

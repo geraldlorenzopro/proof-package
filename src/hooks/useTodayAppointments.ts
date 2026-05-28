@@ -8,7 +8,7 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { useDemoMode } from "./useDemoData";
+import { useDemoMode, DEMO_CONSULTATIONS } from "./useDemoData";
 
 export interface TodayAppointment {
   id: string;
@@ -27,6 +27,20 @@ interface State {
   error: string | null;
 }
 
+function buildDemoAppointments(): TodayAppointment[] {
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  return DEMO_CONSULTATIONS.map(c => ({
+    id: c.id,
+    clientName: c.client_name,
+    appointmentType: c.title,
+    status: "confirmed",
+    datetime: `${todayStr}T${c.time}:00`,
+    notes: null,
+    caseId: null,
+    intakeSessionId: null,
+  }));
+}
+
 export function useTodayAppointments(accountId: string | null): State {
   const demoMode = useDemoMode();
   const [state, setState] = useState<State>({
@@ -37,9 +51,7 @@ export function useTodayAppointments(accountId: string | null): State {
 
   useEffect(() => {
     if (demoMode) {
-      // Demo: no queries reales. El briefing global del HubDashboard
-      // ya muestra agenda mock para presentación.
-      setState({ appointments: [], loading: false, error: null });
+      setState({ appointments: buildDemoAppointments(), loading: false, error: null });
       return;
     }
     if (!accountId) {
