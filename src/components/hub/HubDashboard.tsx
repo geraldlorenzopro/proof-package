@@ -18,7 +18,7 @@ import HubAgendaWidget from "./HubAgendaWidget";
 import HubRiskWidget from "./HubRiskWidget";
 import HubPipelineWidget from "./HubPipelineWidget";
 import HubMyActionsCard from "./HubMyActionsCard";
-import HubEventsFeed from "./HubEventsFeed";
+import HubActivityStream from "./HubActivityStream";
 import HubQuickAdd from "./HubQuickAdd";
 import HubPulseRail from "./HubPulseRail";
 import { useTodayAppointments } from "@/hooks/useTodayAppointments";
@@ -648,8 +648,8 @@ function HubDashboardInner({
               {/* Pipeline horizontal */}
               <HubPipelineWidget accountId={accountId} />
 
-              {/* Eventos del weekend (con filtros, será refactored a stream en Fase 3) */}
-              <HubEventsFeed accountId={accountId} />
+              {/* Activity stream cronológico filterable (Hub v8 Fase 3) */}
+              <HubActivityStream accountId={accountId} />
             </div>
 
             {/* ─── RIGHT RAIL (sticky, 340px) ─── */}
