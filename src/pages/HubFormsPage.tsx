@@ -110,7 +110,7 @@ export default function HubFormsPage() {
 
   return (
     <HubLayout>
-      <div className="max-w-[1400px] mx-auto px-4 py-5 space-y-4">
+      <div className="max-w-[1600px] mx-auto px-6 py-4 space-y-4">
 
         {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-3">

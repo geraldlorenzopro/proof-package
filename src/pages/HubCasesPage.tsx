@@ -182,7 +182,7 @@ export default function HubCasesPage() {
 
   return (
     <HubLayout>
-      <div className="px-5 py-4 space-y-3">
+      <div className="max-w-[1600px] mx-auto px-6 py-4 space-y-3">
 
         {/* ═══ Header + Search global ═══ (paridad mockup v2) */}
         <div className="flex items-center justify-between gap-4 flex-wrap">

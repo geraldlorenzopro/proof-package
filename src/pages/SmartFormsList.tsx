@@ -282,7 +282,7 @@ export default function SmartFormsList() {
   })).filter(g => g.forms.length > 0);
 
   if (loading) return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
+    <div className="max-w-[1600px] mx-auto px-6 py-6">
       <div className="h-6 w-48 bg-muted rounded mb-4 animate-pulse" />
       <div className="h-10 w-full bg-muted/60 rounded-lg mb-6 animate-pulse" />
       <div className="space-y-3">
@@ -298,7 +298,7 @@ export default function SmartFormsList() {
 
   return (
     <div className="min-h-full bg-background">
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="max-w-[1600px] mx-auto px-6 py-6">
 
         {/* ═══════ HEADER ═══════ */}
         <div className="flex items-center justify-between mb-5">
