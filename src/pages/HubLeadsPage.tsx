@@ -121,14 +121,26 @@ export default function HubLeadsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [sortBy, setSortBy] = useState<"recent" | "name_asc" | "name_desc" | "oldest">("recent");
 
-  const accountId = (() => {
+  const [accountId, setAccountId] = useState<string | null>(() => {
     try {
       const imp = sessionStorage.getItem("ner_impersonate");
       if (imp) { const p = JSON.parse(imp); if (new Date(p.expires_at) > new Date()) return p.account_id; }
       const raw = sessionStorage.getItem("ner_hub_data");
       return raw ? JSON.parse(raw).account_id : null;
     } catch { return null; }
-  })();
+  });
+
+  // Fallback: resolve account_id from auth when sessionStorage is empty (direct URL entry)
+  useEffect(() => {
+    if (accountId) return;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.rpc("user_account_id", { _user_id: user.id });
+      if (data) setAccountId(data as string);
+    })();
+  }, [accountId]);
+
 
   // Reset page when filters change
   useEffect(() => { setCurrentPage(0); }, [search, channelFilter, pageSize, sortBy]);
