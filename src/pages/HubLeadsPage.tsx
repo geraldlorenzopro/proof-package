@@ -108,7 +108,7 @@ export default function HubLeadsPage() {
   const [search, setSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState<ChannelFilterKey>("all");
   const [intakeOpen, setIntakeOpen] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  // syncing state removed: GHL auto-sync disabled.
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
   const [selected, setSelected] = useState<string[]>([]);
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
@@ -130,43 +130,7 @@ export default function HubLeadsPage() {
   useEffect(() => { setCurrentPage(0); }, [search, channelFilter, pageSize, sortBy]);
 
   const auditLoggedRef = useRef(false);
-  const syncTriggeredRef = useRef(false);
-
-  // Auto-sync GHL contacts on mount (throttled to 5 min)
-  useEffect(() => {
-    if (!accountId || syncTriggeredRef.current) return;
-    syncTriggeredRef.current = true;
-
-    (async () => {
-      const lastSync = localStorage.getItem(`ghl_last_sync_${accountId}`);
-      const now = Date.now();
-      if (lastSync && now - parseInt(lastSync) < 5 * 60 * 1000) return;
-
-      setSyncing(true);
-      try {
-        const { data: session } = await supabase.auth.getSession();
-        if (!session.session) return;
-        const resp = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-ghl-contacts`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.session.access_token}`,
-            },
-            body: JSON.stringify({ account_id: accountId, mode: "contacts", silent: true }),
-          }
-        );
-        if (resp.ok) {
-          localStorage.setItem(`ghl_last_sync_${accountId}`, now.toString());
-        }
-      } catch (e) {
-        console.warn("Auto-sync failed:", e);
-      } finally {
-        setSyncing(false);
-      }
-    })();
-  }, [accountId]);
+  // GHL auto-sync disabled: leads are created manually or via contracted services only.
 
   useEffect(() => {
     if (!accountId) return;
@@ -322,17 +286,11 @@ export default function HubLeadsPage() {
                <UserSearch className="w-5 h-5 text-primary" />
              </div>
              <div>
-               <div className="flex items-center gap-2">
-                 {/* Header alineado a WIREFRAMES.md §3 L142 (sidebar item "Leads") y §15.1 L824 */}
-                 <h1 className="text-xl font-bold text-foreground">Leads</h1>
-                 {syncing && (
-                   <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
-                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                     Sincronizando...
-                   </span>
-                 )}
-               </div>
-               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} leads · auto-sync GHL cada 5 min</p>
+                <div className="flex items-center gap-2">
+                  {/* Header alineado a WIREFRAMES.md §3 L142 (sidebar item "Leads") y §15.1 L824 */}
+                  <h1 className="text-xl font-bold text-foreground">Leads</h1>
+                </div>
+               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos</p>
              </div>
            </div>
 
