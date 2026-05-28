@@ -565,9 +565,44 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
 
           {/* 3. Asignado a */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              3. Asignar a
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                3. Asignar a
+              </Label>
+              {team.length === 0 && lead?.account_id && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const { error } = await supabase.functions.invoke("seed-team-members", {
+                        body: { account_id: lead.account_id },
+                      });
+                      if (error) throw error;
+                      toast.success("Equipo creado · 5 personas agregadas", { duration: 3000 });
+                      // Recargar team
+                      const { data } = await supabase
+                        .from("account_members")
+                        .select("user_id, role, profiles:profiles(full_name)")
+                        .eq("account_id", lead.account_id)
+                        .eq("is_active", true);
+                      if (data) {
+                        const members: TeamMember[] = (data as any[]).map(m => ({
+                          user_id: m.user_id,
+                          role: m.role,
+                          full_name: m.profiles?.full_name || null,
+                        }));
+                        setTeam(members);
+                      }
+                    } catch (err: any) {
+                      toast.error("Error al crear equipo", { description: err?.message });
+                    }
+                  }}
+                  className="text-[10px] text-cyan-accent hover:text-cyan-accent/80 font-medium"
+                >
+                  + Crear equipo de prueba
+                </button>
+              )}
+            </div>
             <select
               value={assignedTo}
               onChange={e => setAssignedTo(e.target.value)}
@@ -580,6 +615,11 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
                 </option>
               ))}
             </select>
+            {team.length === 0 && (
+              <p className="text-[10px] text-muted-foreground/70">
+                Tu cuenta aún no tiene miembros. Click "+ Crear equipo de prueba" para agregar 5 personas (Pablo · Vanessa · Daniela · Carmen · Sofía).
+              </p>
+            )}
           </div>
 
           {/* 4. Notas */}
