@@ -35,6 +35,7 @@ interface SmartTemplate {
   description: string | null;
   icon: string;
   color: string;
+  case_type: string | null;
   account_id: string | null; // null = global NER
   forms_included: TemplateForm[];
 }
