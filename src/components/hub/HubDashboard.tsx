@@ -12,7 +12,6 @@ import { useConversation, ConversationProvider } from "@elevenlabs/react";
 import { supabase } from "@/integrations/supabase/client";
 
 import type { FeedItemKind, FeedItemSeverity } from "@/types/feed";
-import IntakeWizard from "../intake/IntakeWizard";
 import HubCrisisBar from "./HubCrisisBar";
 import HubAgendaWidget from "./HubAgendaWidget";
 import HubRiskWidget from "./HubRiskWidget";
@@ -187,8 +186,7 @@ function HubDashboardInner({
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
 
-  // Modals + popups
-  const [intakeOpen, setIntakeOpen] = useState(false);
+  // Modals + popups (IntakeWizard movido a HubQuickAdd)
   const [openingResource, setOpeningResource] = useState<{label: string; url: string} | null>(null);
   const [showSecondaryResources, setShowSecondaryResources] = useState(false);
   const secondaryResourcesTriggerRef = useRef<HTMLButtonElement>(null);
@@ -685,8 +683,7 @@ function HubDashboardInner({
         </div>
       </div>
 
-      {/* Modals */}
-      <IntakeWizard open={intakeOpen} onOpenChange={setIntakeOpen} />
+      {/* Modals — IntakeWizard ahora está montado en HubQuickAdd con skipGhlPush */}
 
       {openingResource && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setOpeningResource(null)}>

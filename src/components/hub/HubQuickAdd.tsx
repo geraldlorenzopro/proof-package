@@ -6,89 +6,107 @@
  *   - MyCase "Quick Actions" — supportcenter.mycase.com
  *   - Salesforce Homepage Assistant
  *
- * 4 acciones del paralegal hispano (Vanessa) en su día típico:
- *   1. + Nuevo cliente (entra ya como contratado, GHL hizo la venta)
- *   2. + Nueva tarea (acción operativa interna)
- *   3. + Nueva consulta (intake nuevo lead que vino sin GHL)
- *   4. + Nueva nota rápida (apuntar algo sin perder contexto)
+ * 4 acciones del paralegal hispano (Vanessa) en su día típico — ACTIVADAS
+ * 2026-05-28 (antes eran toast.info placeholder):
+ *   1. + Cliente   → NewClientModal stage='client' (reusa modal existente)
+ *   2. + Tarea     → QuickTaskModal (nuevo, standalone — case_id opcional)
+ *   3. + Consulta  → IntakeWizard con skipGhlPush=true (sin sync GHL todavía)
+ *   4. + Nota      → QuickNoteModal (nuevo, requiere caso por schema)
  *
- * Cada acción dispara navegación o modal según corresponda. En demo mode
- * se dispara toast informativo "Próximamente · X disponible en Fase Y".
+ * Auditoría línea-por-línea pre-build (4 agentes paralelos) confirmó que
+ * Cliente + Consulta ya existían reusables; Tarea + Nota requirieron build
+ * nuevo por falta de modal standalone en el repo.
  */
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { toast } from "sonner";
 import { UserPlus, ListPlus, MessageSquarePlus, FileText, Plus } from "lucide-react";
+import NewClientModal from "@/components/workspace/NewClientModal";
+import IntakeWizard from "@/components/intake/IntakeWizard";
+import QuickTaskModal from "./QuickTaskModal";
+import QuickNoteModal from "./QuickNoteModal";
 
 export default function HubQuickAdd() {
-  const navigate = useNavigate();
-
-  const handleNewClient = () => {
-    toast.info("Nuevo cliente", {
-      description: "Llega con Fase 2 (Sprint Clientes).",
-      duration: 2500,
-    });
-  };
-
-  const handleNewTask = () => {
-    toast.info("Nueva tarea", {
-      description: "Modal de tareas disponible cuando se active el módulo de Tareas.",
-      duration: 2500,
-    });
-  };
-
-  const handleNewConsultation = () => {
-    toast.info("Nueva consulta", {
-      description: "Pasa a /hub/consultations cuando se active esa sección.",
-      duration: 2500,
-    });
-  };
-
-  const handleNewNote = () => {
-    toast.info("Nueva nota rápida", {
-      description: "Camila puede tomarla por vos. Decile: 'Camila, anotá…'",
-      duration: 3000,
-    });
-  };
+  const [newClientOpen, setNewClientOpen] = useState(false);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [intakeOpen, setIntakeOpen] = useState(false);
+  const [newNoteOpen, setNewNoteOpen] = useState(false);
 
   return (
-    <section className="rounded-2xl border border-cyan-accent/15 bg-gradient-to-br from-ai-blue/[0.05] to-card/30 backdrop-blur-sm p-3">
-      <div className="flex items-center justify-between mb-2.5">
-        <h4 className="text-[11px] font-bold flex items-center gap-1.5 text-foreground font-sora">
-          <Plus className="w-3.5 h-3.5 text-cyan-accent" />
-          Acción rápida
-        </h4>
-        <span className="text-[9px] text-muted-foreground/60 font-mono uppercase tracking-wider">
-          ⌘N
-        </span>
-      </div>
+    <>
+      <section className="rounded-2xl border border-cyan-accent/15 bg-gradient-to-br from-ai-blue/[0.05] to-card/30 backdrop-blur-sm p-3">
+        <div className="flex items-center justify-between mb-2.5">
+          <h4 className="text-[11px] font-bold flex items-center gap-1.5 text-foreground font-sora">
+            <Plus className="w-3.5 h-3.5 text-cyan-accent" />
+            Acción rápida
+          </h4>
+          <span className="text-[9px] text-muted-foreground/60 font-mono uppercase tracking-wider">
+            ⌘N
+          </span>
+        </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <QuickActionButton
-          icon={<UserPlus className="w-3.5 h-3.5" />}
-          label="Cliente"
-          tone="cyan"
-          onClick={handleNewClient}
-        />
-        <QuickActionButton
-          icon={<ListPlus className="w-3.5 h-3.5" />}
-          label="Tarea"
-          tone="purple"
-          onClick={handleNewTask}
-        />
-        <QuickActionButton
-          icon={<MessageSquarePlus className="w-3.5 h-3.5" />}
-          label="Consulta"
-          tone="amber"
-          onClick={handleNewConsultation}
-        />
-        <QuickActionButton
-          icon={<FileText className="w-3.5 h-3.5" />}
-          label="Nota"
-          tone="slate"
-          onClick={handleNewNote}
-        />
-      </div>
-    </section>
+        <div className="grid grid-cols-2 gap-2">
+          <QuickActionButton
+            icon={<UserPlus className="w-3.5 h-3.5" />}
+            label="Cliente"
+            tone="cyan"
+            onClick={() => setNewClientOpen(true)}
+          />
+          <QuickActionButton
+            icon={<ListPlus className="w-3.5 h-3.5" />}
+            label="Tarea"
+            tone="purple"
+            onClick={() => setNewTaskOpen(true)}
+          />
+          <QuickActionButton
+            icon={<MessageSquarePlus className="w-3.5 h-3.5" />}
+            label="Consulta"
+            tone="amber"
+            onClick={() => setIntakeOpen(true)}
+          />
+          <QuickActionButton
+            icon={<FileText className="w-3.5 h-3.5" />}
+            label="Nota"
+            tone="slate"
+            onClick={() => setNewNoteOpen(true)}
+          />
+        </div>
+      </section>
+
+      {/* Modals — 4 acciones del paralegal */}
+      <NewClientModal
+        open={newClientOpen}
+        onOpenChange={setNewClientOpen}
+        stage="client"
+        onCreated={(_, clientName) => {
+          toast.success(`${clientName} agregado a tus clientes`, {
+            description: "Disponible en /hub/clients cuando se active la sección.",
+            duration: 3500,
+          });
+        }}
+      />
+
+      <QuickTaskModal
+        open={newTaskOpen}
+        onOpenChange={setNewTaskOpen}
+      />
+
+      <IntakeWizard
+        open={intakeOpen}
+        onOpenChange={setIntakeOpen}
+        skipGhlPush
+        onCreated={() => {
+          toast.success("Consulta registrada", {
+            description: "El lead quedó guardado en tu pipeline.",
+            duration: 3500,
+          });
+        }}
+      />
+
+      <QuickNoteModal
+        open={newNoteOpen}
+        onOpenChange={setNewNoteOpen}
+      />
+    </>
   );
 }
 

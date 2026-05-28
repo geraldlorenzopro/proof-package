@@ -108,9 +108,12 @@ interface Props {
   prefill?: { name?: string; phone?: string; email?: string; client_profile_id?: string };
   initialStep?: number;
   prefillChannel?: string;
+  /** Suprime el push-contact-to-ghl al final del wizard. Útil para Hub Inicio
+   *  Quick Actions donde Mr. Lorenzo aún no quiere sync GHL automático. */
+  skipGhlPush?: boolean;
 }
 
-export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, initialStep, prefillChannel }: Props) {
+export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, initialStep, prefillChannel, skipGhlPush }: Props) {
   const [step, setStep] = useState(initialStep || 0);
   const [data, setData] = useState<IntakeData>(() => {
     const initial = { ...INITIAL_DATA };
@@ -333,7 +336,8 @@ export default function IntakeWizard({ open, onOpenChange, onCreated, prefill, i
       setCompleted(completedData);
 
       // FIX 2: Push contact to GHL with dedup — pass ghl_contact_id if exists
-      if (profileId) {
+      // Skip cuando el caller explícitamente lo deshabilita (Hub Inicio QuickAdd)
+      if (profileId && !skipGhlPush) {
         let ghlContactId: string | null = null;
         if (data.existing_client_profile_id) {
           const { data: profileData } = await supabase
