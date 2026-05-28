@@ -521,7 +521,7 @@ function HubDashboardInner({
         )}
 
         {/* Main content — 3 zonas verticales */}
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col gap-2 px-6 py-3 w-full mx-auto">
+        <div className="flex-1 min-h-0 flex flex-col gap-2 px-6 py-3 w-full mx-auto">
 
           {/* ═══ ZONA 0 — CRISIS BAR (rojo arriba antes que prosa larga) ═══ */}
           {/* Decisión 2026-05-11 post-debate con Mr. Lorenzo: los ojos del abogado
