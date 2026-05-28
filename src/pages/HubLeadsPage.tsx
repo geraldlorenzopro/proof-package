@@ -296,7 +296,7 @@ export default function HubLeadsPage() {
                    </span>
                  )}
                </div>
-               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} leads · auto-sync GHL cada 5 min</p>
+               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos</p>
              </div>
            </div>
 
