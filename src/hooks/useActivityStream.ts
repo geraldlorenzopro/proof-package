@@ -67,6 +67,56 @@ function isoMinutesAgo(m: number): string {
   return new Date(Date.now() - m * 60_000).toISOString();
 }
 
+/**
+ * Traduce action raw del audit_logs (snake_case técnico) a copy humano
+ * que el paralegal entiende. Tabla maintained manualmente — agregar
+ * entries cuando aparezca un action nuevo en BD.
+ *
+ * Si action no está mapeado, hace humanize lo más decente posible
+ * (capitalize + replace _).
+ */
+function translateAction(action: string, entityLabel?: string): { title: string; icon: string; category: ActivityCategory } {
+  const map: Record<string, { title: string; icon: string; category: ActivityCategory }> = {
+    "viewed_contacts_list":   { title: "Revisaste la lista de clientes nuevos",   icon: "👀", category: "team" },
+    "viewed_clients_list":    { title: "Revisaste la lista de clientes",          icon: "👀", category: "team" },
+    "viewed_cases_list":      { title: "Revisaste la lista de casos",             icon: "👀", category: "team" },
+    "viewed_forms_list":      { title: "Revisaste la lista de formularios",      icon: "👀", category: "team" },
+
+    "client.created":         { title: `Cliente nuevo: ${entityLabel || "sin nombre"}`,            icon: "✨", category: "client" },
+    "client.updated":         { title: `Cliente actualizado: ${entityLabel || ""}`,                icon: "✏️", category: "client" },
+    "client.deleted":         { title: `Cliente eliminado: ${entityLabel || ""}`,                  icon: "🗑️", category: "client" },
+
+    "case.created":           { title: `Caso creado: ${entityLabel || ""}`,                        icon: "📁", category: "team" },
+    "case.updated":           { title: `Caso actualizado: ${entityLabel || ""}`,                   icon: "✏️", category: "team" },
+    "case.stage_changed":     { title: `Etapa actualizada: ${entityLabel || ""}`,                  icon: "🔄", category: "team" },
+
+    "note.created":           { title: entityLabel ? `Nota: ${entityLabel}` : "Nota agregada",     icon: "📝", category: "team" },
+    "task.created":           { title: entityLabel ? `Tarea: ${entityLabel}` : "Tarea creada",     icon: "✅", category: "team" },
+    "task.completed":         { title: entityLabel ? `Tarea hecha: ${entityLabel}` : "Tarea hecha",icon: "✔️", category: "team" },
+
+    "email.sent":             { title: entityLabel ? `Email enviado: ${entityLabel}` : "Email al cliente", icon: "📧", category: "client" },
+    "questionnaire.sent":     { title: `Cuestionario enviado: ${entityLabel || "cliente"}`,        icon: "📋", category: "client" },
+
+    "lead.converted":         { title: `Cliente convertido a caso: ${entityLabel || ""}`,          icon: "🎯", category: "lead" },
+    "intake.completed":       { title: `Intake completado: ${entityLabel || ""}`,                  icon: "📝", category: "client" },
+
+    "rfe.received":           { title: `RFE recibido: ${entityLabel || ""}`,                       icon: "🚨", category: "uscis" },
+    "receipt.received":       { title: `Recibo USCIS: ${entityLabel || ""}`,                       icon: "📬", category: "uscis" },
+    "approval.received":      { title: `Aprobación: ${entityLabel || ""}`,                         icon: "✅", category: "uscis" },
+
+    "form.draft.created":     { title: `Borrador formulario: ${entityLabel || ""}`,                icon: "📄", category: "team" },
+    "form.completed":         { title: `Formulario completado: ${entityLabel || ""}`,              icon: "✓",  category: "team" },
+  };
+
+  if (map[action]) return map[action];
+
+  // Fallback: humanize el action snake_case "felix_completed_packet" → "Felix completed packet"
+  const humanized = action
+    .replace(/[._]/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+  return { title: humanized, icon: "📋", category: "team" };
+}
+
 const DEMO_EVENTS: ActivityEvent[] = [
   { id: "ev-1",  category: "ai",     icon: "⚡", title: "Felix completó I-130 packet de María García",       actor: "Felix",       caseId: "demo-c-002", clientName: "María García",      timestamp: isoMinutesAgo(28) },
   { id: "ev-2",  category: "uscis",  icon: "🏛️", title: "USCIS posted RFE — María Rodríguez Vega (I-485)",  caseId: "demo-c-002", clientName: "María Rodríguez",  detail: "Bona fide marriage evidence requested · 90 days", timestamp: isoMinutesAgo(95) },
@@ -114,16 +164,31 @@ export function useActivityStream(accountId: string | null, limit = 15): State {
 
         if (cancelled) return;
 
-        const events: ActivityEvent[] = (data || []).map((row: any) => ({
-          id: row.id,
-          category: "team",
-          icon: "📋",
-          title: row.action || "Evento sin descripción",
-          detail: row.details_json?.summary,
-          actor: row.user_id,
-          caseId: row.resource_id,
-          timestamp: row.created_at,
-        }));
+        // Dedup: si varios "viewed_*" consecutivos del mismo tipo y user
+        // dentro de 5 min, mostrar solo el más reciente con contador (en
+        // un futuro). Por ahora dedup simple por action+min.
+        const seen = new Set<string>();
+        const events: ActivityEvent[] = [];
+        for (const row of (data || []) as any[]) {
+          const minBucket = Math.floor(new Date(row.created_at).getTime() / 60000);
+          const dedupKey = `${row.action}-${row.user_id}-${minBucket}`;
+          if (row.action?.startsWith("viewed_") && seen.has(dedupKey)) continue;
+          seen.add(dedupKey);
+
+          const entityLabel = row.entity_label || row.details_json?.label || row.details_json?.name;
+          const translated = translateAction(row.action || "unknown", entityLabel);
+
+          events.push({
+            id: row.id,
+            category: translated.category,
+            icon: translated.icon,
+            title: translated.title,
+            detail: row.details_json?.summary || undefined,
+            actor: row.user_id,
+            caseId: row.resource_id,
+            timestamp: row.created_at,
+          });
+        }
 
         setState({ events, loading: false });
       } catch {

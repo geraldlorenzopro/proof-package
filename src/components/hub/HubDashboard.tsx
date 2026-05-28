@@ -462,7 +462,7 @@ function HubDashboardInner({
     }
     if (eventsCount > 0) {
       parts.push({
-        label: `${eventsCount} ${eventsCount === 1 ? "evento" : "eventos"} del weekend`,
+        label: `${eventsCount} ${eventsCount === 1 ? "evento reciente" : "eventos recientes"}`,
         color: "text-emerald-300",
       });
     }
@@ -561,7 +561,7 @@ function HubDashboardInner({
                     </span>
                   </div>
                   <p className="text-[17px] sm:text-[18px] font-bold text-foreground leading-snug font-sora">
-                    {greeting}, <span className="bg-gradient-to-r from-ai-blue via-cyan-accent to-ai-blue bg-clip-text text-transparent">{firstName || "Jefe"}</span>.
+                    {greeting}, <span className="text-foreground font-bold">{firstName || "Jefe"}</span>.
                   </p>
                   <p className="text-[13px] text-foreground/85 leading-snug mt-1 font-inter">
                     {microBriefing.length > 0 ? (

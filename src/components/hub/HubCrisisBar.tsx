@@ -105,7 +105,11 @@ export default function HubCrisisBar({ accountId }: Props) {
       case_id: worst.case_id,
       title: `${caseData?.client_name || "Caso"} · ${worst.title}`,
       subtitle: days !== null
-        ? (days < 0 ? `Venció hace ${Math.abs(days)}d` : days === 0 ? "Vence HOY" : `Vence en ${days}d`)
+        ? (days < 0
+            ? `Venció hace ${Math.abs(days)} ${Math.abs(days) === 1 ? "día" : "días"}`
+            : days === 0
+            ? "Vence hoy"
+            : `Vence en ${days} ${days === 1 ? "día" : "días"}`)
         : "Sin fecha — atender",
       severity: days !== null && days <= 0 ? "overdue" : "urgent",
     });
