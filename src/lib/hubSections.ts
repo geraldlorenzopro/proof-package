@@ -63,7 +63,7 @@ export const HUB_SECTIONS: Record<HubSectionKey, HubSectionMeta> = {
     key: "forms",
     label: "Forms",
     path: "/hub/forms",
-    enabled: false,
+    enabled: true,
     order: 2,
     comingSoon: {
       title: "Smart Forms USCIS — Felix llena automático",
@@ -123,7 +123,7 @@ export const HUB_SECTIONS: Record<HubSectionKey, HubSectionMeta> = {
     key: "leads",
     label: "Leads",
     path: "/hub/leads",
-    enabled: false,
+    enabled: true,
     order: 5,
     comingSoon: {
       title: "Captura de leads multicanal",
