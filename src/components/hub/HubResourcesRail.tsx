@@ -1,8 +1,9 @@
 /**
- * HubResourcesRail — Recursos oficiales en el right rail.
+ * HubResourcesRail — Recursos oficiales horizontal centrado.
  *
- * Separado del HubPulseRail original para que el rail (Hub v8.2) pueda
- * tener structure: Acción rápida + Recursos + Actividad (último flex-1).
+ * v8.4 (2026-05-28): Mr. Lorenzo pidió desplegar TODOS los recursos
+ * (primarios + secundarios) inline en la misma línea. Sin dropdown
+ * "+4 más" — los 8 chips caben perfectamente.
  */
 import { BookOpen, ExternalLink } from "lucide-react";
 
@@ -11,7 +12,7 @@ interface ResourceLink {
   source: string;
   url: string;
   desc?: string;
-  chipClass: string;
+  chipClass?: string;
 }
 
 interface Props {
@@ -20,52 +21,33 @@ interface Props {
   onOpenResource: (r: { label: string; url: string }) => void;
 }
 
+const NEUTRAL_CHIP = "bg-white/[0.04] border-white/15 text-slate-300 hover:bg-white/[0.08]";
+
 export default function HubResourcesRail({ primaryResources, secondaryResources, onOpenResource }: Props) {
-  // Layout v8.3 (2026-05-28): horizontal centrado abajo del main, debajo
-  // de Acción rápida. Chips inline.
+  // v8.4: TODOS los 8 chips en una sola línea horizontal centrada.
+  const allResources = [...primaryResources, ...secondaryResources];
+
   return (
     <section className="rounded-2xl border border-white/10 bg-card/40 backdrop-blur-sm px-5 py-3 shrink-0">
-      <div className="flex items-center justify-center gap-4 flex-wrap">
+      <div className="flex items-center justify-center gap-3 flex-wrap">
         <h4 className="text-[13px] font-bold flex items-center gap-2 text-foreground font-sora shrink-0">
           <BookOpen className="w-4 h-4 text-cyan-accent" />
           Recursos oficiales
         </h4>
-        <div className="flex items-center gap-2 flex-wrap">
-          {primaryResources.map(r => (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {allResources.map(r => (
             <button
               key={r.label}
               type="button"
               onClick={() => onOpenResource({ label: r.label, url: r.url })}
-              title={r.desc}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] font-semibold border transition ${r.chipClass}`}
+              title={r.desc || r.label}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold border transition whitespace-nowrap ${r.chipClass || NEUTRAL_CHIP}`}
             >
               <span>{r.source}</span>
-              <ExternalLink className="w-3 h-3 opacity-60" />
+              <span className="opacity-70 normal-case font-normal">{r.label}</span>
+              <ExternalLink className="w-2.5 h-2.5 opacity-50" />
             </button>
           ))}
-          {secondaryResources.length > 0 && (
-            <details className="relative group">
-              <summary className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 cursor-pointer hover:text-foreground transition list-none px-3 py-1.5 rounded-md border border-white/15 bg-white/[0.03] hover:bg-white/[0.06]">
-                +{secondaryResources.length} más ▾
-              </summary>
-              <div className="absolute right-0 top-full mt-1.5 z-30 w-[280px] rounded-lg border border-white/10 bg-deep-navy/95 backdrop-blur-xl shadow-xl p-1.5 space-y-1">
-                {secondaryResources.map(r => (
-                  <button
-                    key={r.label}
-                    type="button"
-                    onClick={() => onOpenResource({ label: r.label, url: r.url })}
-                    className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded hover:bg-white/[0.04] transition"
-                  >
-                    <span className="text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded border border-border/40 text-muted-foreground/70 shrink-0">{r.source}</span>
-                    <span className="flex-1 min-w-0">
-                      <span className="text-[10px] font-medium text-foreground/80 truncate block">{r.label}</span>
-                    </span>
-                    <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
-                  </button>
-                ))}
-              </div>
-            </details>
-          )}
         </div>
       </div>
     </section>

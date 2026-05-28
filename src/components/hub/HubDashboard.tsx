@@ -528,11 +528,19 @@ function HubDashboardInner({
               buscan rojo instintivamente. Crisis va PRIMERO, briefing después. */}
           <HubCrisisBar accountId={accountId} />
 
-          {/* ═══ ZONA 1 — BRIEFING CAMILA (presence-first Hub v8.1) ═══ */}
-          {/* Bigger Camila avatar + larger greeting. Validated by Mr. Lorenzo
-              2026-05-28: la versión compacta hacía que Camila pasara
-              desapercibida. Sora bold, 17-18px greeting, 56px avatar con ring. */}
-          <section className="shrink-0 rounded-2xl px-5 py-4 border border-cyan-accent/25 bg-gradient-to-br from-ai-blue/[0.07] via-cyan-accent/[0.04] to-card/50 shadow-lg shadow-ai-blue/10 backdrop-blur-sm">
+          {/* ═══ MAIN 2-PANE Hub v8.4 (2026-05-28 reorg Mr. Lorenzo) ═══ */}
+          {/* Estructura v8.4:
+              - LEFT col: Briefing + Agenda+Risk + Mis acciones + Pulse +
+                Pipeline (flex-1) + Acción rápida + Recursos oficiales
+              - RIGHT rail: SOLO Actividad reciente (full altura, desde
+                briefing hasta recursos) */}
+          <section className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3 flex-1 min-h-0 overflow-hidden">
+
+            {/* ─── LEFT COLUMN ─── */}
+            <div className="flex flex-col gap-2 min-h-0">
+
+              {/* Briefing Camila — primero en la columna izquierda */}
+              <section className="shrink-0 rounded-2xl px-5 py-4 border border-cyan-accent/25 bg-gradient-to-br from-ai-blue/[0.07] via-cyan-accent/[0.04] to-card/50 shadow-lg shadow-ai-blue/10 backdrop-blur-sm">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="relative shrink-0">
@@ -623,30 +631,21 @@ function HubDashboardInner({
               </div>
             </div>
 
-            {/* Live transcript inline en hero (si voice activo) */}
-            {isVoiceActive && callMessages.length > 0 && (
-              <div ref={callScrollRef} className="mt-3 max-h-24 overflow-y-auto rounded-lg border border-emerald-500/20 bg-card/60 p-2 space-y-1">
-                {callMessages.map(msg => (
-                  <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[80%] px-2 py-1 rounded text-[10px] leading-relaxed ${
-                      msg.role === "user" ? "bg-cyan-accent/15 text-foreground border border-cyan-accent/20" : "bg-muted/40 text-foreground border border-border/20"
-                    }`}>{msg.content}</div>
+                {/* Live transcript inline en hero (si voice activo) */}
+                {isVoiceActive && callMessages.length > 0 && (
+                  <div ref={callScrollRef} className="mt-3 max-h-24 overflow-y-auto rounded-lg border border-emerald-500/20 bg-card/60 p-2 space-y-1">
+                    {callMessages.map(msg => (
+                      <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[80%] px-2 py-1 rounded text-[10px] leading-relaxed ${
+                          msg.role === "user" ? "bg-cyan-accent/15 text-foreground border border-cyan-accent/20" : "bg-muted/40 text-foreground border border-border/20"
+                        }`}>{msg.content}</div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
+                )}
+              </section>
 
-          {/* ═══ MAIN 2-PANE Hub v8.3 (2026-05-28 reorg per Mr. Lorenzo) ═══ */}
-          {/* Cambios v8.3 vs v8.2:
-              - Right rail = SOLO Actividad reciente (full height absorbe)
-              - Quick Add + Recursos oficiales → footer horizontal centrado
-                debajo del grid. Más profesional, anclados visualmente. */}
-          <section className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3 flex-1 min-h-0 overflow-hidden">
-
-            {/* ─── LEFT PANE (1fr, sin scroll interno) ─── */}
-            <div className="flex flex-col gap-2 min-h-0">
-              {/* Agenda 60% + Riesgo 40% — min-h fijo 220px */}
+              {/* Agenda 60% + Riesgo 40% (min-h 220px) */}
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 shrink-0">
                 <div className="lg:col-span-3">
                   <HubAgendaWidget accountId={accountId} />
@@ -656,37 +655,31 @@ function HubDashboardInner({
                 </div>
               </div>
 
-              {/* Mis acciones — fila compacta cuando empty */}
+              {/* Mis acciones */}
               <HubMyActionsCard accountId={accountId} userId={userId} />
 
-              {/* Pulse 4 KPIs horizontal */}
+              {/* Pulse 4 KPIs */}
               <HubPulseTiles
                 kpis={{ closedThisWeek, tasksDoneRatio, activeCases, approvalRate30d }}
               />
 
-              {/* Pipeline 6 buckets */}
+              {/* Pipeline 6 buckets (flex-1 absorbe el aire) */}
               <HubPipelineWidget accountId={accountId} />
+
+              {/* Footer: Acción rápida + Recursos oficiales */}
+              <HubQuickAdd />
+              <HubResourcesRail
+                primaryResources={PRIMARY_RESOURCES}
+                secondaryResources={SECONDARY_RESOURCES}
+                onOpenResource={setOpeningResource}
+              />
             </div>
 
-            {/* ─── RIGHT RAIL · SOLO ACTIVIDAD RECIENTE (full height) ─── */}
+            {/* ─── RIGHT RAIL · SOLO ACTIVIDAD RECIENTE (FULL ALTURA) ─── */}
             <aside className="hidden lg:flex flex-col min-h-0 overflow-hidden">
               <HubActivityStream accountId={accountId} />
             </aside>
           </section>
-
-          {/* ═══ FOOTER · Acción rápida + Recursos oficiales centrados ═══ */}
-          <div className="flex flex-col gap-2 shrink-0 mt-2">
-            <HubQuickAdd />
-            <HubResourcesRail
-              primaryResources={PRIMARY_RESOURCES}
-              secondaryResources={SECONDARY_RESOURCES}
-              onOpenResource={setOpeningResource}
-            />
-          </div>
-
-
-          {/* Pulse footer + recursos oficiales movidos al right rail (Hub v8 2026-05-28).
-              Spacer eliminado — el grid 2-pane ahora llena el viewport por sí mismo. */}
 
         </div>
       </div>
