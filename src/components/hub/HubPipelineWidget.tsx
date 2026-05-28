@@ -32,7 +32,7 @@ export default function HubPipelineWidget({ accountId }: Props) {
   const maxCount = Math.max(1, ...stats.map(s => s.count));
 
   return (
-    <section className="rounded-2xl border border-cyan-accent/15 bg-card/30 backdrop-blur-sm p-3">
+    <section className="rounded-2xl border border-cyan-accent/15 bg-card/30 backdrop-blur-sm p-3 flex-1 flex flex-col min-h-0">
       <div className="flex items-end justify-between mb-2 gap-2 flex-wrap">
         <h3 className="text-sm font-bold flex items-center gap-2 text-foreground font-sora">
           <BarChart3 className="w-4 h-4 text-cyan-accent" />
@@ -57,7 +57,7 @@ export default function HubPipelineWidget({ accountId }: Props) {
           compact
         />
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 flex-1 min-h-0">
           {stats.map(s => {
             const fill = maxCount > 0 ? Math.round((s.count / maxCount) * 100) : 0;
             const color = BUCKET_COLOR[s.bucket];
@@ -65,17 +65,17 @@ export default function HubPipelineWidget({ accountId }: Props) {
               <button
                 key={s.bucket}
                 onClick={() => navigate(`/hub/cases?stage=${s.bucket}`)}
-                className="text-left bg-white/[0.02] hover:bg-white/[0.05] border border-white/8 hover:border-white/15 rounded-lg p-2 transition-all"
+                className="text-left bg-white/[0.02] hover:bg-white/[0.05] border border-white/8 hover:border-white/15 rounded-lg p-3 transition-all flex flex-col justify-between min-h-[80px]"
               >
-                <div className="flex items-baseline justify-between mb-1.5">
-                  <span className={`text-lg font-bold tabular-nums ${BUCKET_TEXT[s.bucket]}`}>
+                <div className="flex items-baseline justify-between">
+                  <span className={`text-2xl font-bold tabular-nums font-sora ${BUCKET_TEXT[s.bucket]}`}>
                     {loading ? "—" : s.count}
                   </span>
-                  <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 font-mono">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-mono font-semibold">
                     {s.label}
                   </span>
                 </div>
-                <div className="h-1 rounded-full bg-white/[0.05] overflow-hidden">
+                <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden mt-2">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{ width: `${fill}%`, backgroundColor: color }}

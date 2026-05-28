@@ -24,28 +24,28 @@ export default function HubResourcesRail({ primaryResources, secondaryResources,
   // Layout v8.3 (2026-05-28): horizontal centrado abajo del main, debajo
   // de Acción rápida. Chips inline.
   return (
-    <section className="rounded-2xl border border-white/8 bg-card/30 backdrop-blur-sm px-4 py-2.5 shrink-0">
-      <div className="flex items-center justify-center gap-3 flex-wrap">
-        <h4 className="text-[11px] font-bold flex items-center gap-1.5 text-foreground font-sora shrink-0">
-          <BookOpen className="w-3.5 h-3.5 text-cyan-accent" />
+    <section className="rounded-2xl border border-white/10 bg-card/40 backdrop-blur-sm px-5 py-3 shrink-0">
+      <div className="flex items-center justify-center gap-4 flex-wrap">
+        <h4 className="text-[13px] font-bold flex items-center gap-2 text-foreground font-sora shrink-0">
+          <BookOpen className="w-4 h-4 text-cyan-accent" />
           Recursos oficiales
         </h4>
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {primaryResources.map(r => (
             <button
               key={r.label}
               type="button"
               onClick={() => onOpenResource({ label: r.label, url: r.url })}
               title={r.desc}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold border transition ${r.chipClass}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] font-semibold border transition ${r.chipClass}`}
             >
               <span>{r.source}</span>
-              <ExternalLink className="w-2.5 h-2.5 opacity-50" />
+              <ExternalLink className="w-3 h-3 opacity-60" />
             </button>
           ))}
           {secondaryResources.length > 0 && (
             <details className="relative group">
-              <summary className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 cursor-pointer hover:text-foreground transition list-none px-2 py-1 rounded-md border border-white/10 bg-white/[0.02] hover:bg-white/[0.05]">
+              <summary className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 cursor-pointer hover:text-foreground transition list-none px-3 py-1.5 rounded-md border border-white/15 bg-white/[0.03] hover:bg-white/[0.06]">
                 +{secondaryResources.length} más ▾
               </summary>
               <div className="absolute right-0 top-full mt-1.5 z-30 w-[280px] rounded-lg border border-white/10 bg-deep-navy/95 backdrop-blur-xl shadow-xl p-1.5 space-y-1">
