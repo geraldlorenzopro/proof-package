@@ -18,9 +18,8 @@ import HubAgendaWidget from "./HubAgendaWidget";
 import HubRiskWidget from "./HubRiskWidget";
 import HubPipelineWidget from "./HubPipelineWidget";
 import HubMyActionsCard from "./HubMyActionsCard";
-import HubMoneyCard from "./HubMoneyCard";
-import HubTeamWidget from "./HubTeamWidget";
 import HubEventsFeed from "./HubEventsFeed";
+import HubQuickAdd from "./HubQuickAdd";
 import { useTodayAppointments } from "@/hooks/useTodayAppointments";
 import { useRiskCases } from "@/hooks/useRiskCases";
 import { useMyActions } from "@/hooks/useMyActions";
@@ -522,7 +521,7 @@ function HubDashboardInner({
         )}
 
         {/* Main content — 3 zonas verticales */}
-        <div className="flex-1 min-h-0 lg:overflow-hidden overflow-y-auto flex flex-col gap-2 px-6 py-3 max-w-[1400px] w-full mx-auto">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col gap-2 px-6 py-3 w-full mx-auto">
 
           {/* ═══ ZONA 0 — CRISIS BAR (rojo arriba antes que prosa larga) ═══ */}
           {/* Decisión 2026-05-11 post-debate con Mr. Lorenzo: los ojos del abogado
@@ -624,28 +623,40 @@ function HubDashboardInner({
             )}
           </section>
 
-          {/* ═══ ZONA 3+4 — AGENDA HÉROE (60%) + RIESGO (40%) ═══ */}
-          <section className="grid grid-cols-1 lg:grid-cols-5 gap-2 shrink-0 min-h-0">
-            <div className="lg:col-span-3">
-              <HubAgendaWidget accountId={accountId} />
+          {/* ═══ MAIN 2-PANE (Hub v8 2026-05-28) ═══ */}
+          {/* Layout validado por research: Akiflow/Reclaim/Sunsama 2-pane pattern.
+              MAIN scrollable (left) + RIGHT RAIL sticky (right).
+              Fill viewport sin whitespace abajo. */}
+          <section className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-3 flex-1 min-h-0 overflow-hidden">
+
+            {/* ─── LEFT PANE (scroll interno, 1fr) ─── */}
+            <div className="flex flex-col gap-2 min-h-0 overflow-y-auto pr-1">
+              {/* Agenda héroe (60%) + Riesgo (40%) */}
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 shrink-0">
+                <div className="lg:col-span-3">
+                  <HubAgendaWidget accountId={accountId} />
+                </div>
+                <div className="lg:col-span-2">
+                  <HubRiskWidget accountId={accountId} />
+                </div>
+              </div>
+
+              {/* Mis acciones (full width sin Dinero ni Equipo — eliminados Hub v8) */}
+              <HubMyActionsCard accountId={accountId} userId={userId} />
+
+              {/* Pipeline horizontal */}
+              <HubPipelineWidget accountId={accountId} />
+
+              {/* Eventos del weekend (con filtros, será refactored a stream en Fase 3) */}
+              <HubEventsFeed accountId={accountId} />
             </div>
-            <div className="lg:col-span-2">
-              <HubRiskWidget accountId={accountId} />
-            </div>
+
+            {/* ─── RIGHT RAIL (sticky, 340px) ─── */}
+            <aside className="hidden lg:flex flex-col gap-2 min-h-0 overflow-y-auto">
+              <HubQuickAdd />
+              {/* Pulse 4 KPIs reubicado acá — más adelante en Fase 3 */}
+            </aside>
           </section>
-
-          {/* ═══ ZONA 4 — MIS ACCIONES + DINERO + EQUIPO (subido: acción antes de contexto) ═══ */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-2 shrink-0">
-            <HubMyActionsCard accountId={accountId} userId={userId} />
-            <HubMoneyCard accountId={accountId} />
-            <HubTeamWidget />
-          </section>
-
-          {/* ═══ ZONA 5 — PIPELINE HORIZONTAL ═══ */}
-          <HubPipelineWidget accountId={accountId} />
-
-          {/* ═══ ZONA 6 — EVENTOS DEL WEEKEND ═══ */}
-          <HubEventsFeed accountId={accountId} />
 
 
           {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo */}
