@@ -31,8 +31,8 @@ const NAV_ITEMS: Array<{
   // Estado enabled/disabled vive en src/lib/hubSections.ts (fuente de verdad única).
   // Iconos emoji para coincidir con mockup NER-HUB-INICIO-V6 (3D colored icons).
   { emoji: "🏠", label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", sectionKey: "inicio", demoSupported: true },
-  { emoji: "✨", label: "Clientes nuevos", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", sectionKey: "leads", demoSupported: false },
-  { emoji: "👥", label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), sectionKey: "clientes", demoSupported: false },
+  { emoji: "👥", label: "Clientes", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", sectionKey: "leads", demoSupported: false },
+  { emoji: "🪪", label: "Cliente 360", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), sectionKey: "clientes", demoSupported: false },
   { emoji: "💬", label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", sectionKey: "consultas", demoSupported: false },
   { emoji: "📁", label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", sectionKey: "casos", demoSupported: true },
   { emoji: "📋", label: "Forms", path: "/hub/forms", match: (p: string) => p.startsWith("/hub/forms") || p.startsWith("/hub/formularios") || p.startsWith("/dashboard/smart-forms"), badgeKey: "forms", sectionKey: "forms", demoSupported: true },
@@ -230,11 +230,11 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                     <span
                       className="text-xl leading-none"
                       style={{
-                        filter: isActive
+                        // v8.5 (2026-05-28): secciones enabled se ven full
+                        // como las active. Solo las PRONTO quedan grayscale.
+                        filter: sectionEnabled
                           ? "none"
-                          : sectionEnabled
-                            ? "grayscale(0.15) opacity(0.9)"
-                            : "grayscale(0.85) opacity(0.5)",
+                          : "grayscale(0.85) opacity(0.5)",
                       }}
                     >
                       {item.emoji}

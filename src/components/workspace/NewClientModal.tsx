@@ -1,3 +1,13 @@
+/**
+ * NewClientModal — Quick add cliente nuevo entrante (post-contrato GHL).
+ *
+ * v2 (2026-05-28 simplificación Mr. Lorenzo):
+ * - Removido immigration_status (se captura en intake post-creación)
+ * - Agregado middle_name (segundo nombre)
+ * - notes + source_channel siempre visibles (antes gateados a isLead)
+ * - 7 campos exactos: nombre, segundo nombre, apellidos, email, tel,
+ *   canal, notas
+ */
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -13,9 +23,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (clientId: string, clientName: string) => void;
-  /** 'lead' = cliente nuevo entrante sin caso todavía (vive en /hub/leads
-   *  conceptualmente "Clientes nuevos" — marketing leads van en GHL).
-   *  'client' = cliente con caso activo (/hub/clients) */
+  /** 'lead' = cliente nuevo entrante sin caso todavía. 'client' = con caso activo. */
   stage?: "lead" | "client";
   /** Channel default si se invoca desde una pantalla que ya filtra por canal */
   defaultSourceChannel?: string;
@@ -38,10 +46,10 @@ const SOURCE_CHANNELS = [
 export default function NewClientModal({ open, onOpenChange, onCreated, stage = "client", defaultSourceChannel }: Props) {
   const [loading, setLoading] = useState(false);
   const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [immigrationStatus, setImmigrationStatus] = useState("");
   const [sourceChannel, setSourceChannel] = useState(defaultSourceChannel || "");
   const [notes, setNotes] = useState("");
   const isLead = stage === "lead";
@@ -55,7 +63,6 @@ export default function NewClientModal({ open, onOpenChange, onCreated, stage = 
     setLoading(true);
 
     try {
-      // Get current user + account
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Debes iniciar sesión");
@@ -63,7 +70,6 @@ export default function NewClientModal({ open, onOpenChange, onCreated, stage = 
         return;
       }
 
-      // Get account_id via RPC
       const { data: accountId, error: accountError } = await supabase.rpc("user_account_id", { _user_id: user.id });
       if (accountError || !accountId) {
         toast.error("No se pudo determinar la cuenta");
@@ -77,10 +83,10 @@ export default function NewClientModal({ open, onOpenChange, onCreated, stage = 
           account_id: accountId,
           created_by: user.id,
           first_name: firstName.trim(),
+          middle_name: middleName.trim() || null,
           last_name: lastName.trim(),
           email: email.trim() || null,
           phone: phone.trim() || null,
-          immigration_status: immigrationStatus || null,
           contact_stage: stage,
           source_channel: sourceChannel || null,
           notes: notes.trim() || null,
@@ -96,10 +102,10 @@ export default function NewClientModal({ open, onOpenChange, onCreated, stage = 
         return;
       }
 
-      const clientName = `${firstName.trim()} ${lastName.trim()}`;
+      const clientName = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(" ");
       toast.success(`${clientName} agregado`, {
         description: isLead
-          ? "Cliente nuevo · pendiente armar su caso"
+          ? "Cliente nuevo · pendiente abrir expediente"
           : "Cliente activo",
       });
 
@@ -110,12 +116,12 @@ export default function NewClientModal({ open, onOpenChange, onCreated, stage = 
         entity_label: clientName,
       });
 
-      // Reset form
+      // Reset
       setFirstName("");
+      setMiddleName("");
       setLastName("");
       setEmail("");
       setPhone("");
-      setImmigrationStatus("");
       setSourceChannel(defaultSourceChannel || "");
       setNotes("");
 
@@ -140,100 +146,95 @@ export default function NewClientModal({ open, onOpenChange, onCreated, stage = 
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Nombre + Segundo nombre */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="firstName">Nombre *</Label>
+              <Label htmlFor="firstName">Primer nombre *</Label>
               <Input
                 id="firstName"
                 placeholder="María"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 disabled={loading}
+                autoFocus
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Apellido *</Label>
+              <Label htmlFor="middleName">Segundo nombre</Label>
               <Input
-                id="lastName"
-                placeholder="García"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                id="middleName"
+                placeholder="Isabel"
+                value={middleName}
+                onChange={(e) => setMiddleName(e.target.value)}
                 disabled={loading}
               />
             </div>
           </div>
 
+          {/* Apellidos */}
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="lastName">Apellido/s *</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="maria@ejemplo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="lastName"
+              placeholder="García López"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
               disabled={loading}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="+1 555 123 4567"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              disabled={loading}
-            />
-          </div>
-
-          {isLead && (
+          {/* Email + Teléfono */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="channel">Canal de origen</Label>
-              <Select value={sourceChannel} onValueChange={setSourceChannel} disabled={loading}>
-                <SelectTrigger id="channel">
-                  <SelectValue placeholder="¿De dónde llegó este lead?" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SOURCE_CHANNELS.map(c => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="maria@ejemplo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+              />
             </div>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor="phone">Teléfono</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+1 555 123 4567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+          </div>
 
+          {/* Canal de origen (siempre visible) */}
           <div className="space-y-2">
-            <Label htmlFor="status">Estatus migratorio actual</Label>
-            <Select value={immigrationStatus} onValueChange={setImmigrationStatus} disabled={loading}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar..." />
+            <Label htmlFor="channel">¿Por dónde nos conoció?</Label>
+            <Select value={sourceChannel} onValueChange={setSourceChannel} disabled={loading}>
+              <SelectTrigger id="channel">
+                <SelectValue placeholder="Canal de origen (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="lpr">Residente Permanente (LPR)</SelectItem>
-                <SelectItem value="ead">Permiso de Trabajo (EAD)</SelectItem>
-                <SelectItem value="visa">Visa de No-Inmigrante</SelectItem>
-                <SelectItem value="asylee">Asilado</SelectItem>
-                <SelectItem value="refugee">Refugiado</SelectItem>
-                <SelectItem value="daca">DACA</SelectItem>
-                <SelectItem value="undocumented">Sin estatus</SelectItem>
-                <SelectItem value="other">Otro</SelectItem>
+                {SOURCE_CHANNELS.map(c => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {isLead && (
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notas rápidas</Label>
-              <Input
-                id="notes"
-                placeholder="Qué necesita, comentarios iniciales..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-          )}
+          {/* Notas rápidas (siempre visibles) */}
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notas rápidas</Label>
+            <Input
+              id="notes"
+              placeholder="Qué necesita, comentarios iniciales..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={loading}
+            />
+          </div>
         </div>
 
         <DialogFooter>

@@ -121,7 +121,7 @@ export const HUB_SECTIONS: Record<HubSectionKey, HubSectionMeta> = {
   },
   leads: {
     key: "leads",
-    label: "Clientes nuevos",
+    label: "Clientes",
     path: "/hub/leads",
     enabled: true,
     order: 5,

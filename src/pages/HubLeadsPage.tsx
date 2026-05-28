@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { normalizeClientName } from "@/lib/caseTypeLabels";
 import {
   Search, UserSearch, Plus,
-   Phone, Mail, Calendar, MessageSquare, Clock, Info,
+   Phone, Mail, Calendar, Clock, Info,
    ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, SortAsc, SortDesc, X, Trash2, CheckSquare, Square, ArrowRightCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -18,8 +18,6 @@ import { logAccess } from "@/lib/auditLog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import HubLayout from "@/components/hub/HubLayout";
-import IntakeWizard from "@/components/intake/IntakeWizard";
-import ContactQuickPanel from "@/components/hub/ContactQuickPanel";
 import NewClientModal from "@/components/workspace/NewClientModal";
 import ConvertLeadToCaseModal from "@/components/hub/ConvertLeadToCaseModal";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
@@ -109,13 +107,9 @@ export default function HubLeadsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState<ChannelFilterKey>("all");
-  const [intakeOpen, setIntakeOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [convertLead, setConvertLead] = useState<LeadProfile | null>(null);
-  // syncing state removed: GHL auto-sync disabled.
-  const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
   const [selected, setSelected] = useState<string[]>([]);
-  const [selectedContact, setSelectedContact] = useState<string | null>(null);
   // Pagination & sort state
   const [pageSize, setPageSize] = useState(15);
   const [currentPage, setCurrentPage] = useState(0);
@@ -239,29 +233,9 @@ export default function HubLeadsPage() {
     return { text: "?", isUnknown: true };
   };
 
-  function openIntakeForLead(lead: LeadProfile) {
-    const classified = classifyChannel(lead.source_channel);
-    const channelKey = KNOWN_CHANNELS.includes(classified.key) ? classified.key : undefined;
-    setPrefillData({
-      name: getName(lead),
-      phone: lead.phone || undefined,
-      email: lead.email || undefined,
-      client_profile_id: lead.id,
-      source_channel: channelKey,
-    });
-    setIntakeOpen(true);
-  }
-
-  function handleIntakeSuccess() {
-    if (prefillData?.client_profile_id) {
-      setLeads(prev => prev.filter(l => l.id !== prefillData.client_profile_id));
-      setTotalCount(prev => Math.max(0, prev - 1));
-      toast.success(`${prefillData.name || 'Contacto'} movido a Consultas ✅`, { duration: 4000 });
-    }
-    setIntakeOpen(false);
-    setPrefillData({});
-    navigate('/hub/consultations');
-  }
+  // Eliminados v8.5: openIntakeForLead + handleIntakeSuccess. El flow
+  // de IntakeWizard "Nueva consulta" no aplica acá (NER = post-contrato).
+  // El único path es ConvertLeadToCaseModal → Abrir expediente.
 
   async function handleBulkDelete() {
     if (selected.length === 0) return;
@@ -303,9 +277,9 @@ export default function HubLeadsPage() {
              </div>
              <div>
                 <div className="flex items-center gap-2">
-                  {/* "Clientes nuevos" = contratados/ganados que aún no tienen caso
-                      activo. Marketing/leads frio vive en GHL (locked 2026-05-28). */}
-                  <h1 className="text-xl font-bold text-foreground font-sora">Clientes nuevos</h1>
+                  {/* "Clientes" = contratados/ganados (NER = post-contrato).
+                      Marketing/leads frío vive en GHL (locked 2026-05-28). */}
+                  <h1 className="text-xl font-bold text-foreground font-sora">Clientes</h1>
                 </div>
                <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} sin caso activo todavía</p>
              </div>
@@ -424,13 +398,19 @@ export default function HubLeadsPage() {
                 const createdDate = new Date(lead.created_at);
 
                 return (
+                  // Card ENTERO clickeable → abre ConvertLeadToCaseModal.
+                  // Eliminados: botón MessageSquare (IntakeWizard) + click
+                  // nombre que abría ContactQuickPanel. Mr. Lorenzo 2026-05-28:
+                  // si el cliente está acá ya fue ganado → 1 acción: abrir
+                  // expediente.
                   <div
                     key={lead.id}
-                    className={`group bg-card border rounded-lg px-3 py-2 transition-all hover:border-cyan-accent/30 hover:bg-card/80 flex flex-col justify-between ${
+                    onClick={() => setConvertLead(lead)}
+                    className={`group bg-card border rounded-lg px-3 py-2 transition-all hover:border-cyan-accent/40 hover:bg-card/80 flex flex-col justify-between cursor-pointer ${
                       selected.includes(lead.id) ? "border-cyan-accent/40 bg-cyan-accent/5" : "border-border"
                     }`}
                   >
-                    {/* Top row: checkbox + avatar + name + consulta icon */}
+                    {/* Top row: checkbox + avatar + name + CTA */}
                     <div className="flex items-center gap-2">
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleSelected(lead.id); }}
@@ -453,12 +433,9 @@ export default function HubLeadsPage() {
                         );
                       })()}
                       <div className="flex-1 min-w-0">
-                        <button
-                          onClick={() => setSelectedContact(lead.id)}
-                          className="font-semibold text-foreground truncate block hover:text-cyan-accent transition-colors text-base leading-tight"
-                        >
+                        <span className="font-semibold text-foreground truncate block group-hover:text-cyan-accent transition-colors text-base leading-tight">
                           {getName(lead)}
-                        </button>
+                        </span>
                         <div className="flex items-center gap-1 mt-0.5">
                           <Badge className={`text-[10px] leading-none px-1.5 py-0.5 border ${badgeStyle}`}>
                             {displayLabel}
@@ -470,22 +447,12 @@ export default function HubLeadsPage() {
                           )}
                         </div>
                       </div>
-                      <div className="shrink-0 flex items-center gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setConvertLead(lead); }}
-                          className="w-7 h-7 rounded-md border border-cyan-accent/30 flex items-center justify-center text-cyan-accent hover:bg-cyan-accent/15 hover:text-cyan-accent/90 transition-all"
-                          title="Convertir a caso"
-                        >
-                          <ArrowRightCircle className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); openIntakeForLead(lead); }}
-                          className="w-7 h-7 rounded-md border border-white/10 flex items-center justify-center text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-all"
-                          title="Iniciar consulta (intake completo)"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      <span
+                        className="shrink-0 flex items-center gap-1 text-cyan-accent opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-semibold"
+                      >
+                        Abrir expediente
+                        <ArrowRightCircle className="w-3.5 h-3.5" />
+                      </span>
                     </div>
 
                     {/* Bottom rows: phone + date, then email */}
@@ -627,17 +594,6 @@ export default function HubLeadsPage() {
         )}
       </div>
 
-      {intakeOpen && (
-        <IntakeWizard
-          open={intakeOpen}
-          onOpenChange={(o) => { if (!o) { setIntakeOpen(false); setPrefillData({}); } }}
-          prefill={prefillData}
-          onCreated={handleIntakeSuccess}
-          initialStep={prefillData.client_profile_id ? 2 : 0}
-          prefillChannel={prefillData.source_channel}
-        />
-      )}
-
       <NewClientModal
         open={quickAddOpen}
         onOpenChange={setQuickAddOpen}
@@ -666,16 +622,6 @@ export default function HubLeadsPage() {
       />
 
 
-      <ContactQuickPanel
-        contactId={selectedContact}
-        open={!!selectedContact}
-        onClose={() => setSelectedContact(null)}
-        onStartIntake={(profileId, data) => {
-          const channelKey = KNOWN_CHANNELS.includes(data.source_channel || "") ? data.source_channel : undefined;
-          setPrefillData({ ...data, client_profile_id: profileId, source_channel: channelKey });
-          setIntakeOpen(true);
-        }}
-      />
     </HubLayout>
   );
 }

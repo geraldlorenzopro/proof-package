@@ -29,6 +29,7 @@ import { Loader2, Briefcase, Search } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/auditLog";
 import { CASE_TYPES, CATEGORY_LABELS, type CaseTypeMeta, type CaseTypeCategory } from "@/lib/caseTypes";
+import { getPrimaryFormForCaseType, getFormsForCaseType } from "@/lib/caseTypeToForms";
 
 type ProcessStage = "uscis" | "nvc" | "embajada" | "court" | "ice";
 
@@ -190,23 +191,59 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
         .update({ contact_stage: "client", updated_at: new Date().toISOString() } as any)
         .eq("id", lead.id);
 
+      // Auto-INSERT form_submissions DRAFT del formulario principal según
+      // case_type. Si no hay mapeo en caseTypeToForms, skip silencioso.
+      // Esto hace que el tab Formularios del case engine ya aparezca con
+      // borrador esperando, no vacío.
+      const primaryFormType = getPrimaryFormForCaseType(selectedType.key);
+      if (primaryFormType) {
+        try {
+          await supabase
+            .from("form_submissions")
+            .insert({
+              account_id: lead.account_id,
+              case_id: caseRow.id,
+              user_id: user.id,
+              form_type: primaryFormType,
+              form_version: primaryFormType === "i-130" ? "04/01/24" : "08/21/25",
+              status: "draft",
+              client_name: clientName,
+              client_email: lead.email || "",
+              form_data: {},
+              notes: `Borrador auto-creado al abrir expediente · ${selectedType.shortLabel}`,
+            } as any);
+        } catch (formErr) {
+          // No bloquear el flow si form_submission falla
+          console.warn("[convert-lead] form auto-draft skipped:", formErr);
+        }
+      }
+
       logAudit({
         action: "case.created" as any,
         entity_type: "case",
         entity_id: caseRow.id,
         entity_label: `${clientName} · ${selectedType.shortLabel}`,
-        metadata: { process_stage: processStage, case_type_key: selectedType.key, from_lead: lead.id },
+        metadata: {
+          process_stage: processStage,
+          case_type_key: selectedType.key,
+          from_lead: lead.id,
+          auto_form: primaryFormType,
+        },
       });
 
-      toast.success(`Caso creado · ${clientName}`, {
-        description: `${selectedType.shortLabel} · ${PIPELINE_OPTIONS.find(p => p.value === processStage)?.label}`,
+      const suggestionCount = getFormsForCaseType(selectedType.key).length;
+      toast.success(`Expediente abierto · ${clientName}`, {
+        description: suggestionCount > 0
+          ? `${selectedType.shortLabel} · ${suggestionCount} formulario${suggestionCount === 1 ? "" : "s"} sugerido${suggestionCount === 1 ? "" : "s"}`
+          : `${selectedType.shortLabel} · ${PIPELINE_OPTIONS.find(p => p.value === processStage)?.label}`,
         duration: 4000,
       });
 
       onOpenChange(false);
       onCreated?.(caseRow.id);
-      // Llevarlo al case engine para configurar siguiente paso
-      navigate(`/case-engine/${caseRow.id}`);
+      // Aterrizar directo en tab Formularios — el paralegal ya tiene el
+      // borrador esperando. Sin pasar por tab Resumen vacío.
+      navigate(`/case-engine/${caseRow.id}?tab=formularios`);
     } catch (err: any) {
       console.error(err);
       toast.error("Error inesperado", { description: err?.message });
@@ -223,7 +260,7 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-sora">
             <Briefcase className="w-5 h-5 text-cyan-accent" />
-            Crear caso del cliente
+            Abrir expediente
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-1">
             <span className="font-semibold text-foreground">{clientName}</span>
@@ -366,7 +403,7 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
             className="bg-cyan-accent hover:bg-cyan-accent/90 text-deep-navy font-semibold gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            Crear caso
+            Abrir expediente
           </Button>
         </DialogFooter>
       </DialogContent>
