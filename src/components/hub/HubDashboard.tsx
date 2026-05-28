@@ -500,7 +500,7 @@ function HubDashboardInner({
           Antes era full-bleed con calc(100vw-72px). Ahora respeta
           max-w-[1600px] mx-auto para alinearse con /hub/leads /hub/cases
           /hub/forms — mismo ancho máximo en todas las pantallas. */}
-      <div className="h-[100dvh] w-full max-w-[1600px] mx-auto overflow-hidden flex flex-col bg-background relative">
+      <div className="min-h-[100dvh] w-full max-w-[1600px] mx-auto overflow-y-auto overflow-x-hidden flex flex-col bg-background relative">
 
         {/* Onboarding banner */}
         {showOnboardingBanner && !bannerDismissed && (
@@ -521,7 +521,7 @@ function HubDashboardInner({
         )}
 
         {/* Main content — 3 zonas verticales */}
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col gap-2 px-6 py-3 w-full mx-auto">
+        <div className="flex-1 min-h-0 flex flex-col gap-2 px-6 py-3 w-full mx-auto">
 
           {/* ═══ ZONA 0 — CRISIS BAR (rojo arriba antes que prosa larga) ═══ */}
           {/* Decisión 2026-05-11 post-debate con Mr. Lorenzo: los ojos del abogado
@@ -534,7 +534,7 @@ function HubDashboardInner({
                 Pipeline (flex-1) + Acción rápida + Recursos oficiales
               - RIGHT rail: SOLO Actividad reciente (full altura, desde
                 briefing hasta recursos) */}
-          <section className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3 flex-1 min-h-0 overflow-hidden">
+          <section className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3 flex-1 min-h-0">
 
             {/* ─── LEFT COLUMN ─── */}
             <div className="flex flex-col gap-2 min-h-0">
@@ -676,7 +676,7 @@ function HubDashboardInner({
             </div>
 
             {/* ─── RIGHT RAIL · SOLO ACTIVIDAD RECIENTE (FULL ALTURA) ─── */}
-            <aside className="hidden lg:flex flex-col min-h-0 overflow-hidden">
+            <aside className="hidden lg:flex flex-col min-h-0 max-h-[calc(100dvh-2rem)] lg:sticky lg:top-3 overflow-hidden">
               <HubActivityStream accountId={accountId} />
             </aside>
           </section>
