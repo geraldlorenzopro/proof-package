@@ -27,15 +27,17 @@ const NAV_ITEMS: Array<{
   sectionKey: HubSectionKey;
   demoSupported?: boolean;
 }> = [
-  // Sidebar canonical según INFORMATION-ARCHITECTURE.md §9.2 — 10 items exactos.
-  // Estado enabled/disabled vive en src/lib/hubSections.ts (fuente de verdad única).
-  // Iconos emoji para coincidir con mockup NER-HUB-INICIO-V6 (3D colored icons).
+  // Sidebar canonical según INFORMATION-ARCHITECTURE.md §9.2.
+  // Orden v8.6 (2026-05-28 Mr. Lorenzo): las 4 secciones LIVE arriba juntas
+  // (Inicio · Clientes · Casos · Forms) para que el paralegal vea de un
+  // vistazo qué está habilitado. El resto queda debajo con badge PRONTO.
   { emoji: "🏠", label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", sectionKey: "inicio", demoSupported: true },
   { emoji: "👥", label: "Clientes", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", sectionKey: "leads", demoSupported: false },
-  { emoji: "🪪", label: "Cliente 360", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), sectionKey: "clientes", demoSupported: false },
-  { emoji: "💬", label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", sectionKey: "consultas", demoSupported: false },
   { emoji: "📁", label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", sectionKey: "casos", demoSupported: true },
   { emoji: "📋", label: "Forms", path: "/hub/forms", match: (p: string) => p.startsWith("/hub/forms") || p.startsWith("/hub/formularios") || p.startsWith("/dashboard/smart-forms"), badgeKey: "forms", sectionKey: "forms", demoSupported: true },
+  // ─── PRONTO ───
+  { emoji: "🪪", label: "Cliente 360", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), sectionKey: "clientes", demoSupported: false },
+  { emoji: "💬", label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", sectionKey: "consultas", demoSupported: false },
   { emoji: "🗓️", label: "Agenda", path: "/hub/agenda", match: (p: string) => p === "/hub/agenda", sectionKey: "agenda", demoSupported: false },
   { emoji: "📊", label: "Reportes", path: "/hub/reports", match: (p: string) => p === "/hub/reports" || p === "/hub/intelligence", sectionKey: "reportes", demoSupported: false },
   { emoji: "🤖", label: "Equipo", path: "/hub/ai", match: (p: string) => p === "/hub/ai" || p === "/hub/team", sectionKey: "equipo", demoSupported: false },
@@ -188,11 +190,13 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
               <img src="/brand/ner-logo-mark-light.svg" alt="NER" className="w-9 h-9 object-contain" />
             </div>
 
-            {/* Nav items — TODOS los items siempre visibles (las secciones disabled muestran ComingSoonPage). */}
+            {/* Nav items — 4 LIVE arriba, separador, resto PRONTO. */}
             <div className="flex flex-col items-center gap-2.5">
-              {NAV_ITEMS.map((item) => {
+              {NAV_ITEMS.map((item, idx) => {
                 const isActive = item.match(currentPath);
                 const sectionEnabled = HUB_SECTIONS[item.sectionKey].enabled;
+                const prevEnabled = idx > 0 ? HUB_SECTIONS[NAV_ITEMS[idx - 1].sectionKey].enabled : true;
+                const showSeparator = !sectionEnabled && prevEnabled;
                 const badge = item.badgeKey && sectionEnabled
                   ? (demoMode ? DEMO_SIDEBAR_BADGES[item.badgeKey] : realBadges[item.badgeKey])
                   : null;
@@ -202,45 +206,49 @@ export default function HubLayout({ children, accountName, staffName, plan }: Pr
                   item.badgeKey === "leads" ? "bg-cyan-accent text-deep-navy" :
                   "bg-rose-500";
                 return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    title={!sectionEnabled ? `${item.label} — próximamente` : undefined}
-                    className={`w-[72px] flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all duration-150 relative ${
-                      isActive
-                        ? "bg-cyan-accent/10 text-cyan-accent"
-                        : sectionEnabled
-                          ? "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-muted/40"
-                          : "text-muted-foreground/25 hover:text-muted-foreground/50 hover:bg-muted/30"
-                    }`}
-                  >
-                    {isActive && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[22px] bg-cyan-accent rounded-r-[2px]" />
+                  <div key={item.path} className="flex flex-col items-center w-full">
+                    {showSeparator && (
+                      <div className="w-8 h-px bg-border/40 my-1.5" aria-hidden="true" />
                     )}
-                    {!sectionEnabled && (
-                      <span className="absolute -top-1 -right-1 bg-cyan-accent text-deep-navy text-[8px] font-bold rounded px-1 py-px leading-none tracking-wider shadow-sm">
-                        PRONTO
-                      </span>
-                    )}
-                    {badge !== null && badge !== undefined && badge > 0 && (
-                      <span className={`absolute top-1 right-2 ${badgeColor} text-white text-[8px] font-bold rounded-full px-1 min-w-[14px] h-[14px] flex items-center justify-center leading-none`}>
-                        {badge > 99 ? "99+" : badge}
-                      </span>
-                    )}
-                    <span
-                      className="text-xl leading-none"
-                      style={{
-                        // v8.5 (2026-05-28): secciones enabled se ven full
-                        // como las active. Solo las PRONTO quedan grayscale.
-                        filter: sectionEnabled
-                          ? "none"
-                          : "grayscale(0.85) opacity(0.5)",
-                      }}
+                    <button
+                      onClick={() => navigate(item.path)}
+                      title={!sectionEnabled ? `${item.label} — próximamente` : item.label}
+                      className={`w-[72px] flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all duration-150 relative ${
+                        isActive
+                          ? "bg-cyan-accent/12 text-cyan-accent"
+                          : sectionEnabled
+                            ? "text-foreground/85 hover:text-cyan-accent hover:bg-cyan-accent/8"
+                            : "text-muted-foreground/35 hover:text-muted-foreground/55 hover:bg-muted/25"
+                      }`}
                     >
-                      {item.emoji}
-                    </span>
-                    <span className="text-[9px] font-medium leading-none">{item.label}</span>
-                  </button>
+                      {isActive && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[22px] bg-cyan-accent rounded-r-[2px]" />
+                      )}
+                      {!sectionEnabled && (
+                        <span className="absolute -top-1 -right-1 bg-cyan-accent text-deep-navy text-[8px] font-bold rounded px-1 py-px leading-none tracking-wider shadow-sm">
+                          PRONTO
+                        </span>
+                      )}
+                      {badge !== null && badge !== undefined && badge > 0 && (
+                        <span className={`absolute top-1 right-2 ${badgeColor} text-white text-[8px] font-bold rounded-full px-1 min-w-[14px] h-[14px] flex items-center justify-center leading-none`}>
+                          {badge > 99 ? "99+" : badge}
+                        </span>
+                      )}
+                      <span
+                        className="text-xl leading-none"
+                        style={{
+                          // v8.6 (2026-05-28): LIVE = full color saturado.
+                          // PRONTO = grayscale fuerte para diferencia clara.
+                          filter: sectionEnabled
+                            ? "none"
+                            : "grayscale(0.95) opacity(0.55)",
+                        }}
+                      >
+                        {item.emoji}
+                      </span>
+                      <span className="text-[9px] font-medium leading-none">{item.label}</span>
+                    </button>
+                  </div>
                 );
               })}
             </div>

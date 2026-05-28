@@ -30,17 +30,20 @@ export default function HubCrisisBar({ accountId }: Props) {
   const navigate = useNavigate();
   const demoMode = useDemoMode();
   const [crisis, setCrisis] = useState<Crisis | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (demoMode) {
       setCrisis(DEMO_CRISIS);
+      setLoaded(true);
       return;
     }
     if (!accountId) {
       setCrisis(null);
+      setLoaded(true);
       return;
     }
-    loadCrisis();
+    loadCrisis().finally(() => setLoaded(true));
   }, [accountId, demoMode]);
 
   async function loadCrisis() {
@@ -115,7 +118,13 @@ export default function HubCrisisBar({ accountId }: Props) {
     });
   }
 
-  if (!crisis) return null;
+  // Reserva siempre la misma altura para evitar que el briefing se
+  // empuje hacia abajo cuando la query async resuelve y aparece la barra.
+  if (!crisis) {
+    // Si ya cargó y no hay crisis → no reservar espacio (limpio).
+    // Si está cargando → reservar 40px para evitar layout shift.
+    return loaded ? null : <div className="h-10 mb-2" aria-hidden="true" />;
+  }
 
   function handleViewCase() {
     if (demoMode) {
