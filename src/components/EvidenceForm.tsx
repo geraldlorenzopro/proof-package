@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { EvidenceItem, EvidenceType, Lang } from '@/types/evidence';
+import { useState, useEffect } from 'react';
+import { EvidenceItem, EvidenceType, Lang, DatePrecision } from '@/types/evidence';
 import { cn } from '@/lib/utils';
-import { FileImage, MessageSquare, FileText, CheckCircle, AlertCircle, ZoomIn, X, CalendarIcon } from 'lucide-react';
+import { FileImage, MessageSquare, FileText, CheckCircle, AlertCircle, ZoomIn, X, CalendarIcon, Eye } from 'lucide-react';
 import { format, parse, isValid } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
+import { buildCaption } from '@/lib/evidenceUtils';
 
 interface EvidenceFormProps {
   item: EvidenceItem;
@@ -152,76 +153,295 @@ function Question({
 const inputCls =
   "w-full text-sm border border-border rounded-md px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all";
 
+const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
 function DatePickerField({
   value,
-  isApprox,
-  onDateChange,
-  onApproxChange,
-  approxLabel,
+  precision: precisionProp,
+  onChange,
   itemId,
+  lang,
 }: {
   value: string;
-  isApprox: boolean;
-  onDateChange: (val: string) => void;
-  onApproxChange: (val: boolean) => void;
-  approxLabel: string;
+  precision: DatePrecision;
+  onChange: (partial: { event_date: string; date_is_approximate: boolean; date_precision: DatePrecision }) => void;
   itemId: string;
+  lang: Lang;
 }) {
   const [open, setOpen] = useState(false);
+  const precision = precisionProp || 'exact';
 
-  let selectedDate: Date | undefined = undefined;
+  // Parse current value
+  const parts = value ? value.split('-').map(Number) : [];
+  const curYear = parts[0] && !isNaN(parts[0]) ? parts[0] : undefined;
+  const curMonth = parts[1] && !isNaN(parts[1]) ? parts[1] : undefined; // 1-12
+  const curDay = parts[2] && !isNaN(parts[2]) ? parts[2] : undefined;
+
+  let selectedDate: Date | undefined;
   if (value) {
     const parsed = parse(value, 'yyyy-MM-dd', new Date());
     if (isValid(parsed)) selectedDate = parsed;
   }
 
-  function handleSelect(date: Date | undefined) {
+  const currentYear = new Date().getFullYear();
+  const years: number[] = [];
+  for (let y = currentYear; y >= 2000; y--) years.push(y);
+  const months = lang === 'es' ? MONTHS_ES : MONTHS_EN;
+
+  function setPrecision(next: DatePrecision) {
+    if (next === precision) return;
+    // Downgrade preserves compatible parts; upgrade clears.
+    if (next === 'exact') {
+      onChange({ event_date: '', date_is_approximate: false, date_precision: 'exact' });
+    } else if (next === 'month') {
+      if (precision === 'exact' && curYear && curMonth) {
+        onChange({
+          event_date: `${curYear}-${String(curMonth).padStart(2,'0')}-01`,
+          date_is_approximate: true,
+          date_precision: 'month',
+        });
+      } else {
+        // year → month: clear month
+        onChange({ event_date: '', date_is_approximate: true, date_precision: 'month' });
+      }
+    } else if (next === 'year') {
+      if (curYear) {
+        onChange({
+          event_date: `${curYear}-01-01`,
+          date_is_approximate: true,
+          date_precision: 'year',
+        });
+      } else {
+        onChange({ event_date: '', date_is_approximate: true, date_precision: 'year' });
+      }
+    }
+  }
+
+  function handleSelectExact(date: Date | undefined) {
     if (date) {
-      onDateChange(format(date, 'yyyy-MM-dd'));
+      const newDate = format(date, 'yyyy-MM-dd');
+      onChange({ event_date: newDate, date_is_approximate: false, date_precision: 'exact' });
       setOpen(false);
     }
   }
 
-  const displayValue = selectedDate
+  function handleMonthChange(monthStr: string) {
+    const m = parseInt(monthStr, 10);
+    if (!m || !curYear) {
+      // need year first; store partial in state? We only commit when both present.
+      // If user picks month but no year, do nothing yet.
+      if (!curYear) return;
+    }
+    onChange({
+      event_date: `${curYear}-${String(m).padStart(2,'0')}-01`,
+      date_is_approximate: true,
+      date_precision: 'month',
+    });
+  }
+
+  function handleYearChangeForMonth(yearStr: string) {
+    const y = parseInt(yearStr, 10);
+    if (!y) return;
+    const m = curMonth || 1;
+    const useMonth = curMonth ? curMonth : null;
+    if (useMonth) {
+      onChange({
+        event_date: `${y}-${String(m).padStart(2,'0')}-01`,
+        date_is_approximate: true,
+        date_precision: 'month',
+      });
+    } else {
+      // Store year placeholder; event_date stays empty until month chosen.
+      onChange({
+        event_date: `${y}-01-01`,
+        date_is_approximate: true,
+        date_precision: 'month',
+      });
+    }
+  }
+
+  function handleYearOnly(yearStr: string) {
+    const y = parseInt(yearStr, 10);
+    if (!y) return;
+    onChange({
+      event_date: `${y}-01-01`,
+      date_is_approximate: true,
+      date_precision: 'year',
+    });
+  }
+
+  const placeholders = {
+    exact: lang === 'es' ? '📅 Selecciona fecha del evento' : '📅 Select event date',
+    month: lang === 'es' ? '📆 Selecciona mes y año' : '📆 Select month and year',
+    year:  lang === 'es' ? '🗓️ Selecciona año' : '🗓️ Select year',
+  };
+
+  const labels = {
+    exact: lang === 'es' ? '📅 Exacta' : '📅 Exact',
+    month: lang === 'es' ? '📆 Mes y año' : '📆 Month + year',
+    year:  lang === 'es' ? '🗓️ Año' : '🗓️ Year',
+  };
+
+  // Preview text (always English, for PDF parity)
+  let previewText = '';
+  if (precision === 'exact' && selectedDate) {
+    previewText = format(selectedDate, 'MMMM d, yyyy');
+  } else if (precision === 'month' && curYear && curMonth) {
+    previewText = `Selected: ${MONTHS_EN[curMonth - 1]} ${curYear} (approximate)`;
+  } else if (precision === 'year' && curYear) {
+    previewText = `Selected: ${curYear} (approximate)`;
+  }
+
+  const displayValue = selectedDate && precision === 'exact'
     ? format(selectedDate, 'MMM d, yyyy')
-    : value || '—';
+    : placeholders.exact;
 
   return (
     <div className="space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
+      {/* Precision selector */}
+      <div className="inline-flex rounded-md border border-border bg-muted/40 p-0.5 gap-0.5 w-full">
+        {(['exact','month','year'] as DatePrecision[]).map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setPrecision(p)}
             className={cn(
-              "w-full justify-start text-left font-normal text-sm h-10",
-              !value && "text-muted-foreground"
+              'flex-1 text-xs font-medium px-2 py-1.5 rounded transition-all',
+              precision === p
+                ? 'bg-background text-foreground shadow-sm border border-border'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0 text-primary" />
-            <span className="truncate text-base">{displayValue}</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 z-[200]" align="start">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleSelect}
-            initialFocus
-            className={cn("p-3 pointer-events-auto")}
-            disabled={(date) => date > new Date()}
-          />
-        </PopoverContent>
-      </Popover>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          id={`approx-${itemId}`}
-          checked={isApprox}
-          onChange={e => onApproxChange(e.target.checked)}
-          className="rounded w-4 h-4"
-        />
-        <span className="text-xs text-muted-foreground">{approxLabel}</span>
-      </label>
+            {labels[p]}
+          </button>
+        ))}
+      </div>
+
+      {/* Mode: exact → Calendar */}
+      {precision === 'exact' && (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                'w-full justify-start text-left font-normal text-sm h-10',
+                !value && 'text-muted-foreground'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0 text-primary" />
+              <span className="truncate text-base">{displayValue}</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 z-[200]" align="start">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleSelectExact}
+              initialFocus
+              className={cn('p-3 pointer-events-auto')}
+              disabled={(date) => date > new Date()}
+              defaultMonth={selectedDate || new Date(2024, 0, 1)}
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {/* Mode: month → month + year dropdowns */}
+      {precision === 'month' && (
+        <div className="grid grid-cols-2 gap-2">
+          <select
+            value={curMonth ?? ''}
+            onChange={(e) => handleMonthChange(e.target.value)}
+            className="text-sm border border-border rounded-md px-3 py-2 bg-background h-10 focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">{lang === 'es' ? 'Mes' : 'Month'}</option>
+            {months.map((m, i) => (
+              <option key={m} value={i + 1}>{m}</option>
+            ))}
+          </select>
+          <select
+            value={curYear ?? ''}
+            onChange={(e) => handleYearChangeForMonth(e.target.value)}
+            className="text-sm border border-border rounded-md px-3 py-2 bg-background h-10 focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">{lang === 'es' ? 'Año' : 'Year'}</option>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Mode: year → year dropdown */}
+      {precision === 'year' && (
+        <select
+          value={curYear ?? ''}
+          onChange={(e) => handleYearOnly(e.target.value)}
+          className="w-full text-sm border border-border rounded-md px-3 py-2 bg-background h-10 focus:outline-none focus:ring-2 focus:ring-primary/30"
+        >
+          <option value="">{placeholders.year}</option>
+          {years.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      )}
+
+      {/* Preview */}
+      {previewText && (
+        <p className="text-xs italic text-muted-foreground" data-item-id={itemId}>
+          {previewText}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Caption preview (debounced) ───────────────────────────────────────────────
+
+function CaptionPreview({ item, lang }: { item: EvidenceItem; lang: Lang }) {
+  const [debouncedItem, setDebouncedItem] = useState(item);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedItem(item), 200);
+    return () => clearTimeout(t);
+  }, [item]);
+
+  const hasAny =
+    !!(debouncedItem.caption?.trim() ||
+      debouncedItem.participants?.trim() ||
+      debouncedItem.event_date ||
+      debouncedItem.demonstrates);
+
+  const label = lang === 'es'
+    ? 'Vista previa de cómo aparecerá en el PDF'
+    : 'Preview of how this will appear in the PDF';
+  const empty = lang === 'es'
+    ? 'Llená los campos arriba para ver la vista previa'
+    : 'Fill the fields above to see the preview';
+  const footnote = lang === 'es'
+    ? 'Este texto se traducirá automáticamente al inglés al generar el PDF.'
+    : 'This text will be translated to English when generating the PDF.';
+
+  const previewText = hasAny ? buildCaption(debouncedItem) : '';
+
+  return (
+    <div className="mt-2 rounded-lg border border-border/60 bg-muted/50 p-4">
+      <div className="flex items-center gap-1.5 mb-2">
+        <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+      </div>
+      {hasAny ? (
+        <p className="font-serif text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+          {previewText}
+        </p>
+      ) : (
+        <p className="text-sm italic text-muted-foreground/70">{empty}</p>
+      )}
+      <p className="mt-3 text-[10px] italic text-muted-foreground/70 leading-snug">
+        {footnote}
+      </p>
     </div>
   );
 }
@@ -239,6 +459,15 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
   function update(partial: Partial<EvidenceItem>) {
     const updated = { ...item, ...partial };
     updated.formComplete = checkComplete(updated);
+    if ('event_date' in partial) {
+      if (import.meta.env.DEV) {
+        console.log('[date-debug] EvidenceForm.update event_date', {
+          itemId: item.id,
+          partialEventDate: partial.event_date,
+          fullItemAfterUpdate: updated,
+        });
+      }
+    }
     onChange(updated);
   }
 
@@ -353,6 +582,15 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
                   className={inputCls}
                 />
               </Question>
+              <Question question={L.dateQ} hint={L.dateHint} required>
+                <DatePickerField
+                  value={item.event_date}
+                  precision={item.date_precision || 'exact'}
+                  onChange={(partial) => update(partial)}
+                  itemId={item.id}
+                  lang={lang}
+                />
+              </Question>
             </>
           )}
 
@@ -387,6 +625,15 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
                   className={inputCls + " resize-none"}
                 />
               </Question>
+              <Question question={L.dateQ} hint={L.dateHint} required>
+                <DatePickerField
+                  value={item.event_date}
+                  precision={item.date_precision || 'exact'}
+                  onChange={(partial) => update(partial)}
+                  itemId={item.id}
+                  lang={lang}
+                />
+              </Question>
             </>
           )}
 
@@ -411,8 +658,20 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
                   className={inputCls}
                 />
               </Question>
+              <Question question={L.dateQ} hint={L.dateHint} required>
+                <DatePickerField
+                  value={item.event_date}
+                  precision={item.date_precision || 'exact'}
+                  onChange={(partial) => update(partial)}
+                  itemId={item.id}
+                  lang={lang}
+                />
+              </Question>
             </>
           )}
+
+          {/* Live caption preview (debounced 200ms) */}
+          <CaptionPreview item={item} lang={lang} />
 
         </div>
       </div>
@@ -421,8 +680,8 @@ export function EvidenceForm({ item, onChange, lang }: EvidenceFormProps) {
 }
 
 function checkComplete(item: EvidenceItem): boolean {
-  if (item.type === 'photo') return !!(item.caption && item.participants);
-  if (item.type === 'chat') return !!(item.participants && item.demonstrates);
-  if (item.type === 'other') return !!item.caption;
+  if (item.type === 'photo') return !!(item.caption && item.participants && item.event_date);
+  if (item.type === 'chat') return !!(item.participants && item.demonstrates && item.event_date);
+  if (item.type === 'other') return !!(item.caption && item.event_date);
   return false;
 }

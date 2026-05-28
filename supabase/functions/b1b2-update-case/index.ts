@@ -4,7 +4,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 /**
  * b1b2-update-case
  * Updates status/stage of a B1/B2 case identified by account_cid + case_id.
- * No auth required — called from the standalone B1/B2 dashboard.
+ * Requires authenticated NER member belonging to the resolved account.
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -16,6 +16,25 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
         status: 405,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // SECURITY: require authenticated user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user }, error: authErr } = await supabaseUser.auth.getUser();
+    if (authErr || !user) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -54,6 +73,19 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "account_not_found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // SECURITY: ensure caller belongs to this account (tenant isolation)
+    const { data: callerMembership } = await supabaseAdmin
+      .from("account_members")
+      .select("user_id")
+      .eq("account_id", account.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!callerMembership) {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Build update payload

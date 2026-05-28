@@ -200,8 +200,17 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // SECURITY FIX 2026-05-10: bloquear abuso directo de LOVABLE_API_KEY
-  // por requests fuera de nuestros dominios (drena créditos pagados).
+  // SECURITY: this is a public tool route (/tools/uscis-analyzer), so we can't
+  // require JWT. Instead we require Origin header (browser fetches always send
+  // it; curl/server-to-server does not) + origin allowlist. Blocks unauthenticated
+  // server-to-server abuse of LOVABLE_API_KEY credits.
+  const origin = req.headers.get("Origin");
+  if (!origin) {
+    return new Response(
+      JSON.stringify({ error: "forbidden", reason: "missing_origin" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
   const originCheck = checkOrigin(req);
   if (originCheck.blocked) {
     console.warn("analyze-uscis-document: origin blocked", originCheck.origin);
@@ -265,7 +274,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userContent },

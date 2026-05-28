@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkOrigin } from "../_shared/origin-allowlist.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,6 +48,23 @@ REGLAS:
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // SECURITY: require Origin header (blocks curl/server-to-server abuse of
+  // LOVABLE_API_KEY) + origin allowlist. Public tool route keeps working.
+  const origin = req.headers.get("Origin");
+  if (!origin) {
+    return new Response(
+      JSON.stringify({ error: "forbidden", reason: "missing_origin" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  const originCheck = checkOrigin(req);
+  if (originCheck.blocked) {
+    return new Response(
+      JSON.stringify({ error: "forbidden" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   try {

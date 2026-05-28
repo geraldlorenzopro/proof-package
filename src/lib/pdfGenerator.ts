@@ -4,53 +4,184 @@ import { buildCaption, generateExhibitNumber } from './evidenceUtils';
 import { supabase } from '@/integrations/supabase/client';
 
 // ── AI Translation (Gemini) ──────────────────────────────────
-async function translateItems(items: EvidenceItem[]): Promise<EvidenceItem[]> {
-  const texts: Record<string, string> = {};
-  for (const item of items) {
-    if (item.caption) texts[`${item.id}__caption`] = item.caption;
-    if (item.participants) texts[`${item.id}__participants`] = item.participants;
-    if (item.location) texts[`${item.id}__location`] = item.location;
-    if (item.notes) texts[`${item.id}__notes`] = item.notes;
-  }
 
-  if (Object.keys(texts).length === 0) return items;
+export type TranslationStatus = 'success' | 'partial' | 'failed';
 
-  console.log('[translate] Sending texts for translation:', Object.keys(texts).length, 'fields');
+export interface TranslateItemsResult {
+  items: EvidenceItem[];
+  translationStatus: TranslationStatus;
+  failedItemIds: string[];
+}
 
+const CHUNK_SIZE = 25;
+const MAX_CONCURRENCY = 3;
+const RETRY_DELAY_MS = 1500;
+
+/** Concurrency-limited pool. Runs `tasks` with at most `limit` in parallel.
+ *  Preserves input order in the returned array. */
+async function runWithConcurrency<T>(tasks: (() => Promise<T>)[], limit: number): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, tasks.length) }, async () => {
+    while (true) {
+      const i = cursor++;
+      if (i >= tasks.length) return;
+      results[i] = await tasks[i]();
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+/** Decide retry policy per HTTP status code. Per spec:
+ *  - 429 (rate limit): NO retry (won't heal in 1.5s)
+ *  - 402 (credits exhausted): NO retry (credits don't recharge alone)
+ *  - 5xx (incl. 502 from gateway): retry once (likely transient)
+ *  - null status + error msg: network/fetch failure → retry once
+ *  - 4xx other (400/403/404): NO retry (client bug, our fault)
+ */
+function shouldRetry(status: number | null, errMsg: string | null): boolean {
+  if (status === 429) return false;
+  if (status === 402) return false;
+  if (status !== null && status >= 500) return true;
+  if (status !== null && status >= 400) return false; // other 4xx = client bug
+  // status === null → network/fetch/timeout error
+  if (errMsg) return true;
+  return false;
+}
+
+async function translateChunk(
+  chunkEntries: [string, string][],
+  caseInfo: CaseInfo,
+  attempt: number = 1,
+): Promise<{ ok: true; translated: Record<string, string> } | { ok: false; reason: string }> {
+  const texts: Record<string, string> = Object.fromEntries(chunkEntries);
   try {
-    const { data, error } = await supabase.functions.invoke('translate-evidence', { body: { texts } });
-    
-    console.log('[translate] Response:', { data, error });
+    const { data, error } = await supabase.functions.invoke('translate-evidence', {
+      body: {
+        texts,
+        account_id: (caseInfo as { account_id?: string }).account_id ?? null,
+        petitioner: caseInfo.petitioner_name ?? null,
+      },
+    });
+
+    // supabase-js v2 attaches HTTP status on FunctionsHttpError context
+    const httpStatus: number | null =
+      (error as { context?: { status?: number } } | null)?.context?.status ?? null;
+    const errMsg: string | null = error ? (error.message ?? String(error)) : null;
+
 
     if (error) {
-      console.error('[translate] Edge function error:', error);
-      return items;
+      if (attempt === 1 && shouldRetry(httpStatus, errMsg)) {
+        console.warn('[translate] Retrying chunk after transient error', { httpStatus, errMsg });
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+        return translateChunk(chunkEntries, caseInfo, 2);
+      }
+      return { ok: false, reason: `edge_error: ${errMsg ?? 'unknown'} (status=${httpStatus})` };
     }
 
     if (data?.error) {
-      console.warn('[translate] Translation service error:', data.error);
+      // Edge returned 200 with error body (legacy compat path).
+      // Rate-limit / credit errors won't heal — DO NOT retry per spec.
+      const reason = String(data.error);
+      return { ok: false, reason: `data_error: ${reason}` };
     }
 
     const translated: Record<string, string> = data?.translated || {};
-    const translatedCount = Object.keys(translated).length;
-    console.log('[translate] Received translations:', translatedCount, '/', Object.keys(texts).length);
-
-    if (translatedCount === 0) {
-      console.warn('[translate] No translations returned — using originals');
-      return items;
+    if (Object.keys(translated).length === 0) {
+      return { ok: false, reason: 'empty_translation_map' };
     }
-
-    return items.map(item => ({
-      ...item,
-      caption: translated[`${item.id}__caption`] || item.caption,
-      participants: translated[`${item.id}__participants`] || item.participants,
-      location: item.location ? (translated[`${item.id}__location`] || item.location) : item.location,
-      notes: item.notes ? (translated[`${item.id}__notes`] || item.notes) : item.notes,
-    }));
+    return { ok: true, translated };
   } catch (err) {
-    console.error('[translate] Exception during translation:', err);
-    return items; // fallback to originals on error
+    // Likely network/fetch exception — transient, retry once.
+    const msg = err instanceof Error ? err.message : String(err);
+    if (attempt === 1) {
+      console.warn('[translate] Retrying chunk after exception:', msg);
+      await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+      return translateChunk(chunkEntries, caseInfo, 2);
+    }
+    return { ok: false, reason: `exception: ${msg}` };
   }
+}
+
+async function translateItems(items: EvidenceItem[], caseInfo: CaseInfo): Promise<TranslateItemsResult> {
+  // Collect all candidate (key, value) pairs
+  const allEntries: [string, string][] = [];
+  for (const item of items) {
+    if (item.caption) allEntries.push([`${item.id}__caption`, item.caption]);
+    if (item.participants) allEntries.push([`${item.id}__participants`, item.participants]);
+    if (item.location) allEntries.push([`${item.id}__location`, item.location]);
+    if (item.notes) allEntries.push([`${item.id}__notes`, item.notes]);
+  }
+
+  // FILTRADO PREVIO: empty / whitespace-only strings → keep as "" (don't send)
+  const preTranslated: Record<string, string> = {};
+  const entriesToSend: [string, string][] = [];
+  for (const [k, v] of allEntries) {
+    if (/^\s*$/.test(v)) {
+      preTranslated[k] = '';
+    } else {
+      entriesToSend.push([k, v]);
+    }
+  }
+
+  if (entriesToSend.length === 0) {
+    return { items, translationStatus: 'success', failedItemIds: [] };
+  }
+
+  // Build chunks
+  const chunks: [string, string][][] = [];
+  for (let i = 0; i < entriesToSend.length; i += CHUNK_SIZE) {
+    chunks.push(entriesToSend.slice(i, i + CHUNK_SIZE));
+  }
+  if (import.meta.env.DEV) {
+    console.log('[translate] Chunking:', {
+      totalKeys: entriesToSend.length,
+      chunks: chunks.length,
+      chunkSize: CHUNK_SIZE,
+      concurrency: MAX_CONCURRENCY,
+    });
+  }
+
+  const tasks = chunks.map(chunk => () => translateChunk(chunk, caseInfo));
+  const chunkResults = await runWithConcurrency(tasks, MAX_CONCURRENCY);
+
+  const translated: Record<string, string> = { ...preTranslated };
+  const failedItemIdSet = new Set<string>();
+  let successChunks = 0;
+  let failedChunks = 0;
+
+  for (let idx = 0; idx < chunkResults.length; idx++) {
+    const res = chunkResults[idx];
+    if (res.ok === true) {
+      successChunks++;
+      Object.assign(translated, res.translated);
+    } else {
+      failedChunks++;
+      const failedIds = Array.from(new Set(chunks[idx].map(([k]) => k.split('__')[0])));
+      failedIds.forEach(id => failedItemIdSet.add(id));
+      console.warn('[translate] Chunk failed, items fell back to original:', failedIds, 'reason:', res.reason);
+    }
+  }
+
+  let translationStatus: TranslationStatus;
+  if (failedChunks === 0) translationStatus = 'success';
+  else if (successChunks === 0) translationStatus = 'failed';
+  else translationStatus = 'partial';
+
+  const remappedItems = items.map(item => ({
+    ...item,
+    caption: translated[`${item.id}__caption`] ?? item.caption,
+    participants: translated[`${item.id}__participants`] ?? item.participants,
+    location: item.location ? (translated[`${item.id}__location`] ?? item.location) : item.location,
+    notes: item.notes ? (translated[`${item.id}__notes`] ?? item.notes) : item.notes,
+  }));
+
+  return {
+    items: remappedItems,
+    translationStatus,
+    failedItemIds: Array.from(failedItemIdSet),
+  };
 }
 
 // ── Color palette ───────────────────────────────────────────────────────────
@@ -70,21 +201,85 @@ function isImageItem(item: EvidenceItem): boolean {
   return false;
 }
 
-function formatDateForPDF(date: string, isApprox: boolean): string {
-  if (!date) return 'Date not specified';
-  const parts = date.split('-');
-  if (parts.length === 3) {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
-    const monthIdx = parseInt(parts[1], 10) - 1;
-    const day = parseInt(parts[2], 10);
-    const year = parts[0];
-    if (monthIdx >= 0 && monthIdx < 12) {
-      const formatted = `${months[monthIdx]} ${day}, ${year}`;
-      return isApprox ? `${formatted} (approx.)` : formatted;
-    }
+function isPdfItem(item: EvidenceItem): boolean {
+  const ext = item.file.name?.split('.').pop()?.toLowerCase() || '';
+  return ext === 'pdf' || item.file.type === 'application/pdf';
+}
+
+// Lazy-loaded PDF.js singleton — keeps the heavy worker out of the initial bundle.
+let pdfjsLibPromise: Promise<typeof import('pdfjs-dist')> | null = null;
+async function loadPdfjs() {
+  if (!pdfjsLibPromise) {
+    pdfjsLibPromise = (async () => {
+      const pdfjs = await import('pdfjs-dist');
+      // Bundle worker locally via Vite ?url import — no CDN/CORS dependency.
+      const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
+      pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+      return pdfjs;
+    })();
   }
-  return isApprox ? `${date} (approx.)` : date;
+  return pdfjsLibPromise;
+}
+
+/** Render page 1 of a PDF to a JPEG data URL. Returns numPages for multi-page indicator. */
+async function pdfFirstPageToJpegDataUrl(
+  file: File,
+): Promise<{ dataUrl: string; width: number; height: number; numPages: number }> {
+  const pdfjs = await loadPdfjs();
+  const url = URL.createObjectURL(file);
+  try {
+    const pdfDoc = await pdfjs.getDocument({ url }).promise;
+    const numPages = pdfDoc.numPages;
+    const page = await pdfDoc.getPage(1);
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(viewport.width);
+    canvas.height = Math.round(viewport.height);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not available');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // pdfjs v5 render() takes { canvasContext, viewport, canvas? }
+    await page.render({ canvasContext: ctx, viewport, canvas } as Parameters<typeof page.render>[0]).promise;
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    return { dataUrl, width: canvas.width, height: canvas.height, numPages };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function formatDateForPDF(
+  date: string,
+  isApprox: boolean,
+  precision: 'exact' | 'month' | 'year' = 'exact',
+): string {
+  if (!date) return 'Date not specified';
+  const parts = date.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) {
+    return isApprox ? `${date} (approximate)` : date;
+  }
+  const [year, month, day] = parts;
+  const months = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+  // Legacy: approximate flag without precision falls back to year-only display
+  if (precision === 'year' || (isApprox && precision === 'exact' && (!month || !day))) {
+    return `${year} (approximate)`;
+  }
+
+  if (precision === 'month') {
+    if (month >= 1 && month <= 12) {
+      return `${months[month - 1]} ${year} (approximate)`;
+    }
+    return `${year} (approximate)`;
+  }
+
+  // precision === 'exact'
+  if (month >= 1 && month <= 12) {
+    const formatted = `${months[month - 1]} ${day}, ${year}`;
+    return isApprox ? `${formatted} (approximate)` : formatted;
+  }
+  return isApprox ? `${date} (approximate)` : date;
 }
 
 function addPageFooter(doc: jsPDF, compiledDate: string, pageNum: number) {
@@ -115,9 +310,18 @@ export interface GeneratePDFOptions {
   skipDownload?: boolean;
 }
 
+export interface ImageFailure {
+  itemId: string;
+  exhibitNumber: string;
+  reason: string;
+}
+
 export interface GeneratePDFResult {
   blob: Blob;
   filename: string;
+  translationStatus: TranslationStatus;
+  failedItemIds: string[];
+  imageFailures: ImageFailure[];
 }
 
 export async function generateEvidencePDF(
@@ -127,13 +331,14 @@ export async function generateEvidencePDF(
   options?: GeneratePDFOptions,
 ): Promise<GeneratePDFResult> {
   onProgress?.('Translating to English…');
-  const translatedItems = await translateItems(items);
+  const { items: translatedItems, translationStatus, failedItemIds } = await translateItems(items, caseInfo);
   onProgress?.('Building PDF…');
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   let pageNum = 1;
+  const imageFailures: ImageFailure[] = [];
 
   const photos = translatedItems.filter(i => i.type === 'photo');
   const chats = translatedItems.filter(i => i.type === 'chat');
@@ -242,7 +447,7 @@ export async function generateEvidencePDF(
       const desc = item.caption.length > 55 ? item.caption.substring(0, 55) + '…' : item.caption;
       doc.text(`  ${item.exhibit_number}  ${desc}`, 20, tocY);
       if (item.event_date) {
-        doc.text(formatDateForPDF(item.event_date, item.date_is_approximate), W - 20, tocY, { align: 'right' });
+        doc.text(formatDateForPDF(item.event_date, item.date_is_approximate, item.date_precision || 'exact'), W - 20, tocY, { align: 'right' });
       }
       tocY += 6;
     });
@@ -286,7 +491,7 @@ export async function generateEvidencePDF(
         onProgress?.(`Rendering ${itemIdx}/${totalItems}…`);
         doc.addPage();
         pageNum++;
-        await renderPhotoGrid(doc, pageItems, caseInfo.compiled_date, pageNum, W, H);
+        await renderPhotoGrid(doc, pageItems, caseInfo.compiled_date, pageNum, W, H, imageFailures);
       }
     } else {
       for (let i = 0; i < sec.items.length; i += 2) {
@@ -295,7 +500,7 @@ export async function generateEvidencePDF(
         onProgress?.(`Rendering ${itemIdx}/${totalItems}…`);
         doc.addPage();
         pageNum++;
-        await renderStackedItems(doc, pageItems, caseInfo.compiled_date, pageNum, W, H);
+        await renderStackedItems(doc, pageItems, caseInfo.compiled_date, pageNum, W, H, imageFailures);
       }
     }
   }
@@ -312,7 +517,7 @@ export async function generateEvidencePDF(
   }
 
   onProgress?.('');
-  return { blob, filename };
+  return { blob, filename, translationStatus, failedItemIds, imageFailures };
 }
 
 // ── Render 4 photos in 2x2 grid ─────────────────────────────────────────────
@@ -324,6 +529,7 @@ async function renderPhotoGrid(
   pageNum: number,
   W: number,
   H: number,
+  imageFailures: ImageFailure[],
 ) {
   const MARGIN = 15;
   const GAP = 6;
@@ -375,7 +581,12 @@ async function renderPhotoGrid(
         doc.rect(imgX - 0.3, y - 0.3, imgW + 0.6, imgH + 0.6);
         doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
         y += imgH + 2;
-      } catch {
+      } catch (err) {
+        imageFailures.push({
+          itemId: item.id,
+          exhibitNumber: item.exhibit_number,
+          reason: err instanceof Error ? err.message : 'Image load failed',
+        });
         doc.setFillColor(...LIGHT);
         doc.rect(pos.x, y, COL_W, 25, 'F');
         doc.setFontSize(7);
@@ -415,6 +626,7 @@ async function renderStackedItems(
   pageNum: number,
   W: number,
   H: number,
+  imageFailures: ImageFailure[],
 ) {
   const MARGIN = 18;
   const CONTENT_W = W - MARGIN * 2;
@@ -462,13 +674,63 @@ async function renderStackedItems(
         doc.rect(imgX - 0.3, y - 0.3, imgW + 0.6, imgH + 0.6);
         doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
         y += imgH + 3;
-      } catch {
+      } catch (err) {
+        imageFailures.push({
+          itemId: item.id,
+          exhibitNumber: item.exhibit_number,
+          reason: err instanceof Error ? err.message : 'Image load failed',
+        });
         doc.setFillColor(...LIGHT);
         doc.rect(MARGIN, y, CONTENT_W, 25, 'F');
         doc.setFontSize(8);
         doc.setTextColor(...GRAY);
         doc.text('[Image error]', W / 2, y + 13, { align: 'center' });
         y += 28;
+      }
+    } else if (isPdfItem(item)) {
+      try {
+        const { dataUrl, width: natW, height: natH, numPages } = await pdfFirstPageToJpegDataUrl(item.file);
+        const ratio = natH / natW;
+        let imgW = CONTENT_W;
+        let imgH = imgW * ratio;
+        // Reserve a line for the multi-page indicator when needed.
+        const reserved = numPages > 1 ? 6 : 0;
+        if (imgH > IMG_MAX_H - reserved) {
+          imgH = IMG_MAX_H - reserved;
+          imgW = imgH / ratio;
+        }
+        const imgX = MARGIN + (CONTENT_W - imgW) / 2;
+
+        doc.setDrawColor(200, 205, 215);
+        doc.setLineWidth(0.2);
+        doc.rect(imgX - 0.3, y - 0.3, imgW + 0.6, imgH + 0.6);
+        doc.addImage(dataUrl, 'JPEG', imgX, y, imgW, imgH);
+        y += imgH + 3;
+
+        if (numPages > 1) {
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(...GRAY);
+          doc.text(
+            `Page 1 of ${numPages}. Full ${numPages}-page document available in case file.`,
+            W / 2,
+            y + 2,
+            { align: 'center' },
+          );
+          y += 5;
+        }
+      } catch (err) {
+        imageFailures.push({
+          itemId: item.id,
+          exhibitNumber: item.exhibit_number,
+          reason: 'pdf_render_failed: ' + (err instanceof Error ? err.message : 'unknown'),
+        });
+        doc.setFillColor(...LIGHT);
+        doc.rect(MARGIN, y, CONTENT_W, 20, 'F');
+        doc.setFontSize(8);
+        doc.setTextColor(...GRAY);
+        doc.text(`[PDF could not be rendered: ${item.file.name}]`, W / 2, y + 12, { align: 'center' });
+        y += 24;
       }
     } else {
       doc.setFillColor(...LIGHT);
@@ -523,6 +785,9 @@ function imageToJpegDataUrl(
       canvas.height = Math.round(img.naturalHeight * scale);
       const ctx = canvas.getContext('2d');
       if (!ctx) { if (created) URL.revokeObjectURL(src); reject(new Error('Canvas not available')); return; }
+      // White background so PNG transparency doesn't show black in JPEG.
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
       if (created) URL.revokeObjectURL(src);

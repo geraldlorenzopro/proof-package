@@ -78,14 +78,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate api_key
-    const { data: officeConfig, error: configErr } = await supabase
-      .from("office_config")
+    // Validate api_key (now stored in office_secrets)
+    const { data: officeSecrets, error: configErr } = await supabase
+      .from("office_secrets")
       .select("webhook_api_key")
       .eq("account_id", account_id)
-      .single();
+      .maybeSingle();
 
-    if (configErr || !officeConfig?.webhook_api_key || officeConfig.webhook_api_key !== api_key) {
+    if (configErr || !officeSecrets?.webhook_api_key || officeSecrets.webhook_api_key !== api_key) {
       return new Response(
         JSON.stringify({ error: "Invalid api_key" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }

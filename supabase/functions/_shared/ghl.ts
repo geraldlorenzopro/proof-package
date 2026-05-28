@@ -13,19 +13,28 @@ export async function getGHLConfig(
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const { data } = await supabase
-    .from("office_config")
-    .select("ghl_api_key, ghl_location_id")
-    .eq("account_id", accountId)
-    .single();
+  const [{ data: cfg }, { data: secrets }] = await Promise.all([
+    supabase
+      .from("office_config")
+      .select("ghl_location_id")
+      .eq("account_id", accountId)
+      .maybeSingle(),
+    supabase
+      .from("office_secrets")
+      .select("ghl_api_key")
+      .eq("account_id", accountId)
+      .maybeSingle(),
+  ]);
 
   // Per-account key takes priority
-  if (data?.ghl_api_key && data?.ghl_location_id) {
+  if (secrets?.ghl_api_key && cfg?.ghl_location_id) {
     return {
-      apiKey: data.ghl_api_key,
-      locationId: data.ghl_location_id,
+      apiKey: secrets.ghl_api_key,
+      locationId: cfg.ghl_location_id,
     };
   }
+
+  const data = cfg;
 
   // Fallback to global secret (Mr Visa backward compat)
   const fallbackKey = Deno.env.get("MRVISA_API_KEY");

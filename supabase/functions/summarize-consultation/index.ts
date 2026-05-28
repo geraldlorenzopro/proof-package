@@ -143,6 +143,30 @@ Analiza estas notas y genera el resumen estructurado.`;
 
     // Update consultation with AI results using service role
     const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // Verify the consultation belongs to an account the user is a member of
+    const { data: consult } = await adminClient
+      .from("consultations")
+      .select("account_id")
+      .eq("id", consultation_id)
+      .maybeSingle();
+    if (!consult?.account_id) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: membership } = await adminClient
+      .from("account_members")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("account_id", consult.account_id)
+      .maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     await adminClient.from("consultations").update({
       ai_summary: parsed.summary || null,
       ai_eligibility_assessment: parsed.eligibility || null,
@@ -151,7 +175,8 @@ Analiza estas notas y genera el resumen estructurado.`;
       ai_action_items: parsed.action_items || [],
       ai_strengths: parsed.strengths || [],
       ai_risks: parsed.risks || [],
-    }).eq("id", consultation_id);
+    }).eq("id", consultation_id).eq("account_id", consult.account_id);
+
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

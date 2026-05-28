@@ -1,5 +1,6 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { verifyAccountMembership } from "../_shared/auth-tenant.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -7,6 +8,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { account_id } = await req.json();
     if (!account_id) {
       return new Response(JSON.stringify({ error: "account_id required" }), {
@@ -15,10 +24,32 @@ Deno.serve(async (req) => {
       });
     }
 
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user } } = await supabaseUser.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    const isMember = await verifyAccountMembership(supabase, user.id, account_id);
+    if (!isMember) {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     const { data: office } = await supabase
       .from("office_config")

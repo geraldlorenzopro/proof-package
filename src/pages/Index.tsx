@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useStepHistory } from '@/hooks/useStepHistory';
 import { useNavigate } from 'react-router-dom';
 import { useBackDestination } from '@/hooks/useBackDestination';
@@ -13,7 +13,7 @@ import { t } from '@/lib/i18n';
 import nerLogo from '@/assets/ner-logo.png';
 import {
   FileText, Upload, ClipboardList, Download, Scale, Shield, Clock,
-  ListChecks, AlertTriangle, X, Loader2, ChevronRight, Camera, ArrowLeft
+  ListChecks, AlertTriangle, X, Loader2, ChevronRight, Camera, ArrowLeft, RotateCcw
 } from 'lucide-react';
 import { LangToggle } from '@/components/LangToggle';
 import { trackToolUsage } from '@/lib/trackUsage';
@@ -80,13 +80,98 @@ const STEPS = (lang: Lang) => [
   { id: 4, label: t('step4', lang), icon: Download },
 ];
 
+// ── Auto-save (sessionStorage) ────────────────────────────────────────────────
+const SS_ITEMS = 'evidence-organizer:wip:items';
+const SS_CASE = 'evidence-organizer:wip:caseInfo';
+const SS_STEP = 'evidence-organizer:wip:step';
+
+interface PersistedItem {
+  id: string;
+  type: EvidenceItem['type'];
+  exhibit_number: string;
+  event_date: string;
+  date_is_approximate: boolean;
+  date_precision?: EvidenceItem['date_precision'];
+  caption: string;
+  participants: string;
+  location?: string;
+  platform?: string;
+  demonstrates?: string;
+  notes?: string;
+  formComplete: boolean;
+  fileName: string;
+  fileSize: number;
+}
+
+function serializeItems(items: EvidenceItem[]): PersistedItem[] {
+  return items.map((i) => ({
+    id: i.id,
+    type: i.type,
+    exhibit_number: i.exhibit_number,
+    event_date: i.event_date,
+    date_is_approximate: i.date_is_approximate,
+    date_precision: i.date_precision ?? 'exact',
+    caption: i.caption,
+    participants: i.participants,
+    location: i.location,
+    platform: i.platform,
+    demonstrates: i.demonstrates,
+    notes: i.notes,
+    formComplete: i.formComplete,
+    fileName: i.file?.name ?? '',
+    fileSize: i.file?.size ?? 0,
+  }));
+}
+
+function deserializeItems(persisted: PersistedItem[]): EvidenceItem[] {
+  return persisted.map((p) => ({
+    id: p.id,
+    // Empty File stub — needsReupload triggers the re-attach UX.
+    file: new File([], p.fileName || 'pending'),
+    previewUrl: '',
+    type: p.type,
+    exhibit_number: p.exhibit_number,
+    event_date: p.event_date,
+    date_is_approximate: p.date_is_approximate,
+    date_precision: p.date_precision ?? 'exact',
+    caption: p.caption,
+    location: p.location,
+    participants: p.participants,
+    platform: p.platform,
+    demonstrates: p.demonstrates,
+    notes: p.notes,
+    formComplete: false, // forced incomplete until re-upload
+    needsReupload: true,
+  }));
+}
+
+function readPersisted(): { items: PersistedItem[]; caseInfo: CaseInfo | null; step: number | null } {
+  try {
+    const items = JSON.parse(sessionStorage.getItem(SS_ITEMS) || '[]') as PersistedItem[];
+    const caseInfo = JSON.parse(sessionStorage.getItem(SS_CASE) || 'null') as CaseInfo | null;
+    const step = Number(sessionStorage.getItem(SS_STEP) || '0') || null;
+    return { items: Array.isArray(items) ? items : [], caseInfo, step };
+  } catch {
+    return { items: [], caseInfo: null, step: null };
+  }
+}
+
+function clearPersisted() {
+  try {
+    sessionStorage.removeItem(SS_ITEMS);
+    sessionStorage.removeItem(SS_CASE);
+    sessionStorage.removeItem(SS_STEP);
+  } catch { /* ignore */ }
+}
+
 export default function Index() {
-  useTrackPageView("public.landing");
+  useTrackPageView("tools.evidence");
   const navigate = useNavigate();
   const { destination: backDest, isHub } = useBackDestination();
   const [accepted, setAccepted] = useState(false);
   const [lang, setLang] = useState<Lang>('es');
   const [step, setStepRaw] = useState(1);
+  const [restorePrompt, setRestorePrompt] = useState<{ count: number; step: number } | null>(null);
   const { goNext: stepForward, goBack: stepBackward } = useStepHistory(step - 1, (s) => {
     if (typeof s === 'function') {
       setStepRaw(prev => (s as (p: number) => number)(prev - 1) + 1);
@@ -134,6 +219,63 @@ export default function Index() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [generatedPdf, setGeneratedPdf] = useState<{ blob: Blob; filename: string } | null>(null);
 
+  // ── Detect a previous WIP session on mount and offer restore ────────────────
+  const checkedRestoreRef = useRef(false);
+  useEffect(() => {
+    if (checkedRestoreRef.current) return;
+    checkedRestoreRef.current = true;
+    const { items: persisted, step: persistedStep } = readPersisted();
+    if (persisted.length > 0) {
+      setRestorePrompt({ count: persisted.length, step: persistedStep ?? 3 });
+    }
+  }, []);
+
+  function handleRestore() {
+    const { items: persisted, caseInfo: persistedCase } = readPersisted();
+    if (persisted.length === 0) {
+      setRestorePrompt(null);
+      return;
+    }
+    setItems(deserializeItems(persisted));
+    if (persistedCase) setCaseInfo(persistedCase);
+    // Force re-upload flow → land on step 2 so the user re-attaches files.
+    setStepRaw(2);
+    setRestorePrompt(null);
+  }
+
+  function handleDiscardRestore() {
+    clearPersisted();
+    setRestorePrompt(null);
+  }
+
+  // ── Debounced persistence (500ms) ────────────────────────────────────────────
+  useEffect(() => {
+    if (items.length === 0) return;
+    const t = setTimeout(() => {
+      try {
+        sessionStorage.setItem(SS_ITEMS, JSON.stringify(serializeItems(items)));
+      } catch (err) {
+        console.warn('[evidence] Could not persist items:', err);
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [items]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        sessionStorage.setItem(SS_CASE, JSON.stringify(caseInfo));
+      } catch (err) {
+        console.warn('[evidence] Could not persist caseInfo:', err);
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [caseInfo]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(SS_STEP, String(step)); } catch { /* ignore */ }
+  }, [step]);
+
   const steps = STEPS(lang);
 
   const numberedItems = useMemo(() => {
@@ -145,7 +287,47 @@ export default function Index() {
   }, [items]);
 
   function handleFilesAdded(newItems: EvidenceItem[]) {
-    setItems(prev => [...prev, ...newItems]);
+    setItems(prev => {
+      const orphans = prev.filter(i => i.needsReupload);
+      if (orphans.length === 0) return [...prev, ...newItems];
+
+      const consumed = new Set<string>();
+      const updated = prev.map(i => ({ ...i }));
+      const trulyNew: EvidenceItem[] = [];
+
+      for (const incoming of newItems) {
+        const exact = updated.find(o =>
+          o.needsReupload && !consumed.has(o.id) &&
+          o.file.name === incoming.file.name && o.file.size === incoming.file.size);
+        const nameOnly = !exact
+          ? updated.find(o => o.needsReupload && !consumed.has(o.id) && o.file.name === incoming.file.name)
+          : null;
+        const match = exact || nameOnly;
+        if (match) {
+          consumed.add(match.id);
+          if (nameOnly && !exact) {
+            import('sonner').then(({ toast }) => {
+              toast.warning(
+                lang === 'es'
+                  ? `El tamaño de "${incoming.file.name}" no coincide con el original. Lo asociamos igual; revisalo si no es el mismo archivo.`
+                  : `Size of "${incoming.file.name}" doesn't match the original. We associated it anyway; please review if this isn't the same file.`,
+                { duration: 8000 },
+              );
+            });
+          }
+          const idx = updated.findIndex(u => u.id === match.id);
+          updated[idx] = {
+            ...updated[idx],
+            file: incoming.file,
+            previewUrl: incoming.previewUrl,
+            needsReupload: false,
+          };
+        } else {
+          trulyNew.push(incoming);
+        }
+      }
+      return [...updated, ...trulyNew];
+    });
     setStep(3);
   }
 
@@ -161,18 +343,120 @@ export default function Index() {
     setGenerating(true);
     setShowConfirm(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    trackToolUsage("evidence-organizer", "generate_pdf", { itemCount: numberedItems.length });
+
+    const itemCount = numberedItems.length;
+    const photoCount = numberedItems.filter(i => i.type === 'photo').length;
+    const chatCount = numberedItems.filter(i => i.type === 'chat').length;
+    const otherCount = numberedItems.filter(i => i.type === 'other').length;
+    const startedAt = performance.now();
+
     try {
       const result = await generateEvidencePDF(numberedItems, caseInfo, (status) => setPdfStatus(status));
+      const elapsedMs = Math.round(performance.now() - startedAt);
+      const { translationStatus, failedItemIds, imageFailures, blob } = result;
+
       // Capturar el Blob para que SaveToCaseButton lo suba al bucket case-outputs
       setGeneratedPdf({ blob: result.blob, filename: result.filename });
+
+      // ── Telemetría rica post-generación ────────────────────────────────────
+      trackToolUsage("evidence-organizer", "generate_pdf", {
+        itemCount,
+        photoCount,
+        chatCount,
+        otherCount,
+        translationStatus,
+        itemsWithoutTranslation: failedItemIds.length,
+        imagesFailedToRender: imageFailures.length,
+        pdfSizeKB: Math.round(blob.size / 1024),
+        elapsedMs,
+        hasHEIC: numberedItems.some(i => /\.(heic|heif)$/i.test(i.file?.name || '')),
+        hasPDFEvidence: numberedItems.some(i => i.file?.type === 'application/pdf'),
+        caseHadAccountId: !!(caseInfo as unknown as { account_id?: string }).account_id,
+      });
+
+      if (translationStatus !== 'success' || imageFailures.length > 0) {
+        trackToolUsage("evidence-organizer", "generate_pdf_degraded", {
+          translationStatus,
+          failedItemIds: failedItemIds.slice(0, 20),
+          imageFailureReasons: imageFailures.map(f => f.reason).slice(0, 20),
+        });
+      }
+
+      // ── Cleanup sessionStorage on clean success ────────────────────────────
+      if (translationStatus === 'success' && imageFailures.length === 0) {
+        clearPersisted();
+      }
+
+      // Surface translation failures AFTER the PDF was saved/downloaded.
+      if (translationStatus === 'partial' || translationStatus === 'failed') {
+        const failedExhibits = numberedItems
+          .filter(i => failedItemIds.includes(i.id))
+          .map(i => i.exhibit_number)
+          .join(', ');
+        const count = failedItemIds.length;
+        const { toast } = await import('sonner');
+        if (translationStatus === 'partial') {
+          toast.warning(
+            lang === 'es'
+              ? `Atención: ${count} items no se pudieron traducir al inglés y aparecen en español en el PDF.`
+              : `Warning: ${count} items could not be translated to English and appear in Spanish in the PDF.`,
+            {
+              description: (lang === 'es' ? 'Items afectados: ' : 'Affected items: ') + (failedExhibits || '—') + (lang === 'es' ? '. Recomendamos regenerar.' : '. We recommend regenerating.'),
+              duration: 15000,
+              action: {
+                label: lang === 'es' ? 'Regenerar PDF' : 'Regenerate PDF',
+                onClick: () => handleGeneratePDF(),
+              },
+            },
+          );
+        } else {
+          toast.error(
+            lang === 'es'
+              ? 'La traducción al inglés falló. El PDF está en español y no es apto para USCIS.'
+              : 'English translation failed. The PDF is in Spanish and not suitable for USCIS.',
+            {
+              description: lang === 'es' ? 'Por favor, reintenta.' : 'Please retry.',
+              duration: 20000,
+              action: {
+                label: lang === 'es' ? 'Reintentar' : 'Retry',
+                onClick: () => handleGeneratePDF(),
+              },
+            },
+          );
+        }
+      }
+
+      // Surface image render failures (corrupted/unsupported) as a warning.
+      if (imageFailures.length > 0) {
+        const exNums = imageFailures.map(f => f.exhibitNumber).filter(Boolean).join(', ');
+        const count = imageFailures.length;
+        const { toast } = await import('sonner');
+        toast.warning(
+          lang === 'es'
+            ? `⚠️ ${count} imagen(es) no se pudieron procesar y aparecen como cajas grises en el PDF: ${exNums || '—'}. Revisá que sean JPG o PNG válidos.`
+            : `⚠️ ${count} image(s) could not be processed and appear as gray boxes in the PDF: ${exNums || '—'}. Please ensure they are valid JPG or PNG files.`,
+          { duration: 15000 },
+        );
+      }
+    } catch (err) {
+      trackToolUsage("evidence-organizer", "generate_pdf_failed", {
+        errorMessage: String(err).slice(0, 200),
+        itemCount,
+        stage: 'unknown',
+      });
+      const { toast } = await import('sonner');
+      toast.error(
+        lang === 'es'
+          ? 'No se pudo generar el PDF. Por favor, reintentá.'
+          : 'Could not generate the PDF. Please try again.',
+      );
     } finally {
       setGenerating(false);
       setPdfStatus('');
     }
   }
 
-  const allComplete = numberedItems.length > 0 && numberedItems.every(i => i.formComplete);
+  const allComplete = numberedItems.length > 0 && numberedItems.every(i => i.formComplete && !i.needsReupload);
   const caseComplete = !!(caseInfo.petitioner_name && caseInfo.beneficiary_name);
   const pendingCount = numberedItems.filter(i => !i.formComplete).length;
   const completedCount = numberedItems.filter(i => i.formComplete).length;
@@ -194,8 +478,33 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Restore-session banner (sessionStorage auto-save) */}
+      {restorePrompt && (
+        <div className="bg-accent/10 border-b border-accent/30">
+          <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-start gap-2 flex-1">
+              <RotateCcw className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-foreground">
+                {lang === 'es'
+                  ? `¿Continuar con tu sesión anterior? Tenías ${restorePrompt.count} item${restorePrompt.count !== 1 ? 's' : ''} en progreso.`
+                  : `Resume your previous session? You had ${restorePrompt.count} item${restorePrompt.count !== 1 ? 's' : ''} in progress.`}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="ghost" onClick={handleDiscardRestore}>
+                {lang === 'es' ? 'Empezar de nuevo' : 'Start fresh'}
+              </Button>
+              <Button size="sm" onClick={handleRestore} className="gradient-gold text-accent-foreground">
+                {lang === 'es' ? 'Continuar' : 'Resume'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Case context banner — additive, solo aparece si ?case_id=X presente */}
       <CaseToolBanner toolLabel="Photo Evidence Organizer" />
+
 
       {/* Sticky header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -317,6 +626,22 @@ export default function Index() {
             <div className="space-y-4">
               {numberedItems.map(item => (
                 <div key={item.id} className="relative">
+                  {item.needsReupload && (
+                    <div className="mb-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>
+                        {lang === 'es'
+                          ? `Archivo pendiente de re-subir: ${item.file.name || '(sin nombre)'} — los datos están guardados, solo falta volver a subir el archivo.`
+                          : `File pending re-upload: ${item.file.name || '(no name)'} — your data is preserved, just re-upload the file.`}
+                      </span>
+                      <button
+                        onClick={() => setStep(2)}
+                        className="ml-auto underline font-semibold"
+                      >
+                        {lang === 'es' ? 'Re-subir' : 'Re-upload'}
+                      </button>
+                    </div>
+                  )}
                   <EvidenceForm item={item} onChange={handleItemChange} lang={lang} />
                   <button
                     onClick={() => removeItem(item.id)}
@@ -336,7 +661,7 @@ export default function Index() {
             >
               {allComplete
                 ? t('reviewAndGenerate', lang)
-                : `${lang === 'es' ? 'Completa todas las fotos' : 'Complete all photos'} (${completedCount}/${numberedItems.length})`
+                : `${lang === 'es' ? 'Completa info y fechas' : 'Complete info and dates'} (${completedCount}/${numberedItems.length})`
               }
             </button>
           </div>

@@ -1,5 +1,7 @@
 export type EvidenceType = 'photo' | 'chat' | 'other';
 
+export type DatePrecision = 'exact' | 'month' | 'year';
+
 export interface EvidenceItem {
   id: string;
   file: File;
@@ -7,8 +9,9 @@ export interface EvidenceItem {
   type: EvidenceType;
   exhibit_number: string;
   // Form fields
-  event_date: string; // YYYY-MM-DD, MM-YYYY, or approximate range
+  event_date: string; // YYYY-MM-DD (day defaults to 01 for month/year precision)
   date_is_approximate: boolean;
+  date_precision?: DatePrecision; // defaults to 'exact' for backwards compat
   caption: string;
   location?: string;
   participants: string;
@@ -17,6 +20,9 @@ export interface EvidenceItem {
   notes?: string;
   // Status
   formComplete: boolean;
+  // When restoring a session from sessionStorage we can't bring blobs back —
+  // the user has to re-upload. Metadata is preserved and re-attached by filename.
+  needsReupload?: boolean;
 }
 
 export interface CaseInfo {

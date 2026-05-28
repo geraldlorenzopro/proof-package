@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Upload, FileImage, MessageSquare, FileText, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Upload, FileImage, MessageSquare, FileText, X, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { EvidenceItem, EvidenceType, Lang } from '@/types/evidence';
-import { classifyFile } from '@/lib/evidenceUtils';
+import { classifyFile, validateFileFormat, isHeicFile } from '@/lib/evidenceUtils';
 import { t } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { EVIDENCE_LIMIT_PER_CASE } from '@/lib/imageCompression';
@@ -29,16 +30,7 @@ const TYPE_COLORS = {
 export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUploadZoneProps) {
   const [dragOver, setDragOver] = useState(false);
   const [previewing, setPreviewing] = useState<{ file: File; type: EvidenceType; url: string }[]>([]);
-
-  // Google Drive picker - disabled for now, code preserved for future use
-  // const handleDriveFiles = useCallback((files: File[]) => {
-  //   const newItems = files.map((file) => {
-  //     const type = classifyFile(file);
-  //     return { file, type, url: URL.createObjectURL(file) };
-  //   });
-  //   setPreviewing(prev => [...prev, ...newItems]);
-  // }, []);
-  // const { openPicker, loading: driveLoading } = useGoogleDrivePicker(handleDriveFiles, lang);
+  const [converting, setConverting] = useState(0);
 
   const TYPE_LABELS = {
     photo: t('typePhoto', lang),
@@ -49,14 +41,57 @@ export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUpload
   const remaining = EVIDENCE_LIMIT_PER_CASE - existingCount;
   const atLimit = remaining <= 0;
 
-  const processFiles = (files: FileList | File[]) => {
+  const processFiles = async (files: FileList | File[]) => {
     if (atLimit) return;
     const arr = Array.from(files).slice(0, remaining - previewing.length);
-    const newItems = arr.map((file) => {
-      const type = classifyFile(file);
-      return { file, type, url: URL.createObjectURL(file) };
-    });
-    setPreviewing(prev => [...prev, ...newItems]);
+
+    // 1) Validate format up-front; reject unsupported with toast.
+    const valid: File[] = [];
+    for (const f of arr) {
+      const v = validateFileFormat(f);
+      if (v.ok === false) {
+        const ext = v.ext;
+        toast.error(
+          lang === 'es'
+            ? `Formato no soportado: ${ext}. Usá JPG o PNG.`
+            : `Unsupported format: ${ext}. Please use JPG or PNG.`,
+        );
+        continue;
+      }
+      valid.push(f);
+    }
+
+    // 2) Convert HEIC/HEIF → JPEG client-side.
+    const heicCount = valid.filter(isHeicFile).length;
+    if (heicCount > 0) setConverting((n) => n + heicCount);
+
+    const processed: { file: File; type: EvidenceType; url: string }[] = [];
+    for (const f of valid) {
+      let outFile = f;
+      if (isHeicFile(f)) {
+        try {
+          const heic2any = (await import('heic2any')).default;
+          const result = await heic2any({ blob: f, toType: 'image/jpeg', quality: 0.9 });
+          const blob = Array.isArray(result) ? result[0] : result;
+          const newName = f.name.replace(/\.(heic|heif)$/i, '.jpg');
+          outFile = new File([blob], newName, { type: 'image/jpeg' });
+        } catch (err) {
+          console.error('HEIC conversion failed:', err);
+          toast.error(
+            lang === 'es'
+              ? 'No se pudo convertir esta foto de iPhone. Intenta exportarla como JPG desde tu iPhone.'
+              : 'Could not convert this iPhone photo. Try exporting it as JPG from your iPhone.',
+          );
+          setConverting((n) => Math.max(0, n - 1));
+          continue;
+        }
+        setConverting((n) => Math.max(0, n - 1));
+      }
+      const type = classifyFile(outFile);
+      processed.push({ file: outFile, type, url: URL.createObjectURL(outFile) });
+    }
+
+    if (processed.length > 0) setPreviewing((prev) => [...prev, ...processed]);
   };
 
   const confirmFiles = () => {
@@ -68,6 +103,7 @@ export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUpload
       exhibit_number: '',
       event_date: '',
       date_is_approximate: false,
+      date_precision: 'exact',
       caption: '',
       participants: '',
       source_location: '',
@@ -101,16 +137,22 @@ export function FileUploadZone({ onFilesAdded, existingCount, lang }: FileUpload
         onDrop={e => {
           e.preventDefault();
           setDragOver(false);
-          processFiles(e.dataTransfer.files);
+          void processFiles(e.dataTransfer.files);
         }}
       >
         <input
           type="file"
           multiple
-          accept="image/*,.pdf"
+          accept="image/*,.heic,.heif,.pdf"
           className="hidden"
-          onChange={e => e.target.files && processFiles(e.target.files)}
+          onChange={e => { if (e.target.files) void processFiles(e.target.files); }}
         />
+        {converting > 0 && (
+          <p className="text-xs text-primary flex items-center gap-1 -mt-2">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            {lang === 'es' ? `Convirtiendo ${converting} foto(s) de iPhone…` : `Converting ${converting} iPhone photo(s)…`}
+          </p>
+        )}
         <div className="flex flex-col items-center gap-3 text-center px-6">
           <div className="w-14 h-14 rounded-full gradient-hero flex items-center justify-center shadow-primary">
             <Upload className="w-6 h-6 text-primary-foreground" />

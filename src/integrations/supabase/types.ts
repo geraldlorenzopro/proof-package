@@ -1243,6 +1243,71 @@ export type Database = {
           },
         ]
       }
+      case_secrets: {
+        Row: {
+          account_id: string
+          case_id: string
+          created_at: string
+          nvc_cas_password: string | null
+          nvc_invoice_id: string | null
+          updated_at: string
+          uscis_email: string | null
+          uscis_password: string | null
+          uscis_recovery_codes: string | null
+        }
+        Insert: {
+          account_id: string
+          case_id: string
+          created_at?: string
+          nvc_cas_password?: string | null
+          nvc_invoice_id?: string | null
+          updated_at?: string
+          uscis_email?: string | null
+          uscis_password?: string | null
+          uscis_recovery_codes?: string | null
+        }
+        Update: {
+          account_id?: string
+          case_id?: string
+          created_at?: string
+          nvc_cas_password?: string | null
+          nvc_invoice_id?: string | null
+          updated_at?: string
+          uscis_email?: string | null
+          uscis_password?: string | null
+          uscis_recovery_codes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_secrets_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "case_secrets_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_secrets_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
+          },
+          {
+            foreignKeyName: "case_secrets_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_stage_history: {
         Row: {
           account_id: string
@@ -1648,10 +1713,8 @@ export type Database = {
           last_client_activity_at: string | null
           notes: string | null
           nvc_cas_email: string | null
-          nvc_cas_password: string | null
           nvc_case_number: string | null
           nvc_ds260_code: string | null
-          nvc_invoice_id: string | null
           petitioner_name: string | null
           pipeline_stage: string | null
           priority_date: string | null
@@ -1662,10 +1725,7 @@ export type Database = {
           stage_entered_at: string | null
           status: string
           updated_at: string
-          uscis_email: string | null
-          uscis_password: string | null
           uscis_receipt_numbers: Json | null
-          uscis_recovery_codes: string | null
           uscis_response_deadline: string | null
           visa_category: string | null
           webhook_url: string | null
@@ -1707,10 +1767,8 @@ export type Database = {
           last_client_activity_at?: string | null
           notes?: string | null
           nvc_cas_email?: string | null
-          nvc_cas_password?: string | null
           nvc_case_number?: string | null
           nvc_ds260_code?: string | null
-          nvc_invoice_id?: string | null
           petitioner_name?: string | null
           pipeline_stage?: string | null
           priority_date?: string | null
@@ -1721,10 +1779,7 @@ export type Database = {
           stage_entered_at?: string | null
           status?: string
           updated_at?: string
-          uscis_email?: string | null
-          uscis_password?: string | null
           uscis_receipt_numbers?: Json | null
-          uscis_recovery_codes?: string | null
           uscis_response_deadline?: string | null
           visa_category?: string | null
           webhook_url?: string | null
@@ -1766,10 +1821,8 @@ export type Database = {
           last_client_activity_at?: string | null
           notes?: string | null
           nvc_cas_email?: string | null
-          nvc_cas_password?: string | null
           nvc_case_number?: string | null
           nvc_ds260_code?: string | null
-          nvc_invoice_id?: string | null
           petitioner_name?: string | null
           pipeline_stage?: string | null
           priority_date?: string | null
@@ -1780,10 +1833,7 @@ export type Database = {
           stage_entered_at?: string | null
           status?: string
           updated_at?: string
-          uscis_email?: string | null
-          uscis_password?: string | null
           uscis_receipt_numbers?: Json | null
-          uscis_recovery_codes?: string | null
           uscis_response_deadline?: string | null
           visa_category?: string | null
           webhook_url?: string | null
@@ -3185,6 +3235,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      office_secrets: {
+        Row: {
+          account_id: string
+          created_at: string
+          ghl_api_key: string | null
+          updated_at: string
+          webhook_api_key: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          ghl_api_key?: string | null
+          updated_at?: string
+          webhook_api_key?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          ghl_api_key?: string | null
+          updated_at?: string
+          webhook_api_key?: string | null
+        }
+        Relationships: []
       }
       pipeline_templates: {
         Row: {
