@@ -1710,6 +1710,7 @@ export type Database = {
           interview_date: string | null
           interview_time: string | null
           interview_type: string | null
+          journey_step: string | null
           last_client_activity_at: string | null
           notes: string | null
           nvc_cas_email: string | null
@@ -1724,6 +1725,7 @@ export type Database = {
           rfe_deadline: string | null
           stage_entered_at: string | null
           status: string
+          sub_stage: string | null
           updated_at: string
           uscis_receipt_numbers: Json | null
           uscis_response_deadline: string | null
@@ -1764,6 +1766,7 @@ export type Database = {
           interview_date?: string | null
           interview_time?: string | null
           interview_type?: string | null
+          journey_step?: string | null
           last_client_activity_at?: string | null
           notes?: string | null
           nvc_cas_email?: string | null
@@ -1778,6 +1781,7 @@ export type Database = {
           rfe_deadline?: string | null
           stage_entered_at?: string | null
           status?: string
+          sub_stage?: string | null
           updated_at?: string
           uscis_receipt_numbers?: Json | null
           uscis_response_deadline?: string | null
@@ -1818,6 +1822,7 @@ export type Database = {
           interview_date?: string | null
           interview_time?: string | null
           interview_type?: string | null
+          journey_step?: string | null
           last_client_activity_at?: string | null
           notes?: string | null
           nvc_cas_email?: string | null
@@ -1832,6 +1837,7 @@ export type Database = {
           rfe_deadline?: string | null
           stage_entered_at?: string | null
           status?: string
+          sub_stage?: string | null
           updated_at?: string
           uscis_receipt_numbers?: Json | null
           uscis_response_deadline?: string | null
