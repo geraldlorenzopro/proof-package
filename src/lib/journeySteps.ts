@@ -110,6 +110,12 @@ export const SUB_STAGES_BY_LOCATION: Record<LocationKey, SubStage[]> = {
     { key: "uscis-negada",          icon: "❌", label: "Negada" },
   ],
   nvc: [
+    // Pre-envío (trabajo interno firma)
+    { key: "nvc-cuestionario",      icon: "📝", label: "Esperando cuestionario" },
+    { key: "nvc-docs-cliente",      icon: "📋", label: "Esperando docs cliente" },
+    { key: "nvc-armando",           icon: "🛠️", label: "Armando paquete interno" },
+    { key: "nvc-rev-interna",       icon: "👀", label: "Revisión interna" },
+    // Post-envío (NVC lo tiene)
     { key: "nvc-recibido",          icon: "📥", label: "Caso recibido en NVC" },
     { key: "nvc-aos-payment",       icon: "💳", label: "AOS payment pendiente" },
     { key: "nvc-iv-payment",        icon: "💳", label: "IV payment pendiente" },
@@ -119,28 +125,45 @@ export const SUB_STAGES_BY_LOCATION: Record<LocationKey, SubStage[]> = {
     { key: "nvc-case-complete",     icon: "✅", label: "Case Complete" },
   ],
   consular: [
-    { key: "consular-entrevista",   icon: "🎤", label: "Entrevista programada" },
+    // Pre-envío
+    { key: "consular-cuestionario", icon: "📝", label: "Esperando cuestionario" },
+    { key: "consular-docs-cliente", icon: "📋", label: "Esperando docs cliente" },
+    { key: "consular-armando",      icon: "🛠️", label: "Armando paquete interno" },
+    { key: "consular-rev-interna",  icon: "👀", label: "Revisión interna" },
+    // Post-envío (NVC entregó al consulado)
+    { key: "consular-prep-docs",    icon: "📋", label: "Preparando docs entrevista" },
     { key: "consular-bio",          icon: "🤚", label: "Biometría consular programada" },
     { key: "consular-medico",       icon: "🏥", label: "Examen médico programado" },
-    { key: "consular-prep-docs",    icon: "📋", label: "Preparando docs entrevista" },
+    { key: "consular-entrevista",   icon: "🎤", label: "Entrevista programada" },
     { key: "consular-221g",         icon: "🟡", label: "221(g) admin processing" },
     { key: "consular-aprobada",     icon: "🟢", label: "Visa aprobada" },
-    { key: "consular-issued",       icon: "📦", label: "Visa issued (passport returned)" },
+    { key: "consular-issued",       icon: "📦", label: "Visa issued" },
     { key: "consular-negada",       icon: "❌", label: "Negada (refusal)" },
   ],
   court: [
+    // Pre-audiencia (trabajo interno firma)
+    { key: "court-cuestionario",    icon: "📝", label: "Esperando cuestionario" },
+    { key: "court-docs-cliente",    icon: "📋", label: "Esperando docs cliente" },
+    { key: "court-armando",         icon: "🛠️", label: "Armando paquete interno" },
+    { key: "court-rev-interna",     icon: "👀", label: "Revisión interna" },
+    // Audiencias programadas
     { key: "court-mch",             icon: "📅", label: "Master Calendar programada" },
     { key: "court-individual",      icon: "⚖️", label: "Individual Hearing programada" },
-    { key: "court-decision-pte",    icon: "⏳", label: "Decision pendiente" },
+    { key: "court-decision-pte",    icon: "⏳", label: "Decisión pendiente" },
     { key: "court-bia-appeal",      icon: "📑", label: "Apelación BIA" },
     { key: "court-circuit-appeal",  icon: "📑", label: "Apelación Circuit Court" },
   ],
   ice: [
+    // Pre-acción (trabajo interno firma)
+    { key: "ice-cuestionario",      icon: "📝", label: "Esperando cuestionario" },
+    { key: "ice-docs-cliente",      icon: "📋", label: "Esperando docs cliente" },
+    { key: "ice-armando",           icon: "🛠️", label: "Armando bond memo / paquete" },
+    { key: "ice-rev-interna",       icon: "👀", label: "Revisión interna" },
+    // Detención / removal
     { key: "ice-custodia",          icon: "🔒", label: "En custodia ICE" },
     { key: "ice-bond-hearing",      icon: "⚖️", label: "Bond hearing programado" },
     { key: "ice-atd-release",       icon: "🏠", label: "ATD release" },
     { key: "ice-transfer",          icon: "🚪", label: "Detention transfer" },
-    // Procesos administrativos (no son journey steps — son transacciones)
     { key: "ice-ar11",              icon: "📬", label: "AR-11 cambio de dirección" },
     { key: "ice-checkin",           icon: "📋", label: "ICE check-in programado" },
     { key: "ice-ead-renewal",       icon: "🪪", label: "EAD renewal pendiente" },
@@ -176,10 +199,10 @@ const JOURNEY_TO_SUB_STAGE_KEY: Record<string, Record<JourneyStep, string | null
   },
   nvc: {
     "cliente-nuevo":          null,
-    "esperando-cuestionario": null,
+    "esperando-cuestionario": "nvc-cuestionario",
     "esperando-documentos":   "nvc-civil-docs",
     "preparando-paquete":     "nvc-ds260",
-    "pendiente-revision":     null,
+    "pendiente-revision":     "nvc-rev-interna",
     "enviado":                "nvc-recibido",
     "confirmado":             "nvc-reviewing",
     "en-espera":              "nvc-reviewing",
@@ -190,13 +213,13 @@ const JOURNEY_TO_SUB_STAGE_KEY: Record<string, Record<JourneyStep, string | null
   },
   embajada: {
     "cliente-nuevo":          null,
-    "esperando-cuestionario": null,
-    "esperando-documentos":   "consular-prep-docs",
-    "preparando-paquete":     "consular-prep-docs",
-    "pendiente-revision":     "consular-prep-docs",
-    "enviado":                "consular-entrevista",
-    "confirmado":             "consular-entrevista",
-    "en-espera":              "consular-entrevista",
+    "esperando-cuestionario": "consular-cuestionario",
+    "esperando-documentos":   "consular-docs-cliente",
+    "preparando-paquete":     "consular-armando",
+    "pendiente-revision":     "consular-rev-interna",
+    "enviado":                "consular-prep-docs",
+    "confirmado":             "consular-prep-docs",
+    "en-espera":              "consular-prep-docs",
     "pide-mas-info":          "consular-221g",
     "cita-programada":        "consular-entrevista",
     "aprobado":               "consular-aprobada",
@@ -204,17 +227,45 @@ const JOURNEY_TO_SUB_STAGE_KEY: Record<string, Record<JourneyStep, string | null
   },
   consular: {
     "cliente-nuevo":          null,
-    "esperando-cuestionario": null,
-    "esperando-documentos":   "consular-prep-docs",
-    "preparando-paquete":     "consular-prep-docs",
-    "pendiente-revision":     "consular-prep-docs",
-    "enviado":                "consular-entrevista",
-    "confirmado":             "consular-entrevista",
-    "en-espera":              "consular-entrevista",
+    "esperando-cuestionario": "consular-cuestionario",
+    "esperando-documentos":   "consular-docs-cliente",
+    "preparando-paquete":     "consular-armando",
+    "pendiente-revision":     "consular-rev-interna",
+    "enviado":                "consular-prep-docs",
+    "confirmado":             "consular-prep-docs",
+    "en-espera":              "consular-prep-docs",
     "pide-mas-info":          "consular-221g",
     "cita-programada":        "consular-entrevista",
     "aprobado":               "consular-aprobada",
     "negado":                 "consular-negada",
+  },
+  court: {
+    "cliente-nuevo":          null,
+    "esperando-cuestionario": "court-cuestionario",
+    "esperando-documentos":   "court-docs-cliente",
+    "preparando-paquete":     "court-armando",
+    "pendiente-revision":     "court-rev-interna",
+    "enviado":                "court-mch",
+    "confirmado":             "court-mch",
+    "en-espera":              "court-decision-pte",
+    "pide-mas-info":          "court-decision-pte",
+    "cita-programada":        "court-individual",
+    "aprobado":               null,
+    "negado":                 "court-bia-appeal",
+  },
+  ice: {
+    "cliente-nuevo":          null,
+    "esperando-cuestionario": "ice-cuestionario",
+    "esperando-documentos":   "ice-docs-cliente",
+    "preparando-paquete":     "ice-armando",
+    "pendiente-revision":     "ice-rev-interna",
+    "enviado":                "ice-custodia",
+    "confirmado":             "ice-custodia",
+    "en-espera":              "ice-custodia",
+    "pide-mas-info":          "ice-checkin",
+    "cita-programada":        "ice-bond-hearing",
+    "aprobado":               "ice-atd-release",
+    "negado":                 null,
   },
 };
 
@@ -334,6 +385,12 @@ export function deriveSubStage(c: PipelineCase): SubStage | null {
 
   // NVC
   if (loc === "nvc") {
+    // Pre-envío: el caso aún NO fue enviado a NVC (trabajo interno firma)
+    if (pipeline === "cuestionario-pendiente") return subs.find(s => s.key === "nvc-cuestionario") || null;
+    if (pipeline === "documentos-pendientes") return subs.find(s => s.key === "nvc-docs-cliente") || null;
+    if (pipeline === "preparacion-formularios" || pipeline === "armando-paquete") return subs.find(s => s.key === "nvc-armando") || null;
+    if (pipeline === "revision-attorney" || pipeline === "revision-qa" || pipeline === "listo-firma") return subs.find(s => s.key === "nvc-rev-interna") || null;
+    // Post-envío: NVC tiene el caso
     if (pipeline === "armando-ds260" || tags.some(t => t.includes("ds260"))) return subs.find(s => s.key === "nvc-ds260") || null;
     if (tags.some(t => t.includes("aos-payment"))) return subs.find(s => s.key === "nvc-aos-payment") || null;
     if (tags.some(t => t.includes("iv-payment"))) return subs.find(s => s.key === "nvc-iv-payment") || null;
@@ -345,12 +402,51 @@ export function deriveSubStage(c: PipelineCase): SubStage | null {
 
   // Consular (legacy: process_stage="embajada" mantiene key, label cambia a Consular)
   if (loc === ("embajada" as LocationKey) || loc === "consular") {
+    // Pre-envío: aún no llegó al consulado
+    if (pipeline === "cuestionario-pendiente") return subs.find(s => s.key === "consular-cuestionario") || null;
+    if (pipeline === "documentos-pendientes") return subs.find(s => s.key === "consular-docs-cliente") || null;
+    if (pipeline === "preparacion-formularios" || pipeline === "armando-paquete") return subs.find(s => s.key === "consular-armando") || null;
+    if (pipeline === "revision-attorney" || pipeline === "revision-qa" || pipeline === "listo-firma") return subs.find(s => s.key === "consular-rev-interna") || null;
+    // Post: 221g / cita / médico
     if (pipeline === "221g" || tags.some(t => t.includes("221g"))) return subs.find(s => s.key === "consular-221g") || null;
     if (c.emb_interview_date || c.cas_interview_date) return subs.find(s => s.key === "consular-entrevista") || null;
     if (tags.some(t => t.includes("medico") || t.includes("medical"))) return subs.find(s => s.key === "consular-medico") || null;
     if (tags.some(t => t.includes("bio"))) return subs.find(s => s.key === "consular-bio") || null;
     if (tags.some(t => t.includes("issued"))) return subs.find(s => s.key === "consular-issued") || null;
-    return subs.find(s => s.key === "consular-entrevista") || null;
+    return subs.find(s => s.key === "consular-prep-docs") || null;
+  }
+
+  // Court EOIR
+  if (loc === "court") {
+    // Pre-audiencia: trabajo interno firma
+    if (pipeline === "cuestionario-pendiente") return subs.find(s => s.key === "court-cuestionario") || null;
+    if (pipeline === "documentos-pendientes") return subs.find(s => s.key === "court-docs-cliente") || null;
+    if (pipeline === "preparacion-formularios" || pipeline === "armando-paquete") return subs.find(s => s.key === "court-armando") || null;
+    if (pipeline === "revision-attorney" || pipeline === "revision-qa" || pipeline === "listo-firma") return subs.find(s => s.key === "court-rev-interna") || null;
+    // Audiencias / apelaciones
+    if (pipeline === "master-calendar" || tags.some(t => t.includes("mch") || t.includes("master"))) return subs.find(s => s.key === "court-mch") || null;
+    if (pipeline === "individual-hearing" || tags.some(t => t.includes("individual"))) return subs.find(s => s.key === "court-individual") || null;
+    if (tags.some(t => t.includes("bia"))) return subs.find(s => s.key === "court-bia-appeal") || null;
+    if (tags.some(t => t.includes("circuit"))) return subs.find(s => s.key === "court-circuit-appeal") || null;
+    if (c.interview_date) return subs.find(s => s.key === "court-mch") || null;
+    return subs.find(s => s.key === "court-decision-pte") || null;
+  }
+
+  // ICE / Detención
+  if (loc === "ice") {
+    // Pre-acción
+    if (pipeline === "cuestionario-pendiente") return subs.find(s => s.key === "ice-cuestionario") || null;
+    if (pipeline === "documentos-pendientes") return subs.find(s => s.key === "ice-docs-cliente") || null;
+    if (pipeline === "preparacion-formularios" || pipeline === "armando-paquete") return subs.find(s => s.key === "ice-armando") || null;
+    if (pipeline === "revision-attorney" || pipeline === "revision-qa" || pipeline === "listo-firma") return subs.find(s => s.key === "ice-rev-interna") || null;
+    // Detención / bond / removal
+    if (pipeline === "bond-hearing" || tags.some(t => t.includes("bond"))) return subs.find(s => s.key === "ice-bond-hearing") || null;
+    if (tags.some(t => t.includes("custodia") || t.includes("detention"))) return subs.find(s => s.key === "ice-custodia") || null;
+    if (tags.some(t => t.includes("atd") || t.includes("release"))) return subs.find(s => s.key === "ice-atd-release") || null;
+    if (tags.some(t => t.includes("checkin") || t.includes("check-in"))) return subs.find(s => s.key === "ice-checkin") || null;
+    if (tags.some(t => t.includes("transfer"))) return subs.find(s => s.key === "ice-transfer") || null;
+    if (c.interview_date) return subs.find(s => s.key === "ice-bond-hearing") || null;
+    return subs.find(s => s.key === "ice-custodia") || null;
   }
 
   return null;
