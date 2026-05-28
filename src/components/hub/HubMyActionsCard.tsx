@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { Hand, CheckCircle2 } from "lucide-react";
+import { Hand } from "lucide-react";
 import { useMyActions, ActionKind } from "@/hooks/useMyActions";
-import HubEmptyState from "./HubEmptyState";
 
 interface Props {
   accountId: string;
@@ -31,8 +30,30 @@ export default function HubMyActionsCard({ accountId, userId }: Props) {
     } as Record<number, string>
   )[visible.length] ?? "grid-cols-3";
 
+  // v8.2: cuando empty, colapsamos a 1 fila compacta (no card alto).
+  // Cuando hay data, fila horizontal de buckets h-fixed.
+  if (!loading && visible.length === 0) {
+    return (
+      <section className="rounded-2xl border border-white/8 bg-card/30 backdrop-blur-sm px-3 py-2 shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Hand className="w-3.5 h-3.5 text-cyan-accent/60 shrink-0" />
+            <span className="text-[12px] font-semibold text-foreground/80 font-sora">Mis acciones · 0</span>
+            <span className="text-[10px] text-muted-foreground/60 truncate">· te avisamos cuando lleguen tareas, RFEs o firmas</span>
+          </div>
+          <button
+            onClick={() => navigate("/hub/cases?assigned=me")}
+            className="text-[10px] text-cyan-accent/80 hover:text-cyan-accent font-medium shrink-0"
+          >
+            Ver mis casos →
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="rounded-2xl border border-white/8 bg-card/30 backdrop-blur-sm p-2.5 h-full flex flex-col">
+    <section className="rounded-2xl border border-white/8 bg-card/30 backdrop-blur-sm p-2.5 shrink-0">
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-bold flex items-center gap-1.5 text-foreground font-sora">
           <Hand className="w-3.5 h-3.5 text-cyan-accent" />
@@ -43,23 +64,12 @@ export default function HubMyActionsCard({ accountId, userId }: Props) {
         </button>
       </div>
 
-      {visible.length === 0 ? (
-        loading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-[11px] text-muted-foreground/60 text-center">Cargando…</p>
-          </div>
-        ) : (
-          <HubEmptyState
-            icon={CheckCircle2}
-            tone="emerald"
-            title="Sin acciones pendientes"
-            subtitle="Cuando se te asignen tareas, RFEs o firmas, aparecen acá."
-            cta={{ label: "Ver mis casos", onClick: () => navigate("/hub/cases?assigned=me") }}
-            compact
-          />
-        )
+      {loading ? (
+        <div className="py-2 flex items-center justify-center">
+          <p className="text-[11px] text-muted-foreground/60">Cargando…</p>
+        </div>
       ) : (
-        <div className={`grid ${gridColsClass} gap-1.5 flex-1`}>
+        <div className={`grid ${gridColsClass} gap-1.5`}>
           {visible.map(b => {
             const c = KIND_COLORS[b.kind];
             return (

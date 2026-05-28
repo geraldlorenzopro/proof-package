@@ -48,7 +48,7 @@ export default function HubActivityStream({ accountId }: Props) {
   }
 
   return (
-    <section className="rounded-2xl border border-white/8 bg-card/30 backdrop-blur-sm p-3 flex flex-col min-h-0">
+    <section className="rounded-2xl border border-white/8 bg-card/30 backdrop-blur-sm p-3 flex flex-col min-h-0 h-full">
       {/* Header con filtros inline */}
       <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
         <h4 className="text-[11px] font-bold flex items-center gap-1.5 text-foreground font-sora">

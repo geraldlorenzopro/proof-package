@@ -19,7 +19,8 @@ import HubPipelineWidget from "./HubPipelineWidget";
 import HubMyActionsCard from "./HubMyActionsCard";
 import HubActivityStream from "./HubActivityStream";
 import HubQuickAdd from "./HubQuickAdd";
-import HubPulseRail from "./HubPulseRail";
+import HubPulseTiles from "./HubPulseTiles";
+import HubResourcesRail from "./HubResourcesRail";
 import { useTodayAppointments } from "@/hooks/useTodayAppointments";
 import { useRiskCases } from "@/hooks/useRiskCases";
 import { useMyActions } from "@/hooks/useMyActions";
@@ -636,15 +637,16 @@ function HubDashboardInner({
             )}
           </section>
 
-          {/* ═══ MAIN 2-PANE (Hub v8 2026-05-28) ═══ */}
-          {/* Layout validado por research: Akiflow/Reclaim/Sunsama 2-pane pattern.
-              MAIN scrollable (left) + RIGHT RAIL sticky (right).
-              Fill viewport sin whitespace abajo. */}
-          <section className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-3 flex-1 min-h-0 overflow-hidden">
+          {/* ═══ MAIN 2-PANE Hub v8.2 (2026-05-28 redistribución whitespace) ═══ */}
+          {/* Cambios v8.2: Pipeline + Activity movidos al right rail.
+              Pulse 4 KPIs movido al main horizontal. Mis acciones colapsa
+              a 1 línea si empty. Agenda+Risk min-h-[220px] fijo.
+              Resultado: zero huecos verticales, actividad SIEMPRE visible. */}
+          <section className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3 flex-1 min-h-0 overflow-hidden">
 
-            {/* ─── LEFT PANE (scroll interno, 1fr) ─── */}
-            <div className="flex flex-col gap-2 min-h-0 overflow-y-auto pr-1">
-              {/* Agenda héroe (60%) + Riesgo (40%) */}
+            {/* ─── LEFT PANE (1fr, sin scroll interno) ─── */}
+            <div className="flex flex-col gap-2 min-h-0">
+              {/* Agenda 60% + Riesgo 40% — min-h fijo 220px */}
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 shrink-0">
                 <div className="lg:col-span-3">
                   <HubAgendaWidget accountId={accountId} />
@@ -654,25 +656,30 @@ function HubDashboardInner({
                 </div>
               </div>
 
-              {/* Mis acciones (full width sin Dinero ni Equipo — eliminados Hub v8) */}
+              {/* Mis acciones — fila compacta cuando empty */}
               <HubMyActionsCard accountId={accountId} userId={userId} />
 
-              {/* Pipeline horizontal */}
-              <HubPipelineWidget accountId={accountId} />
+              {/* Pulse 4 KPIs horizontal (movido del rail) */}
+              <HubPulseTiles
+                kpis={{ closedThisWeek, tasksDoneRatio, activeCases, approvalRate30d }}
+              />
 
-              {/* Activity stream cronológico filterable (Hub v8 Fase 3) */}
-              <HubActivityStream accountId={accountId} />
+              {/* Pipeline 6 buckets — termina el main */}
+              <HubPipelineWidget accountId={accountId} />
             </div>
 
-            {/* ─── RIGHT RAIL (sticky, 340px) ─── */}
-            <aside className="hidden lg:flex flex-col gap-2 min-h-0 overflow-y-auto pr-1">
+            {/* ─── RIGHT RAIL (380px, último child Activity absorbe flex-1) ─── */}
+            <aside className="hidden lg:flex flex-col gap-2 min-h-0 overflow-hidden">
               <HubQuickAdd />
-              <HubPulseRail
-                kpis={{ closedThisWeek, tasksDoneRatio, activeCases, approvalRate30d }}
+              <HubResourcesRail
                 primaryResources={PRIMARY_RESOURCES}
                 secondaryResources={SECONDARY_RESOURCES}
                 onOpenResource={setOpeningResource}
               />
+              {/* Activity stream — flex-1 absorbe TODO el resto del viewport */}
+              <div className="flex-1 min-h-0">
+                <HubActivityStream accountId={accountId} />
+              </div>
             </aside>
           </section>
 

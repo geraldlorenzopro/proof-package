@@ -66,7 +66,7 @@ export default function HubAgendaWidget({ accountId }: Props) {
   const extra = Math.max(0, appointments.length - visible.length);
 
   return (
-    <section className="rounded-2xl border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.04] to-card/30 backdrop-blur-sm p-3 h-full flex flex-col">
+    <section className="rounded-2xl border border-cyan-accent/20 bg-gradient-to-br from-ai-blue/[0.04] to-card/30 backdrop-blur-sm p-3 h-full min-h-[220px] flex flex-col">
       <div className="flex items-end justify-between mb-2 gap-2">
         <div>
           <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-accent/80 font-mono font-semibold mb-0.5">
