@@ -23,7 +23,6 @@ import ContactQuickPanel from "@/components/hub/ContactQuickPanel";
 import NewClientModal from "@/components/workspace/NewClientModal";
 import ConvertLeadToCaseModal from "@/components/hub/ConvertLeadToCaseModal";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
-import { useNerAccountId } from "@/hooks/useNerAccountId";
 
 interface LeadProfile {
   id: string;
@@ -122,22 +121,26 @@ export default function HubLeadsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [sortBy, setSortBy] = useState<"recent" | "name_asc" | "name_desc" | "oldest">("recent");
 
-  // Resolver accountId: prefiere impersonation > cache sessionStorage > query account_members.
-  // Bug fix 2026-05-28: entrando directo a /hub/leads sin pasar por /hub
-  // dejaba sessionStorage vacío → accountId null → fetchPage nunca disparaba.
-  // useNerAccountId hace fallback a RPC `user_account_id(auth.uid())`.
-  const impersonateAccountId = (() => {
+  const [accountId, setAccountId] = useState<string | null>(() => {
     try {
       const imp = sessionStorage.getItem("ner_impersonate");
-      if (imp) {
-        const p = JSON.parse(imp);
-        if (new Date(p.expires_at) > new Date()) return p.account_id as string;
-      }
-    } catch {}
-    return null;
-  })();
-  const { accountId: resolvedAccountId } = useNerAccountId();
-  const accountId = impersonateAccountId || resolvedAccountId;
+      if (imp) { const p = JSON.parse(imp); if (new Date(p.expires_at) > new Date()) return p.account_id; }
+      const raw = sessionStorage.getItem("ner_hub_data");
+      return raw ? JSON.parse(raw).account_id : null;
+    } catch { return null; }
+  });
+
+  // Fallback: resolve account_id from auth when sessionStorage is empty (direct URL entry)
+  useEffect(() => {
+    if (accountId) return;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.rpc("user_account_id", { _user_id: user.id });
+      if (data) setAccountId(data as string);
+    })();
+  }, [accountId]);
+
 
   // Reset page when filters change
   useEffect(() => { setCurrentPage(0); }, [search, channelFilter, pageSize, sortBy]);
