@@ -468,5 +468,31 @@ BEGIN
      'Wilson detenido en Krome (FL) tras check-in ICE. Esposa US citizen, 2 hijos US citizens. Bond hearing programado.',
      'alert', 'team', true, now() - interval '5 days');
 
-  RAISE NOTICE 'Seed test fixture OK · 12 profiles · 10 cases · 17 tasks · 14 notes · account_id=% user_id=%', v_account_id, v_user_id;
+  -- ════════════════════════════════════════════════════════
+  -- FORM SUBMISSIONS (3) — para que /hub/forms tenga data
+  -- ════════════════════════════════════════════════════════
+  -- Andrea I-130 borrador (Felix lo arrancó), Patricia I-765 listo p/firma,
+  -- Carla I-765 (concurrent con N-400 — en revisión paralegal).
+
+  INSERT INTO public.form_submissions
+    (account_id, case_id, user_id, form_type, form_version, status,
+     client_name, client_email, form_data, notes, created_at, updated_at)
+  VALUES
+    (v_account_id, v_c3, v_user_id, 'i-130', '04/01/24', 'draft',
+     'Andrea Morales', 'andrea.morales@demo.test',
+     '{"petitioner":{"firstName":"Anthony","lastName":"Pérez","relationship":"spouse"},"beneficiary":{"firstName":"Andrea","middleName":"","lastName":"Morales","dob":"1993-11-04","countryOfBirth":"Honduras"}}'::jsonb,
+     'Felix arrancó draft basado en intake. Falta confirmar matrimonio + uploads cliente.',
+     now() - interval '2 days', now() - interval '6 hours'),
+    (v_account_id, v_c7, v_user_id, 'i-765', '08/21/25', 'completed',
+     'Patricia Reyes', 'patricia.reyes@demo.test',
+     '{"applicant":{"firstName":"Patricia","middleName":"","lastName":"Reyes","aNumber":"A201456789","dob":"1980-09-12","countryOfBirth":"Peru","eligibilityCategory":"c08"},"mailingAddress":{"street":"123 Main St","city":"Miami","state":"FL","zip":"33135"}}'::jsonb,
+     'Form completo. Listo p/firma. Enviado con I-485 packet.',
+     now() - interval '14 days', now() - interval '14 days'),
+    (v_account_id, v_c5, v_user_id, 'i-765', '08/21/25', 'draft',
+     'Carla Jiménez', 'carla.jimenez@demo.test',
+     '{"applicant":{"firstName":"Carla","lastName":"Jiménez","aNumber":"A089123456","countryOfBirth":"Colombia","eligibilityCategory":"c09"}}'::jsonb,
+     'Concurrent con N-400. Revisión paralegal pendiente.',
+     now() - interval '5 days', now() - interval '1 day');
+
+  RAISE NOTICE 'Seed test fixture OK · 12 profiles · 10 cases · 17 tasks · 14 notes · 3 form_submissions · account_id=% user_id=%', v_account_id, v_user_id;
 END $$;
