@@ -203,7 +203,7 @@ export const HUB_SECTIONS: Record<HubSectionKey, HubSectionMeta> = {
     key: "config",
     label: "Config",
     path: "/hub/settings/office",
-    enabled: false,
+    enabled: true,
     order: 9,
     comingSoon: {
       title: "Configuración de la firma",
