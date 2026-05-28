@@ -223,7 +223,7 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-sora">
             <Briefcase className="w-5 h-5 text-cyan-accent" />
-            Convertir lead en caso
+            Crear caso del cliente
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-1">
             <span className="font-semibold text-foreground">{clientName}</span>

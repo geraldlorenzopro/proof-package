@@ -13,7 +13,9 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (clientId: string, clientName: string) => void;
-  /** 'lead' para /hub/leads (default), 'client' para /hub/clients */
+  /** 'lead' = cliente nuevo entrante sin caso todavía (vive en /hub/leads
+   *  conceptualmente "Clientes nuevos" — marketing leads van en GHL).
+   *  'client' = cliente con caso activo (/hub/clients) */
   stage?: "lead" | "client";
   /** Channel default si se invoca desde una pantalla que ya filtra por canal */
   defaultSourceChannel?: string;
@@ -95,7 +97,11 @@ export default function NewClientModal({ open, onOpenChange, onCreated, stage = 
       }
 
       const clientName = `${firstName.trim()} ${lastName.trim()}`;
-      toast.success(`${isLead ? "Lead" : "Cliente"} "${clientName}" creado`);
+      toast.success(`${clientName} agregado`, {
+        description: isLead
+          ? "Cliente nuevo · pendiente armar su caso"
+          : "Cliente activo",
+      });
 
       logAudit({
         action: "client.created",
@@ -129,7 +135,7 @@ export default function NewClientModal({ open, onOpenChange, onCreated, stage = 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-sora">
             <UserPlus className="w-5 h-5 text-cyan-accent" />
-            {isLead ? "Nuevo lead" : "Nuevo cliente"}
+            {isLead ? "Nuevo cliente entrante" : "Nuevo cliente"}
           </DialogTitle>
         </DialogHeader>
 
@@ -236,7 +242,7 @@ export default function NewClientModal({ open, onOpenChange, onCreated, stage = 
           </Button>
           <Button onClick={handleCreate} disabled={loading} className="bg-cyan-accent hover:bg-cyan-accent/90 text-deep-navy gap-2 font-semibold">
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isLead ? "Crear lead" : "Crear cliente"}
+            Agregar cliente
           </Button>
         </DialogFooter>
       </DialogContent>

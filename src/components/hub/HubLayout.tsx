@@ -31,7 +31,7 @@ const NAV_ITEMS: Array<{
   // Estado enabled/disabled vive en src/lib/hubSections.ts (fuente de verdad única).
   // Iconos emoji para coincidir con mockup NER-HUB-INICIO-V6 (3D colored icons).
   { emoji: "🏠", label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", sectionKey: "inicio", demoSupported: true },
-  { emoji: "🔍", label: "Leads", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", sectionKey: "leads", demoSupported: false },
+  { emoji: "✨", label: "Clientes nuevos", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", sectionKey: "leads", demoSupported: false },
   { emoji: "👥", label: "Clientes", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), sectionKey: "clientes", demoSupported: false },
   { emoji: "💬", label: "Consultas", path: "/hub/consultations", match: (p: string) => p === "/hub/consultations", badgeKey: "consultations", sectionKey: "consultas", demoSupported: false },
   { emoji: "📁", label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", sectionKey: "casos", demoSupported: true },

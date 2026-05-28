@@ -303,10 +303,11 @@ export default function HubLeadsPage() {
              </div>
              <div>
                 <div className="flex items-center gap-2">
-                  {/* Header alineado a WIREFRAMES.md §3 L142 (sidebar item "Leads") y §15.1 L824 */}
-                  <h1 className="text-xl font-bold text-foreground">Leads</h1>
+                  {/* "Clientes nuevos" = contratados/ganados que aún no tienen caso
+                      activo. Marketing/leads frio vive en GHL (locked 2026-05-28). */}
+                  <h1 className="text-xl font-bold text-foreground font-sora">Clientes nuevos</h1>
                 </div>
-               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos</p>
+               <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} sin caso activo todavía</p>
              </div>
            </div>
 
@@ -316,7 +317,7 @@ export default function HubLeadsPage() {
                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-accent/10 border border-cyan-accent/30 text-xs font-semibold text-cyan-accent hover:bg-cyan-accent/20 transition-all font-sora"
              >
                <Plus className="w-3.5 h-3.5" />
-               Nuevo lead
+               Nuevo cliente
              </button>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
             <SelectTrigger className="w-[160px] h-9 text-xs bg-muted/50 border-border gap-1.5">
@@ -401,11 +402,11 @@ export default function HubLeadsPage() {
           ) : leads.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <Search className="w-12 h-12 text-muted-foreground/60 mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-1">
-                {search ? "Sin resultados" : "Sin leads nuevos"}
+              <h3 className="text-lg font-semibold text-foreground mb-1 font-sora">
+                {search ? "Sin resultados" : "Aún no hay clientes nuevos"}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {search ? "Intenta con otro término." : "Creá un contacto nuevo para empezar."}
+                {search ? "Intenta con otro término." : "Cuando un cliente nuevo contrate tu firma, aparece acá esperando que le armes su caso."}
               </p>
             </div>
           ) : (
@@ -644,7 +645,7 @@ export default function HubLeadsPage() {
         defaultSourceChannel={channelFilter !== "all" && channelFilter !== "sin-canal" && channelFilter !== "otro" ? channelFilter : undefined}
         onCreated={() => {
           fetchPage();
-          toast.success("Lead agregado a la lista", { duration: 2500 });
+          toast.success("Cliente agregado a la lista", { duration: 2500 });
         }}
       />
 
