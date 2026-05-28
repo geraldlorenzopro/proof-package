@@ -630,10 +630,29 @@ export default function Dashboard() {
                                 <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">{acc.external_crm_id || '—sin vincular—'}</span>
                                 {acc.external_crm_id && (
                                   <button onClick={async () => {
-                                    await navigator.clipboard.writeText(`https://ner.recursosmigratorios.com/hub?cid=${acc.external_crm_id}`);
-                                    setCopiedId(acc.id); setTimeout(() => setCopiedId(null), 2000);
-                                    toast({ title: 'URL copiada' });
-                                  }} className="p-1 rounded hover:bg-secondary transition-colors">
+                                    // Bug fix 2026-05-28: antes copiaba URL sin sig+ts → resolve-hub
+                                    // rechazaba con "Missing params". Ahora invoca generate-test-hub-link
+                                    // que firma HMAC server-side y devuelve link válido (15 min de vida).
+                                    try {
+                                      const { data, error } = await supabase.functions.invoke('generate-test-hub-link', {
+                                        body: {
+                                          cid: acc.external_crm_id,
+                                          base_url: 'https://ner.recursosmigratorios.com',
+                                          expires_in_minutes: 15,
+                                        },
+                                      });
+                                      if (error || !data?.link) throw error || new Error('No link');
+                                      await navigator.clipboard.writeText(data.link);
+                                      setCopiedId(acc.id); setTimeout(() => setCopiedId(null), 2000);
+                                      toast({ title: 'URL firmada copiada · vence en 15 min' });
+                                    } catch (err: any) {
+                                      toast({
+                                        title: 'Error al generar URL',
+                                        description: err?.message || 'Verificá que seas platform_admin',
+                                        variant: 'destructive',
+                                      });
+                                    }
+                                  }} className="p-1 rounded hover:bg-secondary transition-colors" title="Generar URL firmada (HMAC, 15 min)">
                                     {copiedId === acc.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
                                   </button>
                                 )}

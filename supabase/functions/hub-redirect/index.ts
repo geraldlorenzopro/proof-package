@@ -61,7 +61,8 @@ Deno.serve(async (req) => {
 
     // Build redirect URL
     // Use configured app URL when available; otherwise fall back to this project's published URL.
-    const hubBase = (Deno.env.get("APP_URL") || "https://proof-package.lovable.app").replace(/\/$/, "");
+    // Default canonical 2026-05-28 (decisión Mr. Lorenzo): ner.recursosmigratorios.com
+    const hubBase = (Deno.env.get("APP_URL") || "https://ner.recursosmigratorios.com").replace(/\/$/, "");
     const params = new URLSearchParams({
       cid: contactId,
       ts,
