@@ -133,7 +133,7 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
     (async () => {
       const { data, error } = await supabase
         .from("smart_process_templates" as any)
-        .select("id, name, description, icon, color, account_id, forms_included")
+        .select("id, name, description, icon, color, case_type, account_id, forms_included")
         .eq("is_active", true)
         .or(`account_id.is.null,account_id.eq.${lead.account_id}`)
         .order("sort_order", { ascending: true });
