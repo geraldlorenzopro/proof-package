@@ -7,6 +7,8 @@ import type { PipelineColumn, PipelineCase } from "@/hooks/useCasePipeline";
 interface Props {
   columns: PipelineColumn[];
   staffNames?: Record<string, string>;
+  /** Si se pasa, click card abre peek panel. Si no, navega al case-engine. */
+  onCardClick?: (caseId: string) => void;
 }
 
 const ACCENT_HEX: Record<string, string> = {
@@ -24,7 +26,7 @@ function dayTone(days: number): string {
   return "text-muted-foreground/60";
 }
 
-export default function CaseKanban({ columns, staffNames }: Props) {
+export default function CaseKanban({ columns, staffNames, onCardClick }: Props) {
   // Auto-ocultar columnas vacías (Vanessa: "se ven tristes con '—'").
   // Si TODAS están vacías, mostrar el grid completo igual para que no quede en blanco.
   const allEmpty = columns.every(c => c.cases.length === 0);
@@ -57,7 +59,7 @@ export default function CaseKanban({ columns, staffNames }: Props) {
                   </div>
                 ) : (
                   col.cases.map(c => (
-                    <CompactCard key={c.id} c={c} staffNames={staffNames} accent={accent} />
+                    <CompactCard key={c.id} c={c} staffNames={staffNames} accent={accent} onCardClick={onCardClick} />
                   ))
                 )}
               </div>
@@ -70,14 +72,17 @@ export default function CaseKanban({ columns, staffNames }: Props) {
   );
 }
 
-function CompactCard({ c, staffNames, accent }: { c: PipelineCase; staffNames?: Record<string, string>; accent: string }) {
+function CompactCard({ c, staffNames, accent, onCardClick }: { c: PipelineCase; staffNames?: Record<string, string>; accent: string; onCardClick?: (id: string) => void }) {
   const navigate = useNavigate();
   const days = c.days_in_stage || 0;
   const ownerName = c.assigned_to && staffNames ? staffNames[c.assigned_to] : null;
 
   return (
     <button
-      onClick={() => navigate(`/case-engine/${c.id}`)}
+      onClick={() => {
+        if (onCardClick) onCardClick(c.id);
+        else navigate(`/case-engine/${c.id}`);
+      }}
       className="w-full text-left rounded-md border border-border/40 bg-card/80 hover:bg-card hover:border-border transition-colors px-2 py-1.5 group"
     >
       <div className="flex items-start gap-1.5">

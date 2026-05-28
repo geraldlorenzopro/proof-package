@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, LayoutGrid, Table as TableIcon, AlertCircle, FolderPlus, SlidersHorizontal, ArrowUpDown, Users, FolderTree, Eye } from "lucide-react";
@@ -43,6 +43,7 @@ export default function HubCasesPage() {
   const [team, setTeam] = useState<Array<{ user_id: string; full_name: string }>>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [peekCaseId, setPeekCaseId] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { activeView, setActiveView } = useCaseViews();
 
   // Resolver userId logueado (necesario para "Mis casos" / "Pte acción mía")
@@ -54,6 +55,19 @@ export default function HubCasesPage() {
     }
     void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
   }, [demoMode]);
+
+  // ⌘K shortcut → focus search input. Linear/Notion/Pipedrive pattern.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     // Demo mode: inyectar staffNames desde DEMO_CASES (los UUIDs demo no existen en BD)
@@ -188,6 +202,7 @@ export default function HubCasesPage() {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60 pointer-events-none" />
             <Input
+              ref={searchInputRef}
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar por nombre, teléfono, A-number, receipt USCIS/NVC…"
@@ -302,7 +317,11 @@ export default function HubCasesPage() {
             onRowClick={(id) => setPeekCaseId(id)}
           />
         ) : (
-          <CaseKanban columns={filteredColumns} staffNames={staffNames} />
+          <CaseKanban
+            columns={filteredColumns}
+            staffNames={staffNames}
+            onCardClick={(id) => setPeekCaseId(id)}
+          />
         )}
       </div>
 
