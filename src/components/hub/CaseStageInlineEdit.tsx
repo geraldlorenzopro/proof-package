@@ -1,56 +1,50 @@
 /**
- * CaseStageInlineEdit — chip editable del process_stage del caso.
+ * CaseStageInlineEdit — chip editable del JOURNEY STEP del caso.
  *
- * Dropdown popover con las 7 etapas. Click chip → abre dropdown →
- * select stage → optimistic update con rollback si falla.
+ * (Nombre legacy del archivo; semánticamente edita journey_step, no
+ *  process_stage. El process_stage es la ubicación y vive en el group
+ *  header de la tabla.)
  *
- * NOTA: cambiar stage dispara side-effects en producción (GHL sync,
- * notificaciones cliente, deadlines auto). En v1 confiamos en el UPDATE
- * directo; Sprint 2 puede agregar confirmación modal.
+ * Dropdown popover con los 10 journey steps canónicos NER.
+ * Click chip → abre dropdown → select step → optimistic update con
+ * rollback si falla. En demo mode skipea Supabase (caseIds no son UUIDs).
+ *
+ * Portal: el dropdown se renderiza con createPortal a document.body
+ * para evitar clipping del virtualizer (transform:translateY).
  */
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { PIPELINE_COLUMNS } from "@/hooks/useCasePipeline";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
-import type { PipelineCase, PipelineStageKey } from "@/hooks/useCasePipeline";
+import type { PipelineCase } from "@/hooks/useCasePipeline";
+import {
+  JOURNEY_STEPS,
+  getJourneyMeta,
+  deriveJourneyStep,
+  type JourneyStep,
+} from "@/lib/journeySteps";
 
 interface Props {
   c: PipelineCase;
   /** Notifica al parent del cambio optimista para refresh de la tabla. */
-  onStageChange: (newStage: string) => void;
+  onStageChange: (newStep: JourneyStep) => void;
 }
-
-const STAGE_CHIP: Record<string, string> = {
-  uscis:              "bg-ai-blue/15 border-ai-blue/30 text-blue-200",
-  nvc:                "bg-amber-500/15 border-amber-500/30 text-amber-200",
-  embajada:           "bg-orange-500/15 border-orange-500/30 text-orange-200",
-  "admin-processing": "bg-violet-500/15 border-violet-500/30 text-violet-200",
-  aprobado:           "bg-emerald-500/15 border-emerald-500/30 text-emerald-200",
-  negado:             "bg-rose-500/15 border-rose-500/30 text-rose-200",
-  "sin-clasificar":   "bg-amber-500/15 border-amber-500/30 text-amber-200",
-};
 
 export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
   const [open, setOpen] = useState(false);
-  const [currentStage, setCurrentStage] = useState(c.process_stage || "sin-clasificar");
+  const [currentStep, setCurrentStep] = useState<JourneyStep>(deriveJourneyStep(c));
   const [popPos, setPopPos] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const { saving, edit } = useCaseInlineEdit();
 
-  useEffect(() => { setCurrentStage(c.process_stage || "sin-clasificar"); }, [c.process_stage]);
+  useEffect(() => { setCurrentStep(deriveJourneyStep(c)); }, [c]);
 
-  // Cuando abre, calcular posición del trigger para renderizar via Portal.
-  // Necesario porque el virtualizer (CaseTable Lote E) usa transform:translateY
-  // en cada row, lo cual crea contexto de stacking aislado que corta cualquier
-  // position:absolute interno.
   useEffect(() => {
     if (!open) return;
     const rect = triggerRef.current?.getBoundingClientRect();
     if (rect) setPopPos({ top: rect.bottom + 4, left: rect.left });
   }, [open]);
 
-  // Click outside cierra
   useEffect(() => {
     if (!open) return;
     function handle(e: PointerEvent) {
@@ -63,7 +57,6 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
     return () => document.removeEventListener("pointerdown", handle);
   }, [open]);
 
-  // ESC cierra
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
@@ -71,23 +64,23 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const currentMeta = PIPELINE_COLUMNS.find(s => s.key === currentStage);
-  const chipClass = STAGE_CHIP[currentStage] || STAGE_CHIP["sin-clasificar"];
+  const meta = getJourneyMeta(currentStep);
 
-  async function handleSelect(stageKey: string) {
+  async function handleSelect(stepKey: JourneyStep) {
     setOpen(false);
-    if (stageKey === currentStage) return;
-    const old = currentStage;
+    if (stepKey === currentStep) return;
+    const old = currentStep;
+    const newMeta = getJourneyMeta(stepKey);
     await edit({
       caseId: c.id,
-      field: "process_stage",
-      newValue: stageKey,
+      field: "journey_step",
+      newValue: stepKey,
       oldValue: old,
       onOptimistic: (v) => {
-        setCurrentStage(v as PipelineStageKey);
-        onStageChange(v as string);
+        setCurrentStep(v as JourneyStep);
+        onStageChange(v as JourneyStep);
       },
-      successMessage: `Etapa actualizada → ${stageKey}`,
+      successMessage: `Etapa actualizada → ${newMeta.label}`,
     });
   }
 
@@ -98,10 +91,11 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
         disabled={saving}
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border whitespace-nowrap hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait ${chipClass}`}
-        title="Click para cambiar etapa del caso"
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border whitespace-nowrap hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait ${meta.chipClass}`}
+        title={`Click para cambiar etapa · ${meta.description}`}
       >
-        {currentMeta?.icon || "📁"} {currentMeta?.label || currentStage}
+        <span>{meta.icon}</span>
+        <span>{meta.label}</span>
         <span className="text-[8px] ml-0.5 opacity-70">▾</span>
       </button>
 
@@ -109,21 +103,25 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
         <div
           ref={popoverRef}
           style={{ position: "fixed", top: popPos.top, left: popPos.left, zIndex: 9999 }}
-          className="w-[220px] rounded-lg border border-cyan-accent/30 bg-deep-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 p-1"
+          className="w-[280px] rounded-lg border border-cyan-accent/30 bg-deep-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 p-1"
           onClick={(e) => e.stopPropagation()}
         >
-          <p className="text-[9px] uppercase tracking-wider text-slate-500 px-2 py-1.5 font-semibold">Mover a etapa…</p>
-          {PIPELINE_COLUMNS.map(s => {
-            const isActive = s.key === currentStage;
+          <p className="text-[9px] uppercase tracking-wider text-slate-500 px-2 py-1.5 font-semibold">
+            Mover a etapa del journey…
+          </p>
+          {JOURNEY_STEPS.map(s => {
+            const isActive = s.key === currentStep;
             return (
               <button
                 key={s.key}
                 onClick={() => handleSelect(s.key)}
-                className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded text-[11px] transition-colors ${isActive ? "bg-cyan-accent/15 text-cyan-accent" : "text-slate-300 hover:bg-white/[0.04]"}`}
+                className={`w-full text-left flex items-start gap-2 px-2 py-1.5 rounded text-[11px] transition-colors ${isActive ? "bg-cyan-accent/15 text-cyan-accent" : "text-slate-300 hover:bg-white/[0.04]"}`}
               >
-                <span className="text-sm">{s.icon}</span>
-                <span className="font-medium">{s.label}</span>
-                <span className="text-[9px] text-slate-500 ml-auto">{s.description}</span>
+                <span className="text-sm shrink-0">{s.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium">{s.label}</div>
+                  <div className="text-[9px] text-slate-500 truncate">{s.description}</div>
+                </div>
               </button>
             );
           })}
