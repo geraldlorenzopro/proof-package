@@ -108,7 +108,7 @@ export default function HubLeadsPage() {
   const [search, setSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState<ChannelFilterKey>("all");
   const [intakeOpen, setIntakeOpen] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  // syncing state removed: GHL auto-sync disabled.
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
   const [selected, setSelected] = useState<string[]>([]);
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
