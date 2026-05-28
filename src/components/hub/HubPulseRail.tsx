@@ -7,7 +7,8 @@
  * sticky (validado por research: Akiflow/Reclaim/Sunsama pattern).
  */
 import { useNavigate } from "react-router-dom";
-import { Activity, BookOpen, ExternalLink } from "lucide-react";
+import { Activity, BookOpen, ExternalLink, BarChart3 } from "lucide-react";
+import HubEmptyState from "./HubEmptyState";
 
 interface PulseKpis {
   closedThisWeek: number;
@@ -33,6 +34,7 @@ interface Props {
 
 export default function HubPulseRail({ kpis, primaryResources, secondaryResources, onOpenResource }: Props) {
   const navigate = useNavigate();
+  const allZero = kpis.activeCases === 0 && kpis.closedThisWeek === 0 && kpis.tasksDoneRatio === 0 && kpis.approvalRate30d === 0;
 
   return (
     <>
@@ -42,31 +44,41 @@ export default function HubPulseRail({ kpis, primaryResources, secondaryResource
           <Activity className="w-3.5 h-3.5 text-cyan-accent" />
           Pulse
         </h4>
-        <div className="grid grid-cols-2 gap-2">
-          <PulseKpi
-            label="Cerrados sem."
-            value={kpis.closedThisWeek}
-            onClick={() => navigate("/hub/cases?filter=closed")}
+        {allZero ? (
+          <HubEmptyState
+            icon={BarChart3}
+            tone="muted"
+            title="Tus métricas aparecen acá"
+            subtitle="Cuando cierres tu primer caso, vas a ver tasa de aprobación, casos activos y tareas hechas."
+            compact
           />
-          <PulseKpi
-            label="Tareas hechas"
-            value={kpis.tasksDoneRatio}
-            suffix="%"
-          />
-          <PulseKpi
-            label="Casos activos"
-            value={kpis.activeCases}
-            onClick={() => navigate("/hub/cases")}
-          />
-          <PulseKpi
-            label="Aprobación 30d"
-            value={kpis.approvalRate30d}
-            suffix="%"
-            tone="emerald"
-            onClick={() => navigate("/hub/reports")}
-            title="Tasa de aprobación últimos 30 días"
-          />
-        </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <PulseKpi
+              label="Cerrados sem."
+              value={kpis.closedThisWeek}
+              onClick={() => navigate("/hub/cases?filter=closed")}
+            />
+            <PulseKpi
+              label="Tareas hechas"
+              value={kpis.tasksDoneRatio}
+              suffix="%"
+            />
+            <PulseKpi
+              label="Casos activos"
+              value={kpis.activeCases}
+              onClick={() => navigate("/hub/cases")}
+            />
+            <PulseKpi
+              label="Aprobación 30d"
+              value={kpis.approvalRate30d}
+              suffix="%"
+              tone="emerald"
+              onClick={() => navigate("/hub/reports")}
+              title="Tasa de aprobación últimos 30 días"
+            />
+          </div>
+        )}
       </section>
 
       {/* Recursos oficiales */}

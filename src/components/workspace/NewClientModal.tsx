@@ -13,15 +13,36 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (clientId: string, clientName: string) => void;
+  /** 'lead' para /hub/leads (default), 'client' para /hub/clients */
+  stage?: "lead" | "client";
+  /** Channel default si se invoca desde una pantalla que ya filtra por canal */
+  defaultSourceChannel?: string;
 }
 
-export default function NewClientModal({ open, onOpenChange, onCreated }: Props) {
+const SOURCE_CHANNELS = [
+  { value: "whatsapp",  label: "WhatsApp" },
+  { value: "instagram", label: "Instagram" },
+  { value: "facebook",  label: "Facebook" },
+  { value: "referido",  label: "Referido" },
+  { value: "website",   label: "Website" },
+  { value: "llamada",   label: "Llamada" },
+  { value: "walk-in",   label: "Walk-in" },
+  { value: "tiktok",    label: "TikTok" },
+  { value: "anuncio",   label: "Anuncio / Ads" },
+  { value: "youtube",   label: "YouTube" },
+  { value: "otro",      label: "Otro" },
+];
+
+export default function NewClientModal({ open, onOpenChange, onCreated, stage = "client", defaultSourceChannel }: Props) {
   const [loading, setLoading] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [immigrationStatus, setImmigrationStatus] = useState("");
+  const [sourceChannel, setSourceChannel] = useState(defaultSourceChannel || "");
+  const [notes, setNotes] = useState("");
+  const isLead = stage === "lead";
 
   const handleCreate = async () => {
     if (!firstName.trim() || !lastName.trim()) {
@@ -58,7 +79,11 @@ export default function NewClientModal({ open, onOpenChange, onCreated }: Props)
           email: email.trim() || null,
           phone: phone.trim() || null,
           immigration_status: immigrationStatus || null,
-        })
+          contact_stage: stage,
+          source_channel: sourceChannel || null,
+          notes: notes.trim() || null,
+          is_test: false,
+        } as any)
         .select("id")
         .single();
 
@@ -70,7 +95,7 @@ export default function NewClientModal({ open, onOpenChange, onCreated }: Props)
       }
 
       const clientName = `${firstName.trim()} ${lastName.trim()}`;
-      toast.success(`Cliente "${clientName}" creado`);
+      toast.success(`${isLead ? "Lead" : "Cliente"} "${clientName}" creado`);
 
       logAudit({
         action: "client.created",
@@ -78,14 +103,16 @@ export default function NewClientModal({ open, onOpenChange, onCreated }: Props)
         entity_id: data.id,
         entity_label: clientName,
       });
-      
+
       // Reset form
       setFirstName("");
       setLastName("");
       setEmail("");
       setPhone("");
       setImmigrationStatus("");
-      
+      setSourceChannel(defaultSourceChannel || "");
+      setNotes("");
+
       onOpenChange(false);
       onCreated(data.id, clientName);
     } catch (err) {
@@ -100,9 +127,9 @@ export default function NewClientModal({ open, onOpenChange, onCreated }: Props)
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-jarvis" />
-            Nuevo Cliente
+          <DialogTitle className="flex items-center gap-2 font-sora">
+            <UserPlus className="w-5 h-5 text-cyan-accent" />
+            {isLead ? "Nuevo lead" : "Nuevo cliente"}
           </DialogTitle>
         </DialogHeader>
 
@@ -154,8 +181,24 @@ export default function NewClientModal({ open, onOpenChange, onCreated }: Props)
             />
           </div>
 
+          {isLead && (
+            <div className="space-y-2">
+              <Label htmlFor="channel">Canal de origen</Label>
+              <Select value={sourceChannel} onValueChange={setSourceChannel} disabled={loading}>
+                <SelectTrigger id="channel">
+                  <SelectValue placeholder="¿De dónde llegó este lead?" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SOURCE_CHANNELS.map(c => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label htmlFor="status">Estatus Migratorio</Label>
+            <Label htmlFor="status">Estatus migratorio actual</Label>
             <Select value={immigrationStatus} onValueChange={setImmigrationStatus} disabled={loading}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar..." />
@@ -166,22 +209,34 @@ export default function NewClientModal({ open, onOpenChange, onCreated }: Props)
                 <SelectItem value="visa">Visa de No-Inmigrante</SelectItem>
                 <SelectItem value="asylee">Asilado</SelectItem>
                 <SelectItem value="refugee">Refugiado</SelectItem>
-                <SelectItem value="tps">TPS</SelectItem>
                 <SelectItem value="daca">DACA</SelectItem>
                 <SelectItem value="undocumented">Sin estatus</SelectItem>
                 <SelectItem value="other">Otro</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {isLead && (
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notas rápidas</Label>
+              <Input
+                id="notes"
+                placeholder="Qué necesita, comentarios iniciales..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+          )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancelar
           </Button>
-          <Button onClick={handleCreate} disabled={loading} className="bg-jarvis hover:bg-jarvis/90 gap-2">
+          <Button onClick={handleCreate} disabled={loading} className="bg-cyan-accent hover:bg-cyan-accent/90 text-deep-navy gap-2 font-semibold">
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            Crear Cliente
+            {isLead ? "Crear lead" : "Crear cliente"}
           </Button>
         </DialogFooter>
       </DialogContent>

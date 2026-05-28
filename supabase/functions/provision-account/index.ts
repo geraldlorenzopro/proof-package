@@ -221,13 +221,6 @@ Deno.serve(async (req) => {
 
     if (apps && apps.length > 0) {
       const allSlugs = apps.map((a) => a.slug);
-      // Essential: evidence + cspa. Professional: all. Elite/Enterprise: all.
-      const planApps: Record<string, string[]> = {
-        essential: ["evidence", "cspa"],
-        professional: allSlugs,
-        elite: allSlugs,
-        enterprise: allSlugs,
-      };
 
       // Default seat limits per plan (0 = unlimited)
       const defaultSeats: Record<string, number> = {
@@ -237,7 +230,16 @@ Deno.serve(async (req) => {
         enterprise: 0,
       };
 
-      const allowedSlugs = planApps[selectedPlan] || ["evidence", "cspa"];
+      // Slugs canonical en hub_apps seed: 'evidence-tool', 'cspa-calculator',
+      // 'visa-bulletin', 'uscis-analyzer', 'case-engine'. Antes Essential
+      // grants devolvía [] porque hacía match contra 'evidence'/'cspa' literal.
+      const planApps: Record<string, string[]> = {
+        essential: ["evidence-tool", "cspa-calculator"],
+        professional: allSlugs,
+        elite: allSlugs,
+        enterprise: allSlugs,
+      };
+      const allowedSlugs = planApps[selectedPlan] || ["evidence-tool", "cspa-calculator"];
       const seats = defaultSeats[selectedPlan] ?? 1;
       const grantApps = apps.filter((a) => allowedSlugs.includes(a.slug));
 
@@ -272,6 +274,28 @@ Deno.serve(async (req) => {
       console.warn("[provision-account] tracking failed:", eventErr);
     }
 
+    // 6. Generar magic link de recovery para que el owner pueda entrar.
+    // Antes el flow creaba un tempPassword que NO se devolvía ni emailaba →
+    // owners quedaban locked-out. Usar `generateLink({type:'recovery'})`
+    // produce un URL temporal que el caller (NewFirmModal / GHL webhook /
+    // admin UI) puede emailar al owner para set-password real.
+    let recoveryLink: string | null = null;
+    if (!skipAuthCreate) {
+      try {
+        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+          type: "recovery",
+          email,
+        });
+        if (linkError) {
+          console.warn("[provision-account] generateLink failed:", linkError.message);
+        } else {
+          recoveryLink = linkData?.properties?.action_link ?? null;
+        }
+      } catch (linkErr) {
+        console.warn("[provision-account] generateLink threw:", linkErr);
+      }
+    }
+
     // Return credentials
     const result: Record<string, unknown> = {
       success: true,
@@ -279,6 +303,7 @@ Deno.serve(async (req) => {
       user_id: userId,
       email,
       plan: selectedPlan,
+      recovery_link: recoveryLink,
     };
 
     return new Response(

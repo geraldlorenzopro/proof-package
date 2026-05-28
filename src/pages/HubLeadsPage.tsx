@@ -6,7 +6,7 @@ import { normalizeClientName } from "@/lib/caseTypeLabels";
 import {
   Search, UserSearch, Plus,
    Phone, Mail, Calendar, MessageSquare, Clock, Info,
-   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, SortAsc, SortDesc, X, Trash2, CheckSquare, Square
+   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, SortAsc, SortDesc, X, Trash2, CheckSquare, Square, ArrowRightCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ import { es } from "date-fns/locale";
 import HubLayout from "@/components/hub/HubLayout";
 import IntakeWizard from "@/components/intake/IntakeWizard";
 import ContactQuickPanel from "@/components/hub/ContactQuickPanel";
+import NewClientModal from "@/components/workspace/NewClientModal";
+import ConvertLeadToCaseModal from "@/components/hub/ConvertLeadToCaseModal";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 
 interface LeadProfile {
@@ -108,6 +110,8 @@ export default function HubLeadsPage() {
   const [search, setSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState<ChannelFilterKey>("all");
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [convertLead, setConvertLead] = useState<LeadProfile | null>(null);
   // syncing state removed: GHL auto-sync disabled.
   const [prefillData, setPrefillData] = useState<{ name?: string; phone?: string; email?: string; client_profile_id?: string; source_channel?: string }>({});
   const [selected, setSelected] = useState<string[]>([]);
@@ -296,11 +300,11 @@ export default function HubLeadsPage() {
 
            <div className="flex items-center gap-2">
              <button
-               onClick={() => { setPrefillData({}); setIntakeOpen(true); }}
-               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-medium text-amber-400 hover:bg-amber-500/20 transition-all"
+               onClick={() => setQuickAddOpen(true)}
+               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-accent/10 border border-cyan-accent/30 text-xs font-semibold text-cyan-accent hover:bg-cyan-accent/20 transition-all font-sora"
              >
                <Plus className="w-3.5 h-3.5" />
-               Nuevo contacto
+               Nuevo lead
              </button>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
             <SelectTrigger className="w-[160px] h-9 text-xs bg-muted/50 border-border gap-1.5">
@@ -345,7 +349,7 @@ export default function HubLeadsPage() {
               onClick={() => setChannelFilter(f.key)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 channelFilter === f.key
-                  ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                  ? "bg-cyan-accent/15 text-cyan-accent border border-cyan-accent/30"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted border border-transparent"
               }`}
             >
@@ -409,18 +413,18 @@ export default function HubLeadsPage() {
                 return (
                   <div
                     key={lead.id}
-                    className={`group bg-card border rounded-lg px-3 py-2 transition-all hover:border-amber-500/30 hover:bg-card/80 flex flex-col justify-between ${
-                      selected.includes(lead.id) ? "border-amber-500/40 bg-amber-500/5" : "border-border"
+                    className={`group bg-card border rounded-lg px-3 py-2 transition-all hover:border-cyan-accent/30 hover:bg-card/80 flex flex-col justify-between ${
+                      selected.includes(lead.id) ? "border-cyan-accent/40 bg-cyan-accent/5" : "border-border"
                     }`}
                   >
                     {/* Top row: checkbox + avatar + name + consulta icon */}
                     <div className="flex items-center gap-2">
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleSelected(lead.id); }}
-                        className="shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground hover:text-amber-400 transition-colors"
+                        className="shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground hover:text-cyan-accent transition-colors"
                       >
                         {selected.includes(lead.id) ? (
-                          <CheckSquare className="w-4 h-4 text-amber-400" />
+                          <CheckSquare className="w-4 h-4 text-cyan-accent" />
                         ) : (
                           <Square className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                         )}
@@ -429,7 +433,7 @@ export default function HubLeadsPage() {
                         const ini = getInitials(lead);
                         return (
                           <div className={`w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${
-                            ini.isUnknown ? "bg-muted/50 text-muted-foreground" : "bg-gradient-to-br from-amber-500/20 to-orange-500/10 text-amber-400"
+                            ini.isUnknown ? "bg-muted/50 text-muted-foreground" : "bg-gradient-to-br from-cyan-accent/20 to-ai-blue/10 text-cyan-accent"
                           }`}>
                             {ini.text}
                           </div>
@@ -438,7 +442,7 @@ export default function HubLeadsPage() {
                       <div className="flex-1 min-w-0">
                         <button
                           onClick={() => setSelectedContact(lead.id)}
-                          className="font-semibold text-foreground truncate block hover:text-amber-400 transition-colors text-base leading-tight"
+                          className="font-semibold text-foreground truncate block hover:text-cyan-accent transition-colors text-base leading-tight"
                         >
                           {getName(lead)}
                         </button>
@@ -453,13 +457,22 @@ export default function HubLeadsPage() {
                           )}
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); openIntakeForLead(lead); }}
-                        className="shrink-0 w-7 h-7 rounded-md border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 transition-all"
-                        title="Iniciar consulta"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="shrink-0 flex items-center gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConvertLead(lead); }}
+                          className="w-7 h-7 rounded-md border border-cyan-accent/30 flex items-center justify-center text-cyan-accent hover:bg-cyan-accent/15 hover:text-cyan-accent/90 transition-all"
+                          title="Convertir a caso"
+                        >
+                          <ArrowRightCircle className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openIntakeForLead(lead); }}
+                          className="w-7 h-7 rounded-md border border-white/10 flex items-center justify-center text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-all"
+                          title="Iniciar consulta (intake completo)"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Bottom rows: phone + date, then email */}
@@ -565,7 +578,7 @@ export default function HubLeadsPage() {
                         onClick={() => setCurrentPage(pageNum)}
                         className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
                           pageNum === currentPage
-                            ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                            ? "bg-cyan-accent/15 text-cyan-accent border border-cyan-accent/30"
                             : "text-muted-foreground hover:bg-muted"
                         }`}
                       >
@@ -611,6 +624,34 @@ export default function HubLeadsPage() {
           prefillChannel={prefillData.source_channel}
         />
       )}
+
+      <NewClientModal
+        open={quickAddOpen}
+        onOpenChange={setQuickAddOpen}
+        stage="lead"
+        defaultSourceChannel={channelFilter !== "all" && channelFilter !== "sin-canal" && channelFilter !== "otro" ? channelFilter : undefined}
+        onCreated={() => {
+          fetchPage();
+          toast.success("Lead agregado a la lista", { duration: 2500 });
+        }}
+      />
+
+      <ConvertLeadToCaseModal
+        open={!!convertLead}
+        onOpenChange={(o) => { if (!o) setConvertLead(null); }}
+        lead={convertLead ? {
+          id: convertLead.id,
+          first_name: convertLead.first_name,
+          last_name: convertLead.last_name,
+          email: convertLead.email,
+          phone: convertLead.phone,
+          account_id: accountId,
+        } : null}
+        onCreated={() => {
+          fetchPage();
+        }}
+      />
+
 
       <ContactQuickPanel
         contactId={selectedContact}

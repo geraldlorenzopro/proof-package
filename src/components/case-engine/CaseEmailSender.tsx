@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Send, FileText, Bell, PartyPopper, ChevronDown } from "lucide-react";
+import { Mail, Send, FileText, Bell, PartyPopper, ChevronDown, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,6 +21,7 @@ interface Props {
 }
 
 const SEND_OPTIONS = [
+  { template: "questionnaire", label: "Enviar cuestionario al cliente", icon: ClipboardList },
   { template: "welcome", label: "Enviar bienvenida", icon: Send },
   { template: "document_checklist", label: "Enviar lista de documentos", icon: FileText },
   { template: "case_update", label: "Enviar actualización de caso", icon: Mail },
@@ -37,6 +38,12 @@ export default function CaseEmailSender({ caseId, accountId, clientEmail, client
       const portalLink = accessToken
         ? `${window.location.origin}/case-track/${accessToken}`
         : "#";
+      // Cuestionario apunta al upload portal — el cliente sube docs +
+      // ve checklist + agrega info inicial. /upload/{access_token} es
+      // gratuito y siempre existe (auto-gen en INSERT client_cases).
+      const questionnaireLink = accessToken
+        ? `${window.location.origin}/upload/${accessToken}`
+        : portalLink;
 
       const { error } = await supabase.functions.invoke("send-email", {
         body: {
@@ -50,6 +57,7 @@ export default function CaseEmailSender({ caseId, accountId, clientEmail, client
             file_number: fileNumber,
             case_type: caseType,
             portal_link: portalLink,
+            questionnaire_link: questionnaireLink,
           },
         },
       });

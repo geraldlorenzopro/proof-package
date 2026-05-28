@@ -6,6 +6,8 @@ export type PipelineStageKey =
   | "uscis"
   | "nvc"
   | "embajada"
+  | "court"
+  | "ice"
   | "admin-processing"
   | "aprobado"
   | "negado"
@@ -72,6 +74,20 @@ export const PIPELINE_COLUMNS: Array<Omit<PipelineColumn, "cases">> = [
     description: "Biometría · Médico · Entrevista",
     icon: "🏛️",
     accent: "from-orange-500/80 to-orange-600/80",
+  },
+  {
+    key: "court",
+    label: "Corte EOIR",
+    description: "Audiencias · Apelación BIA",
+    icon: "⚖️",
+    accent: "from-red-500/80 to-red-600/80",
+  },
+  {
+    key: "ice",
+    label: "ICE / Detención",
+    description: "Custodia · Removal · Bond",
+    icon: "🚨",
+    accent: "from-rose-700/80 to-rose-800/80",
   },
   {
     key: "admin-processing",

@@ -51,7 +51,8 @@ export default function NewFirmModal({ open, onClose, onCreated }: Props) {
         throw new Error(data?.error || data?.detail || fnErr?.message || "Error al crear firma");
       }
 
-      // Send firm_welcome email (non-blocking)
+      // Send firm_welcome email (non-blocking) — incluye recovery_link
+      // para que el owner pueda set-password y entrar al sistema.
       supabase.functions.invoke("send-email", {
         body: {
           template_type: "firm_welcome",
@@ -61,11 +62,22 @@ export default function NewFirmModal({ open, onClose, onCreated }: Props) {
           variables: {
             attorney_name: form.attorneyName || form.firmName,
             firm_name: form.firmName,
+            recovery_link: data?.recovery_link || null,
           },
         },
       }).catch(() => {});
 
-      toast.success("Firma creada exitosamente");
+      // Safety net: si el email falla por algún motivo, el admin tiene
+      // copy-paste del recovery_link en clipboard.
+      if (data?.recovery_link) {
+        try { await navigator.clipboard.writeText(data.recovery_link); } catch {}
+        toast.success("Firma creada · link de activación copiado al portapapeles", {
+          description: "Si el email no llega, pasale este link manualmente al owner.",
+          duration: 8000,
+        });
+      } else {
+        toast.success("Firma creada exitosamente");
+      }
       setForm({ firmName: "", email: "", plan: "essential", attorneyName: "", phone: "" });
       onCreated();
       onClose();

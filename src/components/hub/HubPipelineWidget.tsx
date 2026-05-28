@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, FolderOpen } from "lucide-react";
 import { usePipelineStats, PipelineBucket } from "@/hooks/usePipelineStats";
+import HubEmptyState from "./HubEmptyState";
 
 interface Props {
   accountId: string;
@@ -46,34 +47,45 @@ export default function HubPipelineWidget({ accountId }: Props) {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-        {stats.map(s => {
-          const fill = maxCount > 0 ? Math.round((s.count / maxCount) * 100) : 0;
-          const color = BUCKET_COLOR[s.bucket];
-          return (
-            <button
-              key={s.bucket}
-              onClick={() => navigate(`/hub/cases?stage=${s.bucket}`)}
-              className="text-left bg-white/[0.02] hover:bg-white/[0.05] border border-white/8 hover:border-white/15 rounded-lg p-2 transition-all"
-            >
-              <div className="flex items-baseline justify-between mb-1.5">
-                <span className={`text-lg font-bold tabular-nums ${BUCKET_TEXT[s.bucket]}`}>
-                  {loading ? "—" : s.count}
-                </span>
-                <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 font-mono">
-                  {s.label}
-                </span>
-              </div>
-              <div className="h-1 rounded-full bg-white/[0.05] overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${fill}%`, backgroundColor: color }}
-                />
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      {!loading && totalActive === 0 ? (
+        <HubEmptyState
+          icon={FolderOpen}
+          tone="cyan"
+          title="Aún no hay casos en el pipeline"
+          subtitle="Cuando crees tu primer caso, aparece acá clasificado por etapa."
+          cta={{ label: "Crear caso desde lead", onClick: () => navigate("/hub/leads") }}
+          compact
+        />
+      ) : (
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {stats.map(s => {
+            const fill = maxCount > 0 ? Math.round((s.count / maxCount) * 100) : 0;
+            const color = BUCKET_COLOR[s.bucket];
+            return (
+              <button
+                key={s.bucket}
+                onClick={() => navigate(`/hub/cases?stage=${s.bucket}`)}
+                className="text-left bg-white/[0.02] hover:bg-white/[0.05] border border-white/8 hover:border-white/15 rounded-lg p-2 transition-all"
+              >
+                <div className="flex items-baseline justify-between mb-1.5">
+                  <span className={`text-lg font-bold tabular-nums ${BUCKET_TEXT[s.bucket]}`}>
+                    {loading ? "—" : s.count}
+                  </span>
+                  <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 font-mono">
+                    {s.label}
+                  </span>
+                </div>
+                <div className="h-1 rounded-full bg-white/[0.05] overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${fill}%`, backgroundColor: color }}
+                  />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { Hand } from "lucide-react";
+import { Hand, CheckCircle2 } from "lucide-react";
 import { useMyActions, ActionKind } from "@/hooks/useMyActions";
+import HubEmptyState from "./HubEmptyState";
 
 interface Props {
   accountId: string;
@@ -43,11 +44,20 @@ export default function HubMyActionsCard({ accountId, userId }: Props) {
       </div>
 
       {visible.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-[11px] text-muted-foreground/60 text-center">
-            {loading ? "Cargando…" : "Sin acciones pendientes asignadas a ti."}
-          </p>
-        </div>
+        loading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-[11px] text-muted-foreground/60 text-center">Cargando…</p>
+          </div>
+        ) : (
+          <HubEmptyState
+            icon={CheckCircle2}
+            tone="emerald"
+            title="Sin acciones pendientes"
+            subtitle="Cuando se te asignen tareas, RFEs o firmas, aparecen acá."
+            cta={{ label: "Ver mis casos", onClick: () => navigate("/hub/cases?assigned=me") }}
+            compact
+          />
+        )
       ) : (
         <div className={`grid ${gridColsClass} gap-1.5 flex-1`}>
           {visible.map(b => {

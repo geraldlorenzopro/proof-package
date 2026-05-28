@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useRiskCases, RiskCase } from "@/hooks/useRiskCases";
 import { useDemoMode } from "@/hooks/useDemoData";
 import { HUB_SECTIONS } from "@/lib/hubSections";
+import HubEmptyState from "./HubEmptyState";
 
 interface Props {
   accountId: string;
@@ -82,10 +83,13 @@ export default function HubRiskWidget({ accountId }: Props) {
           ))}
         </div>
       ) : cases.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <p className="text-xs text-emerald-300/90 font-semibold">🎯 Sin casos en riesgo</p>
-          <p className="text-[10px] text-muted-foreground/60 mt-1">Bien hecho.</p>
-        </div>
+        <HubEmptyState
+          icon={ShieldCheck}
+          tone="emerald"
+          title="Sin casos en riesgo"
+          subtitle="Cuando un caso esté cerca de un deadline o el cliente no responda, te avisamos acá."
+          compact
+        />
       ) : (
         <div className="space-y-1.5 flex-1">
           {cases.map(c => {

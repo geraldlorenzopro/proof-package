@@ -209,18 +209,25 @@ function caseApprovedES(v: any): TemplateResult {
 }
 
 function firmWelcomeES(v: any): TemplateResult {
+  const recoveryBlock = v.recovery_link ? `
+      <div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0 0 8px;font-size:15px;color:#92400e;font-weight:bold">⚡ Acción requerida: configurá tu contraseña</p>
+        <p style="margin:0 0 12px;font-size:13px;color:#78350f">Hacé click en el botón para crear tu contraseña y entrar al sistema. El link expira en 24 horas.</p>
+        ${btn("Configurar mi contraseña", v.recovery_link)}
+      </div>
+  ` : "";
   return {
     subject: `¡Bienvenido/a a NER Immigration AI!`,
     html: baseLayout({ ...v, firm_name: "NER Immigration AI" }, `
       <p style="font-size:16px;color:#334155">Hola ${v.attorney_name || ""},</p>
       <p style="font-size:14px;color:#475569">Tu firma <strong>${v.firm_name || ""}</strong> ya está configurada en NER Immigration AI.</p>
+      ${recoveryBlock}
       <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px;margin:12px 0">
         <p style="margin:0 0 4px;font-size:14px;color:#334155"><strong>Número de firma:</strong> ${v.file_prefix || ""}</p>
         <p style="margin:0;font-size:14px;color:#334155"><strong>Tu primer expediente será:</strong> ${v.file_prefix || "NER"}-2026-0001</p>
       </div>
       <p style="font-size:14px;color:#475569;font-weight:bold">Próximos pasos:</p>
       <ol style="padding-left:20px;color:#475569;font-size:14px"><li>Completa tu Office Setup</li><li>Crea tu primer caso</li><li>Conecta tu GHL para comunicaciones</li></ol>
-      ${btn("Ir al Hub", v.hub_link || "#")}
     `)
   };
 }
