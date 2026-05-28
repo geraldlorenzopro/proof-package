@@ -30,17 +30,20 @@ export default function HubCrisisBar({ accountId }: Props) {
   const navigate = useNavigate();
   const demoMode = useDemoMode();
   const [crisis, setCrisis] = useState<Crisis | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (demoMode) {
       setCrisis(DEMO_CRISIS);
+      setLoaded(true);
       return;
     }
     if (!accountId) {
       setCrisis(null);
+      setLoaded(true);
       return;
     }
-    loadCrisis();
+    loadCrisis().finally(() => setLoaded(true));
   }, [accountId, demoMode]);
 
   async function loadCrisis() {
