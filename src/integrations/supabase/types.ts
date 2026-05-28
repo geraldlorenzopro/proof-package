@@ -3440,6 +3440,54 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_process_templates: {
+        Row: {
+          account_id: string | null
+          case_type: string | null
+          color: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          forms_included: Json
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          case_type?: string | null
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          forms_included?: Json
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          case_type?: string | null
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          forms_included?: Json
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tool_usage_logs: {
         Row: {
           account_id: string | null

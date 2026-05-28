@@ -10,11 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2, Phone, Link2, RefreshCw, Webhook, Copy, Eye, EyeOff, Moon, Sun } from "lucide-react";
+import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2, Phone, Link2, RefreshCw, Webhook, Copy, Eye, EyeOff, Moon, Sun, Sparkles } from "lucide-react";
 import { useTheme } from "next-themes";
 import HubLayout from "@/components/hub/HubLayout";
 import { initializeOfficeConfig, STANDARD_CASE_TYPES, AI_CASE_TYPES, TIMEZONES, US_STATES } from "@/lib/officeSetup";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
+import SmartProcessesPanel from "@/components/hub/settings/SmartProcessesPanel";
 
 interface OfficeConfig {
   id?: string;
@@ -430,6 +431,9 @@ export default function OfficeSettingsPage() {
             <TabsTrigger value="casos" className="data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis text-xs gap-1.5">
               <FolderOpen className="w-3.5 h-3.5" /> Tipos de Caso
             </TabsTrigger>
+            <TabsTrigger value="smart-processes" className="data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis text-xs gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> Smart Processes
+            </TabsTrigger>
             <TabsTrigger value="ghl" className="data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis text-xs gap-1.5">
               <Link2 className="w-3.5 h-3.5" /> GHL
             </TabsTrigger>
@@ -721,6 +725,11 @@ export default function OfficeSettingsPage() {
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          {/* ═══════ TAB: SMART PROCESSES ═══════ */}
+          <TabsContent value="smart-processes" className="mt-4">
+            {accountId && <SmartProcessesPanel accountId={accountId} canEdit={isAdmin} />}
           </TabsContent>
 
           {/* ═══════ TAB 6: GHL ═══════ */}
