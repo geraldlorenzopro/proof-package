@@ -270,7 +270,7 @@ function ColumnHeaderRow() {
     <div className="grid grid-cols-[minmax(240px,2fr)_140px_minmax(180px,1.5fr)_120px_120px_120px_70px] gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
       <div>Cliente</div>
       <div>Tipo de proceso</div>
-      <div>Status · Sub-etapa</div>
+      <div>Status</div>
       <div>Responsable</div>
       <div>Owner</div>
       <div>Próximo paso</div>
@@ -354,20 +354,15 @@ function CaseRow({
         />
       </div>
 
-      {/* Status (journey step editable) + sub-stage chip pequeño debajo */}
+      {/* Status (journey step editable). Sub-stage removido 2026-05-28
+          per Mr. Lorenzo: inconsistencia visual entre rows (algunos tenían
+          sub, otros no). El journey step principal alcanza para la tabla;
+          el detalle del sub vive en case-engine + peek panel. */}
       <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
-        <div className="flex flex-col gap-1">
-          <CaseStageInlineEdit
-            c={c}
-            onStageChange={handleJourneyChange}
-          />
-          {activeSubStage && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 truncate pl-1" title={activeSubStage.label}>
-              <span className="opacity-70">{activeSubStage.icon}</span>
-              <span className="truncate">{activeSubStage.label}</span>
-            </span>
-          )}
-        </div>
+        <CaseStageInlineEdit
+          c={c}
+          onStageChange={handleJourneyChange}
+        />
       </div>
 
       {/* Responsable (ball-in-court) */}
