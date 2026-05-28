@@ -102,7 +102,7 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 const STAGE_COLORS: Record<string, string> = {
-  lead: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  lead: "bg-cyan-accent/10 text-cyan-accent border-cyan-accent/25",
   prospect: "bg-violet-500/10 text-violet-400 border-violet-500/20",
   client: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   inactive: "bg-muted/50 text-muted-foreground border-border",
@@ -693,14 +693,14 @@ export default function ContactQuickPanel({ contactId, open, onClose, onStartInt
 
               {/* Original Lead Message — prominent block */}
               {leadMessage && (
-                <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-3 space-y-1.5 shadow-sm">
+                <div className="rounded-xl border border-cyan-accent/30 bg-gradient-to-br from-cyan-accent/10 to-ai-blue/5 p-3 space-y-1.5 shadow-sm">
                   <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <p className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-accent shrink-0" />
+                    <p className="text-[11px] font-bold text-cyan-accent uppercase tracking-wide font-sora">
                       Mensaje del lead
                     </p>
                     {profile.source_channel && (
-                      <span className="text-[10px] text-amber-400/70 ml-auto">
+                      <span className="text-[10px] text-cyan-accent/70 ml-auto">
                         vía {CHANNEL_LABELS[profile.source_channel] || profile.source_channel}
                       </span>
                     )}
