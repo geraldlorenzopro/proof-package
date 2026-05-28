@@ -654,6 +654,7 @@ export default function CaseEnginePage() {
               accountId={caseData.account_id}
               clientProfileId={(caseData as any).client_profile_id}
               clientName={caseData.client_name}
+              caseTypeKey={(caseData as any).process_type || caseData.case_type}
             />
           )}
 

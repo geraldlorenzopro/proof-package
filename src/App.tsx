@@ -39,7 +39,7 @@ import VawaScreener from "./pages/VawaScreener";
 import VawaChecklistPage from "./pages/VawaChecklistPage";
 import SmartFormsList from "./pages/SmartFormsList";
 import SmartFormPage from "./pages/SmartFormPage";
-import SmartFormsSettings from "./pages/SmartFormsSettings";
+// SmartFormsSettings removed 2026-05-28 — merged into OfficeSettingsPage
 import SmartFormsLayout from "./components/smartforms/SmartFormsLayout";
 import ClientQuestionnaire from "./pages/ClientQuestionnaire";
 import NotFound from "./pages/NotFound";
@@ -96,7 +96,7 @@ import I765Doc05ComboCard from "./pages/packs/i765/Doc05ComboCard";
 import I765Doc06Packet from "./pages/packs/i765/Doc06Packet";
 import I765Doc07Status from "./pages/packs/i765/Doc07Status";
 import { PacksGate } from "./components/questionnaire-packs/shared/PacksGate";
-import HubFormsPage from "./pages/HubFormsPage";
+// HubFormsPage removed 2026-05-28 — dead code (nunca ruteado). SmartFormsList es la lista canonical.
 import HubAgendaPage from "./pages/HubAgendaPage";
 import HubAiPage from "./pages/HubAiPage";
 import HubChatPage from "./pages/HubChatPage";
@@ -168,13 +168,12 @@ const App = () => (
           <Route path="/hub/forms" element={<ProtectedRoute><HubSectionGate sectionKey="forms"><SmartFormsLayout /></HubSectionGate></ProtectedRoute>}>
             <Route index element={<SmartFormsList />} />
             <Route path="new" element={<SmartFormPage />} />
-            <Route path="settings" element={<SmartFormsSettings />} />
             <Route path=":id" element={<SmartFormPage />} />
           </Route>
-          {/* Redirect Ola 4.1.5: /hub/formularios → /hub/forms (corrige error de Ola 4.1) */}
+          {/* Redirect Ola 4.1.5: /hub/formularios → /hub/forms */}
           <Route path="/hub/formularios" element={<Navigate to="/hub/forms" replace />} />
           <Route path="/hub/formularios/new" element={<Navigate to="/hub/forms/new" replace />} />
-          <Route path="/hub/formularios/settings" element={<Navigate to="/hub/forms/settings" replace />} />
+          <Route path="/hub/formularios/settings" element={<Navigate to="/hub/settings/office" replace />} />
           <Route path="/hub/formularios/:id" element={<RedirectWithParams to="/hub/forms" />} />
 
           {/* ═══ /dashboard/* DEPRECATED — redirects (Ola 4.1 + 4.1.5) ═══ */}
@@ -196,7 +195,7 @@ const App = () => (
           <Route path="/dashboard/settings" element={<Navigate to="/hub/settings/office" replace />} />
           <Route path="/dashboard/smart-forms" element={<Navigate to="/hub/forms" replace />} />
           <Route path="/dashboard/smart-forms/new" element={<Navigate to="/hub/forms/new" replace />} />
-          <Route path="/dashboard/smart-forms/settings" element={<Navigate to="/hub/forms/settings" replace />} />
+          <Route path="/dashboard/smart-forms/settings" element={<Navigate to="/hub/settings/office" replace />} />
           <Route path="/dashboard/smart-forms/:id" element={<RedirectWithParams to="/hub/forms" />} />
           {/* Ola 4.1.5 conservador: workspace-demo y tracker → /hub/cases.
               Plano §15.1 L619 dice ELIMINAR workspace-demo "confirmar con Mr. Lorenzo".

@@ -15,6 +15,8 @@ import { es } from "date-fns/locale";
 import { generateI765Pdf } from "@/lib/i765PdfGenerator";
 import { fillI765Pdf } from "@/lib/i765FormFiller";
 import { toast } from "sonner";
+import { getFormsForCaseType } from "@/lib/caseTypeToForms";
+import { getFormMeta } from "@/hooks/useFormsList";
 
 interface FormSubmission {
   id: string;
@@ -25,21 +27,40 @@ interface FormSubmission {
   client_name: string | null;
 }
 
-const AVAILABLE_FORMS = [
-  { type: "i-765", label: "I-765 — Permiso de Trabajo (EAD)", available: true, icon: "📋" },
-  { type: "n-400", label: "N-400 — Naturalización", available: false, icon: "🗽" },
-  { type: "i-485", label: "I-485 — Ajuste de Estatus", available: false, icon: "📄" },
-  { type: "i-131", label: "I-131 — Advance Parole", available: false, icon: "✈️" },
-];
+// Forms LIVE 2026-05-28: solo I-130 e I-765 cerrados con playbook.
+// Los demás son sugeridos pero abren con notice "Próximamente".
+const LIVE_FORMS = new Set(["i-130", "i-765"]);
 
 interface Props {
   caseId: string;
   accountId: string;
   clientProfileId?: string | null;
   clientName?: string;
+  /** case_type key del catálogo caseTypes.ts (e.g. "i130-spouse-ir1") */
+  caseTypeKey?: string | null;
 }
 
-export default function CaseFormsPanel({ caseId, accountId, clientProfileId, clientName }: Props) {
+export default function CaseFormsPanel({ caseId, accountId, clientProfileId, clientName, caseTypeKey }: Props) {
+  // Forms sugeridos basados en case_type — antes era hardcoded 4 forms.
+  // v8.5 (2026-05-28): usa caseTypeToForms mapping (30+ tipos).
+  const suggestions = getFormsForCaseType(caseTypeKey || null);
+  const availableForms = suggestions.length > 0
+    ? suggestions.map(s => {
+        const meta = getFormMeta(s.formType);
+        return {
+          type: s.formType,
+          label: `${meta.code} — ${meta.name}`,
+          available: LIVE_FORMS.has(s.formType),
+          icon: s.primary ? "⭐" : "📋",
+          reason: s.reason,
+        };
+      })
+    : [
+        // Fallback si case_type no está mapeado
+        { type: "i-130", label: "I-130 — Petición Familiar", available: true, icon: "👨‍👩‍👧" },
+        { type: "i-765", label: "I-765 — Permiso de Trabajo (EAD)", available: true, icon: "📋" },
+      ];
+
   const navigate = useNavigate();
   const [forms, setForms] = useState<FormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,7 +156,7 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
               Formularios disponibles
             </p>
             <div className="space-y-2">
-              {AVAILABLE_FORMS.map(f => (
+              {availableForms.map(f => (
                 <div
                   key={f.type}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border ${
@@ -167,6 +188,7 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
           open={showSelector}
           onClose={() => setShowSelector(false)}
           onSelect={handleCreateForm}
+          forms={availableForms}
         />
       </div>
     );
@@ -269,19 +291,30 @@ export default function CaseFormsPanel({ caseId, accountId, clientProfileId, cli
         open={showSelector}
         onClose={() => setShowSelector(false)}
         onSelect={handleCreateForm}
+        forms={availableForms}
       />
     </div>
   );
+}
+
+interface FormOption {
+  type: string;
+  label: string;
+  available: boolean;
+  icon: string;
+  reason?: string;
 }
 
 function FormSelectorModal({
   open,
   onClose,
   onSelect,
+  forms,
 }: {
   open: boolean;
   onClose: () => void;
   onSelect: (type: string) => void;
+  forms: FormOption[];
 }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -296,7 +329,7 @@ function FormSelectorModal({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2 mt-2">
-          {AVAILABLE_FORMS.map(f => (
+          {forms.map(f => (
             <button
               key={f.type}
               disabled={!f.available}
