@@ -1,17 +1,25 @@
 /**
- * usePipelineStats — Hub Inicio v7 Zona 6
+ * usePipelineStats — Hub Inicio Pipeline widget.
  *
- * Cuenta casos activos por etapa del pipeline canónico, para renderizar
- * la barra horizontal "Tu negocio de un vistazo".
+ * Cuenta casos activos por etapa del pipeline canónico, mismo modelo que
+ * /hub/cases Kanban (process_stage post migration 20260528170000).
  *
- * Mapping de pipeline_stage → bucket visible:
- *   intake | consulta | contrato | uscis | rfe | aprobado
+ * BUCKETS canonical alineados con useCasePipeline.ts:
+ *   uscis | nvc | embajada (Consular) | court | ice | aprobado
+ *
+ * Antes (Hub v7): mapeaba pipeline_stage con strings legacy (intake/consulta/
+ * contrato/rfe) que NO matcheaban los pipeline_stage modernos
+ * ('cuestionario-pendiente', 'documentos-pendientes', etc.) → todos caían
+ * en 'intake' default. Inconsistencia detectada en smoke test 2026-05-28.
+ *
+ * Ahora: lee directo de process_stage (canonical post-court+ice) y muestra
+ * el mismo conteo que el Kanban de /hub/cases.
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoMode, DEMO_PULSE } from "./useDemoData";
 
-export type PipelineBucket = "intake" | "consulta" | "contrato" | "uscis" | "rfe" | "aprobado";
+export type PipelineBucket = "uscis" | "nvc" | "embajada" | "court" | "ice" | "aprobado";
 
 export interface PipelineStat {
   bucket: PipelineBucket;
@@ -26,24 +34,25 @@ interface State {
 }
 
 const BUCKETS: { bucket: PipelineBucket; label: string }[] = [
-  { bucket: "intake", label: "INTAKE" },
-  { bucket: "consulta", label: "CONSULTA" },
-  { bucket: "contrato", label: "CONTRATO" },
-  { bucket: "uscis", label: "USCIS" },
-  { bucket: "rfe", label: "RFE" },
+  { bucket: "uscis",    label: "USCIS" },
+  { bucket: "nvc",      label: "NVC" },
+  { bucket: "embajada", label: "CONSULAR" },
+  { bucket: "court",    label: "CORTE" },
+  { bucket: "ice",      label: "ICE" },
   { bucket: "aprobado", label: "APROB. 30D" },
 ];
 
-function classify(stage: string | null): PipelineBucket | null {
-  if (!stage) return "intake";
+function classifyProcessStage(stage: string | null): PipelineBucket | null {
+  if (!stage) return null;
   const s = stage.toLowerCase();
-  if (s.includes("rfe") || s.includes("noid")) return "rfe";
-  if (s.includes("aprob") || s.includes("approved")) return "aprobado";
-  if (s.includes("uscis") || s.includes("nvc") || s.includes("embajada") || s.includes("filed") || s.includes("env")) return "uscis";
-  if (s.includes("contrat") || s.includes("firm") || s.includes("sign")) return "contrato";
-  if (s.includes("consult")) return "consulta";
-  if (s.includes("intake") || s.includes("no-iniciado") || s.includes("lead")) return "intake";
-  return "intake";
+  if (s === "uscis" || s === "admin-processing") return "uscis";
+  if (s === "nvc") return "nvc";
+  if (s === "embajada" || s === "consular") return "embajada";
+  if (s === "court") return "court";
+  if (s === "ice") return "ice";
+  if (s === "aprobado") return "aprobado";
+  // 'negado' y otros no van al pipeline activo
+  return null;
 }
 
 export function usePipelineStats(accountId: string | null): State {
@@ -53,11 +62,11 @@ export function usePipelineStats(accountId: string | null): State {
   useEffect(() => {
     if (demoMode) {
       const demoCounts: Record<PipelineBucket, number> = {
-        intake: DEMO_PULSE.leads_today,
-        consulta: 6,
-        contrato: 11,
         uscis: 98,
-        rfe: 7,
+        nvc: 18,
+        embajada: 12,
+        court: 4,
+        ice: 1,
         aprobado: 14,
       };
       const stats = BUCKETS.map(b => ({ ...b, count: demoCounts[b.bucket] }));
@@ -76,7 +85,7 @@ export function usePipelineStats(accountId: string | null): State {
       const [activeRes, approvedRes] = await Promise.all([
         supabase
           .from("client_cases")
-          .select("pipeline_stage, process_stage, status")
+          .select("process_stage, status")
           .eq("account_id", accountId)
           .not("status", "in", "(completed,archived,cancelled)"),
         supabase
@@ -92,17 +101,16 @@ export function usePipelineStats(accountId: string | null): State {
       const counts = new Map<PipelineBucket, number>(BUCKETS.map(b => [b.bucket, 0]));
       if (!activeRes.error && activeRes.data) {
         for (const row of activeRes.data as any[]) {
-          const b = classify(row.pipeline_stage ?? row.process_stage);
-          // No contamos "aprobado" del set activo — esa columna se llena con 30d
+          const b = classifyProcessStage(row.process_stage);
+          // 'aprobado' se cuenta aparte con ventana 30d
           if (b && b !== "aprobado") counts.set(b, (counts.get(b) ?? 0) + 1);
         }
       }
       counts.set("aprobado", approvedRes.count ?? 0);
 
-      const activeData = activeRes.data ?? [];
-      const totalActive = activeData.filter((r: any) => {
-        const b = classify(r.pipeline_stage ?? r.process_stage);
-        return b !== "aprobado";
+      const totalActive = (activeRes.data ?? []).filter((r: any) => {
+        const b = classifyProcessStage(r.process_stage);
+        return b !== null && b !== "aprobado";
       }).length;
 
       setState({

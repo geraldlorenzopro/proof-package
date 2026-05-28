@@ -8,20 +8,20 @@ interface Props {
 }
 
 const BUCKET_COLOR: Record<PipelineBucket, string> = {
-  intake: "#22D3EE",
-  consulta: "#22D3EE",
-  contrato: "#a855f7",
-  uscis: "#3b82f6",
-  rfe: "#f43f5e",
+  uscis:    "#3b82f6",
+  nvc:      "#f59e0b",
+  embajada: "#f97316",
+  court:    "#ef4444",
+  ice:      "#e11d48",
   aprobado: "#10b981",
 };
 
 const BUCKET_TEXT: Record<PipelineBucket, string> = {
-  intake: "text-cyan-accent",
-  consulta: "text-cyan-accent",
-  contrato: "text-purple-300",
-  uscis: "text-blue-300",
-  rfe: "text-rose-300",
+  uscis:    "text-blue-300",
+  nvc:      "text-amber-300",
+  embajada: "text-orange-300",
+  court:    "text-red-300",
+  ice:      "text-rose-300",
   aprobado: "text-emerald-300",
 };
 

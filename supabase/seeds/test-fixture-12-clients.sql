@@ -169,6 +169,10 @@ BEGIN
   -- CLIENT CASES (10) — #1 y #2 son leads sin caso
   -- ════════════════════════════════════════════════════════
 
+  -- case_tags_array NO debe duplicar pipeline_stage (causa render duplicado
+  -- en CaseEnginePage header). Tags son semánticos extra (urgente, prioritario,
+  -- pago-pendiente, etc.), pipeline_stage es la etapa canónica.
+
   INSERT INTO public.client_cases
     (id, account_id, professional_id, client_profile_id, client_name, client_email,
      case_type, status, process_stage, pipeline_stage, stage_entered_at,
@@ -177,7 +181,7 @@ BEGIN
     (v_c3, v_account_id, v_user_id, v_p3, 'Andrea Morales', 'andrea.morales@demo.test',
      'i130-spouse-ir1', 'in_progress', 'uscis', 'cuestionario-pendiente',
      now() - interval '3 days', now() - interval '3 days',
-     ARRAY['cuestionario-pendiente']::text[], now() - interval '3 days');
+     ARRAY[]::text[], now() - interval '3 days');
 
   INSERT INTO public.client_cases
     (id, account_id, professional_id, client_profile_id, client_name, client_email,
@@ -187,7 +191,7 @@ BEGIN
     (v_c4, v_account_id, v_user_id, v_p4, 'Roberto Pineda', 'roberto.pineda@demo.test',
      'i485-family', 'in_progress', 'uscis', 'documentos-pendientes',
      now() - interval '6 days', now() - interval '2 days',
-     ARRAY['docs-pendiente','espera-cliente']::text[], now() - interval '10 days');
+     ARRAY['espera-cliente']::text[], now() - interval '10 days');
 
   INSERT INTO public.client_cases
     (id, account_id, professional_id, client_profile_id, client_name, client_email,
@@ -197,7 +201,7 @@ BEGIN
     (v_c5, v_account_id, v_user_id, v_p5, 'Carla Jiménez', 'carla.jimenez@demo.test',
      'n400', 'in_progress', 'uscis', 'preparacion-formularios',
      now() - interval '12 days', now() - interval '1 day',
-     ARRAY['preparacion-formularios']::text[], now() - interval '25 days');
+     ARRAY[]::text[], now() - interval '25 days');
 
   INSERT INTO public.client_cases
     (id, account_id, professional_id, client_profile_id, client_name, client_email,
