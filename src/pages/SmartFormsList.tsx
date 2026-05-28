@@ -53,7 +53,7 @@ type FormCatalogItem = {
   fullName: string;
   description: string;
   category: string;
-  status: "available" | "coming_soon" | "beta";
+  status: "available" | "next_week" | "coming_soon" | "beta";
 };
 
 const CATEGORY_ICONS: Record<string, typeof Briefcase> = {
@@ -74,15 +74,15 @@ const FORMS_CATALOG: FormCatalogItem[] = [
   { slug: "i-130a", name: "I-130A", fullName: "Supplemental Information for Spouse Beneficiary", description: "Suplemento para cónyuge beneficiario", category: "Familia", status: "coming_soon" },
   { slug: "i-129f", name: "I-129F", fullName: "Petition for Alien Fiancé(e)", description: "Visa K-1 para prometido(a)", category: "Familia", status: "coming_soon" },
   { slug: "i-751", name: "I-751", fullName: "Petition to Remove Conditions on Residence", description: "Remover condiciones de residencia", category: "Familia", status: "coming_soon" },
-  { slug: "i-485", name: "I-485", fullName: "Application to Register Permanent Residence", description: "Ajuste de estatus", category: "Residencia", status: "coming_soon" },
+  { slug: "i-485", name: "I-485", fullName: "Application to Register Permanent Residence", description: "Ajuste de estatus", category: "Residencia", status: "next_week" },
   { slug: "ar-11", name: "AR-11", fullName: "Alien's Change of Address Card", description: "Cambio de dirección", category: "Residencia", status: "coming_soon" },
   { slug: "i-90", name: "I-90", fullName: "Application to Replace Permanent Resident Card", description: "Renovar / reemplazar Green Card", category: "Renovación", status: "coming_soon" },
-  { slug: "i-131", name: "I-131", fullName: "Application for Travel Document", description: "Advance Parole y documentos de viaje", category: "Viaje", status: "coming_soon" },
-  { slug: "i-864", name: "I-864", fullName: "Affidavit of Support Under Section 213A", description: "Declaración jurada de manutención", category: "Soporte", status: "coming_soon" },
+  { slug: "i-131", name: "I-131", fullName: "Application for Travel Document", description: "Advance Parole y documentos de viaje", category: "Viaje", status: "next_week" },
+  { slug: "i-864", name: "I-864", fullName: "Affidavit of Support Under Section 213A", description: "Declaración jurada de manutención", category: "Soporte", status: "next_week" },
   { slug: "i-864a", name: "I-864A", fullName: "Contract Between Sponsor and Household Member", description: "Contrato co-patrocinador", category: "Soporte", status: "coming_soon" },
   { slug: "i-589", name: "I-589", fullName: "Application for Asylum and for Withholding of Removal", description: "Solicitud de asilo", category: "Asilo / Protección", status: "coming_soon" },
   { slug: "i-821", name: "I-821", fullName: "Application for Temporary Protected Status", description: "Estatus de Protección Temporal (TPS)", category: "Asilo / Protección", status: "coming_soon" },
-  { slug: "n-400", name: "N-400", fullName: "Application for Naturalization", description: "Solicitud de ciudadanía", category: "Ciudadanía", status: "coming_soon" },
+  { slug: "n-400", name: "N-400", fullName: "Application for Naturalization", description: "Solicitud de ciudadanía", category: "Ciudadanía", status: "next_week" },
 ];
 
 const CATEGORIES = [...new Set(FORMS_CATALOG.map(f => f.category))];
@@ -290,6 +290,10 @@ export default function SmartFormsList() {
   // Los disponibles van arriba sin agrupar por categoría — son pocos y queremos foco.
   // Los "próximamente" van debajo en accordion colapsado por categoría.
   const availableForms = filteredCatalog.filter(f => f.status === "available" || f.status === "beta");
+  // v8.6 (2026-05-28): tier "next_week" — los 4 forms más usados después
+  // de I-130/I-765 que llegan próximo sprint (I-485, N-400, I-131, I-864).
+  // Se muestran entre Disponibles ahora y Próximamente.
+  const nextWeekForms = filteredCatalog.filter(f => f.status === "next_week");
   const comingSoonByCategory = CATEGORIES.map(cat => ({
     category: cat,
     forms: filteredCatalog.filter(f => f.category === cat && f.status === "coming_soon"),
@@ -513,6 +517,35 @@ export default function SmartFormsList() {
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* DISPONIBLE LA SEMANA QUE VIENE — los 4 más usados después de I-130/I-765 */}
+              {nextWeekForms.length > 0 && (
+                <div className="border-t border-border/30 pt-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-400">Disponible la semana que viene · {nextWeekForms.length}</span>
+                  </div>
+                  <div className="space-y-1">
+                    {nextWeekForms.map(form => (
+                      <div
+                        key={form.slug}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left bg-amber-500/5 border border-amber-500/15"
+                      >
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 bg-amber-500/15 text-amber-300">
+                          {form.name}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate text-amber-100">{form.fullName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{form.description}</p>
+                        </div>
+                        <span className="text-[9px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap">
+                          PRÓXIMA SEMANA
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
