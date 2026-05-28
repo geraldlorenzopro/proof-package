@@ -14,7 +14,7 @@
  *   - Keyboard: ESC cierra · ↑↓ navega casos (futuro) · ⏎ abre expediente
  */
 import { useEffect } from "react";
-import { X, AlertTriangle, FileText, Zap, Phone, Mail, ExternalLink, Plus } from "lucide-react";
+import { X, AlertTriangle, FileText, Zap, Phone, ExternalLink, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import { useCasePeekData } from "@/hooks/useCasePeekData";
@@ -267,23 +267,8 @@ export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase }: Pro
           )}
         </div>
 
-        {/* Quick actions */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => toast.info("Próximamente", { description: "Camila voice + dialing integrado en Sprint Comms.", duration: 3000 })}
-            className="px-3 py-2 rounded-lg bg-cyan-accent/15 border border-cyan-accent/30 text-cyan-accent text-[11px] font-semibold hover:bg-cyan-accent/25 flex items-center justify-center gap-1.5"
-          >
-            <Phone className="w-3.5 h-3.5" /> Llamar
-          </button>
-          <button
-            type="button"
-            onClick={() => toast.info("Próximamente", { description: "Email via Resend integrado en Sprint Comms.", duration: 3000 })}
-            className="px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-slate-300 text-[11px] font-semibold hover:bg-white/[0.08] flex items-center justify-center gap-1.5"
-          >
-            <Mail className="w-3.5 h-3.5" /> Email
-          </button>
-        </div>
+        {/* Comunicaciones (Llamar / Email) se manejan desde GHL — no las
+            duplicamos acá. Mr. Lorenzo locked 2026-05-28 split GHL/NER. */}
 
         {/* Abrir expediente completo */}
         <button

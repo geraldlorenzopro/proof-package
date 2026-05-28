@@ -269,7 +269,7 @@ function ColumnHeaderRow() {
   return (
     <div className="grid grid-cols-[minmax(240px,2fr)_140px_minmax(180px,1.5fr)_120px_120px_120px_70px] gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
       <div>Cliente</div>
-      <div>Tipo</div>
+      <div>Tipo de proceso</div>
       <div>Status · Sub-etapa</div>
       <div>Responsable</div>
       <div>Owner</div>

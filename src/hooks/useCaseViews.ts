@@ -29,7 +29,7 @@ export interface CaseViewMeta {
 export const CASE_VIEWS: CaseViewMeta[] = [
   { key: "mis-casos",      icon: "⭐", label: "Mis casos",       description: "Casos asignados a mí, activos" },
   { key: "urgentes",       icon: "🔴", label: "Urgentes",         description: "RFE ≤3d, vencidos, sin contacto >10d" },
-  { key: "pte-accion-mia", icon: "📋", label: "Pte. acción mía",  description: "Tareas pendientes asignadas a mí" },
+  { key: "pte-accion-mia", icon: "📋", label: "Mi turno",         description: "Tareas pendientes asignadas a mí" },
   { key: "cerrados-30d",   icon: "✓",  label: "Cerrados 30d",     description: "Aprobados + negados + cancelados últimos 30 días" },
   { key: "todos",          icon: "📂", label: "Todos",            description: "Todos los casos de la firma" },
 ];

@@ -31,13 +31,13 @@ export default function CaseKpiStrip({ accountId, userId }: Props) {
         </div>
       </div>
 
-      {/* Pte. acción mía */}
+      {/* Mi turno */}
       <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.025] px-3.5 py-2.5">
         <div className="font-sora font-bold text-[22px] leading-none tabular-nums text-purple-300">
           {fmt(k.ptePendingMine)}
         </div>
         <div className="text-[10px] uppercase tracking-[0.08em] text-slate-300 mt-1.5">
-          Pte. acción mía
+          Mi turno
         </div>
       </div>
 

@@ -92,11 +92,17 @@ export interface SubStage {
  */
 export const SUB_STAGES_BY_LOCATION: Record<LocationKey, SubStage[]> = {
   uscis: [
+    // Pre-envío (trabajo interno de la firma)
+    { key: "uscis-cuestionario",    icon: "📝", label: "Esperando cuestionario" },
+    { key: "uscis-docs-cliente",    icon: "📋", label: "Esperando docs cliente" },
+    { key: "uscis-armando",         icon: "🛠️", label: "Armando paquete interno" },
+    { key: "uscis-rev-interna",     icon: "👀", label: "Revisión interna" },
+    // Post-envío (USCIS lo tiene)
     { key: "uscis-sometido",        icon: "📤", label: "Sometido a USCIS" },
     { key: "uscis-recibo",          icon: "📬", label: "Recibo USCIS (I-797C)" },
     { key: "uscis-bio-programada",  icon: "🤚", label: "Biometría programada" },
     { key: "uscis-bio-completada",  icon: "🤚", label: "Biometría completada" },
-    { key: "uscis-en-revision",     icon: "⏳", label: "En revisión" },
+    { key: "uscis-en-revision",     icon: "⏳", label: "En revisión USCIS" },
     { key: "uscis-rfe",             icon: "🚨", label: "RFE recibido" },
     { key: "uscis-noid",            icon: "🚨", label: "NOID recibido" },
     { key: "uscis-entrevista-prog", icon: "🎤", label: "Entrevista programada" },
@@ -156,10 +162,10 @@ export function getSubStagesForLocation(loc: LocationKey | string | null | undef
 const JOURNEY_TO_SUB_STAGE_KEY: Record<string, Record<JourneyStep, string | null>> = {
   uscis: {
     "cliente-nuevo":          null,
-    "esperando-cuestionario": null,
-    "esperando-documentos":   null,
-    "preparando-paquete":     null,
-    "pendiente-revision":     null,
+    "esperando-cuestionario": "uscis-cuestionario",
+    "esperando-documentos":   "uscis-docs-cliente",
+    "preparando-paquete":     "uscis-armando",
+    "pendiente-revision":     "uscis-rev-interna",
     "enviado":                "uscis-sometido",
     "confirmado":             "uscis-recibo",
     "en-espera":              "uscis-en-revision",
@@ -307,11 +313,19 @@ export function deriveSubStage(c: PipelineCase): SubStage | null {
 
   // USCIS
   if (loc === "uscis") {
+    // RFE / NOID prioridad alta (independiente del pipeline)
     if (pipeline === "rfe" || tags.some(t => t.includes("rfe"))) return subs.find(s => s.key === "uscis-rfe") || null;
     if (tags.some(t => t.includes("noid"))) return subs.find(s => s.key === "uscis-noid") || null;
     if (c.rfe_deadline) return subs.find(s => s.key === "uscis-rfe") || null;
+    // Pre-envío: el caso aún NO fue enviado a USCIS (trabajo interno firma)
+    if (pipeline === "cuestionario-pendiente") return subs.find(s => s.key === "uscis-cuestionario") || null;
+    if (pipeline === "documentos-pendientes") return subs.find(s => s.key === "uscis-docs-cliente") || null;
+    if (pipeline === "preparacion-formularios" || pipeline === "armando-paquete") return subs.find(s => s.key === "uscis-armando") || null;
+    if (pipeline === "revision-attorney" || pipeline === "revision-qa" || pipeline === "listo-firma") return subs.find(s => s.key === "uscis-rev-interna") || null;
+    // Post-envío: receipts presentes o citas programadas
     if (tags.some(t => t.includes("bio"))) return subs.find(s => s.key === "uscis-bio-programada") || null;
     if (tags.some(t => t.includes("entrevista") || t.includes("interview"))) return subs.find(s => s.key === "uscis-entrevista-prog") || null;
+    if (pipeline === "recibo-uscis") return subs.find(s => s.key === "uscis-recibo") || null;
     const r = c.uscis_receipt_numbers;
     const hasReceipts = r && ((Array.isArray(r) && r.length > 0) || (typeof r === "object" && Object.keys(r).length > 0));
     if (hasReceipts) return subs.find(s => s.key === "uscis-en-revision") || null;
