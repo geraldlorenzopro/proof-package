@@ -431,6 +431,9 @@ export default function OfficeSettingsPage() {
             <TabsTrigger value="casos" className="data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis text-xs gap-1.5">
               <FolderOpen className="w-3.5 h-3.5" /> Tipos de Caso
             </TabsTrigger>
+            <TabsTrigger value="smart-processes" className="data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis text-xs gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> Smart Processes
+            </TabsTrigger>
             <TabsTrigger value="ghl" className="data-[state=active]:bg-jarvis/15 data-[state=active]:text-jarvis text-xs gap-1.5">
               <Link2 className="w-3.5 h-3.5" /> GHL
             </TabsTrigger>
