@@ -68,8 +68,8 @@ export const PIPELINE_COLUMNS: Array<Omit<PipelineColumn, "cases">> = [
   },
   {
     key: "embajada",
-    label: "Embajada",
-    description: "Entrevista consular",
+    label: "Consular",
+    description: "Biometría · Médico · Entrevista",
     icon: "🏛️",
     accent: "from-orange-500/80 to-orange-600/80",
   },

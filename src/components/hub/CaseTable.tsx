@@ -22,10 +22,18 @@ import { useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
+import { deriveJourneyStep, deriveSubStage, getJourneyMeta } from "@/lib/journeySteps";
 import type { PipelineColumn, PipelineCase } from "@/hooks/useCasePipeline";
 import CaseAlertsCell from "./CaseAlertsCell";
 import CaseStageInlineEdit from "./CaseStageInlineEdit";
 import CaseOwnerInlineEdit from "./CaseOwnerInlineEdit";
+
+const RESPONSIBLE_META: Record<string, { icon: string; label: string; chipClass: string }> = {
+  cliente:      { icon: "🙋", label: "Cliente",     chipClass: "bg-orange-500/15 border-orange-500/30 text-orange-200" },
+  equipo:       { icon: "👥", label: "Equipo",      chipClass: "bg-cyan-accent/15 border-cyan-accent/30 text-cyan-200" },
+  profesional:  { icon: "👨‍⚖️", label: "Profesional", chipClass: "bg-purple-500/15 border-purple-500/30 text-purple-200" },
+  gobierno:     { icon: "🏛️", label: "Gobierno",    chipClass: "bg-slate-500/15 border-slate-500/30 text-slate-200" },
+};
 
 interface TeamMember {
   user_id: string;
@@ -50,7 +58,7 @@ interface Props {
 const STAGE_META: Record<string, { emoji: string; accentClass: string; chipClass: string; subtitle?: string }> = {
   uscis:                { emoji: "🏛️", accentClass: "from-ai-blue/15",      chipClass: "bg-ai-blue/15 border-ai-blue/30 text-blue-200",         subtitle: "Petición en proceso" },
   nvc:                  { emoji: "📋", accentClass: "from-amber-500/10",    chipClass: "bg-amber-500/15 border-amber-500/30 text-amber-200",   subtitle: "Visa Center" },
-  embajada:             { emoji: "🏛️", accentClass: "from-orange-500/10",   chipClass: "bg-orange-500/15 border-orange-500/30 text-orange-200",subtitle: "Entrevista consular" },
+  embajada:             { emoji: "🏛️", accentClass: "from-orange-500/10",   chipClass: "bg-orange-500/15 border-orange-500/30 text-orange-200",subtitle: "Biometría · Médico · Entrevista" },
   aprobado:             { emoji: "✅", accentClass: "from-emerald-500/10",  chipClass: "bg-emerald-500/15 border-emerald-500/30 text-emerald-200",subtitle: "Decisión positiva últimos 30d" },
   negado:               { emoji: "❌", accentClass: "from-rose-500/8",      chipClass: "bg-rose-500/15 border-rose-500/30 text-rose-200",      subtitle: "Decisión negativa últimos 30d" },
   "admin-processing":   { emoji: "⏸️", accentClass: "from-violet-500/8",    chipClass: "bg-violet-500/15 border-violet-500/30 text-violet-200",subtitle: "221(g) / FBI namecheck" },
@@ -259,12 +267,13 @@ function GroupHeader({
 
 function ColumnHeaderRow() {
   return (
-    <div className="grid grid-cols-[minmax(220px,2fr)_140px_140px_100px_120px_60px] gap-3 px-4 py-2 text-[9px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
+    <div className="grid grid-cols-[minmax(220px,2fr)_120px_minmax(160px,1.4fr)_100px_110px_110px_60px] gap-3 px-4 py-2 text-[9px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
       <div>Cliente</div>
       <div>Tipo</div>
-      <div>Status</div>
+      <div>Status · Sub-etapa</div>
+      <div>Responsable</div>
       <div>Owner</div>
-      <div>Próximo</div>
+      <div>Próximo paso</div>
       <div className="text-center">Alertas</div>
     </div>
   );
@@ -286,6 +295,10 @@ function CaseRow({
   const taskCount = c.overdue_tasks_count ?? c.open_tasks_count ?? 0;
   const taskOverdue = (c.overdue_tasks_count ?? 0) > 0;
   const clientGradient = ownerGradient(c.id);
+  // Modelo C+: journey step (locked AI) + sub-stage por ubicación
+  const journeyMeta = getJourneyMeta(deriveJourneyStep(c));
+  const subStage = deriveSubStage(c);
+  const responsibleMeta = RESPONSIBLE_META[journeyMeta.responsible] || RESPONSIBLE_META.equipo;
 
   return (
     <div
@@ -293,7 +306,7 @@ function CaseRow({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className={`${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(220px,2fr)_140px_140px_100px_120px_60px] gap-3 px-4 h-12 items-center text-[12px] border-t border-white/[0.03] transition-colors text-left cursor-pointer`}
+      className={`${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(220px,2fr)_120px_minmax(160px,1.4fr)_100px_110px_110px_60px] gap-3 px-4 h-12 items-center text-[12px] border-t border-white/[0.03] transition-colors text-left cursor-pointer`}
     >
       {/* Cliente + badge tareas */}
       <div className="flex items-center gap-2.5 min-w-0">
@@ -319,12 +332,31 @@ function CaseRow({
         </span>
       </div>
 
-      {/* Status / Stage editable inline */}
-      <div onClick={(e) => e.stopPropagation()}>
-        <CaseStageInlineEdit
-          c={c}
-          onStageChange={(newStage) => onCaseChange?.(c.id, { process_stage: newStage } as Partial<PipelineCase>)}
-        />
+      {/* Status (journey step editable) + sub-stage chip pequeño debajo */}
+      <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-col gap-0.5">
+          <CaseStageInlineEdit
+            c={c}
+            onStageChange={(newStage) => onCaseChange?.(c.id, { process_stage: newStage } as Partial<PipelineCase>)}
+          />
+          {subStage && (
+            <span className="inline-flex items-center gap-1 text-[9px] text-slate-400 truncate pl-1" title={subStage.label}>
+              <span className="opacity-70">{subStage.icon}</span>
+              <span className="truncate">{subStage.label}</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Responsable (ball-in-court) */}
+      <div className="truncate">
+        <span
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${responsibleMeta.chipClass} whitespace-nowrap`}
+          title={`Responsable: ${responsibleMeta.label}`}
+        >
+          <span>{responsibleMeta.icon}</span>
+          <span>{responsibleMeta.label}</span>
+        </span>
       </div>
 
       {/* Owner editable inline */}
@@ -338,12 +370,12 @@ function CaseRow({
         />
       </div>
 
-      {/* Próximo */}
+      {/* Próximo paso */}
       <div className={`text-[11px] tabular-nums truncate ${nextDue.tone}`}>
         {nextDue.label}
       </div>
 
-      {/* Alertas (40px col) */}
+      {/* Alertas (60px col) */}
       <CaseAlertsCell c={c} />
     </div>
   );
