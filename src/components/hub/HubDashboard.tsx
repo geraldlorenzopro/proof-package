@@ -676,7 +676,7 @@ function HubDashboardInner({
             </div>
 
             {/* ─── RIGHT RAIL · SOLO ACTIVIDAD RECIENTE (FULL ALTURA) ─── */}
-            <aside className="hidden lg:flex flex-col min-h-0 overflow-hidden">
+            <aside className="hidden lg:flex flex-col min-h-0 max-h-[calc(100dvh-2rem)] lg:sticky lg:top-3 overflow-hidden">
               <HubActivityStream accountId={accountId} />
             </aside>
           </section>
