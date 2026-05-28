@@ -42,10 +42,10 @@ const PRIMARY_RESOURCES = [
 ];
 
 const SECONDARY_RESOURCES = [
-  { label: "NVC Timeframes", desc: "Tiempos del Centro Nacional de Visas", url: "https://travel.state.gov/content/travel/en/us-visas/immigrate/nvc-timeframes.html", source: "DOS" },
-  { label: "US Visa News", desc: "Noticias del Departamento de Estado", url: "https://travel.state.gov/content/travel/en/News/visas-news.html", source: "DOS" },
-  { label: "USCIS Alertas", desc: "Alertas y actualizaciones urgentes", url: "https://www.uscis.gov/newsroom/alerts", source: "USCIS" },
-  { label: "USCIS Noticias", desc: "Comunicados de prensa oficiales", url: "https://www.uscis.gov/newsroom/news-releases", source: "USCIS" },
+  { label: "NVC Timeframes", desc: "Tiempos del Centro Nacional de Visas", url: "https://travel.state.gov/content/travel/en/us-visas/immigrate/nvc-timeframes.html", source: "DOS", chipClass: "bg-slate-500/10 border-slate-500/30 text-slate-300 hover:bg-slate-500/20" },
+  { label: "US Visa News", desc: "Noticias del Departamento de Estado", url: "https://travel.state.gov/content/travel/en/News/visas-news.html", source: "DOS", chipClass: "bg-slate-500/10 border-slate-500/30 text-slate-300 hover:bg-slate-500/20" },
+  { label: "USCIS Alertas", desc: "Alertas y actualizaciones urgentes", url: "https://www.uscis.gov/newsroom/alerts", source: "USCIS", chipClass: "bg-slate-500/10 border-slate-500/30 text-slate-300 hover:bg-slate-500/20" },
+  { label: "USCIS Noticias", desc: "Comunicados de prensa oficiales", url: "https://www.uscis.gov/newsroom/news-releases", source: "USCIS", chipClass: "bg-slate-500/10 border-slate-500/30 text-slate-300 hover:bg-slate-500/20" },
 ];
 
 const KIND_ICON: Record<FeedItemKind, typeof AlertTriangle> = {
