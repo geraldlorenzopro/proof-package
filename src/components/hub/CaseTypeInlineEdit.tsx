@@ -55,16 +55,22 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [popPos, setPopPos] = useState<{ top: number; left: number } | null>(null);
+  // State local del case_type activo — necesario para optimistic update visible
+  // sin depender de que el parent re-renderee (en demo mode el parent NO
+  // re-renderea porque no hay query Supabase que dispare refetch).
+  const [activeCaseType, setActiveCaseType] = useState<string | null>(currentCaseType);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const { saving, edit } = useCaseInlineEdit();
 
+  useEffect(() => { setActiveCaseType(currentCaseType); }, [currentCaseType]);
+
   // Chip principal — usa el resolver para soportar legacy values
   const currentMeta = useMemo(() => {
-    const direct = getCaseTypeByKey(currentCaseType);
-    return direct || resolveLegacyType(currentCaseType);
-  }, [currentCaseType]);
+    const direct = getCaseTypeByKey(activeCaseType);
+    return direct || resolveLegacyType(activeCaseType);
+  }, [activeCaseType]);
 
   const displayLabel = currentMeta?.shortLabel || currentCaseType || "Sin clasificar";
 
@@ -110,14 +116,17 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
   async function handleSelect(t: CaseTypeMeta) {
     setOpen(false);
     if (t.key === currentMeta?.key) return;
-    const oldKey = currentMeta?.key || currentCaseType || "";
+    const oldKey = currentMeta?.key || activeCaseType || "";
     await edit({
       caseId,
       field: "case_type",
       newValue: t.key,
       oldValue: oldKey,
-      onOptimistic: (v) => onCaseTypeChange(v as string),
-      successMessage: `Tipo actualizado → ${t.formNumber} ${t.shortLabel.split("·")[1]?.trim() || ""}`,
+      onOptimistic: (v) => {
+        setActiveCaseType(v as string);
+        onCaseTypeChange(v as string);
+      },
+      successMessage: `Tipo actualizado → ${t.formNumber} · ${t.shortLabel.split("·")[1]?.trim() || t.shortLabel}`,
     });
   }
 

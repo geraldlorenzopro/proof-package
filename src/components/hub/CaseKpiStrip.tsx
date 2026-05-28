@@ -26,7 +26,7 @@ export default function CaseKpiStrip({ accountId, userId }: Props) {
         <div className="font-sora font-bold text-[22px] leading-none tabular-nums text-cyan-accent">
           {fmt(k.myActiveCases)}
         </div>
-        <div className="text-[9px] uppercase tracking-[0.08em] text-slate-400 mt-1">
+        <div className="text-[10px] uppercase tracking-[0.08em] text-slate-300 mt-1.5">
           Mis casos activos
         </div>
       </div>
@@ -36,7 +36,7 @@ export default function CaseKpiStrip({ accountId, userId }: Props) {
         <div className="font-sora font-bold text-[22px] leading-none tabular-nums text-purple-300">
           {fmt(k.ptePendingMine)}
         </div>
-        <div className="text-[9px] uppercase tracking-[0.08em] text-slate-400 mt-1">
+        <div className="text-[10px] uppercase tracking-[0.08em] text-slate-300 mt-1.5">
           Pte. acción mía
         </div>
       </div>
@@ -46,7 +46,7 @@ export default function CaseKpiStrip({ accountId, userId }: Props) {
         <div className="font-sora font-bold text-[22px] leading-none tabular-nums text-amber-300">
           {fmt(k.deadlines7d)}
         </div>
-        <div className="text-[9px] uppercase tracking-[0.08em] text-slate-400 mt-1">
+        <div className="text-[10px] uppercase tracking-[0.08em] text-slate-300 mt-1.5">
           ⚠ Deadlines 7d
         </div>
       </div>
@@ -56,7 +56,7 @@ export default function CaseKpiStrip({ accountId, userId }: Props) {
         <div className="font-sora font-bold text-[22px] leading-none tabular-nums text-emerald-300">
           {fmt(k.closedLast30d)}
         </div>
-        <div className="text-[9px] uppercase tracking-[0.08em] text-slate-400 mt-1">
+        <div className="text-[10px] uppercase tracking-[0.08em] text-slate-300 mt-1.5">
           ✓ Cerrados 30d
         </div>
       </div>

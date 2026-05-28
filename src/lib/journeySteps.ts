@@ -147,6 +147,85 @@ export function getSubStagesForLocation(loc: LocationKey | string | null | undef
   return SUB_STAGES_BY_LOCATION[loc as LocationKey] || [];
 }
 
+/**
+ * Mapeo journey_step → sub_stage default por ubicación.
+ * Cuando el usuario cambia el journey_step desde el dropdown, el sub-stage
+ * abajo debe actualizar a uno coherente con la nueva etapa (en vez de
+ * quedarse con el sub-stage anterior que ya no aplica).
+ */
+const JOURNEY_TO_SUB_STAGE_KEY: Record<string, Record<JourneyStep, string | null>> = {
+  uscis: {
+    "cliente-nuevo":          null,
+    "esperando-cuestionario": null,
+    "esperando-documentos":   null,
+    "preparando-paquete":     null,
+    "pendiente-revision":     null,
+    "enviado":                "uscis-sometido",
+    "confirmado":             "uscis-recibo",
+    "en-espera":              "uscis-en-revision",
+    "pide-mas-info":          "uscis-rfe",
+    "cita-programada":        "uscis-bio-programada",
+    "aprobado":               "uscis-aprobada",
+    "negado":                 "uscis-negada",
+  },
+  nvc: {
+    "cliente-nuevo":          null,
+    "esperando-cuestionario": null,
+    "esperando-documentos":   "nvc-civil-docs",
+    "preparando-paquete":     "nvc-ds260",
+    "pendiente-revision":     null,
+    "enviado":                "nvc-recibido",
+    "confirmado":             "nvc-reviewing",
+    "en-espera":              "nvc-reviewing",
+    "pide-mas-info":          "nvc-civil-docs",
+    "cita-programada":        "nvc-case-complete",
+    "aprobado":               "nvc-case-complete",
+    "negado":                 null,
+  },
+  embajada: {
+    "cliente-nuevo":          null,
+    "esperando-cuestionario": null,
+    "esperando-documentos":   "consular-prep-docs",
+    "preparando-paquete":     "consular-prep-docs",
+    "pendiente-revision":     "consular-prep-docs",
+    "enviado":                "consular-entrevista",
+    "confirmado":             "consular-entrevista",
+    "en-espera":              "consular-entrevista",
+    "pide-mas-info":          "consular-221g",
+    "cita-programada":        "consular-entrevista",
+    "aprobado":               "consular-aprobada",
+    "negado":                 "consular-negada",
+  },
+  consular: {
+    "cliente-nuevo":          null,
+    "esperando-cuestionario": null,
+    "esperando-documentos":   "consular-prep-docs",
+    "preparando-paquete":     "consular-prep-docs",
+    "pendiente-revision":     "consular-prep-docs",
+    "enviado":                "consular-entrevista",
+    "confirmado":             "consular-entrevista",
+    "en-espera":              "consular-entrevista",
+    "pide-mas-info":          "consular-221g",
+    "cita-programada":        "consular-entrevista",
+    "aprobado":               "consular-aprobada",
+    "negado":                 "consular-negada",
+  },
+};
+
+/**
+ * Devuelve el sub-stage default para una combinación journey + location.
+ * Null si no aplica.
+ */
+export function defaultSubStageFor(journey: JourneyStep, location: string | null | undefined): SubStage | null {
+  if (!location) return null;
+  const map = JOURNEY_TO_SUB_STAGE_KEY[location];
+  if (!map) return null;
+  const subKey = map[journey];
+  if (!subKey) return null;
+  const subs = getSubStagesForLocation(location);
+  return subs.find(s => s.key === subKey) || null;
+}
+
 // ════════════════════════════════════════════════════════════════════
 // LEGACY MAPEO pipeline_stage → journey_step (DEMO + seed)
 // ════════════════════════════════════════════════════════════════════

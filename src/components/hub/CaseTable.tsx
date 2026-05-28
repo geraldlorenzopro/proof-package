@@ -21,7 +21,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { deriveJourneyStep, deriveSubStage, getJourneyMeta } from "@/lib/journeySteps";
+import { deriveJourneyStep, deriveSubStage, defaultSubStageFor, getJourneyMeta, type JourneyStep, type SubStage } from "@/lib/journeySteps";
 import type { PipelineColumn, PipelineCase } from "@/hooks/useCasePipeline";
 import CaseAlertsCell from "./CaseAlertsCell";
 import CaseStageInlineEdit from "./CaseStageInlineEdit";
@@ -109,9 +109,9 @@ type FlatItem =
   | { kind: "row"; key: string; c: PipelineCase; size: number }
   | { kind: "empty"; key: string; size: number };
 
-const SIZE_HEADER = 44;
-const SIZE_COLHEADER = 28;
-const SIZE_ROW = 48; // h-12
+const SIZE_HEADER = 48;
+const SIZE_COLHEADER = 32;
+const SIZE_ROW = 56; // h-14 (más legible)
 const SIZE_EMPTY = 32;
 
 export default function CaseTable({
@@ -267,7 +267,7 @@ function GroupHeader({
 
 function ColumnHeaderRow() {
   return (
-    <div className="grid grid-cols-[minmax(220px,2fr)_120px_minmax(160px,1.4fr)_100px_110px_110px_60px] gap-3 px-4 py-2 text-[9px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
+    <div className="grid grid-cols-[minmax(240px,2fr)_140px_minmax(180px,1.5fr)_120px_120px_120px_70px] gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
       <div>Cliente</div>
       <div>Tipo</div>
       <div>Status · Sub-etapa</div>
@@ -295,10 +295,30 @@ function CaseRow({
   const taskCount = c.overdue_tasks_count ?? c.open_tasks_count ?? 0;
   const taskOverdue = (c.overdue_tasks_count ?? 0) > 0;
   const clientGradient = ownerGradient(c.id);
-  // Modelo C+: journey step (locked AI) + sub-stage por ubicación
-  const journeyMeta = getJourneyMeta(deriveJourneyStep(c));
-  const subStage = deriveSubStage(c);
+
+  // Modelo C+ con state local: cuando el user cambia el journey desde el
+  // dropdown, el sub-stage debajo debe actualizar al sub-stage default
+  // de la nueva etapa (sino queda inconsistente: "Cliente nuevo · En revisión").
+  const initialJourney = useMemo(() => deriveJourneyStep(c), [c.id]);
+  const initialSubStage = useMemo(() => deriveSubStage(c), [c.id]);
+  const [activeJourney, setActiveJourney] = useState<JourneyStep>(initialJourney);
+  const [activeSubStage, setActiveSubStage] = useState<SubStage | null>(initialSubStage);
+
+  useEffect(() => {
+    setActiveJourney(initialJourney);
+    setActiveSubStage(initialSubStage);
+  }, [initialJourney, initialSubStage]);
+
+  const journeyMeta = getJourneyMeta(activeJourney);
   const responsibleMeta = RESPONSIBLE_META[journeyMeta.responsible] || RESPONSIBLE_META.equipo;
+
+  function handleJourneyChange(newJourney: string) {
+    const j = newJourney as JourneyStep;
+    setActiveJourney(j);
+    // Auto-sync sub-stage al nuevo journey (mantiene coherencia visual)
+    const newSub = defaultSubStageFor(j, c.process_stage as string);
+    setActiveSubStage(newSub);
+  }
 
   return (
     <div
@@ -306,21 +326,21 @@ function CaseRow({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className={`${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(220px,2fr)_120px_minmax(160px,1.4fr)_100px_110px_110px_60px] gap-3 px-4 h-12 items-center text-[12px] border-t border-white/[0.03] transition-colors text-left cursor-pointer`}
+      className={`${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(240px,2fr)_140px_minmax(180px,1.5fr)_120px_120px_120px_70px] gap-3 px-4 h-14 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left cursor-pointer`}
     >
       {/* Cliente + badge tareas */}
       <div className="flex items-center gap-2.5 min-w-0">
-        <div className={`w-[22px] h-[22px] rounded-full bg-gradient-to-br ${clientGradient} flex items-center justify-center text-[9px] font-bold text-white shrink-0`}>
+        <div className={`w-[26px] h-[26px] rounded-full bg-gradient-to-br ${clientGradient} flex items-center justify-center text-[10px] font-bold text-white shrink-0`}>
           {clientInitials}
         </div>
-        <span className="font-medium text-white truncate">{c.client_name}</span>
+        <span className="text-[13px] font-medium text-white truncate">{c.client_name}</span>
         {taskCount > 0 && (
           taskOverdue ? (
-            <span className="text-[10px] tabular-nums bg-rose-500/20 border border-rose-500/30 text-rose-300 px-1.5 py-0.5 rounded shrink-0">
+            <span className="text-[11px] tabular-nums bg-rose-500/20 border border-rose-500/30 text-rose-300 px-1.5 py-0.5 rounded shrink-0">
               {taskCount} ⚠
             </span>
           ) : (
-            <span className="text-[10px] tabular-nums text-slate-500 shrink-0">{taskCount}</span>
+            <span className="text-[11px] tabular-nums text-slate-500 shrink-0">{taskCount}</span>
           )
         )}
       </div>
@@ -336,15 +356,15 @@ function CaseRow({
 
       {/* Status (journey step editable) + sub-stage chip pequeño debajo */}
       <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-1">
           <CaseStageInlineEdit
             c={c}
-            onStageChange={(newStage) => onCaseChange?.(c.id, { process_stage: newStage } as Partial<PipelineCase>)}
+            onStageChange={handleJourneyChange}
           />
-          {subStage && (
-            <span className="inline-flex items-center gap-1 text-[9px] text-slate-400 truncate pl-1" title={subStage.label}>
-              <span className="opacity-70">{subStage.icon}</span>
-              <span className="truncate">{subStage.label}</span>
+          {activeSubStage && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 truncate pl-1" title={activeSubStage.label}>
+              <span className="opacity-70">{activeSubStage.icon}</span>
+              <span className="truncate">{activeSubStage.label}</span>
             </span>
           )}
         </div>
@@ -353,7 +373,7 @@ function CaseRow({
       {/* Responsable (ball-in-court) */}
       <div className="truncate">
         <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${responsibleMeta.chipClass} whitespace-nowrap`}
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border ${responsibleMeta.chipClass} whitespace-nowrap`}
           title={`Responsable: ${responsibleMeta.label}`}
         >
           <span>{responsibleMeta.icon}</span>
@@ -373,11 +393,11 @@ function CaseRow({
       </div>
 
       {/* Próximo paso */}
-      <div className={`text-[11px] tabular-nums truncate ${nextDue.tone}`}>
+      <div className={`text-[12px] tabular-nums truncate ${nextDue.tone}`}>
         {nextDue.label}
       </div>
 
-      {/* Alertas (60px col) */}
+      {/* Alertas (70px col) */}
       <CaseAlertsCell c={c} />
     </div>
   );
