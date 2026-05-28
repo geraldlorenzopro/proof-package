@@ -110,7 +110,8 @@ Deno.serve(async (req) => {
 
     const validPlans = ["essential", "professional", "elite", "enterprise"];
     const selectedPlan = validPlans.includes(plan) ? plan : "essential";
-    const maxUsersMap: Record<string, number> = { essential: 1, professional: 3, elite: 5, enterprise: 50 };
+    // Locked en CLAUDE.md §"Membership Tiers"
+    const maxUsersMap: Record<string, number> = { essential: 2, professional: 5, elite: 10, enterprise: 999 };
 
     // supabaseAdmin already created above
 
