@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SmartFormsProvider, useSmartFormsContext } from "./SmartFormsContext";
+import HubLayout from "@/components/hub/HubLayout";
 import { useAppSeat } from "@/hooks/useAppSeat";
 
 /* Fallback label si el wizard no inyectó stepLabels en el context.
@@ -348,14 +349,17 @@ function SeatGuardedContent() {
     );
   }
 
+  // v8.5 (2026-05-28): envolver en HubLayout para mantener el sidebar
+  // visible (Inicio/Clientes/Casos/Forms). Antes SmartFormsLayout era
+  // un layout standalone que reemplazaba al HubLayout.
   return (
-    <>
+    <HubLayout>
       <TopNavBar />
       <MobileStepDrawer />
       <main className="flex-1 flex flex-col min-h-0">
         <Outlet />
       </main>
-    </>
+    </HubLayout>
   );
 }
 
