@@ -534,7 +534,7 @@ function HubDashboardInner({
                 Pipeline (flex-1) + Acción rápida + Recursos oficiales
               - RIGHT rail: SOLO Actividad reciente (full altura, desde
                 briefing hasta recursos) */}
-          <section className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3 flex-1 min-h-0 overflow-hidden">
+          <section className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3 flex-1 min-h-0">
 
             {/* ─── LEFT COLUMN ─── */}
             <div className="flex flex-col gap-2 min-h-0">
