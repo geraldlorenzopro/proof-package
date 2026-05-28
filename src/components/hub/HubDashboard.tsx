@@ -500,7 +500,7 @@ function HubDashboardInner({
           Antes era full-bleed con calc(100vw-72px). Ahora respeta
           max-w-[1600px] mx-auto para alinearse con /hub/leads /hub/cases
           /hub/forms — mismo ancho máximo en todas las pantallas. */}
-      <div className="h-[100dvh] w-full max-w-[1600px] mx-auto overflow-hidden flex flex-col bg-background relative">
+      <div className="min-h-[100dvh] w-full max-w-[1600px] mx-auto overflow-y-auto overflow-x-hidden flex flex-col bg-background relative">
 
         {/* Onboarding banner */}
         {showOnboardingBanner && !bannerDismissed && (
