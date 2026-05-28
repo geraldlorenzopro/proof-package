@@ -496,11 +496,11 @@ function HubDashboardInner({
 
   return (
     <>
-      {/* ═══ COCKPIT — layout estática 60/30/10 sin scroll en 1366×768 ═══ */}
-      <div
-        className="h-[100dvh] w-full overflow-hidden flex flex-col bg-background relative"
-        style={{ width: "calc(100vw - 72px)" }}
-      >
+      {/* ═══ COCKPIT — layout v8.3.2 (2026-05-28 consistencia con resto del Hub) ═══
+          Antes era full-bleed con calc(100vw-72px). Ahora respeta
+          max-w-[1600px] mx-auto para alinearse con /hub/leads /hub/cases
+          /hub/forms — mismo ancho máximo en todas las pantallas. */}
+      <div className="h-[100dvh] w-full max-w-[1600px] mx-auto overflow-hidden flex flex-col bg-background relative">
 
         {/* Onboarding banner */}
         {showOnboardingBanner && !bannerDismissed && (
