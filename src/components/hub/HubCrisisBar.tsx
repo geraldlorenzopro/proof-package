@@ -118,7 +118,13 @@ export default function HubCrisisBar({ accountId }: Props) {
     });
   }
 
-  if (!crisis) return null;
+  // Reserva siempre la misma altura para evitar que el briefing se
+  // empuje hacia abajo cuando la query async resuelve y aparece la barra.
+  if (!crisis) {
+    // Si ya cargó y no hay crisis → no reservar espacio (limpio).
+    // Si está cargando → reservar 40px para evitar layout shift.
+    return loaded ? null : <div className="h-10 mb-2" aria-hidden="true" />;
+  }
 
   function handleViewCase() {
     if (demoMode) {
