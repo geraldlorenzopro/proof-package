@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ghlApiKey = Deno.env.get("GHL_API_KEY");
+// GHL email API removed 2026-05-28 — Resend handles all transactional email now.
+// GHL stays for marketing/comms in their separate API (push-contact-to-ghl etc).
 
 const supabase = createClient(supabaseUrl, serviceKey);
 
@@ -453,17 +454,20 @@ Deno.serve(async (req) => {
       fileNumber = caseData?.file_number || null;
     }
 
-    // 4. Send via Resend (primary) → fallback a GHL si Resend no configurado
-    // Mr. Lorenzo 2026-05-28: split GHL/NER — Resend para transactional NER,
-    // GHL solo para comms conversacionales (no transactional).
+    // 4. Send via Resend (Docketwise pattern: central sender + dynamic reply-to)
+    // Research 2026-05-28: Docketwise usa "no-reply@notifications" central +
+    // reply_to dinámico al staff que envió. Cliente contesta al paralegal real.
     //
-    // Requiere: RESEND_API_KEY en Supabase Secrets + domain verificado
-    // en Resend (nerimmigration.ai). Reply-to = firm_email del config
-    // para que el cliente conteste al equipo legal.
+    // Requiere: RESEND_API_KEY en Supabase Secrets + domain verificado en
+    // Resend (nerimmigration.ai).
+    //
+    // Reply-To priority: (1) user.email del JWT (paralegal que disparó esto)
+    //                     (2) office_config.firm_email (fallback central firma)
+    //                     (3) undefined (sin reply-to, defaults a from)
     let status = "pending";
     let providerMessageId: string | null = null;
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const replyTo = (config as any)?.firm_email || (config as any)?.attorney_email || undefined;
+    const replyTo = user.email || (config as any)?.firm_email || (config as any)?.attorney_email || undefined;
 
     if (resendApiKey) {
       try {
@@ -495,42 +499,12 @@ Deno.serve(async (req) => {
         console.error("Resend send exception:", err);
         status = "failed";
       }
-    } else if (ghlApiKey && (config as any)?.ghl_location_id) {
-      // Fallback: GHL Conversations API si Resend no configurado
-      try {
-        const ghlRes = await fetch("https://services.leadconnectorhq.com/conversations/messages/outbound", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${ghlApiKey}`,
-            "Version": "2021-04-15",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: "Email",
-            locationId: (config as any).ghl_location_id,
-            emailFrom: "noreply@nerimmigration.ai",
-            emailFromName: vars.firm_name,
-            emailTo: to_email,
-            subject,
-            html,
-          }),
-        });
-
-        if (ghlRes.ok) {
-          const ghlData = await ghlRes.json();
-          status = "sent";
-          providerMessageId = ghlData.messageId || ghlData.id || null;
-        } else {
-          const errText = await ghlRes.text();
-          console.error("GHL send error:", ghlRes.status, errText);
-          status = "failed";
-        }
-      } catch (err) {
-        console.error("GHL send exception:", err);
-        status = "failed";
-      }
     } else {
-      console.log("Neither RESEND_API_KEY nor GHL configured, queuing as pending");
+      // Sin RESEND_API_KEY → queue como pending. GHL fallback ELIMINADO
+      // 2026-05-28 (research Docketwise): transactional necesita latencia
+      // <2s y deliverability dedicada. GHL queda solo para drip campaigns
+      // marketing, no transactional.
+      console.log("RESEND_API_KEY not configured, queuing as pending");
       status = "pending";
     }
     const ghlMessageId = providerMessageId; // alias backward-compat con email_logs schema
