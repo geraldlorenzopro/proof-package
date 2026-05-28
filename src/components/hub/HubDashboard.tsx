@@ -20,6 +20,7 @@ import HubPipelineWidget from "./HubPipelineWidget";
 import HubMyActionsCard from "./HubMyActionsCard";
 import HubEventsFeed from "./HubEventsFeed";
 import HubQuickAdd from "./HubQuickAdd";
+import HubPulseRail from "./HubPulseRail";
 import { useTodayAppointments } from "@/hooks/useTodayAppointments";
 import { useRiskCases } from "@/hooks/useRiskCases";
 import { useMyActions } from "@/hooks/useMyActions";
@@ -652,121 +653,20 @@ function HubDashboardInner({
             </div>
 
             {/* ─── RIGHT RAIL (sticky, 340px) ─── */}
-            <aside className="hidden lg:flex flex-col gap-2 min-h-0 overflow-y-auto">
+            <aside className="hidden lg:flex flex-col gap-2 min-h-0 overflow-y-auto pr-1">
               <HubQuickAdd />
-              {/* Pulse 4 KPIs reubicado acá — más adelante en Fase 3 */}
+              <HubPulseRail
+                kpis={{ closedThisWeek, tasksDoneRatio, activeCases, approvalRate30d }}
+                primaryResources={PRIMARY_RESOURCES}
+                secondaryResources={SECONDARY_RESOURCES}
+                onOpenResource={setOpeningResource}
+              />
             </aside>
           </section>
 
 
-          {/* ═══ ZONA 3 — PULSO + RECURSOS (10%) ═══ — ocultar en demo */}
-          {!demoMode && (
-          <section className="shrink-0 rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm px-3 py-2 flex items-center gap-5 flex-wrap">
-            {/* Pulse mini KPIs */}
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-              <button onClick={() => navigate("/hub/cases?filter=closed")} className="flex items-baseline gap-1.5 hover:opacity-80 transition">
-                <span className="text-[14px] font-semibold text-foreground tabular-nums">{closedThisWeek}</span>
-                <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">cerrados sem.</span>
-              </button>
-              <div className="w-px h-5 bg-border/30" />
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-[14px] font-semibold text-foreground tabular-nums">{tasksDoneRatio}<span className="text-[10px]">%</span></span>
-                <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">tareas hechas</span>
-              </div>
-              <div className="w-px h-5 bg-border/30" />
-              <button onClick={() => navigate("/hub/cases")} className="flex items-baseline gap-1.5 hover:opacity-80 transition">
-                <span className="text-[14px] font-semibold text-foreground tabular-nums">{activeCases}</span>
-                <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">casos activos</span>
-              </button>
-              <div className="w-px h-5 bg-border/30" />
-              <button onClick={() => navigate("/hub/reports")} className="flex items-baseline gap-1.5 hover:opacity-80 transition" title="Tasa de aprobación últimos 30 días">
-                <span className="text-[14px] font-display font-semibold text-emerald-300 tabular-nums">
-                  {approvalRate30d}<span className="text-[10px] text-slate-400">%</span>
-                </span>
-                <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60">
-                  aprobación 30d
-                </span>
-              </button>
-            </div>
-
-            <div className="w-px h-5 bg-border/40" />
-
-            {/* Recursos: 4 inline + dropdown "+4" */}
-            <div className="relative flex items-center gap-1.5 shrink-0">
-              <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 mr-0.5 flex items-center gap-1">
-                <BookOpen className="w-3 h-3" /> Oficiales
-              </span>
-              {PRIMARY_RESOURCES.map(r => (
-                <button
-                  key={r.label}
-                  onClick={() => setOpeningResource({ label: r.label, url: r.url })}
-                  title={r.desc}
-                  className={`px-2 py-1 rounded-md text-[10px] font-semibold border transition ${r.chipClass}`}
-                >
-                  {r.source}
-                </button>
-              ))}
-              <button
-                ref={secondaryResourcesTriggerRef}
-                onClick={() => setShowSecondaryResources(v => !v)}
-                className="px-2 py-1 rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/40 transition"
-                title="Más recursos oficiales"
-                aria-expanded={showSecondaryResources}
-                aria-haspopup="menu"
-                aria-controls="secondary-resources-menu"
-              >
-                +{SECONDARY_RESOURCES.length}
-              </button>
-
-              {/* Dropdown popup +4 — spec Valerie/Victoria 2026-05-03 */}
-              {showSecondaryResources && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onPointerDown={() => setShowSecondaryResources(false)}
-                    aria-hidden="true"
-                  />
-                  <div
-                    ref={secondaryResourcesPopupRef}
-                    id="secondary-resources-menu"
-                    role="menu"
-                    aria-label="Más recursos oficiales"
-                    className="absolute bottom-full right-0 mb-2 z-50 w-[320px] rounded-xl border border-border/40 bg-card shadow-2xl shadow-black/40 backdrop-blur-xl p-2 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-150"
-                  >
-                    <div className="flex items-center justify-between px-2 py-1">
-                      <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground/60 font-semibold">
-                        Más recursos oficiales
-                      </p>
-                      <span className="text-[9px] text-muted-foreground/40 font-mono">ESC</span>
-                    </div>
-                    {SECONDARY_RESOURCES.map(r => (
-                      <button
-                        key={r.label}
-                        role="menuitem"
-                        onClick={() => {
-                          setOpeningResource({ label: r.label, url: r.url });
-                          setShowSecondaryResources(false);
-                        }}
-                        className="w-full text-left px-2 py-2 rounded-lg hover:bg-muted/40 focus:bg-muted/40 focus:outline-none transition flex items-center gap-2"
-                      >
-                        <span className="text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded border border-border/40 text-muted-foreground/70 shrink-0">{r.source}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold text-foreground/90 truncate">{r.label}</p>
-                          <p className="text-[9px] text-muted-foreground/60 truncate">{r.desc}</p>
-                        </div>
-                        <ExternalLink className="w-3 h-3 text-muted-foreground/40 shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </section>
-          )}
-
-          {/* Spacer: absorbe espacio vertical sobrante en desktop para que el cockpit
-              llene la altura del viewport en lugar de "encogerse" cuando hay pocos datos */}
-          <div className="hidden lg:block flex-1 min-h-0" aria-hidden="true" />
+          {/* Pulse footer + recursos oficiales movidos al right rail (Hub v8 2026-05-28).
+              Spacer eliminado — el grid 2-pane ahora llena el viewport por sí mismo. */}
 
         </div>
       </div>
