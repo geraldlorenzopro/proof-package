@@ -21,12 +21,12 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import { deriveJourneyStep, deriveSubStage, getJourneyMeta } from "@/lib/journeySteps";
 import type { PipelineColumn, PipelineCase } from "@/hooks/useCasePipeline";
 import CaseAlertsCell from "./CaseAlertsCell";
 import CaseStageInlineEdit from "./CaseStageInlineEdit";
 import CaseOwnerInlineEdit from "./CaseOwnerInlineEdit";
+import CaseTypeInlineEdit from "./CaseTypeInlineEdit";
 
 const RESPONSIBLE_META: Record<string, { icon: string; label: string; chipClass: string }> = {
   cliente:      { icon: "🙋", label: "Cliente",     chipClass: "bg-orange-500/15 border-orange-500/30 text-orange-200" },
@@ -325,11 +325,13 @@ function CaseRow({
         )}
       </div>
 
-      {/* Tipo */}
-      <div className="truncate">
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border bg-ai-blue/15 border-ai-blue/30 text-blue-200 whitespace-nowrap">
-          {getCaseTypeLabel(c.case_type)}
-        </span>
+      {/* Tipo (editable con buscador 75+ forms USCIS/DOS) */}
+      <div className="truncate" onClick={(e) => e.stopPropagation()}>
+        <CaseTypeInlineEdit
+          caseId={c.id}
+          currentCaseType={c.case_type}
+          onCaseTypeChange={(newType) => onCaseChange?.(c.id, { case_type: newType } as Partial<PipelineCase>)}
+        />
       </div>
 
       {/* Status (journey step editable) + sub-stage chip pequeño debajo */}

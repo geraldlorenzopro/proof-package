@@ -136,7 +136,6 @@ export const SUB_STAGES_BY_LOCATION: Record<LocationKey, SubStage[]> = {
     { key: "ice-transfer",          icon: "🚪", label: "Detention transfer" },
     // Procesos administrativos (no son journey steps — son transacciones)
     { key: "ice-ar11",              icon: "📬", label: "AR-11 cambio de dirección" },
-    { key: "ice-tps-renewal",       icon: "🔁", label: "TPS renewal pendiente" },
     { key: "ice-checkin",           icon: "📋", label: "ICE check-in programado" },
     { key: "ice-ead-renewal",       icon: "🪪", label: "EAD renewal pendiente" },
   ],

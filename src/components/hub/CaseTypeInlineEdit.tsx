@@ -1,0 +1,202 @@
+/**
+ * CaseTypeInlineEdit — chip editable del case_type con buscador.
+ *
+ * Click chip → popover (Portal por virtualizer) con buscador arriba +
+ * lista categorizada de 75+ case types. Filtra por:
+ *   - Nombre del caso (label / shortLabel)
+ *   - Número de formulario (I-130, DS-160, EOIR-26, etc.)
+ *   - Searchterms adicionales (esposa, asilo, eb1, b1b2, etc.)
+ *   - Categoría
+ *
+ * Optimistic update con rollback (useCaseInlineEdit) — en demo mode
+ * skipea Supabase.
+ */
+import { useState, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
+import { Search } from "lucide-react";
+import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
+import {
+  CASE_TYPES,
+  CATEGORY_LABELS,
+  searchCaseTypes,
+  getCaseTypeByKey,
+  type CaseTypeMeta,
+  type CaseTypeCategory,
+} from "@/lib/caseTypes";
+
+interface Props {
+  caseId: string;
+  /** key existente (CASE_TYPES.key) o el legacy string del DEMO_CASES */
+  currentCaseType: string | null;
+  onCaseTypeChange: (newCaseTypeKey: string) => void;
+}
+
+/**
+ * Mapea legacy case_type strings (DEMO_CASES) a un CaseTypeMeta del catálogo.
+ * Ejemplo: "I-130" demo → matches "i130-spouse-ir1" si nada más específico.
+ */
+function resolveLegacyType(legacy: string | null): CaseTypeMeta | undefined {
+  if (!legacy) return undefined;
+  const exact = CASE_TYPES.find(t => t.key === legacy);
+  if (exact) return exact;
+  // Match por formNumber inicial (ej. "I-130" → primer I-130)
+  const byForm = CASE_TYPES.find(t => t.formNumber.toLowerCase() === legacy.toLowerCase());
+  if (byForm) return byForm;
+  // Match parcial del label
+  const lower = legacy.toLowerCase();
+  return CASE_TYPES.find(t =>
+    t.label.toLowerCase().includes(lower) ||
+    t.shortLabel.toLowerCase().includes(lower) ||
+    t.searchTerms?.some(s => s.toLowerCase() === lower)
+  );
+}
+
+export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseTypeChange }: Props) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [popPos, setPopPos] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const { saving, edit } = useCaseInlineEdit();
+
+  // Chip principal — usa el resolver para soportar legacy values
+  const currentMeta = useMemo(() => {
+    const direct = getCaseTypeByKey(currentCaseType);
+    return direct || resolveLegacyType(currentCaseType);
+  }, [currentCaseType]);
+
+  const displayLabel = currentMeta?.shortLabel || currentCaseType || "Sin clasificar";
+
+  // Reset search al cerrar
+  useEffect(() => {
+    if (!open) { setSearch(""); return; }
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) setPopPos({ top: rect.bottom + 4, left: rect.left });
+    // Focus al input
+    setTimeout(() => searchRef.current?.focus(), 50);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: PointerEvent) {
+      const t = e.target as Node;
+      if (popoverRef.current?.contains(t)) return;
+      if (triggerRef.current?.contains(t)) return;
+      setOpen(false);
+    }
+    document.addEventListener("pointerdown", handle);
+    return () => document.removeEventListener("pointerdown", handle);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const results = useMemo(() => searchCaseTypes(search), [search]);
+
+  // Agrupar por categoría
+  const grouped = useMemo(() => {
+    const byCategory: Record<string, CaseTypeMeta[]> = {};
+    results.forEach(t => {
+      (byCategory[t.category] = byCategory[t.category] || []).push(t);
+    });
+    return byCategory;
+  }, [results]);
+
+  async function handleSelect(t: CaseTypeMeta) {
+    setOpen(false);
+    if (t.key === currentMeta?.key) return;
+    const oldKey = currentMeta?.key || currentCaseType || "";
+    await edit({
+      caseId,
+      field: "case_type",
+      newValue: t.key,
+      oldValue: oldKey,
+      onOptimistic: (v) => onCaseTypeChange(v as string),
+      successMessage: `Tipo actualizado → ${t.formNumber} ${t.shortLabel.split("·")[1]?.trim() || ""}`,
+    });
+  }
+
+  return (
+    <div className="relative inline-block">
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+        disabled={saving}
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border bg-ai-blue/15 border-ai-blue/30 text-blue-200 whitespace-nowrap hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait"
+        title={currentMeta?.description || "Click para cambiar tipo de caso"}
+      >
+        <span className="truncate max-w-[140px]">{displayLabel}</span>
+        <span className="text-[8px] ml-0.5 opacity-70">▾</span>
+      </button>
+
+      {open && popPos && typeof document !== "undefined" && createPortal(
+        <div
+          ref={popoverRef}
+          style={{ position: "fixed", top: popPos.top, left: popPos.left, zIndex: 9999, maxHeight: "min(70vh, 500px)" }}
+          className="w-[420px] rounded-lg border border-cyan-accent/30 bg-deep-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Search box */}
+          <div className="p-2 border-b border-white/8 shrink-0">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar: I-130, esposa, F-1, asilo, B-2…"
+                className="w-full h-8 pl-8 pr-2 text-[12px] bg-white/[0.04] border border-white/10 rounded focus:outline-none focus:border-cyan-accent/50 placeholder:text-slate-500 text-slate-200"
+              />
+            </div>
+            <p className="text-[9px] text-slate-500 mt-1 px-1">
+              {results.length} de {CASE_TYPES.length} tipos · ESC cierra
+            </p>
+          </div>
+
+          {/* Results list (scrollable) */}
+          <div className="flex-1 overflow-y-auto p-1">
+            {results.length === 0 ? (
+              <p className="text-[11px] text-slate-500 italic px-3 py-4 text-center">
+                Sin resultados para "{search}"
+              </p>
+            ) : (
+              Object.entries(grouped).map(([cat, items]) => (
+                <div key={cat} className="mb-1">
+                  <p className="text-[9px] uppercase tracking-wider text-slate-500 px-2 py-1 font-semibold sticky top-0 bg-deep-navy/90 backdrop-blur-sm">
+                    {CATEGORY_LABELS[cat as CaseTypeCategory] || cat}
+                  </p>
+                  {items.map(t => {
+                    const isActive = t.key === currentMeta?.key;
+                    return (
+                      <button
+                        key={t.key}
+                        onClick={() => handleSelect(t)}
+                        className={`w-full text-left flex items-start gap-2 px-2 py-1.5 rounded text-[11px] transition-colors ${isActive ? "bg-cyan-accent/15 text-cyan-accent" : "text-slate-300 hover:bg-white/[0.04]"}`}
+                      >
+                        <span className="font-mono text-[10px] bg-white/[0.06] border border-white/10 rounded px-1 py-0.5 shrink-0 text-blue-300">
+                          {t.formNumber}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{t.shortLabel.replace(/^[A-Z0-9-]+\s·\s/, "")}</div>
+                          <div className="text-[9px] text-slate-500 truncate">{t.description}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
