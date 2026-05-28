@@ -286,16 +286,10 @@ export default function HubLeadsPage() {
                <UserSearch className="w-5 h-5 text-primary" />
              </div>
              <div>
-               <div className="flex items-center gap-2">
-                 {/* Header alineado a WIREFRAMES.md §3 L142 (sidebar item "Leads") y §15.1 L824 */}
-                 <h1 className="text-xl font-bold text-foreground">Leads</h1>
-                 {syncing && (
-                   <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
-                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                     Sincronizando...
-                   </span>
-                 )}
-               </div>
+                <div className="flex items-center gap-2">
+                  {/* Header alineado a WIREFRAMES.md §3 L142 (sidebar item "Leads") y §15.1 L824 */}
+                  <h1 className="text-xl font-bold text-foreground">Leads</h1>
+                </div>
                <p className="text-xs text-muted-foreground">{totalCount.toLocaleString("es")} contactos</p>
              </div>
            </div>
