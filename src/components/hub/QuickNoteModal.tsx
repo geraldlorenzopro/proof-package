@@ -28,6 +28,8 @@ import { Label } from "@/components/ui/label";
 import { Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/auditLog";
+import VisibilityPicker from "./VisibilityPicker";
+import type { VisibilityLevel } from "@/hooks/usePermissions";
 
 interface Props {
   open: boolean;
@@ -56,6 +58,7 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated }: Props)
   const [content, setContent] = useState("");
   const [noteType, setNoteType] = useState("general");
   const [caseId, setCaseId] = useState<string>("");
+  const [visibility, setVisibility] = useState<VisibilityLevel>("team");
   const [cases, setCases] = useState<CaseOption[]>([]);
 
   useEffect(() => {
@@ -63,6 +66,7 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated }: Props)
     setContent("");
     setNoteType("general");
     setCaseId("");
+    setVisibility("team");
     setCasesLoading(true);
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -119,6 +123,7 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated }: Props)
           author_name: authorName,
           content: content.trim(),
           note_type: noteType,
+          visibility,
         } as any)
         .select("id")
         .single();
@@ -251,9 +256,11 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated }: Props)
               </div>
             </div>
 
-            <p className="text-[10px] text-muted-foreground/60">
-              Visible para todo el equipo de tu firma · Los abogados pueden cambiar visibilidad después.
-            </p>
+            <VisibilityPicker
+              value={visibility}
+              onChange={setVisibility}
+              recordLabel="nota"
+            />
           </div>
         )}
 

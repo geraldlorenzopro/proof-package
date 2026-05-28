@@ -24,6 +24,8 @@ import { Label } from "@/components/ui/label";
 import { Loader2, ListPlus } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/auditLog";
+import VisibilityPicker from "./VisibilityPicker";
+import type { VisibilityLevel } from "@/hooks/usePermissions";
 
 interface Props {
   open: boolean;
@@ -35,6 +37,12 @@ interface CaseOption {
   id: string;
   client_name: string;
   case_type: string | null;
+}
+
+interface TeamMember {
+  user_id: string;
+  full_name: string | null;
+  role: string;
 }
 
 const PRIORITIES = [
@@ -50,29 +58,51 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated }: Props)
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("normal");
   const [caseId, setCaseId] = useState<string>("");
+  const [assignedTo, setAssignedTo] = useState<string>("");
+  const [visibility, setVisibility] = useState<VisibilityLevel>("team");
   const [cases, setCases] = useState<CaseOption[]>([]);
+  const [team, setTeam] = useState<TeamMember[]>([]);
 
-  // Reset al abrir + cargar lista de casos
+  // Reset al abrir + cargar lista de casos + equipo de la firma
   useEffect(() => {
     if (!open) return;
     setTitle("");
     setDueDate("");
     setPriority("normal");
     setCaseId("");
+    setVisibility("team");
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data: accountId } = await supabase.rpc("user_account_id", { _user_id: user.id });
       if (!accountId) return;
-      const { data } = await supabase
-        .from("client_cases")
-        .select("id, client_name, case_type")
-        .eq("account_id", accountId)
-        .neq("status", "completed")
-        .neq("status", "archived")
-        .order("updated_at", { ascending: false })
-        .limit(30);
-      setCases((data as any) || []);
+
+      // Cargar casos + team en paralelo
+      const [casesRes, teamRes] = await Promise.all([
+        supabase
+          .from("client_cases")
+          .select("id, client_name, case_type")
+          .eq("account_id", accountId)
+          .neq("status", "completed")
+          .neq("status", "archived")
+          .order("updated_at", { ascending: false })
+          .limit(30),
+        supabase
+          .from("account_members")
+          .select("user_id, role, profiles:profiles(full_name)")
+          .eq("account_id", accountId)
+          .eq("is_active", true),
+      ]);
+
+      setCases((casesRes.data as any) || []);
+      const members: TeamMember[] = ((teamRes.data as any[]) || []).map(m => ({
+        user_id: m.user_id,
+        role: m.role,
+        full_name: m.profiles?.full_name || null,
+      }));
+      setTeam(members);
+      // Default: asignar a mí mismo (más común)
+      setAssignedTo(user.id);
     })();
   }, [open]);
 
@@ -98,6 +128,10 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated }: Props)
       const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
       const createdByName = profile?.full_name || user.email?.split("@")[0] || "Usuario";
 
+      // Si assignedTo es un member del equipo, capturar su nombre también
+      const assignee = team.find(m => m.user_id === assignedTo);
+      const assignedToName = assignee?.full_name || (assignedTo === user.id ? createdByName : null);
+
       const { data, error } = await supabase
         .from("case_tasks")
         .insert({
@@ -105,11 +139,14 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated }: Props)
           case_id: caseId || null,
           created_by: user.id,
           created_by_name: createdByName,
+          assigned_to: assignedTo || null,
+          assigned_to_name: assignedToName,
           title: title.trim(),
           priority,
           due_date: dueDate || null,
           status: "pending",
           task_type: "general",
+          visibility,
         } as any)
         .select("id")
         .single();
@@ -220,6 +257,30 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated }: Props)
               <p className="text-[10px] text-muted-foreground/60">Aún no hay casos activos. La tarea queda suelta.</p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="task-assignee">Asignar a</Label>
+            <select
+              id="task-assignee"
+              value={assignedTo}
+              onChange={e => setAssignedTo(e.target.value)}
+              disabled={loading}
+              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:border-cyan-accent/50 focus:outline-none"
+            >
+              <option value="">Sin asignar</option>
+              {team.map(m => (
+                <option key={m.user_id} value={m.user_id}>
+                  {m.full_name || "Sin nombre"} · {m.role}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <VisibilityPicker
+            value={visibility}
+            onChange={setVisibility}
+            recordLabel="tarea"
+          />
         </div>
 
         <DialogFooter>
