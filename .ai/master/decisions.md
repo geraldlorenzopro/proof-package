@@ -2873,3 +2873,62 @@ en proceso):*
 
 **Implicación:** [qué cambia en el código / proceso / strategy]
 ```
+
+
+---
+
+## 2026-05-28 (noche) — Sprint masivo Hub v8.x + Forms + GHL handshake + Resend
+
+**Decisiones LOCKED en sesión web (10 totales):**
+
+### 1. NER es POST-contrato — "Leads" desterrado
+**Decidido:** El término "leads" sale del vocabulario NER. Todo lo que entra a NER es CLIENTE (ya ganado en GHL). Sidebar item "Clientes nuevos" → "Clientes". Página `/hub/leads` h1 → "Clientes". Modal "Convertir lead en caso" → "Abrir expediente".
+**Razón:** Mr. Lorenzo + research Docketwise — NER vive post-contrato, GHL maneja marketing/leads frío. Mezclar terminología confunde al paralegal sobre dónde está el cliente en el funnel.
+**Implicación:** UX cleanup. Schema `client_profiles.contact_stage='lead'` se mantiene (deuda interna, no afecta UI). El modal IntakeWizard sigue vivo en otros entry points (HubQuickAdd, /hub/consultations) pero NO en /hub/leads (eliminados botón mensaje + mount + states).
+
+### 2. Sidebar order: 4 LIVE arriba juntas
+**Decidido:** Inicio · Clientes · Casos · Forms van pegadas arriba. PRONTO debajo. Iconos enabled en color full (no opacity-50).
+**Razón:** Paralegal de un vistazo distingue qué tiene activo. Mejor priorización visual.
+**Implicación:** HubLayout NAV_ITEMS reordenado. Comentario actualizado en código.
+
+### 3. Forms tier 3-way en catálogo
+**Decidido:** Modal "Nuevo Formulario" muestra 3 secciones diferenciadas: ✓ Disponibles ahora (cyan) · ⏰ Disponible la semana que viene (amber, info-only) · ▸ Próximamente (gris, accordion).
+**Razón:** Mr. Lorenzo: "solo tenemos 2 disponibles ahora, pon los próximos 4 que digan disponible la semana que viene". Mejor expectation management que un solo bucket "13 próximamente".
+**Implicación:** `FormCatalogItem.status` enum extendido con "next_week". Cards next_week NO clickeables (info-only).
+
+### 4. Email Docketwise pattern: sender central + reply-to dinámico
+**Decidido:** From = `<firm_name> <noreply@nerimmigration.ai>` central. Reply-To = `user.email` del paralegal que disparó el envío (dinámico).
+**Razón:** Research Docketwise oficial: "the email appears to come from your email address and replies go to your email address". Cliente contesta al paralegal real, no a un inbox muerto. Per-firm white-label se posterga a Fase 9 (SPF/DKIM por firma = ops hell para piloto).
+**Implicación:** `send-email/index.ts` modificado. `replyTo` priority: `user.email` > `firm_email` > `attorney_email`. Aplicar después de configurar Resend (Mr. Lorenzo acción).
+
+### 5. GHL fallback para transactional CORTADO
+**Decidido:** Si `RESEND_API_KEY` no está configurado, email queda `status='pending'`. NO fallback a GHL Conversations API.
+**Razón:** Research Docketwise: transactional necesita latencia <2s y deliverability dedicada. GHL = drip campaigns + 2-way SMS. Doble path = doble costo + reply-to confuso.
+**Implicación:** `send-email/index.ts` simplificado. GHL sigue activo para sync (push-contact-to-ghl, push-task-to-ghl, import-ghl-*) pero NO para outbound transactional.
+
+### 6. Top 4 forms próxima semana: I-485, N-400, I-131, I-864
+**Decidido:** Esos son los próximos 4 a cerrar después de I-130/I-765.
+**Razón:** Volumen real USCIS — I-485 (ajuste, combo con I-130), N-400 (naturalización, fase 2), I-131 (Advance Parole, combo con I-485), I-864 (Affidavit, combo I-130/I-485). Esos 4 cubren ~70% de casos familiares.
+**Implicación:** SmartFormsList tier "next_week" pre-cargado. Próximo sprint: cerrar I-485 con playbook USCIS (Fase 0 obligatoria).
+
+### 7. APP_URL canonical = `ner.recursosmigratorios.com`
+**Decidido:** Ese es el dominio de producción para el frontend NER. Default fallback en `hub-redirect` cambiado de `proof-package.lovable.app` (Lovable preview) a este.
+**Razón:** Mr. Lorenzo confirmó dominio activo. Audit detectó 3 candidatos (app.nerimmigration.com legacy, ner.recursosmigratorios.com prod, proof-package.lovable.app preview). Decidido el del medio.
+**Implicación:** `hub-redirect/index.ts` línea 64 hardcoded fallback actualizado. APP_URL env var override sigue disponible.
+
+### 8. Pattern Token-Scoped MD ya implementado en NER
+**Decidido:** No copiar nada del pattern que Mr. Lorenzo trajo de otro proyecto (capability_token + RLS por header).
+**Razón:** NER ya implementa ese mismo concepto con 2 capas extra: HMAC en vez de UUID plano (no reusable, tamper-proof), JWT Supabase real post-handshake (stack RLS standard, no headers custom). Capability_token YA usado en NER para clientes finales: /upload/:token, /q/:token, /case-track/:token.
+**Implicación:** Cero código nuevo. Confirmación arquitectónica.
+
+### 9. Smart Process templates en ConvertLeadToCaseModal
+**Decidido:** Modal soporta 2 modos: "simple" (1 caso con 1 form principal) y "smart" (1 caso con N forms desde template). Lovable extension durante sesión paralela.
+**Razón:** Real-world casos familiares = combo de forms (I-130 + I-130A + I-864 + I-485 + I-765 + I-131 + I-693). Template ahorra clicks repetitivos.
+**Implicación:** Tabla `smart_process_templates` esperada con `forms_included JSONB`. Cuando se inserta INSERT en `case_forms` por cada form marcado.
+
+### 10. Wizard step "Configuración" — mantener siempre + pre-rellenar fromCase
+**Decidido:** Step 1 "Configuración" del wizard USCIS forms SE MANTIENE incluso cuando se entra desde un caso. Pero los valores (attorney/preparer/applicant) se PRE-RELLENAN con datos del caso. Editable.
+**Razón:** Research Docketwise mantiene este step. Esconde decisiones de G-28 que importan (quién firma G-28, qué role). Skip-by-default = paralegal pierde control de decisiones legales relevantes.
+**Implicación:** I130Wizard + I765Wizard NO skipean caseConfig cuando fromCase. Pre-fill desde location.state.caseId + cases.attorney_id + case_team_members. Pendiente implementación próximo round.
+
+---

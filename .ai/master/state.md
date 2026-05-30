@@ -1,8 +1,49 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-19 (Sprint Casos v2 IMPLEMENTADO · Monday-style opinionated · Fase C activada `casos.enabled=true`)
+**Última actualización:** 2026-05-28 noche (Sprint masivo Hub v8.x + Forms + Resend + GHL handshake)
 **Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) UX review + Mr. Lorenzo UX validation
-**Próximo update:** post-validación visual Mr. Lorenzo + Lovable runtime → arrancar Forms (paso 3 Camino A)
+**Próximo update:** post-configuración `NER_HUB_SECRET` + Resend + activación custom menu link GHL en Mr Visa
+
+---
+
+## 🚀 Sprint 2026-05-28 — Hub v8.x + Forms + GHL handshake — CERRADO
+
+**Sesión web masiva con 30+ commits.** Detalle completo en
+[`.ai/master/handoff-2026-05-28.md`](handoff-2026-05-28.md).
+
+### Resumen ejecutivo
+
+| Categoría | Cambio | Estado |
+|---|---|:--:|
+| **Hub Inicio v8.x** | 6 iteraciones de layout (v8.1 → v8.4.1) | ✅ Cerrado |
+| **Sidebar** | Reordenado 4 LIVE arriba + iconos full color | ✅ Cerrado |
+| **Renames** | "Leads" → "Clientes" (NER post-contrato) | ✅ Cerrado |
+| **Forms cleanup** | -572 LOC dead code + tier 3-way catálogo | ✅ Cerrado |
+| **Lead → Caso → Forms** | Auto-form draft + `caseTypeToForms.ts` mapping | ✅ Cerrado |
+| **Email transactional** | GHL → Resend (Docketwise pattern) | ⏳ Espera config Mr. Lorenzo |
+| **GHL custom menu link** | Audit + URL listo para pegar | ⏳ Espera `NER_HUB_SECRET` |
+| **Smart Process templates** | Modo dual ConvertLeadToCaseModal | ✅ Lovable extension |
+
+### 10 decisiones LOCKED de hoy
+
+1. NER es POST-contrato. "Leads" no se usa en NER.
+2. Sidebar order: LIVE arriba (4), PRONTO debajo.
+3. Forms tier 3-way: Disponible / Próxima semana / Próximamente.
+4. Email Docketwise: sender central + reply-to dinámico al paralegal.
+5. GHL fallback para transactional cortado.
+6. Top 4 forms próxima semana: I-485, N-400, I-131, I-864.
+7. APP_URL canonical: `ner.recursosmigratorios.com`.
+8. Pattern Token-Scoped MD ya implementado en NER, no duplicar.
+9. Smart Process templates soportados en convert modal.
+10. Wizard step "Configuración" mantener + pre-rellenar fromCase.
+
+### Pendientes Mr. Lorenzo (próxima sesión laptop)
+
+1. Crear `NER_HUB_SECRET` en Supabase Edge Functions Secrets
+2. Pegar URL custom menu link en GHL Agency Pro (Mr Visa)
+3. Crear cuenta Resend + verificar domain + `RESEND_API_KEY`
+4. Test end-to-end del handshake desde browser
+5. Pedir Lovable redeploy: hub-redirect, resolve-hub, send-email
 
 ---
 
