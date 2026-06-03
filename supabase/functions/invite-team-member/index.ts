@@ -369,8 +369,28 @@ Deno.serve(async (req) => {
           invite_link,
         });
 
-        const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@nerimmigration.ai";
+        // Defensive build del header From (locked 2026-06-03 fix):
+        // - Trim del secret para eliminar newlines/espacios invisibles del copy/paste
+        // - Si el secret YA tiene formato "Name <email>" (con < y >), úsalo tal cual
+        //   y NO wrappear de nuevo. Esto evita resultados tipo "Name <Name <email>>".
+        // - Si es solo email, wrappear con el name por default.
+        // - Validación final: si el resultado no matchea regex básico de email
+        //   válido, log warning + fallback a sandbox onboarding@resend.dev
+        //   (Resend siempre acepta ese for testing aunque no tengas dominio).
+        const fromRaw = (Deno.env.get("RESEND_FROM_EMAIL") || "noreply@nerimmigration.ai").trim();
         const fromName = "NER Immigration AI";
+        const hasFullFormat = fromRaw.includes("<") && fromRaw.includes(">");
+        let from = hasFullFormat ? fromRaw : `${fromName} <${fromRaw}>`;
+
+        // Validación básica del formato final
+        const fromValid = /^([^<>]+\s)?<[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+>$|^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(from);
+        if (!fromValid) {
+          console.error(`[invite-team-member] from malformed, raw secret value: "${fromRaw}" → "${from}"`);
+          // Fallback al sandbox de Resend (siempre acepta, no requiere domain verification)
+          from = "NER Immigration AI <onboarding@resend.dev>";
+        }
+
+        console.log(`[invite-team-member] sending via Resend from="${from}" to="${email}"`);
 
         const resendRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -379,7 +399,7 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: `${fromName} <${fromEmail}>`,
+            from,
             to: [email],
             subject,
             html,
