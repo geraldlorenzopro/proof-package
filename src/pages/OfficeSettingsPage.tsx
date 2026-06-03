@@ -976,7 +976,7 @@ export default function OfficeSettingsPage() {
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(m)}
-                          className="text-muted-foreground/40 hover:text-destructive transition-colors"
+                          className="text-muted-foreground hover:text-destructive transition-colors"
                           title={isDemoSeed ? "Eliminar miembro demo" : "Eliminar miembro"}
                         >
                           <Trash2 className="w-4 h-4" />
