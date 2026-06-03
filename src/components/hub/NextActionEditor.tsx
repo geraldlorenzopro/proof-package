@@ -168,7 +168,7 @@ export default function NextActionEditor({
 
     const { error: writeErr } = await supabase
       .from("client_cases")
-      .update({ custom_fields: merged, updated_at: new Date().toISOString() })
+      .update({ custom_fields: merged as any, updated_at: new Date().toISOString() })
       .eq("id", caseId);
 
     setSaving(false);
