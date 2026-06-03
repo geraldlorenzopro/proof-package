@@ -382,22 +382,40 @@ Deno.serve(async (req) => {
       emailStatus = "skipped_existing";
     } else if (resendApiKey) {
       try {
-        // Resolver nombre de firma + logo + inviter name
-        const [{ data: officeConfig }, { data: callerProfile }] = await Promise.all([
-          supabaseAdmin
-            .from("office_config")
-            .select("firm_name, firm_logo_url")
-            .eq("account_id", account_id)
-            .maybeSingle(),
-          supabaseAdmin
-            .from("profiles")
-            .select("full_name")
-            .eq("user_id", callerId)
-            .maybeSingle(),
-        ]);
+        // Resolver nombre de firma + logo + inviter name (con error handling
+        // explícito — agente 2 detectó que Promise.all puede taparse fallos
+        // de RLS o conexión).
+        let officeConfig: any = null;
+        let callerProfile: any = null;
+        try {
+          const [ocRes, cpRes] = await Promise.all([
+            supabaseAdmin
+              .from("office_config")
+              .select("firm_name, firm_logo_url")
+              .eq("account_id", account_id)
+              .maybeSingle(),
+            supabaseAdmin
+              .from("profiles")
+              .select("full_name")
+              .eq("user_id", callerId)
+              .maybeSingle(),
+          ]);
+          officeConfig = ocRes.data;
+          callerProfile = cpRes.data;
+        } catch (queryErr) {
+          console.warn(
+            `[invite-team-member] office_config/profile lookup failed:`,
+            queryErr
+          );
+        }
 
-        const { data: callerAuth } = await supabaseAdmin.auth.admin.getUserById(callerId);
+        const { data: callerAuth, error: callerAuthErr } = await supabaseAdmin.auth.admin.getUserById(callerId);
         const callerEmail = callerAuth?.user?.email || undefined;
+        if (callerAuthErr || !callerEmail) {
+          console.warn(
+            `[invite-team-member] caller email lookup: error="${callerAuthErr?.message || "(none)"}" callerEmail="${callerEmail || "(undefined)"}"`
+          );
+        }
 
         const { subject, html } = buildInviteEmail({
           firm_name: officeConfig?.firm_name || account.account_name || "Tu firma",
@@ -449,19 +467,27 @@ Deno.serve(async (req) => {
         let resendErrorBody: string | null = null;
         let resendStatus: number | null = null;
         try {
+          // CRÍTICO 2026-06-03: reply_to debe omitirse si callerEmail es
+          // undefined. Resend devuelve 422 validation_error si recibe
+          // reply_to: undefined / null / empty string. Agente 2 identificó
+          // esto como causa más probable del fallo silencioso.
+          const resendPayload: Record<string, unknown> = {
+            from,
+            to: [email],
+            subject,
+            html,
+          };
+          if (callerEmail && typeof callerEmail === "string" && callerEmail.includes("@")) {
+            resendPayload.reply_to = callerEmail;
+          }
+
           const resendRes = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: {
               Authorization: `Bearer ${resendApiKey}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              from,
-              to: [email],
-              subject,
-              html,
-              reply_to: callerEmail,
-            }),
+            body: JSON.stringify(resendPayload),
           });
 
           resendStatus = resendRes.status;
@@ -520,7 +546,11 @@ Deno.serve(async (req) => {
       role,
       account_id,
       max_users: maxUsers,
-      active_users: (activeCount ?? 0) + 1,
+      // active_users post-operación: si el miembro YA estaba activo (reenvío),
+      // el count no cambia. Si fue insert nuevo o reactivación, +1.
+      active_users: (existingMember && existingMember.is_active)
+        ? (activeCount ?? 0)
+        : (activeCount ?? 0) + 1,
       email_status: emailStatus,
       invite_link, // Siempre incluido para que admin pueda copiar/mandar manual
       resend_debug: lastResendError, // null si OK, { status, body, from_used } si falló
