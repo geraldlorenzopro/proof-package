@@ -173,17 +173,17 @@ export default function HubPage() {
       if (!sessionData?.session?.user) {
         console.log("[Hub] No session on first try, awaiting auth state...");
         sessionData = await new Promise<typeof sessionData>((resolve) => {
-          const timeout = setTimeout(async () => {
-            sub.subscription.unsubscribe();
-            resolve((await supabase.auth.getSession()).data);
-          }, 1500);
           const sub = supabase.auth.onAuthStateChange((_e, session) => {
             if (session?.user) {
               clearTimeout(timeout);
-              sub.subscription.unsubscribe();
+              sub.data.subscription.unsubscribe();
               resolve({ session } as any);
             }
           });
+          const timeout = setTimeout(async () => {
+            sub.data.subscription.unsubscribe();
+            resolve((await supabase.auth.getSession()).data);
+          }, 1500);
         });
       }
       if (!sessionData?.session?.user) {
