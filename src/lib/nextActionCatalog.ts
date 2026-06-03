@@ -131,6 +131,32 @@ export function getActionsForStage(stage: string | null | undefined): NextAction
   return [...specific, ...NEXT_ACTION_UNIVERSAL];
 }
 
+/** Devuelve las opciones separadas en 2 grupos para render con `<optgroup>`. */
+export function getGroupedActionsForStage(stage: string | null | undefined): {
+  specific: NextActionOption[];
+  universal: NextActionOption[];
+} {
+  const key = stage || "sin-clasificar";
+  const specific = NEXT_ACTION_CATALOG[key] || NEXT_ACTION_CATALOG["sin-clasificar"];
+  return { specific, universal: NEXT_ACTION_UNIVERSAL };
+}
+
+/** Label legible del stage para mostrar en headers (ej. "USCIS", "Consulado"). */
+export function getStageDisplayLabel(stage: string | null | undefined): string {
+  const map: Record<string, string> = {
+    uscis: "USCIS",
+    nvc: "NVC (Visa Center)",
+    embajada: "Consulado / Embajada",
+    court: "Corte EOIR",
+    ice: "ICE / Detención",
+    "admin-processing": "Admin Processing",
+    aprobado: "Aprobado",
+    negado: "Negado",
+    "sin-clasificar": "Etapa sin clasificar",
+  };
+  return map[stage || "sin-clasificar"] || "Etapa";
+}
+
 /** Lookup de label por key para mostrar en tabla/peek panel. */
 export function getActionLabel(key: string | null | undefined, customLabel?: string | null): string {
   if (!key) return "—";

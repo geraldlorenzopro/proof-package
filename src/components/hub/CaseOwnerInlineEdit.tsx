@@ -6,6 +6,8 @@
  */
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
+import { UserPlus } from "lucide-react";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
 
 interface TeamMember {
@@ -42,6 +44,7 @@ function initials(name: string | null | undefined): string {
 }
 
 export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwnerName, team, onOwnerChange }: Props) {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [ownerId, setOwnerId] = useState(currentOwnerId);
   const [ownerName, setOwnerName] = useState(currentOwnerName);
@@ -138,33 +141,61 @@ export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwn
         <div
           ref={popoverRef}
           style={{ position: "fixed", top: popPos.top, left: popPos.left, zIndex: 9999 }}
-          className="w-[220px] rounded-lg border border-cyan-accent/30 bg-deep-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 p-1"
+          className="w-[240px] rounded-lg border border-cyan-accent/30 bg-deep-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 p-1"
           onClick={(e) => e.stopPropagation()}
         >
-          <p className="text-[9px] uppercase tracking-wider text-slate-500 px-2 py-1.5 font-semibold">Asignar a…</p>
-          <button
-            onClick={() => handleSelect(null)}
-            className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded text-[11px] transition-colors ${!ownerId ? "bg-cyan-accent/15 text-cyan-accent" : "text-slate-300 hover:bg-white/[0.04]"}`}
-          >
-            <div className="w-[22px] h-[22px] rounded-full bg-slate-700 border border-dashed border-slate-500 shrink-0" />
-            <span className="italic">Sin asignar</span>
-          </button>
-          {team.map(m => {
-            const g = ownerGradient(m.user_id);
-            const isActive = m.user_id === ownerId;
-            return (
+          {team.length === 0 ? (
+            // Empty state — firma sin miembros del equipo todavía
+            <div className="px-3 py-4 text-center space-y-2.5">
+              <div className="w-10 h-10 rounded-full bg-amber-500/15 border border-amber-500/30 mx-auto flex items-center justify-center">
+                <UserPlus className="w-4 h-4 text-amber-300" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[11px] font-semibold text-white">No hay miembros del equipo aún</p>
+                <p className="text-[10px] text-slate-400 leading-snug">
+                  Invitá a tu equipo para poder asignar casos.
+                </p>
+              </div>
               <button
-                key={m.user_id}
-                onClick={() => handleSelect(m)}
-                className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded text-[11px] transition-colors ${isActive ? "bg-cyan-accent/15 text-cyan-accent" : "text-slate-300 hover:bg-white/[0.04]"}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(false);
+                  navigate("/hub/settings/office#team");
+                }}
+                className="w-full px-3 py-1.5 rounded-md bg-gradient-to-r from-ai-blue to-cyan-accent text-white text-[11px] font-bold flex items-center justify-center gap-1.5 hover:opacity-90"
               >
-                <div className={`w-[22px] h-[22px] rounded-full bg-gradient-to-br ${g} flex items-center justify-center text-[8px] font-bold text-white shrink-0`}>
-                  {initials(m.full_name)}
-                </div>
-                <span className="font-medium truncate">{m.full_name}</span>
+                <UserPlus className="w-3 h-3" />
+                Invitar miembro
               </button>
-            );
-          })}
+            </div>
+          ) : (
+            <>
+              <p className="text-[9px] uppercase tracking-wider text-slate-500 px-2 py-1.5 font-semibold">Asignar a…</p>
+              <button
+                onClick={() => handleSelect(null)}
+                className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded text-[11px] transition-colors ${!ownerId ? "bg-cyan-accent/15 text-cyan-accent" : "text-slate-300 hover:bg-white/[0.04]"}`}
+              >
+                <div className="w-[22px] h-[22px] rounded-full bg-slate-700 border border-dashed border-slate-500 shrink-0" />
+                <span className="italic">Sin asignar</span>
+              </button>
+              {team.map(m => {
+                const g = ownerGradient(m.user_id);
+                const isActive = m.user_id === ownerId;
+                return (
+                  <button
+                    key={m.user_id}
+                    onClick={() => handleSelect(m)}
+                    className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded text-[11px] transition-colors ${isActive ? "bg-cyan-accent/15 text-cyan-accent" : "text-slate-300 hover:bg-white/[0.04]"}`}
+                  >
+                    <div className={`w-[22px] h-[22px] rounded-full bg-gradient-to-br ${g} flex items-center justify-center text-[8px] font-bold text-white shrink-0`}>
+                      {initials(m.full_name)}
+                    </div>
+                    <span className="font-medium truncate">{m.full_name}</span>
+                  </button>
+                );
+              })}
+            </>
+          )}
         </div>,
         document.body
       )}

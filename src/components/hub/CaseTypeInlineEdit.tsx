@@ -20,8 +20,13 @@ import {
   CATEGORY_LABELS,
   searchCaseTypes,
   getCaseTypeByKey,
+  inferAgency,
+  filterCaseTypesByAgency,
+  AGENCY_LABELS,
+  AGENCY_DESCRIPTIONS,
   type CaseTypeMeta,
   type CaseTypeCategory,
+  type Agency,
 } from "@/lib/caseTypes";
 
 interface Props {
@@ -51,9 +56,28 @@ function resolveLegacyType(legacy: string | null): CaseTypeMeta | undefined {
   );
 }
 
+// Persist filtro de agencia entre sesiones — paralegal de Mr Visa abre
+// dropdown 80% USCIS, pre-seleccioná esa columna (sugerencia 2da opinión).
+const AGENCY_FILTER_KEY = "ner_case_types_agency_filter";
+
+const AGENCY_OPTIONS: Array<{ key: Agency | "all"; label: string }> = [
+  { key: "all", label: "Todas" },
+  { key: "USCIS", label: "USCIS" },
+  { key: "DOS", label: "DOS" },
+  { key: "EOIR", label: "EOIR" },
+  { key: "ICE", label: "ICE" },
+];
+
 export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseTypeChange }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [agencyFilter, setAgencyFilter] = useState<Agency | "all">(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(AGENCY_FILTER_KEY) : null;
+      if (saved && AGENCY_OPTIONS.some(o => o.key === saved)) return saved as Agency | "all";
+    } catch {}
+    return "all";
+  });
   const [popPos, setPopPos] = useState<{ top: number; left: number } | null>(null);
   // State local del case_type activo — necesario para optimistic update visible
   // sin depender de que el parent re-renderee (en demo mode el parent NO
@@ -65,6 +89,11 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
   const { saving, edit } = useCaseInlineEdit();
 
   useEffect(() => { setActiveCaseType(currentCaseType); }, [currentCaseType]);
+
+  // Persistir filtro de agencia
+  useEffect(() => {
+    try { localStorage.setItem(AGENCY_FILTER_KEY, agencyFilter); } catch {}
+  }, [agencyFilter]);
 
   // Chip principal — usa el resolver para soportar legacy values
   const currentMeta = useMemo(() => {
@@ -102,7 +131,21 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const results = useMemo(() => searchCaseTypes(search), [search]);
+  const searchResults = useMemo(() => searchCaseTypes(search), [search]);
+  const results = useMemo(
+    () => filterCaseTypesByAgency(searchResults, agencyFilter),
+    [searchResults, agencyFilter]
+  );
+
+  // Conteo por agencia para los badges de los chips
+  const agencyCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: searchResults.length };
+    for (const t of searchResults) {
+      const a = inferAgency(t.formNumber);
+      counts[a] = (counts[a] || 0) + 1;
+    }
+    return counts;
+  }, [searchResults]);
 
   // Agrupar por categoría
   const grouped = useMemo(() => {
@@ -151,8 +194,36 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
           className="w-[420px] rounded-lg border border-cyan-accent/30 bg-deep-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Search box */}
-          <div className="p-2 border-b border-white/8 shrink-0">
+          {/* Chips de filtro por agencia */}
+          <div className="p-2 border-b border-white/8 shrink-0 space-y-2">
+            <div className="flex items-center gap-1 flex-wrap">
+              {AGENCY_OPTIONS.map(opt => {
+                const isActive = agencyFilter === opt.key;
+                const count = agencyCounts[opt.key] ?? 0;
+                const description = opt.key === "all"
+                  ? "Todos los tipos del catálogo"
+                  : AGENCY_DESCRIPTIONS[opt.key as Agency];
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => setAgencyFilter(opt.key)}
+                    title={description}
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold border transition-colors ${
+                      isActive
+                        ? "bg-cyan-accent/15 border-cyan-accent/40 text-cyan-accent"
+                        : "bg-white/[0.04] border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20"
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    <span className={`tabular-nums text-[9px] ${isActive ? "text-cyan-accent/80" : "text-slate-500"}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search box */}
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
               <input
@@ -164,17 +235,35 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
                 className="w-full h-8 pl-8 pr-2 text-[12px] bg-white/[0.04] border border-white/10 rounded focus:outline-none focus:border-cyan-accent/50 placeholder:text-slate-500 text-slate-200"
               />
             </div>
-            <p className="text-[9px] text-slate-500 mt-1 px-1">
-              {results.length} de {CASE_TYPES.length} tipos · ESC cierra
+            <p className="text-[9px] text-slate-500 px-1 flex items-center justify-between">
+              <span>
+                {results.length} de {CASE_TYPES.length} tipos
+                {agencyFilter !== "all" && (
+                  <span className="text-cyan-accent/70"> · filtro: {AGENCY_LABELS[agencyFilter]}</span>
+                )}
+              </span>
+              <span>ESC cierra</span>
             </p>
           </div>
 
           {/* Results list (scrollable) */}
           <div className="flex-1 overflow-y-auto p-1">
             {results.length === 0 ? (
-              <p className="text-[11px] text-slate-500 italic px-3 py-4 text-center">
-                Sin resultados para "{search}"
-              </p>
+              <div className="px-3 py-4 text-center space-y-2">
+                <p className="text-[11px] text-slate-500 italic">
+                  {search.trim()
+                    ? `Sin resultados para "${search}"`
+                    : `Sin tipos en ${AGENCY_LABELS[agencyFilter as Agency] || "este filtro"}`}
+                </p>
+                {agencyFilter !== "all" && (
+                  <button
+                    onClick={() => setAgencyFilter("all")}
+                    className="text-[10px] text-cyan-accent hover:underline"
+                  >
+                    Ver todas las agencias
+                  </button>
+                )}
+              </div>
             ) : (
               Object.entries(grouped).map(([cat, items]) => (
                 <div key={cat} className="mb-1">

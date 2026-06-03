@@ -12,7 +12,7 @@
  * Width reducido 480 → 420 para dejar más contexto visible de la tabla.
  */
 import { useEffect, useState } from "react";
-import { X, AlertTriangle, FileText, Zap, ExternalLink, Phone, Target } from "lucide-react";
+import { X, AlertTriangle, FileText, Zap, ExternalLink, UserX, Target } from "lucide-react";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import { useCasePeekData } from "@/hooks/useCasePeekData";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
@@ -111,9 +111,9 @@ export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase, onNex
     const daysSilent = Math.floor((now - lastMs) / 86400000);
     if (daysSilent >= 10) {
       alerts.push({
-        icon: Phone,
+        icon: UserX,
         tone: "amber",
-        title: `Cliente sin contacto hace ${daysSilent}d`,
+        title: `Sin actividad del cliente hace ${daysSilent}d`,
       });
     }
   }

@@ -212,3 +212,57 @@ export const CATEGORY_LABELS: Record<CaseTypeCategory, string> = {
   "non-immigrant-special": "No-inmigrante · Especial",
   "administrative":        "Administrativo",
 };
+
+// ════════════════════════════════════════════════════════════════
+// AGENCIA — derivada al vuelo del formNumber prefix.
+// NO data migration, NO schema change. Función pura.
+// Decisión locked 2026-06-03 (segunda opinión: Codex).
+// ════════════════════════════════════════════════════════════════
+
+export type Agency = "USCIS" | "DOS" | "EOIR" | "ICE" | "Otros";
+
+export const AGENCY_LABELS: Record<Agency, string> = {
+  USCIS: "USCIS",
+  DOS:   "DOS (Consulado/NVC)",
+  EOIR:  "EOIR (Corte)",
+  ICE:   "ICE / Detención",
+  Otros: "Otros",
+};
+
+export const AGENCY_DESCRIPTIONS: Record<Agency, string> = {
+  USCIS: "Forms que se mandan a USCIS (peticiones, naturalización, AOS, EAD, etc.)",
+  DOS:   "Department of State — visas consulares (DS-160, DS-260) y National Visa Center",
+  EOIR:  "Corte de inmigración + Board of Immigration Appeals",
+  ICE:   "Detención, bonds, custody y removal",
+  Otros: "Forms administrativos generales (cambio de dirección, etc.)",
+};
+
+/**
+ * Deriva la agencia desde el formNumber. Función pura, cero side-effects.
+ * Casos especiales:
+ *   - I-352 es ICE (immigration bond), no USCIS
+ *   - I-589 puede ser USCIS (affirmative) o EOIR (defensive) — default USCIS
+ *   - AR-11 es USCIS (cambio de dirección)
+ */
+export function inferAgency(formNumber: string | null | undefined): Agency {
+  if (!formNumber) return "Otros";
+  const fn = formNumber.toUpperCase().trim();
+
+  // Casos especiales primero
+  if (fn === "I-352") return "ICE";
+  if (fn.startsWith("EOIR")) return "EOIR";
+  if (fn.startsWith("DS-")) return "DOS";
+
+  // I-* forms → USCIS por default (cubre I-130, I-485, I-765, I-129, I-140, N-*, etc.)
+  if (fn.startsWith("I-") || fn.startsWith("N-")) return "USCIS";
+  if (fn.startsWith("G-")) return "USCIS"; // G-28, G-1145
+  if (fn.startsWith("AR-")) return "USCIS";
+
+  return "Otros";
+}
+
+/** Helper para filtrar el catálogo por agencia. */
+export function filterCaseTypesByAgency(types: CaseTypeMeta[], agency: Agency | "all"): CaseTypeMeta[] {
+  if (agency === "all") return types;
+  return types.filter(t => inferAgency(t.formNumber) === agency);
+}

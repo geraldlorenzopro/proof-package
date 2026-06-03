@@ -21,6 +21,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDemoMode } from "@/hooks/useDemoData";
 import {
   getActionsForStage,
+  getGroupedActionsForStage,
+  getStageDisplayLabel,
   type NextActionPayload,
 } from "@/lib/nextActionCatalog";
 
@@ -65,6 +67,8 @@ export default function NextActionEditor({
   const [saving, setSaving] = useState(false);
 
   const options = getActionsForStage(processStage);
+  const grouped = getGroupedActionsForStage(processStage);
+  const stageLabel = getStageDisplayLabel(processStage);
   const isCustom = actionKey === "__custom__";
 
   // Reset state cuando cambia el caso o el currentValue
@@ -237,9 +241,18 @@ export default function NextActionEditor({
       <div className="p-4 space-y-3 max-h-[420px] overflow-y-auto">
         {/* Acción */}
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-            Acción
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Acción
+            </label>
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border bg-ai-blue/15 border-ai-blue/30 text-blue-200"
+              title="La lista de abajo está filtrada según la etapa actual del caso"
+            >
+              <span className="w-1 h-1 rounded-full bg-cyan-accent" />
+              Para etapa: {stageLabel}
+            </span>
+          </div>
           <select
             value={actionKey}
             onChange={(e) => {
@@ -253,9 +266,16 @@ export default function NextActionEditor({
             className="w-full px-2.5 py-2 rounded-md bg-white/5 border border-white/10 text-[12px] text-white focus:border-cyan-accent focus:outline-none"
           >
             <option value="">— Elegí una acción —</option>
-            {options.map(o => (
-              <option key={o.key} value={o.key}>{o.label}</option>
-            ))}
+            <optgroup label={`Específicas de ${stageLabel}`}>
+              {grouped.specific.map(o => (
+                <option key={o.key} value={o.key}>{o.label}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Universales (cualquier etapa)">
+              {grouped.universal.map(o => (
+                <option key={o.key} value={o.key}>{o.label}</option>
+              ))}
+            </optgroup>
             <option value="__custom__">Otra… (texto libre)</option>
           </select>
 
