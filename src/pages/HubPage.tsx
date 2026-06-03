@@ -168,13 +168,32 @@ export default function HubPage() {
 
   async function recoverFromSession() {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      // Try to get session; if not ready, wait briefly for auth state to settle
+      let sessionData = (await supabase.auth.getSession()).data;
       if (!sessionData?.session?.user) {
-        setError("Enlace inválido o incompleto. Por favor usa el enlace desde tu CRM.");
+        console.log("[Hub] No session on first try, awaiting auth state...");
+        sessionData = await new Promise<typeof sessionData>((resolve) => {
+          const sub = supabase.auth.onAuthStateChange((_e, session) => {
+            if (session?.user) {
+              clearTimeout(timeout);
+              sub.data.subscription.unsubscribe();
+              resolve({ session } as any);
+            }
+          });
+          const timeout = setTimeout(async () => {
+            sub.data.subscription.unsubscribe();
+            resolve((await supabase.auth.getSession()).data);
+          }, 1500);
+        });
+      }
+      if (!sessionData?.session?.user) {
+        console.warn("[Hub] No active session after wait");
+        setError("Tu sesión expiró. Iniciá sesión nuevamente.");
         setLoading(false);
         return;
       }
       const userId = sessionData.session.user.id;
+      console.log("[Hub] Recovering for user:", userId);
 
       // Step 1: Check sessionStorage for pinned account
       let resolvedAccountId = sessionStorage.getItem("ner_active_account_id");
@@ -182,12 +201,12 @@ export default function HubPage() {
       let resolvedPlan = "essential";
 
       if (resolvedAccountId) {
-        // Validate it still exists
-        const { data: account } = await supabase
+        const { data: account, error: accErr } = await supabase
           .from("ner_accounts")
           .select("account_name, plan")
           .eq("id", resolvedAccountId)
-          .single();
+          .maybeSingle();
+        if (accErr) console.warn("[Hub] Pinned account lookup error:", accErr);
         if (account) {
           resolvedAccountName = account.account_name;
           resolvedPlan = account.plan;
@@ -199,32 +218,42 @@ export default function HubPage() {
 
       // Step 2: If not pinned, resolve from account_members with priority
       if (!resolvedAccountId) {
-        const { data: members } = await supabase
+        const { data: members, error: memErr } = await supabase
           .from("account_members")
           .select("account_id, role")
           .eq("user_id", userId);
 
+        if (memErr) {
+          console.error("[Hub] account_members query error:", memErr);
+          setError(`Error consultando tu membresía: ${memErr.message}`);
+          setLoading(false);
+          return;
+        }
         if (!members || members.length === 0) {
-          setError("No se encontró una cuenta asociada.");
+          setError("No se encontró una cuenta asociada a tu usuario.");
           setLoading(false);
           return;
         }
 
-        // Fetch account details for all memberships
         const accountIds = [...new Set(members.map(m => m.account_id))];
-        const { data: accounts } = await supabase
+        const { data: accounts, error: accsErr } = await supabase
           .from("ner_accounts")
           .select("id, account_name, plan, external_crm_id, is_active")
           .in("id", accountIds)
           .eq("is_active", true);
 
+        if (accsErr) {
+          console.error("[Hub] ner_accounts query error:", accsErr);
+          setError(`Error consultando tu cuenta: ${accsErr.message}`);
+          setLoading(false);
+          return;
+        }
         if (!accounts || accounts.length === 0) {
           setError("No se encontró una cuenta activa.");
           setLoading(false);
           return;
         }
 
-        // Sort: owner role first, then GHL-linked accounts
         const enriched = members
           .map(m => ({
             ...m,
@@ -245,7 +274,6 @@ export default function HubPage() {
         resolvedAccountName = best.account?.account_name || "";
         resolvedPlan = best.account?.plan || "essential";
 
-        // Pin for this session
         sessionStorage.setItem("ner_active_account_id", resolvedAccountId);
       }
 
@@ -266,12 +294,12 @@ export default function HubPage() {
         apps = hubApps || [];
       }
 
-      // Get profile for staff name
+      // Get profile for staff name (maybeSingle — profile may not exist yet)
       const { data: profile } = await supabase
         .from("profiles")
         .select("full_name")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       const recovered: HubData = {
         account_id: resolvedAccountId,
@@ -287,9 +315,9 @@ export default function HubPage() {
       sessionStorage.setItem("ner_hub_data", JSON.stringify(recovered));
       setAuthReady(true);
       setLoading(false);
-    } catch (err) {
-      console.error("Hub recovery failed:", err);
-      setError("Enlace inválido o incompleto. Por favor usa el enlace desde tu CRM.");
+    } catch (err: any) {
+      console.error("[Hub] recoverFromSession exception:", err);
+      setError(`Error cargando el hub: ${err?.message || "desconocido"}`);
       setLoading(false);
     }
   }
