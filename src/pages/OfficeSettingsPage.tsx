@@ -860,24 +860,47 @@ export default function OfficeSettingsPage() {
             })()}
             <div className="space-y-2">
              {members.map(m => {
-                // Fallback: si no hay full_name, usa la parte local del email (sin dominios internos)
+                // Fallback en cascada: full_name → parte local del email → "Sin nombre"
+                // Antes decía "Pendiente de sincronizar" cuando full_name era null —
+                // confuso porque sugiere que falta un sync con un sistema externo.
+                // 2026-06-03: copy honesto + visibilidad de los seeds demo.
                 const emailLocal = m.email && !m.email.endsWith('@hub.ner.internal')
                   ? m.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
                   : null;
-                const displayName = m.full_name || emailLocal || 'Pendiente de sincronizar';
+                const displayName = m.full_name || emailLocal || 'Sin nombre';
                 const initials = displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
                 const roleColor = m.role === 'owner' ? 'bg-accent/20 text-accent border-accent/30' : m.role === 'admin' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-secondary text-muted-foreground border-border/30';
+
+                // Flag: rows de seed demo creados por la edge function
+                // seed-team-members. NO son miembros reales, son data de prueba
+                // que se inyecta para validar flujos UI antes del piloto.
+                const isDemoSeed = m.email?.endsWith('@team.demo.test') ?? false;
+
                 return (
-                  <Card key={m.id} className="bg-card/60 border-border/30 p-3 flex items-center gap-3">
+                  <Card key={m.id} className={`bg-card/60 border-border/30 p-3 flex items-center gap-3 ${isDemoSeed ? "opacity-60" : ""}`}>
                     <div className="w-10 h-10 rounded-full bg-secondary/80 flex items-center justify-center text-sm font-bold text-foreground shrink-0">{initials}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
+                      <p className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
+                        {displayName}
+                        {isDemoSeed && (
+                          <span
+                            className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300 font-semibold uppercase tracking-wider"
+                            title="Miembro creado por edge function de prueba seed-team-members"
+                          >
+                            Demo
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-muted-foreground truncate">{m.email || m.user_id.slice(0, 8) + '...'}</p>
                     </div>
                     <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${roleColor}`}>{m.role}</Badge>
                     <span className="text-xs text-muted-foreground hidden sm:inline">{new Date(m.created_at).toLocaleDateString()}</span>
                     {isAdmin && m.user_id !== currentUserId && (
-                      <button onClick={() => setDeleteConfirm(m)} className="text-muted-foreground/40 hover:text-destructive transition-colors">
+                      <button
+                        onClick={() => setDeleteConfirm(m)}
+                        className="text-muted-foreground/40 hover:text-destructive transition-colors"
+                        title={isDemoSeed ? "Eliminar miembro demo" : "Eliminar miembro"}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
