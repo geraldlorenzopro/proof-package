@@ -4,13 +4,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  ArrowLeft, Building2, Users, Briefcase, Loader2, UserCheck,
+  ArrowLeft, Building2, Users, Briefcase, Loader2, UserCheck, RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
+
+const MAX_USERS_BY_PLAN: Record<string, number> = {
+  essential: 2,
+  professional: 5,
+  elite: 10,
+  enterprise: 999,
+};
 
 interface Account {
   id: string;
@@ -38,9 +46,16 @@ export default function AdminAccountDetailPage() {
   const { accountId } = useParams<{ accountId: string }>();
   const [account, setAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
+  const [maxUsersDraft, setMaxUsersDraft] = useState<string>("");
+  const [savingMaxUsers, setSavingMaxUsers] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => { loadAccount(); }, [accountId]);
+
+  // Sincronizar draft del input cuando recargamos la cuenta
+  useEffect(() => {
+    if (account) setMaxUsersDraft(String(account.max_users ?? ""));
+  }, [account?.max_users]);
 
   async function loadAccount() {
     const { data } = await supabase.functions.invoke("admin-get-all-accounts");
@@ -61,6 +76,30 @@ export default function AdminAccountDetailPage() {
     } else {
       toast.error("Error al actualizar");
     }
+  }
+
+  async function saveMaxUsers() {
+    const parsed = Number(maxUsersDraft);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 999) {
+      toast.error("Max users debe ser un entero entre 1 y 999");
+      return;
+    }
+    if (account && parsed === account.max_users) {
+      toast.info("Sin cambios");
+      return;
+    }
+    setSavingMaxUsers(true);
+    try {
+      await handleUpdate({ max_users: parsed });
+    } finally {
+      setSavingMaxUsers(false);
+    }
+  }
+
+  function resetMaxUsersToPlan() {
+    if (!account) return;
+    const planDefault = MAX_USERS_BY_PLAN[account.plan] ?? account.max_users;
+    setMaxUsersDraft(String(planDefault));
   }
 
   async function handleImpersonate() {
@@ -125,6 +164,63 @@ export default function AdminAccountDetailPage() {
                 </SelectContent>
               </Select>
             </div>
+            {/* Max users — editable con override visual */}
+            {(() => {
+              const planDefault = MAX_USERS_BY_PLAN[account.plan] ?? account.max_users;
+              const isOverride = account.max_users !== planDefault;
+              const draftIsDifferent = String(account.max_users) !== maxUsersDraft;
+
+              return (
+                <div className="space-y-2 py-1 border-y border-white/5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs text-white/40">Max users</p>
+                      <p className="text-[10px] text-white/30">
+                        Por defecto plan {account.plan}: <span className="text-white/50">{planDefault === 999 ? "∞" : planDefault}</span>
+                        {isOverride && (
+                          <span className="ml-1 text-amber-400 font-semibold">· override activo</span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={999}
+                        value={maxUsersDraft}
+                        onChange={(e) => setMaxUsersDraft(e.target.value)}
+                        className="w-16 h-7 text-xs bg-transparent border-white/10 text-white text-center"
+                        disabled={savingMaxUsers}
+                      />
+                      {isOverride && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={resetMaxUsersToPlan}
+                          className="h-7 w-7 p-0 text-white/40 hover:text-white"
+                          title="Volver al valor del plan"
+                          disabled={savingMaxUsers}
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        onClick={saveMaxUsers}
+                        disabled={savingMaxUsers || !draftIsDifferent}
+                        className="h-7 px-2 text-[10px] bg-jarvis/80 hover:bg-jarvis text-background"
+                      >
+                        {savingMaxUsers ? <Loader2 className="w-3 h-3 animate-spin" /> : "Guardar"}
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-white/30 leading-snug">
+                    Override puntual — caso de uso: vender 1+ asientos extra a una firma sin subirla de plan.
+                  </p>
+                </div>
+              );
+            })()}
+
             <div className="flex justify-between items-center">
               <span className="text-xs text-white/40">Activa</span>
               <Switch

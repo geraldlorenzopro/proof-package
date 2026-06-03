@@ -97,6 +97,10 @@ export default function OfficeSettingsPage() {
   const [accountName, setAccountName] = useState("");
   const [staffName, setStaffName] = useState("");
   const [plan, setPlan] = useState("essential");
+  const [maxUsers, setMaxUsers] = useState<number | null>(null);
+  const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
+  const [showInviteLinkDialog, setShowInviteLinkDialog] = useState(false);
+  const [lastInviteEmail, setLastInviteEmail] = useState("");
   const [userRole, setUserRole] = useState<string>("member");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -175,10 +179,14 @@ export default function OfficeSettingsPage() {
 
       const { data: acct } = await supabase
         .from('ner_accounts')
-        .select('account_name, plan')
+        .select('account_name, plan, max_users')
         .eq('id', mem.account_id)
         .single();
-      if (acct) { setAccountName(acct.account_name); setPlan(acct.plan); }
+      if (acct) {
+        setAccountName(acct.account_name);
+        setPlan(acct.plan);
+        setMaxUsers(acct.max_users ?? null);
+      }
 
       const { data: prof } = await supabase
         .from('profiles')
@@ -309,6 +317,52 @@ export default function OfficeSettingsPage() {
   }
 
   // ── Team actions ──
+
+  // Reutiliza la lógica de carga del initial useEffect — con JOIN correcto a
+  // profiles + ghl_user_mappings + filter is_active=true. Llamado al mount
+  // y después de inviteMember/removeMember.
+  async function reloadTeam() {
+    if (!accountId) return;
+    const { data: mems } = await supabase
+      .from('account_members')
+      .select('id, user_id, role, created_at')
+      .eq('account_id', accountId)
+      .eq('is_active', true);
+
+    if (!mems) return;
+    const userIds = mems.map(m => m.user_id);
+    const { data: profiles } = userIds.length > 0
+      ? await supabase.from('profiles').select('user_id, full_name').in('user_id', userIds)
+      : { data: [] as any[] };
+    const { data: ghlMaps } = userIds.length > 0
+      ? await supabase.from('ghl_user_mappings').select('mapped_user_id, ghl_user_email, ghl_user_name').in('mapped_user_id', userIds)
+      : { data: [] as any[] };
+
+    const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+    const ghlMap = new Map((ghlMaps || []).map((g: any) => [g.mapped_user_id, g]));
+    const enriched: TeamMember[] = mems.map((m: any) => {
+      const profile = profileMap.get(m.user_id);
+      const ghl = ghlMap.get(m.user_id);
+      return {
+        ...m,
+        full_name: profile?.full_name || ghl?.ghl_user_name || null,
+        email: ghl?.ghl_user_email || null,
+      };
+    });
+    setMembers(enriched);
+
+    // Refrescar max_users por si platform admin lo cambió
+    const { data: acct } = await supabase
+      .from('ner_accounts')
+      .select('plan, max_users')
+      .eq('id', accountId)
+      .single();
+    if (acct) {
+      setPlan(acct.plan);
+      setMaxUsers(acct.max_users ?? null);
+    }
+  }
+
   async function inviteMember() {
     const email = inviteEmail.trim().toLowerCase();
     const full_name = inviteFullName.trim();
@@ -325,6 +379,14 @@ export default function OfficeSettingsPage() {
       return;
     }
 
+    // Pre-check local: avisar antes de pegarle al backend si ya estás al límite
+    if (maxUsers !== null && members.length >= maxUsers) {
+      toast.error("Plan al máximo", {
+        description: `Tu plan ${plan} permite ${maxUsers} usuarios. Contactá a soporte para subir el plan o quitá un miembro.`,
+      });
+      return;
+    }
+
     setInviting(true);
     try {
       const { data, error } = await supabase.functions.invoke("invite-team-member", {
@@ -332,7 +394,6 @@ export default function OfficeSettingsPage() {
       });
 
       if (error) {
-        // El error de supabase.functions.invoke puede traer body con detail
         const detail = (error as any)?.context?.body || (error as any)?.message || "Intentá de nuevo.";
         toast.error("No se pudo invitar", { description: String(detail) });
         return;
@@ -346,42 +407,44 @@ export default function OfficeSettingsPage() {
           invalid_role: "Rol inválido.",
           forbidden: "Solo el owner o un admin pueden invitar miembros.",
           unauthorized: "Tu sesión expiró. Refrescá la página.",
-          auth_invite_failed: "Supabase no pudo enviar el email de invitación.",
+          auth_invite_failed: "No se pudo crear la cuenta en el sistema de autenticación.",
+          seat_limit_reached: data.message || `Llegaste al límite de tu plan (${data.max_users} usuarios).`,
+          account_inactive: "Esta cuenta no está activa. Contactá a soporte.",
+          account_not_found: "No se pudo encontrar la cuenta.",
         };
         toast.error(errorMap[data.error] || "No se pudo invitar", { description: data.detail });
         return;
       }
 
-      toast.success(data?.message || `Invitación enviada a ${email}`);
+      // Éxito — mostrar invite link + cerrar dialog
+      setLastInviteLink(data?.invite_link || null);
+      setLastInviteEmail(email);
+      setShowInviteLinkDialog(true);
+
+      const emailStatus = data?.email_status;
+      const successMsg =
+        emailStatus === "sent"
+          ? `Email enviado a ${email}`
+          : emailStatus === "failed"
+          ? "Miembro creado · email falló (mostrando link)"
+          : emailStatus === "skipped_existing"
+          ? `${full_name} ya tenía cuenta · agregado al equipo`
+          : "Miembro creado · compartí el link manualmente";
+      toast.success(successMsg);
+
       setInviteOpen(false);
       setInviteEmail("");
       setInviteFullName("");
       setInviteRole("member");
 
-      // Refresh team list — re-cargar account_members
-      const { data: refreshed } = await supabase
-        .from("account_members")
-        .select("id, user_id, role, created_at, profiles:user_id(full_name, email)")
-        .eq("account_id", accountId)
-        .order("created_at", { ascending: true });
-
-      if (refreshed) {
-        setMembers(refreshed.map((m: any) => ({
-          id: m.id,
-          user_id: m.user_id,
-          role: m.role,
-          created_at: m.created_at,
-          full_name: m.profiles?.full_name,
-          email: m.profiles?.email,
-        })));
-      }
+      await reloadTeam();
 
       const { logAudit } = await import("@/lib/auditLog");
       logAudit({
         action: "member.invited" as any,
         entity_type: "settings" as any,
         entity_id: data?.member_id || "",
-        entity_label: `${full_name} (${email}) · rol ${inviteRole}`,
+        entity_label: `${full_name} (${email}) · rol ${inviteRole} · email_status ${emailStatus}`,
       });
     } catch (err: any) {
       console.error("[inviteMember] unexpected:", err);
@@ -391,12 +454,32 @@ export default function OfficeSettingsPage() {
     }
   }
 
+  async function copyInviteLink() {
+    if (!lastInviteLink) return;
+    try {
+      await navigator.clipboard.writeText(lastInviteLink);
+      toast.success("Link copiado al portapapeles");
+    } catch {
+      toast.error("No se pudo copiar — seleccioná el link manualmente");
+    }
+  }
+
   async function removeMember(member: TeamMember) {
-    const { error } = await supabase.from('account_members').delete().eq('id', member.id);
+    // Soft-delete: marca is_active=false en vez de borrar. Mantiene el row
+    // para historial/audit y libera un asiento del plan al re-contar
+    // (account_members WHERE is_active=true).
+    const { error } = await supabase
+      .from('account_members')
+      .update({
+        is_active: false,
+        deactivated_at: new Date().toISOString(),
+        deactivated_reason: 'removed_by_admin',
+      })
+      .eq('id', member.id);
     if (error) { toast.error("Error al eliminar"); return; }
-    setMembers(prev => prev.filter(m => m.id !== member.id));
-    toast.success("Miembro eliminado");
+    toast.success("Miembro eliminado del equipo");
     setDeleteConfirm(null);
+    await reloadTeam();
     const { logAudit } = await import("@/lib/auditLog");
     logAudit({ action: "member.removed" as any, entity_type: "settings" as any, entity_id: member.id, entity_label: member.full_name || member.email || "Miembro" });
   }
@@ -703,14 +786,78 @@ export default function OfficeSettingsPage() {
 
           {/* ═══════ TAB 3: EQUIPO ═══════ */}
           <TabsContent value="equipo" className="mt-4 space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold text-foreground">Miembros del equipo</h2>
-              {isAdmin && (
-                <Button size="sm" onClick={() => setInviteOpen(true)} className="bg-jarvis hover:bg-jarvis-glow text-background gap-1.5">
-                  <Plus className="w-3.5 h-3.5" /> Invitar miembro
-                </Button>
-              )}
-            </div>
+            {/* Header con contador del plan + barra de progreso + invitar */}
+            {(() => {
+              const cap = maxUsers ?? 0;
+              const used = members.length;
+              const atLimit = cap > 0 && used >= cap;
+              const nearLimit = cap > 0 && used >= cap - 1 && used < cap;
+              const pct = cap > 0 ? Math.min(100, Math.round((used / cap) * 100)) : 0;
+              const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
+              const barColor = atLimit
+                ? "bg-rose-500"
+                : nearLimit
+                ? "bg-amber-500"
+                : "bg-jarvis";
+
+              return (
+                <div className="space-y-3 mb-2">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-lg font-semibold text-foreground">Miembros del equipo</h2>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Plan <span className="font-semibold text-foreground">{planLabel}</span>
+                        {cap > 0 && (
+                          <>
+                            {" · "}
+                            <span className={atLimit ? "text-rose-400 font-semibold" : "text-foreground"}>
+                              {used} de {cap === 999 ? "∞" : cap} usuarios
+                            </span>
+                          </>
+                        )}
+                        {plan !== "enterprise" && (
+                          <>
+                            {" · "}
+                            <a
+                              href="mailto:hola@nerimmigration.com?subject=Quiero subir mi plan"
+                              className="text-jarvis hover:underline"
+                            >
+                              Cambiar plan
+                            </a>
+                          </>
+                        )}
+                      </p>
+                    </div>
+                    {isAdmin && (
+                      <div className="flex flex-col items-end gap-0.5">
+                        <Button
+                          size="sm"
+                          onClick={() => setInviteOpen(true)}
+                          disabled={atLimit}
+                          className="bg-jarvis hover:bg-jarvis-glow text-background gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={atLimit ? `Tu plan ${planLabel} permite ${cap} usuarios. Contactá soporte para subir.` : undefined}
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Invitar miembro
+                        </Button>
+                        {atLimit && (
+                          <span className="text-[10px] text-rose-400 font-medium">
+                            Plan al máximo
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {cap > 0 && cap < 900 && (
+                    <div className="w-full h-1.5 rounded-full bg-secondary/40 overflow-hidden">
+                      <div
+                        className={`h-full ${barColor} transition-all duration-300`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <div className="space-y-2">
              {members.map(m => {
                 // Fallback: si no hay full_name, usa la parte local del email (sin dominios internos)
@@ -909,6 +1056,51 @@ export default function OfficeSettingsPage() {
               className="bg-jarvis hover:bg-jarvis-glow text-background"
             >
               {inviting ? "Invitando…" : "Enviar invitación"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Invite Link Dialog (post-invite) — backup por si el email no llega ── */}
+      <Dialog open={showInviteLinkDialog} onOpenChange={setShowInviteLinkDialog}>
+        <DialogContent className="bg-card border-border/40">
+          <DialogHeader>
+            <DialogTitle>Invitación creada</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-foreground">
+              Se envió un email a <span className="font-semibold">{lastInviteEmail}</span> con un link para configurar la contraseña.
+            </p>
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-3 space-y-2">
+              <p className="text-[11px] font-semibold text-amber-300 uppercase tracking-wider">
+                Por si el email no llega
+              </p>
+              <p className="text-[11px] text-amber-200/90 leading-snug">
+                Compartí este link directo por WhatsApp/Telegram. Expira en 24 horas.
+              </p>
+              {lastInviteLink ? (
+                <div className="flex items-stretch gap-2">
+                  <code className="flex-1 min-w-0 text-[10px] bg-black/30 border border-white/10 rounded px-2 py-1.5 text-cyan-300 break-all leading-tight">
+                    {lastInviteLink}
+                  </code>
+                  <Button
+                    size="sm"
+                    onClick={copyInviteLink}
+                    className="shrink-0 bg-cyan-accent hover:bg-cyan-accent/90 text-background gap-1.5"
+                  >
+                    Copiar
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-[11px] text-amber-300/80 italic">
+                  Link no disponible — el usuario debe ingresar a /auth con su email y usar "Olvidé mi contraseña".
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowInviteLinkDialog(false)} className="bg-jarvis hover:bg-jarvis-glow text-background">
+              Listo
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1372,8 +1564,13 @@ function GhlIntegrationCard({ accountId, config, isAdmin }: { accountId: string 
         <p className="text-[10px] text-amber-400/80 text-center">Configura tu API Key y Location ID para sincronizar</p>
       )}
 
-      {/* GHL Team Members Sync */}
-      {isGhlConnected && (
+      {/* GHL Team Members Sync — DESHABILITADO 2026-06-03 (decisión Mr. Lorenzo).
+          El team de NER ahora se gestiona 100% desde NER con seat enforcement
+          por plan (essential 2 / professional 5 / elite 10 / enterprise ∞).
+          GHL sigue siendo source-of-truth de leads/clientes via sync-ghl-contacts.
+          Componente GhlTeamSyncSection queda como código (reactivar cambiando
+          false a true) por si se decide en el futuro un híbrido controlado. */}
+      {false && isGhlConnected && (
         <GhlTeamSyncSection accountId={accountId} />
       )}
     </Card>

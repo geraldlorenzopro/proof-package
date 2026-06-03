@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { account_id, plan, is_active, external_crm_id } = body;
+    const { account_id, plan, is_active, external_crm_id, max_users } = body;
 
     if (!account_id) {
       return new Response(JSON.stringify({ error: "account_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -35,11 +35,36 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceKey);
 
+    // Max_users por plan (debe coincidir con provision-account/index.ts)
+    const MAX_USERS_BY_PLAN: Record<string, number> = {
+      essential: 2,
+      professional: 5,
+      elite: 10,
+      enterprise: 999,
+    };
+
     // Build update payload
     const updates: Record<string, unknown> = {};
-    if (plan !== undefined) updates.plan = plan;
+    if (plan !== undefined) {
+      updates.plan = plan;
+      // Auto-ajustar max_users al límite del nuevo plan (a menos que se pase
+      // override explícito en max_users). Mr. Lorenzo locked 2026-06-03:
+      // cambiar plan debe ajustar el seat limit automáticamente.
+      if (max_users === undefined && MAX_USERS_BY_PLAN[plan] !== undefined) {
+        updates.max_users = MAX_USERS_BY_PLAN[plan];
+      }
+    }
     if (is_active !== undefined) updates.is_active = is_active;
     if (external_crm_id !== undefined) updates.external_crm_id = external_crm_id;
+    if (max_users !== undefined) {
+      // Override puntual del platform admin — caso de uso: vender 1 asiento
+      // extra a una firma Essential ($217 vs $197) sin subirla a Professional.
+      const parsedMax = Number(max_users);
+      if (!Number.isInteger(parsedMax) || parsedMax < 1 || parsedMax > 999) {
+        return new Response(JSON.stringify({ error: "max_users must be integer 1-999" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      updates.max_users = parsedMax;
+    }
 
     if (Object.keys(updates).length === 0) {
       return new Response(JSON.stringify({ error: "Nothing to update" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
