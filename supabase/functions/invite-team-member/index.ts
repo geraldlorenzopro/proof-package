@@ -323,7 +323,10 @@ Deno.serve(async (req) => {
 
     // ───── Insertar o reactivar account_members ─────
     let memberId: string;
-    if (existingMember && !existingMember.is_active) {
+    if (existingMember && existingMember.is_active) {
+      // Ya es miembro activo (caso force_resend) — no tocar BD, solo email.
+      memberId = existingMember.id;
+    } else if (existingMember && !existingMember.is_active) {
       // Reactivar miembro previamente desactivado
       const { data: reactivated, error: reactErr } = await supabaseAdmin
         .from("account_members")
