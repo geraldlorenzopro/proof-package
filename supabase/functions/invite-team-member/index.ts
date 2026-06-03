@@ -157,31 +157,27 @@ Deno.serve(async (req) => {
     } catch {
       return jsonResponse({ error: "invalid_json" }, 400);
     }
+    console.log("[invite-team-member] body keys:", Object.keys(body), "force_resend:", body.force_resend, "user_id:", body.user_id, "email:", body.email);
 
     let email = (body.email || "").trim().toLowerCase();
     let full_name = (body.full_name || "").trim();
     const role = (body.role || "member").trim();
-    // force_resend: usado por el botón "Reenviar invitación" en cada row
-    // del equipo. Si true: NO valida already_member, NO valida seat_limit
-    // (ya está dentro del cap), y FUERZA el envío del email aunque el
-    // user ya exista. Útil cuando el primer email no llegó a inbox.
     const forceResend = body.force_resend === true;
     const targetUserId = (body.user_id || "").trim();
 
-    // Si llaman con user_id pero sin email/full_name (caso del botón
-    // Reenviar en la UI — el email no está en account_members directo,
-    // está en auth.users), buscar esos datos antes de validar.
     if (targetUserId && (!email || !full_name)) {
-      const supabaseAdminEarly = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
-      const { data: userData } = await supabaseAdminEarly.auth.admin.getUserById(targetUserId);
+      const { data: userData, error: getUserErr } =
+        await supabaseAdmin.auth.admin.getUserById(targetUserId);
       const authEmail = userData?.user?.email;
+      console.log(
+        "[invite-team-member] lookup user_id=" + targetUserId,
+        "found email=" + (authEmail || "(none)"),
+        "err=" + (getUserErr?.message || "(none)")
+      );
       if (authEmail && !email) email = authEmail.toLowerCase();
 
       if (!full_name) {
-        const { data: profile } = await supabaseAdminEarly
+        const { data: profile } = await supabaseAdmin
           .from("profiles")
           .select("full_name")
           .eq("user_id", targetUserId)
@@ -191,7 +187,8 @@ Deno.serve(async (req) => {
     }
 
     if (!email || !email.includes("@") || email.length < 5 || email.length > 256) {
-      return jsonResponse({ error: "invalid_email" }, 400);
+      console.error("[invite-team-member] invalid_email email=\"" + email + "\" targetUserId=\"" + targetUserId + "\"");
+      return jsonResponse({ error: "invalid_email", debug_email: email, debug_user_id: targetUserId }, 400);
     }
     if (!full_name || full_name.length < 2 || full_name.length > 128) {
       return jsonResponse({ error: "invalid_full_name" }, 400);
