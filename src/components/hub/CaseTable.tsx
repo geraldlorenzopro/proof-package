@@ -27,6 +27,7 @@ import CaseAlertsCell from "./CaseAlertsCell";
 import CaseStageInlineEdit from "./CaseStageInlineEdit";
 import CaseOwnerInlineEdit from "./CaseOwnerInlineEdit";
 import CaseTypeInlineEdit from "./CaseTypeInlineEdit";
+import NextActionChip from "./NextActionChip";
 
 const RESPONSIBLE_META: Record<string, { icon: string; label: string; chipClass: string }> = {
   cliente:      { icon: "🙋", label: "Cliente",     chipClass: "bg-orange-500/15 border-orange-500/30 text-orange-200" },
@@ -85,21 +86,6 @@ function ownerGradient(ownerId: string | null | undefined): string {
 function initials(name: string | null | undefined): string {
   if (!name) return "??";
   return name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
-}
-
-function formatNextDue(iso: string | null | undefined): { label: string; tone: string } {
-  if (!iso) return { label: "—", tone: "text-slate-500" };
-  const d = new Date(iso + "T00:00:00");
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diffDays = Math.round((d.getTime() - today.getTime()) / 86400000);
-  const ddmm = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-  if (diffDays < 0) return { label: `${ddmm} (vencido)`, tone: "text-rose-400 font-semibold" };
-  if (diffDays === 0) return { label: `${ddmm} (hoy)`, tone: "text-rose-400 font-semibold" };
-  if (diffDays <= 3) return { label: `${ddmm} (${diffDays}d)`, tone: "text-rose-400 font-semibold" };
-  if (diffDays <= 7) return { label: `${ddmm} (${diffDays}d)`, tone: "text-amber-300 font-semibold" };
-  if (diffDays <= 14) return { label: `${ddmm} (${diffDays}d)`, tone: "text-cyan-accent" };
-  return { label: `${ddmm} (${diffDays}d)`, tone: "text-slate-300" };
 }
 
 // Flat item types para el virtualizer
@@ -271,10 +257,18 @@ function ColumnHeaderRow() {
       <div>Cliente</div>
       <div>Tipo de proceso</div>
       <div>Status</div>
-      <div>Responsable</div>
-      <div>Owner</div>
-      <div>Próximo paso</div>
-      <div className="text-center">Alertas</div>
+      <div title="Quién mueve el caso ahora: cliente, equipo, profesional o gobierno (USCIS / NVC / consulado)">
+        Responsable
+      </div>
+      <div title="Persona del equipo dueña del caso. Si está sin asignar, el caso no tiene a nadie respondiendo por él.">
+        Owner
+      </div>
+      <div title="Acción concreta + fecha. Editable desde el panel del caso.">
+        Próximo paso
+      </div>
+      <div className="text-center" title="RFE vencidos, tareas vencidas, silencio del cliente">
+        Alertas
+      </div>
     </div>
   );
 }
@@ -291,7 +285,6 @@ function CaseRow({
 }) {
   const ownerName = c.assigned_to && staffNames ? staffNames[c.assigned_to] : null;
   const clientInitials = initials(c.client_name);
-  const nextDue = formatNextDue(c.next_due_date);
   const taskCount = c.overdue_tasks_count ?? c.open_tasks_count ?? 0;
   const taskOverdue = (c.overdue_tasks_count ?? 0) > 0;
   const clientGradient = ownerGradient(c.id);
@@ -387,9 +380,15 @@ function CaseRow({
         />
       </div>
 
-      {/* Próximo paso */}
-      <div className={`text-[12px] tabular-nums truncate ${nextDue.tone}`}>
-        {nextDue.label}
+      {/* Próximo paso (Sprint B 2026-06-03: editor inline con catálogo por etapa) */}
+      <div onClick={(e) => e.stopPropagation()} className="min-w-0">
+        <NextActionChip
+          caseId={c.id}
+          processStage={c.process_stage}
+          value={c.next_action ?? null}
+          variant="compact"
+          onChange={(next) => onCaseChange?.(c.id, { next_action: next } as Partial<PipelineCase>)}
+        />
       </div>
 
       {/* Alertas (70px col) */}

@@ -117,7 +117,7 @@ export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwn
         onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
         disabled={saving}
         className="flex items-center gap-1.5 min-w-0 hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait"
-        title="Click para cambiar asignación"
+        title={ownerId ? `Owner: ${ownerName || "Staff"}. Click para reasignar.` : "⚠ Sin owner asignado — click para asignar"}
       >
         {ownerId ? (
           <>
@@ -127,7 +127,10 @@ export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwn
             <span className="text-[11px] text-slate-300 truncate">{ownerName || "Staff"}</span>
           </>
         ) : (
-          <span className="text-[11px] italic text-slate-500">Sin asignar</span>
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-rose-500/15 border-rose-500/40 text-rose-300 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+            Sin owner
+          </span>
         )}
       </button>
 

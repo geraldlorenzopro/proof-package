@@ -31,7 +31,7 @@ export default function HubCasesPage() {
     } catch { return null; }
   })();
 
-  const { cases, loading, unclassifiedCount } = useCasePipeline(accountId);
+  const { cases, loading, unclassifiedCount, updateCase } = useCasePipeline(accountId);
   const demoMode = useDemoMode();
   const [view, setView] = useState<ViewMode>(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("ner_cases_view") : null;
@@ -315,6 +315,7 @@ export default function HubCasesPage() {
             team={team}
             activeCaseId={peekCaseId}
             onRowClick={(id) => setPeekCaseId(id)}
+            onCaseChange={(id, updates) => updateCase(id, updates)}
           />
         ) : (
           <CaseKanban
@@ -333,6 +334,7 @@ export default function HubCasesPage() {
         onOpenCase={() => {
           if (peekCaseId) navigate(`/case-engine/${peekCaseId}`);
         }}
+        onNextActionChange={(id, next) => updateCase(id, { next_action: next })}
       />
     </HubLayout>
   );

@@ -11,17 +11,21 @@
  *
  * Width reducido 480 → 420 para dejar más contexto visible de la tabla.
  */
-import { useEffect } from "react";
-import { X, AlertTriangle, FileText, Zap, ExternalLink, Phone } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, AlertTriangle, FileText, Zap, ExternalLink, Phone, Target } from "lucide-react";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import { useCasePeekData } from "@/hooks/useCasePeekData";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
+import NextActionChip from "./NextActionChip";
+import type { NextActionPayload } from "@/lib/nextActionCatalog";
 
 interface Props {
   c: PipelineCase | null;
   ownerName?: string | null;
   onClose: () => void;
   onOpenCase: () => void;
+  /** Notifica al parent que cambió el next_action — para refrescar la tabla. */
+  onNextActionChange?: (caseId: string, next: NextActionPayload | null) => void;
 }
 
 function initials(name: string | null | undefined): string {
@@ -64,8 +68,14 @@ function dueLabel(due: string | null): { label: string; tone: string } {
   return { label: `Vence en ${diff}d`, tone: "text-slate-400" };
 }
 
-export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase }: Props) {
+export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase, onNextActionChange }: Props) {
   const peek = useCasePeekData(c?.id ?? null);
+
+  // Local state del next_action para optimistic update sin re-fetch del pipeline
+  const [localNextAction, setLocalNextAction] = useState<NextActionPayload | null>(c?.next_action ?? null);
+  useEffect(() => {
+    setLocalNextAction(c?.next_action ?? null);
+  }, [c?.id, c?.next_action]);
 
   // ESC cierra · Enter abre expediente
   useEffect(() => {
@@ -183,6 +193,24 @@ export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase }: Pro
             })}
           </div>
         )}
+
+        {/* Próximo paso — editor inline */}
+        <div className="space-y-1.5">
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1 flex items-center gap-1">
+            <Target className="w-3 h-3" />
+            Próximo paso
+          </h4>
+          <NextActionChip
+            caseId={c.id}
+            processStage={c.process_stage}
+            value={localNextAction}
+            variant="full"
+            onChange={(next) => {
+              setLocalNextAction(next);
+              onNextActionChange?.(c.id, next);
+            }}
+          />
+        </div>
 
         {/* Últimas notas — preview read-only */}
         <div className="space-y-1.5">

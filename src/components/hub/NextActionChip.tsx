@@ -1,0 +1,147 @@
+/**
+ * NextActionChip — Display compacto del "próximo paso" de un caso.
+ *
+ * Usado en CaseTable col "Próximo paso" y CasePeekPanel.
+ *
+ * Estado vacío: muestra "+ Agregar" cliqueable. Estado con valor: muestra
+ * label + fecha relativa. Click abre el NextActionEditor.
+ *
+ * Fecha:
+ *   - vencido (< 0d): rosa con "(vencido)"
+ *   - hoy/3d: rosa
+ *   - 7d: amber
+ *   - 14d: cyan
+ *   - >14d: slate
+ */
+import { useRef, useState } from "react";
+import { Plus } from "lucide-react";
+import NextActionEditor from "./NextActionEditor";
+import { getActionLabel, type NextActionPayload } from "@/lib/nextActionCatalog";
+
+interface Props {
+  caseId: string;
+  processStage: string | null | undefined;
+  value: NextActionPayload | null;
+  /** Notifica al parent que cambió. */
+  onChange: (next: NextActionPayload | null) => void;
+  /** Variante de display: "compact" para tabla, "full" para peek panel. */
+  variant?: "compact" | "full";
+}
+
+function fmtDueDate(iso: string | null): { label: string; tone: string } {
+  if (!iso) return { label: "Sin fecha", tone: "text-slate-500" };
+  const d = new Date(iso + "T00:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  if (diff < 0) return { label: `${dd}/${mm} (vencido)`, tone: "text-rose-400 font-semibold" };
+  if (diff === 0) return { label: `${dd}/${mm} (hoy)`, tone: "text-rose-400 font-semibold" };
+  if (diff <= 3) return { label: `${dd}/${mm} (${diff}d)`, tone: "text-rose-400 font-semibold" };
+  if (diff <= 7) return { label: `${dd}/${mm} (${diff}d)`, tone: "text-amber-300 font-semibold" };
+  if (diff <= 14) return { label: `${dd}/${mm} (${diff}d)`, tone: "text-cyan-accent" };
+  return { label: `${dd}/${mm} (${diff}d)`, tone: "text-slate-300" };
+}
+
+export default function NextActionChip({ caseId, processStage, value, onChange, variant = "compact" }: Props) {
+  const [open, setOpen] = useState(false);
+  const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  function handleOpen(e: React.MouseEvent) {
+    e.stopPropagation();
+    const r = triggerRef.current?.getBoundingClientRect();
+    if (r) {
+      setAnchor({ top: r.bottom + 4, left: r.left });
+      setOpen(true);
+    }
+  }
+
+  if (!value) {
+    return (
+      <>
+        <button
+          ref={triggerRef}
+          onClick={handleOpen}
+          className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-cyan-accent transition-colors"
+          title="Definir próximo paso"
+        >
+          <Plus className="w-3 h-3" />
+          {variant === "full" ? "Definir próximo paso" : "Agregar"}
+        </button>
+        <NextActionEditor
+          caseId={caseId}
+          processStage={processStage}
+          currentValue={value}
+          open={open}
+          anchor={anchor}
+          onSaved={onChange}
+          onClose={() => setOpen(false)}
+        />
+      </>
+    );
+  }
+
+  const label = getActionLabel(value.action_key, value.custom_label);
+  const due = fmtDueDate(value.due_date);
+
+  if (variant === "full") {
+    return (
+      <>
+        <button
+          ref={triggerRef}
+          onClick={handleOpen}
+          className="w-full text-left rounded-md border border-cyan-accent/25 bg-cyan-accent/[0.04] hover:bg-cyan-accent/[0.08] hover:border-cyan-accent/50 transition-colors px-3 py-2"
+          title="Click para editar próximo paso"
+        >
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <p className="text-[12px] font-semibold text-white leading-snug flex-1">{label}</p>
+            {value.is_custom && (
+              <span className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300">
+                custom
+              </span>
+            )}
+          </div>
+          {value.detail && (
+            <p className="text-[10px] text-slate-400 leading-snug line-clamp-2 mb-1">{value.detail}</p>
+          )}
+          <div className={`text-[10px] tabular-nums ${due.tone}`}>{due.label}</div>
+        </button>
+        <NextActionEditor
+          caseId={caseId}
+          processStage={processStage}
+          currentValue={value}
+          open={open}
+          anchor={anchor}
+          onSaved={onChange}
+          onClose={() => setOpen(false)}
+        />
+      </>
+    );
+  }
+
+  // compact (CaseTable cell)
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        onClick={handleOpen}
+        className="w-full text-left flex flex-col min-w-0 hover:opacity-80 transition-opacity"
+        title={value.detail ? `${label} — ${value.detail}` : label}
+      >
+        <span className="text-[12px] text-slate-200 truncate leading-tight">{label}</span>
+        <span className={`text-[10px] tabular-nums ${due.tone} leading-tight`}>{due.label}</span>
+      </button>
+      <NextActionEditor
+        caseId={caseId}
+        processStage={processStage}
+        currentValue={value}
+        open={open}
+        anchor={anchor}
+        onSaved={onChange}
+        onClose={() => setOpen(false)}
+      />
+    </>
+  );
+}

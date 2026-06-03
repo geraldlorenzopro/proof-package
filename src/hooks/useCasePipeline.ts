@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
+import type { NextActionPayload } from "@/lib/nextActionCatalog";
 
 export type PipelineStageKey =
   | "uscis"
@@ -39,6 +40,10 @@ export interface PipelineCase {
   next_due_date?: string | null;
   rfe_deadline?: string | null;
   last_client_activity_at?: string | null;
+  /** Payload del "próximo paso" guardado en custom_fields.next_action. */
+  next_action?: NextActionPayload | null;
+  /** custom_fields completo, por si algún componente lo necesita. */
+  custom_fields?: Record<string, any> | null;
 }
 
 export interface PipelineColumn {
@@ -190,7 +195,8 @@ export function useCasePipeline(accountId: string | null) {
           id, client_name, client_profile_id, case_type, pipeline_stage, process_stage,
           file_number, status, assigned_to, updated_at, stage_entered_at, created_at,
           priority_date, uscis_receipt_numbers, nvc_case_number,
-          interview_date, emb_interview_date, cas_interview_date, case_tags_array
+          interview_date, emb_interview_date, cas_interview_date, case_tags_array,
+          custom_fields, rfe_deadline, last_client_activity_at
         `)
         .eq("account_id", accountId)
         .not("status", "eq", "completed")
@@ -232,6 +238,7 @@ export function useCasePipeline(accountId: string | null) {
         overdue_tasks_count: tasksByCase[c.id]?.overdue || 0,
         next_due_date: tasksByCase[c.id]?.nextDue || null,
         days_in_stage: daysSince(c.stage_entered_at || c.updated_at),
+        next_action: (c.custom_fields?.next_action as NextActionPayload | undefined) || null,
       }));
 
       setCases(enriched);
@@ -254,5 +261,10 @@ export function useCasePipeline(accountId: string | null) {
     [cases]
   );
 
-  return { cases, columns, loading, error, unclassifiedCount };
+  /** Optimistic update local — usado por inline edits (owner, next_action, etc.) */
+  const updateCase = useCallback((caseId: string, updates: Partial<PipelineCase>) => {
+    setCases(prev => prev.map(c => c.id === caseId ? { ...c, ...updates } : c));
+  }, []);
+
+  return { cases, columns, loading, error, unclassifiedCount, updateCase };
 }

@@ -37,6 +37,8 @@ import ProcessStageStepper from "@/components/case-engine/ProcessStageStepper";
 import PortalTrackingPanel from "@/components/case-engine/PortalTrackingPanel";
 import CaseTagsSelector, { CaseTagBadges } from "@/components/case-engine/CaseTagsSelector";
 import CaseDocumentsPanel from "@/components/case-engine/CaseDocumentsPanel";
+import NextActionChip from "@/components/hub/NextActionChip";
+import type { NextActionPayload } from "@/lib/nextActionCatalog";
 import {
   Select,
   SelectContent,
@@ -577,6 +579,25 @@ export default function CaseEnginePage() {
                     openTaskCount={openTasks.length}
                     stages={stages}
                     currentStageSlug={currentStageSlug}
+                  />
+                </div>
+
+                {/* Próximo paso — editor inline con catálogo por etapa */}
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2.5">
+                    Próximo paso
+                  </h3>
+                  <NextActionChip
+                    caseId={caseId!}
+                    processStage={caseData.process_stage}
+                    value={(caseData.custom_fields?.next_action as NextActionPayload | undefined) ?? null}
+                    variant="full"
+                    onChange={(next) => {
+                      setCaseData((prev: any) => prev ? {
+                        ...prev,
+                        custom_fields: { ...(prev.custom_fields || {}), next_action: next },
+                      } : prev);
+                    }}
                   />
                 </div>
 
