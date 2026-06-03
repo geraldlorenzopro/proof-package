@@ -176,10 +176,10 @@ export default function Auth() {
       void trackEvent(mode === "login" ? "auth.login_failed" : "auth.signup_failed", {
         properties: {
           reason: sanitizeErrorReason(err?.message, 80),
-          email_domain: email.split("@")[1] || "unknown",
+          email_domain: normalizeEmail(email).split("@")[1] || "unknown",
         },
       });
-      setError(err.message || 'Error inesperado');
+      setError(getAuthErrorMessage(err?.message));
     } finally {
       setLoading(false);
     }
