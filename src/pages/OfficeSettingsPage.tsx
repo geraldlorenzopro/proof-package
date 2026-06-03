@@ -965,7 +965,7 @@ export default function OfficeSettingsPage() {
                         <button
                           onClick={() => resendInvite(m)}
                           disabled={resendingIds.has(m.id) || !m.email}
-                          className="text-muted-foreground/40 hover:text-cyan-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="text-muted-foreground hover:text-cyan-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                           title={m.email ? "Reenviar invitación por email" : "Sin email registrado"}
                         >
                           {resendingIds.has(m.id) ? (
@@ -976,7 +976,7 @@ export default function OfficeSettingsPage() {
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(m)}
-                          className="text-muted-foreground/40 hover:text-destructive transition-colors"
+                          className="text-muted-foreground hover:text-destructive transition-colors"
                           title={isDemoSeed ? "Eliminar miembro demo" : "Eliminar miembro"}
                         >
                           <Trash2 className="w-4 h-4" />
