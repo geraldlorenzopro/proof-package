@@ -3236,7 +3236,6 @@ export type Database = {
           firm_logo_url: string | null
           firm_name: string | null
           firm_phone: string | null
-          ghl_api_key: string | null
           ghl_appointments_synced: number | null
           ghl_contacts_synced: number | null
           ghl_last_sync: string | null
@@ -3246,7 +3245,6 @@ export type Database = {
           preferred_language: string | null
           timezone: string | null
           updated_at: string | null
-          webhook_api_key: string | null
         }
         Insert: {
           account_id: string
@@ -3262,7 +3260,6 @@ export type Database = {
           firm_logo_url?: string | null
           firm_name?: string | null
           firm_phone?: string | null
-          ghl_api_key?: string | null
           ghl_appointments_synced?: number | null
           ghl_contacts_synced?: number | null
           ghl_last_sync?: string | null
@@ -3272,7 +3269,6 @@ export type Database = {
           preferred_language?: string | null
           timezone?: string | null
           updated_at?: string | null
-          webhook_api_key?: string | null
         }
         Update: {
           account_id?: string
@@ -3288,7 +3284,6 @@ export type Database = {
           firm_logo_url?: string | null
           firm_name?: string | null
           firm_phone?: string | null
-          ghl_api_key?: string | null
           ghl_appointments_synced?: number | null
           ghl_contacts_synced?: number | null
           ghl_last_sync?: string | null
@@ -3298,7 +3293,6 @@ export type Database = {
           preferred_language?: string | null
           timezone?: string | null
           updated_at?: string | null
-          webhook_api_key?: string | null
         }
         Relationships: [
           {
