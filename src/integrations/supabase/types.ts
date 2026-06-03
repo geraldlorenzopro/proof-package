@@ -832,6 +832,81 @@ export type Database = {
           },
         ]
       }
+      backup_logs: {
+        Row: {
+          account_id: string | null
+          backup_type: string
+          completed_at: string | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          metadata: Json
+          rows_exported: number | null
+          s3_bucket: string | null
+          s3_key: string | null
+          scope: string
+          size_bytes: number | null
+          status: string
+          tables_included: string[] | null
+          trigger_source: string
+          triggered_by: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          backup_type: string
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          rows_exported?: number | null
+          s3_bucket?: string | null
+          s3_key?: string | null
+          scope?: string
+          size_bytes?: number | null
+          status?: string
+          tables_included?: string[] | null
+          trigger_source?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          backup_type?: string
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          rows_exported?: number | null
+          s3_bucket?: string | null
+          s3_key?: string | null
+          scope?: string
+          size_bytes?: number | null
+          status?: string
+          tables_included?: string[] | null
+          trigger_source?: string
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "backup_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bulletin_sync_log: {
         Row: {
           bulletin_month: number
