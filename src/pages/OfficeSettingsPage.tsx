@@ -469,10 +469,10 @@ export default function OfficeSettingsPage() {
   const [resendingIds, setResendingIds] = useState<Set<string>>(new Set());
 
   async function resendInvite(member: TeamMember) {
-    if (!member.email) {
-      toast.error("Sin email registrado", { description: "No se puede reenviar invitación sin email." });
-      return;
-    }
+    // El email de los rows del frontend solo viene de ghl_user_mappings,
+    // que NO existe para miembros creados via invite-team-member. Pasamos
+    // user_id y dejamos que la edge function busque el email en auth.users
+    // usando service_role.
     setResendingIds(prev => {
       const next = new Set(prev);
       next.add(member.id);
@@ -482,8 +482,9 @@ export default function OfficeSettingsPage() {
     try {
       const { data, error } = await supabase.functions.invoke("invite-team-member", {
         body: {
-          email: member.email,
-          full_name: member.full_name || member.email.split("@")[0],
+          user_id: member.user_id,
+          email: member.email || undefined,
+          full_name: member.full_name || undefined,
           role: member.role,
           force_resend: true,
         },
@@ -964,9 +965,9 @@ export default function OfficeSettingsPage() {
                       <>
                         <button
                           onClick={() => resendInvite(m)}
-                          disabled={resendingIds.has(m.id) || !m.email}
-                          className="text-muted-foreground hover:text-cyan-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                          title={m.email ? "Reenviar invitación por email" : "Sin email registrado"}
+                          disabled={resendingIds.has(m.id)}
+                          className="text-muted-foreground hover:text-cyan-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Reenviar invitación por email"
                         >
                           {resendingIds.has(m.id) ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

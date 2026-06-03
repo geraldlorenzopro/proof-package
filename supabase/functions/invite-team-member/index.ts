@@ -145,21 +145,50 @@ Deno.serve(async (req) => {
     }
 
     // ───── Body ─────
-    let body: { email?: string; full_name?: string; role?: string; force_resend?: boolean };
+    let body: {
+      email?: string;
+      full_name?: string;
+      role?: string;
+      force_resend?: boolean;
+      user_id?: string;
+    };
     try {
       body = await req.json();
     } catch {
       return jsonResponse({ error: "invalid_json" }, 400);
     }
 
-    const email = (body.email || "").trim().toLowerCase();
-    const full_name = (body.full_name || "").trim();
+    let email = (body.email || "").trim().toLowerCase();
+    let full_name = (body.full_name || "").trim();
     const role = (body.role || "member").trim();
     // force_resend: usado por el botón "Reenviar invitación" en cada row
     // del equipo. Si true: NO valida already_member, NO valida seat_limit
     // (ya está dentro del cap), y FUERZA el envío del email aunque el
     // user ya exista. Útil cuando el primer email no llegó a inbox.
     const forceResend = body.force_resend === true;
+    const targetUserId = (body.user_id || "").trim();
+
+    // Si llaman con user_id pero sin email/full_name (caso del botón
+    // Reenviar en la UI — el email no está en account_members directo,
+    // está en auth.users), buscar esos datos antes de validar.
+    if (targetUserId && (!email || !full_name)) {
+      const supabaseAdminEarly = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: userData } = await supabaseAdminEarly.auth.admin.getUserById(targetUserId);
+      const authEmail = userData?.user?.email;
+      if (authEmail && !email) email = authEmail.toLowerCase();
+
+      if (!full_name) {
+        const { data: profile } = await supabaseAdminEarly
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", targetUserId)
+          .maybeSingle();
+        full_name = profile?.full_name || authEmail?.split("@")[0] || "Miembro";
+      }
+    }
 
     if (!email || !email.includes("@") || email.length < 5 || email.length > 256) {
       return jsonResponse({ error: "invalid_email" }, 400);
