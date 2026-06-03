@@ -106,12 +106,48 @@ export default function OfficeSettingsPage() {
   const [caseTypes, setCaseTypes] = useState<CaseType[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState("firma");
+  const [activeTab, setActiveTab] = useState(() => {
+    // Auto-tab desde URL hash al mount: /hub/settings/office#team → tab "equipo"
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace("#", "");
+      const hashToTab: Record<string, string> = {
+        team: "equipo",
+        equipo: "equipo",
+        consultations: "consultas",
+        consultas: "consultas",
+        plan: "plan",
+        firma: "firma",
+      };
+      if (hash && hashToTab[hash]) return hashToTab[hash];
+    }
+    return "firma";
+  });
+
+  // También responder a cambios de hash mientras la página está abierta
+  // (ej. user navega desde otro lado mientras la página ya está montada).
+  useEffect(() => {
+    function onHashChange() {
+      const hash = window.location.hash.replace("#", "");
+      const hashToTab: Record<string, string> = {
+        team: "equipo",
+        equipo: "equipo",
+        consultations: "consultas",
+        consultas: "consultas",
+        plan: "plan",
+        firma: "firma",
+      };
+      if (hash && hashToTab[hash]) setActiveTab(hashToTab[hash]);
+    }
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   // Modals
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteFullName, setInviteFullName] = useState("");
   const [inviteRole, setInviteRole] = useState<string>("member");
+  const [inviting, setInviting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<TeamMember | null>(null);
   const [customCaseOpen, setCustomCaseOpen] = useState(false);
   const [newCase, setNewCase] = useState({ case_type: '', display_name: '', description: '', main_form: '', icon: '📋' });
@@ -274,12 +310,85 @@ export default function OfficeSettingsPage() {
 
   // ── Team actions ──
   async function inviteMember() {
-    if (!inviteEmail || !accountId) return;
-    // For now, insert into account_members with a placeholder user_id
-    // Real invitation flow comes in Sprint 4
-    toast.success(`Invitación enviada a ${inviteEmail}`);
-    setInviteOpen(false);
-    setInviteEmail("");
+    const email = inviteEmail.trim().toLowerCase();
+    const full_name = inviteFullName.trim();
+    if (!email || !email.includes("@")) {
+      toast.error("Ingresá un email válido");
+      return;
+    }
+    if (!full_name || full_name.length < 2) {
+      toast.error("Ingresá el nombre completo del miembro");
+      return;
+    }
+    if (!accountId) {
+      toast.error("Sesión sin cuenta activa");
+      return;
+    }
+
+    setInviting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("invite-team-member", {
+        body: { email, full_name, role: inviteRole },
+      });
+
+      if (error) {
+        // El error de supabase.functions.invoke puede traer body con detail
+        const detail = (error as any)?.context?.body || (error as any)?.message || "Intentá de nuevo.";
+        toast.error("No se pudo invitar", { description: String(detail) });
+        return;
+      }
+
+      if (data?.error) {
+        const errorMap: Record<string, string> = {
+          already_member: `${full_name} ya es miembro de tu equipo.`,
+          invalid_email: "El email no es válido.",
+          invalid_full_name: "El nombre debe tener al menos 2 caracteres.",
+          invalid_role: "Rol inválido.",
+          forbidden: "Solo el owner o un admin pueden invitar miembros.",
+          unauthorized: "Tu sesión expiró. Refrescá la página.",
+          auth_invite_failed: "Supabase no pudo enviar el email de invitación.",
+        };
+        toast.error(errorMap[data.error] || "No se pudo invitar", { description: data.detail });
+        return;
+      }
+
+      toast.success(data?.message || `Invitación enviada a ${email}`);
+      setInviteOpen(false);
+      setInviteEmail("");
+      setInviteFullName("");
+      setInviteRole("member");
+
+      // Refresh team list — re-cargar account_members
+      const { data: refreshed } = await supabase
+        .from("account_members")
+        .select("id, user_id, role, created_at, profiles:user_id(full_name, email)")
+        .eq("account_id", accountId)
+        .order("created_at", { ascending: true });
+
+      if (refreshed) {
+        setMembers(refreshed.map((m: any) => ({
+          id: m.id,
+          user_id: m.user_id,
+          role: m.role,
+          created_at: m.created_at,
+          full_name: m.profiles?.full_name,
+          email: m.profiles?.email,
+        })));
+      }
+
+      const { logAudit } = await import("@/lib/auditLog");
+      logAudit({
+        action: "member.invited" as any,
+        entity_type: "settings" as any,
+        entity_id: data?.member_id || "",
+        entity_label: `${full_name} (${email}) · rol ${inviteRole}`,
+      });
+    } catch (err: any) {
+      console.error("[inviteMember] unexpected:", err);
+      toast.error("Error inesperado", { description: err?.message });
+    } finally {
+      setInviting(false);
+    }
   }
 
   async function removeMember(member: TeamMember) {
@@ -745,26 +854,62 @@ export default function OfficeSettingsPage() {
       </div>
 
       {/* ── Invite Modal ── */}
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+      <Dialog open={inviteOpen} onOpenChange={(v) => { if (!inviting) setInviteOpen(v); }}>
         <DialogContent className="bg-card border-border/40">
           <DialogHeader><DialogTitle>Invitar miembro</DialogTitle></DialogHeader>
           <div className="space-y-4">
+            <FieldRow label="Nombre completo">
+              <Input
+                value={inviteFullName}
+                onChange={e => setInviteFullName(e.target.value)}
+                placeholder="Ej. María González"
+                className="bg-secondary/50 border-border/30"
+                disabled={inviting}
+                maxLength={128}
+              />
+            </FieldRow>
             <FieldRow label="Email">
-              <Input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="email@firma.com" className="bg-secondary/50 border-border/30" />
+              <Input
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+                placeholder="email@firma.com"
+                type="email"
+                className="bg-secondary/50 border-border/30"
+                disabled={inviting}
+                maxLength={256}
+              />
             </FieldRow>
             <FieldRow label="Rol">
-              <Select value={inviteRole} onValueChange={setInviteRole}>
+              <Select value={inviteRole} onValueChange={setInviteRole} disabled={inviting}>
                 <SelectTrigger className="bg-secondary/50 border-border/30"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="admin">Admin — Ve todo (revenue, config, audit)</SelectItem>
+                  <SelectItem value="attorney">Attorney — Memos confidenciales legales</SelectItem>
+                  <SelectItem value="paralegal">Paralegal — Trabajo operativo</SelectItem>
+                  <SelectItem value="member">Member — Trabajo operativo (default)</SelectItem>
+                  <SelectItem value="assistant">Assistant — Intake + comms</SelectItem>
+                  <SelectItem value="readonly">Solo lectura</SelectItem>
                 </SelectContent>
               </Select>
             </FieldRow>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Recibirá un email con link para configurar su contraseña. El miembro
+              podrá ingresar a NER desde <span className="font-mono text-foreground">/auth</span> con su email.
+            </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancelar</Button>
-            <Button onClick={inviteMember} className="bg-jarvis hover:bg-jarvis-glow text-background">Enviar invitación</Button>
+            <Button
+              variant="outline"
+              onClick={() => setInviteOpen(false)}
+              disabled={inviting}
+            >Cancelar</Button>
+            <Button
+              onClick={inviteMember}
+              disabled={inviting || !inviteEmail || !inviteFullName}
+              className="bg-jarvis hover:bg-jarvis-glow text-background"
+            >
+              {inviting ? "Invitando…" : "Enviar invitación"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

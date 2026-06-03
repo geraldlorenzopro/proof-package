@@ -154,16 +154,21 @@ export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase, onNex
           </button>
         </div>
 
-        {/* Meta inline: process_stage chip + responsable */}
+        {/* Meta inline: process_stage chip + owner (NO confundir con Responsable
+            del ball-in-court, que es derivado del journey step) */}
         <div className="flex items-center gap-2 mt-3 flex-wrap">
           {c.process_stage && (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border bg-ai-blue/15 border-ai-blue/30 text-blue-200">
               {c.process_stage === "embajada" ? "Consular" : c.process_stage.toUpperCase()}
             </span>
           )}
-          {ownerName && (
+          {ownerName ? (
             <span className="text-[10px] text-slate-400">
-              Responsable: <span className="text-slate-200 font-medium">{ownerName}</span>
+              Owner: <span className="text-slate-200 font-medium">{ownerName}</span>
+            </span>
+          ) : (
+            <span className="text-[10px] text-rose-300 font-semibold">
+              Sin owner asignado
             </span>
           )}
         </div>

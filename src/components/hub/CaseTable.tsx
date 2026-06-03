@@ -358,11 +358,11 @@ function CaseRow({
         />
       </div>
 
-      {/* Responsable (ball-in-court) */}
+      {/* Responsable (ball-in-court) — derivado del Status del caso, NO editable directo */}
       <div className="truncate">
         <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border ${responsibleMeta.chipClass} whitespace-nowrap`}
-          title={`Responsable: ${responsibleMeta.label}`}
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border ${responsibleMeta.chipClass} whitespace-nowrap cursor-help`}
+          title={`Responsable: ${responsibleMeta.label}. Se ajusta automáticamente al cambiar el Status del caso.`}
         >
           <span>{responsibleMeta.icon}</span>
           <span>{responsibleMeta.label}</span>
