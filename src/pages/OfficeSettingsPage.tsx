@@ -460,15 +460,37 @@ export default function OfficeSettingsPage() {
   async function parseInvokeError(error: any): Promise<string> {
     try {
       const ctx = error?.context;
-      if (ctx?.body) {
-        let text: string;
+      let text: string | null = null;
+
+      // Caso 1: ctx ES una Response (supabase-js v2 FunctionsHttpError)
+      if (ctx && typeof ctx.text === "function" && typeof ctx.clone === "function") {
+        try {
+          text = await ctx.clone().text();
+        } catch {
+          text = null;
+        }
+      }
+
+      // Caso 2: ctx.body es ReadableStream o string
+      if (!text && ctx?.body) {
         if (typeof ctx.body === "string") {
           text = ctx.body;
-        } else if (ctx.body instanceof ReadableStream) {
-          text = await new Response(ctx.body).text();
+        } else if (ctx.body && typeof (ctx.body as any).getReader === "function") {
+          try {
+            text = await new Response(ctx.body).text();
+          } catch {
+            text = null;
+          }
         } else {
-          text = JSON.stringify(ctx.body);
+          try {
+            text = JSON.stringify(ctx.body);
+          } catch {
+            text = null;
+          }
         }
+      }
+
+      if (text) {
         try {
           const json = JSON.parse(text);
           return json.message || json.error || json.detail || text;
@@ -476,6 +498,7 @@ export default function OfficeSettingsPage() {
           return text;
         }
       }
+
       return error?.message || "Intentá de nuevo en unos segundos.";
     } catch {
       return error?.message || "Error desconocido.";
