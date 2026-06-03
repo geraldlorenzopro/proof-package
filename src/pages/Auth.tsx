@@ -165,7 +165,7 @@ export default function Auth() {
         // Si la RLS bloquea (es policy authenticated-only post-Ola 3.1),
         // el evento se silencia gracefully en analytics.ts.
         void trackEvent("auth.signup", {
-          properties: { email_domain: email.split("@")[1] || "unknown" },
+          properties: { email_domain: normalizedEmail.split("@")[1] || "unknown" },
         });
       }
     } catch (err: any) {
@@ -294,8 +294,8 @@ export default function Auth() {
                 onClick={async () => {
                   setError(''); setMessage(''); setLoading(true);
                   try {
-                    const siteUrl = 'https://ner.recursosmigratorios.com';
-                    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+                    const normalizedForgotEmail = normalizeEmail(forgotEmail);
+                    const { error } = await supabase.auth.resetPasswordForEmail(normalizedForgotEmail, {
                       redirectTo: `${siteUrl}/reset-password`,
                     });
                     if (error) throw error;
