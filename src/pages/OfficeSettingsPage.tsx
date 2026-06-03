@@ -394,8 +394,8 @@ export default function OfficeSettingsPage() {
       });
 
       if (error) {
-        const detail = (error as any)?.context?.body || (error as any)?.message || "Intentá de nuevo.";
-        toast.error("No se pudo invitar", { description: String(detail) });
+        const detail = await parseInvokeError(error);
+        toast.error("No se pudo invitar", { description: detail });
         return;
       }
 
@@ -454,6 +454,34 @@ export default function OfficeSettingsPage() {
     }
   }
 
+  // Helper: extrae el mensaje legible de un error de supabase.functions.invoke.
+  // El body del error puede venir como string, ReadableStream, o no venir
+  // en absoluto. Sin este parseo el toast mostraba "[object ReadableStream]".
+  async function parseInvokeError(error: any): Promise<string> {
+    try {
+      const ctx = error?.context;
+      if (ctx?.body) {
+        let text: string;
+        if (typeof ctx.body === "string") {
+          text = ctx.body;
+        } else if (ctx.body instanceof ReadableStream) {
+          text = await new Response(ctx.body).text();
+        } else {
+          text = JSON.stringify(ctx.body);
+        }
+        try {
+          const json = JSON.parse(text);
+          return json.message || json.error || json.detail || text;
+        } catch {
+          return text;
+        }
+      }
+      return error?.message || "Intentá de nuevo en unos segundos.";
+    } catch {
+      return error?.message || "Error desconocido.";
+    }
+  }
+
   async function copyInviteLink() {
     if (!lastInviteLink) return;
     try {
@@ -491,8 +519,8 @@ export default function OfficeSettingsPage() {
       });
 
       if (error) {
-        const detail = (error as any)?.context?.body || (error as any)?.message || "Intentá de nuevo.";
-        toast.error("No se pudo reenviar", { description: String(detail) });
+        const detail = await parseInvokeError(error);
+        toast.error("No se pudo reenviar", { description: detail });
         return;
       }
 
