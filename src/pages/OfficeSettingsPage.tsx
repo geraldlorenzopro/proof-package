@@ -416,21 +416,32 @@ export default function OfficeSettingsPage() {
         return;
       }
 
-      // Éxito — mostrar invite link + cerrar dialog
+      // Éxito en BD — mostrar invite link + cerrar dialog SIEMPRE
       setLastInviteLink(data?.invite_link || null);
       setLastInviteEmail(email);
       setShowInviteLinkDialog(true);
 
       const emailStatus = data?.email_status;
-      const successMsg =
-        emailStatus === "sent"
-          ? `Email enviado a ${email}`
-          : emailStatus === "failed"
-          ? "Miembro creado · email falló (mostrando link)"
-          : emailStatus === "skipped_existing"
-          ? `${full_name} ya tenía cuenta · agregado al equipo`
-          : "Miembro creado · compartí el link manualmente";
-      toast.success(successMsg);
+      const resendDebug = data?.resend_debug;
+
+      // Toast diferenciado: success solo si el email REAL salió.
+      // failed → warning con detalle del error Resend (visible al admin).
+      // skipped → info neutro.
+      if (emailStatus === "sent") {
+        toast.success(`Email enviado a ${email}`);
+      } else if (emailStatus === "failed") {
+        const resendDetail = resendDebug
+          ? `Resend ${resendDebug.status}: ${(resendDebug.body || "").slice(0, 200)}`
+          : "Causa desconocida — revisá los logs de Supabase";
+        toast.warning("Miembro creado, pero el email NO se envió", {
+          description: `${resendDetail}. Usá el link copiable del diálogo para mandar la invitación manualmente.`,
+          duration: 12000,
+        });
+      } else if (emailStatus === "skipped_existing") {
+        toast.info(`${full_name} ya tenía cuenta · agregado al equipo. Compartí el link manualmente.`);
+      } else {
+        toast.info("Miembro creado · compartí el link manualmente al invitado.");
+      }
 
       setInviteOpen(false);
       setInviteEmail("");
@@ -553,21 +564,28 @@ export default function OfficeSettingsPage() {
       }
 
       const emailStatus = data?.email_status;
+      const resendDebug = data?.resend_debug;
+      const memberEmail = member.email || data?.email || "(email no disponible)";
+
+      // Mostrar dialog con el link SIEMPRE como backup
+      if (data?.invite_link) {
+        setLastInviteLink(data.invite_link);
+        setLastInviteEmail(memberEmail);
+        setShowInviteLinkDialog(true);
+      }
+
       if (emailStatus === "sent") {
-        toast.success(`Invitación reenviada a ${member.email}`);
+        toast.success(`Invitación reenviada a ${memberEmail}`);
       } else if (emailStatus === "failed") {
-        toast.warning("Reenvío parcial", {
-          description: "No se pudo mandar el email — mostrando link copiable.",
+        const resendDetail = resendDebug
+          ? `Resend ${resendDebug.status}: ${(resendDebug.body || "").slice(0, 200)}`
+          : "Causa desconocida — revisá los logs de Supabase";
+        toast.warning("Reenvío NO llegó a Resend", {
+          description: `${resendDetail}. Compartí el link del diálogo manualmente.`,
+          duration: 12000,
         });
       } else {
         toast.info(data?.message || "Reenvío procesado");
-      }
-
-      // Mostrar el dialog con el link como backup, igual que en invitación nueva
-      if (data?.invite_link) {
-        setLastInviteLink(data.invite_link);
-        setLastInviteEmail(member.email);
-        setShowInviteLinkDialog(true);
       }
     } catch (err: any) {
       console.error("[resendInvite] unexpected:", err);

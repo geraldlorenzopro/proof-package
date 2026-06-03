@@ -408,55 +408,107 @@ Deno.serve(async (req) => {
           invite_link,
         });
 
-        // Defensive build del header From (locked 2026-06-03 fix):
-        // - Trim del secret para eliminar newlines/espacios invisibles del copy/paste
-        // - Si el secret YA tiene formato "Name <email>" (con < y >), úsalo tal cual
-        //   y NO wrappear de nuevo. Esto evita resultados tipo "Name <Name <email>>".
-        // - Si es solo email, wrappear con el name por default.
-        // - Validación final: si el resultado no matchea regex básico de email
-        //   válido, log warning + fallback a sandbox onboarding@resend.dev
-        //   (Resend siempre acepta ese for testing aunque no tengas dominio).
-        const fromRaw = (Deno.env.get("RESEND_FROM_EMAIL") || "noreply@nerimmigration.ai").trim();
+        // Sanitización agresiva del RESEND_FROM_EMAIL (audit 2026-06-03):
+        // .trim() solo elimina whitespace de los extremos. Pero un copy/paste
+        // mal hecho puede meter \t, \r, \n, espacios no-breaking, o caracteres
+        // de control DENTRO del string. Los limpiamos todos:
+        // -   = nbsp (espacios "duros" que Notion/Slack pegan)
+        // - ​ = zero-width space (invisible, copy/paste de PDFs/web)
+        // - \r, \n, \t = controles
+        // - Múltiples espacios → uno solo
+        const rawSecret = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@nerimmigration.ai";
+        const fromRaw = rawSecret
+          .replace(/[\r\n\t ​]/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
         const fromName = "NER Immigration AI";
         const hasFullFormat = fromRaw.includes("<") && fromRaw.includes(">");
         let from = hasFullFormat ? fromRaw : `${fromName} <${fromRaw}>`;
 
-        // Validación básica del formato final
-        const fromValid = /^([^<>]+\s)?<[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+>$|^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(from);
+        // Regex permisiva: solo verifica que tenga @ y . dentro de los <>,
+        // o sin brackets sea un email válido. NO rechaza caracteres especiales
+        // del nombre (audit 2026-06-03 dijo que la anterior era muy estricta).
+        const fromValid = /^.+\s<[^<>]+@[^<>]+\.[^<>]+>$|^[^<>\s]+@[^<>\s]+\.[^<>\s]+$/.test(from);
         if (!fromValid) {
-          console.error(`[invite-team-member] from malformed, raw secret value: "${fromRaw}" → "${from}"`);
-          // Fallback al sandbox de Resend (siempre acepta, no requiere domain verification)
+          console.error(
+            `[invite-team-member] from MALFORMED. raw secret length=${rawSecret.length}, ` +
+            `bytes=[${[...rawSecret].map(c => c.charCodeAt(0)).join(",")}], ` +
+            `after-sanitize="${fromRaw}", final-from="${from}"`
+          );
+          // Fallback al sandbox Resend que SIEMPRE acepta
           from = "NER Immigration AI <onboarding@resend.dev>";
         }
 
-        console.log(`[invite-team-member] sending via Resend from="${from}" to="${email}"`);
+        console.log(
+          `[invite-team-member] sending via Resend ` +
+          `from="${from}" to="${email}" ` +
+          `apiKeyLength=${resendApiKey?.length || 0} ` +
+          `fromValidPassed=${fromValid}`
+        );
 
-        const resendRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from,
-            to: [email],
-            subject,
-            html,
-            reply_to: callerEmail,
-          }),
-        });
+        let resendErrorBody: string | null = null;
+        let resendStatus: number | null = null;
+        try {
+          const resendRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${resendApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from,
+              to: [email],
+              subject,
+              html,
+              reply_to: callerEmail,
+            }),
+          });
 
-        if (resendRes.ok) {
-          emailStatus = "sent";
-        } else {
-          const errText = await resendRes.text();
-          console.error("[invite-team-member] Resend error:", resendRes.status, errText);
+          resendStatus = resendRes.status;
+
+          if (resendRes.ok) {
+            const respBody = await resendRes.json().catch(() => ({}));
+            console.log(
+              `[invite-team-member] Resend SUCCESS status=${resendRes.status} ` +
+              `id="${respBody?.id || "(none)"}"`
+            );
+            emailStatus = "sent";
+          } else {
+            resendErrorBody = await resendRes.text();
+            console.error(
+              `[invite-team-member] Resend FAILED status=${resendRes.status} ` +
+              `body=${resendErrorBody}`
+            );
+            emailStatus = "failed";
+          }
+        } catch (fetchErr: any) {
+          console.error(
+            `[invite-team-member] Resend FETCH EXCEPTION: ${fetchErr?.message || fetchErr}`
+          );
+          resendErrorBody = `fetch_exception: ${fetchErr?.message || String(fetchErr)}`;
           emailStatus = "failed";
+        }
+
+        // Guardar el error para devolverlo en el response (debugging desde frontend)
+        if (resendErrorBody) {
+          (globalThis as any).__lastResendError = {
+            status: resendStatus,
+            body: resendErrorBody,
+            from_used: from,
+          };
         }
       } catch (err) {
         console.error("[invite-team-member] Resend exception:", err);
         emailStatus = "failed";
       }
+    }
+
+    // Si Resend falló, devolvemos el error específico al frontend para que
+    // el admin pueda diagnosticar sin abrir logs de Supabase.
+    const lastResendError = (globalThis as any).__lastResendError || null;
+    if (lastResendError) {
+      // Cleanup global state
+      (globalThis as any).__lastResendError = null;
     }
 
     return jsonResponse({
@@ -471,6 +523,7 @@ Deno.serve(async (req) => {
       active_users: (activeCount ?? 0) + 1,
       email_status: emailStatus,
       invite_link, // Siempre incluido para que admin pueda copiar/mandar manual
+      resend_debug: lastResendError, // null si OK, { status, body, from_used } si falló
       message:
         emailStatus === "sent" && forceResend
           ? `Invitación reenviada a ${email}.`
@@ -479,7 +532,7 @@ Deno.serve(async (req) => {
           : existed && !forceResend
           ? `${full_name} ya tenía cuenta. Agregado al equipo. Compartile el link manualmente.`
           : emailStatus === "failed"
-          ? `Miembro creado pero el email no se pudo enviar. Compartí el link manualmente al invitado.`
+          ? `Miembro creado pero el email no se pudo enviar. Compartí el link manualmente al invitado.${lastResendError ? " Error Resend: " + (lastResendError.body || "(sin detalle)") : ""}`
           : `Miembro creado. RESEND_API_KEY no configurada — compartí el link manualmente al invitado.`,
     });
   } catch (err: any) {
