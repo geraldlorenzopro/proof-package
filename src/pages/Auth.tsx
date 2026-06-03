@@ -120,8 +120,9 @@ export default function Auth() {
     setLoading(true);
 
     try {
+      const normalizedEmail = normalizeEmail(email);
       if (mode === 'login') {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
         if (error) throw error;
 
         // Check if user has MFA enrolled
@@ -134,7 +135,7 @@ export default function Auth() {
         }
 
         // No MFA — check if user belongs to a firm account
-        logAudit({ action: "auth.login", entity_type: "auth", entity_label: email });
+        logAudit({ action: "auth.login", entity_type: "auth", entity_label: normalizedEmail });
         // Ola 3.2.a — track success (sin MFA path)
         void trackEvent("auth.login_success", {
           properties: { mfa: false, method: "password" },
@@ -149,7 +150,7 @@ export default function Auth() {
           navigate(destination, { replace: true });
         }
       } else {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email: normalizedEmail, password });
         if (error) throw error;
         if (data.user) {
           await supabase.from('profiles').insert({
