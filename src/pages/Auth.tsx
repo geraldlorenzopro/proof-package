@@ -296,7 +296,7 @@ export default function Auth() {
                   try {
                     const normalizedForgotEmail = normalizeEmail(forgotEmail);
                     const { error } = await supabase.auth.resetPasswordForEmail(normalizedForgotEmail, {
-                      redirectTo: `${siteUrl}/reset-password`,
+                      redirectTo: `${window.location.origin}/reset-password`,
                     });
                     if (error) throw error;
                     setMessage('Si el correo existe, recibirás un enlace de recuperación.');
