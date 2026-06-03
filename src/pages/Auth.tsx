@@ -7,6 +7,17 @@ import { lovable } from '@/integrations/lovable/index';
 import { useTrackPageView } from '@/hooks/useTrackPageView';
 import { trackEvent, sanitizeErrorReason } from '@/lib/analytics';
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function getAuthErrorMessage(message?: string) {
+  if (message === 'Invalid login credentials') {
+    return 'La contraseña no coincide. Si esta cuenta fue creada con Google, usa “Continuar con Google” o restablece tu contraseña una vez para activar acceso por email.';
+  }
+  return message || 'Error inesperado';
+}
+
 async function handleGoogleSignIn(setError: (s: string) => void) {
   setError('');
   const result = await lovable.auth.signInWithOAuth('google', {
