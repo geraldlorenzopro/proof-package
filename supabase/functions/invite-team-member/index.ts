@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
     }
 
     // ───── Body ─────
-    let body: { email?: string; full_name?: string; role?: string };
+    let body: { email?: string; full_name?: string; role?: string; force_resend?: boolean };
     try {
       body = await req.json();
     } catch {
@@ -155,6 +155,11 @@ Deno.serve(async (req) => {
     const email = (body.email || "").trim().toLowerCase();
     const full_name = (body.full_name || "").trim();
     const role = (body.role || "member").trim();
+    // force_resend: usado por el botón "Reenviar invitación" en cada row
+    // del equipo. Si true: NO valida already_member, NO valida seat_limit
+    // (ya está dentro del cap), y FUERZA el envío del email aunque el
+    // user ya exista. Útil cuando el primer email no llegó a inbox.
+    const forceResend = body.force_resend === true;
 
     if (!email || !email.includes("@") || email.length < 5 || email.length > 256) {
       return jsonResponse({ error: "invalid_email" }, 400);
@@ -206,7 +211,8 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "count_failed", detail: countErr.message }, 500);
     }
 
-    if ((activeCount ?? 0) >= maxUsers) {
+    // Seat limit NO aplica si es reenvío (el miembro ya está dentro del cap)
+    if (!forceResend && (activeCount ?? 0) >= maxUsers) {
       return jsonResponse(
         {
           error: "seat_limit_reached",
@@ -276,7 +282,9 @@ Deno.serve(async (req) => {
       .eq("user_id", user_id)
       .maybeSingle();
 
-    if (existingMember && existingMember.is_active) {
+    // already_member NO bloquea si es reenvío — significa que mandamos
+    // el email otra vez al miembro existente sin modificar nada en BD.
+    if (!forceResend && existingMember && existingMember.is_active) {
       return jsonResponse(
         {
           error: "already_member",
@@ -338,8 +346,10 @@ Deno.serve(async (req) => {
 
     if (!invite_link) {
       emailStatus = "skipped_no_key"; // sin link nada que mandar
-    } else if (existed) {
-      // User existente — no spam, solo devolvemos el link para entrega manual
+    } else if (existed && !forceResend) {
+      // User existente — no spam por default, solo devolvemos el link.
+      // Si el caller pidió force_resend=true (botón "Reenviar invitación"),
+      // sí mandamos el email otra vez con el recovery link generado.
       emailStatus = "skipped_existing";
     } else if (resendApiKey) {
       try {
@@ -433,9 +443,11 @@ Deno.serve(async (req) => {
       email_status: emailStatus,
       invite_link, // Siempre incluido para que admin pueda copiar/mandar manual
       message:
-        emailStatus === "sent"
+        emailStatus === "sent" && forceResend
+          ? `Invitación reenviada a ${email}.`
+          : emailStatus === "sent"
           ? `Invitación enviada a ${email}. Recibirá un email con link para configurar su contraseña.`
-          : existed
+          : existed && !forceResend
           ? `${full_name} ya tenía cuenta. Agregado al equipo. Compartile el link manualmente.`
           : emailStatus === "failed"
           ? `Miembro creado pero el email no se pudo enviar. Compartí el link manualmente al invitado.`

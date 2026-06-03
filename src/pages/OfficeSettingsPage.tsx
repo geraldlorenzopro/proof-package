@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2, Phone, Link2, RefreshCw, Webhook, Copy, Eye, EyeOff, Moon, Sun, Sparkles } from "lucide-react";
+import { Building2, Scale, Users, Calendar, FolderOpen, Save, Trash2, Plus, Upload, Loader2, Phone, Link2, RefreshCw, Webhook, Copy, Eye, EyeOff, Moon, Sun, Sparkles, Send } from "lucide-react";
 import { useTheme } from "next-themes";
 import HubLayout from "@/components/hub/HubLayout";
 import { initializeOfficeConfig, STANDARD_CASE_TYPES, AI_CASE_TYPES, TIMEZONES, US_STATES } from "@/lib/officeSetup";
@@ -464,6 +464,71 @@ export default function OfficeSettingsPage() {
     }
   }
 
+  // Set de member ids que están reenviando (para deshabilitar el botón
+  // durante el request — no usar setInviting global para no afectar otros UI).
+  const [resendingIds, setResendingIds] = useState<Set<string>>(new Set());
+
+  async function resendInvite(member: TeamMember) {
+    if (!member.email) {
+      toast.error("Sin email registrado", { description: "No se puede reenviar invitación sin email." });
+      return;
+    }
+    setResendingIds(prev => {
+      const next = new Set(prev);
+      next.add(member.id);
+      return next;
+    });
+
+    try {
+      const { data, error } = await supabase.functions.invoke("invite-team-member", {
+        body: {
+          email: member.email,
+          full_name: member.full_name || member.email.split("@")[0],
+          role: member.role,
+          force_resend: true,
+        },
+      });
+
+      if (error) {
+        const detail = (error as any)?.context?.body || (error as any)?.message || "Intentá de nuevo.";
+        toast.error("No se pudo reenviar", { description: String(detail) });
+        return;
+      }
+
+      if (data?.error) {
+        toast.error("No se pudo reenviar", { description: data.message || data.error });
+        return;
+      }
+
+      const emailStatus = data?.email_status;
+      if (emailStatus === "sent") {
+        toast.success(`Invitación reenviada a ${member.email}`);
+      } else if (emailStatus === "failed") {
+        toast.warning("Reenvío parcial", {
+          description: "No se pudo mandar el email — mostrando link copiable.",
+        });
+      } else {
+        toast.info(data?.message || "Reenvío procesado");
+      }
+
+      // Mostrar el dialog con el link como backup, igual que en invitación nueva
+      if (data?.invite_link) {
+        setLastInviteLink(data.invite_link);
+        setLastInviteEmail(member.email);
+        setShowInviteLinkDialog(true);
+      }
+    } catch (err: any) {
+      console.error("[resendInvite] unexpected:", err);
+      toast.error("Error inesperado", { description: err?.message });
+    } finally {
+      setResendingIds(prev => {
+        const next = new Set(prev);
+        next.delete(member.id);
+        return next;
+      });
+    }
+  }
+
   async function removeMember(member: TeamMember) {
     // Soft-delete: marca is_active=false en vez de borrar. Mantiene el row
     // para historial/audit y libera un asiento del plan al re-contar
@@ -896,13 +961,27 @@ export default function OfficeSettingsPage() {
                     <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${roleColor}`}>{m.role}</Badge>
                     <span className="text-xs text-muted-foreground hidden sm:inline">{new Date(m.created_at).toLocaleDateString()}</span>
                     {isAdmin && m.user_id !== currentUserId && (
-                      <button
-                        onClick={() => setDeleteConfirm(m)}
-                        className="text-muted-foreground/40 hover:text-destructive transition-colors"
-                        title={isDemoSeed ? "Eliminar miembro demo" : "Eliminar miembro"}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => resendInvite(m)}
+                          disabled={resendingIds.has(m.id) || !m.email}
+                          className="text-muted-foreground/40 hover:text-cyan-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          title={m.email ? "Reenviar invitación por email" : "Sin email registrado"}
+                        >
+                          {resendingIds.has(m.id) ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(m)}
+                          className="text-muted-foreground/40 hover:text-destructive transition-colors"
+                          title={isDemoSeed ? "Eliminar miembro demo" : "Eliminar miembro"}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                   </Card>
                 );
