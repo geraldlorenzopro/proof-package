@@ -28,6 +28,7 @@ import CaseStageInlineEdit from "./CaseStageInlineEdit";
 import CaseOwnerInlineEdit from "./CaseOwnerInlineEdit";
 import CaseTypeInlineEdit from "./CaseTypeInlineEdit";
 import NextActionChip from "./NextActionChip";
+import ResponsibleInlineEdit, { type ResponsibleOverridePayload } from "./ResponsibleInlineEdit";
 
 const RESPONSIBLE_META: Record<string, { icon: string; label: string; chipClass: string }> = {
   cliente:      { icon: "🙋", label: "Cliente",     chipClass: "bg-orange-500/15 border-orange-500/30 text-orange-200" },
@@ -358,15 +359,22 @@ function CaseRow({
         />
       </div>
 
-      {/* Responsable (ball-in-court) — derivado del Status del caso, NO editable directo */}
-      <div className="truncate">
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border ${responsibleMeta.chipClass} whitespace-nowrap cursor-help`}
-          title={`Responsable: ${responsibleMeta.label}. Se ajusta automáticamente al cambiar el Status del caso.`}
-        >
-          <span>{responsibleMeta.icon}</span>
-          <span>{responsibleMeta.label}</span>
-        </span>
+      {/* Responsable híbrido (locked 2026-06-03):
+            - Auto derivado del journey_step (90% casos)
+            - Override manual con nota opcional (10% edge cases)
+            - Override expira si cambia el Status del caso */}
+      <div className="truncate" onClick={(e) => e.stopPropagation()}>
+        <ResponsibleInlineEdit
+          caseId={c.id}
+          autoResponsible={journeyMeta.responsible}
+          currentStatus={activeJourney}
+          override={(c.custom_fields?.responsible_override as ResponsibleOverridePayload | undefined) ?? null}
+          onChange={(payload) => {
+            const merged = { ...(c.custom_fields || {}), responsible_override: payload };
+            if (!payload) delete (merged as any).responsible_override;
+            onCaseChange?.(c.id, { custom_fields: merged } as Partial<PipelineCase>);
+          }}
+        />
       </div>
 
       {/* Owner editable inline */}
