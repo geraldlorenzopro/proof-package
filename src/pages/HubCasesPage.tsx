@@ -85,23 +85,53 @@ export default function HubCasesPage() {
       return;
     }
     if (!accountId) return;
-    supabase
-      .from("account_members")
-      .select("user_id, profiles:user_id(full_name)")
-      .eq("account_id", accountId)
-      .then(({ data }) => {
-        const map: Record<string, string> = {};
-        const teamList: Array<{ user_id: string; full_name: string }> = [];
-        (data || []).forEach((m: any) => {
-          if (m.user_id) {
-            const name = m.profiles?.full_name || "Staff";
-            map[m.user_id] = name;
-            teamList.push({ user_id: m.user_id, full_name: name });
-          }
-        });
-        setStaffNames(map);
-        setTeam(teamList);
+
+    // Carga del team con el MISMO patrón que OfficeSettingsPage:
+    // 1. account_members WHERE is_active=true (NO traer desactivados)
+    // 2. JOIN manual a profiles (full_name) — sintaxis Supabase
+    //    `profiles:user_id(full_name)` puede no resolver si no hay FK explícita
+    // 3. JOIN manual a ghl_user_mappings (fallback de nombre desde sync GHL)
+    async function loadTeam() {
+      const { data: mems, error: memErr } = await supabase
+        .from("account_members")
+        .select("user_id, role")
+        .eq("account_id", accountId)
+        .eq("is_active", true);
+
+      if (memErr) {
+        console.error("[HubCasesPage] team load error:", memErr.message);
+        return;
+      }
+
+      if (!mems || mems.length === 0) {
+        setStaffNames({});
+        setTeam([]);
+        return;
+      }
+
+      const userIds = mems.map((m: any) => m.user_id).filter(Boolean);
+      const [{ data: profiles }, { data: ghlMaps }] = await Promise.all([
+        supabase.from("profiles").select("user_id, full_name").in("user_id", userIds),
+        supabase.from("ghl_user_mappings").select("mapped_user_id, ghl_user_name").in("mapped_user_id", userIds),
+      ]);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p.full_name]));
+      const ghlMap = new Map((ghlMaps || []).map((g: any) => [g.mapped_user_id, g.ghl_user_name]));
+
+      const map: Record<string, string> = {};
+      const teamList: Array<{ user_id: string; full_name: string }> = [];
+      mems.forEach((m: any) => {
+        if (!m.user_id) return;
+        const name = profileMap.get(m.user_id) || ghlMap.get(m.user_id) || "Staff";
+        map[m.user_id] = name;
+        teamList.push({ user_id: m.user_id, full_name: name });
       });
+
+      setStaffNames(map);
+      setTeam(teamList);
+    }
+
+    loadTeam();
   }, [accountId, demoMode]);
 
   function changeView(next: ViewMode) {
