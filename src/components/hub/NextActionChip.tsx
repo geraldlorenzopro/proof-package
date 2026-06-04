@@ -21,6 +21,8 @@ import { getActionLabel, type NextActionPayload } from "@/lib/nextActionCatalog"
 interface Props {
   caseId: string;
   processStage: string | null | undefined;
+  /** Key del case_type — para acciones contextualizadas (Fase 5 catálogo). */
+  caseTypeKey?: string | null;
   value: NextActionPayload | null;
   /** Notifica al parent que cambió. */
   onChange: (next: NextActionPayload | null) => void;
@@ -44,7 +46,7 @@ function fmtDueDate(iso: string | null): { label: string; tone: string } {
   return { label: `${dd}/${mm} (${diff}d)`, tone: "text-slate-300" };
 }
 
-export default function NextActionChip({ caseId, processStage, value, onChange, variant = "compact" }: Props) {
+export default function NextActionChip({ caseId, processStage, caseTypeKey, value, onChange, variant = "compact" }: Props) {
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -73,6 +75,7 @@ export default function NextActionChip({ caseId, processStage, value, onChange, 
         <NextActionEditor
           caseId={caseId}
           processStage={processStage}
+          caseTypeKey={caseTypeKey}
           currentValue={value}
           open={open}
           anchor={anchor}
@@ -111,6 +114,7 @@ export default function NextActionChip({ caseId, processStage, value, onChange, 
         <NextActionEditor
           caseId={caseId}
           processStage={processStage}
+          caseTypeKey={caseTypeKey}
           currentValue={value}
           open={open}
           anchor={anchor}
@@ -136,6 +140,7 @@ export default function NextActionChip({ caseId, processStage, value, onChange, 
       <NextActionEditor
         caseId={caseId}
         processStage={processStage}
+        caseTypeKey={caseTypeKey}
         currentValue={value}
         open={open}
         anchor={anchor}

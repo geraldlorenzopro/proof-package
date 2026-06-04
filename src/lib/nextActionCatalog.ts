@@ -284,8 +284,8 @@ export const CONTEXTUAL_ACTIONS: Record<string, NextActionOption[]> = {
     { key: "verify_category_c08", label: "Confirmar categoría (c)(8) o pending I-485", responsible: "equipo", defaultDueDays: 1 },
   ],
 
-  // ─── I-918 U-visa ───
-  "uscis:i918-uvisa": [
+  // ─── I-918 U-visa (key real: uvisa-i918, no i918-uvisa — fix auditoría 2026-06-03) ───
+  "uscis:uvisa-i918": [
     { key: "obtain_supp_b_certification", label: "Obtener certificación policial Supp. B", responsible: "profesional", defaultDueDays: 60 },
     { key: "victim_statement", label: "Preparar declaración de víctima detallada", responsible: "cliente", defaultDueDays: 21 },
   ],

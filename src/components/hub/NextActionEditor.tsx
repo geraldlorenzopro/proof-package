@@ -21,7 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDemoMode } from "@/hooks/useDemoData";
 import {
   getActionsForStage,
-  getGroupedActionsForStage,
+  getGroupedActionsForCase,
   getStageDisplayLabel,
   type NextActionPayload,
 } from "@/lib/nextActionCatalog";
@@ -29,6 +29,8 @@ import {
 interface Props {
   caseId: string;
   processStage: string | null | undefined;
+  /** Key del case_type — habilita acciones contextualizadas (Fase 5 catálogo). */
+  caseTypeKey?: string | null;
   currentValue: NextActionPayload | null;
   /** Estado open controlado desde el parent. */
   open: boolean;
@@ -51,6 +53,7 @@ function isoDateNDaysFromToday(n: number): string {
 export default function NextActionEditor({
   caseId,
   processStage,
+  caseTypeKey,
   currentValue,
   open,
   anchor,
@@ -67,7 +70,9 @@ export default function NextActionEditor({
   const [saving, setSaving] = useState(false);
 
   const options = getActionsForStage(processStage);
-  const grouped = getGroupedActionsForStage(processStage);
+  // Usa getGroupedActionsForCase para incluir contextual actions (Fase 5)
+  // Si caseTypeKey no se pasa, contextual queda vacío y comportamiento es igual al anterior.
+  const grouped = getGroupedActionsForCase(processStage, caseTypeKey ?? null);
   const stageLabel = getStageDisplayLabel(processStage);
   const isCustom = actionKey === "__custom__";
 
@@ -266,6 +271,13 @@ export default function NextActionEditor({
             className="w-full px-2.5 py-2 rounded-md bg-white/5 border border-white/10 text-[12px] text-white focus:border-cyan-accent focus:outline-none"
           >
             <option value="">— Elegí una acción —</option>
+            {grouped.contextual.length > 0 && (
+              <optgroup label={`Para este caso (${caseTypeKey})`}>
+                {grouped.contextual.map(o => (
+                  <option key={o.key} value={o.key}>{o.label}</option>
+                ))}
+              </optgroup>
+            )}
             <optgroup label={`Específicas de ${stageLabel}`}>
               {grouped.specific.map(o => (
                 <option key={o.key} value={o.key}>{o.label}</option>

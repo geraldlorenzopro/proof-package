@@ -453,7 +453,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "uscis",
     ruta: ["uscis", "aprobado"],
     etapas: ["Verificar país designado / período", "Presentar I-821 (+ I-765)", "Recibo", "Biométricos", "Decisión", "Re-registro en cada extensión"],
-    case_type_keys: ["i821-tps"],
+    case_type_keys: ["daca-i821d"],
   },
   {
     id: "i821d-daca",
@@ -464,7 +464,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "uscis",
     ruta: ["uscis", "aprobado"],
     etapas: ["Verificar elegibilidad", "Presentar I-821D + I-765 + I-765WS", "Recibo", "Biométricos", "Decisión", "Renovación"],
-    case_type_keys: ["i821d-daca"],
+    case_type_keys: ["daca-i821d"],
   },
   {
     id: "i360-vawa",
@@ -475,7 +475,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "uscis",
     ruta: ["uscis", "aprobado"],
     etapas: ["Presentar I-360", "Recibo", "Determinación prima facie", "Adjudicación", "Aprobación", "Ajuste si elegible"],
-    case_type_keys: ["i360-vawa"],
+    case_type_keys: ["vawa-i360"],
   },
   {
     id: "i360-sij",
@@ -486,7 +486,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "uscis",
     ruta: ["uscis", "aprobado"],
     etapas: ["Orden de tribunal estatal de menores", "Presentar I-360", "Adjudicación", "Aprobación", "Ajuste según disponibilidad"],
-    case_type_keys: ["i360-sij"],
+    case_type_keys: ["sijs-i360"],
   },
   {
     id: "i918-uvisa",
@@ -497,7 +497,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "uscis",
     ruta: ["uscis", "aprobado"],
     etapas: ["Certificación policial (Supp. B)", "Presentar I-918", "Recibo", "Lista de espera (tope anual)", "Adjudicación", "Estatus U otorgado"],
-    case_type_keys: ["i918-uvisa"],
+    case_type_keys: ["uvisa-i918"],
     notes: "Después de 3 años con estatus U, ver process route 'i485-uvisa' para ajuste a LPR.",
   },
   {
@@ -509,7 +509,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "uscis",
     ruta: ["uscis", "aprobado"],
     etapas: ["Presentar I-914", "Recibo", "Biométricos", "Adjudicación", "Estatus T otorgado"],
-    case_type_keys: ["i914-tvisa"],
+    case_type_keys: ["tvisa-i914"],
     notes: "Después de 3 años con estatus T (o cumplir otros requisitos), ver process route 'i485-tvisa' para ajuste a LPR.",
   },
   {
@@ -579,7 +579,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "uscis",
     ruta: ["uscis", "aprobado"],
     etapas: ["Presentar I-131", "Recibo", "Biométricos si aplica", "Decisión", "Emisión del documento"],
-    case_type_keys: ["i131"],
+    case_type_keys: ["i131-ap", "parole-i131"],
   },
   {
     id: "i90-replace-gc",
@@ -616,7 +616,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "uscis",
     ruta: ["uscis", "embajada", "aprobado"],
     etapas: ["Identificar causal de inadmisibilidad", "Presentar I-601", "Recibo", "Adjudicación", "Decisión"],
-    case_type_keys: ["i601"],
+    case_type_keys: ["i601-waiver"],
   },
 
   // ════════════════════════════════════════════════════════════════════

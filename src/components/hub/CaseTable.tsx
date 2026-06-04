@@ -393,6 +393,7 @@ function CaseRow({
         <NextActionChip
           caseId={c.id}
           processStage={c.process_stage}
+          caseTypeKey={c.case_type}
           value={c.next_action ?? null}
           variant="compact"
           onChange={(next) => onCaseChange?.(c.id, { next_action: next } as Partial<PipelineCase>)}

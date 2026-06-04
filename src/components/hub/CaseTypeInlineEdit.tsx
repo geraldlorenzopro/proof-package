@@ -20,7 +20,7 @@ import {
   CATEGORY_LABELS,
   searchCaseTypes,
   getCaseTypeByKey,
-  inferAgency,
+  inferAgencyForCaseType,
   filterCaseTypesByAgency,
   AGENCY_LABELS,
   AGENCY_DESCRIPTIONS,
@@ -141,7 +141,9 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
   const agencyCounts = useMemo(() => {
     const counts: Record<string, number> = { all: searchResults.length };
     for (const t of searchResults) {
-      const a = inferAgency(t.formNumber);
+      // Respeta agency_override igual que filterCaseTypesByAgency
+      // (fix auditoría 2026-06-03: antes usaba inferAgency directo → counts ≠ filter)
+      const a = inferAgencyForCaseType(t);
       counts[a] = (counts[a] || 0) + 1;
     }
     return counts;
