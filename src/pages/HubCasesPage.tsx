@@ -12,6 +12,7 @@ import CaseTable from "@/components/hub/CaseTable";
 import CaseKanban from "@/components/hub/CaseKanban";
 import CaseKpiStrip from "@/components/hub/CaseKpiStrip";
 import CaseViewTabs from "@/components/hub/CaseViewTabs";
+import CaseFiltersPopover, { type CaseFilters, EMPTY_FILTERS } from "@/components/hub/CaseFiltersPopover";
 import CasePeekPanel from "@/components/hub/CasePeekPanel";
 import { useCasePipeline, PIPELINE_COLUMNS } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
@@ -59,6 +60,17 @@ export default function HubCasesPage() {
   }, [groupBy]);
   const [search, setSearch] = useState("");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [filters, setFilters] = useState<CaseFilters>(() => {
+    if (typeof window === "undefined") return EMPTY_FILTERS;
+    try {
+      const saved = localStorage.getItem("ner_cases_filters");
+      if (saved) return { ...EMPTY_FILTERS, ...JSON.parse(saved) };
+    } catch {}
+    return EMPTY_FILTERS;
+  });
+  useEffect(() => {
+    try { localStorage.setItem("ner_cases_filters", JSON.stringify(filters)); } catch {}
+  }, [filters]);
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
   const [team, setTeam] = useState<Array<{ user_id: string; full_name: string }>>([]);
   const [userId, setUserId] = useState<string | null>(null);
@@ -181,10 +193,28 @@ export default function HubCasesPage() {
   }, [cases, search, ownerFilter]);
 
   // Filtro adicional por vista activa (mis-casos / urgentes / pte-accion / cerrados / todos)
-  const filteredCases = useMemo(
+  const viewFilteredCases = useMemo(
     () => filterCasesByView(searchFilteredCases, activeView, userId),
     [searchFilteredCases, activeView, userId]
   );
+
+  // Toggles del CaseFiltersPopover (AND aditivo) — 2026-06-03
+  const filteredCases = useMemo(() => {
+    let out = viewFilteredCases;
+    if (filters.onlyOverdue) {
+      out = out.filter(c => (c.overdue_tasks_count ?? 0) > 0);
+    }
+    if (filters.onlyWithRfe) {
+      out = out.filter(c => !!c.rfe_deadline);
+    }
+    if (filters.onlyWithNextAction) {
+      out = out.filter(c => !!c.next_action);
+    }
+    if (filters.onlyWithoutOwner) {
+      out = out.filter(c => !c.assigned_to);
+    }
+    return out;
+  }, [viewFilteredCases, filters]);
 
   // Counts por vista (para badges en tabs)
   const viewCounts = useMemo(() => ({
@@ -279,16 +309,9 @@ export default function HubCasesPage() {
 
         {/* ═══ Toolbar (filtros separados de search) ═══ */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            disabled
-            title="Filtros avanzados — próxima entrega"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] bg-white/[0.04] border border-white/10 rounded-md text-muted-foreground/40 cursor-not-allowed opacity-60"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            Filtros
-            <span className="text-[8px] uppercase tracking-wider bg-cyan-accent/15 border border-cyan-accent/30 text-cyan-accent/80 px-1 py-px rounded">Pronto</span>
-          </button>
+          {/* Filtros funcional 2026-06-03 (Mr. Lorenzo: "por qué Pronto si
+              tenemos forma de hacerlo ya?"). 4 toggles aditivos AND. */}
+          <CaseFiltersPopover value={filters} onChange={setFilters} />
           <button
             type="button"
             disabled

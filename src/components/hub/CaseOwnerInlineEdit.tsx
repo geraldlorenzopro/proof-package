@@ -90,23 +90,48 @@ export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwn
     if (newId === ownerId) return;
     const oldId = ownerId;
     const oldName = ownerName;
-    await edit({
-      caseId,
-      field: "professional_id",
-      newValue: newId,
-      oldValue: oldId,
-      onOptimistic: (v) => {
-        const id = v as string | null;
-        // Si el optimistic update revertió al oldId (= API error path),
-        // restauramos el nombre original también. Sin esto el ID rollbackea
-        // pero el name quedaba stale hasta el próximo re-render del parent.
-        const matchedName = id === oldId ? oldName : newName;
-        setOwnerId(id);
-        setOwnerName(matchedName);
-        onOwnerChange(id, matchedName);
-      },
-      successMessage: newName ? `Asignado a ${newName}` : "Sin asignar",
-    });
+
+    // BUG FIX 2026-06-03: el sistema lee `assigned_to` en todo el resto
+    // del código (useCasePipeline, CaseTable, etc.) pero antes guardaba
+    // en `professional_id`. Por eso el cambio se veía pero no persistía
+    // al refresh. También sincronizamos `assigned_to_name` denormalizado.
+    setOpen(false);
+
+    // Optimistic update local
+    setOwnerId(newId);
+    setOwnerName(newName);
+    onOwnerChange(newId, newName);
+
+    if (saving) return;
+
+    try {
+      await edit({
+        caseId,
+        field: "assigned_to",
+        newValue: newId,
+        oldValue: oldId,
+        onOptimistic: () => { /* ya hecho arriba */ },
+        successMessage: newName ? `Asignado a ${newName}` : "Sin asignar",
+      });
+
+      // Sincronizar el denormalizado assigned_to_name (no rompe si la
+      // columna no existe — Supabase devuelve error pero no rompe el OK
+      // principal de assigned_to). Demo mode lo skipea adentro de edit().
+      if (newName !== null) {
+        await edit({
+          caseId,
+          field: "assigned_to_name",
+          newValue: newName,
+          oldValue: oldName,
+          onOptimistic: () => {},
+        }).catch(() => { /* assigned_to_name puede no existir en BD, ignorar */ });
+      }
+    } catch {
+      // edit() ya hizo rollback con toast destructivo
+      setOwnerId(oldId);
+      setOwnerName(oldName);
+      onOwnerChange(oldId, oldName);
+    }
   }
 
   const grad = ownerGradient(ownerId);
