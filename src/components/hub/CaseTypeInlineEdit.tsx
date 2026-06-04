@@ -191,7 +191,7 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
         <div
           ref={popoverRef}
           style={{ position: "fixed", top: popPos.top, left: popPos.left, zIndex: 9999, maxHeight: "min(70vh, 500px)" }}
-          className="w-[420px] rounded-lg border border-cyan-accent/30 bg-deep-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 flex flex-col"
+          className="w-[420px] rounded-lg border border-cyan-accent/30 bg-deep-navy shadow-2xl shadow-black/40 flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Chips de filtro por agencia */}
