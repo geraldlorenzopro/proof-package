@@ -338,7 +338,19 @@ export default function Auth() {
               )}
             </div>
 
-            <form onSubmit={handleSetInvitedPassword} className="space-y-4">
+            <form
+              onSubmit={handleSetInvitedPassword}
+              className="space-y-4"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+            >
+              {/* Honey-trap inputs invisibles para distraer al autofill agresivo
+                  de Chrome/Safari. El browser intenta llenar el primer username+
+                  password con credenciales guardadas; estos campos se los comen. */}
+              <input type="text" name="username" autoComplete="username" style={{ display: "none" }} tabIndex={-1} aria-hidden="true" readOnly />
+              <input type="password" name="password" autoComplete="current-password" style={{ display: "none" }} tabIndex={-1} aria-hidden="true" readOnly />
+
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
                   Nueva contraseña
@@ -347,6 +359,7 @@ export default function Auth() {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type={showPass ? 'text' : 'password'}
+                    name="ner-new-password"
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
                     placeholder="Mínimo 8 caracteres"
@@ -354,6 +367,9 @@ export default function Auth() {
                     minLength={8}
                     required
                     disabled={!invitedEmail}
+                    autoComplete="new-password"
+                    data-1p-ignore
+                    data-lpignore="true"
                     className="w-full border border-input bg-background rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                   />
                   <button
@@ -374,12 +390,16 @@ export default function Auth() {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type={showPass ? 'text' : 'password'}
+                    name="ner-new-password-confirm"
                     value={newPasswordConfirm}
                     onChange={e => setNewPasswordConfirm(e.target.value)}
                     placeholder="Repetí la misma contraseña"
                     minLength={8}
                     required
                     disabled={!invitedEmail}
+                    autoComplete="new-password"
+                    data-1p-ignore
+                    data-lpignore="true"
                     className="w-full border border-input bg-background rounded-xl pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                   />
                 </div>
