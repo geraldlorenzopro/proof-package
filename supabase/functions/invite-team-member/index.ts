@@ -100,9 +100,8 @@ function buildInviteEmail(opts: {
         Configurar mi contraseña
       </a>
     </div>
-    <p style="font-size:12px;color:#64748B;line-height:1.5;margin:20px 0 0">
-      Si el botón no funciona, copiá y pegá esta URL en tu navegador:<br>
-      <a href="${link}" style="color:#2563EB;word-break:break-all">${link}</a>
+    <p style="font-size:12px;color:#64748B;line-height:1.5;margin:20px 0 0;text-align:center">
+      ¿El botón no funciona? <a href="${link}" style="color:#2563EB;text-decoration:underline;font-weight:600">Hacé click aquí</a>
     </p>
   </div>
   <div style="padding:24px 30px;margin-top:20px;background:#f8fafc;border-top:1px solid #e2e8f0">

@@ -49,6 +49,19 @@ export default function Auth() {
   const [mfaCode, setMfaCode] = useState('');
   const [mfaVerifying, setMfaVerifying] = useState(false);
 
+  // Invited mode: usuario llegó desde email de invitación (link de recovery
+  // que Supabase ya validó + redirect a /auth?invited=1 con sesión activa).
+  // En vez del redirect normal al hub, mostrar UI "Configurá tu contraseña
+  // por primera vez" porque el user fue creado via inviteUserByEmail SIN
+  // contraseña — necesita setearla antes de poder entrar.
+  const [invitedMode, setInvitedMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('invited') === '1';
+  });
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [invitedEmail, setInvitedEmail] = useState<string | null>(null);
+
   // Read redirect param from URL
   const redirectParam = new URLSearchParams(window.location.search).get('redirect');
 
@@ -56,6 +69,13 @@ export default function Auth() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
+        // INVITED MODE: sesión activa por el recovery link del email — NO
+        // redirigir al hub. Mostrar pantalla de set password.
+        if (invitedMode) {
+          setInvitedEmail(user.email || null);
+          return;
+        }
+
         // Hub users should go back to Hub, not Dashboard
         const isHubUser = user.email?.endsWith('@hub.ner.internal');
         const hubData = sessionStorage.getItem('ner_hub_data');
@@ -81,7 +101,49 @@ export default function Auth() {
         });
       }
     });
-  }, [navigate]);
+  }, [navigate, invitedMode]);
+
+  async function handleSetInvitedPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+
+    if (newPassword.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+
+    setLoading(true);
+    const { error: updateErr } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    setLoading(false);
+
+    if (updateErr) {
+      setError(getAuthErrorMessage(updateErr.message));
+      return;
+    }
+
+    // Contraseña seteada — limpiar query param + navigate al hub
+    setMessage('Contraseña configurada. Entrando al sistema…');
+    setInvitedMode(false);
+
+    // Quitar ?invited=1 del URL así si recarga no vuelve a este modo
+    window.history.replaceState({}, '', '/auth');
+
+    // Resolver destino post-login (usualmente /hub para members)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const dest = await resolvePostLoginDestination(user.id);
+      navigate(dest, { replace: true });
+    } else {
+      navigate('/hub', { replace: true });
+    }
+  }
 
   async function resolvePostLoginDestination(userId: string): Promise<string> {
     try {
@@ -242,6 +304,117 @@ export default function Auth() {
     setMfaCode('');
     setMfaFactorId('');
     setError('');
+  }
+
+  // ─── Pantalla especial: usuario invitado seteando contraseña por primera vez ───
+  if (invitedMode && invitedEmail) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 rounded-2xl gradient-hero flex items-center justify-center mx-auto mb-4 shadow-primary">
+              <Scale className="w-7 h-7 text-accent" />
+            </div>
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              Bienvenido a NER
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Configurá tu contraseña para entrar
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-card">
+            <div className="rounded-lg bg-cyan-accent/[0.06] border border-cyan-accent/30 p-3 mb-5 text-center">
+              <p className="text-xs text-muted-foreground">Tu cuenta</p>
+              <p className="text-sm font-semibold text-foreground mt-0.5 truncate">
+                {invitedEmail}
+              </p>
+            </div>
+
+            <form onSubmit={handleSetInvitedPassword} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                  Nueva contraseña
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    autoFocus
+                    minLength={8}
+                    required
+                    className="w-full border border-input bg-background rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                  Confirmá tu contraseña
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    value={newPasswordConfirm}
+                    onChange={e => setNewPasswordConfirm(e.target.value)}
+                    placeholder="Repetí la misma contraseña"
+                    minLength={8}
+                    required
+                    className="w-full border border-input bg-background rounded-xl pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <p className="text-destructive text-sm bg-destructive/10 rounded-lg px-3 py-2">
+                  {error}
+                </p>
+              )}
+              {message && (
+                <p className="text-cyan-accent text-sm bg-cyan-accent/10 rounded-lg px-3 py-2">
+                  {message}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || newPassword.length < 8 || newPassword !== newPasswordConfirm}
+                className="w-full gradient-hero text-primary-foreground font-semibold py-3 rounded-xl shadow-primary hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Guardando…
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight className="w-4 h-4" />
+                    Entrar al sistema
+                  </>
+                )}
+              </button>
+
+              <p className="text-[11px] text-muted-foreground text-center pt-1">
+                Después de configurar tu contraseña vas a poder entrar siempre desde{' '}
+                <span className="font-mono text-foreground">/auth</span> con tu email + contraseña.
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
