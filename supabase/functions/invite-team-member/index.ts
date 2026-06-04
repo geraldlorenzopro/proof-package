@@ -541,6 +541,8 @@ Deno.serve(async (req) => {
       success: true,
       user_id,
       member_id: memberId,
+      email, // Devolver el email para que el frontend lo muestre en el dialog
+      full_name,
       existed,
       reactivated: !!(existingMember && !existingMember.is_active),
       role,
