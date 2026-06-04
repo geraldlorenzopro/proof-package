@@ -307,7 +307,9 @@ export default function Auth() {
   }
 
   // ─── Pantalla especial: usuario invitado seteando contraseña por primera vez ───
-  if (invitedMode && invitedEmail) {
+  // Renderizar SIEMPRE si invitedMode=true (aunque invitedEmail aún no se
+  // haya resuelto del getUser async) para evitar flash de la pantalla Login.
+  if (invitedMode) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md">
@@ -325,11 +327,15 @@ export default function Auth() {
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card">
-            <div className="rounded-lg bg-cyan-accent/[0.06] border border-cyan-accent/30 p-3 mb-5 text-center">
+            <div className="rounded-lg bg-cyan-accent/[0.06] border border-cyan-accent/30 p-3 mb-5 text-center min-h-[58px] flex flex-col items-center justify-center">
               <p className="text-xs text-muted-foreground">Tu cuenta</p>
-              <p className="text-sm font-semibold text-foreground mt-0.5 truncate">
-                {invitedEmail}
-              </p>
+              {invitedEmail ? (
+                <p className="text-sm font-semibold text-foreground mt-0.5 truncate w-full">
+                  {invitedEmail}
+                </p>
+              ) : (
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mt-1" />
+              )}
             </div>
 
             <form onSubmit={handleSetInvitedPassword} className="space-y-4">
@@ -347,7 +353,8 @@ export default function Auth() {
                     autoFocus
                     minLength={8}
                     required
-                    className="w-full border border-input bg-background rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    disabled={!invitedEmail}
+                    className="w-full border border-input bg-background rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                   />
                   <button
                     type="button"
@@ -372,7 +379,8 @@ export default function Auth() {
                     placeholder="Repetí la misma contraseña"
                     minLength={8}
                     required
-                    className="w-full border border-input bg-background rounded-xl pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    disabled={!invitedEmail}
+                    className="w-full border border-input bg-background rounded-xl pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -390,13 +398,18 @@ export default function Auth() {
 
               <button
                 type="submit"
-                disabled={loading || newPassword.length < 8 || newPassword !== newPasswordConfirm}
+                disabled={loading || !invitedEmail || newPassword.length < 8 || newPassword !== newPasswordConfirm}
                 className="w-full gradient-hero text-primary-foreground font-semibold py-3 rounded-xl shadow-primary hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Guardando…
+                  </>
+                ) : !invitedEmail ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Verificando invitación…
                   </>
                 ) : (
                   <>
