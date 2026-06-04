@@ -656,11 +656,11 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "Procesamiento consular (visa IR-3/IH-3/IR-4/IH-4)",
       "Admisión",
     ],
-    case_type_keys: [],
+    case_type_keys: ["i130-orphan-ir3"],
   },
 
   // ════════════════════════════════════════════════════════════════════
-  // CONSULAR — DS-160 / DS-260 / DS-117
+  // ADOPCIÓN — I-600 / I-800 (Fase 2 standalone)
   // ════════════════════════════════════════════════════════════════════
   {
     id: "ds160-niv",
@@ -722,7 +722,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "Entrevista consular",
       "Decisión (antes del fin del año fiscal)",
     ],
-    case_type_keys: [],
+    case_type_keys: ["ds260-dv-lottery"],
   },
   {
     id: "ds117-sb1",
@@ -742,7 +742,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "Entrevista SB-1",
       "Visa emitida",
     ],
-    case_type_keys: [],
+    case_type_keys: ["ds117-sb1-returning"],
   },
 
   // ════════════════════════════════════════════════════════════════════
@@ -766,7 +766,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "Determinación del reclamo",
       "CRBA (FS-240) emitido",
     ],
-    case_type_keys: [],
+    case_type_keys: ["ds2029-crba"],
   },
   {
     id: "ds11-passport-new",
@@ -784,7 +784,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "Procesamiento",
       "Emisión del pasaporte",
     ],
-    case_type_keys: [],
+    case_type_keys: ["ds11-passport-new"],
   },
   {
     id: "ds82-passport-renew",
@@ -795,7 +795,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "embajada",
     ruta: ["embajada", "aprobado"],
     etapas: ["Verificar elegibilidad", "Completar DS-82", "Adjuntar pasaporte anterior + foto", "Enviar (correo o en línea)", "Procesamiento", "Emisión"],
-    case_type_keys: [],
+    case_type_keys: ["ds82-passport-renew"],
   },
 
   // ════════════════════════════════════════════════════════════════════
@@ -816,7 +816,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "Determinación de admisibilidad",
       "Admisión: I-94 con clase y fecha",
     ],
-    case_type_keys: [],
+    case_type_keys: ["cbp-i94-admission"],
   },
   {
     id: "parole-humanitarian",
@@ -833,7 +833,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "EAD (I-765) si aplica",
       "Vencimiento o ajuste",
     ],
-    case_type_keys: [],
+    case_type_keys: ["cbp-parole-humanitarian"],
   },
   {
     id: "i862-removal-240",
@@ -844,7 +844,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "court",
     ruta: ["court", "ice", "aprobado", "negado"],
     etapas: ["DHS presenta y notifica el NTA", "Calendario maestro", "Aplicaciones de alivio", "Audiencia de méritos", "Decisión del juez", "Apelación BIA"],
-    case_type_keys: [],
+    case_type_keys: ["eoir-removal-240"],
   },
   {
     id: "bond-hearing",
@@ -861,7 +861,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "Decisión (monto / sin fianza / negada)",
       "Pago y liberación o ATD",
     ],
-    case_type_keys: [],
+    case_type_keys: ["ice-bond"],
   },
   {
     id: "expedited-removal",
@@ -878,7 +878,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "Orden de remoción acelerada",
       "Ejecución",
     ],
-    case_type_keys: [],
+    case_type_keys: ["cbp-expedited-removal"],
   },
 
   // ════════════════════════════════════════════════════════════════════
@@ -893,7 +893,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "court",
     ruta: ["court", "aprobado", "negado"],
     etapas: ["En proceso de remoción", "Presentar EOIR-42B + biométricos", "Audiencia de méritos", "Decisión del juez"],
-    case_type_keys: [],
+    case_type_keys: ["eoir-42b"],
   },
   {
     id: "eoir-42a-cancellation",
@@ -904,7 +904,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "court",
     ruta: ["court", "aprobado", "negado"],
     etapas: ["En proceso de remoción", "Presentar EOIR-42A", "Audiencia de méritos", "Decisión del juez"],
-    case_type_keys: [],
+    case_type_keys: ["eoir-42a"],
   },
   {
     id: "eoir-26-bia-appeal",
@@ -915,7 +915,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     agencia_inicial: "court",
     ruta: ["court", "aprobado", "negado"],
     etapas: ["Presentar EOIR-26 (30 días)", "Escritos (briefs)", "Revisión en papel", "Decisión de la BIA"],
-    case_type_keys: [],
+    case_type_keys: ["eoir-26-bia-appeal"],
   },
 ];
 

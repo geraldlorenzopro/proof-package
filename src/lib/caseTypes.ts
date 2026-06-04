@@ -171,6 +171,32 @@ export const CASE_TYPES: CaseTypeMeta[] = [
   { key: "ar11-address",     formNumber: "AR-11",  shortLabel: "AR-11 · Cambio dirección",   label: "AR-11 · Cambio de dirección",                    category: "administrative", description: "Notificación obligatoria de cambio de dirección",            searchTerms: ["ar11","direccion","address"] },
   { key: "i94-record",       formNumber: "I-94",   shortLabel: "I-94 · Record",              label: "I-94 · Récord de admisión",                      category: "administrative", description: "Arrival/Departure Record",                                     searchTerms: ["i94","admision","record"] },
   { key: "g28",              formNumber: "G-28",   shortLabel: "G-28 · Notice of Appearance",label: "G-28 · Notice of Appearance",                    category: "administrative", description: "Representación legal ante USCIS",                              searchTerms: ["g28","representacion","appearance"] },
+
+  // ════════════════════════════════════════════════════════════════
+  // CORTE / ICE / CBP — operacionales (Fase 3 catálogo, 2026-06-03)
+  // ════════════════════════════════════════════════════════════════
+  { key: "eoir-removal-240",     formNumber: "I-862",    shortLabel: "Remoción · Sección 240",      label: "I-862 · Remoción (Sección 240)",                  category: "court-removal", description: "Proceso de remoción ante Juez de Inmigración (NTA)",          searchTerms: ["remocion","removal","nta","i862","seccion 240","corte","deportacion"] },
+  { key: "eoir-42b",             formNumber: "EOIR-42B", shortLabel: "Cancelación No-LPR",          label: "EOIR-42B · Cancelación de remoción No-LPR",       category: "court-removal", description: "Alivio para no residentes con 10+ años en EE.UU.",            searchTerms: ["cancelacion","42b","no-lpr","alivio","remocion","10 anos"] },
+  { key: "eoir-42a",             formNumber: "EOIR-42A", shortLabel: "Cancelación LPR",             label: "EOIR-42A · Cancelación de remoción LPR",          category: "court-removal", description: "Alivio para residentes permanentes en remoción",              searchTerms: ["cancelacion","42a","lpr","residente","alivio"] },
+  { key: "eoir-26-bia-appeal",   formNumber: "EOIR-26",  shortLabel: "Apelación BIA",               label: "EOIR-26 · Apelación a la BIA",                    category: "court-removal", description: "Apelación de decisión del juez de inmigración",               searchTerms: ["apelacion","bia","eoir-26","board"] },
+  { key: "ice-bond",             formNumber: "Bond",     shortLabel: "Bond · Audiencia fianza",     label: "Bond · Audiencia de fianza (ICE)",                category: "court-removal", description: "Solicitud de redeterminación de fianza para liberación",      searchTerms: ["bond","fianza","liberacion","detenido","ice","audiencia"] },
+  { key: "ice-stay-removal",     formNumber: "I-246",    shortLabel: "I-246 · Stay of removal",     label: "I-246 · Suspensión de deportación",               category: "court-removal", description: "Solicitud administrativa de stay ante ICE",                   searchTerms: ["stay","suspension","deportacion","i246","ice"] },
+  { key: "cbp-expedited-removal",formNumber: "Expedited Removal", shortLabel: "Expedited Removal",  label: "Expedited Removal · INA 235 (CBP)",               category: "court-removal", description: "Remoción acelerada en puerto de entrada",                     searchTerms: ["expedited","removal","ina 235","puerto","cbp","acelerada"] },
+  { key: "cbp-parole-humanitarian", formNumber: "Parole", shortLabel: "Parole humanitario",          label: "Parole · Humanitario (CBP)",                      category: "humanitarian", description: "Permiso humanitario caso por caso por CBP/USCIS",              searchTerms: ["parole","humanitario","cbp","cuban","venezolano"] },
+  { key: "cbp-i94-admission",    formNumber: "I-94",     shortLabel: "I-94 · Inspección CBP",       label: "I-94 · Inspección y admisión (CBP)",              category: "administrative", description: "Inspección por oficial CBP en puerto de entrada",             searchTerms: ["i94","admision","inspeccion","cbp","puerto","entrada"] },
+
+  // ════════════════════════════════════════════════════════════════
+  // PASAPORTE EE.UU. (Fase 3)
+  // ════════════════════════════════════════════════════════════════
+  { key: "ds11-passport-new",    formNumber: "DS-11",    shortLabel: "DS-11 · Pasaporte 1ra vez",   label: "DS-11 · Pasaporte EE.UU. (primera vez)",          category: "administrative", description: "Trámite de primer pasaporte en persona",                       searchTerms: ["pasaporte","passport","ds-11","primera vez","first time"] },
+  { key: "ds82-passport-renew",  formNumber: "DS-82",    shortLabel: "DS-82 · Renovación pasaporte",label: "DS-82 · Renovación de pasaporte EE.UU.",          category: "administrative", description: "Renovación de pasaporte por correo o en línea",                searchTerms: ["pasaporte","renovacion","ds-82","passport","renewal"] },
+  { key: "ds2029-crba",          formNumber: "DS-2029",  shortLabel: "CRBA · Nacimiento exterior",  label: "DS-2029 · CRBA (nacimiento en el exterior)",      category: "naturalization", description: "Reporte consular de nacimiento de menor de padres US",        searchTerms: ["crba","nacimiento","exterior","consular","ds-2029","fs-240","hijo"] },
+
+  // ════════════════════════════════════════════════════════════════
+  // CONSULAR — DV / SB-1 (Fase 3)
+  // ════════════════════════════════════════════════════════════════
+  { key: "ds260-dv-lottery",     formNumber: "DS-260",   shortLabel: "DS-260 · Lotería de visas",   label: "DS-260 · Visa de Diversidad (DV)",                category: "non-immigrant-special", description: "Visa por sorteo anual (DV Lottery)",                       searchTerms: ["lottery","loteria","dv","diversity","sorteo","ds-260"] },
+  { key: "ds117-sb1-returning",  formNumber: "DS-117",   shortLabel: "DS-117 · SB-1 Residente",     label: "DS-117 · SB-1 Residente que regresa",             category: "adjustment", description: "Visa para LPR que estuvo fuera por causa de fuerza mayor",      searchTerms: ["sb-1","returning","ds-117","residente","regresa"] },
 ];
 
 /**
