@@ -37,6 +37,7 @@ import ProcessStageStepper from "@/components/case-engine/ProcessStageStepper";
 import PortalTrackingPanel from "@/components/case-engine/PortalTrackingPanel";
 import CaseTagsSelector, { CaseTagBadges } from "@/components/case-engine/CaseTagsSelector";
 import CaseDocumentsPanel from "@/components/case-engine/CaseDocumentsPanel";
+import CaseRouteProgress from "@/components/case-engine/CaseRouteProgress";
 import NextActionChip from "@/components/hub/NextActionChip";
 import type { NextActionPayload } from "@/lib/nextActionCatalog";
 import {
@@ -548,6 +549,13 @@ export default function CaseEnginePage() {
                   caseId={caseId!}
                   caseData={caseData}
                   onCaseDataChanged={(updates) => setCaseData((prev: any) => prev ? { ...prev, ...updates } : prev)}
+                />
+
+                {/* 3a. Ruta canónica del proceso (Fase 2.5 catálogo) — solo
+                    renderiza si el caseType mapea a un ProcessRoute */}
+                <CaseRouteProgress
+                  caseTypeKey={caseData.case_type}
+                  currentStage={caseData.process_stage}
                 />
 
                 {/* 3. Pipeline full view */}
