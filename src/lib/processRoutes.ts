@@ -51,6 +51,17 @@ export interface ProcessRoute {
   etapas: string[];
   /** Keys del CASE_TYPES de A que mapean a este proceso. */
   case_type_keys: string[];
+  /**
+   * Premium processing (I-907) disponible para este proceso. Locked
+   * 2026-06-03 después de auditoría — Premium NO es etapa de sequence,
+   * es add-on de timeline. UI debería mostrarlo como toggle aparte.
+   */
+  premium_available?: boolean;
+  /**
+   * Notas operacionales para el paralegal (timing, requisitos especiales,
+   * forms acompañantes). Opcional.
+   */
+  notes?: string;
 }
 
 export const PROCESS_ROUTES: ProcessRoute[] = [
@@ -185,7 +196,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     category: "familiar",
     agencia_inicial: "uscis",
     ruta: ["uscis", "nvc", "embajada", "aprobado"],
-    etapas: ["Presentar I-130", "Recibo", "Aprobación", "Fecha de prioridad", "Caso al NVC", "DS-260 + documentos", "Entrevista", "Visa emitida"],
+    etapas: ["Presentar I-130", "Recibo", "RFE si aplica", "Aprobación", "Fecha de prioridad", "Caso al NVC", "Pago de fees CEAC", "DS-260 + I-864 + docs civiles", "Documentariamente completo (DQ)", "Examen médico (panel physician)", "Entrevista consular", "Visa emitida"],
     case_type_keys: ["i130-child-f2b"],
   },
   {
@@ -196,7 +207,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     category: "familiar",
     agencia_inicial: "uscis",
     ruta: ["uscis", "nvc", "embajada", "aprobado"],
-    etapas: ["Presentar I-130", "Recibo", "Aprobación", "Fecha de prioridad", "Caso al NVC", "DS-260 + documentos", "Entrevista", "Visa emitida"],
+    etapas: ["Presentar I-130", "Recibo", "RFE si aplica", "Aprobación", "Fecha de prioridad", "Caso al NVC", "Pago de fees CEAC", "DS-260 + I-864 + docs civiles", "Documentariamente completo (DQ)", "Examen médico (panel physician)", "Entrevista consular", "Visa emitida"],
     case_type_keys: ["i130-child-f3"],
   },
   {
@@ -207,7 +218,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     category: "familiar",
     agencia_inicial: "uscis",
     ruta: ["uscis", "nvc", "embajada", "aprobado"],
-    etapas: ["Presentar I-130", "Recibo", "Aprobación", "Fecha de prioridad (espera larga)", "Caso al NVC", "DS-260 + documentos", "Entrevista", "Visa emitida"],
+    etapas: ["Presentar I-130", "Recibo", "RFE si aplica", "Aprobación", "Fecha de prioridad (espera larga)", "Caso al NVC", "Pago de fees CEAC", "DS-260 + I-864 + docs civiles", "Documentariamente completo (DQ)", "Examen médico (panel physician)", "Entrevista consular", "Visa emitida"],
     case_type_keys: ["i130-sibling-f4"],
   },
 
@@ -276,8 +287,9 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     category: "empleo",
     agencia_inicial: "uscis",
     ruta: ["uscis", "nvc", "embajada", "aprobado"],
-    etapas: ["Presentar I-140", "Recibo", "Premium opcional", "Adjudicación", "Aprobación", "Ajuste o consular", "Decisión"],
+    etapas: ["Presentar I-140", "Recibo", "Adjudicación", "Aprobación", "Ajuste o consular", "Decisión"],
     case_type_keys: ["i140-eb1a", "i140-eb1b", "i140-eb1c"],
+    premium_available: true,
   },
   {
     id: "i129-h1b",
@@ -292,11 +304,11 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "LCA del DOL",
       "Presentar I-129",
       "Recibo",
-      "Premium opcional",
       "Aprobación",
       "Visa en consulado o cambio de estatus",
     ],
     case_type_keys: ["i129-h1b"],
+    premium_available: true,
   },
   {
     id: "i129-l1",
@@ -334,10 +346,11 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     ruta: ["uscis", "aprobado"],
     etapas: [
       "I-130 aprobada o concurrente",
-      "Presentar I-485 (+ I-765/I-131)",
-      "Recibo",
-      "Biométricos",
-      "Examen médico I-693",
+      "Preparar paquete AOS (I-485 + I-693 + I-864 + I-765 + I-131)",
+      "Presentar I-485 + concurrentes",
+      "Recibo (incl. EAD/AP combo card eventual)",
+      "Biométricos (ASC appointment)",
+      "Examen médico I-693 (sealed envelope)",
       "RFE si aplica",
       "Entrevista si aplica",
       "Decisión (residencia)",
@@ -354,10 +367,12 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     ruta: ["uscis", "aprobado"],
     etapas: [
       "I-140 aprobada / fecha de prioridad current",
-      "Presentar I-485",
+      "Preparar paquete AOS (I-485 + I-693 + I-765 + I-131)",
+      "Presentar I-485 + concurrentes",
       "Recibo",
-      "Biométricos",
-      "Examen médico",
+      "Biométricos (ASC appointment)",
+      "Examen médico I-693",
+      "RFE si aplica",
       "Entrevista si aplica",
       "Decisión",
     ],
@@ -481,8 +496,9 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     category: "humanitario",
     agencia_inicial: "uscis",
     ruta: ["uscis", "aprobado"],
-    etapas: ["Certificación policial (Supp. B)", "Presentar I-918", "Recibo", "Lista de espera (tope anual)", "Adjudicación", "Estatus U", "Ajuste tras 3 años"],
+    etapas: ["Certificación policial (Supp. B)", "Presentar I-918", "Recibo", "Lista de espera (tope anual)", "Adjudicación", "Estatus U otorgado"],
     case_type_keys: ["i918-uvisa"],
+    notes: "Después de 3 años con estatus U, ver process route 'i485-uvisa' para ajuste a LPR.",
   },
   {
     id: "i914-tvisa",
@@ -492,8 +508,9 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     category: "humanitario",
     agencia_inicial: "uscis",
     ruta: ["uscis", "aprobado"],
-    etapas: ["Presentar I-914", "Recibo", "Biométricos", "Adjudicación", "Estatus T", "Ajuste según requisitos"],
+    etapas: ["Presentar I-914", "Recibo", "Biométricos", "Adjudicación", "Estatus T otorgado"],
     case_type_keys: ["i914-tvisa"],
+    notes: "Después de 3 años con estatus T (o cumplir otros requisitos), ver process route 'i485-tvisa' para ajuste a LPR.",
   },
   {
     id: "i730-followup",
@@ -656,11 +673,11 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "Procesamiento consular (visa IR-3/IH-3/IR-4/IH-4)",
       "Admisión",
     ],
-    case_type_keys: ["i130-orphan-ir3"],
+    case_type_keys: ["i600-orphan-nonhague", "i800-orphan-hague"],
   },
 
   // ════════════════════════════════════════════════════════════════════
-  // ADOPCIÓN — I-600 / I-800 (Fase 2 standalone)
+  // CONSULAR — DS-160 / DS-260 / DS-117 / DS-2029 / DS-11 / DS-82
   // ════════════════════════════════════════════════════════════════════
   {
     id: "ds160-niv",
@@ -819,16 +836,20 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     case_type_keys: ["cbp-i94-admission"],
   },
   {
+    // Fix auditoría 2026-06-03: parole humanitario se filed con I-131
+    // a USCIS (no a embajada). CBP solo inspecciona en port-of-entry.
     id: "parole-humanitarian",
-    form: "Parole",
+    form: "I-131",
     descriptor: "Parole humanitario",
-    label: "Parole · Humanitario (CBP)",
+    label: "I-131 · Parole humanitario (USCIS)",
     category: "humanitario",
-    agencia_inicial: "embajada",
-    ruta: ["embajada", "uscis", "aprobado"],
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "embajada", "aprobado"],
     etapas: [
-      "Solicitud/autorización caso por caso",
-      "Inspección por CBP",
+      "Solicitar parole (I-131) caso por caso a USCIS",
+      "Adjudicación USCIS",
+      "Aprobación (Travel Authorization)",
+      "Inspección por CBP en puerto de entrada",
       "Concesión de parole + I-94",
       "EAD (I-765) si aplica",
       "Vencimiento o ajuste",
@@ -853,7 +874,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     label: "Bond · Audiencia de fianza",
     category: "cumplimiento",
     agencia_inicial: "ice",
-    ruta: ["ice", "court", "aprobado"],
+    ruta: ["ice", "court", "aprobado", "negado"],
     etapas: [
       "Detención",
       "Solicitud de redeterminación de fianza",
@@ -916,6 +937,263 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
     ruta: ["court", "aprobado", "negado"],
     etapas: ["Presentar EOIR-26 (30 días)", "Escritos (briefs)", "Revisión en papel", "Decisión de la BIA"],
     case_type_keys: ["eoir-26-bia-appeal"],
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // FASE E (auditoría 2026-06-03): 9 ProcessRoutes operacionales
+  // faltantes detectados en auditoría. Operacionalmente importantes para
+  // bufetes hispanos de inmigración (CHNV parole, parole in place
+  // militar, DACA initial vs renewal, I-751 splits joint vs waivers).
+  // ════════════════════════════════════════════════════════════════════
+
+  // T-visa adjustment a LPR (después de 3 años con estatus T)
+  {
+    id: "i485-tvisa",
+    form: "I-485",
+    descriptor: "AOS T-Visa",
+    label: "I-485 · AOS T-Visa",
+    category: "residencia",
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "aprobado"],
+    etapas: [
+      "3 años con estatus T (o cumplir otros requisitos)",
+      "Presentar I-485 con paquete AOS T-based",
+      "Recibo",
+      "Biométricos",
+      "Examen médico I-693 si aplica",
+      "RFE si aplica",
+      "Decisión",
+    ],
+    case_type_keys: [],
+    notes: "Continuación del route 'i914-tvisa' una vez cumplidos los requisitos de ajuste.",
+  },
+
+  // I-360 religious worker (R-1 a LPR)
+  {
+    id: "i360-religious-worker",
+    form: "I-360",
+    descriptor: "Trabajador religioso (SI / R-1 a LPR)",
+    label: "I-360 · Trabajador religioso especial",
+    category: "empleo",
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "nvc", "embajada", "aprobado"],
+    etapas: [
+      "Verificar elegibilidad (denominación + 2 años de práctica)",
+      "Presentar I-360 por el empleador religioso",
+      "Recibo",
+      "Site visit USCIS si aplica",
+      "Adjudicación",
+      "Aprobación",
+      "Procesamiento consular o ajuste",
+      "Decisión",
+    ],
+    case_type_keys: [],
+  },
+
+  // DACA first-time vs renewal (split del único existente)
+  {
+    id: "i821d-initial",
+    form: "I-821D",
+    descriptor: "DACA inicial (primera vez)",
+    label: "I-821D · DACA (inicial)",
+    category: "humanitario",
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "aprobado"],
+    etapas: [
+      "Verificar elegibilidad inicial (arrival before 16, continuous since 2007, education)",
+      "Compilar evidencia documental robusta",
+      "Presentar I-821D + I-765 + I-765WS + G-1145",
+      "Recibo",
+      "Biométricos (ASC appointment)",
+      "Decisión",
+      "Emisión EAD + SSN",
+    ],
+    case_type_keys: [],
+    notes: "Más documentación que renewal. Verificar disponibilidad — DACA initial puede estar restringido por orden judicial.",
+  },
+  {
+    id: "i821d-renewal",
+    form: "I-821D",
+    descriptor: "DACA renovación",
+    label: "I-821D · DACA (renovación)",
+    category: "humanitario",
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "aprobado"],
+    etapas: [
+      "Verificar elegibilidad de renovación (sin departures unauthorized, sin felonias)",
+      "Presentar I-821D + I-765 (entre 120 y 150 días antes del expire)",
+      "Recibo",
+      "Biométricos si USCIS los pide (reuse común)",
+      "Decisión",
+      "Renovación EAD",
+    ],
+    case_type_keys: [],
+    notes: "Timing crítico: presentar 120-150 días antes del expire del EAD vigente.",
+  },
+
+  // I-751 splits: joint vs 3 waivers
+  {
+    id: "i751-joint",
+    form: "I-751",
+    descriptor: "I-751 conjunto (matrimonio intacto)",
+    label: "I-751 · Conjunto (joint filing)",
+    category: "residencia",
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "aprobado"],
+    etapas: [
+      "Presentar I-751 conjunto (90 días antes del 2do aniversario)",
+      "Compilar evidencia matrimonio bona fide continuo (fotos, taxes, leases, hijos)",
+      "Recibo (extiende residencia)",
+      "Biométricos",
+      "RFE si aplica",
+      "Entrevista si aplica",
+      "Decisión (residencia 10 años)",
+    ],
+    case_type_keys: [],
+  },
+  {
+    id: "i751-waiver-divorce",
+    form: "I-751",
+    descriptor: "I-751 waiver por divorcio",
+    label: "I-751 · Waiver (divorcio)",
+    category: "residencia",
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "aprobado"],
+    etapas: [
+      "Verificar divorcio finalizado (final decree)",
+      "Presentar I-751 con waiver claim 'good faith marriage'",
+      "Compilar evidencia matrimonio bona fide + razón divorcio",
+      "Recibo",
+      "Biométricos",
+      "RFE casi seguro",
+      "Entrevista probable (Stokes interview)",
+      "Decisión",
+    ],
+    case_type_keys: [],
+  },
+  {
+    id: "i751-waiver-abuse",
+    form: "I-751",
+    descriptor: "I-751 waiver por abuso (VAWA-style)",
+    label: "I-751 · Waiver (battery/extreme cruelty)",
+    category: "humanitario",
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "aprobado"],
+    etapas: [
+      "Evaluar criterios VAWA-style battery/extreme cruelty",
+      "Presentar I-751 con waiver claim",
+      "Compilar evidencia abuso (reportes policiales, orden de protección, evaluación psicológica)",
+      "Recibo (confidencialidad VAWA aplica)",
+      "Biométricos",
+      "RFE probable",
+      "Decisión",
+    ],
+    case_type_keys: [],
+  },
+  {
+    id: "i751-waiver-hardship",
+    form: "I-751",
+    descriptor: "I-751 waiver por hardship extremo",
+    label: "I-751 · Waiver (extreme hardship)",
+    category: "residencia",
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "aprobado"],
+    etapas: [
+      "Evaluar criterios extreme hardship si removido",
+      "Presentar I-751 con waiver claim",
+      "Compilar evidencia hardship (familia US, condiciones país origen, vínculos comunitarios)",
+      "Recibo",
+      "Biométricos",
+      "RFE casi seguro",
+      "Entrevista probable",
+      "Decisión",
+    ],
+    case_type_keys: [],
+  },
+
+  // I-131A transportation letter (LPR sin Green Card que necesita reentrar)
+  {
+    id: "i131a-transportation",
+    form: "I-131A",
+    descriptor: "Carta de transporte (boarding foil)",
+    label: "I-131A · Documentación de transportista",
+    category: "ead_viaje",
+    agencia_inicial: "embajada",
+    ruta: ["embajada", "aprobado"],
+    etapas: [
+      "Verificar elegibilidad (LPR válido sin documento)",
+      "Pagar tarifa online",
+      "Presentar I-131A en consulado US en el exterior",
+      "Entrevista corta",
+      "Emisión del boarding foil",
+      "Reentrada con boarding foil",
+    ],
+    case_type_keys: [],
+  },
+
+  // N-400 military naturalization (N-426 path)
+  {
+    id: "n400-military",
+    form: "N-400",
+    descriptor: "Naturalización militar (N-426 path)",
+    label: "N-400 · Naturalización militar",
+    category: "ciudadania",
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "aprobado"],
+    etapas: [
+      "Verificar elegibilidad militar (servicio activo o veterano)",
+      "Obtener N-426 firmado por comando",
+      "Presentar N-400 + N-426 (sin fee)",
+      "Recibo",
+      "Biométricos",
+      "Entrevista + examen inglés/cívico",
+      "Decisión",
+      "Juramento + Certificado (a veces overseas en base militar)",
+    ],
+    case_type_keys: [],
+    notes: "Beneficio: no fee, fast-track, puede ocurrir overseas. INA 328/329.",
+  },
+
+  // Parole in place (PIP) para familia militar
+  {
+    id: "parole-in-place",
+    form: "I-131",
+    descriptor: "Parole in Place (PIP) familia militar",
+    label: "I-131 · Parole in Place (familia militar)",
+    category: "humanitario",
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "aprobado"],
+    etapas: [
+      "Verificar elegibilidad (cónyuge/hijo/padre de US military)",
+      "Presentar I-131 PIP con evidencia militar relationship",
+      "Recibo",
+      "Biométricos si aplica",
+      "Decisión (típicamente 1 año, renovable)",
+      "Habilita I-485 AOS sin salida del país",
+    ],
+    case_type_keys: [],
+  },
+
+  // CHNV Parole (Cuban/Haitian/Nicaraguan/Venezuelan)
+  {
+    id: "chnv-parole",
+    form: "I-134A",
+    descriptor: "CHNV Parole humanitario",
+    label: "I-134A · CHNV Parole (Cuba/Haití/Nicaragua/Venezuela)",
+    category: "humanitario",
+    agencia_inicial: "uscis",
+    ruta: ["uscis", "embajada", "aprobado"],
+    etapas: [
+      "Sponsor US presenta I-134A para el beneficiario",
+      "Revisión USCIS del sponsor",
+      "Beneficiario completa CBP One para travel auth",
+      "Travel authorization",
+      "Inspección por CBP en aeropuerto",
+      "Parole + I-94 (típicamente 2 años)",
+      "EAD I-765 si aplica",
+    ],
+    case_type_keys: [],
+    notes: "Programa CHNV bajo Biden — verificar estado político actual. CBP One requerido pero restringido post-2024.",
   },
 ];
 
