@@ -11,19 +11,20 @@
  */
 
 export type CaseTypeCategory =
-  | "family-immigrant"      // Family-based green card (IR-1, CR-1, F-categories)
-  | "employment-immigrant"  // Employment-based green card (EB-1 a EB-5)
-  | "humanitarian"          // VAWA, U-visa, T-visa, SIJS, parole
-  | "asylum-refugee"        // Asilo, refugio
-  | "naturalization"        // Ciudadanía
-  | "adjustment"            // I-485 AOS + asociados (EAD, AP, I-693)
-  | "waiver"                // Waivers (I-601, I-601A, I-212)
-  | "court-removal"         // EOIR / Removal defense
-  | "non-immigrant-tourism" // B-1/B-2, C, D, transit
-  | "non-immigrant-study"   // F, M, J
-  | "non-immigrant-work"    // H, L, O, P, R, E, TN
-  | "non-immigrant-special" // K-1/K-3 fiancé, V, S
-  | "administrative";       // I-90, I-94, AR-11, name change
+  | "family-immigrant"           // Family-based green card (IR-1, CR-1, F-categories)
+  | "employment-immigrant"       // Employment-based green card (EB-1 a EB-5)
+  | "humanitarian"               // VAWA, U-visa, T-visa, SIJS, parole
+  | "asylum-refugee"             // Asilo, refugio
+  | "naturalization"             // Ciudadanía
+  | "adjustment"                 // I-485 AOS + asociados (EAD, AP, I-693)
+  | "waiver"                     // Waivers (I-601, I-601A, I-212)
+  | "court-removal"              // EOIR / Removal defense
+  | "non-immigrant-tourism"      // B-1/B-2, C, D, transit
+  | "non-immigrant-study"        // F, M, J
+  | "non-immigrant-work"         // H, L, O, P, R, E, TN
+  | "non-immigrant-special"      // K-1/K-3 fiancé, V, S
+  | "non-immigrant-change-extend"// I-539: extensión/cambio de status NI (B, F, M, deps H-4/L-2/O-3/F-2/M-2/J-2, V)
+  | "administrative";            // I-90, I-94, AR-11, name change
 
 export interface CaseTypeMeta {
   key: string;             // Identificador interno (estable para AI)
@@ -33,6 +34,12 @@ export interface CaseTypeMeta {
   category: CaseTypeCategory;
   description: string;     // Descripción 1 línea
   searchTerms?: string[];  // Palabras adicionales para el buscador (incluye nombres comunes)
+  /**
+   * Override de agencia para case_types donde el form se usa en agencias
+   * distintas (ej. I-589 affirmative=USCIS vs defensive=EOIR). Si está
+   * presente, inferAgencyForCaseType() lo respeta. Auditoría 2026-06-03.
+   */
+  agency_override?: "USCIS" | "DOS" | "EOIR" | "ICE" | "Otros";
 }
 
 export const CASE_TYPES: CaseTypeMeta[] = [
@@ -48,7 +55,10 @@ export const CASE_TYPES: CaseTypeMeta[] = [
   { key: "i130-child-f3",    formNumber: "I-130",  shortLabel: "I-130 · Hijo casado F3",     label: "I-130 · Hijo casado de ciudadano (F3)",         category: "family-immigrant", description: "Hijo/a casado de ciudadano US",                            searchTerms: ["hijo","hija","casado","f3","ciudadano"] },
   { key: "i130-sibling-f4",  formNumber: "I-130",  shortLabel: "I-130 · Hermano F4",         label: "I-130 · Hermano de ciudadano US (F4)",          category: "family-immigrant", description: "Hermano/a de ciudadano US",                                searchTerms: ["hermano","hermana","f4","ciudadano"] },
   { key: "i130-parent",      formNumber: "I-130",  shortLabel: "I-130 · Padre/Madre IR-5",   label: "I-130 · Padre/Madre de ciudadano US (IR-5)",    category: "family-immigrant", description: "Padre o madre de ciudadano US >21 años",                  searchTerms: ["padre","madre","ir5","ciudadano"] },
-  { key: "i130-orphan-ir3",  formNumber: "I-130",  shortLabel: "I-130 · Adopción IR-3/IR-4", label: "I-130 · Hijo adoptivo (IR-3/IR-4)",             category: "family-immigrant", description: "Niño adoptado en el extranjero",                          searchTerms: ["adopcion","ir3","ir4","huerfano"] },
+  // Adopción: I-130 NO se usa para huérfanos (auditoría 2026-06-03).
+  // Reemplazado por 2 procesos correctos según jurisdicción:
+  { key: "i600-orphan-nonhague", formNumber: "I-600",  shortLabel: "I-600 · Huérfano (no-Hague)", label: "I-600 · Petición de huérfano (no Convención de La Haya)", category: "family-immigrant", description: "Adopción internacional para países NO miembros de Hague",       searchTerms: ["adopcion","i600","huerfano","ir3","ir4","no-hague"] },
+  { key: "i800-orphan-hague",    formNumber: "I-800",  shortLabel: "I-800 · Huérfano (Hague)",    label: "I-800 · Adoptado de la Convención de La Haya",            category: "family-immigrant", description: "Adopción internacional bajo Convención de La Haya",              searchTerms: ["adopcion","i800","hague","convencion","ih3","ih4"] },
   { key: "i129f-k1",         formNumber: "I-129F", shortLabel: "I-129F · K-1 Prometido",     label: "I-129F · Prometido/a (K-1)",                    category: "non-immigrant-special", description: "Visa de prometido/a para entrar y casarse en US",     searchTerms: ["prometido","novio","novia","k1","fiance"] },
   { key: "i129f-k3",         formNumber: "I-129F", shortLabel: "I-129F · K-3 Cónyuge",       label: "I-129F · Cónyuge en espera (K-3)",              category: "non-immigrant-special", description: "Cónyuge esperando I-130 approval",                     searchTerms: ["esposa","esposo","k3"] },
 
@@ -85,7 +95,7 @@ export const CASE_TYPES: CaseTypeMeta[] = [
   // ASYLUM & REFUGEE
   // ════════════════════════════════════════════════════════════════
   { key: "i589-affirmative", formNumber: "I-589",  shortLabel: "I-589 · Asilo Afirmativo",   label: "I-589 · Asilo afirmativo",                       category: "asylum-refugee", description: "Asilo ante USCIS (no en deportación)",                       searchTerms: ["asilo","asylum","afirmativo","i589"] },
-  { key: "i589-defensive",   formNumber: "I-589",  shortLabel: "I-589 · Asilo Defensivo",    label: "I-589 · Asilo defensivo (Corte)",                category: "asylum-refugee", description: "Asilo en Corte de Inmigración (EOIR)",                       searchTerms: ["asilo","defensivo","corte","eoir"] },
+  { key: "i589-defensive",   formNumber: "I-589",  shortLabel: "I-589 · Asilo Defensivo",    label: "I-589 · Asilo defensivo (Corte)",                category: "asylum-refugee", description: "Asilo en Corte de Inmigración (EOIR)",                       searchTerms: ["asilo","defensivo","corte","eoir"], agency_override: "EOIR" },
   { key: "i730",             formNumber: "I-730",  shortLabel: "I-730 · Asilo Familia",      label: "I-730 · Petición familiar asilado/refugiado",    category: "asylum-refugee", description: "Family follow-to-join para asilados",                        searchTerms: ["i730","familia","asilo","refugiado"] },
   { key: "withholding",      formNumber: "I-589",  shortLabel: "Withholding of Removal",     label: "Withholding of removal",                          category: "asylum-refugee", description: "Protección alternativa al asilo",                            searchTerms: ["withholding","retencion"] },
   { key: "cat-protection",   formNumber: "I-589",  shortLabel: "Protección CAT",             label: "Convención contra la Tortura (CAT)",              category: "asylum-refugee", description: "Convention Against Torture protection",                       searchTerms: ["cat","tortura","convencion"] },
@@ -163,7 +173,7 @@ export const CASE_TYPES: CaseTypeMeta[] = [
   { key: "i129-tn",          formNumber: "I-129",  shortLabel: "TN · NAFTA/USMCA",           label: "I-129 · TN Profesional NAFTA/USMCA",             category: "non-immigrant-work", description: "Profesional canadiense o mexicano (USMCA)",                   searchTerms: ["tn","nafta","usmca","canada","mexico"] },
   { key: "ds160-e1",         formNumber: "DS-160", shortLabel: "E-1 · Comerciante",          label: "DS-160 · E-1 Comerciante por tratado",           category: "non-immigrant-work", description: "Treaty trader",                                                searchTerms: ["e1","tratado","trader"] },
   { key: "ds160-e2",         formNumber: "DS-160", shortLabel: "E-2 · Inversionista",        label: "DS-160 · E-2 Inversionista por tratado",         category: "non-immigrant-work", description: "Treaty investor",                                              searchTerms: ["e2","inversionista","investor","tratado"] },
-  { key: "i539-extend",      formNumber: "I-539",  shortLabel: "I-539 · Extender status",    label: "I-539 · Extender/cambiar status NI",             category: "non-immigrant-work", description: "Extension or change of nonimmigrant status",                  searchTerms: ["i539","extension","cambio"] },
+  { key: "i539-extend",      formNumber: "I-539",  shortLabel: "I-539 · Extender/Cambiar status",label: "I-539 · Extender o cambiar status NI",       category: "non-immigrant-change-extend", description: "Extensión/cambio para B, F, M, J-2, H-4, L-2, O-3, V — NO autoriza empleo. Auditoría 2026-06-03.", searchTerms: ["i539","extension","cambio","h-4","l-2","b-2","f-1","dependiente"] },
 
   // ════════════════════════════════════════════════════════════════
   // ADMINISTRATIVE / OTROS
@@ -235,8 +245,9 @@ export const CATEGORY_LABELS: Record<CaseTypeCategory, string> = {
   "non-immigrant-tourism": "No-inmigrante · Turismo",
   "non-immigrant-study":   "No-inmigrante · Estudio",
   "non-immigrant-work":    "No-inmigrante · Trabajo",
-  "non-immigrant-special": "No-inmigrante · Especial",
-  "administrative":        "Administrativo",
+  "non-immigrant-special":        "No-inmigrante · Especial",
+  "non-immigrant-change-extend":  "No-inmigrante · Extensión/Cambio",
+  "administrative":               "Administrativo",
 };
 
 // ════════════════════════════════════════════════════════════════
@@ -287,8 +298,19 @@ export function inferAgency(formNumber: string | null | undefined): Agency {
   return "Otros";
 }
 
-/** Helper para filtrar el catálogo por agencia. */
+/**
+ * Deriva la agencia de un case_type respetando `agency_override` si está
+ * presente. Para case_types donde el form se usa en distintas agencias
+ * según contexto (ej. I-589 affirmative=USCIS vs defensive=EOIR), el
+ * override toma precedencia sobre la inferencia por formNumber.
+ * Auditoría 2026-06-03.
+ */
+export function inferAgencyForCaseType(caseType: CaseTypeMeta): Agency {
+  return caseType.agency_override || inferAgency(caseType.formNumber);
+}
+
+/** Helper para filtrar el catálogo por agencia. Respeta agency_override. */
 export function filterCaseTypesByAgency(types: CaseTypeMeta[], agency: Agency | "all"): CaseTypeMeta[] {
   if (agency === "all") return types;
-  return types.filter(t => inferAgency(t.formNumber) === agency);
+  return types.filter(t => inferAgencyForCaseType(t) === agency);
 }

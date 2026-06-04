@@ -20,12 +20,45 @@
 
 export type FormAgency = "USCIS" | "DOS" | "NVC" | "CBP" | "ICE" | "EOIR";
 
+/**
+ * Categoriza al ITEM por su naturaleza (form vs sistema vs orden).
+ * Locked 2026-06-03 después de auditoría (docs/auditoria_catalogo.md):
+ *   - form: formulario OMB que el solicitante completa y presenta
+ *   - system: portal/plataforma (CEAC, CBP One)
+ *   - app: aplicación móvil (ESTA, CBP One mobile)
+ *   - process: proceso legal sin form único (Bond, Expedited Removal)
+ *   - order: orden emitida por el gobierno (I-220A, I-220B)
+ */
+export type FormKind = "form" | "system" | "app" | "process" | "order";
+
+/**
+ * Quién presenta/inicia el item (no necesariamente quién aplica).
+ *   - applicant: el solicitante mismo (self-petition o self-filed)
+ *   - petitioner: tercero patrocinador (citizen/LPR para I-130, employer para I-140)
+ *   - employer: empleador específicamente (I-9, I-129 worker forms)
+ *   - government: agencia del gobierno emite (I-862 NTA, I-220A/B)
+ *   - system: ítem auto-generado por sistema (I-94 record at admission)
+ */
+export type FiledBy = "applicant" | "petitioner" | "employer" | "government" | "system";
+
 export interface UscisFormDef {
   code: string;
   name: string;
   category: "petition" | "application" | "support" | "representation" | "consular" | "other";
   /** Agencia oficial del form. Opcional para backwards compat. Default USCIS si falta. */
   agency?: FormAgency;
+  /** Naturaleza del item — distingue forms OMB de sistemas/órdenes/procesos. Default "form". */
+  kind?: FormKind;
+  /** Quién presenta/inicia. Default "applicant". */
+  filed_by?: FiledBy;
+  /** Filing location si difiere de la agency (ej. I-192 USCIS-form filed at CBP port). */
+  filing_location?: FormAgency | string;
+  /** Si el form fue retirado/reemplazado. Ocultar en UI por default. */
+  discontinued?: boolean;
+  /** Fecha aproximada de descontinuación (formato libre, ej. "2021-03"). */
+  discontinued_since?: string;
+  /** Notas para el paralegal (motivo de descontinuación, reemplazo, etc.). */
+  notes?: string;
 }
 
 export const USCIS_FORMS_CATALOG: UscisFormDef[] = [
@@ -38,7 +71,7 @@ export const USCIS_FORMS_CATALOG: UscisFormDef[] = [
   { code: "I-129F", name: "Petición de Prometido(a) Extranjero(a) (K-1 / K-3)", category: "petition", agency: "USCIS" },
   { code: "I-129S", name: "Petición No Inmigrante Basada en L General (L Blanket)", category: "petition", agency: "USCIS" },
   { code: "I-130", name: "Petición de Familiar Extranjero", category: "petition", agency: "USCIS" },
-  { code: "I-130A", name: "Información Suplementaria del Cónyuge (anexo I-130)", category: "petition", agency: "USCIS" },
+  { code: "I-130A", name: "Información Suplementaria del Cónyuge Beneficiario(a) (anexo I-130)", category: "petition", agency: "USCIS", notes: "Oficial: 'Supplemental Information for Spouse Beneficiary'. Completado por el beneficiario, NO por el peticionario." },
   { code: "I-140", name: "Petición de Trabajador Inmigrante (EB-1 a EB-3)", category: "petition", agency: "USCIS" },
   { code: "I-360", name: "Petición de Amerasiático, Viudo(a), Inmigrante Especial (VAWA, SIJ, religioso)", category: "petition", agency: "USCIS" },
   { code: "I-526", name: "Petición de Inversionista Inmigrante (EB-5)", category: "petition", agency: "USCIS" },
@@ -52,20 +85,20 @@ export const USCIS_FORMS_CATALOG: UscisFormDef[] = [
   { code: "I-829", name: "Petición de Inversionista para Remover Condiciones (EB-5)", category: "petition", agency: "USCIS" },
   { code: "I-914", name: "Solicitud de Estatus T No Inmigrante (víctima de trata)", category: "petition", agency: "USCIS" },
   { code: "I-918", name: "Petición de Estatus U No Inmigrante (víctima de delito)", category: "petition", agency: "USCIS" },
-  { code: "I-918A", name: "Solicitud de Familiar Calificado del Solicitante U", category: "petition", agency: "USCIS" },
+  { code: "I-918A", name: "Petición de Familiar Calificado del Beneficiario U-1 (anexo I-918)", category: "petition", agency: "USCIS", notes: "Oficial: 'Petition for Qualifying Family Member of U-1 Recipient'." },
   { code: "I-929", name: "Petición de Familiar Calificado de un No Inmigrante U-1", category: "petition", agency: "USCIS" },
 
   // ════════════════════════════════════════════════════════════════════
   // USCIS — Aplicaciones (application)
   // ════════════════════════════════════════════════════════════════════
-  { code: "I-9", name: "Verificación de Elegibilidad de Empleo", category: "application", agency: "USCIS" },
+  { code: "I-9", name: "Verificación de Elegibilidad de Empleo (retenido por el empleador)", category: "other", agency: "USCIS", filed_by: "employer", notes: "Compliance del empleador (8 USC 1324a). NO se presenta a USCIS — se retiene en archivos del empleador." },
   { code: "I-90", name: "Solicitud para Reemplazar la Tarjeta de Residente Permanente", category: "application", agency: "USCIS" },
   { code: "I-102", name: "Documento Inicial o Reemplazo de Entrada/Salida (I-94)", category: "application", agency: "USCIS" },
   { code: "I-131", name: "Solicitud de Documento de Viaje (Advance Parole / reingreso / refugiado)", category: "application", agency: "USCIS" },
   { code: "I-131A", name: "Documento de Viaje (documentación de transportista)", category: "application", agency: "USCIS" },
   { code: "I-191", name: "Solicitud de Ayuda bajo la Antigua Sección 212(c)", category: "application", agency: "USCIS" },
-  { code: "I-192", name: "Permiso Adelantado para Entrar como No Inmigrante", category: "application", agency: "USCIS" },
-  { code: "I-193", name: "Exención de Pasaporte y/o Visa", category: "application", agency: "USCIS" },
+  { code: "I-192", name: "Permiso Adelantado para Entrar como No Inmigrante", category: "application", agency: "USCIS", notes: "Mismo form filed en USCIS o en CBP port-of-entry según contexto." },
+  { code: "I-193", name: "Exención de Pasaporte y/o Visa", category: "application", agency: "USCIS", notes: "Mismo form filed en USCIS o en CBP port-of-entry según contexto." },
   { code: "I-212", name: "Permiso para Volver a Solicitar Admisión tras Remoción", category: "application", agency: "USCIS" },
   { code: "I-407", name: "Registro de Abandono de Estatus de Residente Permanente", category: "application", agency: "USCIS" },
   { code: "I-485", name: "Solicitud para Registrar Residencia Permanente o Ajustar Estatus", category: "application", agency: "USCIS" },
@@ -79,7 +112,7 @@ export const USCIS_FORMS_CATALOG: UscisFormDef[] = [
   { code: "I-601A", name: "Exención Provisional por Presencia Ilegal", category: "application", agency: "USCIS" },
   { code: "I-602", name: "Exención de Inadmisibilidad para Refugiado", category: "application", agency: "USCIS" },
   { code: "I-612", name: "Exención del Requisito de Residencia Extranjera de 2 años (J)", category: "application", agency: "USCIS" },
-  { code: "I-687", name: "Solicitud de Estatus de Residente Temporal (245A)", category: "application", agency: "USCIS" },
+  { code: "I-687", name: "Solicitud de Estatus de Residente Temporal (245A)", category: "application", agency: "USCIS", discontinued: true, discontinued_since: "1988", notes: "IRCA late-amnesty 1986. Funcionalmente histórico — solo LIFE Act / LULAC class members." },
   { code: "I-690", name: "Exención de Causales de Inadmisibilidad (245A/210)", category: "application", agency: "USCIS" },
   { code: "I-693", name: "Reporte de Examen Médico y Registro de Vacunación", category: "application", agency: "USCIS" },
   { code: "I-698", name: "Ajuste de Estatus de Temporal a Permanente (245A)", category: "application", agency: "USCIS" },
@@ -99,7 +132,7 @@ export const USCIS_FORMS_CATALOG: UscisFormDef[] = [
   { code: "I-924A", name: "Certificación Anual de Centro Regional", category: "application", agency: "USCIS" },
   { code: "I-942", name: "Solicitud de Reducción de Tarifa (N-400)", category: "application", agency: "USCIS" },
   { code: "I-942P", name: "Guías de Ingreso para Reducción de Tarifa", category: "application", agency: "USCIS" },
-  { code: "I-944", name: "Declaración de Autosuficiencia (descontinuado)", category: "application", agency: "USCIS" },
+  { code: "I-944", name: "Declaración de Autosuficiencia", category: "application", agency: "USCIS", discontinued: true, discontinued_since: "2021-03", notes: "Descontinuado tras vacatur del Public Charge Final Rule (marzo 2021)." },
   { code: "I-945", name: "Fianza de Carga Pública", category: "application", agency: "USCIS" },
   { code: "I-955", name: "Estatus de Residente de Largo Plazo de CNMI (NM-1)", category: "application", agency: "USCIS" },
   { code: "I-956", name: "Designación de Centro Regional (EB-5 Reform 2022)", category: "application", agency: "USCIS" },
@@ -164,10 +197,10 @@ export const USCIS_FORMS_CATALOG: UscisFormDef[] = [
   { code: "DS-156E", name: "Solicitud Suplementaria de Comerciante/Inversionista (E)", category: "consular", agency: "DOS" },
   { code: "DS-157", name: "Petición de Clasificación Inmigrante Especial (SIV afgano)", category: "consular", agency: "DOS" },
   { code: "DS-160", name: "Solicitud de Visa de No Inmigrante en Línea", category: "consular", agency: "DOS" },
-  { code: "DS-230", name: "Solicitud de Visa de Inmigrante (legacy / parole cubana)", category: "consular", agency: "DOS" },
+  { code: "DS-230", name: "Solicitud de Visa de Inmigrante", category: "consular", agency: "DOS", discontinued: true, discontinued_since: "2013", notes: "Reemplazado por DS-260 (electrónico) en 2013. Algunos flows consulares legacy aún lo referencian — verificar caso por caso." },
   { code: "DS-260", name: "Solicitud de Visa de Inmigrante y Registro de Extranjero", category: "consular", agency: "DOS" },
   { code: "DS-1884", name: "Inmigrante Especial (empleado del gobierno de EE.UU. en el exterior)", category: "consular", agency: "DOS" },
-  { code: "DS-2029", name: "Reporte Consular de Nacimiento en el Exterior (CRBA)", category: "consular", agency: "DOS" },
+  { code: "DS-2029", name: "Solicitud de Reporte Consular de Nacimiento en el Exterior (CRBA / FS-240)", category: "consular", agency: "DOS", notes: "Oficial: 'Application for Consular Report of Birth Abroad of a Citizen of the United States of America'. El reporte emitido es el FS-240." },
   { code: "DS-3035", name: "Recomendación de Exención de Visa J-1", category: "consular", agency: "DOS" },
   { code: "DS-5507", name: "Declaración Jurada de Presencia Física (CRBA)", category: "consular", agency: "DOS" },
   { code: "DS-5535", name: "Información Adicional del Solicitante de Visa (redes sociales)", category: "consular", agency: "DOS" },
@@ -180,23 +213,23 @@ export const USCIS_FORMS_CATALOG: UscisFormDef[] = [
   // NVC — Visa Center
   // ════════════════════════════════════════════════════════════════════
   { code: "DS-261", name: "Elección de Dirección y Agente (NVC)", category: "consular", agency: "NVC" },
-  { code: "CEAC", name: "Centro Electrónico de Solicitudes Consulares (CEAC)", category: "consular", agency: "NVC" },
+  { code: "CEAC", name: "Centro Electrónico de Solicitudes Consulares (CEAC)", category: "consular", agency: "NVC", kind: "system", notes: "Portal/plataforma NVC para pagos + carga de documentos. NO es un form OMB." },
 
   // ════════════════════════════════════════════════════════════════════
   // CBP — Customs and Border Protection
   // ════════════════════════════════════════════════════════════════════
   { code: "I-94", name: "Registro de Entrada/Salida (admisión)", category: "other", agency: "CBP" },
-  { code: "ESTA", name: "Autorización Electrónica de Viaje (Visa Waiver)", category: "other", agency: "CBP" },
-  { code: "CBP One", name: "Aplicación móvil de CBP (citas / I-94 provisional)", category: "other", agency: "CBP" },
-  { code: "I-192 (CBP)", name: "Permiso Adelantado para Entrar (Puerto de Entrada)", category: "other", agency: "CBP" },
-  { code: "I-193 (CBP)", name: "Exención de Pasaporte y/o Visa (Puerto de Entrada)", category: "other", agency: "CBP" },
+  { code: "ESTA", name: "Autorización Electrónica de Viaje (Visa Waiver Program)", category: "other", agency: "CBP", kind: "system", notes: "Autorización electrónica para entrar bajo VWP. NO es form OMB." },
+  { code: "CBP One", name: "App móvil CBP (citas / I-94 provisional)", category: "other", agency: "CBP", kind: "app", notes: "Aplicación móvil, no formulario. Verificar disponibilidad — restringido post-junio 2024." },
+  // I-192 (CBP) e I-193 (CBP) eliminados — eran duplicados (auditoría 2026-06-03).
+  // El form es el mismo USCIS, varía solo el filing_location según contexto.
 
   // ════════════════════════════════════════════════════════════════════
   // ICE — Immigration and Customs Enforcement
   // ════════════════════════════════════════════════════════════════════
-  { code: "I-862", name: "Notice to Appear (NTA) — inicio de remoción", category: "other", agency: "ICE" },
-  { code: "I-220A", name: "Orden de Liberación bajo Reconocimiento", category: "other", agency: "ICE" },
-  { code: "I-220B", name: "Orden de Supervisión", category: "other", agency: "ICE" },
+  { code: "I-862", name: "Notice to Appear (NTA) — inicio de remoción", category: "other", agency: "EOIR", filed_by: "government", notes: "Emitido por DHS (CBP/ICE/USCIS) y filed con corte EOIR para iniciar removal proceedings." },
+  { code: "I-220A", name: "Orden de Liberación bajo Reconocimiento (emitida por ICE)", category: "other", agency: "ICE", filed_by: "government", kind: "order", notes: "Orden ICE — read-only para el solicitante. NO se 'presenta'." },
+  { code: "I-220B", name: "Orden de Supervisión (emitida por ICE)", category: "other", agency: "ICE", filed_by: "government", kind: "order", notes: "Orden ICE — read-only para el solicitante. NO se 'presenta'." },
   { code: "I-246", name: "Solicitud de Suspensión de Deportación / Remoción (stay)", category: "other", agency: "ICE" },
 
   // ════════════════════════════════════════════════════════════════════
@@ -207,7 +240,7 @@ export const USCIS_FORMS_CATALOG: UscisFormDef[] = [
   { code: "EOIR-28", name: "Comparecencia de Abogado ante la Corte de Inmigración", category: "representation", agency: "EOIR" },
   { code: "EOIR-29", name: "Notificación de Apelación de Decisión de USCIS (BIA)", category: "other", agency: "EOIR" },
   { code: "EOIR-33", name: "Cambio de Dirección (Corte / BIA)", category: "other", agency: "EOIR" },
-  { code: "EOIR-40", name: "Solicitud de Suspensión de Deportación", category: "other", agency: "EOIR" },
+  { code: "EOIR-40", name: "Solicitud de Suspensión de Deportación (legacy NACARA-era)", category: "other", agency: "EOIR", discontinued: true, discontinued_since: "1997", notes: "Reemplazado por EOIR-42A/42B (Cancelación de Remoción) tras IIRAIRA 1996." },
   { code: "EOIR-42A", name: "Cancelación de Remoción para Residente Permanente Legal", category: "application", agency: "EOIR" },
   { code: "EOIR-42B", name: "Cancelación de Remoción y Ajuste para No-LPR", category: "application", agency: "EOIR" },
 ];
