@@ -1,8 +1,70 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-05-28 noche (Sprint masivo Hub v8.x + Forms + Resend + GHL handshake)
+**Última actualización:** 2026-06-03 (Sprint catálogo migratorio + invitación con Resend + auditoría DS-117)
 **Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) UX review + Mr. Lorenzo UX validation
-**Próximo update:** post-configuración `NER_HUB_SECRET` + Resend + activación custom menu link GHL en Mr Visa
+**Próximo update:** post-test invitación real con paralegales activos + verificación visual de progress bar en case-engine
+
+---
+
+## 🆕 Sprint 2026-06-03 — Catálogo migratorio expandido + Email Resend cerrado — CERRADO
+
+**Sesión web continuación del sprint anterior. ~25 commits.**
+
+### Resumen ejecutivo del día
+
+| Categoría | Cambio | Estado |
+|---|---|:--:|
+| **Email transactional Resend** | Domain verified + API key Production + edge function `invite-team-member` 348→378 LOC | ✅ FUNCIONA (email branded NER llega a Gmail) |
+| **Pantalla "Configurá tu contraseña"** | Detección `?invited=1` + form set password con anti-autofill (5 capas defense in depth) | ✅ Cerrado |
+| **Sistema seats por plan** | Enforcement `max_users` + UI contador 3 de 5 + Reenviar invitación + admin override | ✅ Cerrado |
+| **GHL team sync** | Deshabilitado (NER team se gestiona autónomo) | ✅ Cerrado |
+| **Catálogo Fases 1-5 + auditoría A-F** | Forms 33→142, ProcessRoutes 0→67, case_types 88→104, 60+ sub_stage hints, 83+ acciones contextuales | ✅ Cerrado |
+| **Auditoría I-539 + DS-117** | Mr. Lorenzo detectó 2 categorías mal asignadas (mi error), fix aplicado | ✅ Cerrado |
+
+### Decisiones LOCKED de hoy
+
+1. **Categoría I-539:** `non-immigrant-change-extend` (categoría nueva, Opción B) — NO es trabajo, NO autoriza empleo
+2. **Categoría DS-117 + DS-260 DV:** `consular-immigrant` (categoría nueva) — visa de inmigrante por DOS, NO ajuste
+3. **I-407** agregado como case_type (antes solo era form)
+4. **Forms legacy:** flag `discontinued` + UI toggle ("mostrar legacy" pendiente)
+5. **Campo `filed_by`** aplicado ahora (no diferido) — distingue applicant/petitioner/employer/government/system
+6. **Email branded NER via Resend** vs SMTP Supabase — fallback hardcoded a `noreply@nerimmigration.ai` para nunca caer a `onboarding@resend.dev`
+7. **reply_to condicional** en payload Resend (causa raíz del 422 silencioso resuelta)
+8. **GHL team sync DESHABILITADO** — equipo NER gestionado 100% autónomo con enforcement por plan
+9. **Anti-autofill 5 capas** en pantalla `?invited=1`: form `autoComplete=off` + `data-1p-ignore` + `data-lpignore` + honey-trap invisible inputs + `name` custom + `autoComplete="new-password"` real
+10. **Aplicar Opción B siempre que categoría sea ambigua** (en vez de Opción A "mover a la más cercana") — explicitud sobre conveniencia
+
+### Lección aprendida importante
+
+**Patrón "POR VERIFICAR" mal usado:** en el informe de auditoría inicial yo marqué DS-117 como "POR VERIFICAR / discutible" cuando en realidad MI propia BD (`uscisForms.ts`) y el JSON oficial ya tenían la respuesta correcta (`consular`). Estaba escondiendo mi bug detrás de "discutible". Mr. Lorenzo lo detectó.
+
+**Regla nueva (aplicar siempre):** antes de marcar "POR VERIFICAR" en un informe, contrastar contra:
+1. JSON/source oficial subido por el usuario
+2. Las 3 fuentes internas del repo — si están inconsistentes, esa es la causa del bug, no es "discutible"
+
+Propagar a `CLAUDE.md` (pendiente próximo update).
+
+### Archivos nuevos del día
+
+- `docs/comparativa_catalogo.md` — 385 LOC, comparativa A vs B + plan 5 fases
+- `docs/auditoria_catalogo.md` — 360+ LOC, 45 hallazgos vs fuentes oficiales + addendum DS-117
+- `src/lib/processRoutes.ts` — 982 LOC, 67 procesos con ruta + etapas + helpers
+- `src/lib/subStageHints.ts` — vocabulario sugerido por lane (60+ statuses)
+- `src/components/case-engine/CaseRouteProgress.tsx` — UI progress bar etapas
+- `src/components/hub/SubStageInput.tsx` — autocomplete sub_stage
+- `supabase/functions/invite-team-member/index.ts` — 378 LOC con Resend + seat enforcement
+- `supabase/migrations/20260603190000_profiles_teammate_visibility.sql` — RLS para members ver teammate profiles
+
+### Archivos extendidos del día
+
+- `src/lib/caseTypes.ts` — 88 → 104 case_types + 3 nuevas categorías + helpers
+- `src/lib/uscisForms.ts` — 33 → 142 forms + flags semánticos (kind, filed_by, discontinued, notes)
+- `src/lib/nextActionCatalog.ts` — 53 → 83 acciones + helpers contextuales
+- `src/pages/Auth.tsx` — pantalla `?invited=1` con anti-autofill
+- `src/pages/OfficeSettingsPage.tsx` — tab Equipo con contador + Reenviar + dialog invite link backup
+- `src/pages/admin/AdminAccountDetailPage.tsx` — override max_users editable
+- `src/pages/CaseEnginePage.tsx` — `CaseRouteProgress` integrado en tab Resumen
+- `src/components/hub/CaseTypeInlineEdit.tsx` — fix sticky headers transparentes
 
 ---
 

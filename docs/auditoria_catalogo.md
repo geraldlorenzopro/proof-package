@@ -319,3 +319,71 @@ Estos NO son errores del catálogo — son áreas que tu sistema actual no cubre
 4. **Aplicar fases A+B+C (~65 min) o todo el set A-F (~3.5h)?** Mi voto: A+B+C ahora, D-F en otro sprint.
 
 **Esperando tu aprobación. No voy a tocar código hasta que confirmes.**
+
+---
+
+## 11. ESTADO POST-APLICACIÓN (2026-06-03)
+
+### Decisiones Mr. Lorenzo
+
+| Pregunta | Decisión |
+|---|---|
+| 1. Categoría I-539 | **Opción B** — categoría nueva `non-immigrant-change-extend` |
+| 2. Forms legacy | Ocultos por default con flag `discontinued` + toggle "mostrar" (UI pendiente) |
+| 3. Campo `filed_by` | Aplicar ahora (no diferir) |
+| 4. Alcance | **Aplicar todas las fases A-F** en este sprint |
+
+### Fases aplicadas
+
+| Fase | Commit | Resultado |
+|:-:|:-:|---|
+| A | `a49f46b` | 6 bugs críticos corregidos (I-539, I-9, I-220A/B, I-862, i130-orphan split, dedup I-192/193) |
+| B | `a49f46b` | Forms legacy marcados (I-944, DS-230, I-687, EOIR-40) + flags `kind`/`filed_by`/`discontinued`/`notes` |
+| C | `a49f46b` | 3 títulos oficiales actualizados (I-130A, I-918A, DS-2029) |
+| D | `a49f46b` | Campo `agency_override` + función `inferAgencyForCaseType()` — I-589 defensivo ahora resuelve EOIR |
+| E | `44bf792` | 12 ProcessRoutes operacionales agregados (T-visa adj, religious worker, DACA inicial/renewal, I-751×4 splits, I-131A, N-400 military, PIP, CHNV) + etapas mejoradas |
+| F | `44bf792` | Cleanup (header mal puesto, Premium → flag, Bond ruta, parole-humanitarian USCIS-first, i600/i800 mapping) |
+
+### Hallazgo adicional encontrado post-aplicación (2026-06-03)
+
+**DS-117 / SB-1** — Mr. Lorenzo detectó que el informe original marcó como "POR VERIFICAR" cuando en realidad el JSON oficial decía claramente `consular` y mi propio `uscisForms.ts` también. Yo lo había creado MAL en `caseTypes.ts:209` con `category: "adjustment"` durante Fase 3 del sprint anterior y defendido el error en lugar de admitirlo.
+
+**Confesión:** error mío en commit `704fd01`. El DS-117 NO es ajuste de estatus — es **visa de inmigrante consular** (DOS, fuera de EE.UU.).
+
+**Resolución aplicada commit `<NUEVO>`:**
+
+1. Nueva categoría `consular-immigrant` agregada al enum `CaseTypeCategory`
+2. Label: "Inmigrante · Consular (DOS)"
+3. DS-117 SB-1 movido de `adjustment` → `consular-immigrant`
+4. DS-260 DV (Lotería) también movido a `consular-immigrant` (era `non-immigrant-special` — error similar)
+5. I-407 agregado como case_type nuevo (antes solo existía como form en uscisForms.ts)
+
+### Estadísticas finales post-todos los fixes
+
+| Métrica | Valor |
+|---|:-:|
+| Case types totales | **104** (102 + I-600 + I-800 + I-407 - i130-orphan-ir3 deprecado) |
+| Categorías de case_type | **15** (12 originales + non-immigrant-change-extend + consular-immigrant + administrativo) |
+| Forms con flags semánticos | 9 |
+| Forms duplicados | 0 |
+| Process routes | **67** |
+| TS errors | 0 |
+| Migrations BD | 0 |
+| Breaking changes | 0 |
+
+### Items que quedan pendientes
+
+- **UI toggle "Mostrar legacy"** en dropdown del case type (data ya está)
+- **UI badge "Premium"** en case-engine cuando `premium_available=true` (data ya está)
+- **Verificación caso por caso con Vanessa** de los 12 routes nuevos
+- **3 items POR VERIFICAR** del informe original (DS-230 cubana, I-131A categoría, I-407 path completo)
+
+### Lección aprendida
+
+**Patrón anti-mí mismo:** cuando armé el informe de auditoría incluí 3 items "POR VERIFICAR" sin contrastar contra MI propia BD (que ya tenía la respuesta correcta en uscisForms.ts) ni contra el JSON oficial. **Resultado:** estaba escondiendo bugs míos detrás de "discutible". Mr. Lorenzo lo detectó leyendo el informe y trayendo evidencia directa.
+
+**Regla nueva:** antes de marcar algo "POR VERIFICAR" en un informe, validar contra:
+1. El JSON/source oficial subido por el usuario
+2. Las 3 fuentes internas del repo (caseTypes.ts, uscisForms.ts, processRoutes.ts) — si están inconsistentes, esa es la causa del bug, no es "discutible"
+
+Aplicado a este informe + propagado a `CLAUDE.md` (próximo update).

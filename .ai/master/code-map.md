@@ -17,6 +17,28 @@
 - `supabase/migrations/20260503100000_role_visibility_hierarchical.sql` — Hierarchical visibility model
 - `supabase/migrations/20260510120000_feature_flags_system.sql` — Feature flags por firma
 
+**Sprint 2026-06-03 — Catálogo migratorio + Email Resend + Seats:**
+- `src/lib/processRoutes.ts` — 982 LOC, 67 procesos canónicos con `ruta: PipelineStageKey[]` + `etapas: string[]` + helpers `getRouteForCaseType()` + `getRouteProgress()`. **Consume desde:** `CaseRouteProgress.tsx`. Mapping a `caseTypes.ts` vía campo `case_type_keys[]`.
+- `src/lib/subStageHints.ts` — vocabulario sugerido por lane (60+ statuses oficiales). Helpers `getSubStageHints(lane)` + `getSubStageDatalistId()`.
+- `src/components/case-engine/CaseRouteProgress.tsx` — progress bar visual de ruta del caso. Render condicional (return null si no hay ProcessRoute). Integrado en case-engine tab Resumen.
+- `src/components/hub/SubStageInput.tsx` — autocomplete con datalist nativo HTML5 para sub_stage. Compatible con cualquier lane.
+- `src/components/hub/NextActionEditor.tsx` — popover modal con dropdown dependiente de stage + detalle + fecha. Storage `client_cases.custom_fields.next_action` JSONB.
+- `src/components/hub/NextActionChip.tsx` — display compacto del próximo paso (tabla + peek + sidebar).
+- `src/lib/nextActionCatalog.ts` — 83 acciones (53 base + 30 contextualizadas por case_type). Helper `getAllActionsForCase(stage, caseType)` con dedup.
+- `supabase/functions/invite-team-member/index.ts` — 378 LOC. Resend directo + seat enforcement por plan + force_resend support + sanitización agresiva from + reply_to condicional + fallback hardcoded.
+- `supabase/migrations/20260603190000_profiles_teammate_visibility.sql` — RLS policy adicional para que account members vean profiles de teammates (antes solo se veía propio profile → fix bug "Sin nombre" en listas de equipo).
+- `docs/comparativa_catalogo.md` — 385 LOC, comparativa A (mi catálogo) vs B (JSON oficial) + plan 5 fases.
+- `docs/auditoria_catalogo.md` — 360+ LOC, 45 hallazgos vs uscis.gov/travel.state.gov/ice.gov/eoir + addendum DS-117 resolución.
+
+**Archivos MODIFICADOS sustancialmente sprint 2026-06-03:**
+- `src/lib/caseTypes.ts` — 88 → 104 case_types. 3 categorías nuevas (`non-immigrant-change-extend`, `consular-immigrant`, + flag `agency_override`). Helpers `inferAgency()` + `inferAgencyForCaseType()` + `filterCaseTypesByAgency()` + `getCaseTypeByKey()` + `searchCaseTypes()`.
+- `src/lib/uscisForms.ts` — 33 → 142 forms con campos nuevos opcionales: `agency`, `kind` (form/system/app/order/process), `filed_by` (applicant/petitioner/employer/government/system), `filing_location`, `discontinued`, `discontinued_since`, `notes`.
+- `src/pages/Auth.tsx` — pantalla `?invited=1` dedicada con anti-autofill 5 capas defense in depth.
+- `src/pages/OfficeSettingsPage.tsx` — tab Equipo con seat counter + barra progreso + botón Reenviar (icono Send) + Invite Link Dialog backup + reloadTeam() correcto con JOIN profiles + ghl_user_mappings.
+- `src/pages/admin/AdminAccountDetailPage.tsx` — Override editable de max_users con reset al default del plan.
+- `src/pages/CaseEnginePage.tsx` — `CaseRouteProgress` integrado en tab Resumen entre Portal y Pipeline.
+- `src/components/hub/CaseTypeInlineEdit.tsx` — chips filtro por agencia + persistencia localStorage + fix headers sticky transparentes.
+
 **Deleted files:**
 - `src/components/hub/CaseCard.tsx` — huérfano tras remover vista "Lista" del Pipeline (2026-05-11)
 

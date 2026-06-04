@@ -24,6 +24,7 @@ export type CaseTypeCategory =
   | "non-immigrant-work"         // H, L, O, P, R, E, TN
   | "non-immigrant-special"      // K-1/K-3 fiancé, V, S
   | "non-immigrant-change-extend"// I-539: extensión/cambio de status NI (B, F, M, deps H-4/L-2/O-3/F-2/M-2/J-2, V)
+  | "consular-immigrant"         // Visas de inmigrante consulares (DS-117 SB-1, DS-260 IV/DV) — DOS, fuera de USCIS
   | "administrative";            // I-90, I-94, AR-11, name change
 
 export interface CaseTypeMeta {
@@ -205,8 +206,15 @@ export const CASE_TYPES: CaseTypeMeta[] = [
   // ════════════════════════════════════════════════════════════════
   // CONSULAR — DV / SB-1 (Fase 3)
   // ════════════════════════════════════════════════════════════════
-  { key: "ds260-dv-lottery",     formNumber: "DS-260",   shortLabel: "DS-260 · Lotería de visas",   label: "DS-260 · Visa de Diversidad (DV)",                category: "non-immigrant-special", description: "Visa por sorteo anual (DV Lottery)",                       searchTerms: ["lottery","loteria","dv","diversity","sorteo","ds-260"] },
-  { key: "ds117-sb1-returning",  formNumber: "DS-117",   shortLabel: "DS-117 · SB-1 Residente",     label: "DS-117 · SB-1 Residente que regresa",             category: "adjustment", description: "Visa para LPR que estuvo fuera por causa de fuerza mayor",      searchTerms: ["sb-1","returning","ds-117","residente","regresa"] },
+  { key: "ds260-dv-lottery",     formNumber: "DS-260",   shortLabel: "DS-260 · Lotería de visas",   label: "DS-260 · Visa de Diversidad (DV)",                category: "consular-immigrant", description: "Visa de inmigrante por sorteo anual (DV Lottery) — procesada consular por DOS. Auditoría 2026-06-03: movida de non-immigrant-special a consular-immigrant (es inmigrante, NO no-inmigrante).", searchTerms: ["lottery","loteria","dv","diversity","sorteo","ds-260","inmigrante"] },
+  { key: "ds117-sb1-returning",  formNumber: "DS-117",   shortLabel: "DS-117 · SB-1 Residente",     label: "DS-117 · SB-1 Residente que regresa",             category: "consular-immigrant", description: "Visa de inmigrante consular para LPR que estuvo fuera por causa de fuerza mayor. Procesada por DOS en embajada fuera de EE.UU. — NO es ajuste de estatus (auditoría 2026-06-03).", searchTerms: ["sb-1","returning","ds-117","residente","regresa","abandono","consular"] },
+
+  // ════════════════════════════════════════════════════════════════
+  // I-407 ABANDONO DE LPR (agregado auditoría 2026-06-03)
+  // Antes solo existía como form en uscisForms.ts. Bufetes lo manejan
+  // como case_type cuando un LPR decide renunciar voluntariamente.
+  // ════════════════════════════════════════════════════════════════
+  { key: "i407-abandono-lpr",    formNumber: "I-407",    shortLabel: "I-407 · Abandono de LPR",     label: "I-407 · Registro de abandono de residencia permanente",  category: "administrative", description: "Relinquish voluntario de Green Card. Common: LPR que vive permanentemente fuera de EE.UU.", searchTerms: ["i407","abandono","relinquish","green card","lpr","residente"] },
 ];
 
 /**
@@ -247,6 +255,7 @@ export const CATEGORY_LABELS: Record<CaseTypeCategory, string> = {
   "non-immigrant-work":    "No-inmigrante · Trabajo",
   "non-immigrant-special":        "No-inmigrante · Especial",
   "non-immigrant-change-extend":  "No-inmigrante · Extensión/Cambio",
+  "consular-immigrant":           "Inmigrante · Consular (DOS)",
   "administrative":               "Administrativo",
 };
 

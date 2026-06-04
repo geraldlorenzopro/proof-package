@@ -6,6 +6,131 @@ pasadas — agregar nueva decisión que las supersede si cambian.**
 
 ---
 
+## 2026-06-03 — Catálogo migratorio canónico + auditoría DS-117 + Email Resend
+
+### Decisión 1 — Categoría I-539 = `non-immigrant-change-extend` (Opción B)
+
+**Decisión:** crear categoría NUEVA en lugar de mover a la más cercana.
+
+**Alternativas consideradas:**
+- A. Mover a `non-immigrant-special` — semántica forzada (special = K-1/V/S)
+- **B. Crear `non-immigrant-change-extend` ✅**
+- C. Renombrar `non-immigrant-special` → `non-immigrant-special-change` — refactor mayor
+
+**Razón:** I-539 NO es trabajo (lo usan B/F/M/dependientes H-4/L-2/O-3/F-2/M-2/J-2/V). Categoría explícita facilita filtros UI + analytics futuras + reduce ambigüedad para Camila/AI.
+
+**Quién decidió:** Mr. Lorenzo (Opción B explícita).
+
+### Decisión 2 — Categoría DS-117 + DS-260 DV = `consular-immigrant` (categoría NUEVA)
+
+**Decisión:** crear segunda categoría nueva el mismo día.
+
+**Contexto:** Mr. Lorenzo detectó que el DS-117 estaba mal categorizado como `adjustment` cuando es visa de inmigrante CONSULAR (DOS, fuera de EE.UU.). Fuente oficial: travel.state.gov/returning-resident. Mi propio `uscisForms.ts` ya lo tenía como `consular` (inconsistencia interna).
+
+**Alternativas consideradas:**
+- A. Dejar como `adjustment` con asterisco — NO, era el bug original
+- **B. Crear `consular-immigrant` ✅**
+- C. Reutilizar `adjustment` redefiniendo semántica — rompe los 5 splits I-485
+
+**Razón:** mismo principio que Opción B del I-539. Explicitud sobre conveniencia. Cubre DS-117 + DS-260 IV + DS-260 DV + futuros consular immigrant pathways.
+
+**Quién decidió:** Mr. Lorenzo, después de Mr. Lorenzo pedir cita textual del JSON oficial.
+
+### Decisión 3 — I-407 promovido a case_type (no solo form)
+
+**Decisión:** registrar el I-407 (Abandono LPR) como case_type además de form.
+
+**Razón:** bufetes hispanos manejan abandono LPR (común: LPR vive permanentemente fuera de EE.UU. y formaliza la renuncia para optimizar impuestos). Antes solo existía en `uscisForms.ts`. Promoverlo a case_type permite trackearlo en pipeline.
+
+**Categoría asignada:** `administrative` (relinquish voluntario, no es adjustment ni consular).
+
+### Decisión 4 — Forms legacy con flag `discontinued`
+
+**Decisión:** marcar forms legacy con `discontinued: true` + `discontinued_since` + nota. UI los oculta por default con toggle "mostrar legacy" (UI pendiente).
+
+**Forms marcados:** I-944 (2021-03 Public Charge vacated), DS-230 (2013 reemplazado DS-260), I-687 (IRCA 1986), EOIR-40 (NACARA-era reemplazado EOIR-42A/B).
+
+**Alternativa rechazada:** dejarlos visibles con badge "LEGACY" gris — confunde al paralegal nuevo.
+
+**Quién decidió:** Mr. Lorenzo ("tu voto" = mi recomendación de ocultar por default).
+
+### Decisión 5 — Campo `filed_by` aplicado AHORA (no diferido)
+
+**Decisión:** agregar campo opcional `filed_by` a `UscisFormDef` en este sprint (no esperar Fase 6 audit trail SOC 2).
+
+**Valores:** applicant | petitioner | employer | government | system.
+
+**Razón:** distingue I-9 (employer) de I-130 (petitioner) de I-485 (applicant) de I-862 NTA (government). Útil para UI badges + Camila razonamiento + futuro audit SOC 2.
+
+### Decisión 6 — Email transactional via Resend con fallback hardcoded
+
+**Decisión:** edge function `invite-team-member` usa `admin.generateLink({type:'invite'})` + manda email custom via Resend API directo (NO SMTP Supabase).
+
+**Causa raíz del fallo silencioso identificada vía 2-agentes paralelos:**
+- Bug 1: `reply_to: undefined` causaba Resend 422 silencioso
+- Bug 2: fallback al `onboarding@resend.dev` sandbox causaba 403 "verify a domain" para recipients externos
+
+**Fix locked:**
+- `reply_to` se omite del payload si `callerEmail` es undefined (en lugar de pasar undefined)
+- Fallback hardcoded a `noreply@nerimmigration.ai` (dominio verified) en vez de `onboarding@resend.dev`
+- Sanitización agresiva de `RESEND_FROM_EMAIL` para chars Unicode invisibles (BOM, LRM, RLM, NBSP, zero-width)
+- Logging exhaustivo con `apiKeyLength` + `fromValidPassed` + body completo de errores
+
+**Quién decidió:** Mr. Lorenzo después de auditoría 3-agentes paralelos identificando causas en 2 rondas.
+
+### Decisión 7 — GHL team sync DESHABILITADO
+
+**Decisión:** ocultar botón "Sincronizar equipo desde GHL" en OfficeSettingsPage. Equipo NER se gestiona 100% autónomo con enforcement por plan.
+
+**Razón:** estratégicamente NER debe controlar su propio team enforcement por plan (max_users) — depender de GHL para esto rompe el modelo SaaS por seats. Edge function `sync-ghl-team` queda como código histórico pero no expuesta en UI.
+
+**Sync GHL de leads/clientes (`sync-ghl-contacts`) se mantiene** — útil para marketing.
+
+### Decisión 8 — Anti-autofill 5 capas en pantalla `?invited=1`
+
+**Decisión:** defense in depth contra autofill agresivo de Chrome/Safari/1Password/LastPass que estaba prefilling el campo "Nueva contraseña" con credenciales guardadas del admin.
+
+**Capas aplicadas:**
+1. `<form autoComplete="off" data-1p-ignore data-lpignore="true">`
+2. Honey-trap inputs invisibles con `name="username"` + `name="password"` (capta el autofill)
+3. Inputs reales con `autoComplete="new-password"`
+4. `name` custom (`ner-new-password`, no matchea heurística)
+5. `data-1p-ignore` / `data-lpignore` también por input
+
+**Disparador:** Mr. Lorenzo vio una contraseña real autocompletada (de su Gmail/otro sitio) en el campo de set password — leak crítico si el invitee no se daba cuenta.
+
+### Decisión 9 — Patrón anti-"POR VERIFICAR" en informes
+
+**Lección aprendida + regla nueva:**
+
+Cuando armé el informe de auditoría inicial (`docs/auditoria_catalogo.md`), incluí 3 items "POR VERIFICAR" sin contrastar contra MI propia BD (que ya tenía la respuesta correcta) ni contra el JSON oficial. Específicamente el DS-117 estaba "discutible" cuando en realidad mi `uscisForms.ts` ya lo tenía como `consular` y el JSON oficial también. **Estaba escondiendo bugs míos detrás de "discutible".**
+
+**Regla nueva (aplicar siempre):** antes de marcar "POR VERIFICAR" en un informe, validar contra:
+1. JSON/source oficial del usuario
+2. Las 3 fuentes internas del repo (si están inconsistentes, esa es la causa del bug)
+3. La documentación oficial pública
+
+**Si las 3 fuentes coinciden:** NO marcar "POR VERIFICAR" — es bug claro.
+
+**Propagar a:** `CLAUDE.md` en próximo update (pendiente).
+
+### Decisión 10 — Siempre actualizar TODOS los MDs al cerrar asignación
+
+**Decisión locked:** Mr. Lorenzo solicitó explícitamente que al cerrar cualquier asignación importante, actualice TODOS los documentos relevantes del repo (no solo el código).
+
+**Documentos auto-actualizables al cierre de sprint:**
+- `.ai/master/state.md` — sprint actual + estado + sprint cerrado
+- `.ai/master/decisions.md` — append-only log de decisiones
+- `docs/*.md` específicos del sprint (este caso: `auditoria_catalogo.md` con addendum)
+
+**Documentos a actualizar solo cuando aplique:**
+- `.ai/master/code-map.md` — al agregar archivos nuevos importantes
+- `.ai/master/ROADMAP.md` — al cerrar fases del roadmap
+- `CLAUDE.md` — al cambiar protocolos / reglas operativas
+- `.ai/master/features.md` — al cambiar status de features (planned → live)
+
+---
+
 ## 2026-05-18 (tarde) — Plan arquitectónico Camino A + sistema Coming Soon por sección
 
 **Decisión:** trabajar el producto **una sección del sidebar a la vez**.
