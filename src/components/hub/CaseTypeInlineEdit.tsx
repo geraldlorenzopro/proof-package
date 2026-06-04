@@ -195,7 +195,7 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
           onClick={(e) => e.stopPropagation()}
         >
           {/* Chips de filtro por agencia */}
-          <div className="p-2 border-b border-white/8 shrink-0 space-y-2">
+          <div className="p-2 border-b border-white/8 shrink-0 space-y-2 bg-deep-navy">
             <div className="flex items-center gap-1 flex-wrap">
               {AGENCY_OPTIONS.map(opt => {
                 const isActive = agencyFilter === opt.key;
@@ -267,7 +267,7 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
             ) : (
               Object.entries(grouped).map(([cat, items]) => (
                 <div key={cat} className="mb-1">
-                  <p className="text-[9px] uppercase tracking-wider text-slate-500 px-2 py-1 font-semibold sticky top-0 bg-deep-navy/90 backdrop-blur-sm">
+                  <p className="text-[9px] uppercase tracking-wider text-slate-400 px-2 py-1.5 font-semibold sticky top-0 z-[5] bg-deep-navy border-y border-white/5">
                     {CATEGORY_LABELS[cat as CaseTypeCategory] || cat}
                   </p>
                   {items.map(t => {
