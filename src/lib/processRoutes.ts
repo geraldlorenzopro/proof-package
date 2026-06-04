@@ -833,7 +833,7 @@ export const PROCESS_ROUTES: ProcessRoute[] = [
       "Determinación de admisibilidad",
       "Admisión: I-94 con clase y fecha",
     ],
-    case_type_keys: ["cbp-i94-admission"],
+    case_type_keys: ["i94-record"],
   },
   {
     // Fix auditoría 2026-06-03: parole humanitario se filed con I-131

@@ -20,6 +20,15 @@ import { useCaseViews, filterCasesByView } from "@/hooks/useCaseViews";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "tabla" | "kanban";
+type GroupByKey = "stage" | "owner" | "case_type" | "responsible" | "none";
+
+const GROUP_BY_LABELS: Record<GroupByKey, string> = {
+  stage:       "Stage",
+  owner:       "Owner",
+  case_type:   "Tipo",
+  responsible: "Responsable",
+  none:        "Ninguno",
+};
 
 export default function HubCasesPage() {
   useTrackPageView("hub.cases");
@@ -37,6 +46,17 @@ export default function HubCasesPage() {
     const saved = typeof window !== "undefined" ? localStorage.getItem("ner_cases_view") : null;
     return saved === "kanban" ? "kanban" : "tabla";
   });
+  const [groupBy, setGroupBy] = useState<GroupByKey>(() => {
+    if (typeof window === "undefined") return "stage";
+    const saved = localStorage.getItem("ner_cases_group_by");
+    if (saved && (["stage","owner","case_type","responsible","none"] as const).includes(saved as GroupByKey)) {
+      return saved as GroupByKey;
+    }
+    return "stage";
+  });
+  useEffect(() => {
+    try { localStorage.setItem("ner_cases_group_by", groupBy); } catch {}
+  }, [groupBy]);
   const [search, setSearch] = useState("");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
@@ -243,7 +263,12 @@ export default function HubCasesPage() {
         </div>
 
         {/* ═══ KPI Strip (4 boxes sin culpa) ═══ */}
-        <CaseKpiStrip accountId={accountId} userId={userId} />
+        <CaseKpiStrip
+          accountId={accountId}
+          userId={userId}
+          activeView={activeView}
+          onSelectView={setActiveView}
+        />
 
         {/* ═══ Tabs guardables (4 + Todos) ═══ */}
         <CaseViewTabs
@@ -257,20 +282,22 @@ export default function HubCasesPage() {
           <button
             type="button"
             disabled
-            title="Próximamente: filtros avanzados"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] bg-white/[0.04] border border-white/10 rounded-md text-muted-foreground/60 cursor-not-allowed"
+            title="Filtros avanzados — próxima entrega"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] bg-white/[0.04] border border-white/10 rounded-md text-muted-foreground/40 cursor-not-allowed opacity-60"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
             Filtros
+            <span className="text-[8px] uppercase tracking-wider bg-cyan-accent/15 border border-cyan-accent/30 text-cyan-accent/80 px-1 py-px rounded">Pronto</span>
           </button>
           <button
             type="button"
             disabled
-            title="Próximamente: sort por columna"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] bg-white/[0.04] border border-white/10 rounded-md text-muted-foreground/60 cursor-not-allowed"
+            title="Sort por columna — próxima entrega"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] bg-white/[0.04] border border-white/10 rounded-md text-muted-foreground/40 cursor-not-allowed opacity-60"
           >
             <ArrowUpDown className="w-3.5 h-3.5" />
             Ordenar
+            <span className="text-[8px] uppercase tracking-wider bg-cyan-accent/15 border border-cyan-accent/30 text-cyan-accent/80 px-1 py-px rounded">Pronto</span>
           </button>
           {uniqueOwners.length > 0 && (
             <Select value={ownerFilter} onValueChange={setOwnerFilter}>
@@ -286,14 +313,21 @@ export default function HubCasesPage() {
               </SelectContent>
             </Select>
           )}
-          <button
-            type="button"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] bg-cyan-accent/10 border border-cyan-accent/30 text-cyan-accent rounded-md"
-            title="Vista agrupada por etapa del caso"
-          >
-            <FolderTree className="w-3.5 h-3.5" />
-            Agrupar: Stage
-          </button>
+          {/* Agrupar dropdown — funcional 2026-06-03 (auditoría). Antes era
+              botón visual cyan sin onClick (engañoso). Ahora Select real. */}
+          <Select value={groupBy} onValueChange={(v: GroupByKey) => setGroupBy(v)}>
+            <SelectTrigger className="h-8 w-auto px-3 text-[11px] bg-cyan-accent/10 border-cyan-accent/30 text-cyan-accent gap-1.5">
+              <FolderTree className="w-3.5 h-3.5" />
+              <span>Agrupar: {GROUP_BY_LABELS[groupBy]}</span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="stage">Etapa del caso (Stage)</SelectItem>
+              <SelectItem value="owner">Owner</SelectItem>
+              <SelectItem value="case_type">Tipo de proceso</SelectItem>
+              <SelectItem value="responsible">Responsable (ball-in-court)</SelectItem>
+              <SelectItem value="none">Sin agrupar</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="ml-auto flex items-center bg-white/[0.04] border border-white/10 rounded-md p-0.5">
             <ViewButton active={view === "tabla"} onClick={() => changeView("tabla")} icon={<TableIcon className="w-3.5 h-3.5" />} label="Tabla" />
             <ViewButton active={view === "kanban"} onClick={() => changeView("kanban")} icon={<LayoutGrid className="w-3.5 h-3.5" />} label="Kanban" />

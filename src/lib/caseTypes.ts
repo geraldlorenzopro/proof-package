@@ -180,7 +180,7 @@ export const CASE_TYPES: CaseTypeMeta[] = [
   // ADMINISTRATIVE / OTROS
   // ════════════════════════════════════════════════════════════════
   { key: "ar11-address",     formNumber: "AR-11",  shortLabel: "AR-11 · Cambio dirección",   label: "AR-11 · Cambio de dirección",                    category: "administrative", description: "Notificación obligatoria de cambio de dirección",            searchTerms: ["ar11","direccion","address"] },
-  { key: "i94-record",       formNumber: "I-94",   shortLabel: "I-94 · Record",              label: "I-94 · Récord de admisión",                      category: "administrative", description: "Arrival/Departure Record",                                     searchTerms: ["i94","admision","record"] },
+  { key: "i94-record",       formNumber: "I-94",   shortLabel: "I-94 · Inspección CBP",      label: "I-94 · Récord de admisión (CBP)",                category: "administrative", description: "Récord Arrival/Departure emitido por oficial CBP en puerto de entrada",   searchTerms: ["i94","admision","record","inspeccion","cbp","puerto","entrada"] },
   { key: "g28",              formNumber: "G-28",   shortLabel: "G-28 · Notice of Appearance",label: "G-28 · Notice of Appearance",                    category: "administrative", description: "Representación legal ante USCIS",                              searchTerms: ["g28","representacion","appearance"] },
 
   // ════════════════════════════════════════════════════════════════
@@ -194,7 +194,9 @@ export const CASE_TYPES: CaseTypeMeta[] = [
   { key: "ice-stay-removal",     formNumber: "I-246",    shortLabel: "I-246 · Stay of removal",     label: "I-246 · Suspensión de deportación",               category: "court-removal", description: "Solicitud administrativa de stay ante ICE",                   searchTerms: ["stay","suspension","deportacion","i246","ice"] },
   { key: "cbp-expedited-removal",formNumber: "Expedited Removal", shortLabel: "Expedited Removal",  label: "Expedited Removal · INA 235 (CBP)",               category: "court-removal", description: "Remoción acelerada en puerto de entrada",                     searchTerms: ["expedited","removal","ina 235","puerto","cbp","acelerada"] },
   { key: "cbp-parole-humanitarian", formNumber: "Parole", shortLabel: "Parole humanitario",          label: "Parole · Humanitario (CBP)",                      category: "humanitarian", description: "Permiso humanitario caso por caso por CBP/USCIS",              searchTerms: ["parole","humanitario","cbp","cuban","venezolano"] },
-  { key: "cbp-i94-admission",    formNumber: "I-94",     shortLabel: "I-94 · Inspección CBP",       label: "I-94 · Inspección y admisión (CBP)",              category: "administrative", description: "Inspección por oficial CBP en puerto de entrada",             searchTerms: ["i94","admision","inspeccion","cbp","puerto","entrada"] },
+  // i94 — UN solo case_type consolidado en línea 183 (i94-record).
+  // El duplicado cbp-i94-admission fue eliminado 2026-06-03 (auditoría) —
+  // I-94 es UNA cosa: el récord de admisión CBP, no 2 procesos distintos.
 
   // ════════════════════════════════════════════════════════════════
   // PASAPORTE EE.UU. (Fase 3)

@@ -48,10 +48,11 @@ export default function CaseViewTabs({ activeView, onChange, counts }: Props) {
       })}
       <button
         disabled
-        title="Próximamente: guardar filtros como vista personalizada"
-        className="ml-auto text-[10px] text-muted-foreground/50 px-3 py-2.5 cursor-not-allowed"
+        title="Guardar filtros como vista personalizada — próxima entrega"
+        className="ml-auto text-[10px] text-muted-foreground/40 px-3 py-2.5 cursor-not-allowed flex items-center gap-1"
       >
         + Nueva vista
+        <span className="text-[8px] uppercase tracking-wider bg-cyan-accent/15 border border-cyan-accent/30 text-cyan-accent/80 px-1 py-px rounded">Pronto</span>
       </button>
     </div>
   );
