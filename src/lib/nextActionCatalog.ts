@@ -200,3 +200,173 @@ export interface NextActionPayload {
   /** Flag para reportes: si es true, esta acción salió del catálogo y debería estandarizarse. */
   is_custom: boolean;
 }
+
+// ════════════════════════════════════════════════════════════════════
+// FASE 5 catálogo (2026-06-03): acciones contextualizadas por
+// (stage, case_type) — específicas al tipo de proceso del caso.
+//
+// Cuando un caso es I-130 IR-1 en USCIS, NO mostramos las mismas
+// acciones que un I-485 en USCIS o un I-589 asilo. Las acciones del
+// catálogo BASE (NEXT_ACTION_CATALOG) son las genéricas del stage.
+// Estas adicionales son específicas del tipo de proceso.
+//
+// Las acciones específicas se MERGE con las genéricas en el dropdown,
+// poniendo las específicas primero (más relevantes).
+// ════════════════════════════════════════════════════════════════════
+
+/**
+ * Mapa de (stage, case_type_key) → acciones específicas adicionales.
+ * El key del Map es "stage:case_type_key" (ej. "uscis:i130-spouse-ir1").
+ * Se mergea con NEXT_ACTION_CATALOG[stage] al renderizar.
+ */
+export const CONTEXTUAL_ACTIONS: Record<string, NextActionOption[]> = {
+  // ─── I-130 (familiar) en USCIS ───
+  "uscis:i130-spouse-ir1": [
+    { key: "request_marriage_evidence", label: "Pedir evidencia de matrimonio bona fide", responsible: "cliente", defaultDueDays: 14 },
+    { key: "prepare_g325a", label: "Preparar G-325A (biographic)", responsible: "equipo", defaultDueDays: 5 },
+  ],
+  "uscis:i130-spouse-cr1": [
+    { key: "request_marriage_evidence", label: "Pedir evidencia de matrimonio bona fide", responsible: "cliente", defaultDueDays: 14 },
+  ],
+  "uscis:i130-child-ir2": [
+    { key: "request_birth_cert", label: "Pedir acta de nacimiento del menor", responsible: "cliente", defaultDueDays: 7 },
+  ],
+  "uscis:i130-parent": [
+    { key: "request_petitioner_birth", label: "Pedir acta de nacimiento del peticionario", responsible: "cliente", defaultDueDays: 7 },
+  ],
+
+  // ─── I-129F K-1 ───
+  "uscis:i129f-k1": [
+    { key: "request_proof_meeting", label: "Pedir evidencia de encuentro físico últimos 2 años", responsible: "cliente", defaultDueDays: 14 },
+    { key: "prepare_intent_marriage", label: "Preparar declaración de intención de matrimonio", responsible: "cliente", defaultDueDays: 14 },
+  ],
+
+  // ─── I-485 AOS Familiar ───
+  "uscis:i485-family": [
+    { key: "schedule_medical_i693", label: "Agendar examen médico I-693", responsible: "cliente", defaultDueDays: 30 },
+    { key: "request_aos_tax_returns", label: "Pedir taxes últimos 3 años del sponsor", responsible: "cliente", defaultDueDays: 14 },
+    { key: "prepare_i864", label: "Preparar I-864 (Affidavit of Support)", responsible: "equipo", defaultDueDays: 10 },
+    { key: "request_i693_sealed", label: "Recibir I-693 sellado del cliente", responsible: "cliente", defaultDueDays: 7 },
+  ],
+  "uscis:i485-employment": [
+    { key: "verify_priority_date", label: "Verificar priority date current (Visa Bulletin)", responsible: "equipo", defaultDueDays: 1 },
+    { key: "schedule_medical_i693", label: "Agendar examen médico I-693", responsible: "cliente", defaultDueDays: 30 },
+  ],
+
+  // ─── I-589 Asilo ───
+  "uscis:i589-affirmative": [
+    { key: "prepare_personal_statement", label: "Preparar declaración personal del asilado", responsible: "cliente", defaultDueDays: 14 },
+    { key: "country_conditions_report", label: "Compilar reporte de condiciones del país", responsible: "equipo", defaultDueDays: 21 },
+    { key: "translate_evidence", label: "Traducir evidencia con certificación", responsible: "equipo", defaultDueDays: 14 },
+    { key: "expert_witness_arrangement", label: "Coordinar testigo experto si aplica", responsible: "profesional", defaultDueDays: 30 },
+  ],
+  "court:i589-defensive": [
+    { key: "prepare_pre-hearing_statement", label: "Preparar declaración pre-audiencia", responsible: "profesional", defaultDueDays: 21 },
+    { key: "subpoena_witnesses", label: "Subpoena de testigos", responsible: "profesional", defaultDueDays: 15 },
+  ],
+
+  // ─── N-400 Naturalización ───
+  "uscis:n400": [
+    { key: "review_continuous_residence", label: "Revisar residencia continua + viajes 5 años", responsible: "equipo", defaultDueDays: 5 },
+    { key: "civics_practice_test", label: "Practicar examen cívico con cliente", responsible: "equipo", defaultDueDays: 21 },
+    { key: "english_assessment", label: "Evaluar nivel de inglés del cliente", responsible: "equipo", defaultDueDays: 5 },
+    { key: "selective_service_check", label: "Verificar registro Selective Service (varones)", responsible: "equipo", defaultDueDays: 3 },
+  ],
+
+  // ─── I-751 Remover condiciones ───
+  "uscis:i751": [
+    { key: "request_marriage_evidence_751", label: "Pedir evidencia de matrimonio continuo", responsible: "cliente", defaultDueDays: 21 },
+    { key: "joint_filing_check", label: "Confirmar si es joint filing o waiver", responsible: "equipo", defaultDueDays: 3 },
+  ],
+
+  // ─── I-765 EAD ───
+  "uscis:i765": [
+    { key: "verify_category_c08", label: "Confirmar categoría (c)(8) o pending I-485", responsible: "equipo", defaultDueDays: 1 },
+  ],
+
+  // ─── I-918 U-visa ───
+  "uscis:i918-uvisa": [
+    { key: "obtain_supp_b_certification", label: "Obtener certificación policial Supp. B", responsible: "profesional", defaultDueDays: 60 },
+    { key: "victim_statement", label: "Preparar declaración de víctima detallada", responsible: "cliente", defaultDueDays: 21 },
+  ],
+
+  // ─── EOIR Bond ───
+  "ice:ice-bond": [
+    { key: "obtain_sponsor_letter", label: "Obtener carta de sponsor (alguien con LPR/US)", responsible: "cliente", defaultDueDays: 3 },
+    { key: "evidence_ties_community", label: "Compilar evidencia de vínculos comunitarios", responsible: "equipo", defaultDueDays: 5 },
+  ],
+
+  // ─── EOIR-42B Cancelación No-LPR ───
+  "court:eoir-42b": [
+    { key: "ten_years_evidence", label: "Evidenciar 10 años de presencia continua", responsible: "equipo", defaultDueDays: 30 },
+    { key: "hardship_evidence", label: "Compilar evidencia de hardship excepcional a familiar US", responsible: "equipo", defaultDueDays: 45 },
+    { key: "qualifying_relative_docs", label: "Documentar relación con qualifying relative", responsible: "cliente", defaultDueDays: 21 },
+  ],
+
+  // ─── NVC para I-130 IR-1/CR-1 ───
+  "nvc:i130-spouse-ir1": [
+    { key: "i864_with_sponsor", label: "Coordinar I-864 con sponsor US", responsible: "cliente", defaultDueDays: 21 },
+    { key: "civil_docs_spouse", label: "Subir docs civiles del cónyuge (acta matrimonio, divorcios previos)", responsible: "cliente", defaultDueDays: 14 },
+  ],
+  "nvc:i130-spouse-cr1": [
+    { key: "i864_with_sponsor", label: "Coordinar I-864 con sponsor US", responsible: "cliente", defaultDueDays: 21 },
+  ],
+};
+
+/**
+ * Devuelve las acciones específicas del case_type para un stage,
+ * o array vacío si no hay específicas.
+ */
+export function getContextualActions(
+  stage: string | null | undefined,
+  caseTypeKey: string | null | undefined
+): NextActionOption[] {
+  if (!stage || !caseTypeKey) return [];
+  return CONTEXTUAL_ACTIONS[`${stage}:${caseTypeKey}`] || [];
+}
+
+/**
+ * Devuelve TODAS las acciones aplicables al caso, ordenadas:
+ *   1. Específicas del case_type para el stage (más relevantes)
+ *   2. Genéricas del stage (NEXT_ACTION_CATALOG)
+ *   3. Universales (NEXT_ACTION_UNIVERSAL)
+ * Dedupea por key — si la específica y la genérica comparten key,
+ * gana la específica.
+ */
+export function getAllActionsForCase(
+  stage: string | null | undefined,
+  caseTypeKey: string | null | undefined
+): NextActionOption[] {
+  const contextual = getContextualActions(stage, caseTypeKey);
+  const generic = getActionsForStage(stage);
+
+  const seen = new Set<string>(contextual.map(a => a.key));
+  const filteredGeneric = generic.filter(a => !seen.has(a.key));
+
+  return [...contextual, ...filteredGeneric];
+}
+
+/**
+ * Devuelve las acciones agrupadas en 3 buckets para render con <optgroup>:
+ *   - contextual: específicas del case_type para este stage
+ *   - specific: del stage genéricas (sin las contextual)
+ *   - universal: universales
+ */
+export function getGroupedActionsForCase(
+  stage: string | null | undefined,
+  caseTypeKey: string | null | undefined
+): {
+  contextual: NextActionOption[];
+  specific: NextActionOption[];
+  universal: NextActionOption[];
+} {
+  const contextual = getContextualActions(stage, caseTypeKey);
+  const grouped = getGroupedActionsForStage(stage);
+  const contextualKeys = new Set(contextual.map(a => a.key));
+
+  return {
+    contextual,
+    specific: grouped.specific.filter(a => !contextualKeys.has(a.key)),
+    universal: grouped.universal.filter(a => !contextualKeys.has(a.key)),
+  };
+}
