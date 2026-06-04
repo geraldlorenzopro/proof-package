@@ -267,7 +267,7 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
             ) : (
               Object.entries(grouped).map(([cat, items]) => (
                 <div key={cat} className="mb-1">
-                  <p className="text-[9px] uppercase tracking-wider text-slate-400 px-2 py-1.5 font-semibold sticky top-0 z-[5] bg-deep-navy border-y border-white/5">
+                  <p className="text-[10px] uppercase tracking-wider text-cyan-accent/80 px-2.5 py-2 font-bold sticky -top-1 z-20 bg-deep-navy border-b border-cyan-accent/20 shadow-[0_4px_8px_-2px_rgba(11,31,58,0.95)]">
                     {CATEGORY_LABELS[cat as CaseTypeCategory] || cat}
                   </p>
                   {items.map(t => {
