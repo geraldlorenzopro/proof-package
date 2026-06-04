@@ -453,8 +453,14 @@ Deno.serve(async (req) => {
             `bytes=[${[...rawSecret].map(c => c.charCodeAt(0)).join(",")}], ` +
             `after-sanitize="${fromRaw}", final-from="${from}"`
           );
-          // Fallback al sandbox Resend que SIEMPRE acepta
-          from = "NER Immigration AI <onboarding@resend.dev>";
+          // FALLBACK al dominio HARDCODED nerimmigration.ai (verified en la
+          // cuenta Resend de Mr. Lorenzo desde 2026-05-28). Antes caíamos a
+          // onboarding@resend.dev que es el SANDBOX de Resend — solo permite
+          // mandar al owner email (geraldlorenzopro@gmail.com), Resend
+          // devuelve 403 "verify a domain" al intentar mandar a otros. Esto
+          // era la causa raíz del fallo silencioso.
+          from = `${fromName} <noreply@nerimmigration.ai>`;
+          console.warn(`[invite-team-member] Using HARDCODED fallback from="${from}"`);
         }
 
         console.log(
