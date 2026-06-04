@@ -6,6 +6,7 @@ import { logAudit } from '@/lib/auditLog';
 import { lovable } from '@/integrations/lovable/index';
 import { useTrackPageView } from '@/hooks/useTrackPageView';
 import { trackEvent, sanitizeErrorReason } from '@/lib/analytics';
+import { toast } from 'sonner';
 
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
@@ -61,6 +62,12 @@ export default function Auth() {
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [invitedEmail, setInvitedEmail] = useState<string | null>(null);
+  // Fix agente paralelo 2026-06-03 bug #14: timeout para link expirado.
+  // Si tras 5s getUser() no resolvió en invitedMode, asumir link expirado.
+  const [invitedLinkExpired, setInvitedLinkExpired] = useState(false);
+  // Fix bug #13: detectar si user invitado ya configuró password antes
+  // (clickeó link viejo) — evitar reset destructivo.
+  const [invitedAlreadyConfigured, setInvitedAlreadyConfigured] = useState(false);
 
   // Read redirect param from URL
   const redirectParam = new URLSearchParams(window.location.search).get('redirect');
@@ -73,6 +80,18 @@ export default function Auth() {
         // redirigir al hub. Mostrar pantalla de set password.
         if (invitedMode) {
           setInvitedEmail(user.email || null);
+          // Fix bug #13: si user ya tiene last_sign_in_at, ya configuró
+          // password antes — clickeó link viejo. Redirigir al login normal
+          // en vez de mostrar form que resetearía silenciosamente su pwd.
+          if (user.last_sign_in_at) {
+            setInvitedAlreadyConfigured(true);
+            toast.info("Ya configuraste tu cuenta. Iniciando sesión…");
+            setTimeout(() => {
+              window.history.replaceState({}, '', '/auth');
+              setInvitedMode(false);
+              resolvePostLoginDestination(user.id).then(dest => navigate(dest, { replace: true }));
+            }, 1500);
+          }
           return;
         }
 
@@ -306,6 +325,18 @@ export default function Auth() {
     setError('');
   }
 
+  // Timeout para link expirado (fix bug #14): si tras 5s no se resolvió
+  // invitedEmail Y no apareció "already configured", asumir link expirado.
+  useEffect(() => {
+    if (!invitedMode || invitedEmail || invitedAlreadyConfigured) return;
+    const t = setTimeout(() => {
+      if (!invitedEmail && !invitedAlreadyConfigured) {
+        setInvitedLinkExpired(true);
+      }
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [invitedMode, invitedEmail, invitedAlreadyConfigured]);
+
   // ─── Pantalla especial: usuario invitado seteando contraseña por primera vez ───
   // Renderizar SIEMPRE si invitedMode=true (aunque invitedEmail aún no se
   // haya resuelto del getUser async) para evitar flash de la pantalla Login.
@@ -326,6 +357,30 @@ export default function Auth() {
             </p>
           </div>
 
+          {/* Link expirado (fix bug #14) — render alternativo cuando timeout disparó */}
+          {invitedLinkExpired && (
+            <div className="bg-card border border-rose-500/30 rounded-2xl p-6 shadow-card text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-rose-500/15 border border-rose-500/30 mx-auto flex items-center justify-center">
+                <ArrowLeft className="w-5 h-5 text-rose-300" />
+              </div>
+              <h3 className="text-base font-bold text-foreground">Link de invitación expirado</h3>
+              <p className="text-sm text-muted-foreground leading-snug">
+                El link expira a las 24 horas. Pedile a tu admin que te reenvíe la invitación.
+              </p>
+              <button
+                onClick={() => {
+                  window.history.replaceState({}, '', '/auth');
+                  setInvitedMode(false);
+                  setInvitedLinkExpired(false);
+                }}
+                className="text-sm text-cyan-accent hover:underline"
+              >
+                Volver al inicio de sesión
+              </button>
+            </div>
+          )}
+
+          {!invitedLinkExpired && (
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card">
             <div className="rounded-lg bg-cyan-accent/[0.06] border border-cyan-accent/30 p-3 mb-5 text-center min-h-[58px] flex flex-col items-center justify-center">
               <p className="text-xs text-muted-foreground">Tu cuenta</p>
@@ -445,6 +500,7 @@ export default function Auth() {
               </p>
             </form>
           </div>
+          )}
         </div>
       </div>
     );

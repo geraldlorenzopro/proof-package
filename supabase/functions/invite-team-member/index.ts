@@ -250,11 +250,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ───── Dedup auth.users ─────
-    const { data: existingUsersData } = await supabaseAdmin.auth.admin.listUsers();
-    const existing = existingUsersData?.users?.find(
-      (u: any) => u.email?.toLowerCase() === email
-    );
+    // ───── Dedup auth.users con paginación ─────
+    // Fix agente paralelo 2026-06-03 bug #1: listUsers() default es 50 users,
+    // max ~1000. Cuando la BD crece, dedup falla silenciosamente y se intenta
+    // crear duplicado → user_already_exists.
+    // Paginamos hasta encontrar match o agotar usuarios.
+    let existing: any = null;
+    let page = 1;
+    const perPage = 1000;
+    while (!existing) {
+      const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+      if (!usersPage?.users || usersPage.users.length === 0) break;
+      existing = usersPage.users.find((u: any) => u.email?.toLowerCase() === email);
+      if (existing) break;
+      if (usersPage.users.length < perPage) break; // última página
+      page++;
+      if (page > 100) break; // safety: max 100k usuarios
+    }
 
     let user_id: string;
     let existed = false;
@@ -306,6 +318,20 @@ Deno.serve(async (req) => {
       .eq("account_id", account_id)
       .eq("user_id", user_id)
       .maybeSingle();
+
+    // SECURITY fix agente paralelo 2026-06-03 bug #10:
+    // force_resend requiere que el target user YA SEA member del MISMO account.
+    // Sin este check, owner malicioso podía resend con user_id de OTRO account
+    // y mandar emails a usuarios de otras firmas. Bloqueamos.
+    if (forceResend && !existingMember) {
+      return jsonResponse(
+        {
+          error: "not_member_of_this_account",
+          message: "Solo podés reenviar invitaciones a miembros de tu firma.",
+        },
+        403
+      );
+    }
 
     // already_member NO bloquea si es reenvío — significa que mandamos
     // el email otra vez al miembro existente sin modificar nada en BD.
@@ -371,6 +397,10 @@ Deno.serve(async (req) => {
     // ───── Mandar email via Resend ─────
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     let emailStatus: "sent" | "skipped_no_key" | "failed" | "skipped_existing" = "skipped_no_key";
+    // Variable LOCAL del request para info de debug de Resend.
+    // Antes era globalThis.__lastResendError que filtraba entre invocaciones
+    // concurrentes (fix agente paralelo 2026-06-03 — bug CRÍTICO #5).
+    let resendDebugInfo: { status: number | null; body: string; from_used: string } | null = null;
 
     if (!invite_link) {
       emailStatus = "skipped_no_key"; // sin link nada que mandar
@@ -520,9 +550,12 @@ Deno.serve(async (req) => {
           emailStatus = "failed";
         }
 
-        // Guardar el error para devolverlo en el response (debugging desde frontend)
+        // Guardar el error en variable de scope del request (NO global).
+        // CRÍTICO: Deno workers comparten globalThis entre invocaciones —
+        // usar variable global causaba leak de un request a otro bajo
+        // concurrencia (audit 2026-06-03 agente paralelo).
         if (resendErrorBody) {
-          (globalThis as any).__lastResendError = {
+          resendDebugInfo = {
             status: resendStatus,
             body: resendErrorBody,
             from_used: from,
@@ -534,13 +567,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Si Resend falló, devolvemos el error específico al frontend para que
-    // el admin pueda diagnosticar sin abrir logs de Supabase.
-    const lastResendError = (globalThis as any).__lastResendError || null;
-    if (lastResendError) {
-      // Cleanup global state
-      (globalThis as any).__lastResendError = null;
-    }
+    // Devolvemos resendDebugInfo (variable local, no global) al frontend.
+    // Si Resend no falló, queda null.
+    const lastResendError = resendDebugInfo;
 
     return jsonResponse({
       success: true,
