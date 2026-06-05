@@ -34,7 +34,6 @@ import TaskViewTabs, { type TaskViewKey } from "@/components/hub/TaskViewTabs";
 import { useCasePipeline } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
-import { readScopedJson, writeScopedJson } from "@/lib/scopedStorage";
 import { logAccess } from "@/lib/auditLog";
 
 export default function HubTasksPage() {
