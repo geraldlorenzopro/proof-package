@@ -131,13 +131,17 @@ export default function TaskCreateModal({
       toast.error("Elegí un caso para la tarea");
       return;
     }
-    if (!accountId) {
-      toast.error("Sin cuenta activa");
-      return;
-    }
-    if (!userId) {
-      toast.error("Sin usuario logueado");
-      return;
+    // Round 9.9.1: en demo mode no requerimos accountId/userId reales —
+    // la tarea es fake y se inyecta al estado local del parent.
+    if (!isDemoMode) {
+      if (!accountId) {
+        toast.error("Sin cuenta activa");
+        return;
+      }
+      if (!userId) {
+        toast.error("Sin usuario logueado");
+        return;
+      }
     }
 
     setSubmitting(true);
