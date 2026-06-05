@@ -273,7 +273,7 @@ function sortTasks(tasks: TaskWithCase[], sortBy: TaskSortKey): TaskWithCase[] {
 
 export default function TasksByDateView({
   accountId, userId, cases, activeTab, taskFilters, sortBy, search,
-  team = [], staffNames, onTaskCountsChange, onResetFilters,
+  team = [], staffNames, onTaskCountsChange, onLoadingChange, onResetFilters,
 }: Props) {
   const navigate = useNavigate();
   const demoMode = useDemoMode();
