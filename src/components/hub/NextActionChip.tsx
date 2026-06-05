@@ -79,7 +79,7 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
 
     const snapshot = {
       action_key: value.action_key,
-      action_label: getActionLabel(value),
+      action_label: getActionLabel(value.action_key, value.custom_label),
       action_detail: value.detail ?? null,
       was_custom: !!value.is_custom,
       due_date: value.due_date ?? null,
