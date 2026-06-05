@@ -297,15 +297,26 @@ export default function NextActionEditor({
               value={customLabel}
               onChange={(e) => {
                 setCustomLabel(e.target.value);
-                // Autosize: ajusta height al contenido
+                // Autosize sin tope: deja que crezca con el contenido.
+                // Si excede el viewport del popover, el scroll del popover
+                // padre se activa (overflow-y-auto). Mejor UX que scroll
+                // interno del textarea (poco descubrible).
                 e.target.style.height = "auto";
-                e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
+              ref={(el) => {
+                // Autosize al mount si hay contenido inicial (cuando reabrís
+                // un próximo paso custom guardado antes).
+                if (el && el.value) {
+                  el.style.height = "auto";
+                  el.style.height = `${el.scrollHeight}px`;
+                }
               }}
               placeholder="Escribí la acción… (ej. Contactar al padre para saber cómo llamar a su madre)"
-              maxLength={200}
+              maxLength={500}
               rows={2}
-              className="mt-2 w-full px-2.5 py-2 rounded-md bg-white/5 border border-amber-500/30 text-[12px] text-white placeholder:text-slate-500 focus:border-amber-500 focus:outline-none resize-none leading-snug"
-              style={{ minHeight: "52px", maxHeight: "120px" }}
+              className="mt-2 w-full px-2.5 py-2 rounded-md bg-white/5 border border-amber-500/30 text-[12px] text-white placeholder:text-slate-500 focus:border-amber-500 focus:outline-none resize-none leading-snug overflow-hidden"
+              style={{ minHeight: "52px" }}
             />
           )}
           {isCustom && (
@@ -313,8 +324,8 @@ export default function NextActionEditor({
               <p className="text-[10px] text-amber-300/80 flex-1">
                 ⚠ Acción personalizada — quedará flagged para estandarizar.
               </p>
-              <span className="text-[9px] text-slate-500 tabular-nums shrink-0">
-                {customLabel.length}/200
+              <span className={`text-[9px] tabular-nums shrink-0 ${customLabel.length > 450 ? "text-amber-400 font-semibold" : "text-slate-500"}`}>
+                {customLabel.length}/500
               </span>
             </div>
           )}
