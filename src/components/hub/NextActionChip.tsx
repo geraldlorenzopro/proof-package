@@ -14,10 +14,13 @@
  *   - >14d: slate
  */
 import { useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Check } from "lucide-react";
+import { toast } from "sonner";
 import NextActionEditor from "./NextActionEditor";
 import { getActionLabel, type NextActionPayload } from "@/lib/nextActionCatalog";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { completeNextAction } from "@/hooks/useCaseActionHistory";
+import { useDemoMode } from "@/hooks/useDemoData";
 
 interface Props {
   caseId: string;
@@ -53,7 +56,9 @@ function fmtDueDate(iso: string | null): { label: string; tone: string } {
 export default function NextActionChip({ caseId, processStage, caseTypeKey, value, onChange, variant = "compact" }: Props) {
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
+  const [completing, setCompleting] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const demoMode = useDemoMode();
 
   function handleOpen(e: React.MouseEvent) {
     e.stopPropagation();
@@ -62,6 +67,50 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
       setAnchor({ top: r.bottom + 4, left: r.left });
       setOpen(true);
     }
+  }
+
+  // Round 9.23 — opción A: ✓ Completar inline.
+  // Click → marca el next_action como completed (insert a case_action_history
+  // via RPC complete_case_action) + clear local + toast con CTA "Agregar siguiente".
+  async function handleComplete(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!value || completing) return;
+    setCompleting(true);
+
+    const snapshot = {
+      action_key: value.action_key,
+      action_label: getActionLabel(value),
+      action_detail: value.detail ?? null,
+      was_custom: !!value.is_custom,
+      due_date: value.due_date ?? null,
+    };
+
+    // Optimistic: clear local inmediato
+    const previousValue = value;
+    onChange(null);
+
+    const result = await completeNextAction(caseId, snapshot, demoMode);
+    setCompleting(false);
+
+    if (!result.ok) {
+      // Rollback optimistic
+      onChange(previousValue);
+      toast.error("No se pudo completar", { description: result.error });
+      return;
+    }
+
+    toast.success(`✓ "${snapshot.action_label}" completado · registrado`, {
+      duration: 5000,
+      description: "El paso quedó en el historial. ¿Agregar el siguiente?",
+      action: {
+        label: "Agregar siguiente",
+        onClick: () => {
+          const r = triggerRef.current?.getBoundingClientRect();
+          if (r) setAnchor({ top: r.bottom + 4, left: r.left });
+          setOpen(true);
+        },
+      },
+    });
   }
 
   if (!value) {
@@ -97,25 +146,38 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
   if (variant === "full") {
     return (
       <>
-        <button
-          ref={triggerRef}
-          onClick={handleOpen}
-          className="w-full text-left rounded-md border border-cyan-accent/25 bg-cyan-accent/[0.04] hover:bg-cyan-accent/[0.08] hover:border-cyan-accent/50 transition-colors px-3 py-2"
-          title="Click para editar próximo paso"
-        >
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <p className="text-[12px] font-semibold text-white leading-snug flex-1 break-words">{label}</p>
-            {value.is_custom && (
-              <span className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300">
-                custom
-              </span>
+        <div className="w-full rounded-md border border-cyan-accent/25 bg-cyan-accent/[0.04] hover:bg-cyan-accent/[0.08] hover:border-cyan-accent/50 transition-colors px-3 py-2 flex items-start gap-2">
+          <button
+            ref={triggerRef}
+            onClick={handleOpen}
+            className="flex-1 min-w-0 text-left"
+            title="Click para editar próximo paso"
+          >
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <p className="text-[12px] font-semibold text-white leading-snug flex-1 break-words">{label}</p>
+              {value.is_custom && (
+                <span className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300">
+                  custom
+                </span>
+              )}
+            </div>
+            {value.detail && (
+              <p className="text-[10px] text-slate-400 leading-snug line-clamp-3 mb-1 break-words">{value.detail}</p>
             )}
-          </div>
-          {value.detail && (
-            <p className="text-[10px] text-slate-400 leading-snug line-clamp-3 mb-1 break-words">{value.detail}</p>
-          )}
-          <div className={`text-[10px] tabular-nums ${due.tone}`}>{due.label}</div>
-        </button>
+            <div className={`text-[10px] tabular-nums ${due.tone}`}>{due.label}</div>
+          </button>
+          {/* Round 9.23: botón ✓ Completar también en variant full (peek panel) */}
+          <button
+            type="button"
+            onClick={handleComplete}
+            disabled={completing}
+            title="Marcar paso como completado"
+            aria-label="Completar próximo paso"
+            className="shrink-0 w-7 h-7 rounded-md border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/30 hover:border-emerald-500/60 text-emerald-300 flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-wait"
+          >
+            <Check className="w-3.5 h-3.5" />
+          </button>
+        </div>
         <NextActionEditor
           caseId={caseId}
           processStage={processStage}
@@ -133,23 +195,35 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
 
   // compact (CaseTable cell) — 2026-06-03 v2: line-clamp-2 visible + tooltip
   // rich con texto completo al hover. Click sigue abriendo editor.
-  // Columna expandida a minmax(200px, 1.8fr) en CaseTable para más palabras
-  // por línea.
+  // R9.23: agregamos botón ✓ Completar al lado del texto, hover-reveal en
+  // reposo, fade en 100% sobre hover del row entero (group/hover de Tailwind).
   return (
     <>
       <TooltipProvider delayDuration={300}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
-              ref={triggerRef}
-              onClick={handleOpen}
-              className="w-full text-left flex flex-col min-w-0 hover:opacity-80 transition-opacity gap-0.5 py-0.5"
-            >
-              <span className="text-[12px] text-slate-200 leading-tight line-clamp-2 break-words">
-                {label}
-              </span>
-              <span className={`text-[10px] tabular-nums ${due.tone} leading-tight shrink-0`}>{due.label}</span>
-            </button>
+            <div className="w-full flex items-center gap-1.5 min-w-0">
+              <button
+                ref={triggerRef}
+                onClick={handleOpen}
+                className="flex-1 min-w-0 text-left flex flex-col hover:opacity-80 transition-opacity gap-0.5 py-0.5"
+              >
+                <span className="text-[12px] text-slate-200 leading-tight line-clamp-2 break-words">
+                  {label}
+                </span>
+                <span className={`text-[10px] tabular-nums ${due.tone} leading-tight shrink-0`}>{due.label}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleComplete}
+                disabled={completing}
+                title="Marcar paso como completado"
+                aria-label="Completar próximo paso"
+                className="shrink-0 w-6 h-6 rounded-md border border-emerald-500/30 bg-emerald-500/[0.08] hover:bg-emerald-500/20 hover:border-emerald-500/60 text-emerald-300 flex items-center justify-center transition-all opacity-50 group-hover:opacity-100 disabled:opacity-30 disabled:cursor-wait"
+              >
+                <Check className="w-3 h-3" />
+              </button>
+            </div>
           </TooltipTrigger>
           {/* Round 9.16 + R9.21 Mr. Lorenzo: tooltip seguía cortándose en
               pantallas medianas. Causas combinadas:

@@ -13,9 +13,10 @@
  * apretado el preview de notas/tareas de 2 líneas.
  */
 import { useEffect, useState } from "react";
-import { X, AlertTriangle, FileText, Zap, ExternalLink, UserX, Target, Activity } from "lucide-react";
+import { X, AlertTriangle, FileText, Zap, ExternalLink, UserX, Target, Activity, CheckCircle2 } from "lucide-react";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import { useCasePeekData } from "@/hooks/useCasePeekData";
+import { useCaseActionHistory } from "@/hooks/useCaseActionHistory";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
 import NextActionChip from "./NextActionChip";
 import type { NextActionPayload } from "@/lib/nextActionCatalog";
@@ -71,6 +72,7 @@ function dueLabel(due: string | null): { label: string; tone: string } {
 
 export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase, onNextActionChange }: Props) {
   const peek = useCasePeekData(c?.id ?? null);
+  const history = useCaseActionHistory(c?.id ?? null);
 
   // Local state del next_action para optimistic update sin re-fetch del pipeline
   const [localNextAction, setLocalNextAction] = useState<NextActionPayload | null>(c?.next_action ?? null);
@@ -218,6 +220,41 @@ export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase, onNex
             }}
           />
         </div>
+
+        {/* Round 9.23 — Pasos completados (audit trail).
+            Solo se muestra si hay items o si la migration está aplicada.
+            Cada item: chequeo verde + label + quién + cuándo. */}
+        {history.history.length > 0 && (
+          <div className="space-y-1.5">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400/70" />
+              Pasos completados
+              <span className="text-emerald-400/70 ml-1 normal-case font-mono">· {history.history.length}</span>
+            </h4>
+            <div className="space-y-1">
+              {history.history.slice(0, 4).map(h => (
+                <div key={h.id} className="rounded-md bg-emerald-500/[0.04] border border-emerald-500/15 px-3 py-2 flex items-start gap-2">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-slate-200 leading-snug line-clamp-2 break-words">{h.action_label}</p>
+                    {h.action_detail && (
+                      <p className="text-[10px] text-slate-500 leading-snug line-clamp-1 break-words mt-0.5">{h.action_detail}</p>
+                    )}
+                    <div className="flex items-baseline justify-between mt-0.5 gap-2">
+                      <span className="text-[9px] text-emerald-400/70 truncate">{h.completed_by_name || "Equipo"}</span>
+                      <span className="text-[9px] text-slate-500 tabular-nums shrink-0">{relativeDate(h.completed_at)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {history.history.length > 4 && (
+                <p className="text-[10px] text-slate-500 text-center pt-0.5">
+                  +{history.history.length - 4} más en el expediente
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Últimas notas — preview read-only */}
         <div className="space-y-1.5">

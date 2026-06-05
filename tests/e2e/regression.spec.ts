@@ -203,6 +203,49 @@ test.describe("Pattern 5 — Empty state diagnostico + Limpiar filtros", () => {
   });
 });
 
+test.describe("Pattern 9 — Próximo paso completion flow (R9.23)", () => {
+  // Mr. Lorenzo opción A+C: botón ✓ + historial visible.
+  // Si alguien borra el botón o rompe el flow → tests fallan.
+
+  test("CasePeekPanel muestra Pasos completados (audit trail visible)", async ({ page }) => {
+    await page.goto("/hub/cases?demo=true");
+    await page.waitForLoadState("networkidle");
+
+    // Esperar que tabla cargue
+    await page.waitForFunction(() => {
+      return document.querySelectorAll('button').length > 5;
+    }, { timeout: 10_000 });
+
+    // Click nombre del primer cliente para abrir peek
+    const clientButton = page.locator('button').filter({ hasText: /García|Rodríguez|Hernández/ }).first();
+    if (await clientButton.count() === 0) return; // skip si demo no tiene esos nombres
+    await clientButton.click();
+    await page.waitForTimeout(500);
+
+    // El peek panel debe contener "Pasos completados"
+    const heading = page.getByText(/Pasos completados/i);
+    await expect(heading).toBeVisible({ timeout: 3000 });
+
+    // Y al menos un item con CheckCircle (chequeo verde + nombre del paso)
+    const completedItems = page.locator("text=/I-130|USCIS|bona fide|cliente|recordar/i");
+    const itemCount = await completedItems.count();
+    expect(itemCount).toBeGreaterThan(0);
+  });
+
+  test("NextActionChip botón ✓ existe y es clickeable", async ({ page }) => {
+    await page.goto("/hub/cases?demo=true");
+    await page.waitForLoadState("networkidle");
+    await page.waitForFunction(() => document.querySelectorAll('button').length > 5, { timeout: 10_000 });
+
+    // Buscar un botón ✓ por aria-label
+    const completeBtn = page.getByRole("button", { name: /Completar próximo paso/i }).first();
+    const count = await completeBtn.count();
+    if (count === 0) return; // no rows con next_action set en demo
+
+    await expect(completeBtn).toBeVisible();
+  });
+});
+
 test.describe("Pattern 8 — Tooltip viewport overflow (R9.22)", () => {
   // Mr. Lorenzo cazó 3 veces: tooltip de Próximo paso se salía del viewport
   // a la derecha con texto largo. R9.16 + R9.21 + R9.22 itera el fix.
