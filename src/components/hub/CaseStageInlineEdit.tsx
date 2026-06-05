@@ -113,10 +113,11 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
           side="top"
           avoidCollisions
           collisionPadding={16}
-          className="max-w-[min(260px,calc(100vw-40px))] text-[11px] font-sora bg-deep-navy/95 border border-cyan-accent/30 text-slate-100"
+          style={{ maxWidth: "min(260px, calc(100vw - 32px))" }}
+          className="text-[11px] font-sora bg-deep-navy/95 border border-cyan-accent/30 text-slate-100 overflow-hidden"
         >
-          <div className="font-semibold text-cyan-accent">{meta.label}</div>
-          <div className="text-[10px] text-slate-300 mt-0.5">{meta.description}</div>
+          <div className="font-semibold text-cyan-accent break-words">{meta.label}</div>
+          <div className="text-[10px] text-slate-300 mt-0.5 break-words">{meta.description}</div>
         </TooltipContent>
       </Tooltip>
 

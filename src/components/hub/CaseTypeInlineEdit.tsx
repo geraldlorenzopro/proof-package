@@ -203,10 +203,11 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
           side="top"
           avoidCollisions
           collisionPadding={16}
-          className="max-w-[min(280px,calc(100vw-40px))] text-[11px] font-sora bg-deep-navy/95 border border-cyan-accent/30 text-slate-100"
+          style={{ maxWidth: "min(280px, calc(100vw - 32px))" }}
+          className="text-[11px] font-sora bg-deep-navy/95 border border-cyan-accent/30 text-slate-100 overflow-hidden"
         >
-          <div className="font-semibold text-cyan-accent">{tooltipFullLabel}</div>
-          <div className="text-[10px] text-slate-300 mt-0.5">{tooltipDescription}</div>
+          <div className="font-semibold text-cyan-accent break-all">{tooltipFullLabel}</div>
+          <div className="text-[10px] text-slate-300 mt-0.5 break-all">{tooltipDescription}</div>
         </TooltipContent>
       </Tooltip>
 

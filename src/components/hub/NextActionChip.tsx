@@ -151,25 +151,28 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
               <span className={`text-[10px] tabular-nums ${due.tone} leading-tight shrink-0`}>{due.label}</span>
             </button>
           </TooltipTrigger>
-          {/* Round 9.16 Mr. Lorenzo screenshot: tooltip se cortaba a la derecha
-              en pantallas medianas/chicas porque align=start lo anclaba al
-              trigger sin respetar viewport. Fix:
-                - align=center: Radix anchora horizontalmente y flippea bien
-                  cuando hay colisión.
-                - collisionPadding=16: fuerza margen de 16px a los bordes.
-                - max-w responsive: nunca más ancho que viewport - 40px.
-                - avoidCollisions explícito (default true pero confirmamos). */}
+          {/* Round 9.16 + R9.21 Mr. Lorenzo: tooltip seguía cortándose en
+              pantallas medianas. Causas combinadas:
+                1. Tailwind JIT a veces falla compilando `max-w-[min(400px,
+                   calc(100vw-40px))]` (arbitrary value con paréntesis +
+                   coma). Inline style garantiza que se aplica.
+                2. Texto random sin espacios (ej. "sdjdhksdjfkdjhf...") no
+                   se rompe con `break-words` solo — necesita `break-all`
+                   para forzar break en cualquier carácter.
+                3. width auto explícito + maxWidth — Radix no recalcula
+                   con padding sino con dimensiones reales del content. */}
           <TooltipContent
             side="top"
             align="center"
             avoidCollisions
             collisionPadding={16}
             sideOffset={6}
-            className="max-w-[min(400px,calc(100vw-40px))] bg-deep-navy border border-cyan-accent/30 text-white px-3 py-2.5 shadow-2xl"
+            style={{ maxWidth: "min(360px, calc(100vw - 32px))" }}
+            className="bg-deep-navy border border-cyan-accent/30 text-white px-3 py-2.5 shadow-2xl overflow-hidden"
           >
-            <p className="text-[12px] font-semibold leading-snug mb-1 break-words whitespace-pre-wrap">{label}</p>
+            <p className="text-[12px] font-semibold leading-snug mb-1 break-all whitespace-pre-wrap">{label}</p>
             {value.detail && (
-              <p className="text-[11px] text-slate-300 leading-snug mb-1.5 break-words whitespace-pre-wrap">
+              <p className="text-[11px] text-slate-300 leading-snug mb-1.5 break-all whitespace-pre-wrap">
                 {value.detail}
               </p>
             )}
