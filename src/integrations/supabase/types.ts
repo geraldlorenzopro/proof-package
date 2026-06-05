@@ -307,6 +307,13 @@ export type Database = {
             referencedRelation: "client_cases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ai_agent_sessions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ai_agents: {
@@ -445,6 +452,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_credit_transactions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
             referencedColumns: ["id"]
           },
           {
@@ -753,10 +767,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "appointments_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointments_client_profile_id_fkey"
             columns: ["client_profile_id"]
             isOneToOne: false
             referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1016,6 +1044,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "case_deadlines_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "case_deadlines_source_analysis_id_fkey"
             columns: ["source_analysis_id"]
             isOneToOne: false
@@ -1094,6 +1129,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_documents_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
             referencedColumns: ["id"]
           },
         ]
@@ -1176,6 +1218,13 @@ export type Database = {
             referencedRelation: "client_cases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "case_forms_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
         ]
       }
       case_notes: {
@@ -1186,6 +1235,7 @@ export type Database = {
           case_id: string
           content: string
           created_at: string
+          deleted_at: string | null
           ghl_note_id: string | null
           id: string
           is_pinned: boolean
@@ -1199,6 +1249,7 @@ export type Database = {
           case_id: string
           content: string
           created_at?: string
+          deleted_at?: string | null
           ghl_note_id?: string | null
           id?: string
           is_pinned?: boolean
@@ -1212,6 +1263,7 @@ export type Database = {
           case_id?: string
           content?: string
           created_at?: string
+          deleted_at?: string | null
           ghl_note_id?: string | null
           id?: string
           is_pinned?: boolean
@@ -1245,6 +1297,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_notes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
             referencedColumns: ["id"]
           },
         ]
@@ -1307,6 +1366,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_questionnaire_answers_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
             referencedColumns: ["id"]
           },
           {
@@ -1381,6 +1447,13 @@ export type Database = {
             referencedRelation: "client_cases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "case_secrets_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
         ]
       }
       case_stage_history: {
@@ -1444,6 +1517,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_stage_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
             referencedColumns: ["id"]
           },
         ]
@@ -1556,6 +1636,13 @@ export type Database = {
             referencedRelation: "client_cases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "case_tags_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
         ]
       }
       case_tasks: {
@@ -1569,6 +1656,7 @@ export type Database = {
           created_at: string
           created_by: string
           created_by_name: string | null
+          deleted_at: string | null
           description: string | null
           due_date: string | null
           ghl_task_id: string | null
@@ -1594,6 +1682,7 @@ export type Database = {
           created_at?: string
           created_by: string
           created_by_name?: string | null
+          deleted_at?: string | null
           description?: string | null
           due_date?: string | null
           ghl_task_id?: string | null
@@ -1619,6 +1708,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           created_by_name?: string | null
+          deleted_at?: string | null
           description?: string | null
           due_date?: string | null
           ghl_task_id?: string | null
@@ -1664,10 +1754,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "case_tasks_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "case_tasks_client_profile_id_fkey"
             columns: ["client_profile_id"]
             isOneToOne: false
             referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_tasks_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1755,10 +1859,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "case_tool_outputs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "case_tool_outputs_client_profile_id_fkey"
             columns: ["client_profile_id"]
             isOneToOne: false
             referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_tool_outputs_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1787,6 +1905,7 @@ export type Database = {
           co_sponsor_name: string | null
           created_at: string
           custom_fields: Json | null
+          deleted_at: string | null
           drive_folder_id: string | null
           drive_folder_url: string | null
           emb_interview_date: string | null
@@ -1845,6 +1964,7 @@ export type Database = {
           co_sponsor_name?: string | null
           created_at?: string
           custom_fields?: Json | null
+          deleted_at?: string | null
           drive_folder_id?: string | null
           drive_folder_url?: string | null
           emb_interview_date?: string | null
@@ -1903,6 +2023,7 @@ export type Database = {
           co_sponsor_name?: string | null
           created_at?: string
           custom_fields?: Json | null
+          deleted_at?: string | null
           drive_folder_id?: string | null
           drive_folder_url?: string | null
           emb_interview_date?: string | null
@@ -1958,6 +2079,13 @@ export type Database = {
             columns: ["client_profile_id"]
             isOneToOne: false
             referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_cases_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2296,10 +2424,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "consultations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "consultations_client_profile_id_fkey"
             columns: ["client_profile_id"]
             isOneToOne: false
             referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultations_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2474,6 +2616,13 @@ export type Database = {
             referencedRelation: "client_cases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "email_logs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
         ]
       }
       event_rate_limits: {
@@ -2566,6 +2715,13 @@ export type Database = {
             referencedRelation: "client_cases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "events_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
         ]
       }
       evidence_items: {
@@ -2645,6 +2801,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_items_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
             referencedColumns: ["id"]
           },
         ]
@@ -2862,8 +3025,29 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "form_submissions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "form_submissions_client_profile_id_fkey"
             columns: ["beneficiary_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_client_profile_id_fkey"
+            columns: ["beneficiary_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_petitioner_profile_id_fkey"
+            columns: ["petitioner_profile_id"]
             isOneToOne: false
             referencedRelation: "client_profiles"
             referencedColumns: ["id"]
@@ -2872,7 +3056,7 @@ export type Database = {
             foreignKeyName: "form_submissions_petitioner_profile_id_fkey"
             columns: ["petitioner_profile_id"]
             isOneToOne: false
-            referencedRelation: "client_profiles"
+            referencedRelation: "client_profiles_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3187,10 +3371,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "intake_sessions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "intake_sessions_client_profile_id_fkey"
             columns: ["client_profile_id"]
             isOneToOne: false
             referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_sessions_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3839,6 +4037,13 @@ export type Database = {
             referencedRelation: "client_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "visa_evaluations_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -3873,6 +4078,93 @@ export type Database = {
           },
           {
             foreignKeyName: "client_cases_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_cases_revenue: {
+        Row: {
+          account_id: string | null
+          id: string | null
+          matter_value: number | null
+        }
+        Insert: {
+          account_id?: string | null
+          id?: string | null
+          matter_value?: never
+        }
+        Update: {
+          account_id?: string | null
+          id?: string | null
+          matter_value?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_cases_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "client_cases_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_profiles_safe: {
+        Row: {
+          a_number: string | null
+          account_id: string | null
+          dob: string | null
+          email: string | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          mobile_phone: string | null
+          phone: string | null
+          ssn_last4: string | null
+        }
+        Insert: {
+          a_number?: never
+          account_id?: string | null
+          dob?: never
+          email?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          mobile_phone?: never
+          phone?: never
+          ssn_last4?: never
+        }
+        Update: {
+          a_number?: never
+          account_id?: string | null
+          dob?: never
+          email?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          mobile_phone?: never
+          phone?: never
+          ssn_last4?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_profiles_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "client_profiles_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "ner_accounts"
@@ -4148,6 +4440,11 @@ export type Database = {
         Args: { p_account_id: string; p_user_id: string; p_visibility: string }
         Returns: boolean
       }
+      user_can_see_matter_value: {
+        Args: { p_account: string }
+        Returns: boolean
+      }
+      user_can_see_pii: { Args: { p_account: string }; Returns: boolean }
       user_can_view_visibility: {
         Args: { p_account_id: string; p_user_id: string; p_visibility: string }
         Returns: boolean
