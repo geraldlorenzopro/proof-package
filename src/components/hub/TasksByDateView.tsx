@@ -22,7 +22,7 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronRight, ChevronDown, Calendar, AlertTriangle, Check, Moon } from "lucide-react";
+import { ChevronRight, ChevronDown, Calendar, AlertTriangle, Check, Moon, RotateCcw } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -550,6 +550,35 @@ export default function TasksByDateView({
     });
   }
 
+  // Round 9.28 (Mr. Lorenzo screenshot): reactivar tarea ya completada.
+  // Antes solo 5s de "Deshacer" en el toast post-complete. Si después
+  // queré reactivar, no había forma. Ahora ícono RotateCcw inline en
+  // tareas completed → vuelve a pending + audit log.
+  async function handleReactivate(task: TaskWithCase) {
+    updateTaskLocal(task.id, { status: "pending" });
+
+    if (!demoMode && UUID_RE.test(task.id)) {
+      try {
+        await persistUncomplete(task.id);
+      } catch (err: any) {
+        updateTaskLocal(task.id, { status: task.status });
+        toast.error("No se pudo reactivar", { description: err?.message });
+        return;
+      }
+    }
+
+    toast.success(`↻ Tarea reactivada · registrada`, {
+      duration: 4000,
+      description: task.title,
+    });
+    void logAudit({
+      action: "task.reactivated" as any,
+      entity_type: "task",
+      entity_id: task.id,
+      metadata: { field: "status", old_value: "completed", new_value: "pending", title: task.title },
+    });
+  }
+
   async function handleSnooze(task: TaskWithCase) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -828,6 +857,7 @@ export default function TasksByDateView({
                       onChangePriority={(p) => updateTaskLocal(item.task.id, { priority: p })}
                       onChangeDueDate={(d) => updateTaskLocal(item.task.id, { due_date: d })}
                       onComplete={() => handleComplete(item.task)}
+                      onReactivate={() => handleReactivate(item.task)}
                       onSnooze={() => handleSnooze(item.task)}
                       onOpen={() => item.task.case_id && navigate(`/case-engine/${item.task.case_id}?tab=tareas`)}
                       isDemoMode={demoMode}
@@ -906,7 +936,7 @@ function ColumnHeaderRow() {
 
 function TaskRow({
   task, team, selected, onToggleSelect, onChangeAssignee, onChangePriority, onChangeDueDate,
-  onComplete, onSnooze, onOpen, isDemoMode,
+  onComplete, onReactivate, onSnooze, onOpen, isDemoMode,
 }: {
   task: TaskWithCase;
   team: TeamMember[];
@@ -916,6 +946,8 @@ function TaskRow({
   onChangePriority: (p: any) => void;
   onChangeDueDate: (d: string | null) => void;
   onComplete: () => void;
+  /** Round 9.28: reactivar tarea ya completada (volver a pending). */
+  onReactivate: () => void;
   onSnooze: () => void;
   onOpen: () => void;
   isDemoMode: boolean;
@@ -1011,18 +1043,32 @@ function TaskRow({
         </button>
       </div>
 
-      {/* Complete */}
+      {/* Round 9.28 Mr. Lorenzo: botón condicional Complete/Reactivate.
+          Antes: si isCompleted → disabled + opacity 30 (sin acción posible).
+          Ahora: si isCompleted → muestra ícono RotateCcw cyan "Reactivar"
+          que llama onReactivate (status pending). */}
       <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          onClick={onComplete}
-          disabled={isCompleted}
-          className="p-2 rounded text-emerald-300 hover:bg-emerald-500/15 transition-colors disabled:opacity-30"
-          title={isCompleted ? "Ya completada" : "Marcar completada"}
-          aria-label="Completar tarea"
-        >
-          <Check className="w-3.5 h-3.5" />
-        </button>
+        {isCompleted ? (
+          <button
+            type="button"
+            onClick={onReactivate}
+            className="p-2 rounded text-cyan-accent hover:bg-cyan-accent/15 transition-colors"
+            title="Reactivar tarea (volver a pendiente)"
+            aria-label="Reactivar tarea"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onComplete}
+            className="p-2 rounded text-emerald-300 hover:bg-emerald-500/15 transition-colors"
+            title="Marcar completada"
+            aria-label="Completar tarea"
+          >
+            <Check className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </div>
   );
