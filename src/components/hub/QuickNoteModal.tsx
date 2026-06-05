@@ -270,8 +270,8 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated, prefille
                 </div>
               </div>
             ) : (
-              {/* Round 9.27 Mr. Lorenzo: shadcn Select (Radix) reemplaza
-                  <select> nativo — corrige open-upward + raw key visible. */}
+              // Round 9.27 Mr. Lorenzo: shadcn Select (Radix) reemplaza
+              // <select> nativo — corrige open-upward + raw key visible.
               <div className="space-y-2">
                 <Label htmlFor="note-case">Atar a caso *</Label>
                 <Select
