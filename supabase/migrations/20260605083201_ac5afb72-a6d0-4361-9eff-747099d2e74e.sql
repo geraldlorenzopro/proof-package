@@ -1,0 +1,1 @@
+ALTER TABLE public.case_tasks ALTER COLUMN task_type DROP NOT NULL;

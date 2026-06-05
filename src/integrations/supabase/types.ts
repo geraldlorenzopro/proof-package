@@ -1579,7 +1579,7 @@ export type Database = {
           recurring_interval: string | null
           snoozed_until: string | null
           status: string
-          task_type: string
+          task_type: string | null
           title: string
           updated_at: string
           visibility: string
@@ -1604,7 +1604,7 @@ export type Database = {
           recurring_interval?: string | null
           snoozed_until?: string | null
           status?: string
-          task_type: string
+          task_type?: string | null
           title: string
           updated_at?: string
           visibility?: string
@@ -1629,7 +1629,7 @@ export type Database = {
           recurring_interval?: string | null
           snoozed_until?: string | null
           status?: string
-          task_type?: string
+          task_type?: string | null
           title?: string
           updated_at?: string
           visibility?: string
