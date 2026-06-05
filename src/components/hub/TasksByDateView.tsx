@@ -292,6 +292,13 @@ export default function TasksByDateView({
   }, [accountId]);
   useEffect(() => { writeScopedJson(COLLAPSED_KEY, accountId, collapsed); }, [collapsed, accountId]);
 
+  // Round 9.15: clave string estable derivada de cases — evita que la
+  // identidad del array (recreada cada render upstream) dispare re-fetch.
+  const caseIdsKey = useMemo(
+    () => cases.map(c => `${c.id}:${c.rfe_deadline ?? ""}:${c.case_type ?? ""}:${c.assigned_to ?? ""}`).join("|"),
+    [cases]
+  );
+
   // ═══ Fetch tasks — Victoria fix #1 — SIN restricción .in("case_id", caseIds) ═══
   useEffect(() => {
     if (demoMode) {
@@ -391,7 +398,16 @@ export default function TasksByDateView({
       setLoading(false);
     })();
     return () => { cancelled = true; abortCtrl.abort(); };
-  }, [accountId, cases, demoMode, staffNames, refreshKey]);
+    // Round 9.15 anti-flash (4-agentes diagnóstico):
+    //   - cases/staffNames eran object/array recreados upstream cada render
+    //     → dep identity inestable → setLoading(true) en cada re-render →
+    //     tabs parpadean a "—" + skeleton mientras refetcheaba inútilmente.
+    //   - Ahora deps = solo IDs y flags reales. caseIdsKey es string estable.
+    //   - Enrichment con cases/staffNames usa snapshot del momento del fetch;
+    //     si cases cambian después sin refetch, esos nombres quedan stale 1 ciclo,
+    //     trade-off aceptable vs el flash visible.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountId, demoMode, refreshKey, caseIdsKey]);
 
   // ═══ Custom filters aplicados al universo allTasks ═══
   const customFilteredTasks = useMemo(
@@ -705,7 +721,10 @@ export default function TasksByDateView({
     </div>
   );
 
-  if (loading) {
+  // Round 9.15 anti-flash: stale-while-revalidate. Si ya tenemos data,
+  // mostrala mientras el refetch corre en background — NO flash a skeleton.
+  // Skeleton SOLO en la primera carga (allTasks empty + loading=true).
+  if (loading && allTasks.length === 0) {
     return (
       <div className="space-y-2">
         {topbar}

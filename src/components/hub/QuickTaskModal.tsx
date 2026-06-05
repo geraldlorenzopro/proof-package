@@ -58,52 +58,70 @@ const PRIORITIES = [
 ];
 
 export default function QuickTaskModal({ open, onOpenChange, onCreated, prefilledCase }: Props) {
+  // Round 9.15 anti-flash (4-agentes diagnóstico):
+  //   - useState callbacks inicializan state DIRECTO desde props →
+  //     primer paint del modal ya tiene caseId + cases correctos.
+  //     Antes: state vacío + useEffect lo seteaba post-mount = 2 frames de flash.
+  //   - Sync por prefilledCase.id (NO por open toggle) — solo re-syncea cuando
+  //     realmente cambia el caso, no en cada apertura.
+  //   - Async fetch a mount-only ([] deps), separado de la reset de form.
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("normal");
-  const [caseId, setCaseId] = useState<string>(prefilledCase?.id || "");
+  const [caseId, setCaseId] = useState<string>(() => prefilledCase?.id || "");
   const [assignedTo, setAssignedTo] = useState<string>("");
   const [visibility, setVisibility] = useState<VisibilityLevel>("team");
-  const [cases, setCases] = useState<CaseOption[]>([]);
+  const [cases, setCases] = useState<CaseOption[]>(() =>
+    prefilledCase
+      ? [{
+          id: prefilledCase.id,
+          client_name: prefilledCase.client_name,
+          case_type: prefilledCase.case_type ?? null,
+        }]
+      : []
+  );
   const [team, setTeam] = useState<TeamMember[]>([]);
 
-  // Reset al abrir + cargar lista de casos + equipo de la firma
+  // Sync caseId/cases solo cuando cambia el caso prefilled (NO en cada open toggle).
   useEffect(() => {
-    if (!open) return;
+    if (!prefilledCase) return;
+    setCaseId(prefilledCase.id);
+    setCases([{
+      id: prefilledCase.id,
+      client_name: prefilledCase.client_name,
+      case_type: prefilledCase.case_type ?? null,
+    }]);
+  }, [prefilledCase?.id]);
+
+  // Reset del form SOLO al CERRAR (no al abrir — el primer paint ya está limpio).
+  useEffect(() => {
+    if (open) return;
     setTitle("");
     setDueDate("");
     setPriority("normal");
     setVisibility("team");
+  }, [open]);
 
-    // Round 9: si prefilledCase, skipear fetch de cases.
-    if (prefilledCase) {
-      setCaseId(prefilledCase.id);
-      setCases([{
-        id: prefilledCase.id,
-        client_name: prefilledCase.client_name,
-        case_type: prefilledCase.case_type ?? null,
-      }]);
-    } else {
-      setCaseId("");
-    }
-
+  // Async fetch de casos + team — UNA vez al mount, no on each open.
+  useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data: accountId } = await supabase.rpc("user_account_id", { _user_id: user.id });
       if (!accountId) return;
 
-      // Cargar casos + team en paralelo
       const [casesRes, teamRes] = await Promise.all([
-        supabase
-          .from("client_cases")
-          .select("id, client_name, case_type")
-          .eq("account_id", accountId)
-          .neq("status", "completed")
-          .neq("status", "archived")
-          .order("updated_at", { ascending: false })
-          .limit(30),
+        prefilledCase
+          ? Promise.resolve({ data: null })  // skip si prefilled
+          : supabase
+              .from("client_cases")
+              .select("id, client_name, case_type")
+              .eq("account_id", accountId)
+              .neq("status", "completed")
+              .neq("status", "archived")
+              .order("updated_at", { ascending: false })
+              .limit(30),
         supabase
           .from("account_members")
           .select("user_id, role, profiles:profiles(full_name)")
@@ -111,18 +129,17 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated, prefille
           .eq("is_active", true),
       ]);
 
-      // Round 9: si prefilledCase, mantener solo ese caso (no override).
-      if (!prefilledCase) setCases((casesRes.data as any) || []);
+      if (!prefilledCase && casesRes.data) setCases(casesRes.data as any);
       const members: TeamMember[] = ((teamRes.data as any[]) || []).map(m => ({
         user_id: m.user_id,
         role: m.role,
         full_name: m.profiles?.full_name || null,
       }));
       setTeam(members);
-      // Default: asignar a mí mismo (más común)
       setAssignedTo(user.id);
     })();
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleCreate() {
     if (!title.trim()) {

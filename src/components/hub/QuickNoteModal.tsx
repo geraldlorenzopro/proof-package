@@ -58,34 +58,52 @@ const NOTE_TYPES = [
 ];
 
 export default function QuickNoteModal({ open, onOpenChange, onCreated, prefilledCase }: Props) {
+  // Round 9.15 anti-flash (4-agentes diagnóstico): mismo patrón que QuickTaskModal.
+  //   - State inicializado DIRECTO desde props (callback en useState).
+  //   - casesLoading=false desde el inicio si prefilledCase está presente.
+  //   - Sync caseId/cases solo cuando cambia prefilledCase.id (NO en open toggle).
+  //   - Reset del form SOLO al CERRAR.
+  //   - Async fetch a mount-only ([] deps).
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [casesLoading, setCasesLoading] = useState(!prefilledCase);
+  const [casesLoading, setCasesLoading] = useState(() => !prefilledCase);
   const [content, setContent] = useState("");
   const [noteType, setNoteType] = useState("general");
-  const [caseId, setCaseId] = useState<string>(prefilledCase?.id || "");
+  const [caseId, setCaseId] = useState<string>(() => prefilledCase?.id || "");
   const [visibility, setVisibility] = useState<VisibilityLevel>("team");
-  const [cases, setCases] = useState<CaseOption[]>([]);
+  const [cases, setCases] = useState<CaseOption[]>(() =>
+    prefilledCase
+      ? [{
+          id: prefilledCase.id,
+          client_name: prefilledCase.client_name,
+          case_type: prefilledCase.case_type ?? null,
+        }]
+      : []
+  );
 
+  // Sync cuando cambia el caso prefilled (no en cada open toggle).
   useEffect(() => {
-    if (!open) return;
+    if (!prefilledCase) return;
+    setCaseId(prefilledCase.id);
+    setCases([{
+      id: prefilledCase.id,
+      client_name: prefilledCase.client_name,
+      case_type: prefilledCase.case_type ?? null,
+    }]);
+    setCasesLoading(false);
+  }, [prefilledCase?.id]);
+
+  // Reset del form SOLO al CERRAR (no al abrir).
+  useEffect(() => {
+    if (open) return;
     setContent("");
     setNoteType("general");
     setVisibility("team");
+  }, [open]);
 
-    // Round 9 (Mr. Lorenzo): si prefilledCase, skipear fetch + selector.
-    if (prefilledCase) {
-      setCaseId(prefilledCase.id);
-      setCases([{
-        id: prefilledCase.id,
-        client_name: prefilledCase.client_name,
-        case_type: prefilledCase.case_type ?? null,
-      }]);
-      setCasesLoading(false);
-      return;
-    }
-
-    setCaseId("");
+  // Async fetch de cases — solo si NO hay prefilled. Mount-only.
+  useEffect(() => {
+    if (prefilledCase) return;
     setCasesLoading(true);
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -101,11 +119,11 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated, prefille
         .order("updated_at", { ascending: false })
         .limit(50);
       setCases((data as any) || []);
-      // Auto-seleccionar el primero si existe — mejor UX
       if (data && data.length > 0) setCaseId((data[0] as any).id);
       setCasesLoading(false);
     })();
-  }, [open, prefilledCase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleCreate() {
     if (!content.trim()) {
