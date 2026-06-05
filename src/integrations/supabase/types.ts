@@ -1579,7 +1579,7 @@ export type Database = {
           recurring_interval: string | null
           snoozed_until: string | null
           status: string
-          task_type: Database["public"]["Enums"]["case_task_type"]
+          task_type: string
           title: string
           updated_at: string
           visibility: string
@@ -1604,7 +1604,7 @@ export type Database = {
           recurring_interval?: string | null
           snoozed_until?: string | null
           status?: string
-          task_type?: Database["public"]["Enums"]["case_task_type"]
+          task_type: string
           title: string
           updated_at?: string
           visibility?: string
@@ -1629,7 +1629,7 @@ export type Database = {
           recurring_interval?: string | null
           snoozed_until?: string | null
           status?: string
-          task_type?: Database["public"]["Enums"]["case_task_type"]
+          task_type?: string
           title?: string
           updated_at?: string
           visibility?: string
