@@ -110,6 +110,16 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated, prefille
     setCasesLoading(false);
   }, [prefilledCase?.id]);
 
+  // Round 9.29 (defensa): sync con preloadedCases cuando cambie (race timing).
+  useEffect(() => {
+    if (prefilledCase) return; // prefilled tiene prioridad
+    if (preloadedCases && preloadedCases.length > 0) {
+      setCases(preloadedCases);
+      if (!caseId) setCaseId(preloadedCases[0].id);
+      setCasesLoading(false);
+    }
+  }, [preloadedCases, prefilledCase]);
+
   // Reset del form SOLO al CERRAR (no al abrir).
   useEffect(() => {
     if (open) return;

@@ -99,6 +99,25 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated, prefille
   // Round 9.17: team viene precargado del parent → dropdown poblado desde frame 1.
   const [team, setTeam] = useState<TeamMember[]>(() => preloadedTeam ?? []);
 
+  // Round 9.29 Mr. Lorenzo screenshot: dropdown "Asignar a" estaba vacío
+  // porque preloadedTeam llegaba DESPUÉS del mount del modal (race timing:
+  // HubCasesPage useEffect demo populates team async). useState callback
+  // solo corre ON MOUNT → team quedaba [] aunque parent ya lo tenía cargado.
+  // Fix: sync con preloadedTeam cuando cambie.
+  useEffect(() => {
+    if (preloadedTeam && preloadedTeam.length > 0) {
+      setTeam(preloadedTeam);
+    }
+  }, [preloadedTeam]);
+
+  // Mismo sync para preloadedCases (defensa por mismo timing race).
+  useEffect(() => {
+    if (prefilledCase) return; // prefilled tiene prioridad
+    if (preloadedCases && preloadedCases.length > 0) {
+      setCases(preloadedCases);
+    }
+  }, [preloadedCases, prefilledCase]);
+
   // Sync caseId/cases solo cuando cambia el caso prefilled (NO en cada open toggle).
   useEffect(() => {
     if (!prefilledCase) return;

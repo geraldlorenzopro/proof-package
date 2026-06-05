@@ -79,6 +79,34 @@ if matches=$(grep -REn 'console\.log\(' src/ --exclude-dir=__tests__ --exclude='
   fi
 fi
 
+# Pattern D: SWC ternary-JSX-comment bug (Round 9.27 lección).
+# Caso peligroso: `) : (` seguido en línea siguiente por `{/* ... */}`.
+# tsc lo acepta, SWC lo rechaza con "expected ')' but found '...'".
+# Bug Mr. Lorenzo 2026-06-06: build de Lovable falló por esto.
+#
+# Detección con awk porque necesita mirar línea N + N+1.
+matches=$(find src -type f \( -name '*.tsx' -o -name '*.jsx' \) -exec awk '
+  /\) : \([[:space:]]*$/ {
+    line = NR
+    next_check = 1
+    next
+  }
+  next_check == 1 {
+    if ($0 ~ /^[[:space:]]*\{\/\*/) {
+      print FILENAME ":" line ": ternary `) : (` seguido por comentario JSX `{/* */}` — SWC build fail"
+      found = 1
+    }
+    next_check = 0
+  }
+  END { if (found) exit 1 }
+' {} \; 2>/dev/null)
+if [ -n "$matches" ]; then
+  echo -e "${RED}✘ Pattern D — SWC ternary-JSX-comment bug:${NC}"
+  echo "$matches"
+  echo -e "${RED}  Fix: cambiar {/* ... */} a // comentario JS, o wrappear con <>...</>${NC}"
+  FAIL=1
+fi
+
 # Pattern C: TODO/FIXME en código nuevo (warning only)
 if matches=$(git diff --cached -U0 2>/dev/null | grep -E '^\+.*(TODO|FIXME):' | head -3); then
   if [ -n "$matches" ]; then
