@@ -34,6 +34,7 @@ const NAV_ITEMS: Array<{
   { emoji: "🏠", label: "Inicio", path: "/hub", match: (p: string) => p === "/hub", sectionKey: "inicio", demoSupported: true },
   { emoji: "👥", label: "Clientes", path: "/hub/leads", match: (p: string) => p.startsWith("/hub/leads"), badgeKey: "leads", sectionKey: "leads", demoSupported: false },
   { emoji: "📁", label: "Casos", path: "/hub/cases", match: (p: string) => p.startsWith("/hub/cases"), badgeKey: "cases", sectionKey: "casos", demoSupported: true },
+  { emoji: "✅", label: "Tareas", path: "/hub/tasks", match: (p: string) => p.startsWith("/hub/tasks"), sectionKey: "tareas", demoSupported: true },
   { emoji: "📋", label: "Forms", path: "/hub/forms", match: (p: string) => p.startsWith("/hub/forms") || p.startsWith("/hub/formularios") || p.startsWith("/dashboard/smart-forms"), badgeKey: "forms", sectionKey: "forms", demoSupported: true },
   // ─── PRONTO ───
   { emoji: "🪪", label: "Cliente 360", path: "/hub/clients", match: (p: string) => p.startsWith("/hub/clients"), sectionKey: "clientes", demoSupported: false },

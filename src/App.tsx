@@ -71,6 +71,7 @@ import ConsultationsPage from "./pages/ConsultationsPage";
 import ClientProfilePage from "./pages/ClientProfilePage";
 import HubClientsPage from "./pages/HubClientsPage";
 import HubCasesPage from "./pages/HubCasesPage";
+import HubTasksPage from "./pages/HubTasksPage";
 import I130PackWorkspace from "./pages/I130PackWorkspace";
 import I130Doc01Cuestionario from "./pages/packs/i130/Doc01Cuestionario";
 import I130Doc02Guia from "./pages/packs/i130/Doc02Guia";
@@ -237,6 +238,7 @@ const App = () => (
           {/* Ola 4.1.5 — apuntar directo a /hub/cases (evita doble redirect via workspace-demo) */}
           <Route path="/portfolio" element={<Navigate to="/hub/cases" replace />} />
           <Route path="/hub/cases" element={<ProtectedRoute><HubSectionGate sectionKey="casos"><HubCasesPage /></HubSectionGate></ProtectedRoute>} />
+          <Route path="/hub/tasks" element={<ProtectedRoute><HubSectionGate sectionKey="tareas"><HubTasksPage /></HubSectionGate></ProtectedRoute>} />
           {/* ═══ I-130 PACK ═══ */}
           <Route path="/hub/cases/:caseId/i130-pack" element={<ProtectedRoute><PacksGate><I130PackWorkspace /></PacksGate></ProtectedRoute>} />
           <Route path="/hub/cases/:caseId/i130-pack/01-cuestionario" element={<ProtectedRoute><PacksGate><I130Doc01Cuestionario /></PacksGate></ProtectedRoute>} />

@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, LayoutGrid, Table as TableIcon, ArrowUpDown, FolderTree, FolderPlus, ListChecks } from "lucide-react";
+import { Search, LayoutGrid, Table as TableIcon, ArrowUpDown, FolderTree, FolderPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+// Round 7: toast eliminado (R6 cross-view aclaración movida a /hub/tasks separado).
 import HubLayout from "@/components/hub/HubLayout";
 import CaseTable from "@/components/hub/CaseTable";
 import CaseKanban from "@/components/hub/CaseKanban";
@@ -15,7 +15,7 @@ import CaseViewTabs from "@/components/hub/CaseViewTabs";
 import CaseFiltersPopover, { type CaseFilters, EMPTY_FILTERS } from "@/components/hub/CaseFiltersPopover";
 import CaseTypeFilterDropdown from "@/components/hub/CaseTypeFilterDropdown";
 import CasePeekPanel from "@/components/hub/CasePeekPanel";
-import TasksByDateView, { type TaskCountsByView } from "@/components/hub/TasksByDateView";
+// Round 7: TasksByDateView ya no se importa aquí. Vive en /hub/tasks.
 import { useCasePipeline } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
@@ -26,7 +26,8 @@ import { getCaseTypeByKey } from "@/lib/caseTypes";
 import { readScopedJson, writeScopedJson, migrateLegacyKeys } from "@/lib/scopedStorage";
 import { cn } from "@/lib/utils";
 
-type ViewMode = "tabla" | "kanban" | "tareas";
+// Round 7: Tareas movido a /hub/tasks (Marcus pattern). Pipeline solo Tabla|Kanban.
+type ViewMode = "tabla" | "kanban";
 
 const GROUP_BY_LABELS: Record<GroupByKey, string> = {
   stage:       "Etapa",
@@ -90,7 +91,9 @@ export default function HubCasesPage() {
   useEffect(() => {
     if (!accountId) return;
     const savedView = readScopedJson<ViewMode>("ner_cases_view", accountId, "tabla");
-    if (savedView === "kanban" || savedView === "tabla" || savedView === "tareas") setView(savedView);
+    // Round 7: legacy "tareas" se redirige a "tabla" (Tareas vive en /hub/tasks)
+    if (savedView === "kanban" || savedView === "tabla") setView(savedView);
+    else if ((savedView as string) === "tareas") setView("tabla");
     const savedGroup = readScopedJson<GroupByKey>("ner_cases_group_by", accountId, "stage");
     if ((["stage","owner","case_type","responsible","none"] as const).includes(savedGroup as GroupByKey)) {
       setGroupBy(savedGroup);
@@ -105,26 +108,8 @@ export default function HubCasesPage() {
   // Persist (scoped)
   useEffect(() => { writeScopedJson("ner_cases_view", accountId, view); }, [view, accountId]);
 
-  // Round 6 (Marcus): toast informativo al cambiar entre vista Cases ↔ Tasks.
-  // Aclara que el meaning de los filtros cambia (cases vs tasks).
-  const previousViewRef = useRef<typeof view>(view);
-  useEffect(() => {
-    const prev = previousViewRef.current;
-    if (prev !== view) {
-      if (view === "tareas" && (prev === "tabla" || prev === "kanban")) {
-        toast.info("Vista Tareas activa", {
-          duration: 3000,
-          description: "Los filtros (Urgentes, Mis casos…) ahora aplican a tareas, no a casos.",
-        });
-      } else if (prev === "tareas" && (view === "tabla" || view === "kanban")) {
-        toast.info("Vista Casos activa", {
-          duration: 2500,
-          description: "Los filtros vuelven a aplicar a casos.",
-        });
-      }
-      previousViewRef.current = view;
-    }
-  }, [view]);
+  // Round 7: toast informativo R6 ELIMINADO. Tareas vive en /hub/tasks
+  // ahora — no hay cross-view dentro de /hub/cases que necesite explicar.
   useEffect(() => { writeScopedJson("ner_cases_group_by", accountId, groupBy); }, [groupBy, accountId]);
   useEffect(() => { writeScopedJson("ner_cases_sort_by", accountId, sortBy); }, [sortBy, accountId]);
   useEffect(() => { writeScopedJson("ner_cases_filters", accountId, filters); }, [filters, accountId]);
@@ -303,21 +288,16 @@ export default function HubCasesPage() {
     "mis-casos":      filterCasesByView(searchFilteredCases, "mis-casos", userId).length,
     "urgentes":       filterCasesByView(searchFilteredCases, "urgentes", userId).length,
     "pte-accion-mia": filterCasesByView(searchFilteredCases, "pte-accion-mia", userId).length,
-    "rfe-response":   0, // tasksOnly tab — irrelevante para vista cases
+    "rfe-response":   0, // Round 7: tasksOnly tab. /hub/cases NO renderiza este tab (filtrado en CaseViewTabs).
     "cerrados-30d":   filterCasesByView(searchFilteredCases, "cerrados-30d", userId).length,
     "todos":          searchFilteredCases.length,
   }), [searchFilteredCases, userId]);
 
-  // Round 6.5 (Victoria pattern B): counts REALES de tareas, recibidos
-  // de TasksByDateView via callback. Solo se usan cuando vista=tareas.
-  const [taskCounts, setTaskCounts] = useState<TaskCountsByView>({
-    "mis-casos": 0, "urgentes": 0, "pte-accion-mia": 0,
-    "rfe-response": 0, "cerrados-30d": 0, "todos": 0,
-  });
+  // Round 7: taskCounts ELIMINADO. Tareas vive en /hub/tasks con su propio state.
 
   // Counts que se pasan a CaseViewTabs: tasks counts si vista=tareas,
   // case counts si tabla/kanban. Counter NUNCA miente (Marcus + Vanessa).
-  const viewCounts = view === "tareas" ? taskCounts : caseCounts;
+  const viewCounts = caseCounts;
 
   function handleUseRecent(key: string) {
     setRecentTypes(prev => {
@@ -355,15 +335,13 @@ export default function HubCasesPage() {
           </div>
         </div>
 
-        {/* Hero pills h-12 edge-to-edge — Round 3 convergencia.
-            Round 5.5: viewMode prop hace que cuando view=tareas el label
-            "Mis casos" cambie a "Mis tareas" (Mr. Lorenzo confusión #1-3). */}
+        {/* Hero pills h-12 edge-to-edge — Round 7: viewMode prop ya no
+            necesario porque Tareas vive en /hub/tasks ruta propia. */}
         <CaseViewTabs
           activeView={activeView}
           onChange={setActiveView}
           counts={viewCounts}
           loading={loading}
-          viewMode={view}
         />
 
         {/* Toolbar 1 línea — strip horizontal MUERTO, dropdown único para Tipo */}
@@ -418,7 +396,7 @@ export default function HubCasesPage() {
           <div className="ml-auto flex items-center bg-white/[0.04] border border-white/10 rounded-md p-0.5">
             <ViewButton active={view === "tabla"} onClick={() => setView("tabla")} icon={<TableIcon className="w-3.5 h-3.5" />} label="Tabla" />
             <ViewButton active={view === "kanban"} onClick={() => setView("kanban")} icon={<LayoutGrid className="w-3.5 h-3.5" />} label="Kanban" />
-            <ViewButton active={view === "tareas"} onClick={() => setView("tareas")} icon={<ListChecks className="w-3.5 h-3.5" />} label="Tareas" />
+            {/* Round 7: "Tareas" sacado del switcher. Vive en /hub/tasks ruta propia. */}
           </div>
         </div>
 
@@ -472,19 +450,6 @@ export default function HubCasesPage() {
               </Button>
             )}
           </div>
-        ) : view === "tareas" ? (
-          /* Vista Tareas — Round 6 (Mr. Lorenzo + 4 agentes).
-             Filtros aplican a TASKS via activeView + filterTasksByView.
-             Inline editing completo + bulk + snooze + completar + + Nueva. */
-          <TasksByDateView
-            accountId={accountId}
-            userId={userId}
-            cases={sortedCases}
-            activeView={activeView}
-            team={team}
-            staffNames={staffNames}
-            onTaskCountsChange={setTaskCounts}
-          />
         ) : view === "tabla" ? (
           <CaseTable
             groups={allGroups}

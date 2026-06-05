@@ -11,6 +11,7 @@ export type HubSectionKey =
   | "clientes"
   | "consultas"
   | "casos"
+  | "tareas"
   | "forms"
   | "agenda"
   | "reportes"
@@ -46,17 +47,30 @@ export const HUB_SECTIONS: Record<HubSectionKey, HubSectionMeta> = {
     enabled: true,
     order: 1,
     comingSoon: {
-      title: "Pipeline de casos — vertical inmigración",
+      title: "Pipeline de casos cerrado",
+      description: "Ver decisions.md entrada 2026-06-05.",
+      bullets: [],
+      eta: "LIVE",
+    },
+  },
+  tareas: {
+    key: "tareas",
+    label: "Tareas",
+    path: "/hub/tasks",
+    enabled: true,
+    order: 2,
+    comingSoon: {
+      title: "Tareas — bandeja de trabajo del paralegal",
       description:
-        "Dashboard estilo Monday vertical inmigración. Vista tabla Airtable + Kanban compacto con 7 ubicaciones reales (USCIS · NVC · Embajada · ICE · Corte · CBP · Aeropuerto).",
+        "Round 7: separado de /hub/cases a ruta propia (Marcus pattern Clio/Litify/MyCase). Bucketing automático por fecha, inline editing, bulk actions, snooze, RFE Response window 62d.",
       bullets: [
-        "Vista tabla + Kanban + drag-drop entre stages",
-        "Filtros por receipt USCIS/NVC, A-number, fecha",
-        "Status legal por etapa + ball-in-court badge",
-        "Saved views, bulk actions, export CSV",
-        "Search global con shortcuts (j/k, /, Enter)",
+        "Buckets: Vencidas / Hoy / Mañana / Esta semana / Más adelante / Sin fecha",
+        "Inline editing: asignar, prioridad, fecha, completar",
+        "Bulk actions: completar todas, reasignar, snooze",
+        "Filtros específicos: Asignado / Estado / Vence / Tipo caso / Tipo tarea",
+        "+ Nueva tarea sin abandonar contexto",
       ],
-      eta: "Siguiente sprint — apenas cerremos Inicio",
+      eta: "LIVE",
     },
   },
   forms: {

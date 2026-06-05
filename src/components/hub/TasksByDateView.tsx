@@ -1,25 +1,28 @@
 /**
- * TasksByDateView — Vista alternativa de /hub/cases agrupada por
- * fecha de tarea.
+ * TasksByDateView — Round 7 refactor mayor.
  *
- * Round 6 (Mr. Lorenzo + 4 agentes) — sprint inline editing completo:
- *   - Asignar inline (popover team picker)
- *   - Priority inline (dropdown 4 niveles)
- *   - Due date inline (Calendar shadcn)
- *   - Botón ✓ Completar inline con toast undoable 5s
- *   - Botón 💤 Snooze hasta mañana 8 AM (Vanessa pidió)
- *   - Bulk actions (checkbox + toolbar) — Vanessa pidió
- *   - + Nueva tarea modal (sin abandonar context)
- *   - Disclaimer también en empty state
- *   - Filtros aplican a TASKS (filterTasksByView)
+ * Vista principal de /hub/tasks (ya no comparte con /hub/cases).
  *
- * Round 4.5 BLOCKER (Victoria): subtasks huérfanos se promueven a
- * top-level cuando parent completed (sino invisibles).
+ * Cambios Round 7 sobre R6.5:
+ *   - Props nuevos: activeTab (TaskViewKey nuevo), taskFilters, sortBy, search
+ *   - Fetch SIN restricción .in("case_id", caseIds) — universo completo (Victoria fix #1)
+ *   - filterTasksByTab + filterTasksByCustomFilters separados
+ *   - case_rfe_deadline hidratado en demo mode (Victoria fix #10)
+ *   - AbortController en fetch race protection (Victoria fix #7)
+ *   - Counts derivados de allTasks (universo completo) — counts honestos
+ *
+ * Mantiene del Round 6:
+ *   - Subtasks huérfanos promovidos a top-level (Victoria BLOCKER)
+ *   - Inline editing (assignee, priority, due date)
+ *   - Bulk actions (checkbox + toolbar)
+ *   - Snooze 💤
+ *   - + Nueva tarea modal
+ *   - Disclaimer simplificado
  */
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronRight, ChevronDown, Calendar, AlertTriangle, Check, Moon, Plus } from "lucide-react";
+import { ChevronRight, ChevronDown, Calendar, AlertTriangle, Check, Moon } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,12 +30,13 @@ import { Button } from "@/components/ui/button";
 import { bucketForDueDate, TASK_BUCKETS, type TaskBucketKey } from "@/lib/caseGrouping";
 import type { PipelineCase, PipelineStageKey } from "@/hooks/useCasePipeline";
 import { useDemoMode } from "@/hooks/useDemoData";
-import { filterTasksByView, type CaseViewKey } from "@/hooks/useCaseViews";
 import { readScopedJson, writeScopedJson } from "@/lib/scopedStorage";
 import TaskAssigneeInlineEdit from "./TaskAssigneeInlineEdit";
 import TaskPriorityInlineEdit from "./TaskPriorityInlineEdit";
 import TaskDueDateInlineEdit from "./TaskDueDateInlineEdit";
 import TaskCreateModal from "./TaskCreateModal";
+import type { TaskViewKey } from "./TaskViewTabs";
+import type { TaskFilters, TaskSortKey } from "./TasksToolbar";
 
 interface Task {
   id: string;
@@ -46,13 +50,14 @@ interface Task {
   assigned_to_name?: string | null;
   parent_task_id?: string | null;
   snoozed_until?: string | null;
+  task_type?: string | null;
+  created_at?: string | null;
 }
 
 interface TaskWithCase extends Task {
   case_name?: string;
   case_type?: string | null;
   case_stage?: PipelineStageKey | null;
-  /** Round 6.5: rfe_deadline del case parent. Necesario para tab "RFE Response". */
   case_rfe_deadline?: string | null;
   subtasks_total?: number;
   subtasks_completed?: number;
@@ -64,7 +69,6 @@ interface TeamMember {
   full_name: string;
 }
 
-// Stage chips compact para mostrar al lado del título de la tarea.
 const STAGE_CHIP: Record<string, { label: string; class: string }> = {
   uscis:                { label: "USCIS",      class: "bg-blue-500/15 border-blue-500/30 text-blue-200" },
   nvc:                  { label: "NVC",        class: "bg-violet-400/15 border-violet-400/30 text-violet-200" },
@@ -81,34 +85,174 @@ interface Props {
   accountId: string | null;
   userId: string | null;
   cases: PipelineCase[];
-  /** Filtro activo del CaseViewTabs. Aplicado a TASKS (no cases). */
-  activeView: CaseViewKey;
+  /** Round 7: TaskViewKey nuevo (no CaseViewKey). */
+  activeTab: TaskViewKey;
+  taskFilters: TaskFilters;
+  sortBy: TaskSortKey;
+  search: string;
   team?: TeamMember[];
   staffNames?: Record<string, string>;
-  /**
-   * Round 6.5 (Victoria pattern B): callback con counts REALES de tareas
-   * por vista. HubCasesPage lo usa para mostrar counts honestos en
-   * CaseViewTabs (en lugar de cases counts engañosos).
-   */
-  onTaskCountsChange?: (counts: TaskCountsByView) => void;
-}
-
-/** Counts de tareas por CaseViewKey — Round 6.5 fix counter mismatch. */
-export interface TaskCountsByView {
-  "mis-casos": number;
-  "urgentes": number;
-  "pte-accion-mia": number;
-  "rfe-response": number;
-  "cerrados-30d": number;
-  "todos": number;
+  onTaskCountsChange?: (counts: Record<TaskViewKey, number>) => void;
 }
 
 const BUCKET_ORDER: TaskBucketKey[] = ["overdue", "today", "tomorrow", "this_week", "next_week", "later", "no_date"];
-const COLLAPSED_KEY = "ner_tasks_view_collapsed";
+const COLLAPSED_KEY = "ner_tasks_buckets_collapsed";
 const DEFAULT_COLLAPSED: Record<string, boolean> = { later: true };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CLOSED_TASK = ["completed", "archived", "cancelled"];
 
-export default function TasksByDateView({ accountId, userId, cases, activeView, team = [], staffNames, onTaskCountsChange }: Props) {
+// ════════════════════════════════════════════════════════════════
+// FILTERS: separados por tab (TaskViewKey) y por filters customizados
+// ════════════════════════════════════════════════════════════════
+
+function isSnoozedNow(t: TaskWithCase): boolean {
+  if (!t.snoozed_until) return false;
+  return new Date(t.snoozed_until).getTime() > Date.now();
+}
+
+function filterTasksByTab(tasks: TaskWithCase[], tab: TaskViewKey, userId: string | null): TaskWithCase[] {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayMs = todayStart.getTime();
+  const in7d = todayMs + 7 * 86400000;
+  const in62d = todayMs + 62 * 86400000;
+
+  switch (tab) {
+    case "todas":
+      return tasks.filter(t => !CLOSED_TASK.includes(t.status || "") && !isSnoozedNow(t));
+    case "hoy":
+      return tasks.filter(t => {
+        if (CLOSED_TASK.includes(t.status || "") || isSnoozedNow(t)) return false;
+        if (!t.due_date) return false;
+        const dMs = new Date(t.due_date + "T00:00:00").getTime();
+        return dMs === todayMs;
+      });
+    case "atrasadas":
+      return tasks.filter(t => {
+        if (CLOSED_TASK.includes(t.status || "")) return false;
+        if (!t.due_date) return false;
+        const dMs = new Date(t.due_date + "T00:00:00").getTime();
+        return dMs < todayMs;
+      });
+    case "proximas":
+      return tasks.filter(t => {
+        if (CLOSED_TASK.includes(t.status || "") || isSnoozedNow(t)) return false;
+        if (!t.due_date) return false;
+        const dMs = new Date(t.due_date + "T00:00:00").getTime();
+        return dMs > todayMs && dMs <= in7d;
+      });
+    case "rfe-response":
+      return tasks.filter(t => {
+        if (CLOSED_TASK.includes(t.status || "") || isSnoozedNow(t)) return false;
+        if (!t.case_rfe_deadline) return false;
+        const rfeMs = new Date(t.case_rfe_deadline + "T00:00:00").getTime();
+        return rfeMs >= todayMs && rfeMs <= in62d;
+      });
+    case "completadas":
+      return tasks.filter(t => t.status === "completed");
+    default:
+      return tasks;
+  }
+}
+
+function filterTasksByCustomFilters(tasks: TaskWithCase[], filters: TaskFilters, userId: string | null): TaskWithCase[] {
+  return tasks.filter(t => {
+    // Asignado
+    if (filters.assignee === "me") {
+      if (!userId || t.assigned_to !== userId) return false;
+    } else if (filters.assignee === "unassigned") {
+      if (t.assigned_to) return false;
+    }
+    // "team" o "all" = no filtra
+
+    // Estado (extra layer al tab — para custom granular)
+    if (filters.status === "pending") {
+      if (CLOSED_TASK.includes(t.status || "")) return false;
+      if (isSnoozedNow(t)) return false;
+    } else if (filters.status === "completed") {
+      if (t.status !== "completed") return false;
+    } else if (filters.status === "snoozed") {
+      if (!isSnoozedNow(t)) return false;
+    }
+
+    // Vence (con presets o custom range)
+    if (filters.due !== "any") {
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const todayMs = todayStart.getTime();
+      if (filters.due === "today") {
+        if (!t.due_date) return false;
+        const dMs = new Date(t.due_date + "T00:00:00").getTime();
+        if (dMs !== todayMs) return false;
+      } else if (filters.due === "this_week") {
+        if (!t.due_date) return false;
+        const dMs = new Date(t.due_date + "T00:00:00").getTime();
+        const in7d = todayMs + 7 * 86400000;
+        if (dMs < todayMs || dMs > in7d) return false;
+      } else if (filters.due === "custom") {
+        if (!t.due_date) return false;
+        const dMs = new Date(t.due_date + "T00:00:00").getTime();
+        if (filters.dueRangeFrom) {
+          const fromMs = new Date(filters.dueRangeFrom + "T00:00:00").getTime();
+          if (dMs < fromMs) return false;
+        }
+        if (filters.dueRangeTo) {
+          const toMs = new Date(filters.dueRangeTo + "T00:00:00").getTime();
+          if (dMs > toMs) return false;
+        }
+      }
+    }
+
+    // Tipo de caso
+    if (filters.caseType) {
+      if (t.case_type !== filters.caseType) return false;
+    }
+
+    // Tipo de tarea
+    if (filters.taskType !== "all") {
+      if (t.task_type !== filters.taskType) return false;
+    }
+
+    return true;
+  });
+}
+
+function sortTasks(tasks: TaskWithCase[], sortBy: TaskSortKey): TaskWithCase[] {
+  const PRIORITY_RANK: Record<string, number> = { urgent: 0, high: 1, normal: 2, medium: 2, low: 3 };
+  const arr = [...tasks];
+  switch (sortBy) {
+    case "due_asc":
+      return arr.sort((a, b) => {
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return a.due_date.localeCompare(b.due_date);
+      });
+    case "due_desc":
+      return arr.sort((a, b) => {
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return b.due_date.localeCompare(a.due_date);
+      });
+    case "priority_desc":
+      return arr.sort((a, b) => (PRIORITY_RANK[a.priority] ?? 2) - (PRIORITY_RANK[b.priority] ?? 2));
+    case "case_asc":
+      return arr.sort((a, b) => (a.case_name || "").localeCompare(b.case_name || ""));
+    case "created_desc":
+      return arr.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+    default:
+      return arr;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// COMPONENT
+// ════════════════════════════════════════════════════════════════
+
+export default function TasksByDateView({
+  accountId, userId, cases, activeTab, taskFilters, sortBy, search,
+  team = [], staffNames, onTaskCountsChange,
+}: Props) {
   const navigate = useNavigate();
   const demoMode = useDemoMode();
   const [allTasks, setAllTasks] = useState<TaskWithCase[]>([]);
@@ -116,23 +260,20 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
   const [refreshKey, setRefreshKey] = useState(0);
   const parentRef = useRef<HTMLDivElement>(null);
 
-  // Bulk selection state
+  // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(DEFAULT_COLLAPSED);
-
   useEffect(() => {
     if (!accountId) return;
     setCollapsed(readScopedJson<Record<string, boolean>>(COLLAPSED_KEY, accountId, DEFAULT_COLLAPSED));
   }, [accountId]);
+  useEffect(() => { writeScopedJson(COLLAPSED_KEY, accountId, collapsed); }, [collapsed, accountId]);
 
-  useEffect(() => {
-    writeScopedJson(COLLAPSED_KEY, accountId, collapsed);
-  }, [collapsed, accountId]);
-
-  // Fetch all tasks for filtered cases
+  // ═══ Fetch tasks — Victoria fix #1 — SIN restricción .in("case_id", caseIds) ═══
   useEffect(() => {
     if (demoMode) {
+      // Victoria fix #10: hidratar case_rfe_deadline en mocks
       const mockTasks: TaskWithCase[] = cases.flatMap(c => {
         const count = c.open_tasks_count || 0;
         if (count === 0) return [];
@@ -144,6 +285,7 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
             case_name: c.client_name,
             case_type: c.case_type,
             case_stage: c.process_stage,
+            case_rfe_deadline: c.rfe_deadline ?? null,
             title: `Tarea pendiente ${i + 1} — ${c.client_name}`,
             due_date: i === 0 && (c.overdue_tasks_count || 0) > 0
               ? new Date(Date.now() - 86400000).toISOString().slice(0, 10)
@@ -152,6 +294,8 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
             status: "pending",
             assigned_to: c.assigned_to,
             assigned_to_name: c.assigned_to && staffNames ? staffNames[c.assigned_to] : null,
+            task_type: i === 0 ? "call_client" : i === 1 ? "upload_doc" : "review_doc",
+            created_at: new Date(Date.now() - i * 86400000).toISOString(),
           });
         }
         return arr;
@@ -163,23 +307,24 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
 
     if (!accountId) { setLoading(false); return; }
 
+    const abortCtrl = new AbortController();
     let cancelled = false;
+
     void (async () => {
       setLoading(true);
-      const caseIds = cases.map(c => c.id);
-      if (caseIds.length === 0) { setAllTasks([]); setLoading(false); return; }
 
-      // Status != archived (incluye completed para counter subtasks)
+      // Round 7: query SIN .in("case_id", caseIds) — universo completo
       const { data, error } = await supabase
         .from("case_tasks")
-        .select("id, case_id, title, description, due_date, priority, status, assigned_to, assigned_to_name, parent_task_id, snoozed_until")
+        .select("id, case_id, title, description, due_date, priority, status, assigned_to, assigned_to_name, parent_task_id, snoozed_until, task_type, created_at, visibility")
         .eq("account_id", accountId)
         .neq("status", "archived")
-        .in("case_id", caseIds)
-        .order("due_date", { ascending: true, nullsFirst: false });
+        .order("due_date", { ascending: true, nullsFirst: false })
+        .abortSignal(abortCtrl.signal);
 
-      if (cancelled) return;
+      if (cancelled || abortCtrl.signal.aborted) return;
       if (error) {
+        if (error.message?.includes("aborted")) return;
         console.error("[TasksByDateView] fetch error:", error.message);
         setAllTasks([]);
         setLoading(false);
@@ -196,7 +341,7 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
         subtasksByParent.set(t.parent_task_id, slot);
       });
 
-      // Promote orphans + enrich
+      // Promote orphans + enrich (Victoria BLOCKER R4.5)
       const parentIds = new Set((data || []).map((t: any) => t.id));
       const caseMap = new Map(cases.map(c => [c.id, c]));
       const enriched: TaskWithCase[] = (data || [])
@@ -218,32 +363,48 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
       setAllTasks(enriched);
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; abortCtrl.abort(); };
   }, [accountId, cases, demoMode, staffNames, refreshKey]);
 
-  // Filter tasks by activeView using filterTasksByView (Round 6)
-  const tasks = useMemo(
-    () => filterTasksByView(allTasks, activeView, userId),
-    [allTasks, activeView, userId]
+  // ═══ Custom filters aplicados al universo allTasks ═══
+  const customFilteredTasks = useMemo(
+    () => filterTasksByCustomFilters(allTasks, taskFilters, userId),
+    [allTasks, taskFilters, userId]
   );
 
-  // Round 6.5 (Victoria pattern B): computar counts REALES de tareas
-  // por cada CaseViewKey y emitir al parent. Sin doble query — usamos
-  // los allTasks ya fetcheados. useMemo evita recompute en cada render.
-  const taskCounts = useMemo<TaskCountsByView>(() => ({
-    "mis-casos":      filterTasksByView(allTasks, "mis-casos", userId).length,
-    "urgentes":       filterTasksByView(allTasks, "urgentes", userId).length,
-    "pte-accion-mia": filterTasksByView(allTasks, "pte-accion-mia", userId).length,
-    "rfe-response":   filterTasksByView(allTasks, "rfe-response", userId).length,
-    "cerrados-30d":   filterTasksByView(allTasks, "cerrados-30d", userId).length,
-    "todos":          filterTasksByView(allTasks, "todos", userId).length,
-  }), [allTasks, userId]);
+  // ═══ Counts por tab — derivados de customFilteredTasks (respetan filtros) ═══
+  const taskCounts = useMemo<Record<TaskViewKey, number>>(() => ({
+    todas:         filterTasksByTab(customFilteredTasks, "todas", userId).length,
+    hoy:           filterTasksByTab(customFilteredTasks, "hoy", userId).length,
+    atrasadas:     filterTasksByTab(customFilteredTasks, "atrasadas", userId).length,
+    proximas:      filterTasksByTab(customFilteredTasks, "proximas", userId).length,
+    completadas:   filterTasksByTab(customFilteredTasks, "completadas", userId).length,
+    "rfe-response":filterTasksByTab(customFilteredTasks, "rfe-response", userId).length,
+  }), [customFilteredTasks, userId]);
 
-  useEffect(() => {
-    onTaskCountsChange?.(taskCounts);
-  }, [taskCounts, onTaskCountsChange]);
+  useEffect(() => { onTaskCountsChange?.(taskCounts); }, [taskCounts, onTaskCountsChange]);
 
-  // Bucketing
+  // ═══ Tasks display = tab + custom filters + sort + search ═══
+  const tabFilteredTasks = useMemo(
+    () => filterTasksByTab(customFilteredTasks, activeTab, userId),
+    [customFilteredTasks, activeTab, userId]
+  );
+
+  const searchFilteredTasks = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return tabFilteredTasks;
+    return tabFilteredTasks.filter(t =>
+      t.title?.toLowerCase().includes(q) ||
+      (t.case_name || "").toLowerCase().includes(q)
+    );
+  }, [tabFilteredTasks, search]);
+
+  const tasks = useMemo(
+    () => sortTasks(searchFilteredTasks, sortBy),
+    [searchFilteredTasks, sortBy]
+  );
+
+  // ═══ Bucketing ═══
   const bucketed = useMemo(() => {
     const map = new Map<TaskBucketKey, TaskWithCase[]>();
     BUCKET_ORDER.forEach(k => map.set(k, []));
@@ -254,7 +415,7 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
     return map;
   }, [tasks]);
 
-  // Selection handlers
+  // Selection
   function toggleSelect(taskId: string) {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -262,10 +423,7 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
       return next;
     });
   }
-
-  function clearSelection() {
-    setSelectedIds(new Set());
-  }
+  function clearSelection() { setSelectedIds(new Set()); }
 
   // Task mutations
   const updateTaskLocal = useCallback((taskId: string, patch: Partial<TaskWithCase>) => {
@@ -292,7 +450,6 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
     const subtaskCount = task.subtasks_total || 0;
     const subtasksPending = subtaskCount - (task.subtasks_completed || 0);
 
-    // Victoria fix: confirmar si hay subtasks pendientes
     if (subtasksPending > 0) {
       const proceed = window.confirm(
         `Esta tarea tiene ${subtasksPending} sub-tarea${subtasksPending === 1 ? "" : "s"} pendiente${subtasksPending === 1 ? "" : "s"}. ¿Completarlas también?`
@@ -300,13 +457,11 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
       if (!proceed) return;
     }
 
-    // Optimistic
     updateTaskLocal(task.id, { status: "completed" });
 
     if (!demoMode && UUID_RE.test(task.id)) {
       try {
         await persistComplete(task.id);
-        // Auto-complete subtasks si confirmó
         if (subtasksPending > 0) {
           await supabase
             .from("case_tasks")
@@ -321,7 +476,6 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
       }
     }
 
-    // Marcus: toast undoable 5s
     toast.success(`Tarea completada`, {
       duration: 5000,
       description: task.title,
@@ -336,7 +490,6 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
   }
 
   async function handleSnooze(task: TaskWithCase) {
-    // Mañana 8 AM local
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(8, 0, 0, 0);
@@ -371,7 +524,6 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
     });
   }
 
-  // Bulk: complete all selected
   async function handleBulkComplete() {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
@@ -399,6 +551,8 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
       duration: 3000,
     });
     clearSelection();
+    // Victoria fix #8: refresh siempre post-bulk
+    setRefreshKey(k => k + 1);
   }
 
   function toggle(b: TaskBucketKey) {
@@ -408,6 +562,7 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
   // Flat items para virtualizer
   type Item =
     | { kind: "header"; bucket: TaskBucketKey; count: number; size: number }
+    | { kind: "colheader"; size: number }
     | { kind: "row"; task: TaskWithCase; size: number }
     | { kind: "empty"; bucket: TaskBucketKey; size: number };
 
@@ -421,6 +576,7 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
         if (list.length === 0) {
           out.push({ kind: "empty", bucket: b, size: 32 });
         } else {
+          out.push({ kind: "colheader", size: 32 });
           list.forEach(t => out.push({ kind: "row", task: t, size: 56 }));
         }
       }
@@ -435,14 +591,14 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
     overscan: 8,
   });
 
-  // Disclaimer + topbar (always shown, including empty state)
+  // Topbar (siempre visible)
   const topbar = (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="text-[11px] text-muted-foreground px-3 py-1.5 bg-cyan-accent/[0.04] border border-cyan-accent/[0.15] rounded-md flex items-center gap-2 flex-1">
           <Calendar className="w-3 h-3 text-cyan-accent/60 shrink-0" />
           <span>
-            <span className="text-foreground font-semibold tabular-nums">{tasks.length}</span> tarea{tasks.length === 1 ? "" : "s"} en esta vista (de <span className="text-foreground font-semibold tabular-nums">{cases.length}</span> caso{cases.length === 1 ? "" : "s"} filtrado{cases.length === 1 ? "" : "s"}).
+            <span className="text-foreground font-semibold tabular-nums">{tasks.length}</span> tarea{tasks.length === 1 ? "" : "s"} en esta vista.
           </span>
         </div>
         <TaskCreateModal
@@ -455,7 +611,6 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
         />
       </div>
 
-      {/* Bulk toolbar — aparece cuando hay selección */}
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/[0.08] border border-amber-500/30 rounded-md">
           <span className="text-[11px] text-amber-200 font-semibold">
@@ -539,6 +694,7 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
                       onToggle={() => toggle(item.bucket)}
                     />
                   )}
+                  {item.kind === "colheader" && <ColumnHeaderRow />}
                   {item.kind === "row" && (
                     <TaskRow
                       task={item.task}
@@ -603,6 +759,25 @@ function BucketHeader({ bucket, count, collapsed, onToggle }: {
         {count}
       </span>
     </button>
+  );
+}
+
+/**
+ * ColumnHeaderRow — Round 7 (Mr. Lorenzo + 4 agentes unánime).
+ * Headers de columnas sticky con labels Vanessa.
+ */
+function ColumnHeaderRow() {
+  return (
+    <div className="grid grid-cols-[24px_24px_minmax(220px,1.5fr)_minmax(140px,0.9fr)_90px_110px_60px_60px] gap-3 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/20">
+      <div></div>
+      <div>Pri</div>
+      <div>Tarea</div>
+      <div>Caso</div>
+      <div>Vence</div>
+      <div>Asignado</div>
+      <div className="text-center">Aviso</div>
+      <div className="text-center">Hecho</div>
+    </div>
   );
 }
 
