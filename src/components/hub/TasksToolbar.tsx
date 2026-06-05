@@ -100,9 +100,24 @@ interface Props {
   onChangeSortBy: (k: TaskSortKey) => void;
   team: Array<{ user_id: string; full_name: string }>;
   allCases: PipelineCase[];
+  onReset?: () => void;
 }
 
-export default function TasksToolbar({ filters, onChangeFilters, sortBy, onChangeSortBy, team, allCases }: Props) {
+/** Round 9.11: helper exportado para detectar filtros sucios — testeable y reusable. */
+export function isFiltersDirty(filters: TaskFilters, sortBy: TaskSortKey = "due_asc"): boolean {
+  return (
+    filters.assignee !== EMPTY_TASK_FILTERS.assignee ||
+    filters.status !== EMPTY_TASK_FILTERS.status ||
+    filters.due !== EMPTY_TASK_FILTERS.due ||
+    filters.caseType !== EMPTY_TASK_FILTERS.caseType ||
+    filters.taskType !== EMPTY_TASK_FILTERS.taskType ||
+    sortBy !== "due_asc"
+  );
+}
+
+export default function TasksToolbar({ filters, onChangeFilters, sortBy, onChangeSortBy, team, allCases, onReset }: Props) {
+  const dirty = isFiltersDirty(filters, sortBy);
+
   // Case type options con counts derivados de cases activos
   const caseTypeOptions = useMemo(() => {
     const counts = new Map<string, number>();
