@@ -87,10 +87,15 @@ export default function CaseViewTabs({ activeView, onChange, counts, loading = f
   // - tasksOnly tabs (ej. "RFE Response") solo aparecen cuando viewMode === "tareas"
   // - El resto siempre visible
   const visibleViews = CASE_VIEWS.filter(v => !v.tasksOnly || viewMode === "tareas");
-  const gridCols = `grid-cols-[repeat(${visibleViews.length},1fr)_auto]`;
+
+  // Round 9.8 Mr. Lorenzo screenshot BUG: las tabs aparecían apiladas
+  // verticalmente. Causa: Tailwind JIT NO compila clases dinámicas
+  // (`grid-cols-[repeat(${N},1fr)_auto]` se purgaba), fallback a 1 col.
+  // Fix: inline style gridTemplateColumns — evita el JIT bypass.
+  const gridTemplateColumns = `repeat(${visibleViews.length}, minmax(0, 1fr)) auto`;
 
   return (
-    <div className={`grid ${gridCols} gap-2 w-full`}>
+    <div className="grid gap-2 w-full" style={{ gridTemplateColumns }}>
       {visibleViews.map(v => {
         const isActive = activeView === v.key;
         const count = counts[v.key];

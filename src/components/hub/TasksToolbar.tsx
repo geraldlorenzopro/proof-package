@@ -52,8 +52,12 @@ export interface TaskFilters {
 }
 
 export const EMPTY_TASK_FILTERS: TaskFilters = {
-  assignee: "me",      // Vanessa default: 80% del tiempo son mías
-  status: "pending",
+  // Round 9.8 Mr. Lorenzo: defaults CLEAN — sin presets que escondan tareas.
+  // Antes: assignee="me" + status="pending" trampeaba owner accounts y
+  // forzaba clicks de reset. Ahora paralegal/owner ENTRA con filtros
+  // vacíos y elige. Vanessa puede guardar su preset como "vista" futura.
+  assignee: "all",
+  status: "all",
   due: "any",
   dueRangeFrom: null,
   dueRangeTo: null,

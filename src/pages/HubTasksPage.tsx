@@ -68,7 +68,10 @@ export default function HubTasksPage() {
   const { cases, loading: casesLoading } = useCasePipeline(accountId, userId);
 
   // ═══ State scoped a /hub/tasks (no leak con /hub/cases) ═══
-  const [activeTab, setActiveTab] = useState<TaskViewKey>("hoy");
+  // Round 9.8 Mr. Lorenzo: default tab = "todas" (no "hoy") + storage keys
+  // bumpeados a _v2 para BUST defaults stale del Round 7. Sin esto, users
+  // que ya tenían "hoy" + "me" + "pending" persistido seguirían trampeados.
+  const [activeTab, setActiveTab] = useState<TaskViewKey>("todas");
   const [taskFilters, setTaskFilters] = useState<TaskFilters>(EMPTY_TASK_FILTERS);
   const [sortBy, setSortBy] = useState<TaskSortKey>("due_asc");
   const [search, setSearch] = useState("");
@@ -76,14 +79,14 @@ export default function HubTasksPage() {
   // Re-hidratar localStorage al resolverse accountId
   useEffect(() => {
     if (!accountId) return;
-    const savedTab = readScopedJson<TaskViewKey>("ner_tasks_active_tab", accountId, "hoy");
+    const savedTab = readScopedJson<TaskViewKey>("ner_tasks_active_tab_v2", accountId, "todas");
     setActiveTab(savedTab);
-    setTaskFilters(readScopedJson<TaskFilters>("ner_tasks_filters", accountId, EMPTY_TASK_FILTERS));
+    setTaskFilters(readScopedJson<TaskFilters>("ner_tasks_filters_v2", accountId, EMPTY_TASK_FILTERS));
     setSortBy(readScopedJson<TaskSortKey>("ner_tasks_sort_by", accountId, "due_asc"));
   }, [accountId]);
 
-  useEffect(() => { writeScopedJson("ner_tasks_active_tab", accountId, activeTab); }, [activeTab, accountId]);
-  useEffect(() => { writeScopedJson("ner_tasks_filters", accountId, taskFilters); }, [taskFilters, accountId]);
+  useEffect(() => { writeScopedJson("ner_tasks_active_tab_v2", accountId, activeTab); }, [activeTab, accountId]);
+  useEffect(() => { writeScopedJson("ner_tasks_filters_v2", accountId, taskFilters); }, [taskFilters, accountId]);
   useEffect(() => { writeScopedJson("ner_tasks_sort_by", accountId, sortBy); }, [sortBy, accountId]);
 
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});

@@ -292,19 +292,25 @@ function GroupHeader({
       onClick={onToggle}
       className={`backdrop-blur-md w-full bg-gradient-to-r ${accent} to-transparent ${borderL} ${isFirst ? "" : "border-t-2 border-t-white/5"} border-b border-b-white/5 px-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors`}
     >
-      {/* Round 8 (Mr. Lorenzo TODO): counts → far right + subtitle abajo
-          del título. Layout más limpio + counts forman columna visual
-          alineada en todos los headers. */}
-      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-        {collapsed
-          ? <ChevronRight className="w-3 h-3 text-slate-500 shrink-0" />
-          : <ChevronDown className="w-3 h-3 text-cyan-accent shrink-0" />
-        }
-        {group.icon && <span className="text-base shrink-0">{group.icon}</span>}
+      {/* Round 9.8 Mr. Lorenzo screenshot: USCIS estaba desalineado porque
+          el icono quedaba vertical-centrado entre título y subtitle. Fix:
+          chevron a la izquierda (alineado al título), icono INLINE con
+          título (misma línea h3), subtitle debajo. Todo bloque alineado
+          a la izquierda con gap-1.5 reducido (antes gap-2.5 era visible). */}
+      <div className="flex items-start gap-2 min-w-0 flex-1">
+        <span className="mt-[3px] shrink-0">
+          {collapsed
+            ? <ChevronRight className="w-3 h-3 text-slate-500" />
+            : <ChevronDown className="w-3 h-3 text-cyan-accent" />
+          }
+        </span>
         <div className="flex flex-col min-w-0">
-          <h3 className="text-[12px] font-bold text-white font-sora leading-tight truncate">{group.label}</h3>
+          <h3 className="flex items-center gap-1.5 text-[12px] font-bold text-white font-sora leading-tight">
+            {group.icon && <span className="text-sm shrink-0 leading-none">{group.icon}</span>}
+            <span className="truncate">{group.label}</span>
+          </h3>
           {group.description && (
-            <span className="text-[9px] text-slate-500 leading-tight truncate">{group.description}</span>
+            <span className="text-[9px] text-slate-500 leading-tight truncate mt-0.5">{group.description}</span>
           )}
         </div>
       </div>

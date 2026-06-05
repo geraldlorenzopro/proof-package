@@ -114,6 +114,11 @@ function isSnoozedNow(t: TaskWithCase): boolean {
 }
 
 function filterTasksByTab(tasks: TaskWithCase[], tab: TaskViewKey, userId: string | null): TaskWithCase[] {
+  // Round 9.8 Mr. Lorenzo BUG fix: las pestañas eran SOLO time-based pero
+  // también excluían "completed/archived/cancelled". Resultado: filter
+  // status="completed" + tab="todas" → 0 visible aunque counter decía 1.
+  // Ahora las pestañas SON time-based puro + status="completed" tab pinned.
+  // Status filter del dropdown compone ortogonal.
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   const todayMs = todayStart.getTime();
@@ -122,36 +127,34 @@ function filterTasksByTab(tasks: TaskWithCase[], tab: TaskViewKey, userId: strin
 
   switch (tab) {
     case "todas":
-      return tasks.filter(t => !CLOSED_TASK.includes(t.status || "") && !isSnoozedNow(t));
+      // True passthrough — todo lo que sobrevive al custom filter cae acá.
+      return tasks;
     case "hoy":
       return tasks.filter(t => {
-        if (CLOSED_TASK.includes(t.status || "") || isSnoozedNow(t)) return false;
         if (!t.due_date) return false;
         const dMs = new Date(t.due_date + "T00:00:00").getTime();
         return dMs === todayMs;
       });
     case "atrasadas":
       return tasks.filter(t => {
-        if (CLOSED_TASK.includes(t.status || "")) return false;
         if (!t.due_date) return false;
         const dMs = new Date(t.due_date + "T00:00:00").getTime();
         return dMs < todayMs;
       });
     case "proximas":
       return tasks.filter(t => {
-        if (CLOSED_TASK.includes(t.status || "") || isSnoozedNow(t)) return false;
         if (!t.due_date) return false;
         const dMs = new Date(t.due_date + "T00:00:00").getTime();
         return dMs > todayMs && dMs <= in7d;
       });
     case "rfe-response":
       return tasks.filter(t => {
-        if (CLOSED_TASK.includes(t.status || "") || isSnoozedNow(t)) return false;
         if (!t.case_rfe_deadline) return false;
         const rfeMs = new Date(t.case_rfe_deadline + "T00:00:00").getTime();
         return rfeMs >= todayMs && rfeMs <= in62d;
       });
     case "completadas":
+      // Tab pinned a completed regardless of status filter (no doble-gate).
       return tasks.filter(t => t.status === "completed");
     default:
       return tasks;
