@@ -79,7 +79,7 @@ const INITIAL_TASKS: Record<string, Array<{ title: string; days: number; priorit
     { title: 'Felix: Completar I-485', days: 10, priority: 'high' },
     { title: 'Felix: Completar I-864', days: 10, priority: 'high' },
     { title: 'Nina: Revisar paquete completo', days: 14, priority: 'high' },
-    { title: 'Max: Evaluar calidad', days: 15, priority: 'medium' },
+    { title: 'Max: Evaluar calidad', days: 15, priority: 'normal' },
     { title: 'Enviar a USCIS', days: 16, priority: 'high' },
   ],
   'family-petition': [
@@ -94,7 +94,7 @@ const INITIAL_TASKS: Record<string, Array<{ title: string; days: number; priorit
     { title: 'Recopilar documentos de residencia', days: 5, priority: 'high' },
     { title: 'Felix: Completar N-400', days: 7, priority: 'high' },
     { title: 'Nina: Revisar N-400', days: 10, priority: 'high' },
-    { title: 'Preparar entrevista con cliente', days: 20, priority: 'medium' },
+    { title: 'Preparar entrevista con cliente', days: 20, priority: 'normal' },
   ],
   'daca-tps': [
     { title: 'Verificar elegibilidad DACA/TPS', days: 2, priority: 'high' },
@@ -115,13 +115,13 @@ const INITIAL_TASKS: Record<string, Array<{ title: string; days: number; priorit
     { title: 'Documentos de soporte consular', days: 5, priority: 'high' },
     { title: 'Felix: Completar DS-160', days: 7, priority: 'high' },
     { title: 'Agendar entrevista en embajada', days: 10, priority: 'high' },
-    { title: 'Preparar entrevista consular', days: 15, priority: 'medium' },
+    { title: 'Preparar entrevista consular', days: 15, priority: 'normal' },
   ],
   'default': [
     { title: 'Recopilar documentos iniciales', days: 7, priority: 'high' },
     { title: 'Revisar elegibilidad del proceso', days: 3, priority: 'high' },
-    { title: 'Planificar estrategia del caso', days: 5, priority: 'medium' },
-    { title: 'Nina: Revisar documentación inicial', days: 10, priority: 'medium' },
+    { title: 'Planificar estrategia del caso', days: 5, priority: 'normal' },
+    { title: 'Nina: Revisar documentación inicial', days: 10, priority: 'normal' },
   ],
 };
 
@@ -516,7 +516,7 @@ export default function ConsultationRoom() {
           title: `Seguimiento: ${profile.first_name} ${profile.last_name}`,
           description: `Razón no contrató: ${fullReason}. ${noContractNote || ''}`,
           status: "pending",
-          priority: "medium",
+          priority: "normal",
           due_date: followDate.toISOString().split("T")[0],
           created_by: userId,
           created_by_name: userName,
