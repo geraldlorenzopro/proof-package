@@ -12,16 +12,15 @@ import CaseTable from "@/components/hub/CaseTable";
 import CaseKanban from "@/components/hub/CaseKanban";
 import CaseViewTabs from "@/components/hub/CaseViewTabs";
 import CaseFiltersPopover, { type CaseFilters, EMPTY_FILTERS } from "@/components/hub/CaseFiltersPopover";
-import CaseGroupStrip from "@/components/hub/CaseGroupStrip";
+import CaseTypeFilterDropdown from "@/components/hub/CaseTypeFilterDropdown";
 import CasePeekPanel from "@/components/hub/CasePeekPanel";
-// KPI strip removido 2026-06-05 (consenso Valerie + Vanessa):
-// duplicaba 100% lo que ya hacen los tabs. Fusionados en CaseViewTabs
-// Linear-style con número grande inline.
 import { useCasePipeline } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { useCaseViews, filterCasesByView } from "@/hooks/useCaseViews";
 import { groupCases, sortCases, SORT_LABELS, type GroupByKey, type SortKey } from "@/lib/caseGrouping";
+import { getCaseTypeByKey } from "@/lib/caseTypes";
+import { readScopedJson, writeScopedJson, migrateLegacyKeys } from "@/lib/scopedStorage";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "tabla" | "kanban";
@@ -38,6 +37,8 @@ const SORT_OPTIONS: SortKey[] = [
   "default", "alerts_desc", "due_asc", "client_asc", "client_desc", "updated_desc", "updated_asc", "due_desc",
 ];
 
+const MAX_RECENT_TYPES = 3;
+
 export default function HubCasesPage() {
   useTrackPageView("hub.cases");
   const navigate = useNavigate();
@@ -51,66 +52,58 @@ export default function HubCasesPage() {
   const demoMode = useDemoMode();
   const [userId, setUserId] = useState<string | null>(null);
 
-  // userId resolution PRIMERO (lo necesita useCasePipeline para my_pending_tasks_count)
   useEffect(() => {
-    if (demoMode) {
-      setUserId("demo-u-vanessa");
-      return;
-    }
+    if (demoMode) { setUserId("demo-u-vanessa"); return; }
     void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
   }, [demoMode]);
 
+  // Migration de localStorage legacy (Victoria BLOCKER #1).
+  // Una vez por mount cuando accountId resuelve.
+  useEffect(() => {
+    if (accountId) migrateLegacyKeys(accountId);
+  }, [accountId]);
+
   const { cases, loading, unclassifiedCount, updateCase } = useCasePipeline(accountId, userId);
 
-  const [view, setView] = useState<ViewMode>(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("ner_cases_view") : null;
-    return saved === "kanban" ? "kanban" : "tabla";
-  });
-  const [groupBy, setGroupBy] = useState<GroupByKey>(() => {
-    if (typeof window === "undefined") return "stage";
-    const saved = localStorage.getItem("ner_cases_group_by");
-    if (saved && (["stage","owner","case_type","responsible","none"] as const).includes(saved as GroupByKey)) {
-      return saved as GroupByKey;
-    }
-    return "stage";
-  });
-  useEffect(() => {
-    try { localStorage.setItem("ner_cases_group_by", groupBy); } catch {}
-  }, [groupBy]);
-  const [sortBy, setSortBy] = useState<SortKey>(() => {
-    if (typeof window === "undefined") return "default";
-    const saved = localStorage.getItem("ner_cases_sort_by");
-    if (saved && SORT_OPTIONS.includes(saved as SortKey)) return saved as SortKey;
-    return "default";
-  });
-  useEffect(() => {
-    try { localStorage.setItem("ner_cases_sort_by", sortBy); } catch {}
-  }, [sortBy]);
+  // ═══ State persistido por account_id (anti-leak Victoria fix #1) ═══
+  const [view, setView] = useState<ViewMode>("tabla");
+  const [groupBy, setGroupBy] = useState<GroupByKey>("stage");
+  const [sortBy, setSortBy] = useState<SortKey>("default");
+  const [filters, setFilters] = useState<CaseFilters>(EMPTY_FILTERS);
+  const [activeTypeKey, setActiveTypeKey] = useState<string | null>(null);
+  const [recentTypes, setRecentTypes] = useState<string[]>([]);
 
-  // Drill-down del strip: filtra a un solo grupo. null = todos.
-  const [activeGroupKey, setActiveGroupKey] = useState<string | null>(null);
-  // Reset drill-down si cambia el agrupador (los keys cambian de dominio)
-  useEffect(() => { setActiveGroupKey(null); }, [groupBy]);
+  // Re-hidratar cuando accountId resuelve (depende del namespace).
+  useEffect(() => {
+    if (!accountId) return;
+    const savedView = readScopedJson<ViewMode>("ner_cases_view", accountId, "tabla");
+    if (savedView === "kanban" || savedView === "tabla") setView(savedView);
+    const savedGroup = readScopedJson<GroupByKey>("ner_cases_group_by", accountId, "stage");
+    if ((["stage","owner","case_type","responsible","none"] as const).includes(savedGroup as GroupByKey)) {
+      setGroupBy(savedGroup);
+    }
+    const savedSort = readScopedJson<SortKey>("ner_cases_sort_by", accountId, "default");
+    if (SORT_OPTIONS.includes(savedSort)) setSortBy(savedSort);
+    setFilters(readScopedJson<CaseFilters>("ner_cases_filters", accountId, EMPTY_FILTERS));
+    setActiveTypeKey(readScopedJson<string | null>("ner_cases_type_filter", accountId, null));
+    setRecentTypes(readScopedJson<string[]>("ner_cases_recent_types", accountId, []));
+  }, [accountId]);
+
+  // Persist (scoped)
+  useEffect(() => { writeScopedJson("ner_cases_view", accountId, view); }, [view, accountId]);
+  useEffect(() => { writeScopedJson("ner_cases_group_by", accountId, groupBy); }, [groupBy, accountId]);
+  useEffect(() => { writeScopedJson("ner_cases_sort_by", accountId, sortBy); }, [sortBy, accountId]);
+  useEffect(() => { writeScopedJson("ner_cases_filters", accountId, filters); }, [filters, accountId]);
+  useEffect(() => { writeScopedJson("ner_cases_type_filter", accountId, activeTypeKey); }, [activeTypeKey, accountId]);
+  useEffect(() => { writeScopedJson("ner_cases_recent_types", accountId, recentTypes); }, [recentTypes, accountId]);
 
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<CaseFilters>(() => {
-    if (typeof window === "undefined") return EMPTY_FILTERS;
-    try {
-      const saved = localStorage.getItem("ner_cases_filters");
-      if (saved) return { ...EMPTY_FILTERS, ...JSON.parse(saved) };
-    } catch {}
-    return EMPTY_FILTERS;
-  });
-  useEffect(() => {
-    try { localStorage.setItem("ner_cases_filters", JSON.stringify(filters)); } catch {}
-  }, [filters]);
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
   const [team, setTeam] = useState<Array<{ user_id: string; full_name: string }>>([]);
   const [peekCaseId, setPeekCaseId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { activeView, setActiveView } = useCaseViews();
 
-  // ⌘K shortcut → focus search input.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -145,27 +138,16 @@ export default function HubCasesPage() {
         .select("user_id, role")
         .eq("account_id", accountId)
         .eq("is_active", true);
-
-      if (memErr) {
-        console.error("[HubCasesPage] team load error:", memErr.message);
-        return;
-      }
-
-      if (!mems || mems.length === 0) {
-        setStaffNames({});
-        setTeam([]);
-        return;
-      }
+      if (memErr) { console.error("[HubCasesPage] team load error:", memErr.message); return; }
+      if (!mems || mems.length === 0) { setStaffNames({}); setTeam([]); return; }
 
       const userIds = mems.map((m: any) => m.user_id).filter(Boolean);
       const [{ data: profiles }, { data: ghlMaps }] = await Promise.all([
         supabase.from("profiles").select("user_id, full_name").in("user_id", userIds),
         supabase.from("ghl_user_mappings").select("mapped_user_id, ghl_user_name").in("mapped_user_id", userIds),
       ]);
-
       const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p.full_name]));
       const ghlMap = new Map((ghlMaps || []).map((g: any) => [g.mapped_user_id, g.ghl_user_name]));
-
       const map: Record<string, string> = {};
       const teamList: Array<{ user_id: string; full_name: string }> = [];
       mems.forEach((m: any) => {
@@ -174,20 +156,13 @@ export default function HubCasesPage() {
         map[m.user_id] = name;
         teamList.push({ user_id: m.user_id, full_name: name });
       });
-
       setStaffNames(map);
       setTeam(teamList);
     }
-
     loadTeam();
   }, [accountId, demoMode]);
 
-  function changeView(next: ViewMode) {
-    setView(next);
-    try { localStorage.setItem("ner_cases_view", next); } catch {}
-  }
-
-  // Pipeline ▶ Search ▶ View ▶ Filtros toggle ▶ Sort ▶ Group
+  // Pipeline: search → view → toggle → type filter → sort → group
   const searchFilteredCases = useMemo(() => {
     const q = search.trim().toLowerCase();
     return cases.filter(c => {
@@ -219,24 +194,51 @@ export default function HubCasesPage() {
     return out;
   }, [viewFilteredCases, filters]);
 
+  // Filtro por case_type (independiente del groupBy)
+  const typeFilteredCases = useMemo(() => {
+    if (!activeTypeKey) return toggleFilteredCases;
+    return toggleFilteredCases.filter(c => c.case_type === activeTypeKey);
+  }, [toggleFilteredCases, activeTypeKey]);
+
   const sortedCases = useMemo(
-    () => sortCases(toggleFilteredCases, sortBy),
-    [toggleFilteredCases, sortBy]
+    () => sortCases(typeFilteredCases, sortBy),
+    [typeFilteredCases, sortBy]
   );
 
-  // Groups completos (para el strip — necesita ver todos los grupos con counts).
+  // Type options para el dropdown — calculadas sobre toggleFilteredCases
+  // (no sobre typeFiltered — así el dropdown muestra "I-130 (47)" aún
+  // cuando ya estamos filtrando por otro tipo).
+  const typeOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    toggleFilteredCases.forEach(c => {
+      if (!c.case_type) return;
+      counts.set(c.case_type, (counts.get(c.case_type) || 0) + 1);
+    });
+    return Array.from(counts.entries()).map(([key, count]) => ({
+      key,
+      label: getCaseTypeByKey(key)?.shortLabel || key,
+      count,
+    }));
+  }, [toggleFilteredCases]);
+
+  // Groups para la tabla
   const allGroups = useMemo(
     () => groupCases(sortedCases, groupBy, { staffNames }),
     [sortedCases, groupBy, staffNames]
   );
 
-  // Groups visibles en la tabla — si hay drill-down activo, solo ese.
-  const visibleGroups = useMemo(() => {
-    if (!activeGroupKey) return allGroups;
-    return allGroups.filter(g => g.key === activeGroupKey);
-  }, [allGroups, activeGroupKey]);
+  // hideHeaders extendido (Victoria fix #4): si filtro Tipo + Agrupar=Tipo
+  // produce 1 sola entry, ocultar header redundante.
+  const hideHeaders = useMemo(() => {
+    if (groupBy === "none") return true;
+    if (activeTypeKey && groupBy === "case_type") return true;
+    if (allGroups.length === 1 && allGroups[0].cases.length === sortedCases.length) {
+      // Filtro produjo 1 solo grupo no-vacío — el header dice lo mismo que el filtro
+      return !!activeTypeKey;
+    }
+    return false;
+  }, [groupBy, activeTypeKey, allGroups, sortedCases.length]);
 
-  // Counts por vista (para badges en tabs) — antes de aplicar toggle filters
   const viewCounts = useMemo(() => ({
     "mis-casos":      filterCasesByView(searchFilteredCases, "mis-casos", userId).length,
     "urgentes":       filterCasesByView(searchFilteredCases, "urgentes", userId).length,
@@ -245,24 +247,29 @@ export default function HubCasesPage() {
     "todos":          searchFilteredCases.length,
   }), [searchFilteredCases, userId]);
 
+  function handleUseRecent(key: string) {
+    setRecentTypes(prev => {
+      const next = [key, ...prev.filter(k => k !== key)].slice(0, MAX_RECENT_TYPES);
+      return next;
+    });
+  }
+
   return (
     <HubLayout>
-      <div className="max-w-[1600px] mx-auto px-6 py-4 space-y-3">
+      {/* Edge-to-edge (Marcus + Vanessa): w-full px-6, sin max-w mx-auto */}
+      <div className="w-full px-6 py-4 space-y-3">
 
-        {/* ═══ Header + Search global ═══ */}
+        {/* Header + Search */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-lg font-bold font-sora text-foreground">Pipeline de casos</h1>
             <p className="text-[11px] text-muted-foreground">
               Tu vista · {cases.length} casos totales
               {unclassifiedCount > 0 && (
-                <span className="ml-2 text-muted-foreground/50">
-                  · {unclassifiedCount} sin clasificar
-                </span>
+                <span className="ml-2 text-muted-foreground/50">· {unclassifiedCount} sin clasificar</span>
               )}
             </p>
           </div>
-
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60 pointer-events-none" />
             <Input
@@ -276,9 +283,7 @@ export default function HubCasesPage() {
           </div>
         </div>
 
-        {/* ═══ Vista activa — pills Linear-style con número grande ═══
-            Reemplaza la doble fila KPI + Tabs anterior. Single source
-            of truth para filtrar la vista. */}
+        {/* Hero pills h-12 edge-to-edge — Round 3 convergencia */}
         <CaseViewTabs
           activeView={activeView}
           onChange={setActiveView}
@@ -286,29 +291,17 @@ export default function HubCasesPage() {
           loading={loading}
         />
 
-        {/* ═══ Group Strip horizontal (chips uno al lado del otro) ═══
-            Reemplaza visualmente los headers verticales que decía Mr. Lorenzo
-            que eran ruido. Click chip → drill-down a un solo grupo. */}
-        <CaseGroupStrip
-          groupBy={groupBy}
-          groups={allGroups}
-          activeKey={activeGroupKey}
-          onSelect={setActiveGroupKey}
-          totalCount={sortedCases.length}
-        />
-
-        {/* ═══ Toolbar ═══ */}
+        {/* Toolbar 1 línea — strip horizontal MUERTO, dropdown único para Tipo */}
         <div className="flex items-center gap-2 flex-wrap">
           <CaseFiltersPopover value={filters} onChange={setFilters} />
 
-          {/* Ordenar funcional 2026-06-05 (antes badge PRONTO). */}
           <Select value={sortBy} onValueChange={(v: SortKey) => setSortBy(v)}>
             <SelectTrigger
               className={cn(
                 "h-8 w-auto px-3 text-[11px] gap-1.5 border",
                 sortBy === "default"
                   ? "bg-white/[0.04] border-white/10 text-muted-foreground"
-                  : "bg-ai-blue/10 border-ai-blue/30 text-blue-200",
+                  : "bg-ai-blue/10 border-ai-blue/40 text-blue-200",
               )}
             >
               <ArrowUpDown className="w-3.5 h-3.5" />
@@ -321,7 +314,6 @@ export default function HubCasesPage() {
             </SelectContent>
           </Select>
 
-          {/* Agrupar — ahora con 4 dimensiones REALES (no UI muerta). */}
           <Select value={groupBy} onValueChange={(v: GroupByKey) => setGroupBy(v)}>
             <SelectTrigger className="h-8 w-auto px-3 text-[11px] bg-cyan-accent/10 border-cyan-accent/30 text-cyan-accent gap-1.5">
               <FolderTree className="w-3.5 h-3.5" />
@@ -336,9 +328,18 @@ export default function HubCasesPage() {
             </SelectContent>
           </Select>
 
+          {/* Filtro independiente Tipo (Round 3 — reemplaza strip horizontal) */}
+          <CaseTypeFilterDropdown
+            options={typeOptions}
+            selectedKey={activeTypeKey}
+            onChange={setActiveTypeKey}
+            recents={recentTypes}
+            onUseRecent={handleUseRecent}
+          />
+
           <div className="ml-auto flex items-center bg-white/[0.04] border border-white/10 rounded-md p-0.5">
-            <ViewButton active={view === "tabla"} onClick={() => changeView("tabla")} icon={<TableIcon className="w-3.5 h-3.5" />} label="Tabla" />
-            <ViewButton active={view === "kanban"} onClick={() => changeView("kanban")} icon={<LayoutGrid className="w-3.5 h-3.5" />} label="Kanban" />
+            <ViewButton active={view === "tabla"} onClick={() => setView("tabla")} icon={<TableIcon className="w-3.5 h-3.5" />} label="Tabla" />
+            <ViewButton active={view === "kanban"} onClick={() => setView("kanban")} icon={<LayoutGrid className="w-3.5 h-3.5" />} label="Kanban" />
           </div>
         </div>
 
@@ -358,22 +359,14 @@ export default function HubCasesPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground mb-1">
-                {search
-                  ? "Ningún caso coincide"
-                  : "No hay casos en esta vista"}
+                {search ? "Ningún caso coincide" : "No hay casos en esta vista"}
               </p>
               <p className="text-[11px] text-muted-foreground">
-                {search
-                  ? "Probá ajustar los filtros o limpiar la búsqueda."
-                  : "Cambiá de tab o limpiá los filtros toggle."}
+                {search ? "Probá ajustar los filtros o limpiar la búsqueda." : "Cambiá de tab o limpiá los filtros toggle."}
               </p>
             </div>
             {!search && (
-              <Button
-                size="sm"
-                onClick={() => navigate("/hub/leads")}
-                className="text-[11px]"
-              >
+              <Button size="sm" onClick={() => navigate("/hub/leads")} className="text-[11px]">
                 <FolderPlus className="w-3.5 h-3.5 mr-1.5" />
                 Crear caso desde lead
               </Button>
@@ -381,31 +374,28 @@ export default function HubCasesPage() {
           </div>
         ) : view === "tabla" ? (
           <CaseTable
-            groups={visibleGroups}
+            groups={allGroups}
             staffNames={staffNames}
             team={team}
             activeCaseId={peekCaseId}
             onRowClick={(id) => setPeekCaseId(id)}
             onCaseChange={(id, updates) => updateCase(id, updates)}
-            hideHeaders={activeGroupKey !== null && visibleGroups.length === 1}
+            hideHeaders={hideHeaders}
           />
         ) : (
           <CaseKanban
-            groups={visibleGroups}
+            groups={allGroups}
             staffNames={staffNames}
             onCardClick={(id) => setPeekCaseId(id)}
           />
         )}
       </div>
 
-      {/* Peek panel lateral */}
       <CasePeekPanel
         c={peekCaseId ? sortedCases.find(c => c.id === peekCaseId) || null : null}
         ownerName={peekCaseId ? staffNames[sortedCases.find(c => c.id === peekCaseId)?.assigned_to || ""] || null : null}
         onClose={() => setPeekCaseId(null)}
-        onOpenCase={() => {
-          if (peekCaseId) navigate(`/case-engine/${peekCaseId}`);
-        }}
+        onOpenCase={() => { if (peekCaseId) navigate(`/case-engine/${peekCaseId}`); }}
         onNextActionChange={(id, next) => updateCase(id, { next_action: next })}
       />
     </HubLayout>

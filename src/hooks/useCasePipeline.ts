@@ -266,7 +266,14 @@ export function useCasePipeline(accountId: string | null, userId: string | null 
     [cases]
   );
 
-  /** Optimistic update local — usado por inline edits (owner, next_action, etc.) */
+  /** Optimistic update local — usado por inline edits (owner, next_action, etc.)
+   *
+   * TODO Victoria audit #5 (2026-06-05): este update puede ser sobrescrito
+   * si entre el optimistic y el próximo render llega un re-fetch
+   * (accountId o demoMode toggle). Probabilidad baja en producción
+   * (accountId no cambia en sesión normal). Fix futuro: Map de
+   * pendingUpdates aplicado post-fetch, o cancel del fetch in-flight
+   * cuando hay optimistic update reciente (<2s). */
   const updateCase = useCallback((caseId: string, updates: Partial<PipelineCase>) => {
     setCases(prev => prev.map(c => c.id === caseId ? { ...c, ...updates } : c));
   }, []);

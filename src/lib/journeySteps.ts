@@ -54,19 +54,27 @@ export interface JourneyStepMeta {
  * 12 journey steps universales (locked). Aplica a TODOS los case_types.
  * El sub-stage por ubicación da el detalle fino (USCIS bio vs NVC DS-260).
  */
+// Paleta 2026-06-05 (Round 3 consensus + Victoria fix #3):
+//   - URGENT states (pide-mas-info, cita-programada): SATURATED 600+
+//     con white text — alta visibilidad para RFE/cita (Vanessa 6pm test)
+//   - DECISION states (aprobado, negado): SATURATED para destacar
+//     decisiones del expediente
+//   - Normal flow: pastel /15 (no satura ruido)
+//   - "preparando-paquete" cambiado de bg-ai-blue → bg-sky-500
+//     (Victoria audit: ai-blue es primary brand, no debe pisar data badges)
 export const JOURNEY_STEPS: JourneyStepMeta[] = [
   { key: "cliente-nuevo",         icon: "🆕", label: "Cliente nuevo",           description: "Kickoff pendiente",                          chipClass: "bg-cyan-accent/15 border-cyan-accent/30 text-cyan-200",   responsible: "equipo" },
   { key: "esperando-cuestionario",icon: "📝", label: "Esperando cuestionario",  description: "Cliente debe completar el formulario online",chipClass: "bg-violet-500/15 border-violet-500/30 text-violet-200",  responsible: "cliente" },
   { key: "esperando-documentos",  icon: "📋", label: "Esperando documentos",    description: "Cliente debe traer actas, pasaporte, fotos", chipClass: "bg-orange-500/15 border-orange-500/30 text-orange-200",  responsible: "cliente" },
-  { key: "preparando-paquete",    icon: "🛠️", label: "Preparando paquete",      description: "Armando formularios y evidencia",            chipClass: "bg-ai-blue/15 border-ai-blue/30 text-blue-200",          responsible: "equipo" },
+  { key: "preparando-paquete",    icon: "🛠️", label: "Preparando paquete",      description: "Armando formularios y evidencia",            chipClass: "bg-sky-500/15 border-sky-500/30 text-sky-200",           responsible: "equipo" },
   { key: "pendiente-revision",    icon: "✍️", label: "Pendiente revisión",      description: "Listo para que el profesional revise",       chipClass: "bg-purple-500/15 border-purple-500/30 text-purple-200",  responsible: "profesional" },
   { key: "enviado",               icon: "📤", label: "Enviado",                 description: "Paquete enviado, esperando confirmación",    chipClass: "bg-indigo-500/15 border-indigo-500/30 text-indigo-200",  responsible: "gobierno" },
-  { key: "confirmado",            icon: "📬", label: "Recibido por gobierno",   description: "Receipt confirmado (I-797C / NVC# / cita)",  chipClass: "bg-sky-500/15 border-sky-500/30 text-sky-200",           responsible: "gobierno" },
+  { key: "confirmado",            icon: "📬", label: "Recibido por gobierno",   description: "Receipt confirmado (I-797C / NVC# / cita)",  chipClass: "bg-teal-500/15 border-teal-500/30 text-teal-200",        responsible: "gobierno" },
   { key: "en-espera",             icon: "⏳", label: "En espera",               description: "Bajo evaluación, sin acción nuestra",        chipClass: "bg-slate-500/15 border-slate-500/30 text-slate-200",     responsible: "gobierno" },
-  { key: "pide-mas-info",         icon: "🚨", label: "Gobierno pide más info",  description: "RFE / NOID / 221(g) / docs solicitados",     chipClass: "bg-rose-500/15 border-rose-500/30 text-rose-200",        responsible: "equipo" },
-  { key: "cita-programada",       icon: "🎯", label: "Cita programada",         description: "Bio / Médico / Entrevista agendada",         chipClass: "bg-amber-500/15 border-amber-500/30 text-amber-200",     responsible: "cliente" },
-  { key: "aprobado",              icon: "✅", label: "Aprobado",                description: "Decisión positiva — coordinar next steps",   chipClass: "bg-emerald-500/15 border-emerald-500/30 text-emerald-200",responsible: "equipo" },
-  { key: "negado",                icon: "❌", label: "Negado",                  description: "Decisión negativa — apelación o cierre",     chipClass: "bg-rose-700/20 border-rose-700/40 text-rose-300",        responsible: "profesional" },
+  { key: "pide-mas-info",         icon: "🚨", label: "Gobierno pide más info",  description: "RFE / NOID / 221(g) / docs solicitados",     chipClass: "bg-rose-600 border-rose-700 text-white font-semibold",   responsible: "equipo" },
+  { key: "cita-programada",       icon: "🎯", label: "Cita programada",         description: "Bio / Médico / Entrevista agendada",         chipClass: "bg-amber-500 border-amber-600 text-slate-900 font-semibold", responsible: "cliente" },
+  { key: "aprobado",              icon: "✅", label: "Aprobado",                description: "Decisión positiva — coordinar next steps",   chipClass: "bg-emerald-600 border-emerald-700 text-white font-semibold", responsible: "equipo" },
+  { key: "negado",                icon: "❌", label: "Negado",                  description: "Decisión negativa — apelación o cierre",     chipClass: "bg-rose-900/60 border-rose-800 text-rose-100 font-semibold", responsible: "profesional" },
 ];
 
 export function getJourneyMeta(key: JourneyStep | null | undefined): JourneyStepMeta {
