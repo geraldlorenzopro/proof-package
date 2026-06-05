@@ -86,11 +86,11 @@ export default function TaskViewTabs({ activeTab, onChange, counts, loading = fa
                 {t.label}
               </span>
               <span
-                className={`font-sora font-bold text-[20px] leading-none tabular-nums ${
+                className={`font-sora font-bold text-[20px] leading-none tabular-nums min-w-[2ch] text-right ${
                   isActive ? theme.activeText : "text-slate-300"
                 }`}
               >
-                {loading ? "—" : count}
+                {loading ? <span className="opacity-0" aria-hidden="true">0</span> : count}
               </span>
             </div>
           </button>
