@@ -16,6 +16,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   JOURNEY_STEPS,
   getJourneyMeta,
@@ -84,20 +85,38 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
     });
   }
 
+  // Round 9.7 Mr. Lorenzo + 3 agents (Valerie/Marcus/Victoria):
+  // Chips truncados ("Gobierno pide m...") perdían info crítica.
+  // Solución sintetizada: max-w-full ya estaba pero el column container
+  // del CaseTable es 140px-1.2fr — chips largos cortan. Agregamos:
+  //   - shadcn Tooltip (Radix, portales por defecto, mobile-safe auto-off)
+  //   - controlled open gating contra el popover (no superpongan)
+  //   - delayDuration 400ms (fast pero no jitter en scroll)
+  // Native title removido (evita double tooltip OS-styled + Radix).
   return (
     <div className="relative flex w-full min-w-0">
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
-        disabled={saving}
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border max-w-full hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait ${meta.chipClass}`}
-        title={`${meta.label} · ${meta.description}`}
-      >
-        <span className="shrink-0">{meta.icon}</span>
-        <span className="truncate min-w-0">{meta.label}</span>
-        <span className="text-[8px] ml-0.5 opacity-70 shrink-0">▾</span>
-      </button>
+      <Tooltip open={open ? false : undefined} delayDuration={400}>
+        <TooltipTrigger asChild>
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+            disabled={saving}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border max-w-full hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait ${meta.chipClass}`}
+          >
+            <span className="shrink-0">{meta.icon}</span>
+            <span className="truncate min-w-0">{meta.label}</span>
+            <span className="text-[8px] ml-0.5 opacity-70 shrink-0">▾</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className="max-w-[260px] text-[11px] font-sora bg-deep-navy/95 border border-cyan-accent/30 text-slate-100"
+        >
+          <div className="font-semibold text-cyan-accent">{meta.label}</div>
+          <div className="text-[10px] text-slate-300 mt-0.5">{meta.description}</div>
+        </TooltipContent>
+      </Tooltip>
 
       {open && popPos && typeof document !== "undefined" && createPortal(
         <div

@@ -15,6 +15,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Search } from "lucide-react";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   CASE_TYPES,
   CATEGORY_LABELS,
@@ -175,19 +176,37 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
     });
   }
 
+  // Round 9.7 Mr. Lorenzo + 3 agents: chip truncado ("DS-82 · Renovación pa...")
+  // perdía info crítica. Solución sintetizada:
+  //   - max-w bump 140 → 180 (Victoria: 80% de labels caben sin truncate)
+  //   - shadcn Tooltip on hover muestra label completo + description
+  //   - open gating contra popover (no superpongan los 2 layers)
+  // Native title removido (evita OS-styled tooltip + Radix duplicados).
+  const tooltipFullLabel = currentMeta?.label ?? currentCaseType ?? "Tipo no clasificado";
+  const tooltipDescription = currentMeta?.description ?? (currentCaseType ? "Click para reclasificar" : "Click para asignar tipo de caso");
   return (
     <div className="relative inline-block">
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
-        disabled={saving}
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border bg-ai-blue/15 border-ai-blue/30 text-blue-200 whitespace-nowrap hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait"
-        title={currentMeta?.description || "Click para cambiar tipo de caso"}
-      >
-        <span className="truncate max-w-[140px]">{displayLabel}</span>
-        <span className="text-[8px] ml-0.5 opacity-70">▾</span>
-      </button>
+      <Tooltip open={open ? false : undefined} delayDuration={400}>
+        <TooltipTrigger asChild>
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+            disabled={saving}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border bg-ai-blue/15 border-ai-blue/30 text-blue-200 whitespace-nowrap hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait max-w-full"
+          >
+            <span className="truncate max-w-[180px]">{displayLabel}</span>
+            <span className="text-[8px] ml-0.5 opacity-70 shrink-0">▾</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className="max-w-[280px] text-[11px] font-sora bg-deep-navy/95 border border-cyan-accent/30 text-slate-100"
+        >
+          <div className="font-semibold text-cyan-accent">{tooltipFullLabel}</div>
+          <div className="text-[10px] text-slate-300 mt-0.5">{tooltipDescription}</div>
+        </TooltipContent>
+      </Tooltip>
 
       {open && popPos && typeof document !== "undefined" && createPortal(
         <div

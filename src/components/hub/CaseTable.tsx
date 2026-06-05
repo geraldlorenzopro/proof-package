@@ -320,7 +320,7 @@ function GroupHeader({
 
 function ColumnHeaderRow() {
   return (
-    <div className="grid grid-cols-[minmax(200px,1.8fr)_115px_minmax(140px,1.2fr)_100px_100px_minmax(170px,1.8fr)_110px] gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
+    <div className="grid grid-cols-[minmax(200px,1.8fr)_145px_minmax(150px,1.2fr)_100px_100px_minmax(170px,1.8fr)_110px] gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
       <div>Cliente</div>
       <div>Tipo de proceso</div>
       <div>Status</div>
@@ -409,7 +409,7 @@ function CaseRow({
 
   return (
     <div
-      className={`group ${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(200px,1.8fr)_115px_minmax(140px,1.2fr)_100px_100px_minmax(170px,1.8fr)_110px] gap-3 px-4 h-16 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left`}
+      className={`group ${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(200px,1.8fr)_145px_minmax(150px,1.2fr)_100px_100px_minmax(170px,1.8fr)_110px] gap-3 px-4 h-16 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left`}
     >
       {/* Cliente + sub-text 2 líneas + badge tareas.
           Round 4.5 (Valerie): Pin amber al lado izquierdo del avatar
