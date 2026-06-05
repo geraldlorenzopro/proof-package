@@ -43,6 +43,12 @@ export interface PipelineCase {
   rfe_deadline?: string | null;
   uscis_response_deadline?: string | null;
   last_client_activity_at?: string | null;
+  /** Round 4 (Marcus): $$$ flat-fee del caso para Kanban "$ por columna".
+   *  Visible solo tier 1+2 (owner/admin/attorney) — gating en UI, no en RLS. */
+  matter_value?: number | null;
+  /** Round 4 (Marcus alternativa a priority manual): fija caso arriba sin
+   *  override del urgency_desc auto-calc. Boolean en client_cases. */
+  pinned?: boolean;
   /** Payload del "próximo paso" guardado en custom_fields.next_action. */
   next_action?: NextActionPayload | null;
   /** custom_fields completo, por si algún componente lo necesita. */
@@ -199,7 +205,8 @@ export function useCasePipeline(accountId: string | null, userId: string | null 
           file_number, status, assigned_to, updated_at, stage_entered_at, created_at,
           priority_date, uscis_receipt_numbers, nvc_case_number,
           interview_date, emb_interview_date, cas_interview_date, case_tags_array,
-          custom_fields, rfe_deadline, uscis_response_deadline, last_client_activity_at
+          custom_fields, rfe_deadline, uscis_response_deadline, last_client_activity_at,
+          matter_value, pinned
         `)
         .eq("account_id", accountId)
         .not("status", "eq", "completed")

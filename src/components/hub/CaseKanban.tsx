@@ -3,13 +3,16 @@ import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
-import type { CaseGroup } from "@/lib/caseGrouping";
+import { sumMatterValue, formatCurrency, type CaseGroup } from "@/lib/caseGrouping";
 
 interface Props {
   groups: CaseGroup[];
   staffNames?: Record<string, string>;
   /** Si se pasa, click card abre peek panel. Si no, navega al case-engine. */
   onCardClick?: (caseId: string) => void;
+  /** Round 4 Marcus: $$$ por columna gated tier 1+2 (owner/admin/attorney).
+   *  Si false, no muestra revenue. Default false (paralegal NO ve). */
+  showRevenue?: boolean;
 }
 
 const ACCENT_HEX: Record<string, string> = {
@@ -27,9 +30,8 @@ function dayTone(days: number): string {
   return "text-muted-foreground/60";
 }
 
-export default function CaseKanban({ groups, staffNames, onCardClick }: Props) {
+export default function CaseKanban({ groups, staffNames, onCardClick, showRevenue = false }: Props) {
   // Auto-ocultar columnas vacías (Vanessa: "se ven tristes con '—'").
-  // Si TODAS están vacías, mostrar el grid completo igual para que no quede en blanco.
   const allEmpty = groups.every(g => g.cases.length === 0);
   const visible = allEmpty ? groups : groups.filter(g => g.cases.length > 0);
 
@@ -38,19 +40,29 @@ export default function CaseKanban({ groups, staffNames, onCardClick }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2.5">
         {visible.map(group => {
           const accent = ACCENT_HEX[group.key] || "#6B7280";
+          const revenue = showRevenue ? sumMatterValue(group.cases) : 0;
           return (
             <div
               key={group.key}
               className="flex flex-col rounded-lg border border-border/50 bg-card/30 min-h-[140px]"
             >
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-border/30">
-                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: accent }} />
-                <span className="text-[10px] font-bold uppercase tracking-wide text-foreground truncate">
-                  {group.label}
-                </span>
-                <span className="ml-auto text-[10px] font-semibold text-muted-foreground/70 tabular-nums">
-                  {group.cases.length}
-                </span>
+              <div className="flex flex-col gap-0.5 px-2.5 py-1.5 border-b border-border/30">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: accent }} />
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-foreground truncate">
+                    {group.label}
+                  </span>
+                  <span className="ml-auto text-[10px] font-semibold text-muted-foreground/70 tabular-nums">
+                    {group.cases.length}
+                  </span>
+                </div>
+                {/* $$$ por columna — solo visible para tier 1+2 (Round 4 Marcus).
+                    El parent gate la prop showRevenue via usePermissions. */}
+                {showRevenue && revenue > 0 && (
+                  <div className="text-[10px] font-sora font-semibold tabular-nums text-emerald-300/80 pl-3">
+                    {formatCurrency(revenue)}
+                  </div>
+                )}
               </div>
 
               <div className="flex-1 p-1.5 space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto">

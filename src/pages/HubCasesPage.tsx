@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, LayoutGrid, Table as TableIcon, ArrowUpDown, FolderTree, FolderPlus } from "lucide-react";
+import { Search, LayoutGrid, Table as TableIcon, ArrowUpDown, FolderTree, FolderPlus, ListChecks } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -14,16 +14,18 @@ import CaseViewTabs from "@/components/hub/CaseViewTabs";
 import CaseFiltersPopover, { type CaseFilters, EMPTY_FILTERS } from "@/components/hub/CaseFiltersPopover";
 import CaseTypeFilterDropdown from "@/components/hub/CaseTypeFilterDropdown";
 import CasePeekPanel from "@/components/hub/CasePeekPanel";
+import TasksByDateView from "@/components/hub/TasksByDateView";
 import { useCasePipeline } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { useCaseViews, filterCasesByView } from "@/hooks/useCaseViews";
+import { usePermissions } from "@/hooks/usePermissions";
 import { groupCases, sortCases, SORT_LABELS, type GroupByKey, type SortKey } from "@/lib/caseGrouping";
 import { getCaseTypeByKey } from "@/lib/caseTypes";
 import { readScopedJson, writeScopedJson, migrateLegacyKeys } from "@/lib/scopedStorage";
 import { cn } from "@/lib/utils";
 
-type ViewMode = "tabla" | "kanban";
+type ViewMode = "tabla" | "kanban" | "tareas";
 
 const GROUP_BY_LABELS: Record<GroupByKey, string> = {
   stage:       "Etapa",
@@ -33,8 +35,10 @@ const GROUP_BY_LABELS: Record<GroupByKey, string> = {
   none:        "Ninguno",
 };
 
+// Round 4 set (6 sorts, sin ambigüedad). Ver SORT_LABELS y SORT_DESCRIPTIONS
+// en caseGrouping.ts para la definición de cada uno.
 const SORT_OPTIONS: SortKey[] = [
-  "default", "alerts_desc", "due_asc", "client_asc", "client_desc", "updated_desc", "updated_asc", "due_desc",
+  "default", "urgency_desc", "stage_age_desc", "gov_deadline_asc", "due_asc", "activity_desc", "client_asc",
 ];
 
 const MAX_RECENT_TYPES = 3;
@@ -65,6 +69,13 @@ export default function HubCasesPage() {
 
   const { cases, loading, unclassifiedCount, updateCase } = useCasePipeline(accountId, userId);
 
+  // Permisos para $$$ por columna (Round 4 Marcus + Mr. Lorenzo):
+  // solo tier 1+2 (owner/admin/attorney) ven revenue. Paralegal NO.
+  // Reusa canViewVisibility("attorney_only") que es exactamente el mismo
+  // grupo de roles autorizados.
+  const { canViewVisibility } = usePermissions(accountId);
+  const canViewRevenue = canViewVisibility("attorney_only");
+
   // ═══ State persistido por account_id (anti-leak Victoria fix #1) ═══
   const [view, setView] = useState<ViewMode>("tabla");
   const [groupBy, setGroupBy] = useState<GroupByKey>("stage");
@@ -77,7 +88,7 @@ export default function HubCasesPage() {
   useEffect(() => {
     if (!accountId) return;
     const savedView = readScopedJson<ViewMode>("ner_cases_view", accountId, "tabla");
-    if (savedView === "kanban" || savedView === "tabla") setView(savedView);
+    if (savedView === "kanban" || savedView === "tabla" || savedView === "tareas") setView(savedView);
     const savedGroup = readScopedJson<GroupByKey>("ner_cases_group_by", accountId, "stage");
     if ((["stage","owner","case_type","responsible","none"] as const).includes(savedGroup as GroupByKey)) {
       setGroupBy(savedGroup);
@@ -337,9 +348,13 @@ export default function HubCasesPage() {
             onUseRecent={handleUseRecent}
           />
 
+          {/* View switcher con 3 modos: Tabla / Kanban / Tareas.
+              Tareas es la nueva vista Round 4 (Vanessa + Marcus):
+              tasks agrupadas por fecha (Overdue / Hoy / Esta semana). */}
           <div className="ml-auto flex items-center bg-white/[0.04] border border-white/10 rounded-md p-0.5">
             <ViewButton active={view === "tabla"} onClick={() => setView("tabla")} icon={<TableIcon className="w-3.5 h-3.5" />} label="Tabla" />
             <ViewButton active={view === "kanban"} onClick={() => setView("kanban")} icon={<LayoutGrid className="w-3.5 h-3.5" />} label="Kanban" />
+            <ViewButton active={view === "tareas"} onClick={() => setView("tareas")} icon={<ListChecks className="w-3.5 h-3.5" />} label="Tareas" />
           </div>
         </div>
 
@@ -372,6 +387,16 @@ export default function HubCasesPage() {
               </Button>
             )}
           </div>
+        ) : view === "tareas" ? (
+          /* Vista Tareas — Round 4 (Vanessa + Marcus).
+             Tasks agrupadas cronológicamente (Vencidas → Hoy → Esta semana...). */
+          <TasksByDateView
+            accountId={accountId}
+            userId={userId}
+            cases={sortedCases}
+            scope={activeView === "mis-casos" || activeView === "pte-accion-mia" ? "mine" : "all"}
+            staffNames={staffNames}
+          />
         ) : view === "tabla" ? (
           <CaseTable
             groups={allGroups}
@@ -387,6 +412,7 @@ export default function HubCasesPage() {
             groups={allGroups}
             staffNames={staffNames}
             onCardClick={(id) => setPeekCaseId(id)}
+            showRevenue={canViewRevenue}
           />
         )}
       </div>

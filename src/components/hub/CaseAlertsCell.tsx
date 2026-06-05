@@ -1,25 +1,22 @@
 /**
- * CaseAlertsCell — Col Alertas (40px) del Pipeline de Casos.
+ * CaseAlertsCell — Col Alertas (70px) del Pipeline de Casos.
  *
- * Diferenciador NER vs Monday: agentes IA (Felix/Camila) y deadlines
- * visibles inline sin abrir el caso.
+ * v3 Round 4 2026-06-05 (Valerie + Vanessa + Marcus + Victoria consensus):
  *
- * Tipos de alertas:
- *   - Felix OK: checklist completo (✓ emerald)
- *   - Felix bad: falta documento/campo requerido (⚡ rose)
- *   - Camila call-to-action: cliente silent >10d (📞 cyan pulse)
- *   - RFE deadline: vence en ≤7d (📄 rose)
- *   - Doc faltante: documento requerido falta subir (📎 amber)
+ *   - "Cliente silent >10d" deja de ser ícono Phone+pulse cyan en col Alertas
+ *     (era affordance falsa — parecía CTA pero no era). Movido a sub-text
+ *     bajo el nombre del cliente en CaseTable (badge ámbar `12d`).
  *
- * Paridad visual estricta con mockup NER-HUB-CASOS-FASE-C-V2.html:
- *   - alert-icon: w-5 h-5 rounded-full flex items-center justify-center
- *   - alert-felix-ok: bg-emerald-500/20 text-emerald-300
- *   - alert-felix-bad: bg-rose-500/20 text-rose-300
- *   - alert-camila: bg-cyan-500/20 text-cyan-300 (animate-pulse)
- *   - alert-rfe: bg-rose-500/20 text-rose-300
- *   - alert-doc: bg-amber-500/20 text-amber-300
+ *   - Los íconos restantes (RFE, Felix bad, doc faltante, Felix OK) son
+ *     STATUS ÍCONOS NO clickeables. Se quedan como están.
+ *
+ *   - "Pinned" caso → ícono Pin amber al frente (Round 4 Marcus alternativa
+ *     a priority manual).
+ *
+ *   - Pulse animation reservada SOLO para deadlines gov ≤3 días — Marcus:
+ *     "Si todo pulsa, nada pulsa."
  */
-import { Zap, FileText, Phone, Paperclip, Check } from "lucide-react";
+import { Zap, FileText, Check, Pin } from "lucide-react";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
 
 interface Props {
@@ -38,7 +35,17 @@ function deriveAlerts(c: PipelineCase): Alert[] {
   const alerts: Alert[] = [];
   const now = Date.now();
 
-  // RFE deadline próximos 7d
+  // Pinned siempre primero
+  if (c.pinned) {
+    alerts.push({
+      key: "pinned",
+      title: "Caso fijado al tope del pipeline",
+      iconClass: "bg-amber-500/20 text-amber-300",
+      Icon: Pin,
+    });
+  }
+
+  // RFE deadline próximos 7d — pulse SOLO si ≤3d (Marcus rule)
   if (c.rfe_deadline) {
     const rfeMs = new Date(c.rfe_deadline + "T00:00:00").getTime();
     const daysLeft = Math.ceil((rfeMs - now) / 86400000);
@@ -48,26 +55,12 @@ function deriveAlerts(c: PipelineCase): Alert[] {
         title: `RFE vence en ${daysLeft}d (${c.rfe_deadline})`,
         iconClass: "bg-rose-500/20 text-rose-300",
         Icon: FileText,
+        pulse: daysLeft <= 3,
       });
     }
   }
 
-  // Cliente silent >10 días
-  if (c.last_client_activity_at) {
-    const lastMs = new Date(c.last_client_activity_at).getTime();
-    const daysSilent = Math.floor((now - lastMs) / 86400000);
-    if (daysSilent >= 10) {
-      alerts.push({
-        key: "camila",
-        title: `Camila: llamar al cliente (${daysSilent}d sin contacto)`,
-        iconClass: "bg-cyan-500/20 text-cyan-300",
-        Icon: Phone,
-        pulse: true,
-      });
-    }
-  }
-
-  // Overdue tasks → Felix bad (proxy hasta tener checklist real)
+  // Overdue tasks → Felix bad
   if ((c.overdue_tasks_count ?? 0) > 0) {
     alerts.push({
       key: "felix-bad",
@@ -78,7 +71,7 @@ function deriveAlerts(c: PipelineCase): Alert[] {
   }
 
   // Si no hay alertas negativas → Felix OK
-  if (alerts.length === 0) {
+  if (alerts.length === 0 || (alerts.length === 1 && alerts[0].key === "pinned")) {
     alerts.push({
       key: "felix-ok",
       title: "Felix: checklist OK",
@@ -87,7 +80,7 @@ function deriveAlerts(c: PipelineCase): Alert[] {
     });
   }
 
-  // Cap a 3 íconos máximo para no sobrecargar la col de 40px
+  // Cap a 3 íconos máximo
   return alerts.slice(0, 3);
 }
 
@@ -101,6 +94,8 @@ export default function CaseAlertsCell({ c }: Props) {
           <div
             key={a.key}
             title={a.title}
+            aria-label={a.title}
+            role="img"
             className={`w-5 h-5 rounded-full flex items-center justify-center ${a.iconClass} ${a.pulse ? "animate-pulse" : ""}`}
           >
             <Icon className="w-3 h-3" />

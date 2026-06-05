@@ -19,7 +19,7 @@
  */
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronDown, StickyNote, CheckSquare, PhoneOff } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { deriveJourneyStep, deriveSubStage, defaultSubStageFor, getJourneyMeta, type JourneyStep, type SubStage } from "@/lib/journeySteps";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
@@ -64,16 +64,39 @@ interface Props {
 
 // Accent gradient por stage para GroupHeader. Para grupos no-stage,
 // el chip/subtitle viene de CaseGroup.chipClass + description.
+//
+// Round 4 (Vanessa palette): mapa mental real del paralegal.
+// - USCIS = azul (default neutro)
+// - NVC = morado tenue (transición, "está caminando")
+// - Consular = verde suave (otro mundo, afuera de USA)
+// - Corte EOIR = ámbar (CAMBIO de red-500 → amber-500 — Vanessa:
+//   "corte ≠ deportación. Ámbar = atención judicial")
+// - ICE = rojo intenso (único rojo del sistema — "gente detenida")
+// - Aprobado/Negado mantienen verde/rosa
 const STAGE_ACCENT: Record<string, string> = {
-  uscis:                "from-ai-blue/15",
-  nvc:                  "from-amber-500/10",
-  embajada:             "from-orange-500/10",
-  court:                "from-red-500/10",
-  ice:                  "from-rose-700/10",
-  aprobado:             "from-emerald-500/10",
-  negado:               "from-rose-500/8",
-  "admin-processing":   "from-violet-500/8",
-  "sin-clasificar":     "from-amber-500/8",
+  uscis:                "from-blue-500/12",
+  nvc:                  "from-violet-400/12",
+  embajada:             "from-emerald-400/12",
+  court:                "from-amber-500/12",
+  ice:                  "from-rose-600/15",
+  aprobado:             "from-emerald-600/12",
+  negado:               "from-rose-400/12",
+  "admin-processing":   "from-violet-500/10",
+  "sin-clasificar":     "from-slate-500/10",
+};
+
+// Banda lateral 3px por stage — Round 4 Valerie (Linear pattern).
+// Da identidad sin saturar fondo. NO usar ai-blue (Victoria: reservado a brand).
+const STAGE_BORDER_L: Record<string, string> = {
+  uscis:                "border-l-blue-500",
+  nvc:                  "border-l-violet-400",
+  embajada:             "border-l-emerald-400",
+  court:                "border-l-amber-500",
+  ice:                  "border-l-rose-600",
+  aprobado:             "border-l-emerald-600",
+  negado:               "border-l-rose-400",
+  "admin-processing":   "border-l-violet-500",
+  "sin-clasificar":     "border-l-slate-500",
 };
 
 const COLLAPSED_KEY = "ner_cases_collapsed_v2";
@@ -244,11 +267,12 @@ function GroupHeader({
   onToggle: () => void;
 }) {
   const accent = STAGE_ACCENT[group.key] || "from-slate-500/10";
+  const borderL = STAGE_BORDER_L[group.key] || "border-l-slate-500";
   const chipClass = group.chipClass || "bg-slate-500/15 border-slate-500/30 text-slate-200";
   return (
     <button
       onClick={onToggle}
-      className={`backdrop-blur-md w-full bg-gradient-to-r ${accent} to-transparent ${isFirst ? "" : "border-t-2 border-white/5"} border-b border-white/5 px-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors`}
+      className={`backdrop-blur-md w-full bg-gradient-to-r ${accent} to-transparent border-l-[3px] ${borderL} ${isFirst ? "" : "border-t-2 border-t-white/5"} border-b border-b-white/5 px-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors`}
     >
       <div className="flex items-center gap-2.5">
         {collapsed
@@ -298,11 +322,32 @@ function CaseRow({
   active?: boolean;
   onClick: () => void;
 }) {
+  const navigate = useNavigate();
   const ownerName = c.assigned_to && staffNames ? staffNames[c.assigned_to] : null;
   const clientInitials = initials(c.client_name);
   const taskCount = c.overdue_tasks_count ?? c.open_tasks_count ?? 0;
   const taskOverdue = (c.overdue_tasks_count ?? 0) > 0;
   const clientGradient = ownerGradient(c.id);
+
+  // Round 4: sub-text 2 líneas bajo nombre del cliente.
+  // Línea 1: "Nd en esta etapa" — Vanessa pidió esto en R3.
+  //          Solo si days >= 3 (Valerie: ruido si stage muy nueva).
+  // Línea 2: "Sin contacto Nd" o "Felix tiene Nd" — solo condicional.
+  //          Antes vivía en col Alertas como ícono Phone pulse (CTA falsa).
+  const stageAgeLabel = (c.days_in_stage ?? 0) >= 3
+    ? `${c.days_in_stage}d en esta etapa`
+    : null;
+
+  let silentLabel: { text: string; tone: string } | null = null;
+  if (c.last_client_activity_at) {
+    const days = Math.floor((Date.now() - new Date(c.last_client_activity_at).getTime()) / 86400000);
+    if (days >= 10) {
+      silentLabel = {
+        text: `${days}d sin contacto`,
+        tone: days >= 30 ? "text-rose-400" : "text-amber-300",
+      };
+    }
+  }
 
   // Modelo C+ con state local: cuando el user cambia el journey desde el
   // dropdown, el sub-stage debajo debe actualizar al sub-stage default
@@ -334,23 +379,35 @@ function CaseRow({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className={`${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(220px,1.8fr)_130px_minmax(160px,1.2fr)_110px_110px_minmax(200px,1.8fr)_70px] gap-3 px-4 h-16 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left cursor-pointer`}
+      className={`group ${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(220px,1.8fr)_130px_minmax(160px,1.2fr)_110px_110px_minmax(200px,1.8fr)_70px] gap-3 px-4 h-16 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left cursor-pointer relative`}
     >
-      {/* Cliente + badge tareas */}
+      {/* Cliente + sub-text 2 líneas + badge tareas */}
       <div className="flex items-center gap-2.5 min-w-0">
         <div className={`w-[26px] h-[26px] rounded-full bg-gradient-to-br ${clientGradient} flex items-center justify-center text-[10px] font-bold text-white shrink-0`}>
           {clientInitials}
         </div>
-        <span className="text-[13px] font-medium text-white truncate">{c.client_name}</span>
-        {taskCount > 0 && (
-          taskOverdue ? (
-            <span className="text-[11px] tabular-nums bg-rose-500/20 border border-rose-500/30 text-rose-300 px-1.5 py-0.5 rounded shrink-0">
-              {taskCount} ⚠
-            </span>
-          ) : (
-            <span className="text-[11px] tabular-nums text-slate-500 shrink-0">{taskCount}</span>
-          )
-        )}
+        <div className="flex flex-col min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-[13px] font-medium text-white truncate">{c.client_name}</span>
+            {taskCount > 0 && (
+              taskOverdue ? (
+                <span className="text-[10px] tabular-nums bg-rose-500/20 border border-rose-500/30 text-rose-300 px-1.5 py-px rounded shrink-0">
+                  {taskCount} ⚠
+                </span>
+              ) : (
+                <span className="text-[10px] tabular-nums text-slate-500 shrink-0">{taskCount}</span>
+              )
+            )}
+          </div>
+          {/* Sub-text 2 líneas (Round 4): días en etapa + silent condicional */}
+          {(stageAgeLabel || silentLabel) && (
+            <div className="flex items-center gap-2 text-[10px] leading-tight mt-0.5 truncate">
+              {stageAgeLabel && <span className="text-slate-500 tabular-nums">{stageAgeLabel}</span>}
+              {stageAgeLabel && silentLabel && <span className="text-slate-700">·</span>}
+              {silentLabel && <span className={`${silentLabel.tone} tabular-nums`}>{silentLabel.text}</span>}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tipo (editable con buscador 75+ forms USCIS/DOS) */}
@@ -416,6 +473,53 @@ function CaseRow({
 
       {/* Alertas (70px col) */}
       <CaseAlertsCell c={c} />
+
+      {/* Quick Actions hover-reveal (Round 4 Vanessa).
+          Posicionado absolute para no romper grid layout. Solo visible
+          en row hover. 3 iconos: nota / tarea / log-call. Click = deep
+          link al case-engine en tab correspondiente. */}
+      <div
+        className="absolute right-[80px] top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1 bg-deep-navy/95 backdrop-blur-sm border border-white/10 rounded-md px-1.5 py-1 shadow-lg shadow-black/40 z-10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <QuickActionButton
+          Icon={StickyNote}
+          title="Agregar nota rápida"
+          color="text-cyan-accent"
+          onClick={() => navigate(`/case-engine/${c.id}?tab=resumen&action=add-note`)}
+        />
+        <QuickActionButton
+          Icon={CheckSquare}
+          title="Crear tarea"
+          color="text-emerald-300"
+          onClick={() => navigate(`/case-engine/${c.id}?tab=tareas&action=add`)}
+        />
+        <QuickActionButton
+          Icon={PhoneOff}
+          title="Registrar contacto fallido / Ver historial"
+          color="text-amber-300"
+          onClick={() => navigate(`/case-engine/${c.id}?tab=historial`)}
+        />
+      </div>
     </div>
+  );
+}
+
+function QuickActionButton({ Icon, title, color, onClick }: {
+  Icon: typeof StickyNote;
+  title: string;
+  color: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      className={`w-6 h-6 rounded flex items-center justify-center hover:bg-white/[0.08] transition-colors ${color}`}
+    >
+      <Icon className="w-3.5 h-3.5" />
+    </button>
   );
 }
