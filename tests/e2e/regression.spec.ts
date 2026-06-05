@@ -25,21 +25,30 @@ const DEMO_HUB_TASKS = "/hub/tasks?demo=true";
 test.describe("Pattern 1 — Tailwind JIT dynamic class never collapses layout", () => {
   test("CaseViewTabs render horizontalmente (no apiladas)", async ({ page }) => {
     await page.goto(DEMO_HUB_CASES);
-    // Esperar tabs montadas
-    const tabsContainer = page.locator('[data-testid="case-view-tabs"], div').filter({
-      has: page.getByText(/MIS CASOS|TODOS/i),
-    }).first();
+    await page.waitForLoadState("networkidle");
 
-    // Bounding box: el contenedor debe ser MÁS ancho que alto (horizontal)
-    const box = await tabsContainer.boundingBox();
-    expect(box).not.toBeNull();
-    if (box) {
-      expect(box.width).toBeGreaterThan(box.height * 2);
+    // R9.13 fix: el selector anterior `'div'` agarraba el wrapper de la página
+    // entera (1440x900) — falso negativo. Ahora medimos las tabs individuales:
+    // si "Mis casos" y "Todos" están en la misma fila (Y idéntico) y separadas
+    // horizontalmente (X muy distinto), las tabs son horizontales. Si estuvieran
+    // apiladas, Y diferiría >50px.
+    const misCasos = page.getByRole("button", { name: /MIS CASOS/i }).first();
+    const todos = page.getByRole("button", { name: /TODOS/i }).first();
+
+    const boxMis = await misCasos.boundingBox();
+    const boxTodos = await todos.boundingBox();
+    expect(boxMis).not.toBeNull();
+    expect(boxTodos).not.toBeNull();
+
+    if (boxMis && boxTodos) {
+      expect(Math.abs(boxMis.y - boxTodos.y)).toBeLessThan(5);
+      expect(Math.abs(boxMis.x - boxTodos.x)).toBeGreaterThan(100);
     }
   });
 
   test("TaskViewTabs render horizontalmente", async ({ page }) => {
     await page.goto(DEMO_HUB_TASKS);
+    await page.waitForLoadState("networkidle");
     const hoy = page.getByRole("button", { name: /HOY/i }).first();
     const todas = page.getByRole("button", { name: /TODAS/i }).first();
 
@@ -48,7 +57,6 @@ test.describe("Pattern 1 — Tailwind JIT dynamic class never collapses layout",
     expect(boxHoy).not.toBeNull();
     expect(boxTodas).not.toBeNull();
 
-    // Tabs en misma fila: misma Y, X diferente
     if (boxHoy && boxTodas) {
       expect(Math.abs(boxHoy.y - boxTodas.y)).toBeLessThan(5);
       expect(Math.abs(boxHoy.x - boxTodas.x)).toBeGreaterThan(50);
@@ -140,7 +148,13 @@ test.describe("Pattern 5 — Empty state diagnostico + Limpiar filtros", () => {
 
     // Empty state debe aparecer
     await expect(page.getByText(/pero ninguna calza con los filtros/i)).toBeVisible();
-    const clearBtn = page.getByRole("button", { name: /Limpiar filtros/i });
+
+    // R9.13 fix: Lovable agregó otro botón "Limpiar filtros" en el toolbar
+    // (data-testid="reset-filters") como pieza del Round 9.11. Ahora existen
+    // 2 botones con el mismo accessible name → strict mode violation. El del
+    // empty state es el que viene CON texto visible (el del toolbar solo
+    // tiene aria-label + icon). `getByText` matchea solo texto visible.
+    const clearBtn = page.getByText("Limpiar filtros", { exact: true });
     await expect(clearBtn).toBeVisible();
 
     // Click → reset funciona
@@ -158,19 +172,24 @@ test.describe("Pattern 6 — TaskCreateModal demo inyecta + no aborta por accoun
     await page.getByRole("button", { name: /Nueva tarea/i }).click();
     await page.waitForTimeout(500);
 
+    // R9.13 fix: scope al modal dialog para evitar matches ambiguos.
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible({ timeout: 3000 });
+
     // Llenar título
-    await page.getByPlaceholder(/título|qué hay que hacer/i).fill("Test smoke task");
+    await dialog.getByPlaceholder(/título|qué hay que hacer/i).fill("Test smoke task");
 
     // Seleccionar primer caso del autocomplete
-    const caseInput = page.getByPlaceholder(/buscar.*caso/i);
+    const caseInput = dialog.getByPlaceholder(/buscar.*caso/i);
     if (await caseInput.count() > 0) {
       await caseInput.click();
       await page.waitForTimeout(300);
       await page.locator("[role=option], button").filter({ hasText: /García|Rodríguez|Hernández/ }).first().click();
     }
 
-    // Submit
-    await page.getByRole("button", { name: /^Crear$|^Guardar$/i }).click();
+    // R9.13 fix: el regex anterior `^Crear$|^Guardar$` exigía match exacto.
+    // El botón real dice "Crear tarea". Scopeado al dialog + regex permisivo.
+    await dialog.getByRole("button", { name: /Crear/i }).last().click();
     await page.waitForTimeout(500);
 
     // NO debe aparecer toast "Sin cuenta activa"

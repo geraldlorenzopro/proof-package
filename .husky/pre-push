@@ -51,8 +51,16 @@ echo -e "\n${CYAN}[3/3]${NC} Anti-pattern grep (Tailwind JIT, etc)…"
 
 FAIL=0
 
-# Pattern A: dynamic Tailwind class interpolation (causa layouts colapsados)
-if matches=$(grep -REn 'className=.*`[^`]*\$\{[^}]*\}[^`]*\[' src/ 2>/dev/null); then
+# Pattern A: dynamic Tailwind class interpolation INSIDE arbitrary brackets.
+# El bug real: `grid-cols-[repeat(${N},1fr)_auto]` — Tailwind JIT no compila
+# valores arbitrarios con ${} dentro de [], cae a default y colapsa el layout.
+#
+# False-positive fix R9.13: el regex anterior matcheaba CUALQUIER className con
+# ${} + [] en cualquier orden — flagged 15 archivos OK (ej. `${grad}` + `[10px]`
+# en la misma línea son ambos seguros porque ${grad} es un string completo y
+# [10px] es bracket sin interpolación). El nuevo regex EXIGE que el ${ aparezca
+# DENTRO de un [...] sin ] intermedio — solo cazado el patrón peligroso real.
+if matches=$(grep -REn 'className=\{`[^`]*\[[^]]*\$\{' src/ 2>/dev/null); then
   if [ -n "$matches" ]; then
     echo -e "${RED}✘ Pattern A — Tailwind JIT dynamic class:${NC}"
     echo "$matches"
