@@ -99,6 +99,20 @@ interface Props {
 }
 
 const BUCKET_ORDER: TaskBucketKey[] = ["overdue", "today", "tomorrow", "this_week", "next_week", "later", "no_date"];
+
+// Round 9.12 — UX rule: ocultar buckets vacíos cuando el tab no los necesita.
+// Si el bucket está en RELEVANT_BUCKETS_BY_TAB[tab] → siempre se muestra (aunque
+// vacío comunica "no hay nada urgente"). Si NO está en la lista relevante para
+// ese tab → solo se renderiza si tiene items (evita ruido tipo "Hoy / Sin tareas"
+// dentro de Atrasadas o RFE Response).
+const RELEVANT_BUCKETS_BY_TAB: Record<TaskViewKey, TaskBucketKey[]> = {
+  todas: ["overdue", "today", "tomorrow", "this_week", "next_week", "later", "no_date"],
+  hoy: ["today"],
+  atrasadas: ["overdue"],
+  proximas: ["today", "tomorrow", "this_week", "next_week"],
+  completadas: ["overdue", "today", "tomorrow", "this_week", "next_week", "later", "no_date"],
+  "rfe-response": ["overdue", "today", "tomorrow", "this_week", "next_week"],
+};
 const COLLAPSED_KEY = "ner_tasks_buckets_collapsed";
 const DEFAULT_COLLAPSED: Record<string, boolean> = { later: true };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -597,8 +611,11 @@ export default function TasksByDateView({
 
   const items = useMemo<Item[]>(() => {
     const out: Item[] = [];
+    const relevant = new Set(RELEVANT_BUCKETS_BY_TAB[activeTab] ?? BUCKET_ORDER);
     BUCKET_ORDER.forEach(b => {
       const list = bucketed.get(b) || [];
+      // Round 9.12: si el bucket no es relevante para este tab Y está vacío → ocultar.
+      if (list.length === 0 && !relevant.has(b)) return;
       const isCollapsed = !!collapsed[b];
       out.push({ kind: "header", bucket: b, count: list.length, size: 44 });
       if (!isCollapsed) {
@@ -611,7 +628,7 @@ export default function TasksByDateView({
       }
     });
     return out;
-  }, [bucketed, collapsed]);
+  }, [bucketed, collapsed, activeTab]);
 
   const virtualizer = useVirtualizer({
     count: items.length,
