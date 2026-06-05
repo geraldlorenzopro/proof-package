@@ -43,3 +43,9 @@ mockups/2026-*.html
 
 # Logos test de firmas piloto (en prod salen de office_config.logo_url)
 public/brand/firms/
+
+# Playwright artifacts (Sprint A). Baselines en tests/screenshots SÍ se commitean.
+playwright-report/
+test-results/
+/tests/screenshots/**/*-actual.png
+/tests/screenshots/**/*-diff.png

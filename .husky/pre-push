@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# .husky/pre-push — NER pre-push gate (Sprint A, locked 2026-06-06).
+#
+# Corre 3 checks fast (<30s) ANTES de cualquier git push:
+#   1. TypeScript noEmit
+#   2. Build Vite production (cazas Tailwind JIT issues + imports rotos)
+#   3. Grep anti-patterns conocidos (className dinámico, etc)
+#
+# Si CUALQUIERA falla → push abortado. Mr. Lorenzo NO ve el bug.
+#
+# Por qué NO corre Playwright acá:
+#   - Playwright + Chromium = lento (3-5 min)
+#   - Pre-push hook debe ser <30s sino developers lo deshabilitan
+#   - Playwright vive en CI (.github/workflows/e2e.yml)
+#
+# Para BYPASS temporal (URGENT only):
+#   git push --no-verify
+#   Pero después abrir PR con explicación + fix.
+
+set -e
+
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+echo -e "${CYAN}╭─────────────────────────────────────────────╮${NC}"
+echo -e "${CYAN}│   NER pre-push gate · Sprint A protections   │${NC}"
+echo -e "${CYAN}╰─────────────────────────────────────────────╯${NC}"
+
+# ─── Check 1: TypeScript ───────────────────────────────────
+echo -e "\n${CYAN}[1/3]${NC} TypeScript noEmit…"
+if ! bunx tsc --noEmit 2>&1 | tail -20; then
+  echo -e "${RED}✘ TypeScript errors. Push abortado.${NC}"
+  exit 1
+fi
+echo -e "${GREEN}✓ TypeScript clean${NC}"
+
+# ─── Check 2: Build production ─────────────────────────────
+echo -e "\n${CYAN}[2/3]${NC} Vite production build…"
+if ! bun run build > /tmp/ner-prepush-build.log 2>&1; then
+  echo -e "${RED}✘ Build falló. Última 30 líneas:${NC}"
+  tail -30 /tmp/ner-prepush-build.log
+  echo -e "${RED}Push abortado. Fix el build primero.${NC}"
+  exit 1
+fi
+echo -e "${GREEN}✓ Build OK${NC}"
+
+# ─── Check 3: Anti-pattern grep ────────────────────────────
+echo -e "\n${CYAN}[3/3]${NC} Anti-pattern grep (Tailwind JIT, etc)…"
+
+FAIL=0
+
+# Pattern A: dynamic Tailwind class interpolation (causa layouts colapsados)
+if matches=$(grep -REn 'className=.*`[^`]*\$\{[^}]*\}[^`]*\[' src/ 2>/dev/null); then
+  if [ -n "$matches" ]; then
+    echo -e "${RED}✘ Pattern A — Tailwind JIT dynamic class:${NC}"
+    echo "$matches"
+    echo -e "${RED}  Fix: usar inline style={{}} o safelist map literal${NC}"
+    FAIL=1
+  fi
+fi
+
+# Pattern B: console.log left in non-test code (no debe llegar a prod)
+if matches=$(grep -REn 'console\.log\(' src/ --exclude-dir=__tests__ --exclude='*.test.*' 2>/dev/null | grep -v '// debug-OK' | head -5); then
+  if [ -n "$matches" ]; then
+    echo -e "${RED}⚠ Pattern B — console.log en src/ (top 5):${NC}"
+    echo "$matches"
+    echo -e "${RED}  Si es intencional, agregá comentario '// debug-OK' al lado${NC}"
+    # Warning solamente, no abort
+  fi
+fi
+
+# Pattern C: TODO/FIXME en código nuevo (warning only)
+if matches=$(git diff --cached -U0 2>/dev/null | grep -E '^\+.*(TODO|FIXME):' | head -3); then
+  if [ -n "$matches" ]; then
+    echo -e "${CYAN}ℹ TODOs/FIXMEs nuevos detectados:${NC}"
+    echo "$matches"
+  fi
+fi
+
+if [ $FAIL -eq 1 ]; then
+  echo -e "\n${RED}Push abortado por anti-patterns. Fix arriba.${NC}"
+  exit 1
+fi
+echo -e "${GREEN}✓ Anti-patterns clean${NC}"
+
+# ─── Done ───────────────────────────────────────────────────
+echo -e "\n${GREEN}╭─────────────────────────────────────────────╮${NC}"
+echo -e "${GREEN}│   All checks passed. Pushing…              │${NC}"
+echo -e "${GREEN}╰─────────────────────────────────────────────╯${NC}"
