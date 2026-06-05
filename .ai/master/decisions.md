@@ -4,6 +4,106 @@ Archivo append-only. Cada decisión queda registrada con fecha, contexto,
 alternativas consideradas, y razón de elección. **No editar decisiones
 pasadas — agregar nueva decisión que las supersede si cambian.**
 
+## 2026-06-06 (madrugada) — Round 9 hotfix BLOCKERS post Round 8 autonomous
+
+### Contexto
+
+Después de Round 8 (SOC II Pipeline prep), Victoria Round 9 audit detectó
+2 BLOCKERS críticos + 1 UX trap. Mr. Lorenzo todavía durmiendo, instrucción
+estanding: *"DALE SIN PREGUNTARME A MI"*.
+
+### BLOCKER 1 — Trigger universal rompía mutations auth-less
+
+`tg_audit_pipeline_mutations` (Round 8) capturaba `auth.uid()` que
+es NULL en contextos service_role / cron / anon. Pero `audit_logs.user_id`
+es NOT NULL (migration 20260311233317). Resultado: TODA mutation
+server-side a client_cases/case_tasks/case_notes desde edge functions
+fallaba con `23502 not_null_violation`.
+
+**Fix:** migration `20260606040000_audit_logs_user_id_nullable.sql`:
+- `audit_logs.user_id` → nullable
+- Trigger ahora discrimina source: user real / service_role / anon
+- user_display_name fallback inteligente
+- metadata.source = 'system' | 'user' para auditor query
+- Index `idx_audit_logs_system_events` para detection eventos auth-less
+
+### BLOCKER 2 — `/hub/tasks` empty engañoso para owner accounts
+
+Defaults: `assignee="me"` + `tab="hoy"` + `status="pending"`. Para
+Mr. Lorenzo (owner sin tasks self-assigned) la vista arranca vacía
+sin contexto. Vanessa-paralegal flow OK, owner UX rotos.
+
+**Fix:**
+- `TasksByDateView` empty state diagnostica universo:
+  - allTasks.length > 0 + filters non-default → "Tenés N tareas pero
+    ninguna calza con los filtros" + CTA "Limpiar filtros"
+  - allTasks.length === 0 → mensaje original (no es trap real)
+- Reset NO usa EMPTY_TASK_FILTERS (re-trap) — usa override
+  `assignee="all"` + `tab="todas"`
+- Demo mode: `useDemoData` propaga `rfe_deadline` (Vanessa tab "RFE 87d")
+- `useCasePipeline` demo mapping propaga `rfe_deadline`
+- `case_tasks` query filtra `.is("deleted_at", null)` (Round 8 soft-delete)
+
+### Visual polish Round 9.5
+
+GroupHeader Round 8 (subtitle abajo + counter far right) implementado,
+pero counter `10px font-mono` invisible desde 1m. Mr. Lorenzo screenshot:
+*"ESTO DEBE IR TODO A LA IZQUIERDA Y RECOMIENDO QUE LA NUMERACION A LA
+DERECHA SEA UN POCO MAS VISIBLE"*.
+
+**Fix:** counter chip → `13px font-bold`, padding `2.5x1`, `rounded-md`,
+`ml-3`. Lectura clara, mantiene proporción con header.
+
+### Pipeline column fusion (verificación)
+
+Mr. Lorenzo Round 9 TODO #1: *"Alertas + Acciones van al mismo lugar,
+no le veo el sentido a esto así"*.
+
+**Auditado y confirmado:** ambas columnas hacían la misma cosa post
+unificación. `CaseTable.tsx` ahora 7 cols (no 8): header "Estado"
+unifica chips alerta + botones acción. Grid:
+`grid-cols-[minmax(200px,1.8fr)_115px_minmax(140px,1.2fr)_100px_100px_minmax(170px,1.8fr)_110px]`.
+
+### Quick action modals NO navegación
+
+Mr. Lorenzo Round 9 TODO #3: *"Los botones notas y tareas deben abrir
+solo lo de notas y solo lo de tareas para crearlas, NO el expediente"*.
+
+**Fix:** `QuickNoteModal` + `QuickTaskModal` acepta prop `prefilledCase`.
+Cuando viene populated:
+- Modal NO muestra selector de caso
+- Skip fetch de cases list
+- Chip read-only con `client_name + case_type`
+- Crea record contra el caso prefilled
+
+`CaseTable` quick actions row callbacks `onQuickNote(c)` / `onQuickTask(c)`
+hidratan state en `HubCasesPage` que abre el modal correspondiente.
+Row outer NO clickable — solo `<button>` con stopPropagation en el
+nombre del cliente abre peek.
+
+### Archivos tocados Round 9
+
+```
+supabase/migrations/20260606040000_audit_logs_user_id_nullable.sql  (NEW)
+src/hooks/useDemoData.ts          (rfe_deadline en DemoCase + 2 mocks)
+src/hooks/useCasePipeline.ts      (rfe_deadline en demo mapping)
+src/components/hub/TasksByDateView.tsx  (smart empty + deleted_at filter + onResetFilters)
+src/pages/HubTasksPage.tsx        (onResetFilters wiring)
+src/components/hub/CaseTable.tsx  (GroupHeader counter 13px bold)
+.ai/master/soc2-readiness.md      (Round 9 hotfix section)
+.ai/master/decisions.md           (este entry)
+```
+
+### Estado SOC II post Round 9
+
+- Round 8 trigger universal ahora FUNCIONA en TODOS los contextos
+- 73% TSC coverage mantenido (no degradación)
+- Roadmap fase 9-10 sin cambios
+
+---
+
+
+
 ---
 
 ## 2026-06-06 — 🛡 SOC II Type II Pipeline preparation (Round 8 autonomous)

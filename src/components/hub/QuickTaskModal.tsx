@@ -31,6 +31,11 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (taskId: string) => void;
+  /**
+   * Round 9 (Mr. Lorenzo): si se pasa, modal NO muestra selector de caso
+   * y usa este caso directamente. Para click ✅ tarea en row del Pipeline.
+   */
+  prefilledCase?: { id: string; client_name: string; case_type?: string | null } | null;
 }
 
 interface CaseOption {
@@ -52,12 +57,12 @@ const PRIORITIES = [
   { value: "urgent", label: "Urgente",chip: "bg-rose-500/15 border-rose-500/30 text-rose-300" },
 ];
 
-export default function QuickTaskModal({ open, onOpenChange, onCreated }: Props) {
+export default function QuickTaskModal({ open, onOpenChange, onCreated, prefilledCase }: Props) {
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("normal");
-  const [caseId, setCaseId] = useState<string>("");
+  const [caseId, setCaseId] = useState<string>(prefilledCase?.id || "");
   const [assignedTo, setAssignedTo] = useState<string>("");
   const [visibility, setVisibility] = useState<VisibilityLevel>("team");
   const [cases, setCases] = useState<CaseOption[]>([]);
@@ -69,8 +74,20 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated }: Props)
     setTitle("");
     setDueDate("");
     setPriority("normal");
-    setCaseId("");
     setVisibility("team");
+
+    // Round 9: si prefilledCase, skipear fetch de cases.
+    if (prefilledCase) {
+      setCaseId(prefilledCase.id);
+      setCases([{
+        id: prefilledCase.id,
+        client_name: prefilledCase.client_name,
+        case_type: prefilledCase.case_type ?? null,
+      }]);
+    } else {
+      setCaseId("");
+    }
+
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -94,7 +111,8 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated }: Props)
           .eq("is_active", true),
       ]);
 
-      setCases((casesRes.data as any) || []);
+      // Round 9: si prefilledCase, mantener solo ese caso (no override).
+      if (!prefilledCase) setCases((casesRes.data as any) || []);
       const members: TeamMember[] = ((teamRes.data as any[]) || []).map(m => ({
         user_id: m.user_id,
         role: m.role,

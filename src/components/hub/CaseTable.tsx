@@ -60,6 +60,11 @@ interface Props {
   maxHeight?: string;
   /** Si true, oculta los headers (cuando hay 1 solo grupo activo). */
   hideHeaders?: boolean;
+  /** Round 9 (Mr. Lorenzo): callback cuando click 📝 nota. Parent abre
+   *  QuickNoteModal pequeño SIN navegar al expediente. */
+  onQuickNote?: (c: PipelineCase) => void;
+  /** Round 9: callback cuando click ✅ tarea. Parent abre TaskCreateModal. */
+  onQuickTask?: (c: PipelineCase) => void;
 }
 
 // Accent gradient por stage para GroupHeader. Para grupos no-stage,
@@ -151,6 +156,8 @@ export default function CaseTable({
   activeCaseId,
   maxHeight = "calc(100vh - 280px)",
   hideHeaders = false,
+  onQuickNote,
+  onQuickTask,
 }: Props) {
   const navigate = useNavigate();
   const parentRef = useRef<HTMLDivElement>(null);
@@ -251,6 +258,8 @@ export default function CaseTable({
                       if (onRowClick) onRowClick(item.c.id);
                       else navigate(`/case-engine/${item.c.id}`);
                     }}
+                    onQuickNote={onQuickNote}
+                    onQuickTask={onQuickTask}
                   />
                 )}
                 {item.kind === "empty" && (
@@ -299,7 +308,10 @@ function GroupHeader({
           )}
         </div>
       </div>
-      <span className={`text-[10px] font-mono tabular-nums border px-1.5 py-0.5 rounded shrink-0 ml-2 ${chipClass}`}>
+      {/* Round 9.5 (Mr. Lorenzo): contador más visible — antes era 10px chip
+          desaparecido. Ahora 13px bold con padding generoso, lectura clara
+          desde 1m de distancia. */}
+      <span className={`text-[13px] font-bold tabular-nums border px-2.5 py-1 rounded-md shrink-0 ml-3 ${chipClass}`}>
         {group.cases.length}
       </span>
     </button>
@@ -308,7 +320,7 @@ function GroupHeader({
 
 function ColumnHeaderRow() {
   return (
-    <div className="grid grid-cols-[minmax(200px,1.8fr)_115px_minmax(140px,1.2fr)_100px_100px_minmax(170px,1.8fr)_65px_70px] gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
+    <div className="grid grid-cols-[minmax(200px,1.8fr)_115px_minmax(140px,1.2fr)_100px_100px_minmax(170px,1.8fr)_110px] gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
       <div>Cliente</div>
       <div>Tipo de proceso</div>
       <div>Status</div>
@@ -321,18 +333,15 @@ function ColumnHeaderRow() {
       <div title="Acción concreta + fecha. Editable desde el panel del caso.">
         Próximo paso
       </div>
-      <div className="text-center" title="RFE vencidos, tareas vencidas, silencio del cliente">
-        Alertas
-      </div>
-      <div className="text-center" title="Acciones rápidas: nota / tarea">
-        Acciones
+      <div className="text-center" title="Estado del caso + acciones rápidas (nota/tarea)">
+        Estado
       </div>
     </div>
   );
 }
 
 function CaseRow({
-  c, staffNames, team = [], onCaseChange, active, onClick,
+  c, staffNames, team = [], onCaseChange, active, onClick, onQuickNote, onQuickTask,
 }: {
   c: PipelineCase;
   staffNames?: Record<string, string>;
@@ -340,6 +349,8 @@ function CaseRow({
   onCaseChange?: (caseId: string, updates: Partial<PipelineCase>) => void;
   active?: boolean;
   onClick: () => void;
+  onQuickNote?: (c: PipelineCase) => void;
+  onQuickTask?: (c: PipelineCase) => void;
 }) {
   const navigate = useNavigate();
   const ownerName = c.assigned_to && staffNames ? staffNames[c.assigned_to] : null;
@@ -398,11 +409,7 @@ function CaseRow({
 
   return (
     <div
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className={`group ${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(200px,1.8fr)_115px_minmax(140px,1.2fr)_100px_100px_minmax(170px,1.8fr)_65px_70px] gap-3 px-4 h-16 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left cursor-pointer`}
+      className={`group ${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(200px,1.8fr)_115px_minmax(140px,1.2fr)_100px_100px_minmax(170px,1.8fr)_110px] gap-3 px-4 h-16 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left`}
     >
       {/* Cliente + sub-text 2 líneas + badge tareas.
           Round 4.5 (Valerie): Pin amber al lado izquierdo del avatar
@@ -420,7 +427,18 @@ function CaseRow({
         </div>
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[13px] font-medium text-white truncate">{c.client_name}</span>
+            {/* Round 9 (Valerie + Marcus consensus): nombre del cliente es
+                link clickeable separable. Click NOMBRE → peek panel. Resto
+                del row = zona muerta (no abre nada). Pattern Linear exacto. */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onClick(); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onClick(); } }}
+              className="text-[13px] font-medium text-white truncate hover:text-cyan-accent hover:underline underline-offset-2 transition-colors text-left"
+              title="Click para ver detalles del caso"
+            >
+              {c.client_name}
+            </button>
             {taskCount > 0 && (
               taskOverdue ? (
                 <span className="text-[10px] tabular-nums bg-rose-500/20 border border-rose-500/30 text-rose-300 px-1.5 py-px rounded shrink-0">
@@ -503,31 +521,32 @@ function CaseRow({
         />
       </div>
 
-      {/* Alertas (70px col) — siempre visible. */}
-      <CaseAlertsCell c={c} />
-
-      {/* Quick Actions col (70px) — Round 5.6 (Mr. Lorenzo + GHL pattern):
-          SIEMPRE VISIBLES, NO HOVER. Las alertas son la causa de la acción
-          (RFE / Felix / silent) — esconderlas justo cuando vas a accionar
-          es anti-lógico. GHL muestra siempre los iconos de acción al
-          frente del card. Mismo approach acá: alertas y acciones coexisten,
-          ambas siempre legibles. Fase 4 (GHL comms): se agregan más iconos
-          aquí (📞 dialer + 💬 chat + 📅 cita). */}
+      {/* Round 9 Col "Estado" fusionada (110px): Alertas pasivas + Quick
+          Actions clickeables.
+          - Alertas (status icons read-only) izquierda
+          - Separador sutil "·"
+          - Quick actions clickeables derecha → modales pequeños (NO
+            navegan al expediente completo, Mr. Lorenzo decisión).
+          - 📝 nota → QuickNoteModal pequeño (auto-fill caseId)
+          - ✅ tarea → openTaskModal callback (parent gestiona)
+          Fase 4 GHL comms: 📞 + 💬 + 📅 se agregan aquí. */}
       <div
-        className="flex items-center justify-center gap-1"
+        className="flex items-center justify-end gap-1.5"
         onClick={(e) => e.stopPropagation()}
       >
+        <CaseAlertsCell c={c} />
+        <span className="text-[10px] text-slate-700 select-none">·</span>
         <QuickActionButton
           Icon={StickyNote}
           title="Agregar nota rápida"
           color="text-cyan-accent"
-          onClick={() => navigate(`/case-engine/${c.id}?tab=resumen&action=add-note`)}
+          onClick={() => onQuickNote?.(c)}
         />
         <QuickActionButton
           Icon={CheckSquare}
           title="Crear tarea"
           color="text-emerald-300"
-          onClick={() => navigate(`/case-engine/${c.id}?tab=tareas&action=add`)}
+          onClick={() => onQuickTask?.(c)}
         />
       </div>
     </div>

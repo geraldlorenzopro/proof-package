@@ -10,13 +10,15 @@ import { Button } from "@/components/ui/button";
 // Round 7: toast eliminado (R6 cross-view aclaración movida a /hub/tasks separado).
 import HubLayout from "@/components/hub/HubLayout";
 import CaseTable from "@/components/hub/CaseTable";
+import QuickNoteModal from "@/components/hub/QuickNoteModal";
+import QuickTaskModal from "@/components/hub/QuickTaskModal";
 import CaseKanban from "@/components/hub/CaseKanban";
 import CaseViewTabs from "@/components/hub/CaseViewTabs";
 import CaseFiltersPopover, { type CaseFilters, EMPTY_FILTERS } from "@/components/hub/CaseFiltersPopover";
 import CaseTypeFilterDropdown from "@/components/hub/CaseTypeFilterDropdown";
 import CasePeekPanel from "@/components/hub/CasePeekPanel";
 // Round 7: TasksByDateView ya no se importa aquí. Vive en /hub/tasks.
-import { useCasePipeline } from "@/hooks/useCasePipeline";
+import { useCasePipeline, type PipelineCase } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { useCaseViews, filterCasesByView } from "@/hooks/useCaseViews";
@@ -132,6 +134,11 @@ export default function HubCasesPage() {
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
   const [team, setTeam] = useState<Array<{ user_id: string; full_name: string }>>([]);
   const [peekCaseId, setPeekCaseId] = useState<string | null>(null);
+
+  // Round 9 (Mr. Lorenzo + Valerie + Marcus): quick modals para nota
+  // y tarea SIN abandonar la tabla (NO navega al expediente completo).
+  const [quickNoteCase, setQuickNoteCase] = useState<PipelineCase | null>(null);
+  const [quickTaskCase, setQuickTaskCase] = useState<PipelineCase | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { activeView, setActiveView } = useCaseViews();
 
@@ -469,6 +476,8 @@ export default function HubCasesPage() {
             team={team}
             activeCaseId={peekCaseId}
             onRowClick={(id) => setPeekCaseId(id)}
+            onQuickNote={(c) => setQuickNoteCase(c)}
+            onQuickTask={(c) => setQuickTaskCase(c)}
             onCaseChange={(id, updates) => updateCase(id, updates)}
             hideHeaders={hideHeaders}
           />
@@ -488,6 +497,28 @@ export default function HubCasesPage() {
         onClose={() => setPeekCaseId(null)}
         onOpenCase={() => { if (peekCaseId) navigate(`/case-engine/${peekCaseId}`); }}
         onNextActionChange={(id, next) => updateCase(id, { next_action: next })}
+      />
+
+      {/* Round 9 quick modals (Mr. Lorenzo + Valerie + Marcus consensus):
+          click 📝 nota o ✅ tarea → modal pequeño SIN abandonar tabla.
+          NO navega a /case-engine. */}
+      <QuickNoteModal
+        open={!!quickNoteCase}
+        onOpenChange={(o) => !o && setQuickNoteCase(null)}
+        prefilledCase={quickNoteCase ? {
+          id: quickNoteCase.id,
+          client_name: quickNoteCase.client_name,
+          case_type: quickNoteCase.case_type,
+        } : null}
+      />
+      <QuickTaskModal
+        open={!!quickTaskCase}
+        onOpenChange={(o) => !o && setQuickTaskCase(null)}
+        prefilledCase={quickTaskCase ? {
+          id: quickTaskCase.id,
+          client_name: quickTaskCase.client_name,
+          case_type: quickTaskCase.case_type,
+        } : null}
       />
     </HubLayout>
   );

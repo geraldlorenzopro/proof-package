@@ -35,6 +35,12 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (noteId: string) => void;
+  /**
+   * Round 9 (Mr. Lorenzo): si se pasa, el modal NO muestra selector
+   * de caso y usa este caso directamente. Para flow "click ícono nota
+   * en row de Pipeline" sin abandonar la tabla.
+   */
+  prefilledCase?: { id: string; client_name: string; case_type?: string | null } | null;
 }
 
 interface CaseOption {
@@ -51,13 +57,13 @@ const NOTE_TYPES = [
   { value: "decision",      label: "Decisión",      chip: "bg-purple-500/15 border-purple-500/30 text-purple-300" },
 ];
 
-export default function QuickNoteModal({ open, onOpenChange, onCreated }: Props) {
+export default function QuickNoteModal({ open, onOpenChange, onCreated, prefilledCase }: Props) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [casesLoading, setCasesLoading] = useState(true);
+  const [casesLoading, setCasesLoading] = useState(!prefilledCase);
   const [content, setContent] = useState("");
   const [noteType, setNoteType] = useState("general");
-  const [caseId, setCaseId] = useState<string>("");
+  const [caseId, setCaseId] = useState<string>(prefilledCase?.id || "");
   const [visibility, setVisibility] = useState<VisibilityLevel>("team");
   const [cases, setCases] = useState<CaseOption[]>([]);
 
@@ -65,8 +71,21 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated }: Props)
     if (!open) return;
     setContent("");
     setNoteType("general");
-    setCaseId("");
     setVisibility("team");
+
+    // Round 9 (Mr. Lorenzo): si prefilledCase, skipear fetch + selector.
+    if (prefilledCase) {
+      setCaseId(prefilledCase.id);
+      setCases([{
+        id: prefilledCase.id,
+        client_name: prefilledCase.client_name,
+        case_type: prefilledCase.case_type ?? null,
+      }]);
+      setCasesLoading(false);
+      return;
+    }
+
+    setCaseId("");
     setCasesLoading(true);
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -86,7 +105,7 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated }: Props)
       if (data && data.length > 0) setCaseId((data[0] as any).id);
       setCasesLoading(false);
     })();
-  }, [open]);
+  }, [open, prefilledCase]);
 
   async function handleCreate() {
     if (!content.trim()) {
@@ -198,29 +217,44 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated }: Props)
           </div>
         ) : (
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="note-case">Atar a caso *</Label>
-              <select
-                id="note-case"
-                value={caseId}
-                onChange={e => setCaseId(e.target.value)}
-                disabled={loading || casesLoading}
-                className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:border-cyan-accent/50 focus:outline-none disabled:opacity-50"
-              >
-                {casesLoading ? (
-                  <option value="">Cargando casos...</option>
-                ) : (
-                  <>
-                    <option value="">Seleccioná un caso...</option>
-                    {cases.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.client_name}{c.case_type ? ` · ${c.case_type}` : ""}
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
-            </div>
+            {/* Round 9: si prefilledCase, chip read-only con clientName.
+                Si NO prefilledCase, selector dropdown. */}
+            {prefilledCase ? (
+              <div className="space-y-2">
+                <Label>Caso</Label>
+                <div className="inline-flex items-center gap-1.5 text-[12px] font-medium text-cyan-accent bg-cyan-accent/10 border border-cyan-accent/30 rounded px-2.5 py-1">
+                  <FileText className="w-3 h-3" />
+                  {prefilledCase.client_name}
+                  {prefilledCase.case_type && (
+                    <span className="text-slate-400">· {prefilledCase.case_type}</span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="note-case">Atar a caso *</Label>
+                <select
+                  id="note-case"
+                  value={caseId}
+                  onChange={e => setCaseId(e.target.value)}
+                  disabled={loading || casesLoading}
+                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:border-cyan-accent/50 focus:outline-none disabled:opacity-50"
+                >
+                  {casesLoading ? (
+                    <option value="">Cargando casos...</option>
+                  ) : (
+                    <>
+                      <option value="">Seleccioná un caso...</option>
+                      {cases.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.client_name}{c.case_type ? ` · ${c.case_type}` : ""}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="note-content">Contenido *</Label>

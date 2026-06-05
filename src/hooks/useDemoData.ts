@@ -87,6 +87,9 @@ export interface DemoCase {
   interview_date: string | null;
   emb_interview_date: string | null;
   interview_city: string | null;
+  // Victoria fix /hub/tasks: pestaña "RFE 87d" depende de rfe_deadline.
+  // Sin esto, /hub/tasks?tab=rfe-response queda vacía en demo mode.
+  rfe_deadline?: string | null;
 }
 
 const today = new Date();
@@ -103,11 +106,12 @@ export const DEMO_CASES: DemoCase[] = [
     id: "demo-c-001", client_name: "Roberto García Suárez", client_profile_id: "demo-p-001",
     case_type: "I-130", pipeline_stage: "rfe", process_stage: "uscis",
     file_number: "MND-2026-0042", uscis_receipt: "MSC2390123456", nvc_case_number: null,
-    status: "in_progress", assigned_to: "demo-u-daniela", assigned_to_name: "Daniela Pérez",
+    status: "in_progress", assigned_to: "demo-u-vanessa", assigned_to_name: "Vanessa Rivera",
     ball_in_court: "team", legal_status: "RFE pendiente",
     days_since_activity: 9, open_tasks: 3, overdue_tasks: 3,
     next_due_iso: isoOffsetDays(-1),
     interview_date: null, emb_interview_date: null, interview_city: null,
+    rfe_deadline: isoOffsetDays(18),
   },
   {
     id: "demo-c-002", client_name: "María Rodríguez Vega", client_profile_id: "demo-p-002",
@@ -143,11 +147,12 @@ export const DEMO_CASES: DemoCase[] = [
     id: "demo-c-005", client_name: "Fernando Acosta Reyes", client_profile_id: "demo-p-005",
     case_type: "I-589", pipeline_stage: "apelacion", process_stage: "uscis",
     file_number: "MND-2025-0103", uscis_receipt: "ZAR2390223344", nvc_case_number: null,
-    status: "in_progress", assigned_to: "demo-u-carmen", assigned_to_name: "Carmen Báez",
+    status: "in_progress", assigned_to: "demo-u-vanessa", assigned_to_name: "Vanessa Rivera",
     ball_in_court: "team", legal_status: "Apelación I-290B",
     days_since_activity: 62, open_tasks: 2, overdue_tasks: 2,
     next_due_iso: isoOffsetDays(-12),
     interview_date: null, emb_interview_date: null, interview_city: null,
+    rfe_deadline: isoOffsetDays(42),
   },
   // ═══ NVC (18 casos en pulse, 2 detallados) ═══
   {

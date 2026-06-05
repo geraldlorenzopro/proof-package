@@ -189,6 +189,9 @@ export function useCasePipeline(accountId: string | null, userId: string | null 
         overdue_tasks_count: c.overdue_tasks,
         days_in_stage: c.days_since_activity,
         next_due_date: c.next_due_iso,
+        // Victoria fix /hub/tasks: propagar rfe_deadline desde DemoCase
+        // para que la tab "RFE 87d" tenga data en demo mode.
+        rfe_deadline: c.rfe_deadline ?? null,
       }));
       setCases(mockCases);
       setLoading(false);

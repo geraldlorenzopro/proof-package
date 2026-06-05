@@ -191,6 +191,20 @@ export default function HubTasksPage() {
           team={team}
           staffNames={staffNames}
           onTaskCountsChange={setTaskCounts}
+          onResetFilters={() => {
+            // Round 9 Victoria fix: el reset NO usa EMPTY_TASK_FILTERS porque
+            // EMPTY tiene assignee="me" + status="pending" — el mismo combo
+            // que produjo el vacío inicial para owner accounts sin self-assigns.
+            // Reset = mostrar TODO lo activo.
+            setTaskFilters({
+              ...EMPTY_TASK_FILTERS,
+              assignee: "all",
+              status: "pending",
+              due: "any",
+            });
+            setActiveTab("todas");
+            setSearch("");
+          }}
         />
       </div>
     </HubLayout>

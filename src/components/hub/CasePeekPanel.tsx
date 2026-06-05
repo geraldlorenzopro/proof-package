@@ -130,7 +130,7 @@ export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase, onNex
 
   return (
     <aside
-      className="fixed right-0 top-0 bottom-0 w-[420px] bg-deep-navy/[0.97] backdrop-blur-xl border-l border-cyan-accent/25 shadow-[-20px_0_60px_rgba(0,0,0,0.4)] z-50 overflow-y-auto"
+      className="fixed right-0 top-0 bottom-0 w-[480px] bg-deep-navy/[0.97] backdrop-blur-xl border-l border-cyan-accent/25 shadow-[-20px_0_60px_rgba(0,0,0,0.4)] z-50 overflow-y-auto"
       role="complementary"
       aria-label="Vista rápida del caso"
     >

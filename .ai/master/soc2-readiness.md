@@ -153,6 +153,52 @@ A: Tier 1-3 (owner, admin, attorney, paralegal, member). Tier 4-5 (assistant, re
 
 ---
 
+## Round 9 hotfix BLOCKER (2026-06-06 madrugada — autonomous)
+
+Victoria audit Round 9 al despertar identificó **2 BLOCKERS** del trigger
+universal de Round 8:
+
+### BLOCKER 1 — Trigger rompía mutations auth-less
+
+`tg_audit_pipeline_mutations` capturaba `v_user := auth.uid()` pero
+intentaba INSERT en `audit_logs(user_id)` que es NOT NULL.
+**Resultado:** TODA mutation desde edge function (service_role), cron,
+o background worker fallaba con `23502 not_null_violation`.
+
+**Fix aplicado en migration `20260606040000_audit_logs_user_id_nullable.sql`:**
+1. `audit_logs.user_id` → nullable
+2. Trigger ahora distingue source via `current_setting('role')`:
+   - User auth → captura `profiles.full_name`
+   - service_role → `user_display_name = 'Service Role'`
+   - anon → `user_display_name = 'Anonymous'`
+3. Index parcial `idx_audit_logs_system_events` para auditor query
+   "muéstrame eventos auth-less vs user-driven"
+4. metadata.source = 'system' | 'user' para discriminación rápida
+
+### BLOCKER 2 — `/hub/tasks` empty state engañoso
+
+Defaults `assignee="me"` + `tab="hoy"` + `status="pending"` garantizaban
+vista vacía para owner accounts sin tareas auto-asignadas.
+
+**Fix aplicado:**
+- `TasksByDateView` empty state diagnostica: ¿universo tiene tareas?
+  - SI + filtros activos → muestra "Tenés N tareas pero ninguna calza"
+    + CTA "Limpiar filtros" que resetea a `assignee="all"` + `tab="todas"`
+  - SI sin tareas → mensaje original "No tenés tareas en esta vista"
+- `useDemoData` propaga `rfe_deadline` para tab "RFE 87d" en demo
+- `useCasePipeline` demo mapping incluye `rfe_deadline`
+- `case_tasks` query filtra `.is("deleted_at", null)` post-migration
+
+### TSC actualizado post Round 9
+
+| TSC | Update |
+|---|---|
+| **CC4.1** Logging append-only | ✅ Trigger Round 8 funciona en TODOS los contextos auth |
+| **CC7.2** Anomaly source | ✅ Index `idx_audit_logs_system_events` permite query "eventos sospechosos sin user" |
+| **PI1.4** UX integrity | ✅ Empty state honesto explica WHY vacío + path out |
+
+---
+
 ## Referencias
 
 - Marcus audit completo: ver transcript Round 8 (a8967a983bf78a548)
@@ -160,3 +206,4 @@ A: Tier 1-3 (owner, admin, attorney, paralegal, member). Tier 4-5 (assistant, re
 - Pipeline cerrado decisions: `.ai/master/decisions.md` entrada 2026-06-05
 - Visibility hierarchical: `.ai/master/visibility-model.md`
 - Migration aplicada (status): `supabase/migrations/20260606030000_soc2_pipeline_quick_wins.sql`
+- Hotfix Round 9: `supabase/migrations/20260606040000_audit_logs_user_id_nullable.sql`

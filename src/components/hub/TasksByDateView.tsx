@@ -94,6 +94,8 @@ interface Props {
   team?: TeamMember[];
   staffNames?: Record<string, string>;
   onTaskCountsChange?: (counts: Record<TaskViewKey, number>) => void;
+  /** Round 9 Victoria fix: empty state ofrece reset cuando filtros causaron vista vacía. */
+  onResetFilters?: () => void;
 }
 
 const BUCKET_ORDER: TaskBucketKey[] = ["overdue", "today", "tomorrow", "this_week", "next_week", "later", "no_date"];
@@ -252,7 +254,7 @@ function sortTasks(tasks: TaskWithCase[], sortBy: TaskSortKey): TaskWithCase[] {
 
 export default function TasksByDateView({
   accountId, userId, cases, activeTab, taskFilters, sortBy, search,
-  team = [], staffNames, onTaskCountsChange,
+  team = [], staffNames, onTaskCountsChange, onResetFilters,
 }: Props) {
   const navigate = useNavigate();
   const demoMode = useDemoMode();
@@ -315,11 +317,16 @@ export default function TasksByDateView({
       setLoading(true);
 
       // Round 7: query SIN .in("case_id", caseIds) — universo completo
+      // Round 9 SOC II: excluir soft-deleted (deleted_at IS NULL).
+      // .is("deleted_at", null) es no-op si la columna no existe aún
+      // (postgrest ignora filtros sobre cols missing en select=*).
+      // Una vez aplicada migration 20260606030000, oculta tareas borradas.
       const { data, error } = await supabase
         .from("case_tasks")
         .select("id, case_id, title, description, due_date, priority, status, assigned_to, assigned_to_name, parent_task_id, snoozed_until, task_type, created_at, visibility")
         .eq("account_id", accountId)
         .neq("status", "archived")
+        .is("deleted_at" as any, null)
         .order("due_date", { ascending: true, nullsFirst: false })
         .abortSignal(abortCtrl.signal);
 
@@ -669,19 +676,49 @@ export default function TasksByDateView({
   }
 
   if (tasks.length === 0) {
+    // Round 9 Victoria fix: diagnostico WHY vacío.
+    // - allTasks.length === 0 → realmente no hay tareas
+    // - allTasks.length > 0 pero filtrado a 0 → filtros agresivos
+    const universeHasTasks = allTasks.length > 0;
+    const hasNonDefaultFilters =
+      taskFilters.assignee !== "all" ||
+      taskFilters.status !== "pending" ||
+      taskFilters.due !== "any" ||
+      taskFilters.caseType !== null ||
+      taskFilters.taskType !== "all" ||
+      activeTab !== "todas" ||
+      search.length > 0;
+    const filterCausedEmpty = universeHasTasks && hasNonDefaultFilters;
+
     return (
       <div className="space-y-2">
         {topbar}
         <div className="rounded-xl border border-border/40 bg-card/30 py-16 text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/15 mx-auto flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-emerald-300" />
+          <div className={`w-12 h-12 rounded-full mx-auto flex items-center justify-center ${
+            filterCausedEmpty ? "bg-amber-500/15" : "bg-emerald-500/15"
+          }`}>
+            <Calendar className={`w-5 h-5 ${filterCausedEmpty ? "text-amber-300" : "text-emerald-300"}`} />
           </div>
           <p className="text-sm font-semibold text-foreground">
-            No tenés tareas en esta vista
+            {filterCausedEmpty
+              ? `Tenés ${allTasks.length} tarea${allTasks.length === 1 ? "" : "s"}, pero ninguna calza con los filtros`
+              : "No tenés tareas en esta vista"}
           </p>
-          <p className="text-[11px] text-muted-foreground">
-            Las tareas que cumplan con el filtro activo aparecen acá.
+          <p className="text-[11px] text-muted-foreground max-w-md mx-auto">
+            {filterCausedEmpty
+              ? "Probá ampliar el rango: cambia \"Asignado: yo\" → \"Equipo\", o pestaña \"Hoy\" → \"Todas\"."
+              : "Las tareas que cumplan con el filtro activo aparecen acá."}
           </p>
+          {filterCausedEmpty && onResetFilters && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px] border-cyan-accent/40 text-cyan-accent hover:bg-cyan-accent/10"
+              onClick={onResetFilters}
+            >
+              Limpiar filtros
+            </Button>
+          )}
         </div>
       </div>
     );
