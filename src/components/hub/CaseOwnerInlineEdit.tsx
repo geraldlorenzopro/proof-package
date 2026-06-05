@@ -114,18 +114,14 @@ export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwn
         successMessage: newName ? `Asignado a ${newName}` : "Sin asignar",
       });
 
-      // Sincronizar el denormalizado assigned_to_name (no rompe si la
-      // columna no existe — Supabase devuelve error pero no rompe el OK
-      // principal de assigned_to). Demo mode lo skipea adentro de edit().
-      if (newName !== null) {
-        await edit({
-          caseId,
-          field: "assigned_to_name",
-          newValue: newName,
-          oldValue: oldName,
-          onOptimistic: () => {},
-        }).catch(() => { /* assigned_to_name puede no existir en BD, ignorar */ });
-      }
+      // NOTA 2026-06-03: ANTES intentábamos sync 'assigned_to_name' como
+      // segundo edit, pero esa columna NO EXISTE en client_cases (solo
+      // existe en case_tasks). PostgREST devolvía 400 con error de schema
+      // cache → useCaseInlineEdit mostraba toast destructivo aunque el
+      // primer edit (assigned_to) sí persistía. Confusión total.
+      // El display name se resuelve via staffNames[assigned_to] desde
+      // account_members + profiles JOIN en HubCasesPage — modelo derivado,
+      // no denormalizado. No hay que sincronizar nada extra.
     } catch {
       // edit() ya hizo rollback con toast destructivo
       setOwnerId(oldId);
