@@ -206,24 +206,29 @@ export default function HubCasesPage() {
   // teléfono, cliente llama y no me sé el nombre exacto. Apellido o
   // teléfono = primera cosa que tipeo".
   const searchFilteredCases = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    // Round 4.6 (Vanessa): accent-insensitive. Hispanos tipean "garcia"
+    // (sin tilde) y esperan match a "García". Normalizamos query y campos
+    // con NFD + strip diacritics antes de comparar.
+    const stripAccents = (s: string) =>
+      s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const q = stripAccents(search.trim());
     if (!q) return cases;
     // Normalizar input: si el usuario tipeó algo que parece número/teléfono,
     // lo comparamos digits-only contra phone/mobile_phone/a_number normalizados.
     const qDigits = q.replace(/\D/g, "");
     const qAnum = q.replace(/^a/i, "").replace(/\D/g, "");
     return cases.filter(c => {
-      // Text fields (nombre, file, tipo, NVC)
-      if (c.client_name?.toLowerCase().includes(q)) return true;
-      if (c.file_number?.toLowerCase().includes(q)) return true;
-      if (c.case_type?.toLowerCase().includes(q)) return true;
-      if (c.nvc_case_number?.toLowerCase().includes(q)) return true;
+      // Text fields (nombre, file, tipo, NVC) — accent-insensitive
+      if (c.client_name && stripAccents(c.client_name).includes(q)) return true;
+      if (c.file_number && stripAccents(c.file_number).includes(q)) return true;
+      if (c.case_type && stripAccents(c.case_type).includes(q)) return true;
+      if (c.nvc_case_number && stripAccents(c.nvc_case_number).includes(q)) return true;
 
-      // USCIS receipt numbers (array u objeto)
+      // USCIS receipt numbers (array u objeto) — accent-insensitive
       const receipts = c.uscis_receipt_numbers;
-      if (Array.isArray(receipts) && receipts.some((r: any) => String(r).toLowerCase().includes(q))) return true;
+      if (Array.isArray(receipts) && receipts.some((r: any) => stripAccents(String(r)).includes(q))) return true;
       if (receipts && typeof receipts === "object") {
-        if (Object.values(receipts).some((r: any) => String(r).toLowerCase().includes(q))) return true;
+        if (Object.values(receipts).some((r: any) => stripAccents(String(r)).includes(q))) return true;
       }
 
       // Phone + A-number (Round 4.5): JOIN nested client_profiles.
