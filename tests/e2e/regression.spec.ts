@@ -85,6 +85,42 @@ test.describe("Pattern 2 — Counter ↔ render parity (no doble-gate)", () => {
 
     expect(counterFromTab).toBe(counterFromTopbar);
   });
+
+  test("/hub/tasks KPIs no desaparecen después de la primera hidratación", async ({ page }) => {
+    await page.goto(DEMO_HUB_TASKS);
+
+    const counters = page.locator('[data-testid^="task-tab-count-"]');
+    await expect(counters.first()).toBeVisible({ timeout: 5000 });
+
+    await page.waitForFunction(() => {
+      const nodes = Array.from(document.querySelectorAll('[data-testid^="task-tab-count-"]')) as HTMLElement[];
+      return nodes.length > 0 && nodes.every(node => {
+        const text = (node.textContent || "").trim();
+        return /^\d+$/.test(text) && window.getComputedStyle(node.firstElementChild || node).opacity !== "0";
+      });
+    });
+
+    const samples: string[] = [];
+    const hiddenSamples: string[] = [];
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < 1500) {
+      const state = await page.locator('[data-testid^="task-tab-count-"]').evaluateAll(nodes =>
+        nodes.map(node => {
+          const el = node as HTMLElement;
+          const text = (el.textContent || "").trim();
+          const target = (el.firstElementChild as HTMLElement | null) || el;
+          return { id: el.getAttribute("data-testid"), text, opacity: window.getComputedStyle(target).opacity };
+        })
+      );
+      samples.push(JSON.stringify(state));
+      const hidden = state.filter(item => !/^\d+$/.test(item.text) || item.opacity === "0");
+      if (hidden.length > 0) hiddenSamples.push(JSON.stringify(hidden));
+      await page.waitForTimeout(50);
+    }
+
+    expect(hiddenSamples, `Counters disappeared after hydration. Samples: ${samples.join(" | ")}`).toEqual([]);
+    await expect(page.getByTestId("task-tab-count-todas")).not.toHaveText("0");
+  });
 });
 
 test.describe("Pattern 3 — Filtros default neutrales (no trap)", () => {
