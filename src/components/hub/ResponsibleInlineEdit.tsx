@@ -21,6 +21,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoMode } from "@/hooks/useDemoData";
+import { useCloseOnScroll } from "@/hooks/useCloseOnScroll";
 import { toast } from "sonner";
 import type { Responsible } from "@/lib/journeySteps";
 
@@ -108,6 +109,9 @@ export default function ResponsibleInlineEdit({
   useEffect(() => {
     setNoteInput(override?.note || "");
   }, [override?.note]);
+
+  // Round 9.30: cerrar en scroll (popover queda flotando sino).
+  useCloseOnScroll(open, () => setOpen(false));
 
   async function applyOverride(newResp: Responsible | null) {
     setSaving(true);

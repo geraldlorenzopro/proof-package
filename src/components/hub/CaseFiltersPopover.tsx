@@ -16,6 +16,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { SlidersHorizontal, X } from "lucide-react";
+import { useCloseOnScroll } from "@/hooks/useCloseOnScroll";
 
 export interface CaseFilters {
   onlyOverdue: boolean;
@@ -71,6 +72,9 @@ export default function CaseFiltersPopover({ value, onChange }: Props) {
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  // Round 9.30: cerrar en scroll (popover queda flotando sino).
+  useCloseOnScroll(open, () => setOpen(false));
 
   function toggle(key: keyof CaseFilters) {
     onChange({ ...value, [key]: !value[key] });

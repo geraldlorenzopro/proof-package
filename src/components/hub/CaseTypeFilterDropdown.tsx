@@ -22,6 +22,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Search, ChevronDown, Check, FileType } from "lucide-react";
 import { getCaseTypeByKey } from "@/lib/caseTypes";
+import { useCloseOnScroll } from "@/hooks/useCloseOnScroll";
 
 interface TypeOption {
   key: string;
@@ -114,6 +115,9 @@ export default function CaseTypeFilterDropdown({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
+  // Round 9.30: cerrar en scroll (popover queda flotando sino).
+  useCloseOnScroll(open, () => { setOpen(false); setQuery(""); });
 
   function handleSelect(key: string | null) {
     if (key !== null) onUseRecent(key);

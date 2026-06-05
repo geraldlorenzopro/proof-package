@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
+import { useCloseOnScroll } from "@/hooks/useCloseOnScroll";
 
 interface TeamMember {
   user_id: string;
@@ -82,6 +83,10 @@ export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwn
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
+  // Round 9.30: cerrar popover en scroll (popover queda flotando vieja
+  // pos sino — Mr. Lorenzo screenshot).
+  useCloseOnScroll(open, () => setOpen(false));
 
   async function handleSelect(member: TeamMember | null) {
     setOpen(false);

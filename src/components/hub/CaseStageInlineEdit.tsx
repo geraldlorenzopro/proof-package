@@ -15,6 +15,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
+import { useCloseOnScroll } from "@/hooks/useCloseOnScroll";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
@@ -64,6 +65,9 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
+  // Round 9.30: cerrar en scroll (popover queda flotando sino).
+  useCloseOnScroll(open, () => setOpen(false));
 
   const meta = getJourneyMeta(currentStep);
 

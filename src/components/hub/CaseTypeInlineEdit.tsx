@@ -15,6 +15,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Search } from "lucide-react";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
+import { useCloseOnScroll } from "@/hooks/useCloseOnScroll";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   CASE_TYPES,
@@ -124,6 +125,11 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
     document.addEventListener("pointerdown", handle);
     return () => document.removeEventListener("pointerdown", handle);
   }, [open]);
+
+  // Round 9.30 Mr. Lorenzo screenshot: popover queda flotando en posición
+  // vieja durante scroll (rect.bottom no se recalcula). Cerramos al scroll
+  // — patrón Notion/Linear/Airtable.
+  useCloseOnScroll(open, () => setOpen(false));
 
   useEffect(() => {
     if (!open) return;
@@ -278,8 +284,9 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
             </p>
           </div>
 
-          {/* Results list (scrollable) */}
-          <div className="flex-1 overflow-y-auto p-1">
+          {/* Results list (scrollable) — Round 9.30: data attr para que
+              useCloseOnScroll NO cierre cuando scrolleamos esta lista. */}
+          <div className="flex-1 overflow-y-auto p-1" data-popover-internal-scroll="true">
             {results.length === 0 ? (
               <div className="px-3 py-4 text-center space-y-2">
                 <p className="text-[11px] text-slate-500 italic">
