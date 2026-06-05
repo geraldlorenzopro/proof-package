@@ -31,20 +31,23 @@ interface Props {
   variant?: "compact" | "full";
 }
 
+const SHORT_MONTHS_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+
 function fmtDueDate(iso: string | null): { label: string; tone: string } {
   if (!iso) return { label: "Sin fecha", tone: "text-slate-500" };
   const d = new Date(iso + "T00:00:00");
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  if (diff < 0) return { label: `${dd}/${mm} (vencido)`, tone: "text-rose-400 font-semibold" };
-  if (diff === 0) return { label: `${dd}/${mm} (hoy)`, tone: "text-rose-400 font-semibold" };
-  if (diff <= 3) return { label: `${dd}/${mm} (${diff}d)`, tone: "text-rose-400 font-semibold" };
-  if (diff <= 7) return { label: `${dd}/${mm} (${diff}d)`, tone: "text-amber-300 font-semibold" };
-  if (diff <= 14) return { label: `${dd}/${mm} (${diff}d)`, tone: "text-cyan-accent" };
-  return { label: `${dd}/${mm} (${diff}d)`, tone: "text-slate-300" };
+  // Formato D mes (no dd/mm ambiguo). Auditoría 2026-06-05.
+  const dateLabel = `${d.getDate()} ${SHORT_MONTHS_ES[d.getMonth()]}`;
+  if (diff < 0) return { label: `${dateLabel} (vencido)`, tone: "text-rose-400 font-semibold" };
+  if (diff === 0) return { label: `${dateLabel} (hoy)`, tone: "text-rose-400 font-semibold" };
+  if (diff === 1) return { label: `${dateLabel} (mañana)`, tone: "text-rose-400 font-semibold" };
+  if (diff <= 3) return { label: `${dateLabel} (${diff}d)`, tone: "text-rose-400 font-semibold" };
+  if (diff <= 7) return { label: `${dateLabel} (${diff}d)`, tone: "text-amber-300 font-semibold" };
+  if (diff <= 14) return { label: `${dateLabel} (${diff}d)`, tone: "text-cyan-accent" };
+  return { label: `${dateLabel} (${diff}d)`, tone: "text-slate-300" };
 }
 
 export default function NextActionChip({ caseId, processStage, caseTypeKey, value, onChange, variant = "compact" }: Props) {
@@ -80,6 +83,7 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
           currentValue={value}
           open={open}
           anchor={anchor}
+          triggerRef={triggerRef}
           onSaved={onChange}
           onClose={() => setOpen(false)}
         />
@@ -119,6 +123,7 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
           currentValue={value}
           open={open}
           anchor={anchor}
+          triggerRef={triggerRef}
           onSaved={onChange}
           onClose={() => setOpen(false)}
         />
@@ -171,6 +176,7 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
         currentValue={value}
         open={open}
         anchor={anchor}
+        triggerRef={triggerRef}
         onSaved={onChange}
         onClose={() => setOpen(false)}
       />

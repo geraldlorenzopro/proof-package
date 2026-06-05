@@ -208,6 +208,7 @@ export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase, onNex
           <NextActionChip
             caseId={c.id}
             processStage={c.process_stage}
+            caseTypeKey={c.case_type}
             value={localNextAction}
             variant="full"
             onChange={(next) => {

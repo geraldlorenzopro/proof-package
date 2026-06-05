@@ -1,3 +1,10 @@
+import { getCaseTypeByKey } from "./caseTypes";
+
+/**
+ * Labels LEGACY — solo para case_types antiguos en DB que no migraron
+ * a las keys nuevas del catálogo. Antes de buscar acá, se resuelve
+ * contra CASE_TYPES (104 entries). Auditoría 2026-06-05.
+ */
 export const CASE_TYPE_LABELS: Record<string, string> = {
   'naturalization': 'Naturalización',
   'family-petition': 'Petición Familiar',
@@ -28,12 +35,15 @@ export const CASE_TYPE_LABELS: Record<string, string> = {
 
 export function getCaseTypeLabel(caseType: string): string {
   if (!caseType) return 'General';
-  // Direct match
+  // 1. Catálogo nuevo (CASE_TYPES, 104 entries) — fuente de verdad
+  const meta = getCaseTypeByKey(caseType);
+  if (meta) return meta.shortLabel;
+  // 2. Direct match en mapa legacy
   if (CASE_TYPE_LABELS[caseType]) return CASE_TYPE_LABELS[caseType];
-  // Normalize: lowercase + replace spaces with hyphens
+  // 3. Normalize: lowercase + replace spaces with hyphens
   const normalized = caseType.toLowerCase().replace(/\s+/g, '-');
   if (CASE_TYPE_LABELS[normalized]) return CASE_TYPE_LABELS[normalized];
-  // Fallback: return original
+  // 4. Fallback: devolver el raw — visible para que se note el gap
   return caseType;
 }
 

@@ -598,6 +598,7 @@ export default function CaseEnginePage() {
                   <NextActionChip
                     caseId={caseId!}
                     processStage={caseData.process_stage}
+                    caseTypeKey={caseData.case_type}
                     value={(caseData.custom_fields?.next_action as NextActionPayload | undefined) ?? null}
                     variant="full"
                     onChange={(next) => {

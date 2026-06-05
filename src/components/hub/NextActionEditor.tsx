@@ -36,6 +36,14 @@ interface Props {
   open: boolean;
   /** Coordenadas absolutas del trigger (rect.bottom + rect.left). */
   anchor: { top: number; left: number } | null;
+  /**
+   * Ref del botón que disparó la apertura. Si está, el outside-click
+   * IGNORA clicks dentro del trigger (sin esto el trigger queda fuera
+   * del popRef del portal → cualquier re-click del chip dispara cierre
+   * por outside-click y handleOpen lo reabre → flicker "entra y sale"
+   * que reportó Mr. Lorenzo 2026-06-05).
+   */
+  triggerRef?: React.RefObject<HTMLElement>;
   /** Callback cuando se guarda con éxito. */
   onSaved: (payload: NextActionPayload | null) => void;
   /** Cerrar sin guardar. */
@@ -57,6 +65,7 @@ export default function NextActionEditor({
   currentValue,
   open,
   anchor,
+  triggerRef,
   onSaved,
   onClose,
 }: Props) {
@@ -105,20 +114,24 @@ export default function NextActionEditor({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  // Click fuera cierra
+  // Click fuera cierra. IGNORA clicks dentro del trigger (el chip que
+  // abrió el editor) para no caer en el ciclo close→open que percibía
+  // como flicker. Reportado por Mr. Lorenzo 2026-06-05.
   useEffect(() => {
     if (!open) return;
     function handle(e: PointerEvent) {
-      if (popRef.current?.contains(e.target as Node)) return;
+      const t = e.target as Node;
+      if (popRef.current?.contains(t)) return;
+      if (triggerRef?.current?.contains(t)) return;
       onClose();
     }
     // Pequeño delay para no capturar el click que abrió el editor
-    const t = setTimeout(() => document.addEventListener("pointerdown", handle), 50);
+    const tid = setTimeout(() => document.addEventListener("pointerdown", handle), 50);
     return () => {
-      clearTimeout(t);
+      clearTimeout(tid);
       document.removeEventListener("pointerdown", handle);
     };
-  }, [open, onClose]);
+  }, [open, onClose, triggerRef]);
 
   async function handleSave() {
     if (!actionKey) {
