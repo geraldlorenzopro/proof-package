@@ -179,3 +179,55 @@ test.describe("Pattern 6 — TaskCreateModal demo inyecta + no aborta por accoun
     await expect(page.getByText(/Tarea creada/i)).toBeVisible({ timeout: 3000 });
   });
 });
+
+test.describe("Pattern 7 — Buckets vacíos ocultos cuando el tab no los necesita (R9.12)", () => {
+  test("Atrasadas: solo muestra 'Vencidas' (oculta Hoy/Mañana/Esta semana vacíos)", async ({ page }) => {
+    await page.goto(DEMO_HUB_TASKS);
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.getByRole("button", { name: /ATRASADAS/i }).first().click();
+    await page.waitForTimeout(400);
+
+    await expect(page.getByRole("heading", { level: 3, name: "Vencidas" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 3, name: "Hoy" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 3, name: "Mañana" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 3, name: "Esta semana" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 3, name: "Más adelante" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 3, name: "Sin fecha" })).toHaveCount(0);
+  });
+
+  test("RFE Response: oculta 'Más adelante' y 'Sin fecha' si están vacíos", async ({ page }) => {
+    await page.goto(DEMO_HUB_TASKS);
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.getByRole("button", { name: /RFE/i }).first().click();
+    await page.waitForTimeout(400);
+
+    // "Más adelante" y "Sin fecha" no deben aparecer en RFE Response
+    await expect(page.getByRole("heading", { level: 3, name: "Más adelante" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 3, name: "Sin fecha" })).toHaveCount(0);
+  });
+
+  test("Todas: 'Hoy' siempre visible aunque esté vacío (informativo)", async ({ page }) => {
+    await page.goto(DEMO_HUB_TASKS);
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForTimeout(400);
+
+    // En tab Todas todos los buckets relevantes se muestran siempre
+    await expect(page.getByRole("heading", { level: 3, name: "Hoy" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 3, name: "Vencidas" })).toBeVisible();
+  });
+
+  test("Hoy: solo muestra bucket 'Hoy' (oculta el resto vacíos)", async ({ page }) => {
+    await page.goto(DEMO_HUB_TASKS);
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.getByRole("button", { name: /^HOY/i }).first().click();
+    await page.waitForTimeout(400);
+
+    await expect(page.getByRole("heading", { level: 3, name: "Vencidas" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 3, name: "Mañana" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 3, name: "Esta semana" })).toHaveCount(0);
+  });
+});
