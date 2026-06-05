@@ -414,6 +414,35 @@ export default function HubCasesPage() {
             onUseRecent={handleUseRecent}
           />
 
+          {/* Round 9.13 Mr. Lorenzo — chip "Limpiar" visible (espejo de /hub/tasks).
+              Aparece solo cuando hay filtros sucios. Resetea TODO en un click. */}
+          {(() => {
+            const dirty =
+              filters.onlyOverdue || filters.onlyWithRfe ||
+              filters.onlyWithNextAction || filters.onlyWithoutOwner ||
+              !!activeTypeKey || activeView !== "todos" || !!search.trim() ||
+              sortBy !== "default" || groupBy !== "stage";
+            if (!dirty) return null;
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilters(EMPTY_FILTERS);
+                  setActiveTypeKey(null);
+                  setActiveView("todos");
+                  setSearch("");
+                  setSortBy("default");
+                  setGroupBy("stage");
+                }}
+                aria-label="Limpiar filtros"
+                data-testid="reset-filters"
+                className="h-8 px-2.5 text-[11px] rounded-md border border-white/10 bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground inline-flex items-center gap-1.5 transition-colors"
+              >
+                ✕ Limpiar
+              </button>
+            );
+          })()}
+
           {/* View switcher con 3 modos: Tabla / Kanban / Tareas.
               Tareas es la nueva vista Round 4 (Vanessa + Marcus):
               tasks agrupadas por fecha (Overdue / Hoy / Esta semana). */}
