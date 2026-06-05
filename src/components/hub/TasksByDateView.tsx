@@ -701,7 +701,7 @@ export default function TasksByDateView({
     const universeHasTasks = allTasks.length > 0;
     const hasNonDefaultFilters =
       taskFilters.assignee !== "all" ||
-      taskFilters.status !== "pending" ||
+      taskFilters.status !== "all" ||
       taskFilters.due !== "any" ||
       taskFilters.caseType !== null ||
       taskFilters.taskType !== "all" ||
@@ -725,7 +725,7 @@ export default function TasksByDateView({
           </p>
           <p className="text-[11px] text-muted-foreground max-w-md mx-auto">
             {filterCausedEmpty
-              ? "Probá ampliar el rango: cambia \"Asignado: yo\" → \"Equipo\", o pestaña \"Hoy\" → \"Todas\"."
+              ? "Ajustá los filtros o limpialos para ver toda la bandeja."
               : "Las tareas que cumplan con el filtro activo aparecen acá."}
           </p>
           {filterCausedEmpty && onResetFilters && (
