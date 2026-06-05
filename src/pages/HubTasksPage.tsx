@@ -102,6 +102,10 @@ export default function HubTasksPage() {
 
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
   const [team, setTeam] = useState<Array<{ user_id: string; full_name: string }>>([]);
+  // Round 9.13 anti-flash: tasksLoading se hidrata desde TasksByDateView para
+  // que TaskViewTabs muestre "—" hasta que counts sean reales. Antes los tabs
+  // mostraban "0" durante 1-2 render cycles y después saltaban — parpadeo feo.
+  const [tasksLoading, setTasksLoading] = useState(true);
   const [taskCounts, setTaskCounts] = useState<Record<TaskViewKey, number>>({
     todas: 0, hoy: 0, atrasadas: 0, proximas: 0, completadas: 0, "rfe-response": 0,
   });
