@@ -94,6 +94,8 @@ interface Props {
   team?: TeamMember[];
   staffNames?: Record<string, string>;
   onTaskCountsChange?: (counts: Record<TaskViewKey, number>) => void;
+  /** Round 9.13 anti-flash: bubble up tasks loading para que TaskViewTabs muestre "—" hasta que counts sean reales. */
+  onLoadingChange?: (loading: boolean) => void;
   /** Round 9 Victoria fix: empty state ofrece reset cuando filtros causaron vista vacía. */
   onResetFilters?: () => void;
 }
