@@ -131,8 +131,9 @@ export default function TaskCreateModal({
       toast.error("Elegí un caso para la tarea");
       return;
     }
-    // Round 9.9.1: en demo mode no requerimos accountId/userId reales —
-    // la tarea es fake y se inyecta al estado local del parent.
+    // Round 9.10 Lovable E2E catch: los guards de accountId/userId corrían
+    // ANTES del branch isDemoMode, abortando demo create con "Sin cuenta
+    // activa" porque en demo accountId es null. Demo no necesita auth real.
     if (!isDemoMode) {
       if (!accountId) {
         toast.error("Sin cuenta activa");
