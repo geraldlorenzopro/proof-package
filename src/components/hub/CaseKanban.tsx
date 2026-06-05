@@ -48,41 +48,62 @@ function dayTone(days: number): string {
   return "text-muted-foreground/60";
 }
 
+// Round 9.24 (Vanessa request): días en etapa promovido a pill top-right
+// con color tier. Es la métrica que el paralegal escanea primero al ver el
+// board. Antes era texto gris 10px perdido en el meta row.
+function daysPillClass(days: number): string {
+  if (days >= 60) return "bg-rose-500/15 border-rose-500/40 text-rose-300";
+  if (days >= 30) return "bg-amber-500/15 border-amber-500/40 text-amber-300";
+  if (days >= 14) return "bg-cyan-accent/10 border-cyan-accent/30 text-cyan-accent";
+  return "bg-white/[0.04] border-white/10 text-slate-400";
+}
+
 export default function CaseKanban({ groups, staffNames, onCardClick, showRevenue = false, onQuickNote, onQuickTask }: Props) {
   const allEmpty = groups.every(g => g.cases.length === 0);
   const visible = allEmpty ? groups : groups.filter(g => g.cases.length > 0);
 
+  // Round 9.24 (Valerie + Marcus + Vanessa consensus): grid dinámico keyado
+  // a visible.length — el bug era xl:grid-cols-6 hardcoded mostrando 6 slots
+  // cuando solo había 5 stages con casos → 340px de espacio fantasma a la
+  // derecha. Inline gridTemplateColumns evita Tailwind JIT bug (R9.8 pattern).
+  // Cap en 7 cols: más allá → minmax(280px,1fr) habilita scroll horizontal
+  // tipo Trello/Asana para 8+ stages.
+  const gridTemplateColumns = visible.length <= 7
+    ? `repeat(${visible.length}, minmax(0, 1fr))`
+    : `repeat(${visible.length}, minmax(280px, 1fr))`;
+  const overflowX = visible.length > 7 ? "auto" : "visible";
+
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2.5">
+      <div className="grid gap-3" style={{ gridTemplateColumns, overflowX }}>
         {visible.map(group => {
           const accent = ACCENT_HEX[group.key] || "#6B7280";
           const revenue = showRevenue ? sumMatterValue(group.cases) : 0;
           return (
             <div
               key={group.key}
-              className="flex flex-col rounded-lg border border-border/50 bg-card/30 min-h-[140px]"
+              className="flex flex-col rounded-lg border border-border/50 bg-card/30 min-h-[180px]"
             >
-              <div className="flex flex-col gap-0.5 px-2.5 py-1.5 border-b border-border/30">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: accent }} />
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-foreground truncate">
+              <div className="flex flex-col gap-1 px-3 py-2 border-b border-border/30">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: accent }} />
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-foreground truncate">
                     {group.label}
                   </span>
-                  <span className="ml-auto text-[10px] font-semibold text-muted-foreground/70 tabular-nums">
+                  <span className="ml-auto text-[11px] font-semibold text-muted-foreground/70 tabular-nums">
                     {group.cases.length}
                   </span>
                 </div>
                 {showRevenue && revenue > 0 && (
-                  <div className="text-[10px] font-sora font-semibold tabular-nums text-emerald-300/80 pl-3">
+                  <div className="text-[11px] font-sora font-semibold tabular-nums text-emerald-300/80 pl-4">
                     {formatCurrency(revenue)}
                   </div>
                 )}
               </div>
 
-              <div className="flex-1 p-1.5 space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto">
+              <div className="flex-1 p-2 space-y-1.5 max-h-[calc(100vh-260px)] overflow-y-auto">
                 {group.cases.length === 0 ? (
-                  <div className="text-[10px] text-muted-foreground/40 text-center py-4 italic">
+                  <div className="text-[11px] text-muted-foreground/40 text-center py-6 italic">
                     —
                   </div>
                 ) : (
@@ -124,55 +145,72 @@ function CompactCard({ c, staffNames, accent, onCardClick, onQuickNote, onQuickT
     else navigate(`/case-engine/${c.id}`);
   }
 
-  // Victoria fix: wrapper <div role="button"> (no <button>) para
-  // permitir nested buttons del menu "..." sin HTML inválido.
+  // Round 9.24 redesign (3-agentes consensus):
+  //   - Padding p-3 (antes px-2 py-1.5)
+  //   - Name text-sm font-semibold (antes text-[12px])
+  //   - Case type text-xs (antes text-[10px])
+  //   - Pill "días en etapa" promoted al top-right con color tier
+  //   - Min height para que cards no colapsen
   return (
     <div
       role="button"
       tabIndex={0}
       onClick={handleCardClick}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleCardClick(); } }}
-      className="relative w-full text-left rounded-md border border-border/40 bg-card/80 hover:bg-card hover:border-border transition-colors px-2 py-1.5 group cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyan-accent/50"
+      className="relative w-full text-left rounded-md border border-border/40 bg-card/80 hover:bg-card hover:border-border transition-colors p-3 group cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyan-accent/50"
     >
-      <div className="flex items-start gap-1.5">
-        <span className="w-1 h-8 rounded-full shrink-0 mt-0.5" style={{ backgroundColor: accent }} />
+      <div className="flex items-start gap-2">
+        <span className="w-1 h-10 rounded-full shrink-0 mt-0.5" style={{ backgroundColor: accent }} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1 min-w-0">
-            {c.pinned && (
-              <Pin className="w-2.5 h-2.5 text-amber-400 shrink-0" aria-label="Fijado" />
-            )}
-            <div className="text-[12px] font-semibold text-foreground truncate leading-tight group-hover:underline underline-offset-2 decoration-muted-foreground/30">
-              {c.client_name}
+          <div className="flex items-start justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              {c.pinned && (
+                <Pin className="w-3 h-3 text-amber-400 shrink-0" aria-label="Fijado" />
+              )}
+              <div className="text-sm font-semibold text-foreground truncate leading-tight group-hover:underline underline-offset-2 decoration-muted-foreground/30">
+                {c.client_name}
+              </div>
             </div>
+            {/* Días en etapa pill (Vanessa: lo que primero escanea) */}
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 text-[11px] font-mono font-semibold tabular-nums border rounded px-1.5 py-0.5 shrink-0",
+                daysPillClass(days)
+              )}
+              title={`${days} días en esta etapa`}
+            >
+              {days}d
+            </span>
           </div>
-          <div className="text-[10px] text-muted-foreground/70 truncate leading-tight">
+          <div className="text-xs text-muted-foreground/80 truncate leading-tight mt-1">
             {getCaseTypeLabel(c.case_type)}
           </div>
         </div>
-        {/* Round 9.12 Mr. Lorenzo cases audit: quick actions abren modales
-            (NO navegan al expediente). Misma UX que CaseTable. Si no se
-            pasan los callbacks → fallback al navigate legacy. */}
         <CardQuickActions
           c={c}
           onQuickNote={onQuickNote}
           onQuickTask={onQuickTask}
         />
       </div>
-      <div className="flex items-center gap-2 mt-1 pl-2.5 text-[10px]">
-        <span className={cn("tabular-nums", dayTone(days))}>{days}d</span>
-        {(c.overdue_tasks_count ?? 0) > 0 && (
-          <span className="flex items-center gap-0.5 text-rose-400 font-semibold">
-            <AlertCircle className="w-2.5 h-2.5" />
-            {c.overdue_tasks_count}
+      {/* Meta row: overdue tasks + owner */}
+      <div className="flex items-center gap-2 mt-2 pl-3 text-[11px]">
+        {(c.overdue_tasks_count ?? 0) > 0 ? (
+          <span className="inline-flex items-center gap-0.5 text-rose-400 font-semibold">
+            <AlertCircle className="w-3 h-3" />
+            {c.overdue_tasks_count} vencida{c.overdue_tasks_count === 1 ? "" : "s"}
           </span>
-        )}
+        ) : (c.open_tasks_count ?? 0) > 0 ? (
+          <span className="text-muted-foreground/60 tabular-nums">
+            {c.open_tasks_count} pendiente{c.open_tasks_count === 1 ? "" : "s"}
+          </span>
+        ) : null}
         {ownerName ? (
-          <span className="ml-auto text-muted-foreground/60 truncate max-w-[60px]" title={`Owner: ${ownerName}`}>
-            {ownerName.split(" ")[0]}
+          <span className="ml-auto text-muted-foreground/70 truncate max-w-[120px]" title={`Owner: ${ownerName}`}>
+            {ownerName}
           </span>
         ) : (
           <span
-            className="ml-auto inline-flex items-center gap-0.5 px-1 py-px rounded text-[9px] font-semibold border bg-rose-500/15 border-rose-500/40 text-rose-300"
+            className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-rose-500/15 border-rose-500/40 text-rose-300"
             title="Caso sin owner asignado"
           >
             <span className="w-1 h-1 rounded-full bg-rose-400 animate-pulse" />
