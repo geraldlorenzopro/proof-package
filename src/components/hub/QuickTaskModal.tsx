@@ -36,6 +36,15 @@ interface Props {
    * y usa este caso directamente. Para click ✅ tarea en row del Pipeline.
    */
   prefilledCase?: { id: string; client_name: string; case_type?: string | null } | null;
+  /**
+   * Round 9.17 anti-flash (Mr. Lorenzo): si el parent ya tiene team/cases
+   * cargados, los pasa por props → modal abre con dropdowns YA poblados.
+   * Antes el modal hacía fetch interno propio → 200-500ms después el
+   * dropdown "Asignar a" se hidrataba y se veía entrar tarde a la tarjeta.
+   * Si no se pasan, el modal hace fallback al fetch interno.
+   */
+  preloadedTeam?: TeamMember[];
+  preloadedCases?: CaseOption[];
 }
 
 interface CaseOption {
@@ -57,7 +66,7 @@ const PRIORITIES = [
   { value: "urgent", label: "Urgente",chip: "bg-rose-500/15 border-rose-500/30 text-rose-300" },
 ];
 
-export default function QuickTaskModal({ open, onOpenChange, onCreated, prefilledCase }: Props) {
+export default function QuickTaskModal({ open, onOpenChange, onCreated, prefilledCase, preloadedTeam, preloadedCases }: Props) {
   // Round 9.15 anti-flash (4-agentes diagnóstico):
   //   - useState callbacks inicializan state DIRECTO desde props →
   //     primer paint del modal ya tiene caseId + cases correctos.
@@ -72,16 +81,19 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated, prefille
   const [caseId, setCaseId] = useState<string>(() => prefilledCase?.id || "");
   const [assignedTo, setAssignedTo] = useState<string>("");
   const [visibility, setVisibility] = useState<VisibilityLevel>("team");
-  const [cases, setCases] = useState<CaseOption[]>(() =>
-    prefilledCase
-      ? [{
-          id: prefilledCase.id,
-          client_name: prefilledCase.client_name,
-          case_type: prefilledCase.case_type ?? null,
-        }]
-      : []
-  );
-  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [cases, setCases] = useState<CaseOption[]>(() => {
+    // Round 9.17: prefilledCase tiene prioridad. Sino, preloadedCases del parent.
+    if (prefilledCase) {
+      return [{
+        id: prefilledCase.id,
+        client_name: prefilledCase.client_name,
+        case_type: prefilledCase.case_type ?? null,
+      }];
+    }
+    return preloadedCases ?? [];
+  });
+  // Round 9.17: team viene precargado del parent → dropdown poblado desde frame 1.
+  const [team, setTeam] = useState<TeamMember[]>(() => preloadedTeam ?? []);
 
   // Sync caseId/cases solo cuando cambia el caso prefilled (NO en cada open toggle).
   useEffect(() => {
@@ -103,40 +115,57 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated, prefille
     setVisibility("team");
   }, [open]);
 
-  // Async fetch de casos + team — UNA vez al mount, no on each open.
+  // Async fetch — SOLO fetcha lo que NO vino precargado del parent.
+  // Round 9.17: si parent pasó preloadedTeam, no refetch. Mismo con cases.
   useEffect(() => {
+    const needsTeam = !preloadedTeam || preloadedTeam.length === 0;
+    const needsCases = !prefilledCase && (!preloadedCases || preloadedCases.length === 0);
+
+    // assignedTo siempre se setea al user actual (default sensato).
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      if (assignedTo === "") setAssignedTo(user.id);
+
+      if (!needsTeam && !needsCases) return; // nada que fetchear
+
       const { data: accountId } = await supabase.rpc("user_account_id", { _user_id: user.id });
       if (!accountId) return;
 
-      const [casesRes, teamRes] = await Promise.all([
-        prefilledCase
-          ? Promise.resolve({ data: null })  // skip si prefilled
-          : supabase
-              .from("client_cases")
-              .select("id, client_name, case_type")
-              .eq("account_id", accountId)
-              .neq("status", "completed")
-              .neq("status", "archived")
-              .order("updated_at", { ascending: false })
-              .limit(30),
-        supabase
+      const promises: Array<Promise<any>> = [];
+      if (needsCases) {
+        promises.push(supabase
+          .from("client_cases")
+          .select("id, client_name, case_type")
+          .eq("account_id", accountId)
+          .neq("status", "completed")
+          .neq("status", "archived")
+          .order("updated_at", { ascending: false })
+          .limit(30));
+      }
+      if (needsTeam) {
+        promises.push(supabase
           .from("account_members")
           .select("user_id, role, profiles:profiles(full_name)")
           .eq("account_id", accountId)
-          .eq("is_active", true),
-      ]);
+          .eq("is_active", true));
+      }
 
-      if (!prefilledCase && casesRes.data) setCases(casesRes.data as any);
-      const members: TeamMember[] = ((teamRes.data as any[]) || []).map(m => ({
-        user_id: m.user_id,
-        role: m.role,
-        full_name: m.profiles?.full_name || null,
-      }));
-      setTeam(members);
-      setAssignedTo(user.id);
+      const results = await Promise.all(promises);
+      let idx = 0;
+      if (needsCases) {
+        const casesRes = results[idx++];
+        if (casesRes?.data) setCases(casesRes.data as any);
+      }
+      if (needsTeam) {
+        const teamRes = results[idx++];
+        const members: TeamMember[] = ((teamRes?.data as any[]) || []).map(m => ({
+          user_id: m.user_id,
+          role: m.role,
+          full_name: m.profiles?.full_name || null,
+        }));
+        setTeam(members);
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

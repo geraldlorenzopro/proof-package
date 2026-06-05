@@ -582,6 +582,9 @@ export default function HubCasesPage() {
       {/* Round 9 quick modals (Mr. Lorenzo + Valerie + Marcus consensus):
           click 📝 nota o ✅ tarea → modal pequeño SIN abandonar tabla.
           NO navega a /case-engine. */}
+      {/* Round 9.17 anti-flash: pasamos team + cases ya cargados como
+          preload → los modales abren con dropdowns poblados desde frame 1.
+          Antes el modal hacía su propio fetch → "Asignar a" entraba tarde. */}
       <QuickNoteModal
         open={!!quickNoteCase}
         onOpenChange={(o) => !o && setQuickNoteCase(null)}
@@ -590,6 +593,11 @@ export default function HubCasesPage() {
           client_name: quickNoteCase.client_name,
           case_type: quickNoteCase.case_type,
         } : null}
+        preloadedCases={cases.map(c => ({
+          id: c.id,
+          client_name: c.client_name,
+          case_type: c.case_type ?? null,
+        }))}
       />
       <QuickTaskModal
         open={!!quickTaskCase}
@@ -599,6 +607,16 @@ export default function HubCasesPage() {
           client_name: quickTaskCase.client_name,
           case_type: quickTaskCase.case_type,
         } : null}
+        preloadedTeam={team.map(m => ({
+          user_id: m.user_id,
+          full_name: m.full_name,
+          role: "member", // HubCasesPage no tiene role en scope; modal lo usa solo como label
+        }))}
+        preloadedCases={cases.map(c => ({
+          id: c.id,
+          client_name: c.client_name,
+          case_type: c.case_type ?? null,
+        }))}
       />
     </HubLayout>
   );

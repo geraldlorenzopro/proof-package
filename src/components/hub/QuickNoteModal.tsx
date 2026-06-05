@@ -41,6 +41,12 @@ interface Props {
    * en row de Pipeline" sin abandonar la tabla.
    */
   prefilledCase?: { id: string; client_name: string; case_type?: string | null } | null;
+  /**
+   * Round 9.17 anti-flash (Mr. Lorenzo): si el parent ya tiene los cases
+   * cargados, los pasa por props → dropdown poblado desde el frame 1.
+   * Sin esto el modal hace fetch interno y el dropdown entra tarde.
+   */
+  preloadedCases?: CaseOption[];
 }
 
 interface CaseOption {
@@ -57,7 +63,7 @@ const NOTE_TYPES = [
   { value: "decision",      label: "Decisión",      chip: "bg-purple-500/15 border-purple-500/30 text-purple-300" },
 ];
 
-export default function QuickNoteModal({ open, onOpenChange, onCreated, prefilledCase }: Props) {
+export default function QuickNoteModal({ open, onOpenChange, onCreated, prefilledCase, preloadedCases }: Props) {
   // Round 9.15 anti-flash (4-agentes diagnóstico): mismo patrón que QuickTaskModal.
   //   - State inicializado DIRECTO desde props (callback en useState).
   //   - casesLoading=false desde el inicio si prefilledCase está presente.
@@ -66,20 +72,27 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated, prefille
   //   - Async fetch a mount-only ([] deps).
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [casesLoading, setCasesLoading] = useState(() => !prefilledCase);
+  // Round 9.17: si tenemos prefilledCase O preloadedCases del parent, no
+  // hay loading que mostrar — el dropdown puede pintar de una.
+  const [casesLoading, setCasesLoading] = useState(() => !prefilledCase && !preloadedCases);
   const [content, setContent] = useState("");
   const [noteType, setNoteType] = useState("general");
-  const [caseId, setCaseId] = useState<string>(() => prefilledCase?.id || "");
+  const [caseId, setCaseId] = useState<string>(() => {
+    if (prefilledCase?.id) return prefilledCase.id;
+    if (preloadedCases && preloadedCases.length > 0) return preloadedCases[0].id;
+    return "";
+  });
   const [visibility, setVisibility] = useState<VisibilityLevel>("team");
-  const [cases, setCases] = useState<CaseOption[]>(() =>
-    prefilledCase
-      ? [{
-          id: prefilledCase.id,
-          client_name: prefilledCase.client_name,
-          case_type: prefilledCase.case_type ?? null,
-        }]
-      : []
-  );
+  const [cases, setCases] = useState<CaseOption[]>(() => {
+    if (prefilledCase) {
+      return [{
+        id: prefilledCase.id,
+        client_name: prefilledCase.client_name,
+        case_type: prefilledCase.case_type ?? null,
+      }];
+    }
+    return preloadedCases ?? [];
+  });
 
   // Sync cuando cambia el caso prefilled (no en cada open toggle).
   useEffect(() => {
@@ -101,9 +114,11 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated, prefille
     setVisibility("team");
   }, [open]);
 
-  // Async fetch de cases — solo si NO hay prefilled. Mount-only.
+  // Async fetch de cases — solo si NO hay prefilled NI preloaded. Mount-only.
+  // Round 9.17: parent puede pasar preloadedCases → skipear fetch interno.
   useEffect(() => {
     if (prefilledCase) return;
+    if (preloadedCases && preloadedCases.length > 0) return;
     setCasesLoading(true);
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
