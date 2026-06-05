@@ -30,6 +30,8 @@ import { toast } from "sonner";
 import { logAudit } from "@/lib/auditLog";
 import VisibilityPicker from "./VisibilityPicker";
 import type { VisibilityLevel } from "@/hooks/usePermissions";
+import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Props {
   open: boolean;
@@ -257,37 +259,44 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated, prefille
             {prefilledCase ? (
               <div className="space-y-2">
                 <Label>Caso</Label>
+                {/* Round 9.27 Mr. Lorenzo screenshot: mostraba "i130-spouse-ir1" raw key.
+                    Ahora resuelve a label legible "I-130 · Cónyuge IR-1". */}
                 <div className="inline-flex items-center gap-1.5 text-[12px] font-medium text-cyan-accent bg-cyan-accent/10 border border-cyan-accent/30 rounded px-2.5 py-1">
                   <FileText className="w-3 h-3" />
                   {prefilledCase.client_name}
                   {prefilledCase.case_type && (
-                    <span className="text-slate-400">· {prefilledCase.case_type}</span>
+                    <span className="text-slate-400">· {getCaseTypeLabel(prefilledCase.case_type)}</span>
                   )}
                 </div>
               </div>
             ) : (
+              {/* Round 9.27 Mr. Lorenzo: shadcn Select (Radix) reemplaza
+                  <select> nativo — corrige open-upward + raw key visible. */}
               <div className="space-y-2">
                 <Label htmlFor="note-case">Atar a caso *</Label>
-                <select
-                  id="note-case"
-                  value={caseId}
-                  onChange={e => setCaseId(e.target.value)}
+                <Select
+                  value={caseId || (casesLoading ? "__loading__" : "__none__")}
+                  onValueChange={(v) => setCaseId(v === "__none__" || v === "__loading__" ? "" : v)}
                   disabled={loading || casesLoading}
-                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:border-cyan-accent/50 focus:outline-none disabled:opacity-50"
                 >
-                  {casesLoading ? (
-                    <option value="">Cargando casos...</option>
-                  ) : (
-                    <>
-                      <option value="">Seleccioná un caso...</option>
-                      {cases.map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.client_name}{c.case_type ? ` · ${c.case_type}` : ""}
-                        </option>
-                      ))}
-                    </>
-                  )}
-                </select>
+                  <SelectTrigger id="note-case" className="w-full text-sm bg-background border-border">
+                    <SelectValue placeholder="Seleccioná un caso..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {casesLoading ? (
+                      <SelectItem value="__loading__" disabled>Cargando casos...</SelectItem>
+                    ) : (
+                      <>
+                        <SelectItem value="__none__" disabled>Seleccioná un caso...</SelectItem>
+                        {cases.map(c => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.client_name}{c.case_type ? ` · ${getCaseTypeLabel(c.case_type)}` : ""}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 

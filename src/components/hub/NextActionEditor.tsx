@@ -199,10 +199,14 @@ export default function NextActionEditor({
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="sm:max-w-md bg-deep-navy border-cyan-accent/30 text-white">
         <DialogHeader>
+          {/* Round 9.27 Mr. Lorenzo screenshot: chip "ETAPA: USCIS" se
+              superponía con el botón X del Dialog (shadcn lo posiciona
+              absolute right-4 top-4). Fix: mr-7 al chip para dar 28px
+              de breathing room a la X. */}
           <DialogTitle className="flex items-center justify-between gap-3 font-sora text-white">
             <span>Próximo paso</span>
             <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border bg-ai-blue/15 border-ai-blue/30 text-blue-200"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border bg-ai-blue/15 border-ai-blue/30 text-blue-200 mr-7"
               title="La lista de abajo está filtrada según la etapa actual del caso"
             >
               <span className="w-1 h-1 rounded-full bg-cyan-accent" />

@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/auditLog";
@@ -319,6 +320,10 @@ export default function TaskCreateModal({
               <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
                 Fecha objetivo
               </label>
+              {/* Round 9.27 Mr. Lorenzo: calendario no se marcaba bien.
+                  Fix: (1) formato con año "6 jun 2026" para no confundir,
+                  (2) defaultMonth={dueDate} para que el Calendar abra en
+                  el mes de la fecha seleccionada (no en mes actual). */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -326,13 +331,14 @@ export default function TaskCreateModal({
                     className="w-full h-9 justify-start text-[12px] bg-white/[0.04] border-white/10 text-white hover:bg-white/[0.06]"
                   >
                     <CalendarIcon className="w-3.5 h-3.5 mr-2" />
-                    {format(dueDate, "d MMM", { locale: es })}
+                    {format(dueDate, "d MMM yyyy", { locale: es })}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 bg-deep-navy border-cyan-accent/30">
                   <Calendar
                     mode="single"
                     selected={dueDate}
+                    defaultMonth={dueDate}
                     onSelect={d => d && setDueDate(d)}
                     locale={es}
                     initialFocus
@@ -358,21 +364,28 @@ export default function TaskCreateModal({
             </div>
           </div>
 
-          {/* Assignee */}
+          {/* Assignee — Round 9.27: shadcn Select (Radix) reemplaza <select>
+              HTML nativo. El nativo se abría HACIA ARRIBA dentro del modal
+              porque el viewport no tenía espacio debajo. Radix posiciona
+              con preferencia hacia abajo + flippea si no cabe. */}
           <div className="space-y-1">
             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
               Asignar a
             </label>
-            <select
-              value={assigneeId || ""}
-              onChange={e => setAssigneeId(e.target.value || null)}
-              className="w-full h-9 px-2 text-[12px] bg-white/[0.04] border border-white/10 rounded-md text-white"
+            <Select
+              value={assigneeId || "__none__"}
+              onValueChange={(v) => setAssigneeId(v === "__none__" ? null : v)}
             >
-              <option value="">Sin asignar</option>
-              {team.map(m => (
-                <option key={m.user_id} value={m.user_id}>{m.full_name}</option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full h-9 text-[12px] bg-white/[0.04] border-white/10 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Sin asignar</SelectItem>
+                {team.map(m => (
+                  <SelectItem key={m.user_id} value={m.user_id}>{m.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

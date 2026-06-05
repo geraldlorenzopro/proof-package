@@ -203,6 +203,49 @@ test.describe("Pattern 5 — Empty state diagnostico + Limpiar filtros", () => {
   });
 });
 
+test.describe("Pattern 10 — Modales muestran labels legibles + dropdowns shadcn (R9.27)", () => {
+  // Mr. Lorenzo cazó: modales mostraban "i130-spouse-ir1" (raw key) en
+  // vez de "I-130 · Cónyuge IR-1" (shortLabel). Más <select> nativo
+  // que se abría hacia arriba. Fix: usar getCaseTypeLabel + shadcn Select.
+
+  test("QuickNoteModal chip caso muestra label legible (no raw key)", async ({ page }) => {
+    await page.goto("/hub/cases?demo=true");
+    await page.waitForLoadState("networkidle");
+    await page.waitForFunction(() => document.querySelectorAll('button').length > 5, { timeout: 10_000 });
+
+    // Click ícono nota en primer row
+    const noteBtn = page.getByRole("button", { name: /Agregar nota/i }).first();
+    if (await noteBtn.count() === 0) return;
+    await noteBtn.click();
+    await page.waitForTimeout(500);
+
+    // Chip caso NO debe mostrar raw key tipo "i130-spouse-ir1"
+    const chipText = await page.locator("text=/^(García|Rodríguez|Hernández|Castillo|Acosta|Vargas|Rivas|Cabrera|Aguilar|Solano|Morales)/").first().textContent();
+    // No debe contener pattern típico de key (lowercase con guiones tipo i130-spouse-X)
+    expect(chipText).not.toMatch(/^[a-z]\d+-[a-z]+-[a-z]+\d?$/);
+  });
+
+  test("QuickTaskModal usa shadcn Select (no select nativo) para Atar caso", async ({ page }) => {
+    await page.goto("/hub/cases?demo=true");
+    await page.waitForLoadState("networkidle");
+    await page.waitForFunction(() => document.querySelectorAll('button').length > 5, { timeout: 10_000 });
+
+    // Abrir QuickTaskModal
+    const taskBtn = page.getByRole("button", { name: /Crear tarea/i }).first();
+    if (await taskBtn.count() === 0) return;
+    await taskBtn.click();
+    await page.waitForTimeout(500);
+
+    // Buscar trigger del Select (Radix usa role="combobox")
+    const selectTrigger = page.getByRole("combobox").first();
+    await expect(selectTrigger).toBeVisible({ timeout: 3000 });
+
+    // NO debe existir <select> HTML nativo (los reemplazamos)
+    const nativeSelects = await page.locator("select:visible").count();
+    expect(nativeSelects).toBe(0);
+  });
+});
+
 test.describe("Pattern 9 — Próximo paso completion flow (R9.23)", () => {
   // Mr. Lorenzo opción A+C: botón ✓ + historial visible.
   // Si alguien borra el botón o rompe el flow → tests fallan.

@@ -20,11 +20,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Loader2, ListPlus } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/auditLog";
 import VisibilityPicker from "./VisibilityPicker";
+import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import type { VisibilityLevel } from "@/hooks/usePermissions";
 
 interface Props {
@@ -303,22 +305,27 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated, prefille
             </div>
           </div>
 
+          {/* Round 9.27 Mr. Lorenzo: <select> nativo se abría hacia ARRIBA
+              + raw key visible. shadcn Select (Radix) corrige ambos. */}
           <div className="space-y-2">
             <Label htmlFor="task-case">Atar a un caso (opcional)</Label>
-            <select
-              id="task-case"
-              value={caseId}
-              onChange={e => setCaseId(e.target.value)}
+            <Select
+              value={caseId || "__none__"}
+              onValueChange={(v) => setCaseId(v === "__none__" ? "" : v)}
               disabled={loading || cases.length === 0}
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:border-cyan-accent/50 focus:outline-none disabled:opacity-50"
             >
-              <option value="">— Tarea suelta (sin caso) —</option>
-              {cases.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.client_name}{c.case_type ? ` · ${c.case_type}` : ""}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="task-case" className="w-full text-sm bg-background border-border">
+                <SelectValue placeholder="— Tarea suelta (sin caso) —" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">— Tarea suelta (sin caso) —</SelectItem>
+                {cases.map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.client_name}{c.case_type ? ` · ${getCaseTypeLabel(c.case_type)}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {cases.length === 0 && (
               <p className="text-[10px] text-muted-foreground/60">Aún no hay casos activos. La tarea queda suelta.</p>
             )}
@@ -326,20 +333,23 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated, prefille
 
           <div className="space-y-2">
             <Label htmlFor="task-assignee">Asignar a</Label>
-            <select
-              id="task-assignee"
-              value={assignedTo}
-              onChange={e => setAssignedTo(e.target.value)}
+            <Select
+              value={assignedTo || "__none__"}
+              onValueChange={(v) => setAssignedTo(v === "__none__" ? "" : v)}
               disabled={loading}
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:border-cyan-accent/50 focus:outline-none"
             >
-              <option value="">Sin asignar</option>
-              {team.map(m => (
-                <option key={m.user_id} value={m.user_id}>
-                  {m.full_name || "Sin nombre"} · {m.role}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="task-assignee" className="w-full text-sm bg-background border-border">
+                <SelectValue placeholder="Sin asignar" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Sin asignar</SelectItem>
+                {team.map(m => (
+                  <SelectItem key={m.user_id} value={m.user_id}>
+                    {m.full_name || "Sin nombre"} · {m.role}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <VisibilityPicker
