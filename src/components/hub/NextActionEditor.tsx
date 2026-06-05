@@ -235,11 +235,32 @@ export default function NextActionEditor({
     onClose();
   }
 
-  if (!open || !anchor || typeof document === "undefined") return null;
+  // Round 9.17 Mr. Lorenzo: reposicionar en vivo siguiendo el trigger.
+  // Antes: anchor capturado una sola vez al abrir → al scrollear el popover
+  // se quedaba "frizado" en viewport mientras la row se movía debajo.
+  // Ahora: recomputamos top/left desde triggerRef en cada scroll/resize.
+  const [livePos, setLivePos] = useState<{ top: number; left: number } | null>(anchor);
+  useEffect(() => { setLivePos(anchor); }, [anchor]);
+  useEffect(() => {
+    if (!open || !triggerRef?.current) return;
+    function reposition() {
+      const r = triggerRef!.current?.getBoundingClientRect();
+      if (r) setLivePos({ top: r.bottom + 4, left: r.left });
+    }
+    reposition();
+    window.addEventListener("scroll", reposition, true); // capture = atrapa scroll de cualquier ancestro
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [open, triggerRef]);
 
-  // Asegurar que no se salga de la pantalla por la derecha
-  const safeLeft = Math.max(8, Math.min(anchor.left, window.innerWidth - 360));
-  const safeTop = Math.min(anchor.top, window.innerHeight - 460);
+  if (!open || !livePos || typeof document === "undefined") return null;
+
+  // Asegurar que no se salga de la pantalla por la derecha/abajo
+  const safeLeft = Math.max(8, Math.min(livePos.left, window.innerWidth - 360));
+  const safeTop = Math.min(livePos.top, window.innerHeight - 460);
 
   return createPortal(
     <div
