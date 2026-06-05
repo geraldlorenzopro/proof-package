@@ -611,8 +611,11 @@ export default function TasksByDateView({
 
   const items = useMemo<Item[]>(() => {
     const out: Item[] = [];
+    const relevant = new Set(RELEVANT_BUCKETS_BY_TAB[activeTab] ?? BUCKET_ORDER);
     BUCKET_ORDER.forEach(b => {
       const list = bucketed.get(b) || [];
+      // Round 9.12: si el bucket no es relevante para este tab Y está vacío → ocultar.
+      if (list.length === 0 && !relevant.has(b)) return;
       const isCollapsed = !!collapsed[b];
       out.push({ kind: "header", bucket: b, count: list.length, size: 44 });
       if (!isCollapsed) {
@@ -625,7 +628,7 @@ export default function TasksByDateView({
       }
     });
     return out;
-  }, [bucketed, collapsed]);
+  }, [bucketed, collapsed, activeTab]);
 
   const virtualizer = useVirtualizer({
     count: items.length,
