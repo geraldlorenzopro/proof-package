@@ -4244,6 +4244,7 @@ export type Database = {
         Args: { _data: Json; _token: string }
         Returns: undefined
       }
+      count_hidden_notes: { Args: { p_case_id: string }; Returns: number }
       create_intake_with_profile: {
         Args: {
           p_account_id: string
