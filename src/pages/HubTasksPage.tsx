@@ -210,6 +210,7 @@ export default function HubTasksPage() {
           team={team}
           staffNames={staffNames}
           onTaskCountsChange={setTaskCounts}
+          onLoadingChange={setTasksLoading}
           onResetFilters={resetAll}
         />
       </div>
