@@ -182,6 +182,7 @@ export default function HubTasksPage() {
           onChangeSortBy={setSortBy}
           team={team}
           allCases={cases}
+          onReset={resetAll}
         />
 
         {/* Vista principal */}
@@ -196,13 +197,7 @@ export default function HubTasksPage() {
           team={team}
           staffNames={staffNames}
           onTaskCountsChange={setTaskCounts}
-          onResetFilters={() => {
-            // Round 9.11: EMPTY_TASK_FILTERS ya es completamente neutro
-            // (assignee=all, status=all, due=any). Reset = bandeja limpia.
-            setTaskFilters(EMPTY_TASK_FILTERS);
-            setActiveTab("todas");
-            setSearch("");
-          }}
+          onResetFilters={resetAll}
         />
       </div>
     </HubLayout>
