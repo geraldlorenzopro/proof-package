@@ -1574,6 +1574,7 @@ export type Database = {
           ghl_task_id: string | null
           id: string
           is_recurring: boolean | null
+          parent_task_id: string | null
           priority: string
           recurring_interval: string | null
           status: string
@@ -1597,6 +1598,7 @@ export type Database = {
           ghl_task_id?: string | null
           id?: string
           is_recurring?: boolean | null
+          parent_task_id?: string | null
           priority?: string
           recurring_interval?: string | null
           status?: string
@@ -1620,6 +1622,7 @@ export type Database = {
           ghl_task_id?: string | null
           id?: string
           is_recurring?: boolean | null
+          parent_task_id?: string | null
           priority?: string
           recurring_interval?: string | null
           status?: string
@@ -1662,6 +1665,13 @@ export type Database = {
             columns: ["client_profile_id"]
             isOneToOne: false
             referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "case_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -1787,11 +1797,13 @@ export type Database = {
           interview_type: string | null
           journey_step: string | null
           last_client_activity_at: string | null
+          matter_value: number | null
           notes: string | null
           nvc_cas_email: string | null
           nvc_case_number: string | null
           nvc_ds260_code: string | null
           petitioner_name: string | null
+          pinned: boolean
           pipeline_stage: string | null
           priority_date: string | null
           process_stage: string | null
@@ -1843,11 +1855,13 @@ export type Database = {
           interview_type?: string | null
           journey_step?: string | null
           last_client_activity_at?: string | null
+          matter_value?: number | null
           notes?: string | null
           nvc_cas_email?: string | null
           nvc_case_number?: string | null
           nvc_ds260_code?: string | null
           petitioner_name?: string | null
+          pinned?: boolean
           pipeline_stage?: string | null
           priority_date?: string | null
           process_stage?: string | null
@@ -1899,11 +1913,13 @@ export type Database = {
           interview_type?: string | null
           journey_step?: string | null
           last_client_activity_at?: string | null
+          matter_value?: number | null
           notes?: string | null
           nvc_cas_email?: string | null
           nvc_case_number?: string | null
           nvc_ds260_code?: string | null
           petitioner_name?: string | null
+          pinned?: boolean
           pipeline_stage?: string | null
           priority_date?: string | null
           process_stage?: string | null
