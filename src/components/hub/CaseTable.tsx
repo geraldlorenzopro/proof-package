@@ -222,7 +222,7 @@ export default function CaseTable({
   return (
     <div className="rounded-xl border border-white/[0.08] bg-white/[0.015] overflow-hidden">
       <div ref={parentRef} style={{ maxHeight, overflow: "auto" }}>
-        <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
+        <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%", minWidth: 1080 }}>
           {virtualizer.getVirtualItems().map(vi => {
             const item = items[vi.index];
             return (
@@ -234,7 +234,7 @@ export default function CaseTable({
                   position: "absolute",
                   top: 0,
                   left: 0,
-                  right: 0,
+                  width: "100%",
                   transform: `translateY(${vi.start}px)`,
                 }}
               >
