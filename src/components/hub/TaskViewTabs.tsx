@@ -86,6 +86,7 @@ export default function TaskViewTabs({ activeTab, onChange, counts, loading = fa
                 {t.label}
               </span>
               <span
+                data-testid={`task-tab-count-${t.key}`}
                 className={`font-sora font-bold text-[20px] leading-none tabular-nums min-w-[2ch] text-right ${
                   isActive ? theme.activeText : "text-slate-300"
                 }`}
