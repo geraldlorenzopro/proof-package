@@ -88,6 +88,8 @@ test.describe("Pattern 2 — Counter ↔ render parity (no doble-gate)", () => {
 
   test("/hub/tasks KPIs no desaparecen después de la primera hidratación", async ({ page }) => {
     await page.goto(DEMO_HUB_TASKS);
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
 
     const counters = page.locator('[data-testid^="task-tab-count-"]');
     await expect(counters.first()).toBeVisible({ timeout: 5000 });
