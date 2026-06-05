@@ -151,10 +151,21 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
               <span className={`text-[10px] tabular-nums ${due.tone} leading-tight shrink-0`}>{due.label}</span>
             </button>
           </TooltipTrigger>
+          {/* Round 9.16 Mr. Lorenzo screenshot: tooltip se cortaba a la derecha
+              en pantallas medianas/chicas porque align=start lo anclaba al
+              trigger sin respetar viewport. Fix:
+                - align=center: Radix anchora horizontalmente y flippea bien
+                  cuando hay colisión.
+                - collisionPadding=16: fuerza margen de 16px a los bordes.
+                - max-w responsive: nunca más ancho que viewport - 40px.
+                - avoidCollisions explícito (default true pero confirmamos). */}
           <TooltipContent
             side="top"
-            align="start"
-            className="max-w-[400px] bg-deep-navy border border-cyan-accent/30 text-white px-3 py-2.5 shadow-2xl"
+            align="center"
+            avoidCollisions
+            collisionPadding={16}
+            sideOffset={6}
+            className="max-w-[min(400px,calc(100vw-40px))] bg-deep-navy border border-cyan-accent/30 text-white px-3 py-2.5 shadow-2xl"
           >
             <p className="text-[12px] font-semibold leading-snug mb-1 break-words whitespace-pre-wrap">{label}</p>
             {value.detail && (

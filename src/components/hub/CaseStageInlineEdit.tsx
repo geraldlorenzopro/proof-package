@@ -111,7 +111,9 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
         </TooltipTrigger>
         <TooltipContent
           side="top"
-          className="max-w-[260px] text-[11px] font-sora bg-deep-navy/95 border border-cyan-accent/30 text-slate-100"
+          avoidCollisions
+          collisionPadding={16}
+          className="max-w-[min(260px,calc(100vw-40px))] text-[11px] font-sora bg-deep-navy/95 border border-cyan-accent/30 text-slate-100"
         >
           <div className="font-semibold text-cyan-accent">{meta.label}</div>
           <div className="text-[10px] text-slate-300 mt-0.5">{meta.description}</div>
