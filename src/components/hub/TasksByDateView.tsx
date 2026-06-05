@@ -520,7 +520,9 @@ export default function TasksByDateView({
       }
     }
 
-    toast.success(`Tarea completada`, {
+    // Round 9.19 Valerie UX compliance: hint visible "registrada"
+    // refuerza señal SOC II al paralegal en cada mutation sensible.
+    toast.success(`✓ Tarea completada · registrada`, {
       duration: 5000,
       description: task.title,
       action: {
@@ -603,7 +605,7 @@ export default function TasksByDateView({
       }
     }
 
-    toast.success(`${ids.length} tarea${ids.length === 1 ? "" : "s"} completada${ids.length === 1 ? "" : "s"}`, {
+    toast.success(`✓ ${ids.length} tarea${ids.length === 1 ? "" : "s"} completada${ids.length === 1 ? "" : "s"} · registradas`, {
       duration: 3000,
     });
     // SOC II audit (Marcus + Victoria): bulk operation registrada con todos los ids.

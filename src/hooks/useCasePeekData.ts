@@ -33,6 +33,8 @@ export interface PeekTask {
 interface State {
   notes: PeekNote[];
   tasks: PeekTask[];
+  /** Round 9.19: count de notas que el user NO puede ver (visibility gate). */
+  hiddenNotesCount: number;
   loading: boolean;
 }
 
@@ -50,21 +52,22 @@ const DEMO_TASKS: PeekTask[] = [
 
 export function useCasePeekData(caseId: string | null): State {
   const demoMode = useDemoMode();
-  const [state, setState] = useState<State>({ notes: [], tasks: [], loading: true });
+  const [state, setState] = useState<State>({ notes: [], tasks: [], hiddenNotesCount: 0, loading: true });
 
   useEffect(() => {
     if (!caseId) {
-      setState({ notes: [], tasks: [], loading: false });
+      setState({ notes: [], tasks: [], hiddenNotesCount: 0, loading: false });
       return;
     }
     if (demoMode) {
-      setState({ notes: DEMO_NOTES, tasks: DEMO_TASKS, loading: false });
+      // Demo: simulamos 2 notas privadas para demo de la UI compliance.
+      setState({ notes: DEMO_NOTES, tasks: DEMO_TASKS, hiddenNotesCount: 2, loading: false });
       return;
     }
 
     let cancelled = false;
     void (async () => {
-      const [notesRes, tasksRes] = await Promise.all([
+      const [notesRes, tasksRes, hiddenRes] = await Promise.all([
         supabase
           .from("case_notes" as any)
           .select("id, body, created_at, author_id, profiles:author_id(full_name)")
@@ -78,6 +81,8 @@ export function useCasePeekData(caseId: string | null): State {
           .eq("status", "pending")
           .order("due_date", { ascending: true, nullsFirst: false })
           .limit(3),
+        // Round 9.19: RPC SECURITY DEFINER count de notas que el user NO puede ver.
+        supabase.rpc("count_hidden_notes" as any, { p_case_id: caseId }),
       ]);
 
       if (cancelled) return;
@@ -103,7 +108,8 @@ export function useCasePeekData(caseId: string | null): State {
           }))
         : [];
 
-      setState({ notes, tasks, loading: false });
+      const hiddenNotesCount = (!hiddenRes.error && typeof hiddenRes.data === "number") ? hiddenRes.data : 0;
+      setState({ notes, tasks, hiddenNotesCount, loading: false });
     })();
 
     return () => { cancelled = true; };

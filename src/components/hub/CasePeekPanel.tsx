@@ -13,7 +13,7 @@
  * apretado el preview de notas/tareas de 2 líneas.
  */
 import { useEffect, useState } from "react";
-import { X, AlertTriangle, FileText, Zap, ExternalLink, UserX, Target } from "lucide-react";
+import { X, AlertTriangle, FileText, Zap, ExternalLink, UserX, Target, Activity } from "lucide-react";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import { useCasePeekData } from "@/hooks/useCasePeekData";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
@@ -221,9 +221,23 @@ export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase, onNex
 
         {/* Últimas notas — preview read-only */}
         <div className="space-y-1.5">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1">
-            Últimas notas
-            {peek.notes.length > 0 && <span className="text-cyan-accent/70 ml-1 normal-case font-mono">· {peek.notes.length}</span>}
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1 flex items-center justify-between gap-2">
+            <span>
+              Últimas notas
+              {peek.notes.length > 0 && <span className="text-cyan-accent/70 ml-1 normal-case font-mono">· {peek.notes.length}</span>}
+            </span>
+            {/* Round 9.19 CLAUDE.md UX rule + Valerie compliance signal:
+                badge agregado de notas restringidas. Paralegal ve QUE EXISTEN
+                pero NO el contenido (RLS + hierarchical visibility).
+                Tooltip explica el rationale → educa al paralegal sobre el modelo. */}
+            {peek.hiddenNotesCount > 0 && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] font-mono normal-case text-amber-300/80 bg-amber-500/[0.08] border border-amber-500/25 rounded px-1.5 py-0.5"
+                title="Sólo los abogados pueden ver el contenido de estas notas"
+              >
+                🔒 {peek.hiddenNotesCount} privada{peek.hiddenNotesCount === 1 ? "" : "s"}
+              </span>
+            )}
           </h4>
           {peek.loading ? (
             <div className="space-y-1.5">
@@ -288,6 +302,18 @@ export default function CasePeekPanel({ c, ownerName, onClose, onOpenCase, onNex
             </div>
           )}
         </div>
+
+        {/* Round 9.19 Valerie UX compliance: "Última actualización"
+            visible al user + auditor. Señal SOC II básica de change tracking.
+            updated_at se mantiene automáticamente por trigger Round 8 +
+            queda en audit_logs con whitelist post Round 9.19. */}
+        {c.updated_at && (
+          <p className="text-[10px] text-slate-500 px-1 pt-1 border-t border-white/[0.04] flex items-center gap-1.5">
+            <Activity className="w-2.5 h-2.5 text-slate-600" />
+            Última actualización {relativeDate(c.updated_at)}
+            {ownerName && <span className="text-slate-600">· asignado a <span className="text-slate-400">{ownerName}</span></span>}
+          </p>
+        )}
 
         {/* CTA principal */}
         <button

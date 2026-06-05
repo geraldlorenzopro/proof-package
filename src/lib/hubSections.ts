@@ -16,6 +16,7 @@ export type HubSectionKey =
   | "agenda"
   | "reportes"
   | "equipo"
+  | "auditoria"
   | "config";
 
 export interface HubSectionMeta {
@@ -213,12 +214,30 @@ export const HUB_SECTIONS: Record<HubSectionKey, HubSectionMeta> = {
       eta: "Después de Equipo",
     },
   },
+  auditoria: {
+    key: "auditoria",
+    label: "Auditoría",
+    path: "/hub/audit",
+    enabled: true,
+    order: 9,
+    comingSoon: {
+      title: "Registro de Auditoría",
+      description: "Audit trail completo de toda acción en NER — para compliance SOC II + ABA + HIPAA.",
+      bullets: [
+        "Filtros por user, action, módulo, fecha",
+        "Export CSV para auditor SOC II Type II",
+        "Append-only (immutable) post Round 9.19",
+        "Whitelist de campos en metadata (sin PII)",
+      ],
+      eta: "Activada",
+    },
+  },
   config: {
     key: "config",
     label: "Config",
     path: "/hub/settings/office",
     enabled: true,
-    order: 9,
+    order: 10,
     comingSoon: {
       title: "Configuración de la firma",
       description:

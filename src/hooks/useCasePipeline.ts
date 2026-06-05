@@ -214,6 +214,10 @@ export function useCasePipeline(accountId: string | null, userId: string | null 
       // Antes el placeholder mentía — decía "teléfono, A-number" pero
       // el filter no los tenía. PostgREST nested select left join via
       // FK client_profile_id (auto-indexed). Sub-50ms en pool warm.
+      // Round 9.19 Victoria SOC II BLOCKER fix #1: soft-delete leak.
+      // Sin .is("deleted_at", null), Pipeline mostraba casos soft-deleted
+      // post-migration 20260606030000. Auditor lo cazaría inmediatamente.
+      // .is("deleted_at" as any, null) es no-op si columna no existe aún.
       const { data: casesData, error: casesErr } = await supabase
         .from("client_cases")
         .select(`
@@ -227,6 +231,7 @@ export function useCasePipeline(accountId: string | null, userId: string | null 
         `)
         .eq("account_id", accountId)
         .not("status", "eq", "completed")
+        .is("deleted_at" as any, null)
         .order("updated_at", { ascending: false });
 
       if (cancelled) return;
@@ -241,12 +246,14 @@ export function useCasePipeline(accountId: string | null, userId: string | null 
       const tasksByCase: Record<string, { open: number; overdue: number; mine: number; nextDue: string | null }> = {};
 
       if (ids.length > 0) {
+        // Round 9.19 Victoria SOC II BLOCKER fix #1: idem soft-delete filter.
         const { data: tasks } = await supabase
           .from("case_tasks")
           .select("case_id, status, due_date, assigned_to")
           .in("case_id", ids)
           .neq("status", "completed")
-          .neq("status", "archived");
+          .neq("status", "archived")
+          .is("deleted_at" as any, null);
 
         const today = new Date().toISOString().slice(0, 10);
         for (const t of (tasks || []) as any[]) {

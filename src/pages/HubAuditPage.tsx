@@ -6,7 +6,7 @@ import {
   Shield, UserPlus, FolderOpen, FileText, Upload, Scale,
   Activity, LogIn, LogOut, Trash2, Edit, Eye, RefreshCw,
   Search, ChevronLeft, ChevronRight, Tag, Calendar as CalendarIcon,
-  Settings2, Users
+  Settings2, Users, Download
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -169,6 +169,44 @@ const ACTION_FILTER_OPTIONS = [
   { value: "login", label: "Inicio sesión" },
 ];
 
+/**
+ * Round 9.19 (Valerie UX compliance + Victoria SOC II): export CSV de
+ * audit log para auditor. Auditor pide en preview "muéstrame últimos 90d
+ * para entity X" — antes había que screen-grab la tabla. Ahora 1 click.
+ *
+ * NO incluimos metadata.old/new (contiene whitelist post-R9.19 trigger,
+ * pero igual lo evitamos del CSV — auditor lo pide en JSON separado si
+ * necesita). CSV cubre los 6 campos que pide cualquier auditor SOC II:
+ * timestamp, user, action, entity_type, entity_id, entity_label.
+ */
+function exportAuditCsv(entries: AuditEntry[]) {
+  if (entries.length === 0) return;
+  const headers = ["timestamp_iso", "user_id", "user_display_name", "action", "entity_type", "entity_id", "entity_label"];
+  const rows = entries.map(e => [
+    e.created_at,
+    e.user_id || "",
+    e.user_display_name || "",
+    e.action || "",
+    e.entity_type || "",
+    e.entity_id || "",
+    (e.entity_label || "").replace(/"/g, '""'),
+  ]);
+  const csv = [headers, ...rows]
+    .map(row => row.map(cell => `"${String(cell)}"`).join(","))
+    .join("\n");
+
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const ts = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `ner-audit-log-${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export default function HubAuditPage() {
   useTrackPageView("hub.audit");
   const [entries, setEntries] = useState<AuditEntry[]>([]);
@@ -264,15 +302,31 @@ export default function HubAuditPage() {
                Seguimiento y monitoreo de todas las actividades, acciones de usuarios y cambios de datos en su cuenta
              </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { setPage(0); load(); }}
-            className="gap-1.5"
-          >
-             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-             Actualizar
-           </Button>
+          <div className="flex items-center gap-2">
+            {/* Round 9.19 Valerie UX compliance: export CSV es la pregunta
+                #1 del auditor SOC II ("dame el audit log de los últimos 90d").
+                Hasta hoy había que copiar manual de la tabla. */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportAuditCsv(entries)}
+              disabled={loading || entries.length === 0}
+              className="gap-1.5"
+              title="Exportar registros visibles a CSV — para auditor SOC II / compliance"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Exportar CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setPage(0); load(); }}
+              className="gap-1.5"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              Actualizar
+            </Button>
+          </div>
         </div>
 
         {/* Filters Row */}
