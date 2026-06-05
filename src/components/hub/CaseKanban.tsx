@@ -221,8 +221,8 @@ function CardActionMenu({ caseId }: { caseId: string }) {
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
         aria-label="Acciones rápidas del caso"
-        title="Acciones rápidas"
-        className="md:opacity-0 md:group-hover:opacity-100 transition-opacity w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/[0.08] shrink-0"
+        title="Acciones rápidas (nota / tarea)"
+        className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/[0.08] shrink-0 transition-colors"
       >
         <MoreHorizontal className="w-3.5 h-3.5" />
       </button>

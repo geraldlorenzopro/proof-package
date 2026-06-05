@@ -301,7 +301,7 @@ function GroupHeader({
 
 function ColumnHeaderRow() {
   return (
-    <div className="grid grid-cols-[minmax(220px,1.8fr)_130px_minmax(160px,1.2fr)_110px_110px_minmax(200px,1.8fr)_70px] gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
+    <div className="grid grid-cols-[minmax(220px,1.8fr)_130px_minmax(160px,1.2fr)_110px_110px_minmax(200px,1.8fr)_70px_70px] gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 border-b border-white/5 bg-black/10">
       <div>Cliente</div>
       <div>Tipo de proceso</div>
       <div>Status</div>
@@ -316,6 +316,9 @@ function ColumnHeaderRow() {
       </div>
       <div className="text-center" title="RFE vencidos, tareas vencidas, silencio del cliente">
         Alertas
+      </div>
+      <div className="text-center" title="Acciones rápidas: nota / tarea">
+        Acciones
       </div>
     </div>
   );
@@ -392,7 +395,7 @@ function CaseRow({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className={`group ${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(220px,1.8fr)_130px_minmax(160px,1.2fr)_110px_110px_minmax(200px,1.8fr)_70px] gap-3 px-4 h-16 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left cursor-pointer relative`}
+      className={`group ${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(220px,1.8fr)_130px_minmax(160px,1.2fr)_110px_110px_minmax(200px,1.8fr)_70px_70px] gap-3 px-4 h-16 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left cursor-pointer`}
     >
       {/* Cliente + sub-text 2 líneas + badge tareas.
           Round 4.5 (Valerie): Pin amber al lado izquierdo del avatar
@@ -493,22 +496,18 @@ function CaseRow({
         />
       </div>
 
-      {/* Alertas (70px col).
-          Round 5.5 (Mr. Lorenzo bug): durante hover, las alertas se OCULTAN
-          via group-hover:invisible para que Quick Actions ocupen el mismo
-          espacio sin tapar nada visualmente. visibility:invisible (no
-          display:none) preserva el grid layout — no hay reflow ni jump.
-          Mouse aparta → alertas vuelven instant. */}
-      <div className="group-hover:invisible">
-        <CaseAlertsCell c={c} />
-      </div>
+      {/* Alertas (70px col) — siempre visible. */}
+      <CaseAlertsCell c={c} />
 
-      {/* Quick Actions hover-reveal — Round 5.5: solo 2 botones (nota +
-          tarea). PhoneOff REMOVIDO — Mr. Lorenzo: "no llamamos desde NER,
-          eso vive en GHL comms (Fase 4)". Panel ocupa col Alertas exacta
-          (right-1 + ~60px wide cabe en 70px). */}
+      {/* Quick Actions col (70px) — Round 5.6 (Mr. Lorenzo + GHL pattern):
+          SIEMPRE VISIBLES, NO HOVER. Las alertas son la causa de la acción
+          (RFE / Felix / silent) — esconderlas justo cuando vas a accionar
+          es anti-lógico. GHL muestra siempre los iconos de acción al
+          frente del card. Mismo approach acá: alertas y acciones coexisten,
+          ambas siempre legibles. Fase 4 (GHL comms): se agregan más iconos
+          aquí (📞 dialer + 💬 chat + 📅 cita). */}
       <div
-        className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1 bg-deep-navy/95 backdrop-blur-sm border border-white/10 rounded-md px-1 py-1 shadow-lg shadow-black/40 z-10"
+        className="flex items-center justify-center gap-1"
         onClick={(e) => e.stopPropagation()}
       >
         <QuickActionButton
