@@ -98,7 +98,7 @@ type FlatItem =
 
 const SIZE_HEADER = 48;
 const SIZE_COLHEADER = 32;
-const SIZE_ROW = 56; // h-14 (más legible)
+const SIZE_ROW = 64; // h-16 — espacio para Próximo Paso line-clamp-2 + fecha
 const SIZE_EMPTY = 32;
 
 export default function CaseTable({
@@ -320,7 +320,7 @@ function CaseRow({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className={`${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(240px,2fr)_140px_minmax(180px,1.5fr)_120px_120px_120px_70px] gap-3 px-4 h-14 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left cursor-pointer`}
+      className={`${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(240px,2fr)_140px_minmax(180px,1.5fr)_120px_120px_120px_70px] gap-3 px-4 h-16 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left cursor-pointer`}
     >
       {/* Cliente + badge tareas */}
       <div className="flex items-center gap-2.5 min-w-0">

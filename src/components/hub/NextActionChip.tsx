@@ -99,7 +99,7 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
           title="Click para editar próximo paso"
         >
           <div className="flex items-start justify-between gap-2 mb-1">
-            <p className="text-[12px] font-semibold text-white leading-snug flex-1">{label}</p>
+            <p className="text-[12px] font-semibold text-white leading-snug flex-1 break-words">{label}</p>
             {value.is_custom && (
               <span className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300">
                 custom
@@ -107,7 +107,7 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
             )}
           </div>
           {value.detail && (
-            <p className="text-[10px] text-slate-400 leading-snug line-clamp-2 mb-1">{value.detail}</p>
+            <p className="text-[10px] text-slate-400 leading-snug line-clamp-3 mb-1 break-words">{value.detail}</p>
           )}
           <div className={`text-[10px] tabular-nums ${due.tone}`}>{due.label}</div>
         </button>
@@ -125,17 +125,21 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
     );
   }
 
-  // compact (CaseTable cell)
+  // compact (CaseTable cell) — 2026-06-03: line-clamp-2 para que el texto
+  // largo (acciones custom) se vea en 2 líneas. Tooltip nativo con label
+  // + detail + fecha completos para hover discovery.
   return (
     <>
       <button
         ref={triggerRef}
         onClick={handleOpen}
-        className="w-full text-left flex flex-col min-w-0 hover:opacity-80 transition-opacity"
-        title={value.detail ? `${label} — ${value.detail}` : label}
+        className="w-full text-left flex flex-col min-w-0 hover:opacity-80 transition-opacity gap-0.5 py-0.5"
+        title={[label, value.detail, due.label !== "Sin fecha" ? due.label : null].filter(Boolean).join(" — ")}
       >
-        <span className="text-[12px] text-slate-200 truncate leading-tight">{label}</span>
-        <span className={`text-[10px] tabular-nums ${due.tone} leading-tight`}>{due.label}</span>
+        <span className="text-[12px] text-slate-200 leading-tight line-clamp-2 break-words">
+          {label}
+        </span>
+        <span className={`text-[10px] tabular-nums ${due.tone} leading-tight shrink-0`}>{due.label}</span>
       </button>
       <NextActionEditor
         caseId={caseId}
