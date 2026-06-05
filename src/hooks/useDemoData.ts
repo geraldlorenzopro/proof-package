@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
+import type { NextActionPayload } from "@/lib/nextActionCatalog";
 
 // DEMO MODE — activado vía `?demo=true` en la URL.
 //
@@ -90,6 +91,7 @@ export interface DemoCase {
   // Victoria fix /hub/tasks: pestaña "RFE 87d" depende de rfe_deadline.
   // Sin esto, /hub/tasks?tab=rfe-response queda vacía en demo mode.
   rfe_deadline?: string | null;
+  next_action?: NextActionPayload | null;
 }
 
 const today = new Date();
@@ -112,6 +114,16 @@ export const DEMO_CASES: DemoCase[] = [
     next_due_iso: isoOffsetDays(-1),
     interview_date: null, emb_interview_date: null, interview_city: null,
     rfe_deadline: isoOffsetDays(18),
+    next_action: {
+      action_key: "__custom__",
+      custom_label: "asdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfgasdfg",
+      detail: "Texto demo sin espacios para probar que el tooltip rompe líneas y no se sale del viewport.",
+      due_date: isoOffsetDays(1),
+      assignee_id: null,
+      set_at: "2026-06-05T00:00:00.000Z",
+      set_by_user_id: null,
+      is_custom: true,
+    },
   },
   {
     id: "demo-c-002", client_name: "María Rodríguez Vega", client_profile_id: "demo-p-002",
