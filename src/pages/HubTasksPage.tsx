@@ -77,6 +77,15 @@ export default function HubTasksPage() {
   const [sortBy, setSortBy] = useState<TaskSortKey>("due_asc");
   const [search, setSearch] = useState("");
 
+  // Round 9.11: handler único compartido entre TasksToolbar (botón Limpiar)
+  // y empty-state de TasksByDateView. EMPTY_TASK_FILTERS ya es neutro.
+  const resetAll = () => {
+    setTaskFilters(EMPTY_TASK_FILTERS);
+    setActiveTab("todas");
+    setSortBy("due_asc");
+    setSearch("");
+  };
+
   // Round 9.11: limpieza activa de claves stale de versiones previas
   // (v1/v2 + scoped por account) para usuarios que ya las tenían cargadas.
   useEffect(() => {
