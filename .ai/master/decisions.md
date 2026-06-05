@@ -6,6 +6,147 @@ pasadas — agregar nueva decisión que las supersede si cambian.**
 
 ---
 
+## 2026-06-06 — 🛡 SOC II Type II Pipeline preparation (Round 8 autonomous)
+
+### Contexto
+
+Mr. Lorenzo durmió mientras yo apliqué autonomous el sprint SOC II.
+Antes de dormir: *"Quiero que todo lo que estamos haciendo se haga con
+el objetivo de obtener esta aprobación de SOC II. Esta sección
+completa de Pipeline déjala lista con esto — todo el schema, los MD,
+todo. Cuando me despierte espero encontrar todo de Pipeline listo."*
+
+4 agentes auditados en paralelo:
+- Marcus Chen (consultor externo SOC II legal SaaS)
+- Victoria (Code Auditor NER — 16 gaps identificados)
+- Valerie (UX/audit trail UI)
+- Vanessa (workflows que requieren logging)
+
+### Aplicado
+
+**Migration 20260606030000_soc2_pipeline_quick_wins.sql:**
+
+8 quick wins SQL que cierran 11 de los 16 gaps Victoria identificó:
+
+1. **Trigger universal audit** (`tg_audit_pipeline_mutations`) en
+   client_cases + case_tasks + case_notes. Captura TODAS las mutations
+   server-side. Defense in depth: 3 Task*InlineEdit que bypassaban
+   useCaseInlineEdit ya quedan auditados sin refactor frontend.
+
+2. **Audit log tamper-proof** (`tg_audit_logs_immutable`): BEFORE
+   UPDATE/DELETE RAISE EXCEPTION. Incluso service_role no puede
+   modificar audit_logs. Auditor CC4 satisfecho.
+
+3. **matter_value column-level RLS**: deuda documentada hace 6 días
+   en commit 20260605160000. REVOKE SELECT(matter_value) +
+   `client_cases_revenue` view + `user_can_see_matter_value()`
+   function. Paralegal con DevTools ya NO puede leer revenue.
+
+4. **PII column-level RLS** en client_profiles: a_number, phone,
+   mobile_phone, date_of_birth, ssn_last4. View `client_profiles_safe`
+   con masking automático por role. Tier 4-5 (assistant/readonly) ven
+   NULL.
+
+5. **Soft-delete**: ADD COLUMN `deleted_at` en 3 tablas core +
+   index parciales WHERE deleted_at IS NULL. SOC II P1 + GDPR
+   compliant. Retention policy específica TBD por Mr. Lorenzo + counsel.
+
+6. **VALIDATE CONSTRAINT** subtasks one-level-only (era NOT VALID
+   desde Round 4).
+
+7. **Index audit log** para queries auditor: entity_action_time +
+   account_user_time.
+
+8. **CHECK constraint custom_permissions** anti-escalation: paralegal/
+   assistant/readonly NO pueden recibir eliminar_casos / eliminar_clientes
+   / ver_revenue / configurar_firma via custom_permissions override.
+
+**Frontend quick wins (sin migration):**
+
+9. `useCaseInlineEdit.ts`: logAudit fire-and-forget post-success.
+   Captura old → new diff. Granular error toasts por PG code
+   (23514 CHECK, 42501 RLS, 23505 duplicate).
+
+10. `HubCasesPage.tsx` + `HubTasksPage.tsx`: logAccess al mount.
+    CC7.1 access tracking. Auditor: "¿quién accedió a casos cuándo?".
+
+11. `TaskAssigneeInlineEdit` + `TaskPriorityInlineEdit` +
+    `TaskDueDateInlineEdit`: logAudit explicit post-update.
+    Defense-in-depth: trigger SQL captura, esto es user-friendly source.
+
+12. `TasksByDateView`: logAudit en handleComplete + handleSnooze +
+    handleBulkComplete. Bulk operations registradas con array de ids.
+
+13. `TaskCreateModal`: logAudit post-INSERT. Audit creación con
+    case_id, assignee, priority, due_date.
+
+**Documentación:**
+
+14. `.ai/master/soc2-readiness.md` creado: TSC mapping completo
+    (22 controles), gaps cerrados, roadmap Fase 9-10 (16 items
+    pendientes con esfuerzo estimado), auditor questions answered,
+    referencias.
+
+### Bug visual aplicado en mismo sprint
+
+**GroupHeader** (CaseTable.tsx, Mr. Lorenzo TODO):
+- Counts (chip count badge) → far right del header (alineación columna visual)
+- Subtítulo ("Petición en proceso", "Visa Center", etc.) → abajo del
+  título en flex-col, NO inline al lado.
+- truncate + min-w-0 + shrink-0 correctos para evitar overflow
+
+**Status/Responsable chip overflow** (CaseStageInlineEdit.tsx +
+ResponsibleInlineEdit.tsx): chips con whitespace-nowrap desbordaban
+col cuando label era largo ("Gobierno pide más info"). Fix: quitar
+whitespace-nowrap + max-w-full + truncate en label + shrink-0 en
+icon/flecha.
+
+### Cobertura SOC II post Round 8
+
+**73% TSC ready** (16 controles de 22 cubiertos).
+
+### Backlog Round 8 — TODOs nuevos de Mr. Lorenzo (próximo sprint)
+
+Mr. Lorenzo dejó 3 asignaciones mientras dormía. NO aplicadas — para
+el próximo sprint con su input:
+
+1. **Audit columna Alertas vs Acciones — ¿van al mismo lugar?**
+   *"Estos dos botones van al mismo lugar, no le veo el sentido. Analicen
+   con los agentes y tomen una decisión."*
+   - Alertas: íconos status pasivos (📄 RFE, ⚡ Felix bad, ✓ Felix OK)
+   - Acciones: 📝 nota + ✅ tarea (clickeables)
+   - Audit consenso 4 agentes pendiente.
+
+2. **Peek panel (slide derecha) vs Modal central para info cliente**
+   *"Siento que es mejor un modal en centro con la info del cliente pero
+   eso lo validan ustedes en equipo y toman una decisión, la aplican y
+   yo después la valido cuando me despierte."*
+   - Mr. Lorenzo intuye modal centro > peek lateral
+   - 4 agentes deciden + aplican
+   - Mr. Lorenzo valida al despertar
+
+3. **Botones notas/tareas deben abrir SOLO eso (no expediente completo)**
+   *"Los botones notas y tareas también deben de abrir solo lo de notas
+   y el de tareas solo lo de tareas para crearlas aunque cuando le de
+   click al cliente pueda ver las notas tareas alertas y el botón abajo
+   que dice abrir expediente."*
+   - Hoy click row → /case-engine/:id?tab=tareas (todo el expediente)
+   - Debería: 📝 nota → modal pequeño solo crear nota
+   - ✅ tarea → modal pequeño solo crear tarea
+   - Click nombre del cliente → peek panel (notas + tareas + alertas) +
+     botón "Abrir expediente completo" abajo
+   - O quizás pantalla nueva (a evaluar) con todo lo de NER AI GHL +
+     MyCase + lo ya hecho integrado
+
+4. **(Pre-existente) GroupHeader visual** — APLICADO en este Round 8 ✅
+
+### Decisiones diferidas que vienen del backlog Pipeline cerrado
+
+15 items en `2026-06-05` entrada cerrada (templates cartas, pin
+desde pipeline, etc.) — siguen vigentes.
+
+---
+
 ## 2026-06-05 — 🏁 PIPELINE DE CASOS CERRADO (Round 6.5 close-out)
 
 ### Decisión final

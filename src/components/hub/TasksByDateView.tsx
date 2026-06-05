@@ -31,6 +31,7 @@ import { bucketForDueDate, TASK_BUCKETS, type TaskBucketKey } from "@/lib/caseGr
 import type { PipelineCase, PipelineStageKey } from "@/hooks/useCasePipeline";
 import { useDemoMode } from "@/hooks/useDemoData";
 import { readScopedJson, writeScopedJson } from "@/lib/scopedStorage";
+import { logAudit } from "@/lib/auditLog";
 import TaskAssigneeInlineEdit from "./TaskAssigneeInlineEdit";
 import TaskPriorityInlineEdit from "./TaskPriorityInlineEdit";
 import TaskDueDateInlineEdit from "./TaskDueDateInlineEdit";
@@ -484,8 +485,16 @@ export default function TasksByDateView({
         onClick: async () => {
           updateTaskLocal(task.id, { status: task.status });
           if (!demoMode && UUID_RE.test(task.id)) await persistUncomplete(task.id);
+          void logAudit({
+            action: "task.completed", entity_type: "task", entity_id: task.id,
+            metadata: { field: "status", old_value: "completed", new_value: task.status, undo: true },
+          });
         },
       },
+    });
+    void logAudit({
+      action: "task.completed", entity_type: "task", entity_id: task.id,
+      metadata: { field: "status", old_value: task.status, new_value: "completed", title: task.title, subtasks_cascaded: subtasksPending > 0 ? subtasksPending : 0 },
     });
   }
 
@@ -510,6 +519,10 @@ export default function TasksByDateView({
       }
     }
 
+    void logAudit({
+      action: "task.completed", entity_type: "task", entity_id: task.id,
+      metadata: { field: "snoozed_until", action_type: "snooze", new_value: iso },
+    });
     toast.success("Tarea pospuesta hasta mañana 8 AM", {
       duration: 3000,
       action: {
@@ -549,6 +562,12 @@ export default function TasksByDateView({
 
     toast.success(`${ids.length} tarea${ids.length === 1 ? "" : "s"} completada${ids.length === 1 ? "" : "s"}`, {
       duration: 3000,
+    });
+    // SOC II audit (Marcus + Victoria): bulk operation registrada con todos los ids.
+    void logAudit({
+      action: "task.completed", entity_type: "task",
+      entity_id: ids.length === 1 ? ids[0] : undefined,
+      metadata: { bulk: true, count: ids.length, ids },
     });
     clearSelection();
     // Victoria fix #8: refresh siempre post-bulk

@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 
 interface Props {
   taskId: string;
@@ -106,6 +107,12 @@ export default function TaskDueDateInlineEdit({
         throw new Error("Sin permiso para cambiar fecha (RLS).");
       }
       toast.success(newDate ? `Fecha: ${fmtDisplay(newDate)}` : "Sin fecha", { duration: 1500 });
+      void logAudit({
+        action: "task.completed",
+        entity_type: "task",
+        entity_id: taskId,
+        metadata: { field: "due_date", old_value: oldDate, new_value: newDate },
+      });
     } catch (err: any) {
       setLocalDate(oldDate);
       onChange(oldDate);

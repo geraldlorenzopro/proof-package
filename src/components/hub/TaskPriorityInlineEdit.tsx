@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 
 type Priority = "low" | "normal" | "high" | "urgent";
 
@@ -108,6 +109,12 @@ export default function TaskPriorityInlineEdit({
         throw new Error("Sin permiso para cambiar prioridad (RLS).");
       }
       toast.success(`Prioridad: ${PRIORITY_META[p].label}`, { duration: 1500 });
+      void logAudit({
+        action: "task.completed",
+        entity_type: "task",
+        entity_id: taskId,
+        metadata: { field: "priority", old_value: oldP, new_value: p },
+      });
     } catch (err: any) {
       setLocalPriority(oldP);
       onChange(oldP);

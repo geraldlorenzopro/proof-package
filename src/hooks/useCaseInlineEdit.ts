@@ -71,10 +71,25 @@ export function useCaseInlineEdit(): InlineEditState {
     setSaving(false);
 
     if (error) {
-      // 3b. Rollback + toast destructivo + retry
+      // 3b. Rollback + toast destructivo + retry.
+      // SOC II Victoria gap #8: granular por código PG → diff entre
+      // validation (23514 CHECK) / RLS (42501) / conflict (23505).
       onOptimistic(oldValue);
-      toast.error("No se pudo guardar", {
-        description: error.message || "Reintentá en unos segundos.",
+      const pgCode = (error as any).code;
+      let userMsg = "No se pudo guardar";
+      let description = error.message || "Reintentá en unos segundos.";
+      if (pgCode === "23514") {
+        userMsg = "Valor no válido";
+        description = "El valor no cumple las reglas de negocio. Revisá la entrada.";
+      } else if (pgCode === "42501") {
+        userMsg = "Sin permiso";
+        description = "Tu rol no tiene permisos para esta acción. Hablá con un admin.";
+      } else if (pgCode === "23505") {
+        userMsg = "Duplicado";
+        description = "Ya existe un registro con esos datos.";
+      }
+      toast.error(userMsg, {
+        description,
         duration: 8000,
         action: {
           label: "Reintentar",

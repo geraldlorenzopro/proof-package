@@ -30,6 +30,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
 
 interface TeamMember {
@@ -155,6 +156,17 @@ export default function TaskCreateModal({
       toast.success("Tarea creada", {
         duration: 2000,
         description: `${title.trim()} · ${selectedCase?.client_name || ""}`,
+      });
+      void logAudit({
+        action: "task.created", entity_type: "task",
+        entity_label: title.trim(),
+        metadata: {
+          case_id: selectedCaseId,
+          case_name: selectedCase?.client_name,
+          assigned_to: assigneeId,
+          priority,
+          due_date: fmtISO(dueDate),
+        },
       });
       setOpen(false);
       onCreated();

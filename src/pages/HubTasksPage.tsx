@@ -35,6 +35,7 @@ import { useCasePipeline } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { readScopedJson, writeScopedJson } from "@/lib/scopedStorage";
+import { logAccess } from "@/lib/auditLog";
 
 export default function HubTasksPage() {
   useTrackPageView("hub.tasks");
@@ -53,6 +54,15 @@ export default function HubTasksPage() {
     if (demoMode) { setUserId("demo-u-vanessa"); return; }
     void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
   }, [demoMode]);
+
+  // SOC II CC7.2: audit access al mount.
+  useEffect(() => {
+    if (!accountId || !userId) return;
+    void logAccess({
+      accountId, userId,
+      action: "viewed", entityType: "tasks_pipeline",
+    });
+  }, [accountId, userId]);
 
   // useCasePipeline para tener cases (necesario para enrichment de tasks)
   const { cases, loading: casesLoading } = useCasePipeline(accountId, userId);

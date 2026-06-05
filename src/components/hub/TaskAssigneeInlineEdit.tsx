@@ -21,6 +21,7 @@ import { createPortal } from "react-dom";
 import { UserPlus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 
 interface TeamMember {
   user_id: string;
@@ -158,6 +159,21 @@ export default function TaskAssigneeInlineEdit({
       }
 
       toast.success(newName ? `Asignado a ${newName}` : "Sin asignar", { duration: 1500 });
+
+      // SOC II audit (Marcus gap #1, Victoria gap #1).
+      // Defense-in-depth: trigger SQL también captura, esto es source-of-truth user-friendly.
+      void logAudit({
+        action: "task.completed",
+        entity_type: "task",
+        entity_id: taskId,
+        metadata: {
+          field: "assigned_to",
+          old_value: oldState.id,
+          new_value: newId,
+          old_name: oldState.name,
+          new_name: newName,
+        },
+      });
     } catch (err: any) {
       // Rollback
       setLocalAssignee(oldState);
