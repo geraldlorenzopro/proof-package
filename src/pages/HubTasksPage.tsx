@@ -116,8 +116,16 @@ export default function HubTasksPage() {
   // la primera hidratación real, mantenemos los números visibles durante refetches.
   const handleTasksLoadingChange = useCallback((isLoading: boolean) => {
     setTasksLoading(isLoading);
-    if (!isLoading) setTasksHydrated(true);
   }, []);
+
+  const handleTaskCountsChange = useCallback((counts: Record<TaskViewKey, number>) => {
+    if (!tasksHydrated && (tasksLoading || casesLoading)) return;
+    setTaskCounts(counts);
+  }, [casesLoading, tasksHydrated, tasksLoading]);
+
+  useEffect(() => {
+    if (!tasksLoading && !casesLoading) setTasksHydrated(true);
+  }, [casesLoading, tasksLoading]);
 
   // Cargar equipo (igual pattern que HubCasesPage)
   useEffect(() => {
@@ -218,7 +226,7 @@ export default function HubTasksPage() {
           search={search}
           team={team}
           staffNames={staffNames}
-          onTaskCountsChange={setTaskCounts}
+          onTaskCountsChange={handleTaskCountsChange}
           onLoadingChange={handleTasksLoadingChange}
           onResetFilters={resetAll}
         />
