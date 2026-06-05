@@ -1,5 +1,5 @@
 /**
- * CasePeekPanel — Panel peek lateral 420px (Linear/Things pattern, v2 2026-05-28).
+ * CasePeekPanel — Panel peek lateral 480px (Linear/Things pattern, v2 2026-05-28).
  *
  * Diseño simplificado por Mr. Lorenzo:
  *   - Side panel, NO modal central (no bloquea ver el contexto)
@@ -9,7 +9,8 @@
  *   - CTA principal: "Abrir expediente completo"
  *   - ESC cierra · Enter abre expediente
  *
- * Width reducido 480 → 420 para dejar más contexto visible de la tabla.
+ * Width: 480px (Round 9 Mr. Lorenzo). Antes era 420px pero quedaba
+ * apretado el preview de notas/tareas de 2 líneas.
  */
 import { useEffect, useState } from "react";
 import { X, AlertTriangle, FileText, Zap, ExternalLink, UserX, Target } from "lucide-react";

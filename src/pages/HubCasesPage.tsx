@@ -420,8 +420,17 @@ export default function HubCasesPage() {
         </div>
 
         {search.trim() && !loading && (
-          <p className="text-[10px] text-muted-foreground/60 -mt-1">
-            {sortedCases.length} de {cases.length} casos coinciden con "{search.trim()}"
+          // Round 9.12: agregar click-to-clear inline (UX consistencia con
+          // /hub/tasks empty state CTA "Limpiar filtros").
+          <p className="text-[10px] text-muted-foreground/60 -mt-1 flex items-center gap-2">
+            <span>{sortedCases.length} de {cases.length} casos coinciden con "{search.trim()}"</span>
+            <button
+              onClick={() => setSearch("")}
+              className="text-cyan-accent hover:underline transition-colors"
+              type="button"
+            >
+              Limpiar búsqueda
+            </button>
           </p>
         )}
 
@@ -450,25 +459,60 @@ export default function HubCasesPage() {
             </div>
           </div>
         ) : sortedCases.length === 0 ? (
-          <div className="rounded-xl border border-border/40 bg-card/30 py-16 text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-muted/30 mx-auto flex items-center justify-center">
-              <FolderPlus className="w-5 h-5 text-muted-foreground/60" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground mb-1">
-                {search ? "Ningún caso coincide" : "No hay casos en esta vista"}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                {search ? "Probá ajustar los filtros o limpiar la búsqueda." : "Cambiá de tab o limpiá los filtros toggle."}
-              </p>
-            </div>
-            {!search && (
-              <Button size="sm" onClick={() => navigate("/hub/leads")} className="text-[11px]">
-                <FolderPlus className="w-3.5 h-3.5 mr-1.5" />
-                Crear caso desde lead
-              </Button>
-            )}
-          </div>
+          (() => {
+            // Round 9.12 Mr. Lorenzo audit: diagnostico WHY vacío + CTA contextual
+            // (mismo pattern que /hub/tasks Round 9).
+            const hasFiltersActive =
+              filters.onlyOverdue || filters.onlyWithRfe ||
+              filters.onlyWithNextAction || filters.onlyWithoutOwner ||
+              !!activeTypeKey || activeView !== "todos" || !!search.trim();
+            const universeHasCases = cases.length > 0;
+            const filterCausedEmpty = universeHasCases && hasFiltersActive;
+
+            function clearAllFilters() {
+              setFilters(EMPTY_FILTERS);
+              setActiveTypeKey(null);
+              setActiveView("todos");
+              setSearch("");
+            }
+
+            return (
+              <div className="rounded-xl border border-border/40 bg-card/30 py-16 text-center space-y-4">
+                <div className={`w-12 h-12 rounded-full mx-auto flex items-center justify-center ${
+                  filterCausedEmpty ? "bg-amber-500/15" : "bg-muted/30"
+                }`}>
+                  <FolderPlus className={`w-5 h-5 ${filterCausedEmpty ? "text-amber-300" : "text-muted-foreground/60"}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-1">
+                    {filterCausedEmpty
+                      ? `Tenés ${cases.length} caso${cases.length === 1 ? "" : "s"}, pero ninguno calza con los filtros`
+                      : search ? "Ningún caso coincide" : "No hay casos en esta vista"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground max-w-md mx-auto">
+                    {filterCausedEmpty
+                      ? "Probá ampliar el rango — pestaña, tipo o toggles."
+                      : search ? "Probá ajustar los filtros o limpiar la búsqueda." : "Cambiá de tab o limpiá los filtros toggle."}
+                  </p>
+                </div>
+                {filterCausedEmpty ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={clearAllFilters}
+                    className="text-[11px] border-cyan-accent/40 text-cyan-accent hover:bg-cyan-accent/10"
+                  >
+                    Limpiar filtros
+                  </Button>
+                ) : !search && (
+                  <Button size="sm" onClick={() => navigate("/hub/leads")} className="text-[11px]">
+                    <FolderPlus className="w-3.5 h-3.5 mr-1.5" />
+                    Crear caso desde lead
+                  </Button>
+                )}
+              </div>
+            );
+          })()
         ) : view === "tabla" ? (
           <CaseTable
             groups={allGroups}
@@ -487,6 +531,8 @@ export default function HubCasesPage() {
             staffNames={staffNames}
             onCardClick={(id) => setPeekCaseId(id)}
             showRevenue={canViewRevenue}
+            onQuickNote={(c) => setQuickNoteCase(c)}
+            onQuickTask={(c) => setQuickTaskCase(c)}
           />
         )}
       </div>

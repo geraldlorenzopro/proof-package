@@ -26,6 +26,11 @@ interface Props {
   /** Round 4 Marcus: $$$ por columna gated tier 1+2 (owner/admin/attorney).
    *  Si false, no muestra revenue. Default false (paralegal NO ve). */
   showRevenue?: boolean;
+  /** Round 9.12 (Mr. Lorenzo cases audit): mismo pattern que CaseTable —
+   *  quick actions NO navegan al expediente, abren modales chiquitos en el
+   *  parent. Sin estos callbacks el Kanban hace fallback al navigate antiguo. */
+  onQuickNote?: (c: PipelineCase) => void;
+  onQuickTask?: (c: PipelineCase) => void;
 }
 
 const ACCENT_HEX: Record<string, string> = {
@@ -43,7 +48,7 @@ function dayTone(days: number): string {
   return "text-muted-foreground/60";
 }
 
-export default function CaseKanban({ groups, staffNames, onCardClick, showRevenue = false }: Props) {
+export default function CaseKanban({ groups, staffNames, onCardClick, showRevenue = false, onQuickNote, onQuickTask }: Props) {
   const allEmpty = groups.every(g => g.cases.length === 0);
   const visible = allEmpty ? groups : groups.filter(g => g.cases.length > 0);
 
@@ -82,7 +87,15 @@ export default function CaseKanban({ groups, staffNames, onCardClick, showRevenu
                   </div>
                 ) : (
                   group.cases.map(c => (
-                    <CompactCard key={c.id} c={c} staffNames={staffNames} accent={accent} onCardClick={onCardClick} />
+                    <CompactCard
+                      key={c.id}
+                      c={c}
+                      staffNames={staffNames}
+                      accent={accent}
+                      onCardClick={onCardClick}
+                      onQuickNote={onQuickNote}
+                      onQuickTask={onQuickTask}
+                    />
                   ))
                 )}
               </div>
@@ -94,7 +107,14 @@ export default function CaseKanban({ groups, staffNames, onCardClick, showRevenu
   );
 }
 
-function CompactCard({ c, staffNames, accent, onCardClick }: { c: PipelineCase; staffNames?: Record<string, string>; accent: string; onCardClick?: (id: string) => void }) {
+function CompactCard({ c, staffNames, accent, onCardClick, onQuickNote, onQuickTask }: {
+  c: PipelineCase;
+  staffNames?: Record<string, string>;
+  accent: string;
+  onCardClick?: (id: string) => void;
+  onQuickNote?: (c: PipelineCase) => void;
+  onQuickTask?: (c: PipelineCase) => void;
+}) {
   const navigate = useNavigate();
   const days = c.days_in_stage || 0;
   const ownerName = c.assigned_to && staffNames ? staffNames[c.assigned_to] : null;
@@ -129,12 +149,14 @@ function CompactCard({ c, staffNames, accent, onCardClick }: { c: PipelineCase; 
             {getCaseTypeLabel(c.case_type)}
           </div>
         </div>
-        {/* Round 6 (Mr. Lorenzo + Marcus mix): 2 iconos VISIBLES con
-            opacity 60% en reposo, 100% al hover del card. Patrón Asana
-            mix entre "always visible" (GHL) y "subtle in rest" (Linear).
-            Mr. Lorenzo cambió criterio sobre Round 4.5 (menu "..."):
-            quiere los iconos directos, no escondidos. */}
-        <CardQuickActions caseId={c.id} />
+        {/* Round 9.12 Mr. Lorenzo cases audit: quick actions abren modales
+            (NO navegan al expediente). Misma UX que CaseTable. Si no se
+            pasan los callbacks → fallback al navigate legacy. */}
+        <CardQuickActions
+          c={c}
+          onQuickNote={onQuickNote}
+          onQuickTask={onQuickTask}
+        />
       </div>
       <div className="flex items-center gap-2 mt-1 pl-2.5 text-[10px]">
         <span className={cn("tabular-nums", dayTone(days))}>{days}d</span>
@@ -163,39 +185,52 @@ function CompactCard({ c, staffNames, accent, onCardClick }: { c: PipelineCase; 
 }
 
 /**
- * CardQuickActions — Round 6 (Mr. Lorenzo + Marcus).
+ * CardQuickActions — Round 9.12 Mr. Lorenzo cases audit.
  *
- * 2 iconos directos top-right (no menu "..."). Opacity 60% en reposo,
- * 100% al hover del card. Click navega directo al case-engine en el
- * tab correspondiente.
+ * Antes (Round 6): click → navigate al case-engine con ?action=add-note.
+ * Ahora: click → callback al parent que abre Quick{Note,Task}Modal pequeño
+ * SIN abandonar la vista Kanban. Misma UX que CaseTable.
  *
- * Victoria fix obligatorio: stopPropagation en cada button para que
- * click en icon NO dispare la navegación del card entero al peek panel.
+ * Fallback: si el parent no pasa los callbacks, mantiene navigate legacy
+ * (no rompe consumers viejos).
+ *
+ * Victoria fix obligatorio: stopPropagation para que el click en icon no
+ * dispare la navegación del card entero al peek panel.
  */
-function CardQuickActions({ caseId }: { caseId: string }) {
+function CardQuickActions({ c, onQuickNote, onQuickTask }: {
+  c: PipelineCase;
+  onQuickNote?: (c: PipelineCase) => void;
+  onQuickTask?: (c: PipelineCase) => void;
+}) {
   const navigate = useNavigate();
 
-  function go(e: React.MouseEvent, path: string) {
+  function handleNote(e: React.MouseEvent) {
     e.stopPropagation();
-    navigate(path);
+    if (onQuickNote) onQuickNote(c);
+    else navigate(`/case-engine/${c.id}?tab=resumen&action=add-note`);
+  }
+  function handleTask(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (onQuickTask) onQuickTask(c);
+    else navigate(`/case-engine/${c.id}?tab=tareas&action=add`);
   }
 
   return (
     <div className="flex items-center gap-0.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
       <button
         type="button"
-        onClick={(e) => go(e, `/case-engine/${caseId}?tab=resumen&action=add-note`)}
+        onClick={handleNote}
         aria-label="Agregar nota"
-        title="Agregar nota"
+        title="Agregar nota rápida"
         className="w-5 h-5 rounded flex items-center justify-center text-cyan-accent hover:bg-cyan-accent/15 transition-colors"
       >
         <StickyNote className="w-3 h-3" />
       </button>
       <button
         type="button"
-        onClick={(e) => go(e, `/case-engine/${caseId}?tab=tareas&action=add`)}
+        onClick={handleTask}
         aria-label="Crear tarea"
-        title="Crear tarea"
+        title="Crear tarea rápida"
         className="w-5 h-5 rounded flex items-center justify-center text-emerald-300 hover:bg-emerald-500/15 transition-colors"
       >
         <CheckSquare className="w-3 h-3" />
