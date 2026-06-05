@@ -21,7 +21,7 @@
  *   - AbortController en fetch race protection
  *   - Demo mode mocks hidratados con case_rfe_deadline
  */
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Search } from "lucide-react";
@@ -106,9 +106,18 @@ export default function HubTasksPage() {
   // que TaskViewTabs muestre "—" hasta que counts sean reales. Antes los tabs
   // mostraban "0" durante 1-2 render cycles y después saltaban — parpadeo feo.
   const [tasksLoading, setTasksLoading] = useState(true);
+  const [tasksHydrated, setTasksHydrated] = useState(false);
   const [taskCounts, setTaskCounts] = useState<Record<TaskViewKey, number>>({
     todas: 0, hoy: 0, atrasadas: 0, proximas: 0, completadas: 0, "rfe-response": 0,
   });
+
+  // Round 9.19 Mr. Lorenzo: al entrar en /hub/tasks los KPIs mostraban número,
+  // se ocultaban por un refetch de userId/cases, y volvían a entrar. Después de
+  // la primera hidratación real, mantenemos los números visibles durante refetches.
+  const handleTasksLoadingChange = useCallback((isLoading: boolean) => {
+    setTasksLoading(isLoading);
+    if (!isLoading) setTasksHydrated(true);
+  }, []);
 
   // Cargar equipo (igual pattern que HubCasesPage)
   useEffect(() => {
@@ -184,7 +193,7 @@ export default function HubTasksPage() {
           activeTab={activeTab}
           onChange={setActiveTab}
           counts={taskCounts}
-          loading={casesLoading || tasksLoading}
+          loading={!tasksHydrated && (casesLoading || tasksLoading)}
         />
 
         {/* Toolbar específica para tasks (NO CaseFiltersPopover) */}
@@ -210,7 +219,7 @@ export default function HubTasksPage() {
           team={team}
           staffNames={staffNames}
           onTaskCountsChange={setTaskCounts}
-          onLoadingChange={setTasksLoading}
+          onLoadingChange={handleTasksLoadingChange}
           onResetFilters={resetAll}
         />
       </div>
