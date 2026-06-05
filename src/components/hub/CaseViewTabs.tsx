@@ -27,6 +27,13 @@ interface Props {
   onChange: (view: CaseViewKey) => void;
   counts: ViewCounts;
   loading?: boolean;
+  /**
+   * Round 5.5 (Mr. Lorenzo confusión Cases vs Tareas): cuando viewMode==="tareas"
+   * el label del tab "Mis casos" cambia a "Mis tareas" para alinear con la
+   * vista activa. Counters siguen contando CASES (la verdad). El disclaimer
+   * arriba de TasksByDateView aclara el cross-eje.
+   */
+  viewMode?: "tabla" | "kanban" | "tareas";
 }
 
 // Tokens por view — Victoria: contraste ≥4.5:1 vs deep-navy validado
@@ -68,13 +75,16 @@ const VIEW_THEME: Record<CaseViewKey, {
   },
 };
 
-export default function CaseViewTabs({ activeView, onChange, counts, loading = false }: Props) {
+export default function CaseViewTabs({ activeView, onChange, counts, loading = false, viewMode }: Props) {
   return (
     <div className="grid grid-cols-[repeat(4,1fr)_auto] gap-2 w-full">
       {CASE_VIEWS.map(v => {
         const isActive = activeView === v.key;
         const count = counts[v.key];
         const theme = VIEW_THEME[v.key];
+        // Round 5.5: solo "mis-casos" renombra a "Mis tareas" en vista tareas.
+        // Los otros 3 tabs mantienen su label de cases (filtros del eje case).
+        const label = (viewMode === "tareas" && v.key === "mis-casos") ? "Mis tareas" : v.label;
         return (
           <button
             key={v.key}
@@ -97,7 +107,7 @@ export default function CaseViewTabs({ activeView, onChange, counts, loading = f
                   isActive ? theme.activeText : "text-slate-400"
                 }`}
               >
-                {v.label}
+                {label}
               </span>
               <span
                 className={`font-sora font-bold text-[24px] leading-none tabular-nums ${

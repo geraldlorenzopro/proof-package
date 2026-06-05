@@ -314,19 +314,22 @@ export default function HubCasesPage() {
               ref={searchInputRef}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar por nombre, teléfono, A-number, receipt USCIS/NVC…"
+              placeholder="Nombre, teléfono, # caso, A-number, recibo USCIS/NVC"
               className="h-9 pl-9 pr-16 text-[12px] bg-white/[0.04] border-white/10 focus-visible:border-cyan-accent/50"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-0.5 text-[9px] font-mono text-muted-foreground/50 border border-white/10 rounded px-1 py-0.5">⌘K</span>
           </div>
         </div>
 
-        {/* Hero pills h-12 edge-to-edge — Round 3 convergencia */}
+        {/* Hero pills h-12 edge-to-edge — Round 3 convergencia.
+            Round 5.5: viewMode prop hace que cuando view=tareas el label
+            "Mis casos" cambie a "Mis tareas" (Mr. Lorenzo confusión #1-3). */}
         <CaseViewTabs
           activeView={activeView}
           onChange={setActiveView}
           counts={viewCounts}
           loading={loading}
+          viewMode={view}
         />
 
         {/* Toolbar 1 línea — strip horizontal MUERTO, dropdown único para Tipo */}

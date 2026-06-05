@@ -19,7 +19,7 @@
  */
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, ChevronDown, StickyNote, CheckSquare, PhoneOff, Pin } from "lucide-react";
+import { ChevronRight, ChevronDown, StickyNote, CheckSquare, Pin } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { deriveJourneyStep, deriveSubStage, defaultSubStageFor, getJourneyMeta, type JourneyStep, type SubStage } from "@/lib/journeySteps";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
@@ -493,16 +493,22 @@ function CaseRow({
         />
       </div>
 
-      {/* Alertas (70px col) */}
-      <CaseAlertsCell c={c} />
+      {/* Alertas (70px col).
+          Round 5.5 (Mr. Lorenzo bug): durante hover, las alertas se OCULTAN
+          via group-hover:invisible para que Quick Actions ocupen el mismo
+          espacio sin tapar nada visualmente. visibility:invisible (no
+          display:none) preserva el grid layout — no hay reflow ni jump.
+          Mouse aparta → alertas vuelven instant. */}
+      <div className="group-hover:invisible">
+        <CaseAlertsCell c={c} />
+      </div>
 
-      {/* Quick Actions hover-reveal — Round 4.5 fix BLOCKER #2.
-          ANTES: right-[80px] tapaba "Próximo paso" (Valerie audit: anti-
-          pattern Linear "hover actions never occlude primary content").
-          AHORA: right-2 → cubre col Alertas (íconos pasivos, redundantes
-          con tooltips). Acciones nuevas > status icons en hover. */}
+      {/* Quick Actions hover-reveal — Round 5.5: solo 2 botones (nota +
+          tarea). PhoneOff REMOVIDO — Mr. Lorenzo: "no llamamos desde NER,
+          eso vive en GHL comms (Fase 4)". Panel ocupa col Alertas exacta
+          (right-1 + ~60px wide cabe en 70px). */}
       <div
-        className="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1 bg-deep-navy/95 backdrop-blur-sm border border-white/10 rounded-md px-1.5 py-1 shadow-lg shadow-black/40 z-10 transition-opacity duration-100"
+        className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1 bg-deep-navy/95 backdrop-blur-sm border border-white/10 rounded-md px-1 py-1 shadow-lg shadow-black/40 z-10"
         onClick={(e) => e.stopPropagation()}
       >
         <QuickActionButton
@@ -516,12 +522,6 @@ function CaseRow({
           title="Crear tarea"
           color="text-emerald-300"
           onClick={() => navigate(`/case-engine/${c.id}?tab=tareas&action=add`)}
-        />
-        <QuickActionButton
-          Icon={PhoneOff}
-          title="Registrar contacto fallido / Ver historial"
-          color="text-amber-300"
-          onClick={() => navigate(`/case-engine/${c.id}?tab=historial`)}
         />
       </div>
     </div>

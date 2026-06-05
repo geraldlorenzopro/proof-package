@@ -268,8 +268,18 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
   }
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-white/[0.015] overflow-hidden">
-      <div ref={parentRef} style={{ maxHeight: "calc(100vh - 280px)", overflow: "auto" }}>
+    <div className="space-y-2">
+      {/* Round 5.5 (Mr. Lorenzo confusión cross-eje): los counters de tabs
+          arriba cuentan CASOS, esta vista muestra TAREAS dentro de esos
+          casos. El disclaimer aclara el mismatch sin tocar el modelo. */}
+      <div className="text-[11px] text-muted-foreground px-3 py-1.5 bg-cyan-accent/[0.04] border border-cyan-accent/[0.15] rounded-md flex items-center gap-2">
+        <Calendar className="w-3 h-3 text-cyan-accent/60 shrink-0" />
+        <span>
+          Mostrando <span className="text-foreground font-semibold tabular-nums">{tasks.length}</span> tarea{tasks.length === 1 ? "" : "s"} dentro de los <span className="text-foreground font-semibold tabular-nums">{cases.length}</span> casos filtrados. Los contadores arriba cuentan casos, no tareas.
+        </span>
+      </div>
+      <div className="rounded-xl border border-white/[0.08] bg-white/[0.015] overflow-hidden">
+      <div ref={parentRef} style={{ maxHeight: "calc(100vh - 320px)", overflow: "auto" }}>
         <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
           {virtualizer.getVirtualItems().map(vi => {
             const item = items[vi.index];
@@ -307,6 +317,7 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );

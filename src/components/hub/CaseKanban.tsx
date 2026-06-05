@@ -14,7 +14,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
-import { AlertCircle, MoreHorizontal, StickyNote, CheckSquare, PhoneOff, Pin } from "lucide-react";
+import { AlertCircle, MoreHorizontal, StickyNote, CheckSquare, Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
@@ -233,6 +233,11 @@ function CardActionMenu({ caseId }: { caseId: string }) {
           className="rounded-lg border border-cyan-accent/30 bg-deep-navy/[0.97] backdrop-blur-xl shadow-2xl shadow-black/50 p-1"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Round 5.5 (Mr. Lorenzo): 2 opciones únicamente. Removido
+              "Ver historial" porque comms vive en GHL inicialmente y
+              el ícono PhoneOff confundía (Mr. Lorenzo: "no llamamos
+              desde NER"). Cuando integremos comms con GHL Fase 4,
+              agregamos botón real de dialer. */}
           <MenuItem
             Icon={StickyNote}
             color="text-cyan-accent"
@@ -244,12 +249,6 @@ function CardActionMenu({ caseId }: { caseId: string }) {
             color="text-emerald-300"
             label="Crear tarea"
             onClick={() => go(`/case-engine/${caseId}?tab=tareas&action=add`)}
-          />
-          <MenuItem
-            Icon={PhoneOff}
-            color="text-amber-300"
-            label="Ver historial"
-            onClick={() => go(`/case-engine/${caseId}?tab=historial`)}
           />
         </div>,
         document.body
