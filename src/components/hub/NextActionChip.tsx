@@ -17,6 +17,7 @@ import { useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import NextActionEditor from "./NextActionEditor";
 import { getActionLabel, type NextActionPayload } from "@/lib/nextActionCatalog";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 interface Props {
   caseId: string;
@@ -125,22 +126,44 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
     );
   }
 
-  // compact (CaseTable cell) — 2026-06-03: line-clamp-2 para que el texto
-  // largo (acciones custom) se vea en 2 líneas. Tooltip nativo con label
-  // + detail + fecha completos para hover discovery.
+  // compact (CaseTable cell) — 2026-06-03 v2: line-clamp-2 visible + tooltip
+  // rich con texto completo al hover. Click sigue abriendo editor.
+  // Columna expandida a minmax(200px, 1.8fr) en CaseTable para más palabras
+  // por línea.
   return (
     <>
-      <button
-        ref={triggerRef}
-        onClick={handleOpen}
-        className="w-full text-left flex flex-col min-w-0 hover:opacity-80 transition-opacity gap-0.5 py-0.5"
-        title={[label, value.detail, due.label !== "Sin fecha" ? due.label : null].filter(Boolean).join(" — ")}
-      >
-        <span className="text-[12px] text-slate-200 leading-tight line-clamp-2 break-words">
-          {label}
-        </span>
-        <span className={`text-[10px] tabular-nums ${due.tone} leading-tight shrink-0`}>{due.label}</span>
-      </button>
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              ref={triggerRef}
+              onClick={handleOpen}
+              className="w-full text-left flex flex-col min-w-0 hover:opacity-80 transition-opacity gap-0.5 py-0.5"
+            >
+              <span className="text-[12px] text-slate-200 leading-tight line-clamp-2 break-words">
+                {label}
+              </span>
+              <span className={`text-[10px] tabular-nums ${due.tone} leading-tight shrink-0`}>{due.label}</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent
+            side="top"
+            align="start"
+            className="max-w-[400px] bg-deep-navy border border-cyan-accent/30 text-white px-3 py-2.5 shadow-2xl"
+          >
+            <p className="text-[12px] font-semibold leading-snug mb-1 break-words whitespace-pre-wrap">{label}</p>
+            {value.detail && (
+              <p className="text-[11px] text-slate-300 leading-snug mb-1.5 break-words whitespace-pre-wrap">
+                {value.detail}
+              </p>
+            )}
+            <p className={`text-[10px] tabular-nums ${due.tone}`}>{due.label}</p>
+            <p className="text-[9px] text-slate-500 mt-1.5 pt-1.5 border-t border-white/10">
+              Click para editar
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <NextActionEditor
         caseId={caseId}
         processStage={processStage}
