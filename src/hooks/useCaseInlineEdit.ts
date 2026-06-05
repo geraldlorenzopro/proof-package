@@ -18,6 +18,7 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoMode } from "./useDemoData";
+import { logAudit } from "@/lib/auditLog";
 
 interface EditOptions<TValue> {
   caseId: string;
@@ -85,10 +86,22 @@ export function useCaseInlineEdit(): InlineEditState {
       return;
     }
 
-    // 3a. OK
+    // 3a. OK + audit log (SOC II quick win — Marcus gap #1 + #9 closed)
     if (successMessage) {
       toast.success(successMessage, { duration: 2000 });
     }
+    // Fire-and-forget: NUNCA bloquea UX. logAudit captura old → new diff.
+    void logAudit({
+      action: table === "case_tasks" ? "task.completed" : "case.updated",
+      entity_type: table === "case_tasks" ? "task" : "case",
+      entity_id: caseId,
+      metadata: {
+        field,
+        old_value: oldValue as any,
+        new_value: newValue as any,
+        table,
+      },
+    });
   }, [demoMode]);
 
   return { saving, edit };

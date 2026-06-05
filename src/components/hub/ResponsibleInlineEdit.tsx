@@ -194,10 +194,10 @@ export default function ResponsibleInlineEdit({
         onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
         disabled={saving}
         title={triggerTitle}
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border ${meta.chipClass} whitespace-nowrap hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait relative`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border ${meta.chipClass} max-w-full hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait relative`}
       >
-        <span>{meta.icon}</span>
-        <span>{meta.label}</span>
+        <span className="shrink-0">{meta.icon}</span>
+        <span className="truncate min-w-0">{meta.label}</span>
         {isOverridden && (
           <span
             className="ml-0.5 text-[7px] font-bold uppercase tracking-wider bg-amber-500/30 border border-amber-500/40 text-amber-200 px-0.5 rounded leading-none py-px"

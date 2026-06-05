@@ -24,6 +24,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { groupCases, sortCases, SORT_LABELS, type GroupByKey, type SortKey } from "@/lib/caseGrouping";
 import { getCaseTypeByKey } from "@/lib/caseTypes";
 import { readScopedJson, writeScopedJson, migrateLegacyKeys } from "@/lib/scopedStorage";
+import { logAccess } from "@/lib/auditLog";
 import { cn } from "@/lib/utils";
 
 // Round 7: Tareas movido a /hub/tasks (Marcus pattern). Pipeline solo Tabla|Kanban.
@@ -68,6 +69,17 @@ export default function HubCasesPage() {
   useEffect(() => {
     if (accountId) migrateLegacyKeys(accountId);
   }, [accountId]);
+
+  // SOC II CC7.2 (Marcus quick win #5): logAccess al mount.
+  // Audit trail de quién vio el Pipeline cuando — evidencia operativa
+  // para auditor Type II ("¿quién accedió a casos el 14-mayo a las 9am?").
+  useEffect(() => {
+    if (!accountId || !userId) return;
+    void logAccess({
+      accountId, userId,
+      action: "viewed", entityType: "cases_pipeline",
+    });
+  }, [accountId, userId]);
 
   const { cases, loading, error, unclassifiedCount, updateCase } = useCasePipeline(accountId, userId);
 

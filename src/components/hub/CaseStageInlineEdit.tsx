@@ -85,18 +85,18 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
   }
 
   return (
-    <div className="relative inline-block">
+    <div className="relative flex w-full min-w-0">
       <button
         ref={triggerRef}
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
         disabled={saving}
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border whitespace-nowrap hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait ${meta.chipClass}`}
-        title={`Click para cambiar etapa · ${meta.description}`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border max-w-full hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait ${meta.chipClass}`}
+        title={`${meta.label} · ${meta.description}`}
       >
-        <span>{meta.icon}</span>
-        <span>{meta.label}</span>
-        <span className="text-[8px] ml-0.5 opacity-70">▾</span>
+        <span className="shrink-0">{meta.icon}</span>
+        <span className="truncate min-w-0">{meta.label}</span>
+        <span className="text-[8px] ml-0.5 opacity-70 shrink-0">▾</span>
       </button>
 
       {open && popPos && typeof document !== "undefined" && createPortal(
