@@ -34,7 +34,9 @@ import TaskViewTabs, { type TaskViewKey } from "@/components/hub/TaskViewTabs";
 import { useCasePipeline } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
+import { useHubPageReady } from "@/hooks/useHubPageReady";
 import { logAccess } from "@/lib/auditLog";
+import { cn } from "@/lib/utils";
 
 export default function HubTasksPage() {
   useTrackPageView("hub.tasks");
@@ -106,7 +108,10 @@ export default function HubTasksPage() {
   // que TaskViewTabs muestre "—" hasta que counts sean reales. Antes los tabs
   // mostraban "0" durante 1-2 render cycles y después saltaban — parpadeo feo.
   const [tasksLoading, setTasksLoading] = useState(true);
+  // Round 9.19 (Lovable): tasksHydrated evita re-flash de counts en refetches.
   const [tasksHydrated, setTasksHydrated] = useState(false);
+  // Round 9.20 (Claude): teamLoading explícito para useHubPageReady.
+  const [teamLoading, setTeamLoading] = useState(true);
   const [taskCounts, setTaskCounts] = useState<Record<TaskViewKey, number>>({
     todas: 0, hoy: 0, atrasadas: 0, proximas: 0, completadas: 0, "rfe-response": 0,
   });
@@ -137,6 +142,19 @@ export default function HubTasksPage() {
     }
   }, [casesLoading, tasksLoading]);
 
+  // Round 9.20 anti-flash universal pattern: gate del render principal en
+  // UNA sola flag `ready`. Antes cada hijo tenía su propio loading state →
+  // KPIs entraban uno por uno por el waterfall de fetches. Ahora hasta que
+  // TODO esté listo, mostramos skeleton unificado; cuando ready=true,
+  // TODO el contenido aparece sincronizado en un mismo frame.
+  const ready = useHubPageReady(
+    casesLoading,
+    tasksLoading,
+    teamLoading,
+    !userId,
+    !accountId,
+  );
+
   // Cargar equipo (igual pattern que HubCasesPage)
   useEffect(() => {
     if (demoMode) {
@@ -150,6 +168,7 @@ export default function HubTasksPage() {
       });
       setStaffNames(map);
       setTeam(teamList);
+      setTeamLoading(false);
       return;
     }
     if (!accountId) return;
@@ -160,7 +179,7 @@ export default function HubTasksPage() {
         .select("user_id, role")
         .eq("account_id", accountId)
         .eq("is_active", true);
-      if (memErr || !mems || mems.length === 0) { setStaffNames({}); setTeam([]); return; }
+      if (memErr || !mems || mems.length === 0) { setStaffNames({}); setTeam([]); setTeamLoading(false); return; }
 
       const userIds = mems.map((m: any) => m.user_id).filter(Boolean);
       const [{ data: profiles }, { data: ghlMaps }] = await Promise.all([
@@ -179,20 +198,23 @@ export default function HubTasksPage() {
       });
       setStaffNames(map);
       setTeam(teamList);
+      setTeamLoading(false);
     }
     loadTeam();
   }, [accountId, demoMode]);
 
   return (
     <HubLayout>
-      <div className="w-full px-6 py-4 space-y-3">
+      <div className="w-full px-6 py-4 space-y-3 relative">
 
-        {/* Header + Search */}
+        {/* Header + Search — siempre visible (es chrome, no data) */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-lg font-bold font-sora text-foreground">Tareas</h1>
             <p className="text-[11px] text-muted-foreground tabular-nums">
-              Bandeja de trabajo · {!tasksHydrated && (tasksLoading || casesLoading) ? "—" : taskCounts.todas} tareas activas
+              {/* Round 9.20: contador unificado con `ready` — antes había `tasksLoading || casesLoading` que entraba a destiempo vs los KPIs.
+                  Mantenemos `tasksHydrated` (R9.19) para no flickerar en refetches post-mount. */}
+              Bandeja de trabajo · {ready || tasksHydrated ? `${taskCounts.todas} tareas activas` : "Cargando…"}
             </p>
           </div>
           <div className="relative flex-1 max-w-md">
@@ -206,40 +228,68 @@ export default function HubTasksPage() {
           </div>
         </div>
 
-        {/* Tabs especializados (NO comparte con CaseViewTabs) */}
-        <TaskViewTabs
-          activeTab={activeTab}
-          onChange={setActiveTab}
-          counts={taskCounts}
-          loading={!tasksHydrated && (casesLoading || tasksLoading)}
-        />
+        {/* Round 9.20 anti-flash universal: TODO el contenido data-driven
+            (KPIs + toolbar + lista) entra al mismo tiempo cuando ready=true.
+            Antes cada uno entraba en su propio frame por el cascade de fetches.
+            CSS transition opacity-0 → opacity-100 garantiza fade-in coordinado.
+            R9.19 tasksHydrated mantiene los KPIs visibles durante refetches post-mount. */}
+        <div className={cn(
+          "space-y-3 transition-opacity duration-200",
+          (ready || tasksHydrated) ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}>
+          {/* Tabs especializados (NO comparte con CaseViewTabs) */}
+          <TaskViewTabs
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            counts={taskCounts}
+            loading={!ready && !tasksHydrated}
+          />
 
-        {/* Toolbar específica para tasks (NO CaseFiltersPopover) */}
-        <TasksToolbar
-          filters={taskFilters}
-          onChangeFilters={setTaskFilters}
-          sortBy={sortBy}
-          onChangeSortBy={setSortBy}
-          team={team}
-          allCases={cases}
-          onReset={resetAll}
-        />
+          {/* Toolbar específica para tasks (NO CaseFiltersPopover) */}
+          <TasksToolbar
+            filters={taskFilters}
+            onChangeFilters={setTaskFilters}
+            sortBy={sortBy}
+            onChangeSortBy={setSortBy}
+            team={team}
+            allCases={cases}
+            onReset={resetAll}
+          />
 
-        {/* Vista principal */}
-        <TasksByDateView
-          accountId={accountId}
-          userId={userId}
-          cases={cases}
-          activeTab={activeTab}
-          taskFilters={taskFilters}
-          sortBy={sortBy}
-          search={search}
-          team={team}
-          staffNames={staffNames}
-          onTaskCountsChange={handleTaskCountsChange}
-          onLoadingChange={handleTasksLoadingChange}
-          onResetFilters={resetAll}
-        />
+        {/* Vista principal — usa los handlers de R9.19 con buffer de hidratación. */}
+          <TasksByDateView
+            accountId={accountId}
+            userId={userId}
+            cases={cases}
+            activeTab={activeTab}
+            taskFilters={taskFilters}
+            sortBy={sortBy}
+            search={search}
+            team={team}
+            staffNames={staffNames}
+            onTaskCountsChange={handleTaskCountsChange}
+            onLoadingChange={handleTasksLoadingChange}
+            onResetFilters={resetAll}
+          />
+        </div>{/* /Round 9.20 ready gate */}
+
+        {/* Skeleton unificado mientras !ready (solo first-load).
+            R9.19 tasksHydrated lo skipea en refetches subsiguientes. */}
+        {!ready && !tasksHydrated && (
+          <div className="absolute inset-x-0 top-[140px] px-6 space-y-3 pointer-events-none">
+            <div className="grid grid-cols-5 gap-2">
+              {[0,1,2,3,4].map(i => (
+                <div key={i} className="h-14 rounded-lg bg-white/[0.025] border border-white/[0.08] animate-pulse" />
+              ))}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {[0,1,2,3,4,5].map(i => (
+                <div key={i} className="h-8 w-32 rounded-md bg-white/[0.025] border border-white/[0.08] animate-pulse" />
+              ))}
+            </div>
+            <div className="rounded-xl border border-border/40 bg-card/30 h-96 animate-pulse" />
+          </div>
+        )}
       </div>
     </HubLayout>
   );

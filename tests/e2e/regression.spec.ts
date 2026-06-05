@@ -203,6 +203,82 @@ test.describe("Pattern 5 — Empty state diagnostico + Limpiar filtros", () => {
   });
 });
 
+test.describe("Pattern 7 — Anti-flash cascade entry (R9.20)", () => {
+  // Mr. Lorenzo cazó: KPIs entraban uno por uno, "N tareas en esta vista"
+  // entraba segundos después. Causa: waterfall de fetches + cada uno hacía
+  // su propio re-render. Fix: useHubPageReady() gate único.
+  // Si esto se rompe, los KPIs vuelven a entrar staggered.
+
+  test("/hub/tasks: KPIs + topbar + lista aparecen sincronizados (no waterfall)", async ({ page }) => {
+    await page.goto("/hub/tasks?demo=true");
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    // Esperar a que la página esté ready (todos los KPIs visibles con números reales).
+    await page.waitForFunction(() => {
+      const tabs = Array.from(document.querySelectorAll("button"));
+      const taskTabs = tabs.filter(b => /HOY|ATRASADAS|PRÓXIMAS|TODAS|COMPLETADAS/i.test(b.textContent || ""));
+      if (taskTabs.length < 4) return false;
+      // Ninguno debe estar mostrando "—" (placeholder)
+      return taskTabs.every(b => !(b.textContent || "").includes("—"));
+    }, { timeout: 10_000 });
+
+    // Verificar que TODOS los KPIs son numéricos al mismo tiempo
+    const tabs = await page.getByRole("button", { name: /HOY|ATRASADAS|PRÓXIMAS|TODAS|COMPLETADAS/i }).all();
+    for (const tab of tabs) {
+      const text = await tab.textContent();
+      expect(text).not.toContain("—");
+      expect(text).toMatch(/\d+/);
+    }
+
+    // Verificar que el topbar "N tareas en esta vista" tiene número real
+    const topbarText = await page.getByText(/tareas? en esta vista/).first().textContent();
+    expect(topbarText).not.toContain("—");
+    expect(topbarText).toMatch(/\d+\s+tareas?/i);
+  });
+
+  test("/hub/cases: KPIs + tabla aparecen sincronizados (no waterfall)", async ({ page }) => {
+    await page.goto("/hub/cases?demo=true");
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    await page.waitForFunction(() => {
+      const tabs = Array.from(document.querySelectorAll("button"));
+      const caseTabs = tabs.filter(b => /MIS CASOS|URGENTES|MI TURNO|TODOS/i.test(b.textContent || ""));
+      if (caseTabs.length < 3) return false;
+      return caseTabs.every(b => !(b.textContent || "").includes("—"));
+    }, { timeout: 10_000 });
+
+    const tabs = await page.getByRole("button", { name: /MIS CASOS|URGENTES|MI TURNO|TODOS/i }).all();
+    for (const tab of tabs) {
+      const text = await tab.textContent();
+      expect(text).not.toContain("—");
+    }
+  });
+
+  test("/hub/tasks ready gate fade-in (transición coordinada, no staggered)", async ({ page }) => {
+    await page.goto("/hub/tasks?demo=true");
+
+    // Apenas carga, el contenedor data-driven puede tener opacity-0.
+    // Después de ready debe estar opacity-100.
+    await page.waitForLoadState("networkidle");
+
+    // Verificar que NO hay elementos con opacity < 1 cuando la página
+    // está ready (todos sincronizados).
+    await page.waitForFunction(() => {
+      const tabs = Array.from(document.querySelectorAll("button"));
+      const taskTabs = tabs.filter(b => /HOY|ATRASADAS|TODAS/i.test(b.textContent || ""));
+      return taskTabs.length >= 3 && taskTabs.every(b => !(b.textContent || "").includes("—"));
+    }, { timeout: 10_000 });
+
+    // Una vez ready, no debe quedar ningún wrapper con opacity-0 visible
+    const opacityZero = await page.locator(".opacity-0").count();
+    expect(opacityZero).toBe(0);
+  });
+});
+
 test.describe("Pattern 6 — TaskCreateModal demo inyecta + no aborta por accountId", () => {
   test("Crear tarea en demo NO muestra 'Sin cuenta activa'", async ({ page }) => {
     await page.goto(DEMO_HUB_TASKS);

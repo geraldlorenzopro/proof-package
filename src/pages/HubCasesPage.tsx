@@ -23,6 +23,7 @@ import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { useCaseViews, filterCasesByView } from "@/hooks/useCaseViews";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useHubPageReady } from "@/hooks/useHubPageReady";
 import { groupCases, sortCases, SORT_LABELS, type GroupByKey, type SortKey } from "@/lib/caseGrouping";
 import { getCaseTypeByKey } from "@/lib/caseTypes";
 import { readScopedJson, writeScopedJson, migrateLegacyKeys } from "@/lib/scopedStorage";
@@ -133,7 +134,19 @@ export default function HubCasesPage() {
   const [search, setSearch] = useState("");
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
   const [team, setTeam] = useState<Array<{ user_id: string; full_name: string }>>([]);
+  const [teamLoading, setTeamLoading] = useState(true);
   const [peekCaseId, setPeekCaseId] = useState<string | null>(null);
+
+  // Round 9.20 anti-flash universal: gate del render data-driven en una sola
+  // flag `ready`. Antes KPIs/strip/tabla entraban en frames distintos por
+  // cascade de fetches (cases + perms + team async).
+  const ready = useHubPageReady(
+    loading,        // useCasePipeline cases
+    permsLoading,   // usePermissions role
+    teamLoading,
+    !userId,
+    !accountId,
+  );
 
   // Round 9 (Mr. Lorenzo + Valerie + Marcus): quick modals para nota
   // y tarea SIN abandonar la tabla (NO navega al expediente completo).
@@ -166,6 +179,7 @@ export default function HubCasesPage() {
       });
       setStaffNames(map);
       setTeam(teamList);
+      setTeamLoading(false);
       return;
     }
     if (!accountId) return;
@@ -176,8 +190,8 @@ export default function HubCasesPage() {
         .select("user_id, role")
         .eq("account_id", accountId)
         .eq("is_active", true);
-      if (memErr) { console.error("[HubCasesPage] team load error:", memErr.message); return; }
-      if (!mems || mems.length === 0) { setStaffNames({}); setTeam([]); return; }
+      if (memErr) { console.error("[HubCasesPage] team load error:", memErr.message); setTeamLoading(false); return; }
+      if (!mems || mems.length === 0) { setStaffNames({}); setTeam([]); setTeamLoading(false); return; }
 
       const userIds = mems.map((m: any) => m.user_id).filter(Boolean);
       const [{ data: profiles }, { data: ghlMaps }] = await Promise.all([
@@ -196,6 +210,7 @@ export default function HubCasesPage() {
       });
       setStaffNames(map);
       setTeam(teamList);
+      setTeamLoading(false);
     }
     loadTeam();
   }, [accountId, demoMode]);
@@ -333,7 +348,7 @@ export default function HubCasesPage() {
   return (
     <HubLayout>
       {/* Edge-to-edge (Marcus + Vanessa): w-full px-6, sin max-w mx-auto */}
-      <div className="w-full px-6 py-4 space-y-3">
+      <div className="w-full px-6 py-4 space-y-3 relative">
 
         {/* Header + Search */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -359,13 +374,20 @@ export default function HubCasesPage() {
           </div>
         </div>
 
+        {/* Round 9.20 anti-flash universal: wrap del contenido data-driven
+            con gate `ready`. KPIs + toolbar + tabla/Kanban entran sincronizados
+            cuando ready=true. */}
+        <div className={cn(
+          "space-y-3 transition-opacity duration-200",
+          ready ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}>
         {/* Hero pills h-12 edge-to-edge — Round 7: viewMode prop ya no
             necesario porque Tareas vive en /hub/tasks ruta propia. */}
         <CaseViewTabs
           activeView={activeView}
           onChange={setActiveView}
           counts={viewCounts}
-          loading={loading}
+          loading={!ready}
         />
 
         {/* Toolbar 1 línea — strip horizontal MUERTO, dropdown único para Tipo */}
@@ -568,6 +590,24 @@ export default function HubCasesPage() {
             onQuickNote={(c) => setQuickNoteCase(c)}
             onQuickTask={(c) => setQuickTaskCase(c)}
           />
+        )}
+        </div>{/* /Round 9.20 ready gate */}
+
+        {/* Skeleton unificado mientras !ready */}
+        {!ready && (
+          <div className="absolute inset-x-0 top-[140px] px-6 space-y-3 pointer-events-none">
+            <div className="grid grid-cols-5 gap-2">
+              {[0,1,2,3,4].map(i => (
+                <div key={i} className="h-14 rounded-lg bg-white/[0.025] border border-white/[0.08] animate-pulse" />
+              ))}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {[0,1,2,3,4,5].map(i => (
+                <div key={i} className="h-8 w-32 rounded-md bg-white/[0.025] border border-white/[0.08] animate-pulse" />
+              ))}
+            </div>
+            <div className="rounded-xl border border-border/40 bg-card/30 h-96 animate-pulse" />
+          </div>
         )}
       </div>
 
