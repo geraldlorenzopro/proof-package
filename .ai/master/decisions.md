@@ -6,6 +6,111 @@ pasadas — agregar nueva decisión que las supersede si cambian.**
 
 ---
 
+## 2026-06-05 — 🏁 PIPELINE DE CASOS CERRADO (Round 6.5 close-out)
+
+### Decisión final
+
+Después de 6.5 rounds de iteración con los 4 agentes (Valerie + Vanessa
++ Marcus + Victoria), Mr. Lorenzo cierra el sprint Pipeline de Casos.
+
+**Foco siguiente:** otra sección del Hub (TBD por Mr. Lorenzo).
+
+### Decisiones aplicadas en cierre
+
+1. **NO headers de columnas** en vista Tareas. 3 vs 1 agentes (Vanessa
+   + Marcus + Victoria contra Valerie). Bucket headers ya dan contexto.
+   Patrón Things 3 / Linear list view.
+
+2. **Counter REAL de tareas** vía callback `onTaskCountsChange` desde
+   TasksByDateView a HubCasesPage (Victoria pattern B). Cuando vista=
+   tareas, los counts de CaseViewTabs son task counts, no case counts.
+   Marcus: "bug conceptual, sin excepciones — Linear cuenta issues,
+   Asana cuenta tasks". Resolvió la confusión de "Mis Tareas 1" engañoso.
+
+3. **Tab "RFE Response"** vertical NER (Marcus): aparece SOLO cuando
+   vista=tareas, cuenta tareas de cases con `rfe_deadline` ≤ 62 días
+   (ventana USCIS típica). Diferenciador vs GHL CRM genérico.
+
+4. **"Mi turno" → "Atrasadas"** label override cuando vista=tareas
+   (Vanessa: "no lo entiendo bien"). Filter cambia semánticamente:
+   tareas vencidas firm-wide (no solo asignadas a mí).
+
+5. **Auto-search en Assignee dropdown** si team.length > 8 (Vanessa).
+   Firma chica ≤8 ve lista limpia con avatares, firma grande tiene
+   search bar.
+
+6. **Disclaimer simplificado** — antes decía "los contadores cuentan
+   tareas" para justificar el bug. Ahora que el counter es honesto,
+   el disclaimer solo dice "N tareas en esta vista (de M casos
+   filtrados)".
+
+7. **NO filtros chip horizontales tipo GHL** todavía. CaseFiltersPopover
+   actual ya hace el trabajo con toggles. Marcus había sugerido patrón
+   chips (Asignado/Vence/Tipo/Estado) pero Mr. Lorenzo prioriza cerrar
+   antes que perfección. Backlog si firma específica lo pide.
+
+### Hotfix crítico aplicado en cierre
+
+🛑 **ConsultationRoom.tsx** tenía 6 inserts con `priority: 'medium'`
+literal. Después de migration 20260605200000 (CHECK constraint
+`priority IN ('low','normal','high','urgent')`), esos inserts revientan
+silenciosamente con `case_tasks_priority_check` violation. Flujos
+afectados:
+- "Crear caso desde consulta"
+- "Marcar no-contrató con seguimiento"
+
+Fix: replace_all `'medium'` → `'normal'` (6 hits, commit 89882ae).
+Victoria flag pre-prod evitó deploy roto.
+
+### Dead code limpio en cierre
+
+- `CaseGroupStrip.tsx` (292 LOC) — legacy Round 4.5, reemplazado por
+  CaseTypeFilterDropdown.
+- `CaseKpiStrip.tsx` (70 LOC) — legacy Round 4.5, reemplazado por
+  CaseViewTabs hero pills.
+
+Total cleanup: **362 LOC** eliminadas. Pipeline final ~4880 LOC.
+
+### Backlog Pipeline (NO aplicar — diferido)
+
+Items que quedaron en backlog explícito por decisión "cerrar HOY":
+
+1. **Headers columnas vista Tareas** (Valerie minoría) — toggle settings
+   si alguna firma lo pide.
+2. **TaskFiltersPopover chips horizontales** (Marcus pattern GHL) —
+   4 chips: Asignado / Vence / Tipo de caso / Estado. Si telemetría
+   muestra que los toggles actuales se usan poco, replantear.
+3. **Range picker en filter Vence** (Marcus: vertical-relevant para
+   audit pre-NTA hearing) — agregar al popover existente.
+4. **Drawer "Más filtros"** con subtarea sí/no, etiquetas custom, etc.
+5. **Templates de cartas** (Vanessa #1 universal) — bloqueado por
+   agente Pablo planned.
+6. **Pin desde pipeline directo** (Vanessa: hover icon).
+7. **Bucket "Esperando cliente"** en vista Tareas.
+8. **Phone CTA → dialer real** Fase 4 con GHL/Twilio integration.
+9. **Mark All As Read** en notificaciones.
+10. **Botón "Cerrar caso" inline** en row.
+11. **Cap 5 pinned per user** (Marcus contra inflación).
+12. **Defaults por rol** (Marcus mitigation 360 estados combinatorios).
+13. **RLS column-level matter_value** (Marcus + Victoria: SOC 2 deadline).
+14. **Trigger anti-cycle subtasks** (Victoria <0.1% prob race).
+15. **Court tracker (Fase 5)** — agrega `court_date` field + Sofía.
+
+### Métricas finales Pipeline
+
+- **6 rounds** de debate (R1, R2, R3, R4, R4.5, R5, R5.5, R5.6, R6, R6.5)
+- **4 agentes** consultados (Valerie UX, Vanessa paralegal, Marcus
+  consultor externo, Victoria auditora)
+- **8 migrations** aplicadas (CaseTypes catalog + visibility hierarchical
+  + matter_value + pinned + subtasks parent_task_id + indexes + priority
+  CHECK + snoozed_until + 2 polish)
+- **5 componentes nuevos** (TaskAssignee/Priority/DueDate/CreateModal
+  InlineEdit + TasksByDateView)
+- **2 componentes eliminados** (CaseGroupStrip + CaseKpiStrip)
+- **Pipeline LOC final:** ~4880 (post-cleanup)
+
+---
+
 ## 2026-06-05 — Hub Casos Round 4.5 polish (post-deploy audit)
 
 ### Contexto

@@ -6,7 +6,7 @@
  * *"no veo cómo operan, explícamelas"*.
  *
  * Ahora: groupCases(cases, groupBy) devuelve groups dinámicos. CaseTable
- * y CaseGroupStrip ambos consumen el mismo CaseGroup[].
+ * (y CaseKanban) consumen el mismo CaseGroup[].
  */
 import { PIPELINE_COLUMNS, type PipelineCase, type PipelineStageKey } from "@/hooks/useCasePipeline";
 import { getCaseTypeByKey } from "@/lib/caseTypes";

@@ -12,12 +12,13 @@
  *
  * Victoria audit: contraste validado WCAG AA contra bg-deep-navy.
  */
-import { CASE_VIEWS, CaseViewKey } from "@/hooks/useCaseViews";
+import { CASE_VIEWS, CaseViewKey, TASK_VIEW_LABEL_OVERRIDE } from "@/hooks/useCaseViews";
 
 interface ViewCounts {
   "mis-casos": number;
   "urgentes": number;
   "pte-accion-mia": number;
+  "rfe-response": number;
   "cerrados-30d": number;
   "todos": number;
 }
@@ -61,6 +62,12 @@ const VIEW_THEME: Record<CaseViewKey, {
     iconBg: "bg-purple-500/15",
     inactiveNumber: "text-slate-300",
   },
+  "rfe-response": {
+    activeBg: "bg-rose-500/[0.10]", activeBorder: "border-rose-500/55",
+    activeText: "text-rose-300", activeNumber: "text-rose-300",
+    iconBg: "bg-rose-500/15",
+    inactiveNumber: "text-slate-300",
+  },
   "cerrados-30d": {
     activeBg: "bg-emerald-500/[0.10]", activeBorder: "border-emerald-500/55",
     activeText: "text-emerald-300", activeNumber: "text-emerald-300",
@@ -76,15 +83,23 @@ const VIEW_THEME: Record<CaseViewKey, {
 };
 
 export default function CaseViewTabs({ activeView, onChange, counts, loading = false, viewMode }: Props) {
+  // Round 6.5: filtrar tabs según viewMode.
+  // - tasksOnly tabs (ej. "RFE Response") solo aparecen cuando viewMode === "tareas"
+  // - El resto siempre visible
+  const visibleViews = CASE_VIEWS.filter(v => !v.tasksOnly || viewMode === "tareas");
+  const gridCols = `grid-cols-[repeat(${visibleViews.length},1fr)_auto]`;
+
   return (
-    <div className="grid grid-cols-[repeat(4,1fr)_auto] gap-2 w-full">
-      {CASE_VIEWS.map(v => {
+    <div className={`grid ${gridCols} gap-2 w-full`}>
+      {visibleViews.map(v => {
         const isActive = activeView === v.key;
         const count = counts[v.key];
         const theme = VIEW_THEME[v.key];
-        // Round 5.5: solo "mis-casos" renombra a "Mis tareas" en vista tareas.
-        // Los otros 3 tabs mantienen su label de cases (filtros del eje case).
-        const label = (viewMode === "tareas" && v.key === "mis-casos") ? "Mis tareas" : v.label;
+        // Round 6.5: cuando vista=tareas, aplicar overrides de label
+        // (Vanessa: "Mi turno → Atrasadas", "Mis casos → Mis tareas").
+        const label = viewMode === "tareas"
+          ? (TASK_VIEW_LABEL_OVERRIDE[v.key] || v.label)
+          : v.label;
         return (
           <button
             key={v.key}

@@ -52,6 +52,8 @@ interface TaskWithCase extends Task {
   case_name?: string;
   case_type?: string | null;
   case_stage?: PipelineStageKey | null;
+  /** Round 6.5: rfe_deadline del case parent. Necesario para tab "RFE Response". */
+  case_rfe_deadline?: string | null;
   subtasks_total?: number;
   subtasks_completed?: number;
   is_orphan?: boolean;
@@ -83,6 +85,22 @@ interface Props {
   activeView: CaseViewKey;
   team?: TeamMember[];
   staffNames?: Record<string, string>;
+  /**
+   * Round 6.5 (Victoria pattern B): callback con counts REALES de tareas
+   * por vista. HubCasesPage lo usa para mostrar counts honestos en
+   * CaseViewTabs (en lugar de cases counts engañosos).
+   */
+  onTaskCountsChange?: (counts: TaskCountsByView) => void;
+}
+
+/** Counts de tareas por CaseViewKey — Round 6.5 fix counter mismatch. */
+export interface TaskCountsByView {
+  "mis-casos": number;
+  "urgentes": number;
+  "pte-accion-mia": number;
+  "rfe-response": number;
+  "cerrados-30d": number;
+  "todos": number;
 }
 
 const BUCKET_ORDER: TaskBucketKey[] = ["overdue", "today", "tomorrow", "this_week", "next_week", "later", "no_date"];
@@ -90,7 +108,7 @@ const COLLAPSED_KEY = "ner_tasks_view_collapsed";
 const DEFAULT_COLLAPSED: Record<string, boolean> = { later: true };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default function TasksByDateView({ accountId, userId, cases, activeView, team = [], staffNames }: Props) {
+export default function TasksByDateView({ accountId, userId, cases, activeView, team = [], staffNames, onTaskCountsChange }: Props) {
   const navigate = useNavigate();
   const demoMode = useDemoMode();
   const [allTasks, setAllTasks] = useState<TaskWithCase[]>([]);
@@ -190,6 +208,7 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
             case_name: caseObj?.client_name,
             case_type: caseObj?.case_type,
             case_stage: caseObj?.process_stage,
+            case_rfe_deadline: caseObj?.rfe_deadline,
             subtasks_total: subtasksByParent.get(t.id)?.total || 0,
             subtasks_completed: subtasksByParent.get(t.id)?.completed || 0,
             is_orphan: !!t.parent_task_id,
@@ -207,6 +226,22 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
     () => filterTasksByView(allTasks, activeView, userId),
     [allTasks, activeView, userId]
   );
+
+  // Round 6.5 (Victoria pattern B): computar counts REALES de tareas
+  // por cada CaseViewKey y emitir al parent. Sin doble query — usamos
+  // los allTasks ya fetcheados. useMemo evita recompute en cada render.
+  const taskCounts = useMemo<TaskCountsByView>(() => ({
+    "mis-casos":      filterTasksByView(allTasks, "mis-casos", userId).length,
+    "urgentes":       filterTasksByView(allTasks, "urgentes", userId).length,
+    "pte-accion-mia": filterTasksByView(allTasks, "pte-accion-mia", userId).length,
+    "rfe-response":   filterTasksByView(allTasks, "rfe-response", userId).length,
+    "cerrados-30d":   filterTasksByView(allTasks, "cerrados-30d", userId).length,
+    "todos":          filterTasksByView(allTasks, "todos", userId).length,
+  }), [allTasks, userId]);
+
+  useEffect(() => {
+    onTaskCountsChange?.(taskCounts);
+  }, [taskCounts, onTaskCountsChange]);
 
   // Bucketing
   const bucketed = useMemo(() => {
@@ -407,7 +442,7 @@ export default function TasksByDateView({ accountId, userId, cases, activeView, 
         <div className="text-[11px] text-muted-foreground px-3 py-1.5 bg-cyan-accent/[0.04] border border-cyan-accent/[0.15] rounded-md flex items-center gap-2 flex-1">
           <Calendar className="w-3 h-3 text-cyan-accent/60 shrink-0" />
           <span>
-            Mostrando <span className="text-foreground font-semibold tabular-nums">{tasks.length}</span> tarea{tasks.length === 1 ? "" : "s"} dentro de los <span className="text-foreground font-semibold tabular-nums">{cases.length}</span> caso{cases.length === 1 ? "" : "s"} filtrado{cases.length === 1 ? "" : "s"}. Los contadores arriba cuentan tareas (vista activa).
+            <span className="text-foreground font-semibold tabular-nums">{tasks.length}</span> tarea{tasks.length === 1 ? "" : "s"} en esta vista (de <span className="text-foreground font-semibold tabular-nums">{cases.length}</span> caso{cases.length === 1 ? "" : "s"} filtrado{cases.length === 1 ? "" : "s"}).
           </span>
         </div>
         <TaskCreateModal

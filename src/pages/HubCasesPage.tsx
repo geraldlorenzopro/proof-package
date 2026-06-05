@@ -15,7 +15,7 @@ import CaseViewTabs from "@/components/hub/CaseViewTabs";
 import CaseFiltersPopover, { type CaseFilters, EMPTY_FILTERS } from "@/components/hub/CaseFiltersPopover";
 import CaseTypeFilterDropdown from "@/components/hub/CaseTypeFilterDropdown";
 import CasePeekPanel from "@/components/hub/CasePeekPanel";
-import TasksByDateView from "@/components/hub/TasksByDateView";
+import TasksByDateView, { type TaskCountsByView } from "@/components/hub/TasksByDateView";
 import { useCasePipeline } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
@@ -299,13 +299,25 @@ export default function HubCasesPage() {
     return false;
   }, [groupBy, activeTypeKey, allGroups, sortedCases.length]);
 
-  const viewCounts = useMemo(() => ({
+  const caseCounts = useMemo(() => ({
     "mis-casos":      filterCasesByView(searchFilteredCases, "mis-casos", userId).length,
     "urgentes":       filterCasesByView(searchFilteredCases, "urgentes", userId).length,
     "pte-accion-mia": filterCasesByView(searchFilteredCases, "pte-accion-mia", userId).length,
+    "rfe-response":   0, // tasksOnly tab — irrelevante para vista cases
     "cerrados-30d":   filterCasesByView(searchFilteredCases, "cerrados-30d", userId).length,
     "todos":          searchFilteredCases.length,
   }), [searchFilteredCases, userId]);
+
+  // Round 6.5 (Victoria pattern B): counts REALES de tareas, recibidos
+  // de TasksByDateView via callback. Solo se usan cuando vista=tareas.
+  const [taskCounts, setTaskCounts] = useState<TaskCountsByView>({
+    "mis-casos": 0, "urgentes": 0, "pte-accion-mia": 0,
+    "rfe-response": 0, "cerrados-30d": 0, "todos": 0,
+  });
+
+  // Counts que se pasan a CaseViewTabs: tasks counts si vista=tareas,
+  // case counts si tabla/kanban. Counter NUNCA miente (Marcus + Vanessa).
+  const viewCounts = view === "tareas" ? taskCounts : caseCounts;
 
   function handleUseRecent(key: string) {
     setRecentTypes(prev => {
@@ -471,6 +483,7 @@ export default function HubCasesPage() {
             activeView={activeView}
             team={team}
             staffNames={staffNames}
+            onTaskCountsChange={setTaskCounts}
           />
         ) : view === "tabla" ? (
           <CaseTable

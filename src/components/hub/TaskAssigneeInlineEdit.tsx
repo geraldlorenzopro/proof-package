@@ -16,9 +16,9 @@
  *   - Demo mode: noop sin error (ID no-UUID)
  *   - Team list ya scoped a accountId por HubCasesPage (no leak)
  */
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -65,8 +65,20 @@ export default function TaskAssigneeInlineEdit({
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [popPos, setPopPos] = useState<{ top: number; left: number } | null>(null);
+  const [query, setQuery] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Round 6.5 (Vanessa): search auto si team > 8. Firma chica (≤8) ve
+  // lista limpia con avatares — search innecesario y agrega fricción.
+  const showSearch = team.length > 8;
+
+  const filteredTeam = useMemo(() => {
+    if (!query.trim()) return team;
+    const q = query.toLowerCase();
+    return team.filter(m => m.full_name.toLowerCase().includes(q));
+  }, [team, query]);
 
   // Sync prop changes
   const [localAssignee, setLocalAssignee] = useState({
@@ -81,7 +93,10 @@ export default function TaskAssigneeInlineEdit({
     if (!open) return;
     const r = triggerRef.current?.getBoundingClientRect();
     if (r) setPopPos({ top: r.bottom + 4, left: r.left });
-  }, [open]);
+    // Reset search query al abrir
+    setQuery("");
+    if (showSearch) setTimeout(() => searchInputRef.current?.focus(), 30);
+  }, [open, showSearch]);
 
   useEffect(() => {
     if (!open) return;
@@ -202,9 +217,24 @@ export default function TaskAssigneeInlineEdit({
             </div>
           ) : (
             <>
-              <p className="text-[9px] uppercase tracking-wider text-slate-500 px-2 py-1.5 font-semibold">
-                Asignar a…
-              </p>
+              {/* Round 6.5 (Vanessa): search auto si team > 8 */}
+              {showSearch && (
+                <div className="relative px-1 py-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
+                  <input
+                    ref={searchInputRef}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Buscar…"
+                    className="w-full h-7 pl-7 pr-2 text-[11px] bg-white/[0.04] border border-white/10 rounded text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-accent/40"
+                  />
+                </div>
+              )}
+              {!showSearch && (
+                <p className="text-[9px] uppercase tracking-wider text-slate-500 px-2 py-1.5 font-semibold">
+                  Asignar a…
+                </p>
+              )}
               <button
                 onClick={() => handleSelect(null)}
                 className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded text-[11px] transition-colors ${!localAssignee.id ? "bg-cyan-accent/15 text-cyan-accent" : "text-slate-300 hover:bg-white/[0.04]"}`}
@@ -212,7 +242,9 @@ export default function TaskAssigneeInlineEdit({
                 <div className="w-[22px] h-[22px] rounded-full bg-slate-700 border border-dashed border-slate-500 shrink-0" />
                 <span className="italic">Sin asignar</span>
               </button>
-              {team.map(m => {
+              {filteredTeam.length === 0 ? (
+                <p className="text-[11px] text-slate-500 italic px-3 py-2">Sin resultados</p>
+              ) : filteredTeam.map(m => {
                 const g = gradFor(m.user_id);
                 const isActive = m.user_id === localAssignee.id;
                 return (

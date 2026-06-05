@@ -19,6 +19,7 @@ export type CaseViewKey =
   | "mis-casos"
   | "urgentes"
   | "pte-accion-mia"
+  | "rfe-response"
   | "cerrados-30d"
   | "todos";
 
@@ -27,14 +28,27 @@ export interface CaseViewMeta {
   icon: string;
   label: string;
   description: string;
+  /** Round 6.5: si se renderiza solo cuando viewMode === "tareas" (ej. RFE Response). */
+  tasksOnly?: boolean;
 }
 
 export const CASE_VIEWS: CaseViewMeta[] = [
   { key: "mis-casos",      icon: "⭐", label: "Mis casos",       description: "Casos asignados a mí, activos" },
   { key: "urgentes",       icon: "🔴", label: "Urgentes",         description: "RFE / USCIS deadline en próximos 7 días" },
   { key: "pte-accion-mia", icon: "📋", label: "Mi turno",         description: "Cases con tareas pendientes asignadas a mí" },
+  { key: "rfe-response",   icon: "🚨", label: "RFE Response",     description: "Tareas de casos con RFE en próximos 62 días (USCIS deadline crítico)", tasksOnly: true },
   { key: "todos",          icon: "📂", label: "Todos",            description: "Todos los casos de la firma" },
 ];
+
+/**
+ * Round 6.5 (Vanessa + Marcus): label override cuando viewMode === "tareas".
+ * Vanessa: "Mi turno no lo entiendo bien, sacalo o renombralo". Marcus apoya.
+ * Reemplazo en vista tareas: "Mi turno" → "Atrasadas" (más claro semánticamente).
+ */
+export const TASK_VIEW_LABEL_OVERRIDE: Partial<Record<CaseViewKey, string>> = {
+  "mis-casos":      "Mis tareas",
+  "pte-accion-mia": "Atrasadas",
+};
 
 // "cerrados-30d" sigue siendo un CaseViewKey válido (la ENUM y
 // filterCasesByView lo soportan) pero NO se muestra como tab.
@@ -143,6 +157,8 @@ interface FilterableTask {
   status?: string | null;
   due_date?: string | null;
   snoozed_until?: string | null;
+  /** Round 6.5: rfe_deadline del case parent. Necesario para tab "RFE Response". */
+  case_rfe_deadline?: string | null;
 }
 
 export function filterTasksByView<T extends FilterableTask>(
@@ -155,9 +171,9 @@ export function filterTasksByView<T extends FilterableTask>(
   todayStart.setHours(0, 0, 0, 0);
   const todayStartMs = todayStart.getTime();
   const in3dMs = todayStartMs + 3 * 86400000;
+  const in62dMs = todayStartMs + 62 * 86400000;
   const CLOSED_TASK = ["completed", "archived", "cancelled"];
 
-  // Defensa común: tasks closed nunca aparecen, ni tasks snoozed
   function notSnoozedNotClosed(t: T): boolean {
     if (CLOSED_TASK.includes(t.status || "")) return false;
     if (t.snoozed_until && new Date(t.snoozed_until).getTime() > now) return false;
@@ -166,12 +182,12 @@ export function filterTasksByView<T extends FilterableTask>(
 
   switch (view) {
     case "mis-casos":
-      // "Mis tareas" cuando vista=Tareas: tareas asignadas a mí.
+      // "Mis tareas" cuando vista=Tareas
       if (!userId) return [];
       return tasks.filter(t => t.assigned_to === userId && notSnoozedNotClosed(t));
 
     case "urgentes":
-      // Urgentes en tasks: vencidas + hoy + próximos 3d.
+      // Urgentes: vencidas + hoy + próximos 3d
       return tasks.filter(t => {
         if (!notSnoozedNotClosed(t)) return false;
         if (!t.due_date) return false;
@@ -180,21 +196,29 @@ export function filterTasksByView<T extends FilterableTask>(
       });
 
     case "pte-accion-mia":
-      // "Mi turno" cuando vista=Tareas: tareas pendientes mías. Semánticamente
-      // similar a "mis-casos" en este eje pero filtra explicit status=pending.
-      if (!userId) return [];
-      return tasks.filter(t =>
-        t.assigned_to === userId &&
-        (t.status === "pending" || t.status === "in_progress") &&
-        notSnoozedNotClosed(t)
-      );
+      // Round 6.5 (Vanessa): "Mi turno" en tareas → "Atrasadas".
+      // Tareas vencidas independientemente del assignee (la firma tiene
+      // que verlas) — incluye snoozed-pasadas y no-asignadas.
+      return tasks.filter(t => {
+        if (CLOSED_TASK.includes(t.status || "")) return false;
+        if (!t.due_date) return false;
+        const dueMs = new Date(t.due_date + "T00:00:00").getTime();
+        return dueMs < todayStartMs;
+      });
+
+    case "rfe-response":
+      // Round 6.5 (Marcus): tab vertical NER. Tareas de casos con RFE
+      // deadline en próximos 62 días (ventana USCIS típica de respuesta).
+      // Esto es donde NER diferencia vs GHL CRM genérico.
+      return tasks.filter(t => {
+        if (!notSnoozedNotClosed(t)) return false;
+        if (!t.case_rfe_deadline) return false;
+        const rfeMs = new Date(t.case_rfe_deadline + "T00:00:00").getTime();
+        return rfeMs >= todayStartMs && rfeMs <= in62dMs;
+      });
 
     case "cerrados-30d":
-      // Tasks completadas en últimos 30d.
-      return tasks.filter(t => {
-        if (t.status !== "completed") return false;
-        return true; // simplified — no closed_at filter, todas las completed visibles
-      });
+      return tasks.filter(t => t.status === "completed");
 
     case "todos":
     default:
