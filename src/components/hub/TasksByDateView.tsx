@@ -281,6 +281,7 @@ export default function TasksByDateView({
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const parentRef = useRef<HTMLDivElement>(null);
+  const countsHydratedRef = useRef(false);
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -425,7 +426,13 @@ export default function TasksByDateView({
     "rfe-response":filterTasksByTab(customFilteredTasks, "rfe-response", userId).length,
   }), [customFilteredTasks, userId]);
 
-  useEffect(() => { onTaskCountsChange?.(taskCounts); }, [taskCounts, onTaskCountsChange]);
+  useEffect(() => {
+    // Round 9.19: no empujar counts de allTasks=[] durante la primera
+    // hidratación; eso hacía que el KPI entrara, desapareciera y volviera.
+    if (loading && !countsHydratedRef.current) return;
+    onTaskCountsChange?.(taskCounts);
+    if (!loading) countsHydratedRef.current = true;
+  }, [taskCounts, loading, onTaskCountsChange]);
   useEffect(() => { onLoadingChange?.(loading); }, [loading, onLoadingChange]);
 
   // ═══ Tasks display = tab + custom filters + sort + search ═══
