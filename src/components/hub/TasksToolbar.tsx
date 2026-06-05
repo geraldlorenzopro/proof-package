@@ -316,6 +316,20 @@ export default function TasksToolbar({ filters, onChangeFilters, sortBy, onChang
           ))}
         </SelectContent>
       </Select>
+
+      {/* Reset filtros (Round 9.11) — visible solo cuando hay filtros sucios */}
+      {dirty && onReset && (
+        <button
+          type="button"
+          onClick={onReset}
+          aria-label="Limpiar filtros"
+          data-testid="reset-filters"
+          className="h-8 px-2.5 text-[11px] rounded-md border border-white/10 bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground inline-flex items-center gap-1.5 transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+          Limpiar
+        </button>
+      )}
     </div>
   );
 }
