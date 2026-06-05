@@ -43,8 +43,28 @@ interface Props {
   userId: string | null;
   cases: PipelineCase[];
   team: TeamMember[];
-  /** Notifica que se creó una tarea para refresh. */
+  /** Notifica que se creó una tarea para refresh (modo real). */
   onCreated: () => void;
+  /**
+   * Round 9.9 Mr. Lorenzo audit: en demo mode el modal solo mostraba toast
+   * pero el setRefreshKey re-ejecutaba el mock y borraba la tarea creada.
+   * Si se pasa este callback, demo mode lo invoca con la tarea fake para
+   * que el parent la agregue a su estado local sin refetch.
+   */
+  onCreatedDemo?: (fakeTask: {
+    id: string;
+    case_id: string;
+    case_name?: string;
+    title: string;
+    due_date: string;
+    priority: string;
+    status: string;
+    assigned_to: string | null;
+    assigned_to_name: string | null;
+    task_type?: string;
+    visibility?: string;
+    created_at: string;
+  }) => void;
   isDemoMode?: boolean;
 }
 
@@ -56,7 +76,7 @@ function fmtISO(d: Date): string {
 }
 
 export default function TaskCreateModal({
-  accountId, userId, cases, team, onCreated, isDemoMode = false,
+  accountId, userId, cases, team, onCreated, onCreatedDemo, isDemoMode = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -123,12 +143,33 @@ export default function TaskCreateModal({
     setSubmitting(true);
 
     if (isDemoMode) {
-      toast.success(`Tarea creada: ${title}`, {
-        duration: 2000,
-        description: "Modo demo · no persistido",
+      // Round 9.9 fix: inyectar tarea fake al estado del parent para que
+      // aparezca en el list inmediatamente. Sin esto el refresh re-set el
+      // mock + la tarea desaparecía (Mr. Lorenzo audit).
+      const assigneeName = assigneeId
+        ? team.find(m => m.user_id === assigneeId)?.full_name || null
+        : null;
+      const selectedCaseName = selectedCase?.client_name;
+      onCreatedDemo?.({
+        id: `demo-t-${Date.now()}`,
+        case_id: selectedCaseId,
+        case_name: selectedCaseName,
+        title: title.trim(),
+        due_date: fmtISO(dueDate),
+        priority,
+        status: "pending",
+        assigned_to: assigneeId,
+        assigned_to_name: assigneeName,
+        task_type: "admin_other",
+        visibility: "team",
+        created_at: new Date().toISOString(),
+      });
+      toast.success(`Tarea creada: ${title.trim()}`, {
+        duration: 2500,
+        description: `Modo demo · ${selectedCaseName || ""}`,
       });
       setOpen(false);
-      onCreated();
+      if (!onCreatedDemo) onCreated(); // fallback path
       setSubmitting(false);
       return;
     }

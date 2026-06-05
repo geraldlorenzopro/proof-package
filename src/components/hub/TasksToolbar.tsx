@@ -136,7 +136,9 @@ export default function TasksToolbar({ filters, onChangeFilters, sortBy, onChang
         <SelectTrigger
           className={cn(
             "h-8 w-auto px-3 text-[11px] gap-1.5 border",
-            filters.assignee !== "me"
+            // Round 9.8.1: default "all" → chip neutro. Antes comparaba contra
+            // "me" (default viejo) y mostraba PURPLE siempre con defaults clean.
+            filters.assignee !== "all"
               ? "bg-purple-500/10 border-purple-500/40 text-purple-200"
               : "bg-white/[0.04] border-white/10 text-muted-foreground"
           )}
@@ -145,10 +147,10 @@ export default function TasksToolbar({ filters, onChangeFilters, sortBy, onChang
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="all">Todas las tareas</SelectItem>
           <SelectItem value="me">Mis tareas</SelectItem>
           <SelectItem value="team">Equipo (cualquiera)</SelectItem>
           <SelectItem value="unassigned">Sin asignar</SelectItem>
-          <SelectItem value="all">Todas las tareas</SelectItem>
         </SelectContent>
       </Select>
 
@@ -157,7 +159,8 @@ export default function TasksToolbar({ filters, onChangeFilters, sortBy, onChang
         <SelectTrigger
           className={cn(
             "h-8 w-auto px-3 text-[11px] gap-1.5 border",
-            filters.status !== "pending"
+            // Round 9.8.1: default "all" → chip neutro.
+            filters.status !== "all"
               ? "bg-amber-500/10 border-amber-500/40 text-amber-200"
               : "bg-white/[0.04] border-white/10 text-muted-foreground"
           )}
@@ -166,10 +169,10 @@ export default function TasksToolbar({ filters, onChangeFilters, sortBy, onChang
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="all">Todos los estados</SelectItem>
           <SelectItem value="pending">Pendientes</SelectItem>
           <SelectItem value="completed">Completadas</SelectItem>
           <SelectItem value="snoozed">Pospuestas (snoozed)</SelectItem>
-          <SelectItem value="all">Todos los estados</SelectItem>
         </SelectContent>
       </Select>
 

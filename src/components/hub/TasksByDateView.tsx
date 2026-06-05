@@ -636,6 +636,22 @@ export default function TasksByDateView({
           cases={cases}
           team={team}
           onCreated={() => setRefreshKey(k => k + 1)}
+          onCreatedDemo={(fakeTask) => {
+            // Round 9.9: inyectar en estado local — refresh re-bake del mock
+            // borraría la tarea creada.
+            setAllTasks(prev => [{
+              ...fakeTask,
+              description: null,
+              parent_task_id: null,
+              snoozed_until: null,
+              case_type: cases.find(c => c.id === fakeTask.case_id)?.case_type,
+              case_stage: cases.find(c => c.id === fakeTask.case_id)?.process_stage,
+              case_rfe_deadline: cases.find(c => c.id === fakeTask.case_id)?.rfe_deadline ?? null,
+              subtasks_total: 0,
+              subtasks_completed: 0,
+              is_orphan: false,
+            } as TaskWithCase, ...prev]);
+          }}
           isDemoMode={demoMode}
         />
       </div>
