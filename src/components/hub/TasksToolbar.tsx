@@ -16,7 +16,7 @@
  * implementa como pre-set inicial del filtro Asignado.
  */
 import { useMemo } from "react";
-import { ArrowUpDown, User, CircleDot, Calendar, FileType2, Tag, X } from "lucide-react";
+import { ArrowUpDown, User, CircleDot, Calendar, FileType2, X } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
