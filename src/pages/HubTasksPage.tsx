@@ -184,7 +184,7 @@ export default function HubTasksPage() {
           activeTab={activeTab}
           onChange={setActiveTab}
           counts={taskCounts}
-          loading={casesLoading}
+          loading={casesLoading || tasksLoading}
         />
 
         {/* Toolbar específica para tasks (NO CaseFiltersPopover) */}
