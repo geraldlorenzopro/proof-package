@@ -277,25 +277,10 @@ export default function TasksToolbar({ filters, onChangeFilters, sortBy, onChang
         </SelectContent>
       </Select>
 
-      {/* 5. Tipo de tarea (Vanessa nueva feature Round 7) */}
-      <Select value={filters.taskType} onValueChange={(v: TaskTypeFilter) => setFilter("taskType", v)}>
-        <SelectTrigger
-          className={cn(
-            "h-8 w-auto px-3 text-[11px] gap-1.5 border",
-            filters.taskType !== "all"
-              ? "bg-violet-500/10 border-violet-500/40 text-violet-200"
-              : "bg-white/[0.04] border-white/10 text-muted-foreground"
-          )}
-        >
-          <Tag className="w-3.5 h-3.5" />
-          <SelectValue placeholder="Tipo tarea" />
-        </SelectTrigger>
-        <SelectContent className="max-h-[300px]">
-          {(Object.keys(TASK_TYPE_LABELS) as TaskTypeFilter[]).map(k => (
-            <SelectItem key={k} value={k}>{TASK_TYPE_LABELS[k]}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* 5. Tipo de tarea — OCULTO (Round 9.13 Mr. Lorenzo): los modales
+          de creación hardcodean "admin_other"/"general", así que filtrar
+          por "Llamar cliente"/"Subir doc" siempre devuelve 0. Re-activar
+          cuando exista UI real para que el paralegal/IA clasifique al crear. */}
 
       {/* 6. Sort */}
       <Select value={sortBy} onValueChange={(v: TaskSortKey) => onChangeSortBy(v)}>
