@@ -965,6 +965,90 @@ export type Database = {
         }
         Relationships: []
       }
+      case_action_history: {
+        Row: {
+          account_id: string
+          action_detail: string | null
+          action_key: string
+          action_label: string
+          case_id: string
+          case_stage_at_completion: string | null
+          case_status_at_completion: string | null
+          completed_at: string
+          completed_by_name: string | null
+          completed_by_user_id: string | null
+          due_date_at_completion: string | null
+          id: string
+          was_custom: boolean
+        }
+        Insert: {
+          account_id: string
+          action_detail?: string | null
+          action_key: string
+          action_label: string
+          case_id: string
+          case_stage_at_completion?: string | null
+          case_status_at_completion?: string | null
+          completed_at?: string
+          completed_by_name?: string | null
+          completed_by_user_id?: string | null
+          due_date_at_completion?: string | null
+          id?: string
+          was_custom?: boolean
+        }
+        Update: {
+          account_id?: string
+          action_detail?: string | null
+          action_key?: string
+          action_label?: string
+          case_id?: string
+          case_stage_at_completion?: string | null
+          case_status_at_completion?: string | null
+          completed_at?: string
+          completed_by_name?: string | null
+          completed_by_user_id?: string | null
+          due_date_at_completion?: string | null
+          id?: string
+          was_custom?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_action_history_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "firm_metrics_daily"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "case_action_history_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_action_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "case_metrics_daily"
+            referencedColumns: ["case_id"]
+          },
+          {
+            foreignKeyName: "case_action_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_action_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases_revenue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_deadlines: {
         Row: {
           account_id: string
@@ -4240,6 +4324,10 @@ export type Database = {
         Returns: Json
       }
       cleanup_event_rate_limits: { Args: never; Returns: number }
+      complete_case_action: {
+        Args: { p_case_id: string; p_snapshot: Json }
+        Returns: string
+      }
       complete_pre_intake: {
         Args: { _data: Json; _token: string }
         Returns: undefined
