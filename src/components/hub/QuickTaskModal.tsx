@@ -134,21 +134,21 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated, prefille
 
       const promises: Array<Promise<any>> = [];
       if (needsCases) {
-        promises.push(supabase
+        promises.push(Promise.resolve(supabase
           .from("client_cases")
           .select("id, client_name, case_type")
           .eq("account_id", accountId)
           .neq("status", "completed")
           .neq("status", "archived")
           .order("updated_at", { ascending: false })
-          .limit(30));
+          .limit(30)));
       }
       if (needsTeam) {
-        promises.push(supabase
+        promises.push(Promise.resolve(supabase
           .from("account_members")
           .select("user_id, role, profiles:profiles(full_name)")
           .eq("account_id", accountId)
-          .eq("is_active", true));
+          .eq("is_active", true)));
       }
 
       const results = await Promise.all(promises);
