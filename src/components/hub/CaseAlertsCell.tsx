@@ -16,7 +16,7 @@
  *   - Pulse animation reservada SOLO para deadlines gov ≤3 días — Marcus:
  *     "Si todo pulsa, nada pulsa."
  */
-import { Zap, FileText, Check, Pin } from "lucide-react";
+import { Zap, FileText, Check } from "lucide-react";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
 
 interface Props {
@@ -35,15 +35,10 @@ function deriveAlerts(c: PipelineCase): Alert[] {
   const alerts: Alert[] = [];
   const now = Date.now();
 
-  // Pinned siempre primero
-  if (c.pinned) {
-    alerts.push({
-      key: "pinned",
-      title: "Caso fijado al tope del pipeline",
-      iconClass: "bg-amber-500/20 text-amber-300",
-      Icon: Pin,
-    });
-  }
+  // Pin REMOVIDO de aquí — Round 4.5 (Valerie audit). Vive al lado
+  // del avatar en CaseRow como "anchor" del caso. La col Alertas es
+  // SOLO para fuego activo (RFE, Felix, deadlines), no para
+  // properties del caso.
 
   // RFE deadline próximos 7d — pulse SOLO si ≤3d (Marcus rule)
   if (c.rfe_deadline) {
@@ -71,7 +66,7 @@ function deriveAlerts(c: PipelineCase): Alert[] {
   }
 
   // Si no hay alertas negativas → Felix OK
-  if (alerts.length === 0 || (alerts.length === 1 && alerts[0].key === "pinned")) {
+  if (alerts.length === 0) {
     alerts.push({
       key: "felix-ok",
       title: "Felix: checklist OK",

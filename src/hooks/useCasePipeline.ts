@@ -53,6 +53,14 @@ export interface PipelineCase {
   next_action?: NextActionPayload | null;
   /** custom_fields completo, por si algún componente lo necesita. */
   custom_fields?: Record<string, any> | null;
+  /** Round 4.5 (Victoria + Vanessa): JOIN nested a client_profiles
+   *  para que search global pueda filtrar por phone / A-number.
+   *  PostgREST devuelve un objeto (no array) por ser FK 1:1. */
+  client_profile?: {
+    phone: string | null;
+    mobile_phone: string | null;
+    a_number: string | null;
+  } | null;
 }
 
 export interface PipelineColumn {
@@ -198,6 +206,11 @@ export function useCasePipeline(accountId: string | null, userId: string | null 
       setLoading(true);
       setError(null);
 
+      // Round 4.5 (Victoria + Vanessa): JOIN nested a client_profiles
+      // para que el search global pueda filtrar por teléfono + A-number.
+      // Antes el placeholder mentía — decía "teléfono, A-number" pero
+      // el filter no los tenía. PostgREST nested select left join via
+      // FK client_profile_id (auto-indexed). Sub-50ms en pool warm.
       const { data: casesData, error: casesErr } = await supabase
         .from("client_cases")
         .select(`
@@ -206,7 +219,8 @@ export function useCasePipeline(accountId: string | null, userId: string | null 
           priority_date, uscis_receipt_numbers, nvc_case_number,
           interview_date, emb_interview_date, cas_interview_date, case_tags_array,
           custom_fields, rfe_deadline, uscis_response_deadline, last_client_activity_at,
-          matter_value, pinned
+          matter_value, pinned,
+          client_profile:client_profiles(phone, mobile_phone, a_number)
         `)
         .eq("account_id", accountId)
         .not("status", "eq", "completed")

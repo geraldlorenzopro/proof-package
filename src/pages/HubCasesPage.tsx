@@ -67,14 +67,15 @@ export default function HubCasesPage() {
     if (accountId) migrateLegacyKeys(accountId);
   }, [accountId]);
 
-  const { cases, loading, unclassifiedCount, updateCase } = useCasePipeline(accountId, userId);
+  const { cases, loading, error, unclassifiedCount, updateCase } = useCasePipeline(accountId, userId);
 
   // Permisos para $$$ por columna (Round 4 Marcus + Mr. Lorenzo):
   // solo tier 1+2 (owner/admin/attorney) ven revenue. Paralegal NO.
-  // Reusa canViewVisibility("attorney_only") que es exactamente el mismo
-  // grupo de roles autorizados.
-  const { canViewVisibility } = usePermissions(accountId);
-  const canViewRevenue = canViewVisibility("attorney_only");
+  // Round 4.5 (Victoria flash fix): esperamos isLoading antes de
+  // decidir showRevenue, sino el Kanban del owner ve "primero $0,
+  // después $ aparece" durante 1-2 render cycles.
+  const { canViewVisibility, isLoading: permsLoading } = usePermissions(accountId);
+  const canViewRevenue = !permsLoading && canViewVisibility("attorney_only");
 
   // ═══ State persistido por account_id (anti-leak Victoria fix #1) ═══
   const [view, setView] = useState<ViewMode>("tabla");
@@ -174,18 +175,44 @@ export default function HubCasesPage() {
   }, [accountId, demoMode]);
 
   // Pipeline: search → view → toggle → type filter → sort → group
+  // Round 4.5 (Vanessa + Victoria): search expand a phone digits-only
+  // y A-number stripped del prefix "A". Vanessa: "tipeo últimos 4 del
+  // teléfono, cliente llama y no me sé el nombre exacto. Apellido o
+  // teléfono = primera cosa que tipeo".
   const searchFilteredCases = useMemo(() => {
     const q = search.trim().toLowerCase();
+    if (!q) return cases;
+    // Normalizar input: si el usuario tipeó algo que parece número/teléfono,
+    // lo comparamos digits-only contra phone/mobile_phone/a_number normalizados.
+    const qDigits = q.replace(/\D/g, "");
+    const qAnum = q.replace(/^a/i, "").replace(/\D/g, "");
     return cases.filter(c => {
-      if (!q) return true;
+      // Text fields (nombre, file, tipo, NVC)
       if (c.client_name?.toLowerCase().includes(q)) return true;
       if (c.file_number?.toLowerCase().includes(q)) return true;
       if (c.case_type?.toLowerCase().includes(q)) return true;
       if (c.nvc_case_number?.toLowerCase().includes(q)) return true;
+
+      // USCIS receipt numbers (array u objeto)
       const receipts = c.uscis_receipt_numbers;
       if (Array.isArray(receipts) && receipts.some((r: any) => String(r).toLowerCase().includes(q))) return true;
       if (receipts && typeof receipts === "object") {
         if (Object.values(receipts).some((r: any) => String(r).toLowerCase().includes(q))) return true;
+      }
+
+      // Phone + A-number (Round 4.5): JOIN nested client_profiles.
+      // Solo aplica si la query parece numérica (qDigits >= 3 chars)
+      // o A-number-like (empieza con A + dígitos).
+      const prof = c.client_profile;
+      if (prof && qDigits.length >= 3) {
+        const phoneDigits = (prof.phone || "").replace(/\D/g, "");
+        const mobileDigits = (prof.mobile_phone || "").replace(/\D/g, "");
+        if (phoneDigits && phoneDigits.includes(qDigits)) return true;
+        if (mobileDigits && mobileDigits.includes(qDigits)) return true;
+      }
+      if (prof?.a_number && qAnum.length >= 3) {
+        const aDigits = prof.a_number.replace(/^A/i, "").replace(/\D/g, "");
+        if (aDigits && aDigits.includes(qAnum)) return true;
       }
       return false;
     });
@@ -367,6 +394,27 @@ export default function HubCasesPage() {
         {/* Content */}
         {loading ? (
           <div className="rounded-xl border border-border/40 bg-card/30 h-96 animate-pulse" />
+        ) : error ? (
+          /* Round 4.5 (Victoria fix #11): distinguir error vs no-data.
+             Si la query falló (ej. schema mismatch porque la migration
+             no fue aplicada todavía), mostramos error real — antes
+             se veía como "BD vacía", confusión total. */
+          <div className="rounded-xl border border-rose-500/30 bg-rose-500/[0.06] py-16 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-500/15 mx-auto flex items-center justify-center">
+              <span className="text-2xl">⚠</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-rose-200 mb-1">
+                Error al cargar el pipeline
+              </p>
+              <p className="text-[11px] text-rose-300/70 max-w-md mx-auto break-words">
+                {error}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-3">
+                Si esto persiste contactá soporte. Probablemente falta aplicar una migration de base de datos.
+              </p>
+            </div>
+          </div>
         ) : sortedCases.length === 0 ? (
           <div className="rounded-xl border border-border/40 bg-card/30 py-16 text-center space-y-4">
             <div className="w-12 h-12 rounded-full bg-muted/30 mx-auto flex items-center justify-center">

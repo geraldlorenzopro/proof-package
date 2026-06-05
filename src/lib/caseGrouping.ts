@@ -250,7 +250,7 @@ function urgencyScore(c: PipelineCase): number {
   let score = 0;
 
   // Pinned siempre arriba (Marcus alternativa a priority manual)
-  if ((c as any).pinned) score += 1000;
+  if (c.pinned) score += 1000;
 
   // Gov hard deadlines (RFE/USCIS) — peso 1.5x vs Round 3
   if (c.rfe_deadline) {
@@ -283,7 +283,8 @@ function govDeadlineMs(c: PipelineCase): number | null {
   const candidates: number[] = [];
   if (c.rfe_deadline) candidates.push(new Date(c.rfe_deadline).getTime());
   if (c.uscis_response_deadline) candidates.push(new Date(c.uscis_response_deadline).getTime());
-  if ((c as any).court_date) candidates.push(new Date((c as any).court_date).getTime());
+  // court_date: postpone Fase 5 (Court tracker). El campo no existe aún
+  // en client_cases — se agregará con migration de court support.
   if (candidates.length === 0) return null;
   return Math.min(...candidates);
 }
@@ -334,7 +335,7 @@ export function sortCases(cases: PipelineCase[], sortBy: SortKey): PipelineCase[
 // ════════════════════════════════════════════════════════════════
 
 export function sumMatterValue(cases: PipelineCase[]): number {
-  return cases.reduce((sum, c) => sum + (Number((c as any).matter_value) || 0), 0);
+  return cases.reduce((sum, c) => sum + (Number(c.matter_value) || 0), 0);
 }
 
 export function formatCurrency(value: number): string {

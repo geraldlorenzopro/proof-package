@@ -19,7 +19,7 @@
  */
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, ChevronDown, StickyNote, CheckSquare, PhoneOff } from "lucide-react";
+import { ChevronRight, ChevronDown, StickyNote, CheckSquare, PhoneOff, Pin } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { deriveJourneyStep, deriveSubStage, defaultSubStageFor, getJourneyMeta, type JourneyStep, type SubStage } from "@/lib/journeySteps";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
@@ -85,18 +85,27 @@ const STAGE_ACCENT: Record<string, string> = {
   "sin-clasificar":     "from-slate-500/10",
 };
 
-// Banda lateral 3px por stage — Round 4 Valerie (Linear pattern).
-// Da identidad sin saturar fondo. NO usar ai-blue (Victoria: reservado a brand).
+// Banda lateral por stage — Round 4.5 (Valerie audit post-deploy).
+// Aprobado/Negado son TERMINAL STATES → border-l-4 (1px más grueso) +
+// colores distintos del resto (verde-amarillo vs emerald cool de
+// Consular; rojo profundo vs rose intenso de ICE) para que el ojo
+// distinga "fin de journey" vs etapa activa.
+//
+// Paleta Vanessa: "USCIS azul (neutro), NVC morado tenue, Consular
+// verde suave, Corte ÁMBAR (no rojo — corte ≠ deportación), ICE rojo
+// intenso (único rojo del sistema)".
+//
+// Victoria audit: NO usar ai-blue (brand-reserved para chrome).
 const STAGE_BORDER_L: Record<string, string> = {
-  uscis:                "border-l-blue-500",
-  nvc:                  "border-l-violet-400",
-  embajada:             "border-l-emerald-400",
-  court:                "border-l-amber-500",
-  ice:                  "border-l-rose-600",
-  aprobado:             "border-l-emerald-600",
-  negado:               "border-l-rose-400",
-  "admin-processing":   "border-l-violet-500",
-  "sin-clasificar":     "border-l-slate-500",
+  uscis:                "border-l-[3px] border-l-blue-500",
+  nvc:                  "border-l-[3px] border-l-violet-400",
+  embajada:             "border-l-[3px] border-l-emerald-400",
+  court:                "border-l-[3px] border-l-amber-500",
+  ice:                  "border-l-[3px] border-l-rose-600",
+  aprobado:             "border-l-4 border-l-green-500",   // terminal + verde distinto del emerald cool
+  negado:               "border-l-4 border-l-red-700",     // terminal + rojo profundo distinto del rose intenso de ICE
+  "admin-processing":   "border-l-[3px] border-l-violet-500",
+  "sin-clasificar":     "border-l-[3px] border-l-slate-500",
 };
 
 const COLLAPSED_KEY = "ner_cases_collapsed_v2";
@@ -267,12 +276,12 @@ function GroupHeader({
   onToggle: () => void;
 }) {
   const accent = STAGE_ACCENT[group.key] || "from-slate-500/10";
-  const borderL = STAGE_BORDER_L[group.key] || "border-l-slate-500";
+  const borderL = STAGE_BORDER_L[group.key] || "border-l-[3px] border-l-slate-500";
   const chipClass = group.chipClass || "bg-slate-500/15 border-slate-500/30 text-slate-200";
   return (
     <button
       onClick={onToggle}
-      className={`backdrop-blur-md w-full bg-gradient-to-r ${accent} to-transparent border-l-[3px] ${borderL} ${isFirst ? "" : "border-t-2 border-t-white/5"} border-b border-b-white/5 px-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors`}
+      className={`backdrop-blur-md w-full bg-gradient-to-r ${accent} to-transparent ${borderL} ${isFirst ? "" : "border-t-2 border-t-white/5"} border-b border-b-white/5 px-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors`}
     >
       <div className="flex items-center gap-2.5">
         {collapsed
@@ -342,9 +351,13 @@ function CaseRow({
   if (c.last_client_activity_at) {
     const days = Math.floor((Date.now() - new Date(c.last_client_activity_at).getTime()) / 86400000);
     if (days >= 10) {
+      // Round 4.5 (Valerie + Vanessa): font-semibold cuando ≥30d para
+      // gritar real urgency. Color amber 10-29d, rose ≥30d.
       silentLabel = {
         text: `${days}d sin contacto`,
-        tone: days >= 30 ? "text-rose-400" : "text-amber-300",
+        tone: days >= 30
+          ? "text-rose-400 font-semibold"
+          : "text-amber-300",
       };
     }
   }
@@ -381,8 +394,17 @@ function CaseRow({
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
       className={`group ${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(220px,1.8fr)_130px_minmax(160px,1.2fr)_110px_110px_minmax(200px,1.8fr)_70px] gap-3 px-4 h-16 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left cursor-pointer relative`}
     >
-      {/* Cliente + sub-text 2 líneas + badge tareas */}
+      {/* Cliente + sub-text 2 líneas + badge tareas.
+          Round 4.5 (Valerie): Pin amber al lado izquierdo del avatar
+          como "anchor" — pinning es property del caso, NO un alert.
+          Liberé 1 slot en col Alertas y marca pinning con peso real. */}
       <div className="flex items-center gap-2.5 min-w-0">
+        {c.pinned && (
+          <Pin
+            className="w-3 h-3 text-amber-400 shrink-0"
+            aria-label="Caso fijado al tope del pipeline"
+          />
+        )}
         <div className={`w-[26px] h-[26px] rounded-full bg-gradient-to-br ${clientGradient} flex items-center justify-center text-[10px] font-bold text-white shrink-0`}>
           {clientInitials}
         </div>
@@ -474,12 +496,13 @@ function CaseRow({
       {/* Alertas (70px col) */}
       <CaseAlertsCell c={c} />
 
-      {/* Quick Actions hover-reveal (Round 4 Vanessa).
-          Posicionado absolute para no romper grid layout. Solo visible
-          en row hover. 3 iconos: nota / tarea / log-call. Click = deep
-          link al case-engine en tab correspondiente. */}
+      {/* Quick Actions hover-reveal — Round 4.5 fix BLOCKER #2.
+          ANTES: right-[80px] tapaba "Próximo paso" (Valerie audit: anti-
+          pattern Linear "hover actions never occlude primary content").
+          AHORA: right-2 → cubre col Alertas (íconos pasivos, redundantes
+          con tooltips). Acciones nuevas > status icons en hover. */}
       <div
-        className="absolute right-[80px] top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1 bg-deep-navy/95 backdrop-blur-sm border border-white/10 rounded-md px-1.5 py-1 shadow-lg shadow-black/40 z-10"
+        className="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1 bg-deep-navy/95 backdrop-blur-sm border border-white/10 rounded-md px-1.5 py-1 shadow-lg shadow-black/40 z-10 transition-opacity duration-100"
         onClick={(e) => e.stopPropagation()}
       >
         <QuickActionButton

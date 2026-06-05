@@ -23,8 +23,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { ChevronRight, ChevronDown, Calendar, AlertTriangle } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { bucketForDueDate, TASK_BUCKETS, type TaskBucketKey } from "@/lib/caseGrouping";
-import type { PipelineCase } from "@/hooks/useCasePipeline";
+import type { PipelineCase, PipelineStageKey } from "@/hooks/useCasePipeline";
 import { useDemoMode } from "@/hooks/useDemoData";
+import { readScopedJson, writeScopedJson } from "@/lib/scopedStorage";
 
 interface Task {
   id: string;
@@ -41,9 +42,26 @@ interface Task {
 interface TaskWithCase extends Task {
   case_name?: string;
   case_type?: string | null;
+  case_stage?: PipelineStageKey | null;
   subtasks_total?: number;
   subtasks_completed?: number;
+  is_orphan?: boolean;
 }
+
+// Stage badges compactos para mostrar al lado del título de la tarea.
+// Vanessa Round 4.5: "Necesito ver USCIS pending o RFE recibido —
+// una tarea vencida de RFE = pánico, de cliente nuevo = puedo esperar."
+const STAGE_CHIP: Record<string, { label: string; class: string }> = {
+  uscis:                { label: "USCIS",     class: "bg-blue-500/15 border-blue-500/30 text-blue-200" },
+  nvc:                  { label: "NVC",       class: "bg-violet-400/15 border-violet-400/30 text-violet-200" },
+  embajada:             { label: "Consular",  class: "bg-emerald-400/15 border-emerald-400/30 text-emerald-200" },
+  court:                { label: "Corte",     class: "bg-amber-500/15 border-amber-500/30 text-amber-200" },
+  ice:                  { label: "ICE",       class: "bg-rose-600/15 border-rose-600/30 text-rose-200" },
+  "admin-processing":   { label: "Admin",     class: "bg-violet-500/15 border-violet-500/30 text-violet-200" },
+  aprobado:             { label: "Aprobado",  class: "bg-green-500/15 border-green-500/30 text-green-200" },
+  negado:               { label: "Negado",    class: "bg-red-700/15 border-red-700/40 text-red-200" },
+  "sin-clasificar":     { label: "Sin clasif.",class: "bg-slate-500/15 border-slate-500/30 text-slate-200" },
+};
 
 interface Props {
   accountId: string | null;
@@ -57,6 +75,11 @@ interface Props {
 const BUCKET_ORDER: TaskBucketKey[] = ["overdue", "today", "tomorrow", "this_week", "next_week", "later", "no_date"];
 
 const COLLAPSED_KEY = "ner_tasks_view_collapsed";
+// Round 4.5: solo "later" colapsado default. "no_date" ABIERTO
+// (Vanessa: "si está colapsado se me olvida que existe y son las
+// que más me joden — alguien creó la tarea sin fecha porque tenía
+// prisa. Esas son bombas de tiempo.")
+const DEFAULT_COLLAPSED: Record<string, boolean> = { later: true };
 
 export default function TasksByDateView({ accountId, userId, cases, scope, staffNames }: Props) {
   const navigate = useNavigate();
@@ -65,16 +88,19 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
   const [loading, setLoading] = useState(true);
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(COLLAPSED_KEY) : null;
-      return raw ? JSON.parse(raw) : { later: true, no_date: true };
-    } catch { return { later: true, no_date: true }; }
-  });
+  // Round 4.5 (Victoria fix #3): localStorage namespaced por accountId
+  // para evitar cross-account leak si paralegal tiene 2 firmas (Camino B).
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(DEFAULT_COLLAPSED);
+
+  // Re-hidratar cuando accountId resuelve
+  useEffect(() => {
+    if (!accountId) return;
+    setCollapsed(readScopedJson<Record<string, boolean>>(COLLAPSED_KEY, accountId, DEFAULT_COLLAPSED));
+  }, [accountId]);
 
   useEffect(() => {
-    try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsed)); } catch {}
-  }, [collapsed]);
+    writeScopedJson(COLLAPSED_KEY, accountId, collapsed);
+  }, [collapsed, accountId]);
 
   // Demo mode: derivar tasks mock desde DEMO_CASES (overdue_tasks_count)
   useEffect(() => {
@@ -89,11 +115,12 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
             case_id: c.id,
             case_name: c.client_name,
             case_type: c.case_type,
+            case_stage: c.process_stage,
             title: `Tarea pendiente ${i + 1} — ${c.client_name}`,
             due_date: i === 0 && (c.overdue_tasks_count || 0) > 0
               ? new Date(Date.now() - 86400000).toISOString().slice(0, 10)
               : new Date(Date.now() + (i + 1) * 86400000).toISOString().slice(0, 10),
-            priority: "normal",
+            priority: i === 0 ? "high" : "normal",
             status: "pending",
             assigned_to: c.assigned_to,
           });
@@ -145,16 +172,29 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
         subtasksByParent.set(t.parent_task_id, slot);
       });
 
+      // Victoria BLOCKER fix Round 4.5: subtasks huérfanos invisibles.
+      // ANTES: filtraba todo `parent_task_id != null` como "subtask" y
+      // se descartaba. Bug: si el parent fue completed, NO viene en
+      // data (filtro status), entonces sus subtasks pending quedaban
+      // invisibles. Ahora: si el parent NO está en data, el subtask
+      // se promueve a top-level (orphan = true) para que el paralegal
+      // lo vea de todas formas.
+      const parentIds = new Set((data || []).map((t: any) => t.id));
       const caseMap = new Map(cases.map(c => [c.id, c]));
       const enriched: TaskWithCase[] = (data || [])
-        .filter((t: any) => !t.parent_task_id) // solo top-level — los subtasks se muestran via counter
-        .map((t: any) => ({
-          ...t,
-          case_name: t.case_id ? caseMap.get(t.case_id)?.client_name : undefined,
-          case_type: t.case_id ? caseMap.get(t.case_id)?.case_type : null,
-          subtasks_total: subtasksByParent.get(t.id)?.total || 0,
-          subtasks_completed: subtasksByParent.get(t.id)?.completed || 0,
-        }));
+        .filter((t: any) => !t.parent_task_id || !parentIds.has(t.parent_task_id))
+        .map((t: any) => {
+          const caseObj = t.case_id ? caseMap.get(t.case_id) : undefined;
+          return {
+            ...t,
+            case_name: caseObj?.client_name,
+            case_type: caseObj?.case_type,
+            case_stage: caseObj?.process_stage,
+            subtasks_total: subtasksByParent.get(t.id)?.total || 0,
+            subtasks_completed: subtasksByParent.get(t.id)?.completed || 0,
+            is_orphan: !!t.parent_task_id, // marker para futura UI distinguir
+          };
+        });
 
       setTasks(enriched);
       setLoading(false);
@@ -272,6 +312,19 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
   );
 }
 
+// Round 4.5 (Valerie): header del bucket viste del color de su urgencia
+// (no solo el chip). Vencidas=rose, Hoy=amber, Mañana=amber, resto neutro.
+// Antes Hoy heredaba rose como Vencidas → inconsistente con chip amber.
+const BUCKET_HEADER_THEME: Record<TaskBucketKey, { bg: string; iconColor: string; titleColor: string; icon: boolean }> = {
+  overdue:    { bg: "bg-rose-500/[0.06] hover:bg-rose-500/[0.10]",   iconColor: "text-rose-400",   titleColor: "text-rose-200",  icon: true },
+  today:      { bg: "bg-amber-500/[0.06] hover:bg-amber-500/[0.10]", iconColor: "text-amber-400",  titleColor: "text-amber-200", icon: true },
+  tomorrow:   { bg: "bg-amber-500/[0.04] hover:bg-amber-500/[0.08]", iconColor: "text-amber-400",  titleColor: "text-amber-200", icon: false },
+  this_week:  { bg: "bg-white/[0.02] hover:bg-white/[0.04]",         iconColor: "text-cyan-accent",titleColor: "text-white",     icon: false },
+  next_week:  { bg: "bg-white/[0.02] hover:bg-white/[0.04]",         iconColor: "text-cyan-accent",titleColor: "text-white",     icon: false },
+  later:      { bg: "bg-white/[0.02] hover:bg-white/[0.04]",         iconColor: "text-cyan-accent",titleColor: "text-white",     icon: false },
+  no_date:    { bg: "bg-white/[0.02] hover:bg-white/[0.04]",         iconColor: "text-cyan-accent",titleColor: "text-white",     icon: false },
+};
+
 function BucketHeader({ bucket, count, collapsed, onToggle }: {
   bucket: TaskBucketKey;
   count: number;
@@ -279,20 +332,18 @@ function BucketHeader({ bucket, count, collapsed, onToggle }: {
   onToggle: () => void;
 }) {
   const meta = TASK_BUCKETS[bucket];
-  const isUrgent = bucket === "overdue" || bucket === "today";
+  const theme = BUCKET_HEADER_THEME[bucket];
   return (
     <button
       onClick={onToggle}
-      className={`w-full px-4 py-2.5 flex items-center gap-2.5 border-b border-white/5 transition-colors ${
-        isUrgent ? "bg-rose-500/[0.06] hover:bg-rose-500/[0.10]" : "bg-white/[0.02] hover:bg-white/[0.04]"
-      } ${count === 0 ? "opacity-60" : ""}`}
+      className={`w-full px-4 py-2.5 flex items-center gap-2.5 border-b border-white/5 transition-colors ${theme.bg} ${count === 0 ? "opacity-60" : ""}`}
     >
       {collapsed
-        ? <ChevronRight className="w-3 h-3 text-slate-500" />
-        : <ChevronDown className="w-3 h-3 text-cyan-accent" />
+        ? <ChevronRight className={`w-3 h-3 text-slate-500`} />
+        : <ChevronDown className={`w-3 h-3 ${theme.iconColor}`} />
       }
-      {isUrgent && <AlertTriangle className="w-3 h-3 text-rose-400" />}
-      <h3 className={`text-[12px] font-bold font-sora ${isUrgent ? "text-rose-200" : "text-white"}`}>
+      {theme.icon && <AlertTriangle className={`w-3 h-3 ${theme.iconColor}`} />}
+      <h3 className={`text-[12px] font-bold font-sora ${theme.titleColor}`}>
         {meta.label}
       </h3>
       {meta.description && <span className="text-[9px] text-slate-500">{meta.description}</span>}
@@ -315,6 +366,10 @@ function TaskRow({ task, staffNames, onClick }: {
     : task.priority === "medium"
       ? "bg-amber-500"
       : "bg-slate-500";
+  // Round 4.5 (Vanessa): stage chip al lado del título. "Necesito saber
+  // si es USCIS pending o RFE recibido — vencida de RFE = pánico,
+  // vencida de cliente nuevo = puede esperar."
+  const stageChip = task.case_stage ? STAGE_CHIP[task.case_stage] : null;
 
   return (
     <div
@@ -322,11 +377,18 @@ function TaskRow({ task, staffNames, onClick }: {
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className="grid grid-cols-[12px_minmax(200px,1.5fr)_minmax(180px,1fr)_100px_110px] gap-3 px-4 h-14 items-center text-[13px] border-t border-white/[0.03] hover:bg-cyan-accent/[0.04] cursor-pointer"
+      className="grid grid-cols-[12px_minmax(220px,1.5fr)_minmax(160px,1fr)_100px_110px] gap-3 px-4 h-14 items-center text-[13px] border-t border-white/[0.03] hover:bg-cyan-accent/[0.04] cursor-pointer"
     >
       <span className={`w-2 h-2 rounded-full ${priorityColor}`} title={`Prioridad: ${task.priority}`} />
-      <div className="min-w-0 flex flex-col">
-        <span className="text-[12px] text-white truncate">{task.title}</span>
+      <div className="min-w-0 flex flex-col gap-0.5">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-[12px] text-white truncate flex-1">{task.title}</span>
+          {stageChip && (
+            <span className={`shrink-0 text-[9px] font-semibold uppercase tracking-wider border px-1.5 py-0.5 rounded ${stageChip.class}`}>
+              {stageChip.label}
+            </span>
+          )}
+        </div>
         {hasSubtasks && (
           <span className="text-[10px] text-slate-500 tabular-nums">
             Sub-tareas: {task.subtasks_completed}/{task.subtasks_total}
@@ -335,7 +397,14 @@ function TaskRow({ task, staffNames, onClick }: {
       </div>
       <span className="text-[11px] text-slate-400 truncate">{task.case_name || "—"}</span>
       <span className="text-[11px] text-slate-400 tabular-nums">{task.due_date || "Sin fecha"}</span>
-      <span className="text-[11px] text-slate-500 truncate">{assigneeName || "Sin asignar"}</span>
+      {/* Round 4.5 (Vanessa): "ASIGNAR" rojo bold cuando no hay assignee.
+          "Sin asignar" gris se ignora; rojo dice ACCIONÁ. */}
+      {assigneeName
+        ? <span className="text-[11px] text-slate-400 truncate">{assigneeName}</span>
+        : <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-300 bg-rose-500/15 border border-rose-500/30 rounded px-1.5 py-0.5 w-fit">
+            Asignar
+          </span>
+      }
     </div>
   );
 }

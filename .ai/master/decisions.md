@@ -6,6 +6,131 @@ pasadas — agregar nueva decisión que las supersede si cambian.**
 
 ---
 
+## 2026-06-05 — Hub Casos Round 4.5 polish (post-deploy audit)
+
+### Contexto
+
+Round 4 mega-sprint (commit `18bed17`) deployó 9 items: subtasks +
+matter_value + pinned + sub-text 2 líneas + Quick Actions hover-reveal
++ TasksByDateView + Kanban $$$ gated + paleta saturated badges + sort
+renaming. Migration aplicada por Lovable. Mr. Lorenzo probó preview
+y detectó visual bug del Quick Actions tapando "Próximo paso".
+
+4 agentes (Valerie + Vanessa + Marcus + Victoria) auditaron post-deploy.
+**1 BLOCKER nuevo** (subtasks huérfanos invisibles) + 10 IMPORTANTES +
+3 decisiones de producto.
+
+### Decisión 1 — Kanban quick actions = menu "..." (no 3 iconos hover)
+
+**Decisión:** botón `MoreHorizontal` top-right del card Kanban que abre
+dropdown con 3 opciones (nota / tarea / historial).
+
+**Alternativas:**
+- A) 3 iconos hover-reveal top-right (paridad con CaseTable). Valerie pro.
+- B) Menu "..." con dropdown. Vanessa pro.
+- C) Footer del card con iconos. Rechazado (rompe silueta vertical).
+- D) Sin acciones en Kanban — Vanessa: "Kanban es para SCAN". Pero Mr.
+  Lorenzo pidió acciones explícitamente.
+
+**Razón:** Vanessa (usuaria real) vetó A porque *"Kanban es para SCAN,
+NO quiero 3 iconos hover en cada card, me satura visualmente"*. Marcus
+pattern (cmdk-style menu) reusa el dropdown del CaseGroupStrip
+OverflowDropdown — UX coherente. 1 botón = 1 click extra vs 3 iconos
+visibles, pero Vanessa solo accede Kanban viernes 4pm para vista CEO
+(80% del día usa Tabla). Trade-off aceptable.
+
+### Decisión 2 — `matter_value` mantiene nombre, comment refuerza semantics
+
+**Decisión:** NO renombrar a `case_fee`. Agregar COMMENT explícito en
+migration nueva (`20260605160000_pipeline_round45_polish.sql`) que dice
+*"FLAT-FEE one-time del contrato firmado. NO billable hours
+accumulator (NER no tracks billable hours — flat-fee model)"*.
+
+**Alternativas:**
+- A) Renombrar `matter_value` → `case_fee` (Marcus voto). Pro: nombre
+  evita trojan horse semántico hacia billing-by-hour. Con: requiere
+  migration nueva + actualizar código en N lugares + posible romper
+  consumers (Lovable, edge functions).
+- B) Solo comment refresh. Pro: zero código a cambiar. Con: el nombre
+  sigue siendo ambiguo para futuros devs.
+
+**Razón:** costo de rename > beneficio. El comment SQL queda en BD
+y aparece en GUI tools (Supabase Studio, pgAdmin). Devs futuros
+LEEN el comment antes de proponer "agregar billable hours encima".
+Si en 6 meses NER pivota y necesita billable hours: serán columnas
+NUEVAS (`hours_logged`, `billable_rate`), no extender `matter_value`.
+
+### Decisión 3 — RLS column-level para matter_value POSPONE (deuda SOC 2)
+
+**Decisión:** mantener gating frontend-only via
+`usePermissions.canViewVisibility("attorney_only")`. Documentar deuda
+explícita en comment de migration + acá.
+
+**Alternativas:**
+- A) RLS column-level via view filtered (`client_cases_with_revenue`).
+  Pro: enforcement real, paralegal con DevTools no puede leer $. Con:
+  refactor query del pipeline, performance overhead del view, complejidad.
+- B) Tabla separada `client_cases_financial` con RLS estricta. Pro: clean
+  separation. Con: migration grande + JOINs everywhere + duplicación.
+- C) Gating frontend + deuda documentada. Pro: ship rápido para piloto
+  5 firmas. Con: auditor SOC 2 lo va a flaggear.
+
+**Razón:** piloto actual es 5 firmas. Owner/admin/attorney son los
+únicos que pueden hacer DevTools queries en una firma típica (paralegal
+no abre console). Risk surface real = bajo. **OBLIGACIÓN:** atacar
+antes del SOC 2 audit deadline (Q3 2026 según roadmap). Si el deadline
+se mueve, fix antes. Marcus consultor flag explícito.
+
+### Decisión 4 — TasksByDateView vive en `/hub/cases` (no ruta propia)
+
+**Decisión:** mantener como view mode dentro de Pipeline. NO mover a
+`/hub/tasks` ruta separada.
+
+**Alternativas:**
+- A) Ruta propia `/hub/tasks`. Pro: namespace limpio para Fase 5+
+  (Court tracker, Evidence Builder también podrían querer rutas).
+  Con: separa filters compartidos (Mis casos / Urgentes scope).
+- B) View mode toggle. Pro: filters consistentes, mismo dropdown
+  Tipo / Persona / Agrupar aplica a ambas vistas. Con: god-route si
+  agregamos más views en futuro.
+
+**Razón:** Marcus tiene razón estratégica long-term, pero hoy NO hay
+2da vista huérfana. Cuando aparezca Calendar view o Forms view dentro
+de /hub/cases, REVISITAR la decisión y partir. Hoy single-view mode
+es decisión más barata. Costo de pivot es bajo (componente ya está
+desacoplado).
+
+### BLOCKER fix aplicado: subtasks huérfanos invisibles
+
+Victoria detectó: TasksByDateView filtra `status in [pending, in_progress]`
+y descarta tasks con `parent_task_id != null`. Si parent fue completed:
+NO viene en data, sus subtasks pending sí vienen, pero el filter los
+descarta como "subtasks". El paralegal pierde visibilidad de sub-tareas
+reales pendientes.
+
+Fix: `filter(!t.parent_task_id || !parentIds.has(t.parent_task_id))` —
+los orphans se promueven a top-level con marker `is_orphan`.
+
+### Backlog acumulado Round 4.5 (no aplicar ahora)
+
+1. **Templates de cartas con merge fields** (Vanessa #1 — recupera 5 hrs/sem).
+   Bloqueado por agente Pablo (planned).
+2. **Pin desde pipeline directo** (sin abrir case-engine) — hover icon
+   nuevo en row Tabla y card Kanban.
+3. **Bucket "Esperando cliente"** en vista Tareas — tareas blocked-by-client.
+4. **Phone CTA → dialer/WhatsApp real** (no historial) — necesita Twilio.
+5. **Mark All As Read masivo** en notificaciones.
+6. **Botón "Cerrar caso" inline** en row.
+7. **Cap 5 pinned per user** (constraint DB) — Marcus contra inflación.
+8. **Defaults por rol** — assistant ve 2 vistas + 1 sort; attorney ve
+   todo. Marcus contra "360 estados combinatorios".
+9. **RLS column-level matter_value** (Decisión 3 deuda — antes SOC 2).
+10. **Trigger anti-cycle subtasks** (Victoria #1 race condition baja prob).
+11. **Court tracker (Fase 5)** — agrega `court_date` field + Sofía agente.
+12. **`matter_value numeric(12,2)`** reactive cuando firma EB-5 luxury onboarde.
+
+---
+
 ## 2026-06-03 — Catálogo migratorio canónico + auditoría DS-117 + Email Resend
 
 ### Decisión 1 — Categoría I-539 = `non-immigrant-change-extend` (Opción B)
