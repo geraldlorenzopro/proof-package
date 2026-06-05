@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import HubLayout from "@/components/hub/HubLayout";
 import CaseTable from "@/components/hub/CaseTable";
 import CaseKanban from "@/components/hub/CaseKanban";
-import CaseKpiStrip from "@/components/hub/CaseKpiStrip";
 import CaseViewTabs from "@/components/hub/CaseViewTabs";
 import CaseFiltersPopover, { type CaseFilters, EMPTY_FILTERS } from "@/components/hub/CaseFiltersPopover";
 import CaseGroupStrip from "@/components/hub/CaseGroupStrip";
 import CasePeekPanel from "@/components/hub/CasePeekPanel";
+// KPI strip removido 2026-06-05 (consenso Valerie + Vanessa):
+// duplicaba 100% lo que ya hacen los tabs. Fusionados en CaseViewTabs
+// Linear-style con número grande inline.
 import { useCasePipeline } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
@@ -274,19 +276,14 @@ export default function HubCasesPage() {
           </div>
         </div>
 
-        {/* ═══ KPI Strip (4 boxes clickeables) ═══ */}
-        <CaseKpiStrip
-          accountId={accountId}
-          userId={userId}
-          activeView={activeView}
-          onSelectView={setActiveView}
-        />
-
-        {/* ═══ Tabs guardables ═══ */}
+        {/* ═══ Vista activa — pills Linear-style con número grande ═══
+            Reemplaza la doble fila KPI + Tabs anterior. Single source
+            of truth para filtrar la vista. */}
         <CaseViewTabs
           activeView={activeView}
           onChange={setActiveView}
           counts={viewCounts}
+          loading={loading}
         />
 
         {/* ═══ Group Strip horizontal (chips uno al lado del otro) ═══

@@ -33,9 +33,14 @@ export const CASE_VIEWS: CaseViewMeta[] = [
   { key: "mis-casos",      icon: "⭐", label: "Mis casos",       description: "Casos asignados a mí, activos" },
   { key: "urgentes",       icon: "🔴", label: "Urgentes",         description: "RFE / USCIS deadline en próximos 7 días" },
   { key: "pte-accion-mia", icon: "📋", label: "Mi turno",         description: "Cases con tareas pendientes asignadas a mí" },
-  { key: "cerrados-30d",   icon: "✓",  label: "Cerrados 30d",     description: "Aprobados + negados + cancelados últimos 30 días" },
   { key: "todos",          icon: "📂", label: "Todos",            description: "Todos los casos de la firma" },
 ];
+
+// "cerrados-30d" sigue siendo un CaseViewKey válido (la ENUM y
+// filterCasesByView lo soportan) pero NO se muestra como tab.
+// Decisión Vanessa 2026-06-05: *"No lo uso nunca, cuando un cliente
+// llama por un caso cerrado busco por nombre en el search"*. Si en
+// el futuro alguien lo necesita, se mete como filtro toggle.
 
 const STORAGE_KEY = "ner_cases_active_view";
 const DEFAULT_VIEW: CaseViewKey = "mis-casos";
