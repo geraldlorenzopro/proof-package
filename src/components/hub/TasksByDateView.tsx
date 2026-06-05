@@ -410,6 +410,7 @@ export default function TasksByDateView({
   }), [customFilteredTasks, userId]);
 
   useEffect(() => { onTaskCountsChange?.(taskCounts); }, [taskCounts, onTaskCountsChange]);
+  useEffect(() => { onLoadingChange?.(loading); }, [loading, onLoadingChange]);
 
   // ═══ Tasks display = tab + custom filters + sort + search ═══
   const tabFilteredTasks = useMemo(
