@@ -140,11 +140,12 @@ test.describe("Pattern 5 — Empty state diagnostico + Limpiar filtros", () => {
     await page.reload();
     await page.waitForLoadState("networkidle");
 
-    // Setear filtro Tipo de tarea a uno que NO matchee (court_filing)
-    const taskTypeChip = page.getByRole("combobox").filter({ hasText: /Todos los tipos/i }).last();
-    await taskTypeChip.click();
-    await page.getByRole("option", { name: /Filing en corte/i }).click();
-    await page.waitForTimeout(300);
+    // R9.14: el filtro "Tipo de tarea" fue ocultado en R9.13 (Lovable).
+    // Cambiamos a forzar empty via search input con texto random — mismo
+    // efecto: universe>0 + render=0 → empty state diagnostic + CTA Limpiar.
+    const searchInput = page.getByPlaceholder(/Buscar tarea/i);
+    await searchInput.fill("ZZQXYZ_NO_MATCH_NUNCA");
+    await page.waitForTimeout(500);
 
     // Empty state debe aparecer
     await expect(page.getByText(/pero ninguna calza con los filtros/i)).toBeVisible();
@@ -176,19 +177,21 @@ test.describe("Pattern 6 — TaskCreateModal demo inyecta + no aborta por accoun
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible({ timeout: 3000 });
 
-    // Llenar título
-    await dialog.getByPlaceholder(/título|qué hay que hacer/i).fill("Test smoke task");
+    // R9.14: el placeholder real es "Ej. Llamar a USCIS por receipt".
+    // En vez de matchear el placeholder específico (frágil), usamos el
+    // primer input del dialog (autoFocus garantiza que sea el de título).
+    await dialog.locator("input").first().fill("Test smoke task");
 
-    // Seleccionar primer caso del autocomplete
-    const caseInput = dialog.getByPlaceholder(/buscar.*caso/i);
+    // Seleccionar primer caso del autocomplete (search "Buscar caso")
+    const caseInput = dialog.getByPlaceholder(/Buscar caso/i);
     if (await caseInput.count() > 0) {
       await caseInput.click();
       await page.waitForTimeout(300);
       await page.locator("[role=option], button").filter({ hasText: /García|Rodríguez|Hernández/ }).first().click();
     }
 
-    // R9.13 fix: el regex anterior `^Crear$|^Guardar$` exigía match exacto.
-    // El botón real dice "Crear tarea". Scopeado al dialog + regex permisivo.
+    // Submit: el botón real dice "Crear tarea". Scope al dialog evita matches
+    // ambiguos con cualquier otro "Crear" en la página.
     await dialog.getByRole("button", { name: /Crear/i }).last().click();
     await page.waitForTimeout(500);
 

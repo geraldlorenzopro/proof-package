@@ -95,11 +95,12 @@ test.describe("Pipeline de Tareas", () => {
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForHubReady(page);
-    // Setear filtro imposible
-    const taskTypeChip = page.getByRole("combobox").filter({ hasText: /Todos los tipos/i }).last();
-    await taskTypeChip.click();
-    await page.getByRole("option", { name: /Filing en corte/i }).click();
-    await page.waitForTimeout(300);
+    // R9.14: el filtro "Tipo de tarea" fue ocultado en R9.13 (Lovable).
+    // Usar search input con texto random para forzar vacío. Demo tiene
+    // ~22 tareas — "ZZQXYZ" no matchea ninguna por título ni por cliente.
+    const searchInput = page.getByPlaceholder(/Buscar tarea/i);
+    await searchInput.fill("ZZQXYZ_NO_MATCH");
+    await page.waitForTimeout(500);
     await expect(page).toHaveScreenshot("hub-tasks-empty-filtered.png");
   });
 });
