@@ -19,6 +19,10 @@ import { ThemeProvider } from "next-themes";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+// Round 9.26 Trust Center público (sprint legal + compliance)
+import SecurityPage from "./pages/legal/SecurityPage";
+import PrivacyPage from "./pages/legal/PrivacyPage";
+import TermsPage from "./pages/legal/TermsPage";
 import SplashPreview from "./pages/dev/SplashPreview";
 import Dashboard from "./pages/Dashboard";
 import CasesPage from "./pages/CasesPage";
@@ -132,6 +136,11 @@ const App = () => (
           <Route path="/case-track/:token" element={<CaseTrackPublic />} />
           <Route path="/portal/:cid" element={<ClientPortalRouter />} />
           <Route path="/intake/:token" element={<PreIntakePage />} />
+
+          {/* ═══ TRUST CENTER + LEGAL (Round 9.26) ═══ */}
+          <Route path="/legal/security" element={<SecurityPage />} />
+          <Route path="/legal/privacy" element={<PrivacyPage />} />
+          <Route path="/legal/terms" element={<TermsPage />} />
 
           {/* ═══ PUBLIC TOOL ROUTES (GHL Custom Menu Links + SEO) ═══ */}
           {/* Ola 4.1.5 — namespace canonical de tools según INFORMATION-ARCHITECTURE.md §7 */}
