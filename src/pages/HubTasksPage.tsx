@@ -174,7 +174,7 @@ export default function HubTasksPage() {
           <div>
             <h1 className="text-lg font-bold font-sora text-foreground">Tareas</h1>
             <p className="text-[11px] text-muted-foreground tabular-nums">
-              Bandeja de trabajo · {tasksLoading || casesLoading ? "—" : taskCounts.todas} tareas activas
+              Bandeja de trabajo · {!tasksHydrated && (tasksLoading || casesLoading) ? "—" : taskCounts.todas} tareas activas
             </p>
           </div>
           <div className="relative flex-1 max-w-md">
