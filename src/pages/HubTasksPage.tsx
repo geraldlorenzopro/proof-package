@@ -21,7 +21,7 @@
  *   - AbortController en fetch race protection
  *   - Demo mode mocks hidratados con case_rfe_deadline
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Search } from "lucide-react";
@@ -110,6 +110,7 @@ export default function HubTasksPage() {
   const [taskCounts, setTaskCounts] = useState<Record<TaskViewKey, number>>({
     todas: 0, hoy: 0, atrasadas: 0, proximas: 0, completadas: 0, "rfe-response": 0,
   });
+  const pendingTaskCountsRef = useRef<Record<TaskViewKey, number> | null>(null);
 
   // Round 9.19 Mr. Lorenzo: al entrar en /hub/tasks los KPIs mostraban número,
   // se ocultaban por un refetch de userId/cases, y volvían a entrar. Después de
@@ -119,12 +120,21 @@ export default function HubTasksPage() {
   }, []);
 
   const handleTaskCountsChange = useCallback((counts: Record<TaskViewKey, number>) => {
-    if (!tasksHydrated && (tasksLoading || casesLoading)) return;
+    if (!tasksHydrated && (tasksLoading || casesLoading)) {
+      pendingTaskCountsRef.current = counts;
+      return;
+    }
     setTaskCounts(counts);
   }, [casesLoading, tasksHydrated, tasksLoading]);
 
   useEffect(() => {
-    if (!tasksLoading && !casesLoading) setTasksHydrated(true);
+    if (!tasksLoading && !casesLoading) {
+      if (pendingTaskCountsRef.current) {
+        setTaskCounts(pendingTaskCountsRef.current);
+        pendingTaskCountsRef.current = null;
+      }
+      setTasksHydrated(true);
+    }
   }, [casesLoading, tasksLoading]);
 
   // Cargar equipo (igual pattern que HubCasesPage)
