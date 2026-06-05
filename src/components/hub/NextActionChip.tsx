@@ -161,16 +161,22 @@ export default function NextActionChip({ caseId, processStage, caseTypeKey, valu
                    para forzar break en cualquier carácter.
                 3. width auto explícito + maxWidth — Radix no recalcula
                    con padding sino con dimensiones reales del content. */}
+          {/* Round 9.22 robust fix: simplificar a valor fijo numérico.
+              `min()` CSS no resolvía en algunos contextos (sospecha:
+              parsing en Floating UI internals de Radix). React maxWidth
+              numérico → CSS px directo. wordBreak inline reemplaza
+              clases que pueden no compilar. */}
           <TooltipContent
             side="top"
             align="center"
             avoidCollisions
             collisionPadding={16}
             sideOffset={6}
-            style={{ maxWidth: "min(360px, calc(100vw - 32px))" }}
-            className="bg-deep-navy border border-cyan-accent/30 text-white px-3 py-2.5 shadow-2xl overflow-hidden"
+            data-testid="next-action-tooltip"
+            style={{ maxWidth: 360, wordBreak: "break-all", overflowWrap: "anywhere", overflow: "hidden" }}
+            className="bg-deep-navy border border-cyan-accent/30 text-white px-3 py-2.5 shadow-2xl"
           >
-            <p className="text-[12px] font-semibold leading-snug mb-1 break-all whitespace-pre-wrap">{label}</p>
+            <p className="text-[12px] font-semibold leading-snug mb-1 whitespace-pre-wrap">{label}</p>
             {value.detail && (
               <p className="text-[11px] text-slate-300 leading-snug mb-1.5 break-all whitespace-pre-wrap">
                 {value.detail}

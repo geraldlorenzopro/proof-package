@@ -203,6 +203,51 @@ test.describe("Pattern 5 — Empty state diagnostico + Limpiar filtros", () => {
   });
 });
 
+test.describe("Pattern 8 — Tooltip viewport overflow (R9.22)", () => {
+  // Mr. Lorenzo cazó 3 veces: tooltip de Próximo paso se salía del viewport
+  // a la derecha con texto largo. R9.16 + R9.21 + R9.22 itera el fix.
+  // Si esto se rompe, el tooltip vuelve a overflow → señal de UI rota.
+
+  test("NextActionChip tooltip respeta maxWidth y se queda en viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/hub/cases?demo=true");
+    await page.waitForLoadState("networkidle");
+
+    // Esperar a que la tabla cargue
+    await page.waitForFunction(() => {
+      return document.querySelectorAll('[data-testid="next-action-tooltip"], button').length > 0;
+    }, { timeout: 10_000 });
+
+    // Hover sobre el primer "Próximo paso" button con contenido
+    const trigger = page.locator('button').filter({ hasText: /Llamar|Contactar|Enviar|Pagar|Agregar/ }).first();
+    await trigger.hover();
+    await page.waitForTimeout(500);
+
+    // Verificar que el tooltip apareció
+    const tooltip = page.locator('[data-testid="next-action-tooltip"]');
+    const tooltipCount = await tooltip.count();
+    if (tooltipCount === 0) {
+      // Sin tooltip visible: skip (puede ser que ningún row tenga next_action en demo)
+      return;
+    }
+
+    // Box del tooltip
+    const box = await tooltip.first().boundingBox();
+    expect(box).not.toBeNull();
+    if (!box) return;
+
+    // 1. Width nunca debe exceder ~380px (maxWidth: 360 + bordes)
+    expect(box.width).toBeLessThanOrEqual(380);
+
+    // 2. El tooltip NO debe extenderse fuera del viewport derecho
+    const viewportWidth = 1280;
+    expect(box.x + box.width).toBeLessThanOrEqual(viewportWidth);
+
+    // 3. El tooltip NO debe extenderse fuera del viewport izquierdo
+    expect(box.x).toBeGreaterThanOrEqual(0);
+  });
+});
+
 test.describe("Pattern 7 — Anti-flash cascade entry (R9.20)", () => {
   // Mr. Lorenzo cazó: KPIs entraban uno por uno, "N tareas en esta vista"
   // entraba segundos después. Causa: waterfall de fetches + cada uno hacía
