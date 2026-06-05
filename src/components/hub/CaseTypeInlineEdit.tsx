@@ -176,16 +176,19 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
     });
   }
 
-  // Round 9.7 Mr. Lorenzo + 3 agents: chip truncado ("DS-82 · Renovación pa...")
-  // perdía info crítica. Solución sintetizada:
-  //   - max-w bump 140 → 180 (Victoria: 80% de labels caben sin truncate)
-  //   - shadcn Tooltip on hover muestra label completo + description
-  //   - open gating contra popover (no superpongan los 2 layers)
-  // Native title removido (evita OS-styled tooltip + Radix duplicados).
+  // Round 9.25 (4-agentes consensus — Linear/Clio/Litify pattern):
+  //   Stack format en chip: form code (mono) arriba + descripción abajo.
+  //   Mr. Lorenzo screenshot: "DS-82 · Renovación pasapor[t]" truncaba
+  //   con ellipsis = no profesional. Solución: 2 líneas SIEMPRE para
+  //   uniformidad visual (Vanessa: "no quiero unos chips 1 línea + otros
+  //   2, me marea con 50 casos"). Form code es el anchor de scanning.
   const tooltipFullLabel = currentMeta?.label ?? currentCaseType ?? "Tipo no clasificado";
   const tooltipDescription = currentMeta?.description ?? (currentCaseType ? "Click para reclasificar" : "Click para asignar tipo de caso");
+  // Extract description (everything after "FORM · ")
+  const descriptionPart = currentMeta?.shortLabel.split("·").slice(1).join("·").trim() || currentCaseType || "Sin clasificar";
+  const formNumberPart = currentMeta?.formNumber ?? "—";
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block max-w-full">
       <Tooltip open={open ? false : undefined} delayDuration={400}>
         <TooltipTrigger asChild>
           <button
@@ -193,10 +196,15 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
             type="button"
             onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
             disabled={saving}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border bg-ai-blue/15 border-ai-blue/30 text-blue-200 whitespace-nowrap hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait max-w-full"
+            className="inline-flex flex-col items-start gap-0 px-2 py-1 rounded border bg-ai-blue/15 border-ai-blue/30 hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait max-w-full text-left"
           >
-            <span className="truncate max-w-[180px]">{displayLabel}</span>
-            <span className="text-[8px] ml-0.5 opacity-70 shrink-0">▾</span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-blue-200 leading-tight">
+              {formNumberPart}
+              <span className="text-[8px] opacity-70">▾</span>
+            </span>
+            <span className="text-[9px] text-blue-300/80 leading-tight truncate max-w-full mt-0.5">
+              {descriptionPart}
+            </span>
           </button>
         </TooltipTrigger>
         <TooltipContent

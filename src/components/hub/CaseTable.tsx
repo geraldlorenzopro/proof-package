@@ -144,7 +144,10 @@ type FlatItem =
 
 const SIZE_HEADER = 48;
 const SIZE_COLHEADER = 32;
-const SIZE_ROW = 64; // h-16 — espacio para Próximo Paso line-clamp-2 + fecha
+// Round 9.25 (Victoria): bump 64→80px para acomodar chip "Tipo de proceso"
+// con stack format (form code mono arriba + descripción abajo). Cascade
+// safe — virtualizer re-mide vía measureElement.
+const SIZE_ROW = 80; // h-20 — chip Tipo 2 líneas + Próximo Paso line-clamp-2
 const SIZE_EMPTY = 32;
 
 export default function CaseTable({
@@ -415,7 +418,7 @@ function CaseRow({
 
   return (
     <div
-      className={`group ${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(200px,1.8fr)_145px_minmax(150px,1.2fr)_100px_100px_minmax(170px,1.8fr)_110px] gap-3 px-4 h-16 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left`}
+      className={`group ${active ? "bg-cyan-accent/[0.08] border-l-2 border-l-cyan-accent" : "hover:bg-cyan-accent/[0.04]"} grid grid-cols-[minmax(200px,1.8fr)_145px_minmax(150px,1.2fr)_100px_100px_minmax(170px,1.8fr)_110px] gap-3 px-4 h-20 items-center text-[13px] border-t border-white/[0.03] transition-colors text-left`}
     >
       {/* Cliente + sub-text 2 líneas + badge tareas.
           Round 4.5 (Valerie): Pin amber al lado izquierdo del avatar

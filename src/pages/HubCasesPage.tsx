@@ -589,6 +589,7 @@ export default function HubCasesPage() {
             showRevenue={canViewRevenue}
             onQuickNote={(c) => setQuickNoteCase(c)}
             onQuickTask={(c) => setQuickTaskCase(c)}
+            onCaseChange={(id, updates) => updateCase(id, updates)}
           />
         )}
         </div>{/* /Round 9.20 ready gate */}

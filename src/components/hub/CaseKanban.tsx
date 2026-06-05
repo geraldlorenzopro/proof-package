@@ -11,8 +11,13 @@
  *   - Pin amber inline cuando c.pinned = true.
  *   - $$$ por columna gated tier 1+2 (showRevenue prop).
  */
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertCircle, StickyNote, CheckSquare, Pin } from "lucide-react";
+import { AlertCircle, StickyNote, CheckSquare, Pin, Check, FileText, Zap } from "lucide-react";
+import { toast } from "sonner";
+import { completeNextAction } from "@/hooks/useCaseActionHistory";
+import { useDemoMode } from "@/hooks/useDemoData";
+import { getActionLabel } from "@/lib/nextActionCatalog";
 import { cn } from "@/lib/utils";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
@@ -31,6 +36,9 @@ interface Props {
    *  parent. Sin estos callbacks el Kanban hace fallback al navigate antiguo. */
   onQuickNote?: (c: PipelineCase) => void;
   onQuickTask?: (c: PipelineCase) => void;
+  /** Round 9.25: paridad Kanban con Tabla — botón ✓ Completar next_action
+   *  requiere onCaseChange para hacer optimistic clear del next_action. */
+  onCaseChange?: (caseId: string, updates: Partial<PipelineCase>) => void;
 }
 
 const ACCENT_HEX: Record<string, string> = {
@@ -58,7 +66,7 @@ function daysPillClass(days: number): string {
   return "bg-white/[0.04] border-white/10 text-slate-400";
 }
 
-export default function CaseKanban({ groups, staffNames, onCardClick, showRevenue = false, onQuickNote, onQuickTask }: Props) {
+export default function CaseKanban({ groups, staffNames, onCardClick, showRevenue = false, onQuickNote, onQuickTask, onCaseChange }: Props) {
   const allEmpty = groups.every(g => g.cases.length === 0);
   const visible = allEmpty ? groups : groups.filter(g => g.cases.length > 0);
 
@@ -116,6 +124,7 @@ export default function CaseKanban({ groups, staffNames, onCardClick, showRevenu
                       onCardClick={onCardClick}
                       onQuickNote={onQuickNote}
                       onQuickTask={onQuickTask}
+                      onCaseChange={onCaseChange}
                     />
                   ))
                 )}
@@ -128,13 +137,14 @@ export default function CaseKanban({ groups, staffNames, onCardClick, showRevenu
   );
 }
 
-function CompactCard({ c, staffNames, accent, onCardClick, onQuickNote, onQuickTask }: {
+function CompactCard({ c, staffNames, accent, onCardClick, onQuickNote, onQuickTask, onCaseChange }: {
   c: PipelineCase;
   staffNames?: Record<string, string>;
   accent: string;
   onCardClick?: (id: string) => void;
   onQuickNote?: (c: PipelineCase) => void;
   onQuickTask?: (c: PipelineCase) => void;
+  onCaseChange?: (id: string, updates: Partial<PipelineCase>) => void;
 }) {
   const navigate = useNavigate();
   const days = c.days_in_stage || 0;
@@ -190,6 +200,7 @@ function CompactCard({ c, staffNames, accent, onCardClick, onQuickNote, onQuickT
           c={c}
           onQuickNote={onQuickNote}
           onQuickTask={onQuickTask}
+          onCaseChange={onCaseChange}
         />
       </div>
       {/* Meta row: overdue tasks + owner */}
@@ -235,12 +246,15 @@ function CompactCard({ c, staffNames, accent, onCardClick, onQuickNote, onQuickT
  * Victoria fix obligatorio: stopPropagation para que el click en icon no
  * dispare la navegación del card entero al peek panel.
  */
-function CardQuickActions({ c, onQuickNote, onQuickTask }: {
+function CardQuickActions({ c, onQuickNote, onQuickTask, onCaseChange }: {
   c: PipelineCase;
   onQuickNote?: (c: PipelineCase) => void;
   onQuickTask?: (c: PipelineCase) => void;
+  onCaseChange?: (id: string, updates: Partial<PipelineCase>) => void;
 }) {
   const navigate = useNavigate();
+  const demoMode = useDemoMode();
+  const [completing, setCompleting] = useState(false);
 
   function handleNote(e: React.MouseEvent) {
     e.stopPropagation();
@@ -253,8 +267,65 @@ function CardQuickActions({ c, onQuickNote, onQuickTask }: {
     else navigate(`/case-engine/${c.id}?tab=tareas&action=add`);
   }
 
+  // Round 9.25 (Mr. Lorenzo): paridad con Tabla — botón ✓ Completar
+  // next_action también en Kanban cards. Inconsistencia visual + UX
+  // fix. Misma lógica que NextActionChip R9.23.
+  async function handleComplete(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!c.next_action || completing) return;
+    setCompleting(true);
+    const snapshot = {
+      action_key: c.next_action.action_key,
+      action_label: getActionLabel(c.next_action.action_key, c.next_action.custom_label),
+      action_detail: c.next_action.detail ?? null,
+      was_custom: !!c.next_action.is_custom,
+      due_date: c.next_action.due_date ?? null,
+    };
+    const previousAction = c.next_action;
+    onCaseChange?.(c.id, { next_action: null });
+    const result = await completeNextAction(c.id, snapshot, demoMode);
+    setCompleting(false);
+    if (!result.ok) {
+      onCaseChange?.(c.id, { next_action: previousAction });
+      toast.error("No se pudo completar", { description: result.error });
+      return;
+    }
+    toast.success(`✓ "${snapshot.action_label}" completado · registrado`, { duration: 4000 });
+  }
+
+  // Round 9.25 (Mr. Lorenzo): paridad de iconos de alertas con Tabla.
+  // RFE deadline ≤ 7d → ícono FileText rojo. Overdue tasks → Zap rojo.
+  const alerts: Array<{ icon: typeof Zap; tone: string; title: string }> = [];
+  if (c.rfe_deadline) {
+    const days = Math.ceil((new Date(c.rfe_deadline + "T00:00:00").getTime() - Date.now()) / 86400000);
+    if (days >= 0 && days <= 7) alerts.push({ icon: FileText, tone: "text-rose-400", title: `RFE vence en ${days}d` });
+  }
+  if ((c.overdue_tasks_count ?? 0) > 0) alerts.push({ icon: Zap, tone: "text-rose-400", title: `${c.overdue_tasks_count} tareas vencidas` });
+
   return (
-    <div className="flex items-center gap-0.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+    <div className="flex items-center gap-0.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
+      {/* Status icons (read-only) — paridad con CaseAlertsCell de Tabla */}
+      {alerts.map((a, i) => {
+        const Icon = a.icon;
+        return (
+          <span key={i} title={a.title} aria-label={a.title} className={`w-5 h-5 flex items-center justify-center ${a.tone}`}>
+            <Icon className="w-3 h-3" />
+          </span>
+        );
+      })}
+      {/* Botón ✓ Completar (solo si hay next_action) */}
+      {c.next_action && (
+        <button
+          type="button"
+          onClick={handleComplete}
+          disabled={completing}
+          aria-label="Completar próximo paso"
+          title="Marcar próximo paso como completado"
+          className="w-5 h-5 rounded flex items-center justify-center text-emerald-400 hover:bg-emerald-500/15 transition-colors disabled:opacity-30 disabled:cursor-wait"
+        >
+          <Check className="w-3 h-3" />
+        </button>
+      )}
       <button
         type="button"
         onClick={handleNote}
