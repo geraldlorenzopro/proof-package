@@ -34,7 +34,6 @@ import TaskViewTabs, { type TaskViewKey } from "@/components/hub/TaskViewTabs";
 import { useCasePipeline } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
-import { readScopedJson, writeScopedJson } from "@/lib/scopedStorage";
 import { logAccess } from "@/lib/auditLog";
 
 export default function HubTasksPage() {
@@ -67,27 +66,30 @@ export default function HubTasksPage() {
   // useCasePipeline para tener cases (necesario para enrichment de tasks)
   const { cases, loading: casesLoading } = useCasePipeline(accountId, userId);
 
-  // ═══ State scoped a /hub/tasks (no leak con /hub/cases) ═══
-  // Round 9.8 Mr. Lorenzo: default tab = "todas" (no "hoy") + storage keys
-  // bumpeados a _v2 para BUST defaults stale del Round 7. Sin esto, users
-  // que ya tenían "hoy" + "me" + "pending" persistido seguirían trampeados.
+  // ═══ State scoped a /hub/tasks ═══
+  // Round 9.11 Mr. Lorenzo: ENTRAR SIEMPRE LIMPIO. No rehidratar filtros
+  // ni tab desde localStorage al mount — el paralegal quiere que cada
+  // visita a /hub/tasks arranque con bandeja completa visible (tab=todas,
+  // assignee=all, status=all). Los writes a localStorage quedan removidos
+  // para no acumular estado stale entre sesiones.
   const [activeTab, setActiveTab] = useState<TaskViewKey>("todas");
   const [taskFilters, setTaskFilters] = useState<TaskFilters>(EMPTY_TASK_FILTERS);
   const [sortBy, setSortBy] = useState<TaskSortKey>("due_asc");
   const [search, setSearch] = useState("");
 
-  // Re-hidratar localStorage al resolverse accountId
+  // Round 9.11: limpieza activa de claves stale de versiones previas
+  // (v1/v2 + scoped por account) para usuarios que ya las tenían cargadas.
   useEffect(() => {
     if (!accountId) return;
-    const savedTab = readScopedJson<TaskViewKey>("ner_tasks_active_tab_v2", accountId, "todas");
-    setActiveTab(savedTab);
-    setTaskFilters(readScopedJson<TaskFilters>("ner_tasks_filters_v2", accountId, EMPTY_TASK_FILTERS));
-    setSortBy(readScopedJson<TaskSortKey>("ner_tasks_sort_by", accountId, "due_asc"));
+    try {
+      const baseKeys = ["ner_tasks_active_tab_v2", "ner_tasks_filters_v2", "ner_tasks_sort_by",
+                        "ner_tasks_active_tab", "ner_tasks_filters"];
+      baseKeys.forEach(k => {
+        localStorage.removeItem(`${k}:${accountId}`);
+        localStorage.removeItem(k);
+      });
+    } catch { /* no-op */ }
   }, [accountId]);
-
-  useEffect(() => { writeScopedJson("ner_tasks_active_tab_v2", accountId, activeTab); }, [activeTab, accountId]);
-  useEffect(() => { writeScopedJson("ner_tasks_filters_v2", accountId, taskFilters); }, [taskFilters, accountId]);
-  useEffect(() => { writeScopedJson("ner_tasks_sort_by", accountId, sortBy); }, [sortBy, accountId]);
 
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
   const [team, setTeam] = useState<Array<{ user_id: string; full_name: string }>>([]);
@@ -195,16 +197,9 @@ export default function HubTasksPage() {
           staffNames={staffNames}
           onTaskCountsChange={setTaskCounts}
           onResetFilters={() => {
-            // Round 9 Victoria fix: el reset NO usa EMPTY_TASK_FILTERS porque
-            // EMPTY tiene assignee="me" + status="pending" — el mismo combo
-            // que produjo el vacío inicial para owner accounts sin self-assigns.
-            // Reset = mostrar TODO lo activo.
-            setTaskFilters({
-              ...EMPTY_TASK_FILTERS,
-              assignee: "all",
-              status: "pending",
-              due: "any",
-            });
+            // Round 9.11: EMPTY_TASK_FILTERS ya es completamente neutro
+            // (assignee=all, status=all, due=any). Reset = bandeja limpia.
+            setTaskFilters(EMPTY_TASK_FILTERS);
             setActiveTab("todas");
             setSearch("");
           }}
