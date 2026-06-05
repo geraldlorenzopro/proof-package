@@ -1577,6 +1577,7 @@ export type Database = {
           parent_task_id: string | null
           priority: string
           recurring_interval: string | null
+          snoozed_until: string | null
           status: string
           task_type: Database["public"]["Enums"]["case_task_type"]
           title: string
@@ -1601,6 +1602,7 @@ export type Database = {
           parent_task_id?: string | null
           priority?: string
           recurring_interval?: string | null
+          snoozed_until?: string | null
           status?: string
           task_type?: Database["public"]["Enums"]["case_task_type"]
           title: string
@@ -1625,6 +1627,7 @@ export type Database = {
           parent_task_id?: string | null
           priority?: string
           recurring_interval?: string | null
+          snoozed_until?: string | null
           status?: string
           task_type?: Database["public"]["Enums"]["case_task_type"]
           title?: string
