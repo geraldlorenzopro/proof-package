@@ -22,7 +22,8 @@ import { useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { deriveJourneyStep, deriveSubStage, defaultSubStageFor, getJourneyMeta, type JourneyStep, type SubStage } from "@/lib/journeySteps";
-import type { PipelineColumn, PipelineCase } from "@/hooks/useCasePipeline";
+import type { PipelineCase } from "@/hooks/useCasePipeline";
+import type { CaseGroup } from "@/lib/caseGrouping";
 import CaseAlertsCell from "./CaseAlertsCell";
 import CaseStageInlineEdit from "./CaseStageInlineEdit";
 import CaseOwnerInlineEdit from "./CaseOwnerInlineEdit";
@@ -43,7 +44,10 @@ interface TeamMember {
 }
 
 interface Props {
-  columns: PipelineColumn[];
+  /** Grupos a renderizar. v3: generalizado de PipelineColumn[] a CaseGroup[]
+   *  para soportar agrupación por stage / owner / case_type / responsible
+   *  (Mr. Lorenzo 2026-06-05: las 4 agrupaciones del dropdown ahora funcionan). */
+  groups: CaseGroup[];
   staffNames?: Record<string, string>;
   team?: TeamMember[];
   /** Notifica al parent que se cambió un stage/owner para re-fetch o local update */
@@ -54,17 +58,22 @@ interface Props {
   activeCaseId?: string | null;
   /** Altura máxima del viewport virtualizado. Default 'calc(100vh - 280px)'. */
   maxHeight?: string;
+  /** Si true, oculta los headers (cuando hay 1 solo grupo activo). */
+  hideHeaders?: boolean;
 }
 
-// Map stage key → emoji + accent gradient + chip color del mockup
-const STAGE_META: Record<string, { emoji: string; accentClass: string; chipClass: string; subtitle?: string }> = {
-  uscis:                { emoji: "🏛️", accentClass: "from-ai-blue/15",      chipClass: "bg-ai-blue/15 border-ai-blue/30 text-blue-200",         subtitle: "Petición en proceso" },
-  nvc:                  { emoji: "📋", accentClass: "from-amber-500/10",    chipClass: "bg-amber-500/15 border-amber-500/30 text-amber-200",   subtitle: "Visa Center" },
-  embajada:             { emoji: "🏛️", accentClass: "from-orange-500/10",   chipClass: "bg-orange-500/15 border-orange-500/30 text-orange-200",subtitle: "Biometría · Médico · Entrevista" },
-  aprobado:             { emoji: "✅", accentClass: "from-emerald-500/10",  chipClass: "bg-emerald-500/15 border-emerald-500/30 text-emerald-200",subtitle: "Decisión positiva últimos 30d" },
-  negado:               { emoji: "❌", accentClass: "from-rose-500/8",      chipClass: "bg-rose-500/15 border-rose-500/30 text-rose-200",      subtitle: "Decisión negativa últimos 30d" },
-  "admin-processing":   { emoji: "⏸️", accentClass: "from-violet-500/8",    chipClass: "bg-violet-500/15 border-violet-500/30 text-violet-200",subtitle: "221(g) / FBI namecheck" },
-  "sin-clasificar":     { emoji: "⚠️", accentClass: "from-amber-500/8",     chipClass: "bg-amber-500/15 border-amber-500/30 text-amber-200",   subtitle: "Necesitan asignar etapa" },
+// Accent gradient por stage para GroupHeader. Para grupos no-stage,
+// el chip/subtitle viene de CaseGroup.chipClass + description.
+const STAGE_ACCENT: Record<string, string> = {
+  uscis:                "from-ai-blue/15",
+  nvc:                  "from-amber-500/10",
+  embajada:             "from-orange-500/10",
+  court:                "from-red-500/10",
+  ice:                  "from-rose-700/10",
+  aprobado:             "from-emerald-500/10",
+  negado:               "from-rose-500/8",
+  "admin-processing":   "from-violet-500/8",
+  "sin-clasificar":     "from-amber-500/8",
 };
 
 const COLLAPSED_KEY = "ner_cases_collapsed_v2";
@@ -91,7 +100,7 @@ function initials(name: string | null | undefined): string {
 
 // Flat item types para el virtualizer
 type FlatItem =
-  | { kind: "header"; key: string; col: PipelineColumn; collapsed: boolean; isFirst: boolean; size: number }
+  | { kind: "header"; key: string; group: CaseGroup; collapsed: boolean; isFirst: boolean; size: number }
   | { kind: "colheader"; key: string; size: number }
   | { kind: "row"; key: string; c: PipelineCase; size: number }
   | { kind: "empty"; key: string; size: number };
@@ -102,13 +111,14 @@ const SIZE_ROW = 64; // h-16 — espacio para Próximo Paso line-clamp-2 + fecha
 const SIZE_EMPTY = 32;
 
 export default function CaseTable({
-  columns,
+  groups,
   staffNames,
   team = [],
   onCaseChange,
   onRowClick,
   activeCaseId,
   maxHeight = "calc(100vh - 280px)",
+  hideHeaders = false,
 }: Props) {
   const navigate = useNavigate();
   const parentRef = useRef<HTMLDivElement>(null);
@@ -138,26 +148,29 @@ export default function CaseTable({
     setCollapsed(prev => ({ ...prev, [key]: !isCollapsed(key) }));
   }
 
-  // Flatten columns → items array for virtualization
+  // Flatten groups → items array for virtualization. Si hideHeaders=true
+  // (caso: 1 solo grupo activo desde strip) salteamos los GroupHeader.
   const items = useMemo<FlatItem[]>(() => {
     const out: FlatItem[] = [];
-    columns.forEach((col, idx) => {
-      const collapsedNow = isCollapsed(col.key);
-      out.push({ kind: "header", key: `h:${col.key}`, col, collapsed: collapsedNow, isFirst: idx === 0, size: SIZE_HEADER });
+    groups.forEach((group, idx) => {
+      const collapsedNow = !hideHeaders && isCollapsed(group.key);
+      if (!hideHeaders) {
+        out.push({ kind: "header", key: `h:${group.key}`, group, collapsed: collapsedNow, isFirst: idx === 0, size: SIZE_HEADER });
+      }
       if (!collapsedNow) {
-        if (col.cases.length > 0) {
-          out.push({ kind: "colheader", key: `ch:${col.key}`, size: SIZE_COLHEADER });
-          col.cases.forEach(c => {
+        if (group.cases.length > 0) {
+          out.push({ kind: "colheader", key: `ch:${group.key}`, size: SIZE_COLHEADER });
+          group.cases.forEach(c => {
             out.push({ kind: "row", key: `r:${c.id}`, c, size: SIZE_ROW });
           });
-        } else {
-          out.push({ kind: "empty", key: `e:${col.key}`, size: SIZE_EMPTY });
+        } else if (!hideHeaders) {
+          out.push({ kind: "empty", key: `e:${group.key}`, size: SIZE_EMPTY });
         }
       }
     });
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columns, collapsed]);
+  }, [groups, collapsed, hideHeaders]);
 
   const virtualizer = useVirtualizer({
     count: items.length,
@@ -188,10 +201,10 @@ export default function CaseTable({
               >
                 {item.kind === "header" && (
                   <GroupHeader
-                    col={item.col}
+                    group={item.group}
                     collapsed={item.collapsed}
                     isFirst={item.isFirst}
-                    onToggle={() => toggle(item.col.key)}
+                    onToggle={() => toggle(item.group.key)}
                   />
                 )}
                 {item.kind === "colheader" && <ColumnHeaderRow />}
@@ -223,29 +236,30 @@ export default function CaseTable({
 }
 
 function GroupHeader({
-  col, collapsed, isFirst, onToggle,
+  group, collapsed, isFirst, onToggle,
 }: {
-  col: PipelineColumn;
+  group: CaseGroup;
   collapsed: boolean;
   isFirst: boolean;
   onToggle: () => void;
 }) {
-  const meta = STAGE_META[col.key] || { emoji: "📁", accentClass: "from-slate-500/10", chipClass: "bg-slate-500/15 border-slate-500/30 text-slate-200" };
+  const accent = STAGE_ACCENT[group.key] || "from-slate-500/10";
+  const chipClass = group.chipClass || "bg-slate-500/15 border-slate-500/30 text-slate-200";
   return (
     <button
       onClick={onToggle}
-      className={`backdrop-blur-md w-full bg-gradient-to-r ${meta.accentClass} to-transparent ${isFirst ? "" : "border-t-2 border-white/5"} border-b border-white/5 px-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors`}
+      className={`backdrop-blur-md w-full bg-gradient-to-r ${accent} to-transparent ${isFirst ? "" : "border-t-2 border-white/5"} border-b border-white/5 px-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors`}
     >
       <div className="flex items-center gap-2.5">
         {collapsed
           ? <ChevronRight className="w-3 h-3 text-slate-500" />
           : <ChevronDown className="w-3 h-3 text-cyan-accent" />
         }
-        <span className="text-base">{meta.emoji}</span>
-        <h3 className="text-[12px] font-bold text-white font-sora">{col.label}</h3>
-        <span className="text-[9px] text-slate-500">{meta.subtitle || col.description}</span>
-        <span className={`text-[10px] font-mono tabular-nums border px-1.5 py-0.5 rounded ${meta.chipClass}`}>
-          {col.cases.length}
+        {group.icon && <span className="text-base">{group.icon}</span>}
+        <h3 className="text-[12px] font-bold text-white font-sora">{group.label}</h3>
+        {group.description && <span className="text-[9px] text-slate-500">{group.description}</span>}
+        <span className={`text-[10px] font-mono tabular-nums border px-1.5 py-0.5 rounded ${chipClass}`}>
+          {group.cases.length}
         </span>
       </div>
     </button>

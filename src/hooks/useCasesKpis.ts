@@ -1,11 +1,15 @@
 /**
  * useCasesKpis — Hub Casos v2 KPI strip (4 boxes arriba).
  *
- * Diseño UX validado por Lovable 2026-05-19:
- *   - Mis casos activos (no "Total firma" — ese va al cockpit del owner)
- *   - Pte acción mía (firma + revisar + responder, NO solo "Pte firma")
- *   - Deadlines 7d (no "Vencidos" que es trampa culpógena)
- *   - Cerrados 30d (aprobados + negados + cancelados, sirve para reporte semanal)
+ * v3 2026-06-05 — unificación de fuentes:
+ *
+ *   - assigned_to (NO professional_id) — single source of truth para owner.
+ *     Decisión locked desde el CaseOwnerInlineEdit fix (decisions.md).
+ *   - Mi Turno cuenta CASES distintos donde yo tengo ≥1 tarea pendiente
+ *     (no cuenta tareas sueltas — el tab muestra cases, el KPI también).
+ *   - Deadlines 7d cuenta cases con RFE o uscis_response_deadline en
+ *     los próximos 7d (mismos criterios que tab "Urgentes" post-redefine).
+ *   - Cerrados 30d sin cambio.
  *
  * Demo mode: devuelve mocks 42/8/12/18 para presentaciones.
  */
@@ -60,24 +64,27 @@ export function useCasesKpis(accountId: string | null, userId: string | null): C
       const in7d = format(new Date(Date.now() + 7 * 86400000), "yyyy-MM-dd");
       const last30dIso = new Date(Date.now() - 30 * 86400000).toISOString();
 
-      const [myActiveRes, ptePendingRes, deadlinesRes, closedRes] = await Promise.all([
+      const [myActiveRes, myPendingTasksRes, deadlinesRes, closedRes] = await Promise.all([
         // Mis casos activos: assigned_to=me AND NOT IN closed states
         userId
           ? supabase.from("client_cases")
               .select("id", { count: "exact", head: true })
               .eq("account_id", accountId)
-              .eq("professional_id", userId)
+              .eq("assigned_to", userId)
               .not("status", "in", CLOSED_STATES)
           : Promise.resolve({ count: 0, error: null } as any),
 
-        // Pte acción mía: case_tasks con assigned_to=me y status=pending
+        // Mi turno: cases DISTINTOS donde tengo ≥1 tarea pendiente. Cuenta
+        // case_id distinct, no rows de tasks (sino doblamos: 1 case con 3
+        // tareas pendientes ≠ 3 cases). Devolvemos rows con case_id y
+        // dedupeamos en JS — Postgres no soporta count distinct via REST.
         userId
           ? supabase.from("case_tasks" as any)
-              .select("id", { count: "exact", head: true })
+              .select("case_id")
               .eq("account_id", accountId)
               .eq("assigned_to", userId)
               .eq("status", "pending")
-          : Promise.resolve({ count: 0, error: null } as any),
+          : Promise.resolve({ data: [], error: null } as any),
 
         // Deadlines 7d: cases con rfe_deadline o uscis_response_deadline en próximos 7d
         supabase.from("client_cases")
@@ -97,9 +104,13 @@ export function useCasesKpis(accountId: string | null, userId: string | null): C
 
       if (cancelled) return;
 
+      const ptePendingMine = myPendingTasksRes.error
+        ? 0
+        : new Set((myPendingTasksRes.data as Array<{ case_id: string }> || []).map(r => r.case_id).filter(Boolean)).size;
+
       setState({
         myActiveCases: myActiveRes.error ? 0 : (myActiveRes.count ?? 0),
-        ptePendingMine: ptePendingRes.error ? 0 : (ptePendingRes.count ?? 0),
+        ptePendingMine,
         deadlines7d: deadlinesRes.error ? 0 : (deadlinesRes.count ?? 0),
         closedLast30d: closedRes.error ? 0 : (closedRes.count ?? 0),
         loading: false,

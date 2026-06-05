@@ -1,16 +1,19 @@
 /**
- * useCaseViews — Hub Casos v2 tabs guardables.
+ * useCaseViews — Hub Casos v3 tabs guardables.
  *
- * Diseño UX validado por Lovable 2026-05-19:
- *   - "Mis casos" como DEFAULT (no "Todos" — paralegal ve SU trabajo, no ruido del equipo)
- *   - "Urgentes" (RFE deadline ≤3d o vencidos)
- *   - "Pte acción mía" (firma + revisar + responder, más amplio que solo firma)
- *   - "Cerrados 30d" (aprobados + negados + cancelados, sirve reporte semanal)
- *   - "Todos" como opción no-default
+ * v3 2026-06-05 — alineado con KPI strip:
+ *   - "Mis casos"     → assigned_to=me (drop professional_id legacy)
+ *   - "Urgentes"      → solo RFE/USCIS deadlines ≤7d (igual que KPI Deadlines 7d).
+ *                       Antes incluía overdue_tasks + silencio cliente 10d
+ *                       que ahora viven en los filtros toggle (popover).
+ *   - "Mi turno"      → cases con ≥1 tarea pendiente asignada a mí
+ *                       (usa my_pending_tasks_count del pipeline).
+ *   - "Cerrados 30d"  → completed/denied/cancelled/archived últimos 30d.
+ *   - "Todos"         → sin filtro.
  *
  * Estado persistido en localStorage por usuario.
  */
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 
 export type CaseViewKey =
   | "mis-casos"
@@ -28,8 +31,8 @@ export interface CaseViewMeta {
 
 export const CASE_VIEWS: CaseViewMeta[] = [
   { key: "mis-casos",      icon: "⭐", label: "Mis casos",       description: "Casos asignados a mí, activos" },
-  { key: "urgentes",       icon: "🔴", label: "Urgentes",         description: "RFE ≤3d, vencidos, sin contacto >10d" },
-  { key: "pte-accion-mia", icon: "📋", label: "Mi turno",         description: "Tareas pendientes asignadas a mí" },
+  { key: "urgentes",       icon: "🔴", label: "Urgentes",         description: "RFE / USCIS deadline en próximos 7 días" },
+  { key: "pte-accion-mia", icon: "📋", label: "Mi turno",         description: "Cases con tareas pendientes asignadas a mí" },
   { key: "cerrados-30d",   icon: "✓",  label: "Cerrados 30d",     description: "Aprobados + negados + cancelados últimos 30 días" },
   { key: "todos",          icon: "📂", label: "Todos",            description: "Todos los casos de la firma" },
 ];
@@ -58,18 +61,15 @@ export function useCaseViews() {
  * userId es necesario para "mis-casos" + "pte-accion-mia".
  */
 export function filterCasesByView<T extends {
-  professional_id?: string | null;
   assigned_to?: string | null;
   status?: string | null;
   rfe_deadline?: string | null;
   uscis_response_deadline?: string | null;
-  last_client_activity_at?: string | null;
-  overdue_tasks_count?: number | null;
+  my_pending_tasks_count?: number | null;
   updated_at?: string | null;
 }>(cases: T[], view: CaseViewKey, userId: string | null): T[] {
   const now = Date.now();
-  const in3d = now + 3 * 86400000;
-  const tenDaysAgo = now - 10 * 86400000;
+  const in7d = now + 7 * 86400000;
   const thirtyDaysAgo = now - 30 * 86400000;
   const CLOSED = ["completed", "denied", "cancelled", "archived"];
 
@@ -77,33 +77,32 @@ export function filterCasesByView<T extends {
     case "mis-casos":
       if (!userId) return [];
       return cases.filter(c =>
-        (c.professional_id === userId || c.assigned_to === userId) &&
+        c.assigned_to === userId &&
         !CLOSED.includes(c.status || "")
       );
 
     case "urgentes":
+      // Coincide con KPI "Deadlines 7d": solo RFE o uscis_response_deadline
+      // en los próximos 7 días. Overdue tasks + silencio cliente viven en
+      // filtros toggle ahora (popover) para evitar contar 2 veces lo mismo.
       return cases.filter(c => {
         if (CLOSED.includes(c.status || "")) return false;
         const rfe = c.rfe_deadline ? new Date(c.rfe_deadline).getTime() : null;
         const uscis = c.uscis_response_deadline ? new Date(c.uscis_response_deadline).getTime() : null;
-        const lastAct = c.last_client_activity_at ? new Date(c.last_client_activity_at).getTime() : null;
-        const overdueTasks = (c.overdue_tasks_count ?? 0) > 0;
         return (
-          (rfe !== null && rfe <= in3d) ||
-          (uscis !== null && uscis <= in3d) ||
-          (lastAct !== null && lastAct <= tenDaysAgo) ||
-          overdueTasks
+          (rfe !== null && rfe >= now && rfe <= in7d) ||
+          (uscis !== null && uscis >= now && uscis <= in7d)
         );
       });
 
     case "pte-accion-mia":
-      // Filtro real requiere join con case_tasks. Por ahora aproximamos con overdue_tasks_count.
-      // TODO: refinar con query directa a case_tasks.assigned_to=userId
+      // Cases donde YO tengo ≥1 tarea pendiente (independiente de quien sea
+      // el owner del case). Usa my_pending_tasks_count computado en
+      // useCasePipeline. Coincide con KPI "Mi turno".
       if (!userId) return [];
       return cases.filter(c =>
-        (c.professional_id === userId || c.assigned_to === userId) &&
-        !CLOSED.includes(c.status || "") &&
-        (c.overdue_tasks_count ?? 0) > 0
+        (c.my_pending_tasks_count ?? 0) > 0 &&
+        !CLOSED.includes(c.status || "")
       );
 
     case "cerrados-30d":

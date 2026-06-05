@@ -36,9 +36,12 @@ export interface PipelineCase {
   case_tags_array: string[] | null;
   open_tasks_count?: number;
   overdue_tasks_count?: number;
+  /** Tareas pendientes asignadas al usuario logueado. Alimenta tab "Mi turno". */
+  my_pending_tasks_count?: number;
   days_in_stage?: number;
   next_due_date?: string | null;
   rfe_deadline?: string | null;
+  uscis_response_deadline?: string | null;
   last_client_activity_at?: string | null;
   /** Payload del "próximo paso" guardado en custom_fields.next_action. */
   next_action?: NextActionPayload | null;
@@ -139,7 +142,7 @@ function classify(c: PipelineCase): PipelineStageKey {
   return "sin-clasificar";
 }
 
-export function useCasePipeline(accountId: string | null) {
+export function useCasePipeline(accountId: string | null, userId: string | null = null) {
   const demoMode = useDemoMode();
   const [cases, setCases] = useState<PipelineCase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -196,7 +199,7 @@ export function useCasePipeline(accountId: string | null) {
           file_number, status, assigned_to, updated_at, stage_entered_at, created_at,
           priority_date, uscis_receipt_numbers, nvc_case_number,
           interview_date, emb_interview_date, cas_interview_date, case_tags_array,
-          custom_fields, rfe_deadline, last_client_activity_at
+          custom_fields, rfe_deadline, uscis_response_deadline, last_client_activity_at
         `)
         .eq("account_id", accountId)
         .not("status", "eq", "completed")
@@ -211,12 +214,12 @@ export function useCasePipeline(accountId: string | null) {
       }
 
       const ids = (casesData || []).map(c => c.id);
-      const tasksByCase: Record<string, { open: number; overdue: number; nextDue: string | null }> = {};
+      const tasksByCase: Record<string, { open: number; overdue: number; mine: number; nextDue: string | null }> = {};
 
       if (ids.length > 0) {
         const { data: tasks } = await supabase
           .from("case_tasks")
-          .select("case_id, status, due_date")
+          .select("case_id, status, due_date, assigned_to")
           .in("case_id", ids)
           .neq("status", "completed")
           .neq("status", "archived");
@@ -224,9 +227,10 @@ export function useCasePipeline(accountId: string | null) {
         const today = new Date().toISOString().slice(0, 10);
         for (const t of (tasks || []) as any[]) {
           if (!t.case_id) continue;
-          const slot = tasksByCase[t.case_id] || { open: 0, overdue: 0, nextDue: null };
+          const slot = tasksByCase[t.case_id] || { open: 0, overdue: 0, mine: 0, nextDue: null };
           slot.open += 1;
           if (t.due_date && t.due_date < today) slot.overdue += 1;
+          if (userId && t.assigned_to === userId && t.status === "pending") slot.mine += 1;
           if (t.due_date && (!slot.nextDue || t.due_date < slot.nextDue)) slot.nextDue = t.due_date;
           tasksByCase[t.case_id] = slot;
         }
@@ -236,6 +240,7 @@ export function useCasePipeline(accountId: string | null) {
         ...c,
         open_tasks_count: tasksByCase[c.id]?.open || 0,
         overdue_tasks_count: tasksByCase[c.id]?.overdue || 0,
+        my_pending_tasks_count: tasksByCase[c.id]?.mine || 0,
         next_due_date: tasksByCase[c.id]?.nextDue || null,
         days_in_stage: daysSince(c.stage_entered_at || c.updated_at),
         next_action: (c.custom_fields?.next_action as NextActionPayload | undefined) || null,
@@ -247,7 +252,7 @@ export function useCasePipeline(accountId: string | null) {
 
     load();
     return () => { cancelled = true; };
-  }, [accountId, demoMode]);
+  }, [accountId, userId, demoMode]);
 
   const columns: PipelineColumn[] = useMemo(() => {
     return PIPELINE_COLUMNS.map(col => ({
