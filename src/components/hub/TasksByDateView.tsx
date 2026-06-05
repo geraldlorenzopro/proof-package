@@ -1,31 +1,38 @@
 /**
  * TasksByDateView — Vista alternativa de /hub/cases agrupada por
- * fecha de tarea (Round 4 Vanessa + Marcus).
+ * fecha de tarea.
  *
- * Toggle "Tareas" del view-switcher activa esta vista. En lugar de
- * agrupar CASES por stage/owner/tipo/resp, agrupa TASKS por bucket
- * cronológico (Vencidas / Hoy / Mañana / Esta semana / Próxima
- * semana / Más adelante).
+ * Round 6 (Mr. Lorenzo + 4 agentes) — sprint inline editing completo:
+ *   - Asignar inline (popover team picker)
+ *   - Priority inline (dropdown 4 niveles)
+ *   - Due date inline (Calendar shadcn)
+ *   - Botón ✓ Completar inline con toast undoable 5s
+ *   - Botón 💤 Snooze hasta mañana 8 AM (Vanessa pidió)
+ *   - Bulk actions (checkbox + toolbar) — Vanessa pidió
+ *   - + Nueva tarea modal (sin abandonar context)
+ *   - Disclaimer también en empty state
+ *   - Filtros aplican a TASKS (filterTasksByView)
  *
- * Vanessa R4: *"Mi turno = 12 cases me dice 'tenés trabajo' pero no
- * QUÉ HACER PRIMERO. La vista MyCase agrupada Overdue → Due hoy →
- * Due esta semana es exactamente cómo pienso a las 9am."*
- *
- * Marcus R4: *"Vista task-centric paralela. Misma data, eje distinto.
- * El paralegal del lunes 9am NO quiere ver '16 cases' — quiere ver
- * '3 deadlines hoy'."*
- *
- * NO requiere migration: usa case_tasks existente. Solo nueva UI.
+ * Round 4.5 BLOCKER (Victoria): subtasks huérfanos se promueven a
+ * top-level cuando parent completed (sino invisibles).
  */
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronRight, ChevronDown, Calendar, AlertTriangle } from "lucide-react";
+import { ChevronRight, ChevronDown, Calendar, AlertTriangle, Check, Moon, Plus } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { bucketForDueDate, TASK_BUCKETS, type TaskBucketKey } from "@/lib/caseGrouping";
 import type { PipelineCase, PipelineStageKey } from "@/hooks/useCasePipeline";
 import { useDemoMode } from "@/hooks/useDemoData";
+import { filterTasksByView, type CaseViewKey } from "@/hooks/useCaseViews";
 import { readScopedJson, writeScopedJson } from "@/lib/scopedStorage";
+import TaskAssigneeInlineEdit from "./TaskAssigneeInlineEdit";
+import TaskPriorityInlineEdit from "./TaskPriorityInlineEdit";
+import TaskDueDateInlineEdit from "./TaskDueDateInlineEdit";
+import TaskCreateModal from "./TaskCreateModal";
 
 interface Task {
   id: string;
@@ -36,7 +43,9 @@ interface Task {
   priority: string;
   status: string;
   assigned_to?: string | null;
+  assigned_to_name?: string | null;
   parent_task_id?: string | null;
+  snoozed_until?: string | null;
 }
 
 interface TaskWithCase extends Task {
@@ -48,18 +57,21 @@ interface TaskWithCase extends Task {
   is_orphan?: boolean;
 }
 
-// Stage badges compactos para mostrar al lado del título de la tarea.
-// Vanessa Round 4.5: "Necesito ver USCIS pending o RFE recibido —
-// una tarea vencida de RFE = pánico, de cliente nuevo = puedo esperar."
+interface TeamMember {
+  user_id: string;
+  full_name: string;
+}
+
+// Stage chips compact para mostrar al lado del título de la tarea.
 const STAGE_CHIP: Record<string, { label: string; class: string }> = {
-  uscis:                { label: "USCIS",     class: "bg-blue-500/15 border-blue-500/30 text-blue-200" },
-  nvc:                  { label: "NVC",       class: "bg-violet-400/15 border-violet-400/30 text-violet-200" },
-  embajada:             { label: "Consular",  class: "bg-emerald-400/15 border-emerald-400/30 text-emerald-200" },
-  court:                { label: "Corte",     class: "bg-amber-500/15 border-amber-500/30 text-amber-200" },
-  ice:                  { label: "ICE",       class: "bg-rose-600/15 border-rose-600/30 text-rose-200" },
-  "admin-processing":   { label: "Admin",     class: "bg-violet-500/15 border-violet-500/30 text-violet-200" },
-  aprobado:             { label: "Aprobado",  class: "bg-green-500/15 border-green-500/30 text-green-200" },
-  negado:               { label: "Negado",    class: "bg-red-700/15 border-red-700/40 text-red-200" },
+  uscis:                { label: "USCIS",      class: "bg-blue-500/15 border-blue-500/30 text-blue-200" },
+  nvc:                  { label: "NVC",        class: "bg-violet-400/15 border-violet-400/30 text-violet-200" },
+  embajada:             { label: "Consular",   class: "bg-emerald-400/15 border-emerald-400/30 text-emerald-200" },
+  court:                { label: "Corte",      class: "bg-amber-500/15 border-amber-500/30 text-amber-200" },
+  ice:                  { label: "ICE",        class: "bg-rose-600/15 border-rose-600/30 text-rose-200" },
+  "admin-processing":   { label: "Admin",      class: "bg-violet-500/15 border-violet-500/30 text-violet-200" },
+  aprobado:             { label: "Aprobado",   class: "bg-green-500/15 border-green-500/30 text-green-200" },
+  negado:               { label: "Negado",     class: "bg-red-700/15 border-red-700/40 text-red-200" },
   "sin-clasificar":     { label: "Sin clasif.",class: "bg-slate-500/15 border-slate-500/30 text-slate-200" },
 };
 
@@ -67,32 +79,30 @@ interface Props {
   accountId: string | null;
   userId: string | null;
   cases: PipelineCase[];
-  /** "mine" filtra a tareas assigned_to=me. "all" todas. */
-  scope: "mine" | "all";
+  /** Filtro activo del CaseViewTabs. Aplicado a TASKS (no cases). */
+  activeView: CaseViewKey;
+  team?: TeamMember[];
   staffNames?: Record<string, string>;
 }
 
 const BUCKET_ORDER: TaskBucketKey[] = ["overdue", "today", "tomorrow", "this_week", "next_week", "later", "no_date"];
-
 const COLLAPSED_KEY = "ner_tasks_view_collapsed";
-// Round 4.5: solo "later" colapsado default. "no_date" ABIERTO
-// (Vanessa: "si está colapsado se me olvida que existe y son las
-// que más me joden — alguien creó la tarea sin fecha porque tenía
-// prisa. Esas son bombas de tiempo.")
 const DEFAULT_COLLAPSED: Record<string, boolean> = { later: true };
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default function TasksByDateView({ accountId, userId, cases, scope, staffNames }: Props) {
+export default function TasksByDateView({ accountId, userId, cases, activeView, team = [], staffNames }: Props) {
   const navigate = useNavigate();
   const demoMode = useDemoMode();
-  const [tasks, setTasks] = useState<TaskWithCase[]>([]);
+  const [allTasks, setAllTasks] = useState<TaskWithCase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const parentRef = useRef<HTMLDivElement>(null);
 
-  // Round 4.5 (Victoria fix #3): localStorage namespaced por accountId
-  // para evitar cross-account leak si paralegal tiene 2 firmas (Camino B).
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(DEFAULT_COLLAPSED);
 
-  // Re-hidratar cuando accountId resuelve
   useEffect(() => {
     if (!accountId) return;
     setCollapsed(readScopedJson<Record<string, boolean>>(COLLAPSED_KEY, accountId, DEFAULT_COLLAPSED));
@@ -102,7 +112,7 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
     writeScopedJson(COLLAPSED_KEY, accountId, collapsed);
   }, [collapsed, accountId]);
 
-  // Demo mode: derivar tasks mock desde DEMO_CASES (overdue_tasks_count)
+  // Fetch all tasks for filtered cases
   useEffect(() => {
     if (demoMode) {
       const mockTasks: TaskWithCase[] = cases.flatMap(c => {
@@ -123,11 +133,12 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
             priority: i === 0 ? "high" : "normal",
             status: "pending",
             assigned_to: c.assigned_to,
+            assigned_to_name: c.assigned_to && staffNames ? staffNames[c.assigned_to] : null,
           });
         }
         return arr;
       });
-      setTasks(scope === "mine" ? mockTasks.filter(t => t.assigned_to === userId) : mockTasks);
+      setAllTasks(mockTasks);
       setLoading(false);
       return;
     }
@@ -138,31 +149,26 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
     void (async () => {
       setLoading(true);
       const caseIds = cases.map(c => c.id);
-      if (caseIds.length === 0) { setTasks([]); setLoading(false); return; }
+      if (caseIds.length === 0) { setAllTasks([]); setLoading(false); return; }
 
-      // Query tasks. Si scope=mine, filtra assigned_to=userId.
-      let query = supabase
+      // Status != archived (incluye completed para counter subtasks)
+      const { data, error } = await supabase
         .from("case_tasks")
-        .select("id, case_id, title, description, due_date, priority, status, assigned_to, parent_task_id")
+        .select("id, case_id, title, description, due_date, priority, status, assigned_to, assigned_to_name, parent_task_id, snoozed_until")
         .eq("account_id", accountId)
-        .in("status", ["pending", "in_progress"])
+        .neq("status", "archived")
         .in("case_id", caseIds)
         .order("due_date", { ascending: true, nullsFirst: false });
 
-      if (scope === "mine" && userId) {
-        query = query.eq("assigned_to", userId);
-      }
-
-      const { data, error } = await query;
       if (cancelled) return;
       if (error) {
         console.error("[TasksByDateView] fetch error:", error.message);
-        setTasks([]);
+        setAllTasks([]);
         setLoading(false);
         return;
       }
 
-      // Computar subtasks count por parent_task_id
+      // Subtasks count
       const subtasksByParent = new Map<string, { total: number; completed: number }>();
       (data || []).forEach((t: any) => {
         if (!t.parent_task_id) return;
@@ -172,13 +178,7 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
         subtasksByParent.set(t.parent_task_id, slot);
       });
 
-      // Victoria BLOCKER fix Round 4.5: subtasks huérfanos invisibles.
-      // ANTES: filtraba todo `parent_task_id != null` como "subtask" y
-      // se descartaba. Bug: si el parent fue completed, NO viene en
-      // data (filtro status), entonces sus subtasks pending quedaban
-      // invisibles. Ahora: si el parent NO está en data, el subtask
-      // se promueve a top-level (orphan = true) para que el paralegal
-      // lo vea de todas formas.
+      // Promote orphans + enrich
       const parentIds = new Set((data || []).map((t: any) => t.id));
       const caseMap = new Map(cases.map(c => [c.id, c]));
       const enriched: TaskWithCase[] = (data || [])
@@ -192,15 +192,21 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
             case_stage: caseObj?.process_stage,
             subtasks_total: subtasksByParent.get(t.id)?.total || 0,
             subtasks_completed: subtasksByParent.get(t.id)?.completed || 0,
-            is_orphan: !!t.parent_task_id, // marker para futura UI distinguir
+            is_orphan: !!t.parent_task_id,
           };
         });
 
-      setTasks(enriched);
+      setAllTasks(enriched);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [accountId, userId, cases, scope, demoMode]);
+  }, [accountId, cases, demoMode, staffNames, refreshKey]);
+
+  // Filter tasks by activeView using filterTasksByView (Round 6)
+  const tasks = useMemo(
+    () => filterTasksByView(allTasks, activeView, userId),
+    [allTasks, activeView, userId]
+  );
 
   // Bucketing
   const bucketed = useMemo(() => {
@@ -212,6 +218,157 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
     });
     return map;
   }, [tasks]);
+
+  // Selection handlers
+  function toggleSelect(taskId: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId); else next.add(taskId);
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  // Task mutations
+  const updateTaskLocal = useCallback((taskId: string, patch: Partial<TaskWithCase>) => {
+    setAllTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...patch } : t));
+  }, []);
+
+  async function persistComplete(taskId: string) {
+    if (!UUID_RE.test(taskId)) return;
+    await supabase
+      .from("case_tasks")
+      .update({ status: "completed", completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("id", taskId);
+  }
+
+  async function persistUncomplete(taskId: string) {
+    if (!UUID_RE.test(taskId)) return;
+    await supabase
+      .from("case_tasks")
+      .update({ status: "pending", completed_at: null, updated_at: new Date().toISOString() })
+      .eq("id", taskId);
+  }
+
+  async function handleComplete(task: TaskWithCase) {
+    const subtaskCount = task.subtasks_total || 0;
+    const subtasksPending = subtaskCount - (task.subtasks_completed || 0);
+
+    // Victoria fix: confirmar si hay subtasks pendientes
+    if (subtasksPending > 0) {
+      const proceed = window.confirm(
+        `Esta tarea tiene ${subtasksPending} sub-tarea${subtasksPending === 1 ? "" : "s"} pendiente${subtasksPending === 1 ? "" : "s"}. ¿Completarlas también?`
+      );
+      if (!proceed) return;
+    }
+
+    // Optimistic
+    updateTaskLocal(task.id, { status: "completed" });
+
+    if (!demoMode && UUID_RE.test(task.id)) {
+      try {
+        await persistComplete(task.id);
+        // Auto-complete subtasks si confirmó
+        if (subtasksPending > 0) {
+          await supabase
+            .from("case_tasks")
+            .update({ status: "completed", completed_at: new Date().toISOString() })
+            .eq("parent_task_id", task.id)
+            .in("status", ["pending", "in_progress"]);
+        }
+      } catch (err: any) {
+        updateTaskLocal(task.id, { status: task.status });
+        toast.error("No se pudo completar", { description: err?.message });
+        return;
+      }
+    }
+
+    // Marcus: toast undoable 5s
+    toast.success(`Tarea completada`, {
+      duration: 5000,
+      description: task.title,
+      action: {
+        label: "Deshacer",
+        onClick: async () => {
+          updateTaskLocal(task.id, { status: task.status });
+          if (!demoMode && UUID_RE.test(task.id)) await persistUncomplete(task.id);
+        },
+      },
+    });
+  }
+
+  async function handleSnooze(task: TaskWithCase) {
+    // Mañana 8 AM local
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(8, 0, 0, 0);
+    const iso = tomorrow.toISOString();
+
+    updateTaskLocal(task.id, { snoozed_until: iso });
+
+    if (!demoMode && UUID_RE.test(task.id)) {
+      try {
+        await supabase
+          .from("case_tasks")
+          .update({ snoozed_until: iso, updated_at: new Date().toISOString() })
+          .eq("id", task.id);
+      } catch (err: any) {
+        updateTaskLocal(task.id, { snoozed_until: null });
+        toast.error("No se pudo snoozear", { description: err?.message });
+        return;
+      }
+    }
+
+    toast.success("Tarea pospuesta hasta mañana 8 AM", {
+      duration: 3000,
+      action: {
+        label: "Deshacer",
+        onClick: async () => {
+          updateTaskLocal(task.id, { snoozed_until: null });
+          if (!demoMode && UUID_RE.test(task.id)) {
+            await supabase.from("case_tasks").update({ snoozed_until: null }).eq("id", task.id);
+          }
+        },
+      },
+    });
+  }
+
+  // Bulk: complete all selected
+  async function handleBulkComplete() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    const proceed = window.confirm(`¿Completar ${ids.length} tarea${ids.length === 1 ? "" : "s"}?`);
+    if (!proceed) return;
+
+    ids.forEach(id => updateTaskLocal(id, { status: "completed" }));
+
+    if (!demoMode) {
+      const realIds = ids.filter(id => UUID_RE.test(id));
+      if (realIds.length > 0) {
+        const { error } = await supabase
+          .from("case_tasks")
+          .update({ status: "completed", completed_at: new Date().toISOString() })
+          .in("id", realIds);
+        if (error) {
+          toast.error("Algunas no se pudieron completar", { description: error.message });
+          setRefreshKey(k => k + 1);
+          return;
+        }
+      }
+    }
+
+    toast.success(`${ids.length} tarea${ids.length === 1 ? "" : "s"} completada${ids.length === 1 ? "" : "s"}`, {
+      duration: 3000,
+    });
+    clearSelection();
+  }
+
+  function toggle(b: TaskBucketKey) {
+    setCollapsed(prev => ({ ...prev, [b]: !prev[b] }));
+  }
 
   // Flat items para virtualizer
   type Item =
@@ -243,89 +400,140 @@ export default function TasksByDateView({ accountId, userId, cases, scope, staff
     overscan: 8,
   });
 
-  function toggle(b: TaskBucketKey) {
-    setCollapsed(prev => ({ ...prev, [b]: !prev[b] }));
-  }
+  // Disclaimer + topbar (always shown, including empty state)
+  const topbar = (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[11px] text-muted-foreground px-3 py-1.5 bg-cyan-accent/[0.04] border border-cyan-accent/[0.15] rounded-md flex items-center gap-2 flex-1">
+          <Calendar className="w-3 h-3 text-cyan-accent/60 shrink-0" />
+          <span>
+            Mostrando <span className="text-foreground font-semibold tabular-nums">{tasks.length}</span> tarea{tasks.length === 1 ? "" : "s"} dentro de los <span className="text-foreground font-semibold tabular-nums">{cases.length}</span> caso{cases.length === 1 ? "" : "s"} filtrado{cases.length === 1 ? "" : "s"}. Los contadores arriba cuentan tareas (vista activa).
+          </span>
+        </div>
+        <TaskCreateModal
+          accountId={accountId}
+          userId={userId}
+          cases={cases}
+          team={team}
+          onCreated={() => setRefreshKey(k => k + 1)}
+          isDemoMode={demoMode}
+        />
+      </div>
+
+      {/* Bulk toolbar — aparece cuando hay selección */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/[0.08] border border-amber-500/30 rounded-md">
+          <span className="text-[11px] text-amber-200 font-semibold">
+            {selectedIds.size} tarea{selectedIds.size === 1 ? "" : "s"} seleccionada{selectedIds.size === 1 ? "" : "s"}
+          </span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-[11px] text-emerald-300 hover:bg-emerald-500/15"
+              onClick={handleBulkComplete}
+            >
+              <Check className="w-3 h-3 mr-1" />
+              Completar todas
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-[11px] text-slate-400 hover:bg-white/[0.05]"
+              onClick={clearSelection}
+            >
+              Limpiar
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   if (loading) {
-    return <div className="rounded-xl border border-border/40 bg-card/30 h-96 animate-pulse" />;
+    return (
+      <div className="space-y-2">
+        {topbar}
+        <div className="rounded-xl border border-border/40 bg-card/30 h-96 animate-pulse" />
+      </div>
+    );
   }
 
   if (tasks.length === 0) {
     return (
-      <div className="rounded-xl border border-border/40 bg-card/30 py-16 text-center space-y-3">
-        <div className="w-12 h-12 rounded-full bg-emerald-500/15 mx-auto flex items-center justify-center">
-          <Calendar className="w-5 h-5 text-emerald-300" />
+      <div className="space-y-2">
+        {topbar}
+        <div className="rounded-xl border border-border/40 bg-card/30 py-16 text-center space-y-3">
+          <div className="w-12 h-12 rounded-full bg-emerald-500/15 mx-auto flex items-center justify-center">
+            <Calendar className="w-5 h-5 text-emerald-300" />
+          </div>
+          <p className="text-sm font-semibold text-foreground">
+            No tenés tareas en esta vista
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Las tareas que cumplan con el filtro activo aparecen acá.
+          </p>
         </div>
-        <p className="text-sm font-semibold text-foreground">
-          {scope === "mine" ? "No tenés tareas pendientes" : "Sin tareas pendientes en el equipo"}
-        </p>
-        <p className="text-[11px] text-muted-foreground">
-          Las tareas que creés desde el expediente aparecen acá.
-        </p>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      {/* Round 5.5 (Mr. Lorenzo confusión cross-eje): los counters de tabs
-          arriba cuentan CASOS, esta vista muestra TAREAS dentro de esos
-          casos. El disclaimer aclara el mismatch sin tocar el modelo. */}
-      <div className="text-[11px] text-muted-foreground px-3 py-1.5 bg-cyan-accent/[0.04] border border-cyan-accent/[0.15] rounded-md flex items-center gap-2">
-        <Calendar className="w-3 h-3 text-cyan-accent/60 shrink-0" />
-        <span>
-          Mostrando <span className="text-foreground font-semibold tabular-nums">{tasks.length}</span> tarea{tasks.length === 1 ? "" : "s"} dentro de los <span className="text-foreground font-semibold tabular-nums">{cases.length}</span> casos filtrados. Los contadores arriba cuentan casos, no tareas.
-        </span>
-      </div>
+      {topbar}
       <div className="rounded-xl border border-white/[0.08] bg-white/[0.015] overflow-hidden">
-      <div ref={parentRef} style={{ maxHeight: "calc(100vh - 320px)", overflow: "auto" }}>
-        <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
-          {virtualizer.getVirtualItems().map(vi => {
-            const item = items[vi.index];
-            return (
-              <div
-                key={vi.key}
-                ref={virtualizer.measureElement}
-                data-index={vi.index}
-                style={{
-                  position: "absolute", top: 0, left: 0, right: 0,
-                  transform: `translateY(${vi.start}px)`,
-                }}
-              >
-                {item.kind === "header" && (
-                  <BucketHeader
-                    bucket={item.bucket}
-                    count={item.count}
-                    collapsed={!!collapsed[item.bucket]}
-                    onToggle={() => toggle(item.bucket)}
-                  />
-                )}
-                {item.kind === "row" && (
-                  <TaskRow
-                    task={item.task}
-                    staffNames={staffNames}
-                    onClick={() => item.task.case_id && navigate(`/case-engine/${item.task.case_id}?tab=tareas`)}
-                  />
-                )}
-                {item.kind === "empty" && (
-                  <div className="px-12 py-2 text-[11px] text-slate-500 italic">
-                    Sin tareas en este rango
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <div ref={parentRef} style={{ maxHeight: "calc(100vh - 360px)", overflow: "auto" }}>
+          <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
+            {virtualizer.getVirtualItems().map(vi => {
+              const item = items[vi.index];
+              return (
+                <div
+                  key={vi.key}
+                  ref={virtualizer.measureElement}
+                  data-index={vi.index}
+                  style={{
+                    position: "absolute", top: 0, left: 0, right: 0,
+                    transform: `translateY(${vi.start}px)`,
+                  }}
+                >
+                  {item.kind === "header" && (
+                    <BucketHeader
+                      bucket={item.bucket}
+                      count={item.count}
+                      collapsed={!!collapsed[item.bucket]}
+                      onToggle={() => toggle(item.bucket)}
+                    />
+                  )}
+                  {item.kind === "row" && (
+                    <TaskRow
+                      task={item.task}
+                      team={team}
+                      selected={selectedIds.has(item.task.id)}
+                      onToggleSelect={() => toggleSelect(item.task.id)}
+                      onChangeAssignee={(id, name) => updateTaskLocal(item.task.id, { assigned_to: id, assigned_to_name: name })}
+                      onChangePriority={(p) => updateTaskLocal(item.task.id, { priority: p })}
+                      onChangeDueDate={(d) => updateTaskLocal(item.task.id, { due_date: d })}
+                      onComplete={() => handleComplete(item.task)}
+                      onSnooze={() => handleSnooze(item.task)}
+                      onOpen={() => item.task.case_id && navigate(`/case-engine/${item.task.case_id}?tab=tareas`)}
+                      isDemoMode={demoMode}
+                    />
+                  )}
+                  {item.kind === "empty" && (
+                    <div className="px-12 py-2 text-[11px] text-slate-500 italic">
+                      Sin tareas en este rango
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );
 }
 
-// Round 4.5 (Valerie): header del bucket viste del color de su urgencia
-// (no solo el chip). Vencidas=rose, Hoy=amber, Mañana=amber, resto neutro.
-// Antes Hoy heredaba rose como Vencidas → inconsistente con chip amber.
 const BUCKET_HEADER_THEME: Record<TaskBucketKey, { bg: string; iconColor: string; titleColor: string; icon: boolean }> = {
   overdue:    { bg: "bg-rose-500/[0.06] hover:bg-rose-500/[0.10]",   iconColor: "text-rose-400",   titleColor: "text-rose-200",  icon: true },
   today:      { bg: "bg-amber-500/[0.06] hover:bg-amber-500/[0.10]", iconColor: "text-amber-400",  titleColor: "text-amber-200", icon: true },
@@ -354,9 +562,7 @@ function BucketHeader({ bucket, count, collapsed, onToggle }: {
         : <ChevronDown className={`w-3 h-3 ${theme.iconColor}`} />
       }
       {theme.icon && <AlertTriangle className={`w-3 h-3 ${theme.iconColor}`} />}
-      <h3 className={`text-[12px] font-bold font-sora ${theme.titleColor}`}>
-        {meta.label}
-      </h3>
+      <h3 className={`text-[12px] font-bold font-sora ${theme.titleColor}`}>{meta.label}</h3>
       {meta.description && <span className="text-[9px] text-slate-500">{meta.description}</span>}
       <span className={`ml-auto text-[10px] font-mono tabular-nums border px-1.5 py-0.5 rounded ${meta.chipClass}`}>
         {count}
@@ -365,35 +571,59 @@ function BucketHeader({ bucket, count, collapsed, onToggle }: {
   );
 }
 
-function TaskRow({ task, staffNames, onClick }: {
+function TaskRow({
+  task, team, selected, onToggleSelect, onChangeAssignee, onChangePriority, onChangeDueDate,
+  onComplete, onSnooze, onOpen, isDemoMode,
+}: {
   task: TaskWithCase;
-  staffNames?: Record<string, string>;
-  onClick: () => void;
+  team: TeamMember[];
+  selected: boolean;
+  onToggleSelect: () => void;
+  onChangeAssignee: (id: string | null, name: string | null) => void;
+  onChangePriority: (p: any) => void;
+  onChangeDueDate: (d: string | null) => void;
+  onComplete: () => void;
+  onSnooze: () => void;
+  onOpen: () => void;
+  isDemoMode: boolean;
 }) {
-  const assigneeName = task.assigned_to && staffNames ? staffNames[task.assigned_to] : null;
   const hasSubtasks = (task.subtasks_total || 0) > 0;
-  const priorityColor = task.priority === "high" || task.priority === "urgent"
-    ? "bg-rose-500"
-    : task.priority === "medium"
-      ? "bg-amber-500"
-      : "bg-slate-500";
-  // Round 4.5 (Vanessa): stage chip al lado del título. "Necesito saber
-  // si es USCIS pending o RFE recibido — vencida de RFE = pánico,
-  // vencida de cliente nuevo = puede esperar."
   const stageChip = task.case_stage ? STAGE_CHIP[task.case_stage] : null;
+  const isCompleted = task.status === "completed";
 
   return (
     <div
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className="grid grid-cols-[12px_minmax(220px,1.5fr)_minmax(160px,1fr)_100px_110px] gap-3 px-4 h-14 items-center text-[13px] border-t border-white/[0.03] hover:bg-cyan-accent/[0.04] cursor-pointer"
+      className={`grid grid-cols-[24px_24px_minmax(220px,1.5fr)_minmax(140px,0.9fr)_90px_110px_60px_60px] gap-3 px-4 h-14 items-center text-[13px] border-t border-white/[0.03] hover:bg-cyan-accent/[0.04] transition-colors ${isCompleted ? "opacity-50" : ""}`}
     >
-      <span className={`w-2 h-2 rounded-full ${priorityColor}`} title={`Prioridad: ${task.priority}`} />
-      <div className="min-w-0 flex flex-col gap-0.5">
+      {/* Checkbox bulk */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <Checkbox
+          checked={selected}
+          onCheckedChange={onToggleSelect}
+          aria-label="Seleccionar tarea"
+        />
+      </div>
+
+      {/* Priority dot inline */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <TaskPriorityInlineEdit
+          taskId={task.id}
+          currentPriority={task.priority}
+          onChange={onChangePriority}
+          isDemoMode={isDemoMode}
+        />
+      </div>
+
+      {/* Título + stage chip + subtasks */}
+      <div
+        className="min-w-0 flex flex-col gap-0.5 cursor-pointer"
+        onClick={onOpen}
+        title="Click para abrir el caso"
+      >
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[12px] text-white truncate flex-1">{task.title}</span>
+          <span className={`text-[12px] truncate flex-1 ${isCompleted ? "text-slate-500 line-through" : "text-white"}`}>
+            {task.title}
+          </span>
           {stageChip && (
             <span className={`shrink-0 text-[9px] font-semibold uppercase tracking-wider border px-1.5 py-0.5 rounded ${stageChip.class}`}>
               {stageChip.label}
@@ -406,16 +636,61 @@ function TaskRow({ task, staffNames, onClick }: {
           </span>
         )}
       </div>
-      <span className="text-[11px] text-slate-400 truncate">{task.case_name || "—"}</span>
-      <span className="text-[11px] text-slate-400 tabular-nums">{task.due_date || "Sin fecha"}</span>
-      {/* Round 4.5 (Vanessa): "ASIGNAR" rojo bold cuando no hay assignee.
-          "Sin asignar" gris se ignora; rojo dice ACCIONÁ. */}
-      {assigneeName
-        ? <span className="text-[11px] text-slate-400 truncate">{assigneeName}</span>
-        : <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-300 bg-rose-500/15 border border-rose-500/30 rounded px-1.5 py-0.5 w-fit">
-            Asignar
-          </span>
-      }
+
+      {/* Case name (click open) */}
+      <div onClick={onOpen} className="cursor-pointer">
+        <span className="text-[11px] text-slate-400 truncate">{task.case_name || "—"}</span>
+      </div>
+
+      {/* Due date inline */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <TaskDueDateInlineEdit
+          taskId={task.id}
+          currentDueDate={task.due_date}
+          onChange={onChangeDueDate}
+          isDemoMode={isDemoMode}
+        />
+      </div>
+
+      {/* Assignee inline */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <TaskAssigneeInlineEdit
+          taskId={task.id}
+          currentAssigneeId={task.assigned_to ?? null}
+          currentAssigneeName={task.assigned_to_name ?? null}
+          team={team}
+          onChange={onChangeAssignee}
+          isDemoMode={isDemoMode}
+        />
+      </div>
+
+      {/* Snooze */}
+      <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={onSnooze}
+          disabled={isCompleted}
+          className="p-2 rounded text-slate-400 hover:text-violet-300 hover:bg-violet-500/10 transition-colors disabled:opacity-30"
+          title="Posponer hasta mañana 8 AM"
+          aria-label="Snooze tarea"
+        >
+          <Moon className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* Complete */}
+      <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={onComplete}
+          disabled={isCompleted}
+          className="p-2 rounded text-emerald-300 hover:bg-emerald-500/15 transition-colors disabled:opacity-30"
+          title={isCompleted ? "Ya completada" : "Marcar completada"}
+          aria-label="Completar tarea"
+        >
+          <Check className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 }

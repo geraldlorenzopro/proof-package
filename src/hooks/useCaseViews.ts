@@ -122,3 +122,82 @@ export function filterCasesByView<T extends {
       return cases;
   }
 }
+
+// ════════════════════════════════════════════════════════════════
+// FILTERS PARA VISTA TAREAS (Round 6 — Marcus + Vanessa)
+//
+// Coherencia: cuando vista=Tareas, los filtros del CaseViewKey aplican
+// a TAREAS (no a cases). El mapping semántico:
+//   - "mis-casos"     → tareas asignadas a mí
+//   - "urgentes"      → tareas vencidas + hoy + ≤3d (high urgency)
+//   - "pte-accion-mia"→ tareas pendientes asignadas a mí (= mis-casos en tasks)
+//   - "todos"         → todas las tareas
+//
+// Marcus warning: NO compartir CaseViewKey con TaskViewKey crearía
+// duplicación. Reusamos el ENUM pero re-mappeamos la lógica via función
+// dedicada (filterTasksByView), evitando bugs cross-view.
+// ════════════════════════════════════════════════════════════════
+
+interface FilterableTask {
+  assigned_to?: string | null;
+  status?: string | null;
+  due_date?: string | null;
+  snoozed_until?: string | null;
+}
+
+export function filterTasksByView<T extends FilterableTask>(
+  tasks: T[],
+  view: CaseViewKey,
+  userId: string | null
+): T[] {
+  const now = Date.now();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayStartMs = todayStart.getTime();
+  const in3dMs = todayStartMs + 3 * 86400000;
+  const CLOSED_TASK = ["completed", "archived", "cancelled"];
+
+  // Defensa común: tasks closed nunca aparecen, ni tasks snoozed
+  function notSnoozedNotClosed(t: T): boolean {
+    if (CLOSED_TASK.includes(t.status || "")) return false;
+    if (t.snoozed_until && new Date(t.snoozed_until).getTime() > now) return false;
+    return true;
+  }
+
+  switch (view) {
+    case "mis-casos":
+      // "Mis tareas" cuando vista=Tareas: tareas asignadas a mí.
+      if (!userId) return [];
+      return tasks.filter(t => t.assigned_to === userId && notSnoozedNotClosed(t));
+
+    case "urgentes":
+      // Urgentes en tasks: vencidas + hoy + próximos 3d.
+      return tasks.filter(t => {
+        if (!notSnoozedNotClosed(t)) return false;
+        if (!t.due_date) return false;
+        const dueMs = new Date(t.due_date + "T00:00:00").getTime();
+        return dueMs <= in3dMs;
+      });
+
+    case "pte-accion-mia":
+      // "Mi turno" cuando vista=Tareas: tareas pendientes mías. Semánticamente
+      // similar a "mis-casos" en este eje pero filtra explicit status=pending.
+      if (!userId) return [];
+      return tasks.filter(t =>
+        t.assigned_to === userId &&
+        (t.status === "pending" || t.status === "in_progress") &&
+        notSnoozedNotClosed(t)
+      );
+
+    case "cerrados-30d":
+      // Tasks completadas en últimos 30d.
+      return tasks.filter(t => {
+        if (t.status !== "completed") return false;
+        return true; // simplified — no closed_at filter, todas las completed visibles
+      });
+
+    case "todos":
+    default:
+      return tasks.filter(notSnoozedNotClosed);
+  }
+}

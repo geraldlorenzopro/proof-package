@@ -11,10 +11,8 @@
  *   - Pin amber inline cuando c.pinned = true.
  *   - $$$ por columna gated tier 1+2 (showRevenue prop).
  */
-import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createPortal } from "react-dom";
-import { AlertCircle, MoreHorizontal, StickyNote, CheckSquare, Pin } from "lucide-react";
+import { AlertCircle, StickyNote, CheckSquare, Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCaseTypeLabel } from "@/lib/caseTypeLabels";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
@@ -131,10 +129,12 @@ function CompactCard({ c, staffNames, accent, onCardClick }: { c: PipelineCase; 
             {getCaseTypeLabel(c.case_type)}
           </div>
         </div>
-        {/* Menu "..." top-right — Round 4.5 (Vanessa voto B sobre A).
-            Kanban scan-friendly: 1 botón en vez de 3 iconos. Click abre
-            dropdown con las 3 quick actions (nota / tarea / historial). */}
-        <CardActionMenu caseId={c.id} />
+        {/* Round 6 (Mr. Lorenzo + Marcus mix): 2 iconos VISIBLES con
+            opacity 60% en reposo, 100% al hover del card. Patrón Asana
+            mix entre "always visible" (GHL) y "subtle in rest" (Linear).
+            Mr. Lorenzo cambió criterio sobre Round 4.5 (menu "..."):
+            quiere los iconos directos, no escondidos. */}
+        <CardQuickActions caseId={c.id} />
       </div>
       <div className="flex items-center gap-2 mt-1 pl-2.5 text-[10px]">
         <span className={cn("tabular-nums", dayTone(days))}>{days}d</span>
@@ -163,114 +163,44 @@ function CompactCard({ c, staffNames, accent, onCardClick }: { c: PipelineCase; 
 }
 
 /**
- * CardActionMenu — Botón "..." top-right del card Kanban.
+ * CardQuickActions — Round 6 (Mr. Lorenzo + Marcus).
  *
- * Round 4.5 (Vanessa voto B sobre 3-iconos A): 1 botón compacto que
- * abre dropdown con las 3 quick actions. Mantiene Kanban scan-friendly
- * sin saturar visualmente. Touch devices: visible siempre (no hover).
+ * 2 iconos directos top-right (no menu "..."). Opacity 60% en reposo,
+ * 100% al hover del card. Click navega directo al case-engine en el
+ * tab correspondiente.
+ *
+ * Victoria fix obligatorio: stopPropagation en cada button para que
+ * click en icon NO dispare la navegación del card entero al peek panel.
  */
-function CardActionMenu({ caseId }: { caseId: string }) {
+function CardQuickActions({ caseId }: { caseId: string }) {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const popRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const r = btnRef.current?.getBoundingClientRect();
-    if (r) {
-      setAnchor({
-        top: Math.min(r.bottom + 4, window.innerHeight - 160),
-        left: Math.min(r.left - 130, window.innerWidth - 170),
-      });
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    function handle(e: PointerEvent) {
-      const t = e.target as Node;
-      if (popRef.current?.contains(t)) return;
-      if (btnRef.current?.contains(t)) return;
-      setOpen(false);
-    }
-    const tid = setTimeout(() => document.addEventListener("pointerdown", handle), 50);
-    return () => {
-      clearTimeout(tid);
-      document.removeEventListener("pointerdown", handle);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
-
-  function go(path: string) {
-    setOpen(false);
+  function go(e: React.MouseEvent, path: string) {
+    e.stopPropagation();
     navigate(path);
   }
 
   return (
-    <>
+    <div className="flex items-center gap-0.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
       <button
-        ref={btnRef}
         type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
-        aria-label="Acciones rápidas del caso"
-        title="Acciones rápidas (nota / tarea)"
-        className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/[0.08] shrink-0 transition-colors"
+        onClick={(e) => go(e, `/case-engine/${caseId}?tab=resumen&action=add-note`)}
+        aria-label="Agregar nota"
+        title="Agregar nota"
+        className="w-5 h-5 rounded flex items-center justify-center text-cyan-accent hover:bg-cyan-accent/15 transition-colors"
       >
-        <MoreHorizontal className="w-3.5 h-3.5" />
+        <StickyNote className="w-3 h-3" />
       </button>
-      {open && anchor && typeof document !== "undefined" && createPortal(
-        <div
-          ref={popRef}
-          style={{ position: "fixed", top: anchor.top, left: anchor.left, zIndex: 9999, width: 170 }}
-          className="rounded-lg border border-cyan-accent/30 bg-deep-navy/[0.97] backdrop-blur-xl shadow-2xl shadow-black/50 p-1"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Round 5.5 (Mr. Lorenzo): 2 opciones únicamente. Removido
-              "Ver historial" porque comms vive en GHL inicialmente y
-              el ícono PhoneOff confundía (Mr. Lorenzo: "no llamamos
-              desde NER"). Cuando integremos comms con GHL Fase 4,
-              agregamos botón real de dialer. */}
-          <MenuItem
-            Icon={StickyNote}
-            color="text-cyan-accent"
-            label="Agregar nota"
-            onClick={() => go(`/case-engine/${caseId}?tab=resumen&action=add-note`)}
-          />
-          <MenuItem
-            Icon={CheckSquare}
-            color="text-emerald-300"
-            label="Crear tarea"
-            onClick={() => go(`/case-engine/${caseId}?tab=tareas&action=add`)}
-          />
-        </div>,
-        document.body
-      )}
-    </>
+      <button
+        type="button"
+        onClick={(e) => go(e, `/case-engine/${caseId}?tab=tareas&action=add`)}
+        aria-label="Crear tarea"
+        title="Crear tarea"
+        className="w-5 h-5 rounded flex items-center justify-center text-emerald-300 hover:bg-emerald-500/15 transition-colors"
+      >
+        <CheckSquare className="w-3 h-3" />
+      </button>
+    </div>
   );
 }
 
-function MenuItem({ Icon, color, label, onClick }: {
-  Icon: typeof StickyNote;
-  color: string;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded text-[11px] text-slate-200 hover:bg-white/[0.05] transition-colors"
-    >
-      <Icon className={`w-3.5 h-3.5 shrink-0 ${color}`} />
-      <span>{label}</span>
-    </button>
-  );
-}

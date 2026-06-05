@@ -7,6 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import HubLayout from "@/components/hub/HubLayout";
 import CaseTable from "@/components/hub/CaseTable";
 import CaseKanban from "@/components/hub/CaseKanban";
@@ -103,6 +104,27 @@ export default function HubCasesPage() {
 
   // Persist (scoped)
   useEffect(() => { writeScopedJson("ner_cases_view", accountId, view); }, [view, accountId]);
+
+  // Round 6 (Marcus): toast informativo al cambiar entre vista Cases ↔ Tasks.
+  // Aclara que el meaning de los filtros cambia (cases vs tasks).
+  const previousViewRef = useRef<typeof view>(view);
+  useEffect(() => {
+    const prev = previousViewRef.current;
+    if (prev !== view) {
+      if (view === "tareas" && (prev === "tabla" || prev === "kanban")) {
+        toast.info("Vista Tareas activa", {
+          duration: 3000,
+          description: "Los filtros (Urgentes, Mis casos…) ahora aplican a tareas, no a casos.",
+        });
+      } else if (prev === "tareas" && (view === "tabla" || view === "kanban")) {
+        toast.info("Vista Casos activa", {
+          duration: 2500,
+          description: "Los filtros vuelven a aplicar a casos.",
+        });
+      }
+      previousViewRef.current = view;
+    }
+  }, [view]);
   useEffect(() => { writeScopedJson("ner_cases_group_by", accountId, groupBy); }, [groupBy, accountId]);
   useEffect(() => { writeScopedJson("ner_cases_sort_by", accountId, sortBy); }, [sortBy, accountId]);
   useEffect(() => { writeScopedJson("ner_cases_filters", accountId, filters); }, [filters, accountId]);
@@ -439,13 +461,15 @@ export default function HubCasesPage() {
             )}
           </div>
         ) : view === "tareas" ? (
-          /* Vista Tareas — Round 4 (Vanessa + Marcus).
-             Tasks agrupadas cronológicamente (Vencidas → Hoy → Esta semana...). */
+          /* Vista Tareas — Round 6 (Mr. Lorenzo + 4 agentes).
+             Filtros aplican a TASKS via activeView + filterTasksByView.
+             Inline editing completo + bulk + snooze + completar + + Nueva. */
           <TasksByDateView
             accountId={accountId}
             userId={userId}
             cases={sortedCases}
-            scope={activeView === "mis-casos" || activeView === "pte-accion-mia" ? "mine" : "all"}
+            activeView={activeView}
+            team={team}
             staffNames={staffNames}
           />
         ) : view === "tabla" ? (
