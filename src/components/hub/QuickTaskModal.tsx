@@ -45,6 +45,8 @@ interface Props {
    */
   preloadedTeam?: TeamMember[];
   preloadedCases?: CaseOption[];
+  /** Round 9.18: precarga el role del user → VisibilityPicker no hace fetch propio. */
+  preloadedRole?: import("@/hooks/usePermissions").UserRole | null;
 }
 
 interface CaseOption {
@@ -66,7 +68,7 @@ const PRIORITIES = [
   { value: "urgent", label: "Urgente",chip: "bg-rose-500/15 border-rose-500/30 text-rose-300" },
 ];
 
-export default function QuickTaskModal({ open, onOpenChange, onCreated, prefilledCase, preloadedTeam, preloadedCases }: Props) {
+export default function QuickTaskModal({ open, onOpenChange, onCreated, prefilledCase, preloadedTeam, preloadedCases, preloadedRole }: Props) {
   // Round 9.15 anti-flash (4-agentes diagnóstico):
   //   - useState callbacks inicializan state DIRECTO desde props →
   //     primer paint del modal ya tiene caseId + cases correctos.
@@ -344,6 +346,7 @@ export default function QuickTaskModal({ open, onOpenChange, onCreated, prefille
             value={visibility}
             onChange={setVisibility}
             recordLabel="tarea"
+            preloadedRole={preloadedRole}
           />
         </div>
 

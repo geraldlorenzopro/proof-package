@@ -90,7 +90,7 @@ export default function HubCasesPage() {
   // Round 4.5 (Victoria flash fix): esperamos isLoading antes de
   // decidir showRevenue, sino el Kanban del owner ve "primero $0,
   // después $ aparece" durante 1-2 render cycles.
-  const { canViewVisibility, isLoading: permsLoading } = usePermissions(accountId);
+  const { canViewVisibility, role: userRole, isLoading: permsLoading } = usePermissions(accountId);
   const canViewRevenue = !permsLoading && canViewVisibility("attorney_only");
 
   // ═══ State persistido por account_id (anti-leak Victoria fix #1) ═══
@@ -598,6 +598,7 @@ export default function HubCasesPage() {
           client_name: c.client_name,
           case_type: c.case_type ?? null,
         }))}
+        preloadedRole={permsLoading ? undefined : userRole}
       />
       <QuickTaskModal
         open={!!quickTaskCase}
@@ -617,6 +618,7 @@ export default function HubCasesPage() {
           client_name: c.client_name,
           case_type: c.case_type ?? null,
         }))}
+        preloadedRole={permsLoading ? undefined : userRole}
       />
     </HubLayout>
   );

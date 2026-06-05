@@ -18,12 +18,20 @@
  */
 import { Users, Briefcase, Lock } from "lucide-react";
 import { usePermissions, type VisibilityLevel } from "@/hooks/usePermissions";
+import type { UserRole } from "@/hooks/usePermissions";
 
 interface Props {
   value: VisibilityLevel;
   onChange: (v: VisibilityLevel) => void;
   /** Microcopy contextual del tipo de record. Default: "nota". */
   recordLabel?: string;
+  /**
+   * Round 9.18 anti-flash: si el parent ya tiene el role del user cargado,
+   * lo pasa por prop → calcula assignableLevels inline sin hacer su propio
+   * fetch. Antes el VisibilityPicker entraba 200-500ms después del resto
+   * del modal porque hacía usePermissions() interno.
+   */
+  preloadedRole?: UserRole | null;
 }
 
 const OPTIONS: Array<{
@@ -60,9 +68,25 @@ const OPTIONS: Array<{
   },
 ];
 
-export default function VisibilityPicker({ value, onChange, recordLabel = "nota" }: Props) {
-  const { assignableVisibilityLevels, isLoading } = usePermissions();
-  const allowed = assignableVisibilityLevels();
+// Inline calculation — el espejo de assignableVisibilityLevels() del hook.
+// Movido afuera para que VisibilityPicker pueda decidir sin hook si recibió
+// preloadedRole por prop.
+function assignableLevelsFor(role: UserRole | null | undefined): VisibilityLevel[] {
+  if (!role) return ["team"];
+  if (role === "owner" || role === "admin") return ["team", "attorney_only", "admin_only"];
+  if (role === "attorney") return ["team", "attorney_only"];
+  return ["team"];
+}
+
+export default function VisibilityPicker({ value, onChange, recordLabel = "nota", preloadedRole }: Props) {
+  // Round 9.18: si parent precarga el role, NO hookear (evita fetch redundante).
+  // Sino, fallback al hook (back-compat con callers viejos).
+  const internalPerms = usePermissions();
+  const usingPreload = preloadedRole !== undefined;
+  const role = usingPreload ? preloadedRole : internalPerms.role;
+  const isLoading = usingPreload ? false : internalPerms.isLoading;
+
+  const allowed = assignableLevelsFor(role);
   const visibleOptions = OPTIONS.filter(o => allowed.includes(o.value));
   const current = visibleOptions.find(o => o.value === value) || visibleOptions[0];
 

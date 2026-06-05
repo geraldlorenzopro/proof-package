@@ -47,6 +47,8 @@ interface Props {
    * Sin esto el modal hace fetch interno y el dropdown entra tarde.
    */
   preloadedCases?: CaseOption[];
+  /** Round 9.18: precarga el role del user → VisibilityPicker no hace fetch propio. */
+  preloadedRole?: import("@/hooks/usePermissions").UserRole | null;
 }
 
 interface CaseOption {
@@ -63,7 +65,7 @@ const NOTE_TYPES = [
   { value: "decision",      label: "Decisión",      chip: "bg-purple-500/15 border-purple-500/30 text-purple-300" },
 ];
 
-export default function QuickNoteModal({ open, onOpenChange, onCreated, prefilledCase, preloadedCases }: Props) {
+export default function QuickNoteModal({ open, onOpenChange, onCreated, prefilledCase, preloadedCases, preloadedRole }: Props) {
   // Round 9.15 anti-flash (4-agentes diagnóstico): mismo patrón que QuickTaskModal.
   //   - State inicializado DIRECTO desde props (callback en useState).
   //   - casesLoading=false desde el inicio si prefilledCase está presente.
@@ -327,6 +329,7 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated, prefille
               value={visibility}
               onChange={setVisibility}
               recordLabel="nota"
+              preloadedRole={preloadedRole}
             />
           </div>
         )}
