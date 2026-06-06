@@ -40,6 +40,9 @@ jobs:
       - name: TypeScript check
         run: bunx tsc --noEmit
 
+      - name: Vitest unit tests (regression guards — bloquean merge)
+        run: bun run test
+
       - name: Build production
         run: bun run build
 
