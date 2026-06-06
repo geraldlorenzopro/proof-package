@@ -7,7 +7,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
 import { useCloseOnScroll } from "@/hooks/useCloseOnScroll";
 
@@ -154,11 +154,13 @@ export default function CaseOwnerInlineEdit({ caseId, currentOwnerId, currentOwn
               {ini}
             </div>
             <span className="text-[11px] text-slate-300 truncate">{ownerName || "Staff"}</span>
+            {saving && <Loader2 className="w-2.5 h-2.5 ml-0.5 shrink-0 animate-spin text-cyan-accent" aria-label="Guardando" />}
           </>
         ) : (
           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-rose-500/15 border-rose-500/40 text-rose-300 whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
             Sin owner
+            {saving && <Loader2 className="w-2.5 h-2.5 ml-0.5 animate-spin" aria-label="Guardando" />}
           </span>
         )}
       </button>

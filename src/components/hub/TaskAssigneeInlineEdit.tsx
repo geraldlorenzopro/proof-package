@@ -18,7 +18,7 @@
  */
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { UserPlus, Search } from "lucide-react";
+import { UserPlus, Search, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/auditLog";
@@ -191,10 +191,11 @@ export default function TaskAssigneeInlineEdit({
       type="button"
       onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
       disabled={saving}
-      className="text-[11px] text-slate-400 hover:text-cyan-accent truncate disabled:opacity-50 transition-colors text-left"
+      className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-cyan-accent truncate disabled:opacity-50 transition-colors text-left"
       title={`Asignado a ${localAssignee.name || "Staff"}. Click para reasignar.`}
     >
-      {localAssignee.name || "Staff"}
+      <span className="truncate">{localAssignee.name || "Staff"}</span>
+      {saving && <Loader2 className="w-2.5 h-2.5 shrink-0 animate-spin text-cyan-accent" aria-label="Guardando" />}
     </button>
   ) : (
     <button
@@ -202,10 +203,11 @@ export default function TaskAssigneeInlineEdit({
       type="button"
       onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
       disabled={saving}
-      className="text-[10px] font-semibold uppercase tracking-wider text-rose-300 bg-rose-500/15 border border-rose-500/30 rounded px-1.5 py-0.5 w-fit hover:bg-rose-500/25 hover:border-rose-500/50 transition-colors disabled:opacity-50"
+      className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-rose-300 bg-rose-500/15 border border-rose-500/30 rounded px-1.5 py-0.5 w-fit hover:bg-rose-500/25 hover:border-rose-500/50 transition-colors disabled:opacity-50"
       title="Sin asignar — click para elegir miembro del equipo"
     >
       Asignar
+      {saving && <Loader2 className="w-2.5 h-2.5 animate-spin" aria-label="Guardando" />}
     </button>
   );
 

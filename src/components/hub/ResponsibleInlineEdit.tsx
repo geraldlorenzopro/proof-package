@@ -19,10 +19,12 @@
  */
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoMode } from "@/hooks/useDemoData";
 import { useCloseOnScroll } from "@/hooks/useCloseOnScroll";
 import { toast } from "sonner";
+import { parseSupabaseError } from "@/lib/parseSupabaseError";
 import type { Responsible } from "@/lib/journeySteps";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -150,7 +152,12 @@ export default function ResponsibleInlineEdit({
         .maybeSingle();
 
       if (readErr) {
-        toast.error("No se pudo leer el caso", { description: readErr.message });
+        const parsed = parseSupabaseError(readErr);
+        toast.error(parsed.userMsg, {
+          description: parsed.description,
+          duration: 8000,
+          action: { label: "Reintentar", onClick: () => { void applyOverride(newResp); } },
+        });
         return;
       }
 
@@ -167,7 +174,12 @@ export default function ResponsibleInlineEdit({
         .eq("id", caseId);
 
       if (writeErr) {
-        toast.error("No se pudo guardar", { description: writeErr.message });
+        const parsed = parseSupabaseError(writeErr);
+        toast.error(parsed.userMsg, {
+          description: parsed.description,
+          duration: 8000,
+          action: { label: "Reintentar", onClick: () => { void applyOverride(newResp); } },
+        });
         return;
       }
 
@@ -210,6 +222,7 @@ export default function ResponsibleInlineEdit({
             M
           </span>
         )}
+        {saving && <Loader2 className="w-2.5 h-2.5 ml-0.5 shrink-0 animate-spin" aria-label="Guardando" />}
       </button>
 
       {open && popPos && typeof document !== "undefined" && createPortal(

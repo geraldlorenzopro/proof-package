@@ -1,7 +1,7 @@
 # Auto-Save Audit — Pipeline de Casos + Tareas
 
-**Status:** Round 9.31 (2026-06-06) — Mr. Lorenzo validation pre-Sprint C
-**Verdict:** ✅ COBERTURA COMPLETA. Auto-save funciona en TODOS los campos editables.
+**Status:** Round 9.32 (2026-06-06) — Gaps cerrados pre-Sprint C
+**Verdict:** ✅ COBERTURA COMPLETA + GAPS CERRADOS. Auto-save robusto en TODOS los campos editables.
 
 ---
 
@@ -72,18 +72,34 @@ async function handleEdit(newValue) {
 
 ---
 
-## Gaps menores identificados (NO bloqueantes)
+## Gaps cerrados (R9.32 — 2026-06-06)
 
-1. **`TaskAssignee/Priority/DueDateInlineEdit`** no llaman `logAudit` directamente. El audit existe via trigger SQL `tg_audit_pipeline_mutations` (Round 8 → R9.19 con whitelist), así que SOC II trail está cubierto a nivel BD. Sin embargo, el `logAudit` client-side da display name más rico ("Vanessa cambió prioridad de Andrea a urgent"). 
-   - **Acción:** agregar `logAudit` fire-and-forget post-success. Costo 5 min por componente × 3.
+### Gap 1 — `Task*InlineEdit` logAudit client-side ✅ CERRADO
 
-2. **`NextActionEditor` y `ResponsibleInlineEdit`** persisten directo a Supabase sin pasar por `useCaseInlineEdit`. Implica:
-   - No tienen retry button automático en toast.error
-   - No discriminan PG codes (23514/42501/23505)
-   - **Acción:** refactor para usar el hook. Costo 30 min cada uno.
+Verificación previa con grep mostró que los 3 componentes (`TaskAssigneeInlineEdit`, `TaskPriorityInlineEdit`, `TaskDueDateInlineEdit`) **ya llamaban `logAudit`** post-success. El gap original del audit estaba mal — el código ya tenía el client-side logAudit con display name rico ("Vanessa cambió prioridad…"). No requiere cambio.
 
-3. **Sin indicador visual de "saving"** en la mayoría de inline edits. El `saving` state existe pero no se renderiza (solo deshabilita el botón). 
-   - **Acción opcional:** spinner pequeño al lado del chip mientras saving=true. Útil en redes lentas.
+### Gap 2 — `NextActionEditor` + `ResponsibleInlineEdit` paridad con `useCaseInlineEdit` ✅ CERRADO
+
+Creado helper compartido `src/lib/parseSupabaseError.ts` que mapea PG codes (23514 CHECK / 42501 RLS / 23505 dup / 23502 NOT NULL / 23503 FK) a mensajes humanos consistentes con `useCaseInlineEdit`.
+
+Aplicado a:
+- `NextActionEditor.handleSave` + `handleClear`: toast.error ahora usa `parseSupabaseError` + action `{ label: "Reintentar", onClick: () => handleSave/handleClear }`.
+- `ResponsibleInlineEdit.applyOverride`: toast.error ahora usa `parseSupabaseError` + action `{ label: "Reintentar", onClick: () => applyOverride(newResp) }`.
+
+**Nota arquitectónica:** no se refactorizaron a `useCaseInlineEdit` porque ambos persisten en `client_cases.custom_fields` JSONB con merge (read-modify-write). El hook actual sólo soporta `UPDATE { [field]: newValue }` plano. Cubrir JSONB merge sería un refactor del hook fuera de alcance — el helper compartido cierra el gap sin tocar el hook.
+
+### Gap 3 — Indicador visual de saving ✅ CERRADO
+
+Agregado `Loader2` (lucide-react) con `animate-spin` en 6 inline edits:
+- `CaseStageInlineEdit`: reemplaza `▾` con spinner durante saving
+- `CaseTypeInlineEdit`: reemplaza `▾` con spinner durante saving
+- `CaseOwnerInlineEdit`: spinner al lado del nombre/avatar durante saving
+- `ResponsibleInlineEdit`: spinner al lado del label durante saving
+- `TaskAssigneeInlineEdit`: spinner al lado del nombre/badge durante saving
+- `TaskDueDateInlineEdit`: spinner al lado de la fecha durante saving
+- `TaskPriorityInlineEdit`: ring cyan-accent/50 + animate-pulse en el dot (Loader2 era demasiado grande para el dot 8px)
+
+Patrón: `{saving && <Loader2 className="w-2.5 h-2.5 ml-0.5 shrink-0 animate-spin" aria-label="Guardando" />}` — accesible (aria-label), tamaño consistente, no rompe layout.
 
 ---
 
@@ -101,10 +117,8 @@ CI bloquea merge si alguien rompe el pattern.
 
 ---
 
-## Veredicto para Mr. Lorenzo
+## Veredicto para Mr. Lorenzo (post-R9.32)
 
-✅ **APTO PARA PRODUCCIÓN.** Auto-save funciona en TODOS los campos editables de Casos + Tareas. Ningún cambio se pierde silenciosamente. Si la red falla → rollback visible + toast destructivo + (en mayoría) botón Reintentar.
+✅ **APTO PARA PRODUCCIÓN + GAPS CERRADOS.** Auto-save funciona en TODOS los campos editables de Casos + Tareas. Ningún cambio se pierde silenciosamente. Si la red falla → rollback visible + toast destructivo + botón Reintentar **en todos los flows**. Indicador visual `Loader2` en chips mientras saving=true (sentís cuando está guardando, no solo cuando termina).
 
-**Gaps son de pulido, no de funcionalidad.** Los 3 gaps menores se pueden resolver en 1-2 horas si decidís invertir antes de Sprint C, o postponer porque no bloquean la entrega de Casos/Tareas.
-
-**Recomendación:** seguir con Sprint C (`/hub/clients`). Aplicar los gaps menores como sprint de polish en paralelo si necesitás.
+**3/3 gaps cerrados antes de Sprint C.** Listo para activar `/hub/clients` Cliente 360°.
