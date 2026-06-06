@@ -14,6 +14,7 @@
  */
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { Loader2 } from "lucide-react";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
 import { useCloseOnScroll } from "@/hooks/useCloseOnScroll";
 import type { PipelineCase } from "@/hooks/useCasePipeline";
@@ -110,7 +111,11 @@ export default function CaseStageInlineEdit({ c, onStageChange }: Props) {
           >
             <span className="shrink-0">{meta.icon}</span>
             <span className="truncate min-w-0">{meta.label}</span>
-            <span className="text-[8px] ml-0.5 opacity-70 shrink-0">▾</span>
+            {saving ? (
+              <Loader2 className="w-2.5 h-2.5 ml-0.5 shrink-0 animate-spin" aria-label="Guardando" />
+            ) : (
+              <span className="text-[8px] ml-0.5 opacity-70 shrink-0">▾</span>
+            )}
           </button>
         </TooltipTrigger>
         <TooltipContent

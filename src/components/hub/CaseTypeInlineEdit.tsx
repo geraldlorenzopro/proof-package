@@ -13,7 +13,7 @@
  */
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { useCaseInlineEdit } from "@/hooks/useCaseInlineEdit";
 import { useCloseOnScroll } from "@/hooks/useCloseOnScroll";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -206,7 +206,11 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
           >
             <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-blue-200 leading-tight">
               {formNumberPart}
-              <span className="text-[8px] opacity-70">▾</span>
+              {saving ? (
+                <Loader2 className="w-2.5 h-2.5 animate-spin" aria-label="Guardando" />
+              ) : (
+                <span className="text-[8px] opacity-70">▾</span>
+              )}
             </span>
             <span className="text-[9px] text-blue-300/80 leading-tight truncate max-w-full mt-0.5">
               {descriptionPart}
