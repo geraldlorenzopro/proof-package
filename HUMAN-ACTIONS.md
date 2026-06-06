@@ -401,6 +401,113 @@ git fetch origin main
 
 ---
 
+## 11. CI does not execute vitest — security regression guards are non-operational (🔴 SOC 2 first-order risk)
+
+**Status:** Discovered 2026-06-06 immediately after PR #2 (sec-fix/A0.5d)
+merged. The PR shipped a regression-guard unit test
+(`expect(mod.DEMO_ACCOUNT_ID).toBeUndefined()`) designed to fail any
+future attempt to re-introduce the sentinel string. **That test runs
+locally via the pre-push hook, but NOT in the CI gate
+(`.github/workflows/e2e.yml`).** The workflow only runs `tsc`,
+`vite build`, and two Playwright suites — no `vitest` step at all.
+
+**Confirmed via direct read of the workflow file (e2e.yml lines 25-59):**
+
+```yaml
+- name: TypeScript check
+  run: bunx tsc --noEmit
+- name: Build production
+  run: bun run build
+# (no vitest step)
+- name: Run regression tests
+  run: bunx playwright test tests/e2e/regression.spec.ts
+- name: Run smoke tests
+  run: bunx playwright test tests/e2e/hub-smoke.spec.ts
+```
+
+**Inventory of vitest tests that currently exist but DO NOT block any
+merge:**
+
+  - `src/test/cspaCalc.test.ts` — 6 tests
+  - `src/test/intakeIncomplete.test.ts` — 6 tests
+  - `src/test/useNerAccountId.test.ts` — 13 tests (the A0.5d guard)
+  - `src/test/example.test.ts` — 1 test
+  - `src/components/hub/__tests__/TasksToolbar.test.tsx` — 7 tests
+  - **TOTAL: 33 tests, all passing locally, none enforced by CI.**
+
+**Why this is first-order risk:**
+
+The Sprint A security remediation produces regression guards in the
+shape of unit tests. Examples already planned:
+
+  - `sec-fix/B1-hubpage` will add a `grep-all-src "demo-account-mendez"`
+    test to prevent the sentinel from being re-introduced anywhere.
+  - `sec-fix/A0.5a/b/c` will add guards on the `useHubPageState`
+    discriminated union and on the `EmptyState` rendering for
+    `error_no_account`.
+  - Future B-1 work (refactor 15+ inline `sessionStorage["ner_hub_data"]`
+    reads to `useNerAccountId`) will need a test that fails if a new
+    inline read appears.
+
+Without a vitest step in CI, **every one of those guards exists only on
+the disciplined developer's local machine**. They are bypassed by:
+
+  (a) `--no-verify` on `git push` (the developer skipping the hook),
+  (b) Lovable's automated workers (who don't run the human's pre-push
+      hook — see HUMAN-ACTIONS #8: their `lovable-sync-*` branches
+      delete tests outright).
+
+**Connection to entries #8, #9, and the chronic `--no-verify` pattern:**
+
+This is the same dysfunction surface as:
+
+  - **#8** (Lovable side-channel deleting `regression.spec.ts` /
+    `hub-smoke.spec.ts`): when the CI is treated as the source of
+    truth, deleting tests that aren't enforced is "free"; the gate
+    doesn't care.
+  - **#9** (chronic red CI on main, 5 consecutive failed merges
+    R9.28 → R9.31): a gate that fires red routinely teaches the team
+    that red is normal. Adding more tests (here: unit) to a gate that
+    doesn't even check them lets the "red == normal" pattern compound.
+  - **`--no-verify`**: each time it's used, the local hook gets skipped
+    AND the CI never has a chance to catch what the hook would have.
+
+For SOC 2 Type II, a control that runs only on the developer's machine
+is **not a control**. The auditor will ask for the configured workflow.
+Today it shows tsc + build + playwright. The unit tests we ship as
+"regression guards" do not appear anywhere in that artifact.
+
+**Required actions:**
+
+  1. **Add a `bun run test` step to `.github/workflows/e2e.yml`** —
+     after `bunx tsc --noEmit` (TS catches the most), before
+     `bun run build` (fail fast on logic before paying for the bundle).
+     Diff is ~4 lines. PR `chore/ci-add-vitest-step` opens this.
+  2. **Verify the existing 33 vitest tests pass on the GitHub runner
+     with `bun install` native** — same risk surface as HUMAN-ACTIONS
+     #1 (cross-tool dep tree equivalence). PR #2 already cleared that
+     specific risk for the Vite build; the unit test step is the
+     second real exposure. Watch the CI run on the chore PR.
+  3. **Going forward, every Sprint A sec-fix PR that adds a unit-test
+     regression guard must verify that guard runs in CI on its own
+     PR**, not just locally. The Sprint A retrospective for the auditor
+     must show that A0.5d's guard (and B1-hubpage's, and A0.5a/b/c's)
+     were enforced by the workflow at the time of merge.
+
+**Out of scope of `chore/ci-add-vitest-step` (documented separately):**
+
+`supabase/functions/resolve-hub/index.test.ts` is a **Deno test**, not
+a vitest test. Adding `bun run test` will not execute it. A second
+follow-up step (a dedicated `deno test` job, or a separate edge-function
+CI workflow) is the right home for that coverage. Tracked here as a
+known gap, not blocking this entry's fix.
+
+**Owner:** Claude Code (writes the chore PR with the workflow change) +
+Mr. Lorenzo (reviews the diff, opens the PR, watches the first CI run
+to confirm 33/33 vitest tests pass on the GH runner).
+
+---
+
 ## Last updated
 
 2026-06-06 — initial creation during Sprint A security remediation. Add
@@ -412,3 +519,9 @@ deleting CI gates.
 that never resolves; the SOC 2 control was non-operational across
 R9.28–R9.31; likely related to entry #8 (Lovable's response to a
 chronically red gate may have been to delete the tests).
+2026-06-06 — entry #11 added after the CI workflow was confirmed to
+NOT execute vitest. The regression guard shipped by sec-fix/A0.5d
+(blocking re-introduction of the `DEMO_ACCOUNT_ID` sentinel) was found
+to run only in the local pre-push hook, not in the gate that decides
+merges. Same dysfunction shape as entries #8 and #9 and the chronic
+`--no-verify` pattern. Fix tracked as `chore/ci-add-vitest-step`.
