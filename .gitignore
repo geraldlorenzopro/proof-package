@@ -32,6 +32,12 @@ tmp/
 # Si querés commitear uno específico: git add -f .ai/reportes/<archivo>.md
 .ai/reportes/*.md
 
+# Security audit dossiers — contienen repros de vulnerabilidades.
+# Política: estos dossiers viven en almacén privado (Drive/Notion con
+# audit trail de acceso), NO en git. Si necesitás referenciar uno desde
+# un ticket, linkeá al storage privado.
+.ai/master/security-audit-*.md
+
 # Raw responses de agentes (debug del orquestador, no van a prod)
 .ai/debug-raw/
 
