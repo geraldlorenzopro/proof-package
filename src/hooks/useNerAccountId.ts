@@ -5,11 +5,16 @@
  * `sessionStorage["ner_hub_data"]` o queryean account_members.
  *
  * Orden de resolución:
- *   1. Demo mode (`?demo=true`) → demoAccountId si fue inyectado, sino null
+ *   1. Demo mode (`?demo=true`) → `{ accountId: null, source: "demo" }`.
+ *      El caller distingue demo vs no-demo via `source === "demo"`, NUNCA
+ *      via el accountId. Esto evita que un sentinel string viaje como
+ *      parámetro a queries Supabase y dependa de disciplina caller-por-caller
+ *      para interceptarlo. Demo data viene de mocks aislados (DEMO_CASES etc.)
+ *      gateados por `useDemoMode()`, no de un account_id falso.
  *   2. sessionStorage cache (`ner_hub_data.account_id`) — populated en HubPage
  *      al pasar el handshake. Es el account_id "activo" canónico para esta
  *      sesión (importa cuando el user pertenece a N firmas y eligió una).
- *   3. Query a `account_members` (limit 1, fallback no autoritativo)
+ *   3. Query a `account_members` (limit 1, fallback no autoritativo).
  *
  * Por qué el cache de sessionStorage es preferido al query directo:
  *   - Un user puede ser paralegal en 3 firmas. El query `.limit(1)` retorna
@@ -17,7 +22,7 @@
  *     al entrar al hub (o la que GHL handshake autorizó).
  *
  * Devuelve:
- *   - accountId: UUID string | null
+ *   - accountId: UUID string | null (null cuando demo, o no resuelto)
  *   - source: de dónde vino ('demo' | 'cache' | 'query' | 'none')
  *   - loading: true mientras resuelve
  */
@@ -31,9 +36,6 @@ export interface NerAccountIdResult {
   source: "demo" | "cache" | "query" | "none";
   loading: boolean;
 }
-
-/** Sentinel para demo mode (NO es UUID válido — no debe llegar a Supabase). */
-export const DEMO_ACCOUNT_ID = "demo-account-mendez";
 
 function readCachedAccountId(): string | null {
   try {
@@ -50,7 +52,7 @@ export function useNerAccountId(): NerAccountIdResult {
   const demoMode = useDemoMode();
   const [state, setState] = useState<NerAccountIdResult>(() => {
     if (demoMode) {
-      return { accountId: DEMO_ACCOUNT_ID, source: "demo", loading: false };
+      return { accountId: null, source: "demo", loading: false };
     }
     const cached = readCachedAccountId();
     if (cached) {
@@ -63,7 +65,7 @@ export function useNerAccountId(): NerAccountIdResult {
     // Si ya resolvimos por demo o cache, no hacer query
     if (state.source !== "none") return;
     if (demoMode) {
-      setState({ accountId: DEMO_ACCOUNT_ID, source: "demo", loading: false });
+      setState({ accountId: null, source: "demo", loading: false });
       return;
     }
 
@@ -95,9 +97,4 @@ export function useNerAccountId(): NerAccountIdResult {
 /** Helper sincrónico para módulos no-React (ej. analytics.ts). */
 export function getCachedNerAccountId(): string | null {
   return readCachedAccountId();
-}
-
-/** True si el accountId es el sentinel de demo (no consultar Supabase con él). */
-export function isDemoAccountId(id: string | null): boolean {
-  return id === DEMO_ACCOUNT_ID;
 }

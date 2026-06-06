@@ -27,7 +27,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { getCachedNerAccountId, isDemoAccountId } from "@/hooks/useNerAccountId";
+import { getCachedNerAccountId } from "@/hooks/useNerAccountId";
 
 // ─── Tipos ───────────────────────────────────────────────────────────
 
@@ -165,10 +165,12 @@ async function getCurrentAuth(): Promise<{ accountId: string | null; userId: str
       accountId = (data?.account_id as string | undefined) ?? null;
     }
 
-    // Demo mode: cached returns un sentinel que NO es UUID. No persistir a Supabase.
-    if (isDemoAccountId(accountId)) {
-      accountId = null;
-    }
+    // Nota (post sec-fix/A0.5d): el ex-bloque defensivo
+    //   `if (isDemoAccountId(accountId)) accountId = null;`
+    // se eliminó porque `useNerAccountId` ya no devuelve un sentinel string
+    // para demo mode — devuelve `{ accountId: null, source: "demo" }`.
+    // `getCachedNerAccountId()` lee `sessionStorage["ner_hub_data"]` que
+    // demo mode jamás escribe, así que nunca llega un sentinel aquí.
 
     cachedAuth = { accountId, userId, at: now };
     return { accountId, userId };
