@@ -297,9 +297,118 @@ adjust Lovable prompts).
 
 ---
 
+## 9. Chronic red CI on `main` — quality gate non-operational (🔴 SOC 2 first-order risk)
+
+**Status:** Discovered 2026-06-06 while opening PR #1 (R9.32 rescue).
+Confirmed via `mcp__github__actions_list`: the last **5 consecutive
+merges to `main`** all show `conclusion: failure` on the `e2e.yml`
+workflow:
+
+| SHA | Round | CI conclusion |
+|---|---|---|
+| `7f3bb89` | R9.31 (current `main` HEAD) | ❌ failure |
+| `10c7e88` | R9.30 | ❌ failure |
+| `e09350d` | R9.29 | ❌ failure |
+| `633b041` | "Corrigió comentario JSX en src/" | ❌ failure |
+| `aaece78` | R9.28 | ❌ failure |
+
+**The CI gate that the entire Phase-2 security remediation depends on
+to provide SOC 2 Type II evidence has not been operational for at least
+5 versions.** Every one of those merges was waved through with a red
+check. For an auditor of Type II, the existence of a configured gate
+plus 5 consecutive bypasses is materially worse than not having a gate
+at all — it is documented proof that the control is ignored when
+inconvenient.
+
+**Root cause of the chronic red (diagnosed 2026-06-06 during PR #1):**
+
+The 7 failing E2E tests do not reflect 7 different bugs. They reflect
+ONE functional bug in demo mode, plus tests correctly detecting it.
+
+`HubCasesPage.tsx:55-60` reads `accountId` from
+`sessionStorage["ner_hub_data"].account_id`. The `useDemoMode` hook
+(`hooks/useDemoData.ts:24-41`) sets `sessionStorage["ner_demo_mode"]="1"`
+when the `?demo=true` query param is present, but **never sets
+`sessionStorage["ner_hub_data"]`**. So in `/hub/cases?demo=true`:
+
+- `accountId === null`
+- `useHubPageReady(loading, permsLoading, teamLoading, !userId, !accountId)`
+  always has `!accountId === true` as one of its flags
+- → `ready === false` PERMANENT
+- → wrapper at `HubCasesPage.tsx:380-383` keeps `pointer-events-none`
+  (intercepts clicks Playwright tries on chips/tabs)
+- → `<CaseViewTabs loading={true} />` renders all counts as the literal
+  `"—"` (CaseViewTabs.tsx:137: `{loading ? "—" : count}`)
+
+The 6 "overlay intercepts pointer events" failures (Patterns 4, 8, 9,
+10×2, 11) all click chips inside that frozen wrapper. Pattern 7 fails
+because `waitForFunction` rejects tabs whose text contains `"—"` — and
+in demo mode they all do, forever.
+
+`HubTasksPage.tsx:238` has the same pattern with a mitigation via
+`tasksHydrated`; partial improvement, the wrapper still has
+`pointer-events-none` while `ready=false`.
+
+**This means the modo demo of `/hub/cases` has been broken in
+production since R9.20.** Anyone navigating to
+`app.nerimmigration.com/hub/cases?demo=true` (Mr. Lorenzo for sales
+demos, prospect firms, etc.) sees a screen frozen with `"—"` counts
+and unclickable chips.
+
+**Likely connection to entry #8 (Lovable side-channel deleting CI gates):**
+
+Hypothesis: when Lovable was asked for unrelated changes and the CI was
+already chronically red, the path of least resistance for its automated
+worker may have been to "fix" the visible red by deleting the tests
+that were flagging the demo-mode bug. The `lovable-sync-*` branches
+that delete `regression.spec.ts` + `hub-smoke.spec.ts` would, if
+merged, turn a screaming gate into silence — not by fixing the bug,
+but by removing the detector. Entries #8 and #9 are likely two faces
+of the same dysfunction.
+
+**Required actions:**
+
+1. **Fix the root cause first.** Smallest change: in `useDemoMode`,
+   when activating `?demo=true`, also seed
+   `sessionStorage["ner_hub_data"]` with a synthetic
+   `{ account_id: "<demo-uuid>" }`. `exitDemoMode` already cleans it
+   up (`hooks/useDemoData.ts:50`). Verify in CI that the 7 failing
+   tests turn green.
+2. **Then merge R9.32.** With a green CI, R9.32 lands on a baseline
+   that the gate actually validates.
+3. **From that point forward, no merge to `main` with red CI.** Treat
+   the gate as a real gate. If a future test fails, fix the underlying
+   issue or open a `chore/quarantine-test-X` PR that documents why
+   and links to the follow-up bug ticket — never a silent override.
+4. **Document this incident** as part of the Sprint A retrospective
+   for the auditor: "control was not operational from R9.28 through
+   R9.31; root cause was a demo-mode `ready` flag never resolving;
+   detected and fixed during Sprint A remediation as part of opening
+   PR #1; gate operative from R9.33 onward."
+
+**Owner:** Claude Code (proposes the demo-mode `ready` fix as a
+pre-merge sec-fix/A0.5) + Mr. Lorenzo (approves, merges, then merges
+R9.32 on top of a green main).
+
+**Re-verification (after the fix):**
+
+```
+git fetch origin main
+# Confirm CI shows ✅ on the latest main commit.
+# Confirm gh pr view <future-PR> --json statusCheckRollup returns
+# conclusion=success for the E2E job.
+```
+
+---
+
 ## Last updated
 
 2026-06-06 — initial creation during Sprint A security remediation. Add
 follow-up entries as new HUMAN-ACTIONS surface.
 2026-06-06 — entry #8 added after Lovable-sync branches discovered
 deleting CI gates.
+2026-06-06 — entry #9 added after diagnosis of chronic red CI on main
+(5+ consecutive failed merges); root cause is a demo-mode `ready` flag
+that never resolves; the SOC 2 control was non-operational across
+R9.28–R9.31; likely related to entry #8 (Lovable's response to a
+chronically red gate may have been to delete the tests).
