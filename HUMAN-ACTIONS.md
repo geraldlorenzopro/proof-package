@@ -197,7 +197,109 @@ The ones that remain to verify after A29 + A30 are applied:
 
 ---
 
+## 8. Lovable side-channel branches deleting CI gates (🔴 process risk)
+
+**Status:** Discovered 2026-06-06 during routine git fetch. NOT MERGED to
+main as of this date — main still carries the full E2E suite. Action
+required: triage and decide on disposition before they can be merged.
+
+**What happened**
+
+After pushing `sec-fix/A0-purge-dossier`, a `git fetch --prune origin`
+surfaced two new remote branches authored by Lovable's automated
+workflow:
+
+- `origin/lovable-sync-1779996417`
+- `origin/lovable-sync-1779996490` (inspected)
+
+The newer branch carries **170 files changed, 1140 insertions(+),
+18468 deletions(-)** compared to main. Among the deletions:
+
+- `tests/e2e/regression.spec.ts` — **completely removed** (568 lines).
+  This is the CI gate that asserts the 6 known bug patterns and
+  blocks merges that regress any of them. Its removal would let
+  Pattern-A through Pattern-K bugs ship to production without warning.
+- `tests/e2e/hub-smoke.spec.ts` — **completely removed** (114 lines).
+  Visual-diff smoke test that blocks merges with > 2% visual regression
+  in the Hub. Without it, any Lovable UI change can land silently.
+- 7 PNG screenshot baselines under
+  `tests/e2e/hub-smoke.spec.ts-snapshots/` — all removed. Even if the
+  spec were restored later, the baselines would have to be regenerated
+  by hand.
+
+Commit messages on these branches are non-descriptive ("Changes",
+"Changes", "Eliminó menciones a GHL", "Agregó selects extra forms").
+The deletes are mixed in with what appear to be cosmetic UI / form
+adjustments.
+
+**Hypothesis**
+
+A request was made to Lovable (likely a cosmetic one — "elimina
+menciones a GHL del UI", "agrega selects al form de intake", or similar),
+and Lovable's generation either (a) decided the tests referenced
+something no longer present and pruned them, or (b) regenerated the
+test files in a way that overwrote them with empty content. Either
+behavior is collateral damage from a request whose scope did not
+contemplate the test suite.
+
+**Why this is process risk of the first order**
+
+The entire Sprint A remediation plan rests on the assumption that the
+`.github/workflows/e2e.yml` gate (which runs `regression.spec.ts` +
+`hub-smoke.spec.ts` on every PR and push to main) will catch
+regressions before they reach production. If a future Lovable PR lands
+that deletes these specs, every subsequent PR — including future
+sec-fix/* PRs — flies blind. The 6 bug patterns we hardened against
+become silently reintroducible.
+
+**Required actions**
+
+1. **DO NOT auto-merge `lovable-sync-*` branches.** Treat any Lovable PR
+   as requiring manual review of the diff for unrelated deletions,
+   especially under `tests/`, `.github/`, `supabase/migrations/`, and
+   `HUMAN-ACTIONS.md`.
+2. **Decide disposition** of the two existing branches:
+   - Are the cosmetic changes (UI text, selects) worth keeping? If yes,
+     cherry-pick the survivable commits to a clean branch on top of
+     main and discard the rest.
+   - If no — close both branches without merging.
+3. **Add a pre-merge gate** that fails CI if a PR deletes any file
+   matching `tests/e2e/**/*.spec.ts`, `tests/screenshots/**/*.png`, or
+   `.github/workflows/**`. This is a one-time hook addition; it
+   protects all future PRs.
+4. **Train the Lovable prompt** — when asking Lovable for changes,
+   prepend a contract clause: *"Do not modify or delete files under
+   tests/, .github/, supabase/migrations/, or HUMAN-ACTIONS.md.
+   If your change would require touching them, stop and report."*
+
+**Verification (re-run periodically)**
+
+```bash
+git ls-tree origin/main tests/e2e/regression.spec.ts \
+                       tests/e2e/hub-smoke.spec.ts \
+                       tests/e2e/hub-smoke.spec.ts-snapshots
+# Should always return both blobs + the snapshots tree. If empty → main is compromised.
+```
+
+**Current state (verified 2026-06-06)**
+
+```
+tests/e2e/regression.spec.ts       blob 21dc2d6b... — 568 lines
+tests/e2e/hub-smoke.spec.ts        blob e8826f81... — 114 lines
+tests/e2e/hub-smoke.spec.ts-snapshots/  tree 3afaea7f... — present
+```
+
+Main is clean. The risk is forward-looking: prevent a future merge from
+breaking these.
+
+**Owner:** Mr. Lorenzo (decide branch disposition + add CI gate +
+adjust Lovable prompts).
+
+---
+
 ## Last updated
 
 2026-06-06 — initial creation during Sprint A security remediation. Add
 follow-up entries as new HUMAN-ACTIONS surface.
+2026-06-06 — entry #8 added after Lovable-sync branches discovered
+deleting CI gates.
