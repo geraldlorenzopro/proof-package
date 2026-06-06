@@ -15,7 +15,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, X } from "lucide-react";
+import { Calendar as CalendarIcon, X, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -135,10 +135,11 @@ export default function TaskDueDateInlineEdit({
           type="button"
           onClick={(e) => e.stopPropagation()}
           disabled={saving}
-          className={`text-[11px] tabular-nums hover:underline underline-offset-2 disabled:opacity-50 transition-opacity ${dueTone(localDate)}`}
+          className={`inline-flex items-center gap-1 text-[11px] tabular-nums hover:underline underline-offset-2 disabled:opacity-50 transition-opacity ${dueTone(localDate)}`}
           title="Click para cambiar fecha"
         >
-          {fmtDisplay(localDate)}
+          <span>{fmtDisplay(localDate)}</span>
+          {saving && <Loader2 className="w-2.5 h-2.5 animate-spin text-cyan-accent" aria-label="Guardando" />}
         </button>
       </PopoverTrigger>
       <PopoverContent

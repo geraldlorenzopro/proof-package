@@ -138,7 +138,7 @@ export default function TaskPriorityInlineEdit({
         title={`Prioridad: ${meta.label}. Click para cambiar.`}
         aria-label={`Prioridad actual: ${meta.label}. Click para cambiar.`}
       >
-        <span className={`w-2 h-2 rounded-full ${meta.color} ${open ? `ring-2 ${meta.ring}` : ""}`} />
+        <span className={`w-2 h-2 rounded-full ${meta.color} ${open ? `ring-2 ${meta.ring}` : ""} ${saving ? "animate-pulse ring-2 ring-cyan-accent/50" : ""}`} />
       </button>
       {open && popPos && typeof document !== "undefined" && createPortal(
         <div

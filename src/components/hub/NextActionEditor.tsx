@@ -17,6 +17,7 @@ import { Check, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoMode } from "@/hooks/useDemoData";
+import { parseSupabaseError } from "@/lib/parseSupabaseError";
 import {
   Dialog,
   DialogContent,
@@ -138,7 +139,12 @@ export default function NextActionEditor({
 
     if (readErr) {
       setSaving(false);
-      toast.error("No se pudo leer el caso", { description: readErr.message });
+      const parsed = parseSupabaseError(readErr);
+      toast.error(parsed.userMsg, {
+        description: parsed.description,
+        duration: 8000,
+        action: { label: "Reintentar", onClick: () => { void handleSave(); } },
+      });
       return;
     }
 
@@ -152,7 +158,12 @@ export default function NextActionEditor({
     setSaving(false);
 
     if (writeErr) {
-      toast.error("No se pudo guardar", { description: writeErr.message });
+      const parsed = parseSupabaseError(writeErr);
+      toast.error(parsed.userMsg, {
+        description: parsed.description,
+        duration: 8000,
+        action: { label: "Reintentar", onClick: () => { void handleSave(); } },
+      });
       return;
     }
 
@@ -186,7 +197,12 @@ export default function NextActionEditor({
     setSaving(false);
 
     if (error) {
-      toast.error("No se pudo limpiar", { description: error.message });
+      const parsed = parseSupabaseError(error);
+      toast.error(parsed.userMsg, {
+        description: parsed.description,
+        duration: 8000,
+        action: { label: "Reintentar", onClick: () => { void handleClear(); } },
+      });
       return;
     }
 
