@@ -401,7 +401,7 @@ git fetch origin main
 
 ---
 
-## 11. CI does not execute vitest — security regression guards are non-operational (🔴 SOC 2 first-order risk)
+## 10. CI does not execute vitest — security regression guards are non-operational (🔴 SOC 2 first-order risk)
 
 **Status:** Discovered 2026-06-06 immediately after PR #2 (sec-fix/A0.5d)
 merged. The PR shipped a regression-guard unit test
@@ -519,7 +519,7 @@ deleting CI gates.
 that never resolves; the SOC 2 control was non-operational across
 R9.28–R9.31; likely related to entry #8 (Lovable's response to a
 chronically red gate may have been to delete the tests).
-2026-06-06 — entry #11 added after the CI workflow was confirmed to
+2026-06-06 — entry #10 added after the CI workflow was confirmed to
 NOT execute vitest. The regression guard shipped by sec-fix/A0.5d
 (blocking re-introduction of the `DEMO_ACCOUNT_ID` sentinel) was found
 to run only in the local pre-push hook, not in the gate that decides
