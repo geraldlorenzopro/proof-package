@@ -34,7 +34,8 @@ import TaskViewTabs, { type TaskViewKey } from "@/components/hub/TaskViewTabs";
 import { useCasePipeline } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
-import { useHubPageReady } from "@/hooks/useHubPageReady";
+import { useHubPageState } from "@/hooks/useHubPageReady";
+import SessionExpiredView from "@/components/hub/SessionExpiredView";
 import { logAccess } from "@/lib/auditLog";
 import { cn } from "@/lib/utils";
 
@@ -110,7 +111,8 @@ export default function HubTasksPage() {
   const [tasksLoading, setTasksLoading] = useState(true);
   // Round 9.19 (Lovable): tasksHydrated evita re-flash de counts en refetches.
   const [tasksHydrated, setTasksHydrated] = useState(false);
-  // Round 9.20 (Claude): teamLoading explícito para useHubPageReady.
+  // teamLoading explícito para que useHubPageState (sec-fix/A0.5c) lo incluya
+  // en su array de loading flags.
   const [teamLoading, setTeamLoading] = useState(true);
   const [taskCounts, setTaskCounts] = useState<Record<TaskViewKey, number>>({
     todas: 0, hoy: 0, atrasadas: 0, proximas: 0, completadas: 0, "rfe-response": 0,
@@ -147,13 +149,17 @@ export default function HubTasksPage() {
   // KPIs entraban uno por uno por el waterfall de fetches. Ahora hasta que
   // TODO esté listo, mostramos skeleton unificado; cuando ready=true,
   // TODO el contenido aparece sincronizado en un mismo frame.
-  const ready = useHubPageReady(
-    casesLoading,
-    tasksLoading,
-    teamLoading,
-    !userId,
-    !accountId,
-  );
+  // sec-fix/A0.5c: pageState reemplaza la flag boolean. Discrimina
+  // loading / ready / demo / error_no_account. El render gatea contra
+  // status — error_no_account renderiza <SessionExpiredView /> con CTAs
+  // clickeables. Cierra el bug histórico HUMAN-ACTIONS #9 para HubTasksPage.
+  const pageState = useHubPageState({
+    demoMode,
+    loading: [casesLoading, tasksLoading, teamLoading],
+    accountId,
+    userId,
+  });
+  const ready = pageState.status === "ready" || pageState.status === "demo";
 
   // Cargar equipo (igual pattern que HubCasesPage)
   useEffect(() => {
@@ -202,6 +208,13 @@ export default function HubTasksPage() {
     }
     loadTeam();
   }, [accountId, demoMode]);
+
+  // sec-fix/A0.5c: render explícito del estado de error antes de la
+  // Bandeja. Misma lógica que HubCasesPage:
+  // accountId null en modo no-demo → SessionExpiredView con CTAs reales.
+  if (pageState.status === "error_no_account") {
+    return <SessionExpiredView />;
+  }
 
   return (
     <HubLayout>

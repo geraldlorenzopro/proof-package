@@ -1,5 +1,5 @@
 /**
- * useHubPageState unit tests (sec-fix/A0.5a)
+ * useHubPageState unit tests (sec-fix/A0.5a/c)
  *
  * Documenta el contrato de la discriminated union:
  *
@@ -8,12 +8,13 @@
  *   - todo loading falso + userId resuelto + accountId null → { status: "error_no_account" }.
  *   - todo resuelto → { status: "ready" }.
  *
- * El wrapper `useHubPageReady` se exporta como deprecated y mantiene el
- * comportamiento boolean antiguo durante la migración A0.5b/c.
+ * sec-fix/A0.5c: el bloque de tests del wrapper deprecated `useHubPageReady`
+ * se eliminó junto con el wrapper mismo cuando los 2 callers
+ * (HubCasesPage, HubTasksPage) terminaron de migrar.
  */
 
 import { describe, it, expect } from "vitest";
-import { useHubPageState, useHubPageReady } from "@/hooks/useHubPageReady";
+import { useHubPageState } from "@/hooks/useHubPageReady";
 
 describe("useHubPageState — discriminated union", () => {
   describe("demo mode", () => {
@@ -121,22 +122,6 @@ describe("useHubPageState — discriminated union", () => {
   });
 });
 
-describe("useHubPageReady — backward-compat wrapper (deprecated)", () => {
-  it("returns true when all flags falsy", () => {
-    expect(useHubPageReady(false, false, false)).toBe(true);
-  });
-
-  it("returns false when any flag truthy", () => {
-    expect(useHubPageReady(false, true, false)).toBe(false);
-  });
-
-  it("returns true with zero flags (empty case)", () => {
-    expect(useHubPageReady()).toBe(true);
-  });
-
-  it("preserves historic convention: useHubPageReady(loading, !userId, !accountId)", () => {
-    // Convention: pass falsy when "ready", truthy when "not ready yet"
-    expect(useHubPageReady(false, /* !userId */ false, /* !accountId */ false)).toBe(true);
-    expect(useHubPageReady(false, /* !userId */ false, /* !accountId */ true)).toBe(false);
-  });
-});
+// sec-fix/A0.5c: el bloque "useHubPageReady — backward-compat wrapper
+// (deprecated)" (4 tests) se eliminó junto con el wrapper mismo cuando
+// HubTasksPage terminó de migrar. La API canónica es useHubPageState.

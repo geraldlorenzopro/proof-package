@@ -1,15 +1,15 @@
 /**
- * useHubPageReady / useHubPageState — Anti-flash universal pattern.
+ * useHubPageState — Anti-flash universal pattern (post sec-fix/A0.5c).
  *
- * sec-fix/A0.5a (2026-06-06):
- * Esta API se extendió de `useHubPageReady` (boolean flat) a `useHubPageState`
- * (discriminated union de 4 estados) para resolver el bug del demo mode
- * documentado en HUMAN-ACTIONS #9: el flag `ready` quedaba en `false`
- * permanente cuando `accountId` era null (demo mode, sesión perdida,
- * `ner_hub_data` corrupto), produciendo en `/hub/cases` y `/hub/tasks` una
- * pantalla bloqueada con counts en `"—"` y `pointer-events-none` infinito.
+ * sec-fix/A0.5a/b/c (2026-06-06):
+ * Esta API reemplazó el boolean flat `useHubPageReady` con un discriminated
+ * union de 4 estados para resolver el bug del demo mode documentado en
+ * HUMAN-ACTIONS #9: la flag `ready` quedaba en `false` permanente cuando
+ * `accountId` era null (demo mode, sesión perdida, `ner_hub_data` corrupto),
+ * produciendo en `/hub/cases` y `/hub/tasks` una pantalla bloqueada con
+ * counts en `"—"` y `pointer-events-none` infinito.
  *
- * El nuevo hook `useHubPageState` distingue:
+ * `useHubPageState` distingue:
  *   - `loading`: alguna query está in-flight (skeleton VISIBLE, no bloqueante).
  *   - `ready`: todo resuelto, render normal.
  *   - `demo`: demo mode activo, mocks listos, bypass de gates.
@@ -18,9 +18,10 @@
  *     "Refrescar" / "Iniciar sesión" — NUNCA `pointer-events-none`, NUNCA
  *     `"—"` infinito.
  *
- * `useHubPageReady` se mantiene como wrapper de compatibilidad (delega a
- * `useHubPageState`). Sin breaking. Se elimina en sec-fix/A0.5c una vez
- * que los 2 consumidores (`HubCasesPage`, `HubTasksPage`) hayan migrado.
+ * Los wrappers `useHubPageReady` y `useHubPageReadyDebug` existieron entre
+ * A0.5a y A0.5c para permitir migrar los 2 callers
+ * (`HubCasesPage`, `HubTasksPage`) uno a uno. A0.5c los eliminó junto con
+ * la migración del segundo caller.
  *
  * Problema raíz histórico (Round 9.20 Mr. Lorenzo E2E):
  *   /hub/tasks (y por extensión /hub/cases) tenía cascade waterfall.
@@ -124,46 +125,6 @@ export function useHubPageState(opts: UseHubPageStateOpts): HubPageState {
   return { status: "ready" };
 }
 
-/**
- * Wrapper de compatibilidad — delega a `useHubPageState` y devuelve un
- * boolean `ready` para callers que aún no migraron.
- *
- * sec-fix/A0.5a: este wrapper se mantiene para que `HubCasesPage` y
- * `HubTasksPage` (los únicos 2 consumidores) puedan migrar uno a uno en
- * `sec-fix/A0.5b` y `sec-fix/A0.5c`. Una vez ambos migrados, este wrapper
- * y `useHubPageReadyDebug` se eliminan junto con el último PR del bloque.
- *
- * Comportamiento equivalente al anterior (boolean):
- *   - Demo mode con accountId null → ready=false (igual que antes)
- *   - Cualquier flag truthy → ready=false (igual)
- *   - Todo falsy + accountId truthy → ready=true
- *
- * @param flags array de booleans: `true` = ESTÁ cargando o NO está listo.
- *   Convención histórica: `useHubPageReady(loading, permsLoading, teamLoading, !userId, !accountId)`.
- * @returns `true` SOLO cuando TODOS los flags son falsy.
- *
- * @deprecated Migrar a `useHubPageState` para distinguir loading vs error_no_account.
- */
-export function useHubPageReady(...flags: boolean[]): boolean {
-  return flags.every(f => !f);
-}
-
-/**
- * Variante con debug del wrapper viejo. NO se usa en ningún caller actual
- * (verificado en sec-fix/A0.5a vía grep). Se mantiene durante esta
- * transición y se elimina en sec-fix/A0.5c junto con `useHubPageReady`.
- *
- * @deprecated Sin callers; eliminar en sec-fix/A0.5c.
- */
-export function useHubPageReadyDebug(
-  flags: Record<string, boolean>,
-  pageName: string = "hub-page"
-): boolean {
-  const ready = Object.values(flags).every(f => !f);
-  if (import.meta.env.DEV && !ready) {
-    const blocking = Object.entries(flags).filter(([_, v]) => v).map(([k]) => k);
-    // eslint-disable-next-line no-console
-    console.debug(`[${pageName}] not ready · blocking:`, blocking);
-  }
-  return ready;
-}
+// sec-fix/A0.5c: `useHubPageReady` y `useHubPageReadyDebug` se eliminaron
+// junto con la migración de HubTasksPage. Los 2 únicos callers
+// (HubCasesPage en A0.5b, HubTasksPage en A0.5c) usan `useHubPageState`.
