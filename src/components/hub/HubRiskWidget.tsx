@@ -7,7 +7,9 @@ import { HUB_SECTIONS } from "@/lib/hubSections";
 import HubEmptyState from "./HubEmptyState";
 
 interface Props {
-  accountId: string;
+  // sec-fix/B1: null cuando demo mode o sesión pre-handshake.
+  // useRiskCases ya maneja null.
+  accountId: string | null;
 }
 
 function severityClasses(daysLeft: number): { card: string; badge: string } {

@@ -14,8 +14,20 @@ import { trackEvent } from "@/lib/analytics";
 // Datos sintéticos para demo mode — bypassa auth completo, permite mostrar
 // el hub a prospectos sin cuenta. SIN tocar BD: los hooks detectan demoMode
 // (useCasePipeline, etc.) y retornan mock data realista.
+//
+// sec-fix/B1 (2026-06-06): account_id pasó de un sentinel string fijo a
+// `null`. El sentinel viajaba como param a queries Supabase
+// (`.eq("account_id", <sentinel>)`) — patrón rechazado en la auditoría B-1
+// como "client-controlled value as scope param". Ahora demo mode propaga
+// accountId=null y cada caller distingue demo via useDemoMode() o via
+// accountId===null. Los hooks de data (useTodayAppointments, useRiskCases,
+// useMyActions, useWeekendEvents) ya estaban diseñados para recibir null.
+// fetchOfficeContextLite tuvo que ajustarse para early-return con defaults
+// cuando accountId es null. La string literal anterior queda prohibida
+// en src/** por el regression guard en
+// `src/test/noDemoSentinelInSrc.test.ts`.
 const DEMO_HUB_DATA: HubData = {
-  account_id: "demo-account-mendez",
+  account_id: null,
   account_name: DEMO_FIRM_NAME,
   plan: "elite",
   apps: [],
@@ -31,7 +43,7 @@ interface HubApp {
 }
 
 interface HubData {
-  account_id: string;
+  account_id: string | null;
   account_name: string;
   plan: string;
   apps: HubApp[];
@@ -549,8 +561,15 @@ export default function HubPage() {
       plan={data.plan}
       availableApps={availableAppSlugs}
     >
-      {/* Onboarding wizard overlay */}
-      {showOnboarding && (
+      {/* Onboarding wizard overlay.
+          sec-fix/B1: el guard pasó de `showOnboarding` solo a
+          `showOnboarding && data.account_id` para que TypeScript narrowee
+          accountId a `string` antes de pasarlo a OnboardingWizard (que
+          conserva su signature `string`, fuera del scope de B1). En runtime
+          showOnboarding=true ya implicaba account_id non-null (línea 162-163
+          gatea checkOnboarding contra accountId), así que el guard nuevo
+          es no-op de comportamiento — solo type narrowing. */}
+      {showOnboarding && data.account_id && (
         <OnboardingWizard
           accountId={data.account_id}
           accountName={data.account_name}

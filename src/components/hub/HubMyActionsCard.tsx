@@ -3,7 +3,9 @@ import { Hand } from "lucide-react";
 import { useMyActions, ActionKind } from "@/hooks/useMyActions";
 
 interface Props {
-  accountId: string;
+  // sec-fix/B1: null cuando demo mode o sesión pre-handshake.
+  // useMyActions ya maneja null (gateado por accountId && userId).
+  accountId: string | null;
   userId: string | null;
 }
 

@@ -6,7 +6,9 @@ import { useDemoMode } from "@/hooks/useDemoData";
 import { HUB_SECTIONS } from "@/lib/hubSections";
 
 interface Props {
-  accountId: string;
+  // sec-fix/B1: null cuando demo mode o sesión pre-handshake.
+  // useTodayAppointments ya maneja null (early return + estado vacío).
+  accountId: string | null;
 }
 
 function formatTime(iso: string | null): string {

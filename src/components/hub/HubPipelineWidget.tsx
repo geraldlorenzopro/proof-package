@@ -4,7 +4,9 @@ import { usePipelineStats, PipelineBucket } from "@/hooks/usePipelineStats";
 import HubEmptyState from "./HubEmptyState";
 
 interface Props {
-  accountId: string;
+  // sec-fix/B1: null cuando demo mode o sesión pre-handshake.
+  // usePipelineStats ya maneja null.
+  accountId: string | null;
 }
 
 const BUCKET_COLOR: Record<PipelineBucket, string> = {
