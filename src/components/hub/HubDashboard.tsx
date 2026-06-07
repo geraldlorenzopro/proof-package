@@ -100,7 +100,28 @@ async function fetchSignedUrl() {
   return data.signed_url;
 }
 
-async function fetchOfficeContextLite(accountId: string) {
+async function fetchOfficeContextLite(accountId: string | null) {
+  // sec-fix/B1 (2026-06-06): early-return obligatorio cuando accountId es
+  // null (demo mode tras el cambio de DEMO_HUB_DATA.account_id a null, o
+  // sesión que aún no resolvió). NINGUNA de las 4 queries debe ejecutarse
+  // con accountId null — PostgREST se comporta raro con .eq("account_id", null)
+  // y no queremos depender de eso. Defaults explícitos para el voice
+  // briefing de Camila.
+  if (!accountId) {
+    const dayName = new Date().toLocaleDateString("es-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    return {
+      ownerFirstName: "Jefe",
+      context: [
+        `El usuario se llama "Jefe".`,
+        `Firma: Sin nombre`,
+        `Casos activos: 0`,
+        `Tareas pendientes: 0`,
+        `Clientes: 0`,
+        `Fecha: ${dayName}`,
+      ].join("\n"),
+    };
+  }
+
   const [
     { data: officeConfig },
     { count: activeCasesCount },
@@ -143,7 +164,13 @@ function unlockAudioContext() {
 const FAREWELL_PATTERNS = /\b(hasta luego|hasta pronto|nos vemos|que tengas buen día|que tengas buenas noches|fue un placer atenderte|cuídate mucho|chao|adiós)\b/i;
 
 interface Props {
-  accountId: string;
+  // sec-fix/B1: accountId acepta null para que demo mode y sesiones
+  // pre-handshake propaguen el estado real sin sentinel strings. Todos los
+  // callees (useTodayAppointments, useRiskCases, useMyActions,
+  // useWeekendEvents, usePipelineStats, HubAgendaWidget, HubRiskWidget,
+  // HubMyActionsCard, HubPipelineWidget, HubCrisisBar, HubActivityStream,
+  // fetchOfficeContextLite) ya aceptan null tras este PR.
+  accountId: string | null;
   accountName: string;
   staffName?: string;
   plan: string;

@@ -43,11 +43,14 @@ export function useDemoMode(): boolean {
 
 export function exitDemoMode() {
   // Limpieza COMPLETA — evita que demo contamine sesión real del usuario.
-  // Cualquier cache que tenga `account_id="demo-account-mendez"` o estado
-  // visual del demo (vista kanban/tabla guardada) debe borrarse.
+  // Cualquier cache de demo (ner_hub_data, vista guardada, etc) debe
+  // borrarse. sec-fix/B1: demo mode ya no setea un sentinel string en
+  // account_id (ahora es null), pero `exitDemoMode` sigue limpiando
+  // sessionStorage por defensa en profundidad y para limpiar instalaciones
+  // previas que pudieran haber dejado el sentinel viejo cacheado.
   try {
     sessionStorage.removeItem("ner_demo_mode");
-    sessionStorage.removeItem("ner_hub_data");        // HubData cached con account_id fake
+    sessionStorage.removeItem("ner_hub_data");        // HubData cached
     sessionStorage.removeItem("ner_active_account_id"); // pinning de account
     sessionStorage.removeItem("ner_splash_seen");     // demo no debería marcar splash visto
     // localStorage — preferencias del demo no contaminan real
