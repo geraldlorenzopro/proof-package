@@ -23,7 +23,8 @@ import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { useCaseViews, filterCasesByView } from "@/hooks/useCaseViews";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useHubPageReady } from "@/hooks/useHubPageReady";
+import { useHubPageState } from "@/hooks/useHubPageReady";
+import SessionExpiredView from "@/components/hub/SessionExpiredView";
 import { groupCases, sortCases, SORT_LABELS, type GroupByKey, type SortKey } from "@/lib/caseGrouping";
 import { getCaseTypeByKey } from "@/lib/caseTypes";
 import { readScopedJson, writeScopedJson, migrateLegacyKeys } from "@/lib/scopedStorage";
@@ -137,16 +138,18 @@ export default function HubCasesPage() {
   const [teamLoading, setTeamLoading] = useState(true);
   const [peekCaseId, setPeekCaseId] = useState<string | null>(null);
 
-  // Round 9.20 anti-flash universal: gate del render data-driven en una sola
-  // flag `ready`. Antes KPIs/strip/tabla entraban en frames distintos por
-  // cascade de fetches (cases + perms + team async).
-  const ready = useHubPageReady(
-    loading,        // useCasePipeline cases
-    permsLoading,   // usePermissions role
-    teamLoading,
-    !userId,
-    !accountId,
-  );
+  // sec-fix/A0.5b: pageState es la fuente única de verdad. Discrimina
+  // loading / ready / demo / error_no_account. El render gatea contra el
+  // status — error_no_account renderiza <SessionExpiredView /> CON CTAs
+  // clickeables (no pointer-events-none, no "—" infinito) que era el bug
+  // histórico de HUMAN-ACTIONS #9.
+  const pageState = useHubPageState({
+    demoMode,
+    loading: [loading, permsLoading, teamLoading],
+    accountId,
+    userId,
+  });
+  const ready = pageState.status === "ready" || pageState.status === "demo";
 
   // Round 9 (Mr. Lorenzo + Valerie + Marcus): quick modals para nota
   // y tarea SIN abandonar la tabla (NO navega al expediente completo).
@@ -343,6 +346,15 @@ export default function HubCasesPage() {
       const next = [key, ...prev.filter(k => k !== key)].slice(0, MAX_RECENT_TYPES);
       return next;
     });
+  }
+
+  // sec-fix/A0.5b: render explícito del estado de error antes del Pipeline.
+  // Si accountId quedó null en modo no-demo (sesión expirada, ner_hub_data
+  // corrupto, handshake GHL falló), mostramos un EmptyState con CTAs
+  // clickeables — NUNCA la pantalla pegada con pointer-events-none que era
+  // el bug histórico (HUMAN-ACTIONS #9).
+  if (pageState.status === "error_no_account") {
+    return <SessionExpiredView />;
   }
 
   return (

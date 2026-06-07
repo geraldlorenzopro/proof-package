@@ -566,3 +566,82 @@ test.describe("Pattern 11 — Auto-save optimistic + rollback (R9.31 validation)
     expect(await errorToast.count()).toBe(0);
   });
 });
+
+/**
+ * Pattern 12 — Graceful degradation when accountId is null (sec-fix/A0.5b/c).
+ *
+ * Antes de A0.5b/c, las páginas /hub/cases y /hub/tasks en modo NO-demo con
+ * sessionStorage vacío (sesión expirada o ner_hub_data corrupto) se quedaban
+ * con `pointer-events-none` infinito y counts en `"—"` (HUMAN-ACTIONS #9 —
+ * el demo-mode `ready` flag nunca resolvía). Estos 2 tests anclan que
+ * después de A0.5b/c, en ese mismo escenario, se renderiza un EmptyState
+ * con CTAs clickeables reales. Los anchors son `data-testid`, no texto, para
+ * que el copy pueda evolucionar para humanos sin romper el guard.
+ */
+test.describe("Pattern 12 — Graceful degradation when accountId is null (A0.5b/c)", () => {
+  test("/hub/cases sin demo + sessionStorage vacío → SessionExpiredView con CTAs clickeables (no skeleton infinito)", async ({ page }) => {
+    // Setup: limpia sessionStorage SIN demo mode antes de entrar.
+    await page.goto("/auth"); // landing seguro para limpiar storage
+    await page.evaluate(() => {
+      sessionStorage.clear();
+      localStorage.removeItem("ner_active_account_id");
+    });
+
+    await page.goto("/hub/cases"); // SIN ?demo=true
+    await page.waitForLoadState("networkidle");
+
+    // ASSERTION 1: NO debe haber wrappers con pointer-events-none ni opacity-0.
+    //   Esos eran el bug — la UI parecía cargando para siempre, con todo bloqueado.
+    const blockingWrappers = await page.locator("div.pointer-events-none.opacity-0").count();
+    expect(blockingWrappers).toBe(0);
+
+    // ASSERTION 2: NO debe haber tabs/chips con "—" como contenido.
+    //   "—" era el render de counts cuando ready=false (CaseViewTabs línea 137).
+    //   El SessionExpiredView ni siquiera renderiza CaseViewTabs.
+    const dashContent = await page.locator('button:has-text("—")').count();
+    expect(dashContent).toBe(0);
+
+    // ASSERTION 3: el SessionExpiredView debe estar montado.
+    //   Anclamos al data-testid, no al texto del copy (que puede cambiar).
+    await expect(page.locator('[data-testid="session-expired-view"]')).toBeVisible({
+      timeout: 5_000,
+    });
+
+    // ASSERTION 4: las 2 CTAs deben ser visibles Y clickeables.
+    //   `toBeEnabled` confirma que no hay disabled / pointer-events-none.
+    const refreshCta = page.locator('[data-testid="session-expired-refresh-cta"]');
+    const loginCta = page.locator('[data-testid="session-expired-login-cta"]');
+    await expect(refreshCta).toBeVisible();
+    await expect(refreshCta).toBeEnabled();
+    await expect(loginCta).toBeVisible();
+    await expect(loginCta).toBeEnabled();
+  });
+
+  test("/hub/tasks sin demo + sessionStorage vacío → SessionExpiredView con CTAs clickeables (no skeleton infinito)", async ({ page }) => {
+    await page.goto("/auth");
+    await page.evaluate(() => {
+      sessionStorage.clear();
+      localStorage.removeItem("ner_active_account_id");
+    });
+
+    await page.goto("/hub/tasks"); // SIN ?demo=true
+    await page.waitForLoadState("networkidle");
+
+    const blockingWrappers = await page.locator("div.pointer-events-none.opacity-0").count();
+    expect(blockingWrappers).toBe(0);
+
+    const dashContent = await page.locator('button:has-text("—")').count();
+    expect(dashContent).toBe(0);
+
+    await expect(page.locator('[data-testid="session-expired-view"]')).toBeVisible({
+      timeout: 5_000,
+    });
+
+    const refreshCta = page.locator('[data-testid="session-expired-refresh-cta"]');
+    const loginCta = page.locator('[data-testid="session-expired-login-cta"]');
+    await expect(refreshCta).toBeVisible();
+    await expect(refreshCta).toBeEnabled();
+    await expect(loginCta).toBeVisible();
+    await expect(loginCta).toBeEnabled();
+  });
+});
