@@ -401,6 +401,73 @@ git fetch origin main
 
 ---
 
+### Resolution (2026-06-08)
+
+**P-1 cerrado con evidencia E2E (9 patterns verdes). #9 cerrado en su
+criterio FUNCIONAL.** CI overall sigue rojo por un único motivo: baselines
+de visual regression existen solo para `darwin`, nunca se generaron para
+`linux` — pre-existente, no relacionado con la remediación, documentado
+como deuda de infra con su propio PR pendiente.
+
+**Cadena de PRs que cerró el criterio funcional:**
+
+| PR | sec-fix | Contribución |
+|---|---|---|
+| #8 | A0.5a | `useHubPageState` discriminated union (loading/ready/demo/error_no_account) |
+| #9 | A0.5b | `HubCasesPage` migración + `SessionExpiredView` con `data-testid` |
+| #10 | A0.5c | `HubTasksPage` migración + wrapper `useHubPageReady` deprecated eliminado |
+| #11 | A0.5e | `authReady` distingue auth-en-vuelo vs auth-resolvió-null + `.catch`/`.finally`/`cancelled` |
+| #12 | A0.5f | Reorden de prioridad coalescer + reset `setLoading(false)` en origen |
+| #13 | A0.5g | Pattern 12 E2E reescrito al escenario P-1 REAL (sesión válida + `ner_hub_data` ausente) |
+| #14 | A0.5h | Pattern 4 + 10a anclados a `data-testid` (frágiles confirmados con evidencia) |
+
+**Resultado empírico CI (run #64, commit pre-merge `fd1d8b4`):**
+
+```
+✓  7  Pattern 4 — Chips Tipo proceso tienen tooltip Radix Wrapper (1.7s)
+✓  9  Pattern 10 — QuickNoteModal chip caso muestra label legible (no raw key)
+✓ 24  Pattern 12 — [P-1 real] /hub/cases con sesión Supabase válida + ner_hub_data ausente
+✓ 25  Pattern 12 — [P-1 real] /hub/tasks con sesión Supabase válida + ner_hub_data ausente
++ 21 patterns adicionales — 25/25 regression.spec.ts pasaron
+```
+
+**Lo que SÍ está cerrado (criterio funcional):**
+
+- Bug funcional P-1 (`HubCasesPage`/`HubTasksPage` con `accountId=null` se
+  congelaban en `pointer-events-none` con counts "—") → fixed por A0.5b/c/e/f
+- Regression guards E2E del escenario P-1 real → A0.5g verde
+- Tests frágiles que enmascaraban estado verdadero → A0.5h anclados a `data-testid`
+- Discriminated union `useHubPageState` + 20 unit tests de `useHubPageState`
+- Vitest step en CI (#1, #11 cerrados anteriormente) — los unit tests bloquean merge
+
+**Lo que sigue rojo (deuda de infra, NO funcional):**
+
+- `hub-smoke.spec.ts` falla con `"A snapshot doesn't exist at .../hub-leads-chromium-desktop-linux.png, writing actual."` en los 7 views
+- Evidencia: commit baseline `67c14a8` ("test: initial baseline screenshots Sprint A", 5 jun 2026) tiene 7 archivos TODOS `-darwin.png`, ningún `-linux.png`
+- Los baselines `-linux.png` jamás fueron commiteados — 74 commits antes de A0.5b
+- Patrón de error es **"doesn't exist"** (no hay baseline para comparar), NO **"doesn't match"** (regresión visual) — descarta categóricamente que A0.5b-h hayan roto la UI
+- Antes de A0.5h, regression.spec.ts siempre falló primero y el smoke step nunca llegó a ejecutarse en Linux — la discrepancia darwin/linux estuvo OCULTA por el rojo más temprano
+
+**Para el auditor:**
+
+- El control E2E sobre el escenario crítico P-1 (sesión Supabase válida +
+  `ner_hub_data` ausente o corrupto en `/hub/cases` y `/hub/tasks`) está
+  **funcionalmente operativo**, demostrado por `regression.spec.ts` Pattern 12 ×2
+  pasando contra el escenario REAL (vía inyección de sesión fake JWT-shaped en
+  localStorage, security review documentada en PR #13 body).
+- El rojo de `main` es atribuible al hub-smoke visual regression test cuyas
+  baselines Linux nunca se generaron — esto NO es un control funcional fallido,
+  es una pieza de infraestructura nunca completada al setup del Sprint A.
+- Plan de cierre del CI rojo: PR separado regenera baselines Linux con review
+  visual de Mr. Lorenzo antes de commit (no regenerar a ciegas, que grabaría
+  como "correcto" lo que sea que se vea en CI). Sin urgencia.
+
+**Owner del cierre pendiente:** Claude Code (genera Linux baselines en
+container Linux, muestra screenshots a Mr. Lorenzo, abre PR aparte cuando él
+confirme visualmente que el estado es correcto).
+
+---
+
 ## 10. CI does not execute vitest — security regression guards are non-operational (🔴 SOC 2 first-order risk)
 
 **Status:** Discovered 2026-06-06 immediately after PR #2 (sec-fix/A0.5d)
@@ -525,3 +592,10 @@ NOT execute vitest. The regression guard shipped by sec-fix/A0.5d
 to run only in the local pre-push hook, not in the gate that decides
 merges. Same dysfunction shape as entries #8 and #9 and the chronic
 `--no-verify` pattern. Fix tracked as `chore/ci-add-vitest-step`.
+2026-06-08 — entry #9 functional closure block appended after the
+sec-fix/A0.5a/b/c/e/f/g/h chain landed all 25 regression.spec.ts tests
+green (Pattern 12 ×2 against the real P-1 scenario via fake-session
+injection, Pattern 4 + 10a re-anchored to `data-testid`). CI overall
+still red due to pre-existing missing Linux baselines for
+hub-smoke.spec.ts visual regression — documented as separate infra
+debt, baselines PR pending visual review by Mr. Lorenzo before commit.
