@@ -562,15 +562,18 @@ Respuesta RFE → Aprobado/Negado → Apelación
 4. Court system tracker
 5. Evidence Packet Builder
 
-## Known Issues (auto-detected — verify if still apply)
+## Known Issues (auditadas 2026-06-08 post-A0.5)
 
 1. `/hub` NOT in ProtectedRoute — INTENTIONAL (handles GHL handshake)
-2. Case Engine tab "Decisión" — **possibly already fixed** (current code shows no separate tab)
-3. Case Engine "Tareas" tab — **possibly already added** (current code shows it in tabs array)
-4. Case Engine URL sync — **already fixed** (uses useSearchParams)
-5. Dead imports: CaseEmailHistory, CaseAgentHistory, CaseEmailSender, CaseNotesPanel — still imported, never rendered
-6. `index.css` — Jarvis tokens (`--jarvis`, scan-lines, Orbitron import) deuda técnica del v4 rechazado
-7. Stale files: `.tmp_fix_ghl_deploy_probe.ts`, `tmp/vawa.zip` (14 MB binary), `src/pages/AdminPanel.tsx` (no route)
+2. `index.css` — Jarvis tokens (`--jarvis`, scan-lines, Orbitron import) deuda técnica del v4 rechazado
+3. **`hub-smoke.spec.ts` baselines solo darwin** — Linux baselines nunca generadas (commit `67c14a8` solo creó `-darwin`). Pendiente PR aparte CON review visual de Mr. Lorenzo antes de commit. Documentado en HUMAN-ACTIONS #9 Resolution + #11.
+4. **2 branches `lovable-sync-*` vivas** (`1779996417` + `1779996490`) — side-channel risk pendiente decisión. Documentado en HUMAN-ACTIONS #11.
+
+### Entradas legacy AUDITADAS y CERRADAS (2026-06-08, no aplican más)
+
+- ~~Case Engine tab "Decisión" / "Tareas" / URL sync~~ — confirmado fixed (tabs array tiene "Tareas", useSearchParams en uso, "Decisión" es panel embebido por diseño no tab separada)
+- ~~Dead imports CaseEmailHistory/CaseAgentHistory/CaseEmailSender/CaseNotesPanel~~ — los 3 primeros están renderizados en CaseEnginePage/SidebarCommsCompact, el 4to ni siquiera existe el archivo
+- ~~Stale files `tmp/vawa.zip` (14MB) / `.tmp_fix_ghl_deploy_probe.ts` / `src/pages/AdminPanel.tsx`~~ — ninguno existe en working tree ni git history
 
 ## Files persistidos cross-session — LEER ESTOS PRIMERO
 
