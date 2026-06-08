@@ -40,7 +40,7 @@
 
 ### Deuda documentada (NO bloquea cierre funcional, pero CI sigue rojo overall)
 
-- `hub-smoke.spec.ts` Linux baselines faltantes — PR aparte con review visual de Mr. Lorenzo antes de commit
+- `hub-smoke.spec.ts` Linux baselines faltantes — **workflow `update-smoke-baselines.yml` existe en main (PR #20 mergeado, workflow_dispatch manual) pero NO disparar hasta que la UI esté estable.** Mr. Lorenzo decisión 2026-06-09: está rediseñando UI, regenerar ahora = baselines obsoletos en días + loop de regeneración. Smoke rojo sigue como deuda documentada (HUMAN-ACTIONS #9 Resolution + #11). Disparar cuando la UI se estabilice.
 - 2 branches `lovable-sync-*` vivas — decisión pendiente (HUMAN-ACTIONS #11)
 
 ### Columna A cleanup hygiene también cerrada
