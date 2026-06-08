@@ -62,10 +62,38 @@ export default function HubCasesPage() {
 
   const demoMode = useDemoMode();
   const [userId, setUserId] = useState<string | null>(null);
+  // sec-fix/A0.5e: authReady distingue "auth.getUser() en vuelo" (false) de
+  // "auth.getUser() resolvió" (true, sin importar si devolvió user, null o
+  // si throw). Sin este flag, useHubPageState colapsaba ambos en `loading`
+  // y nunca entraba a `error_no_account` cuando no había sesión.
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    if (demoMode) { setUserId("demo-u-vanessa"); return; }
-    void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+    if (demoMode) { setUserId("demo-u-vanessa"); setAuthReady(true); return; }
+
+    // sec-fix/A0.5e: cleanup guard contra setState-on-unmounted si el user
+    // navega antes de que getUser resuelva.
+    let cancelled = false;
+    void supabase.auth.getUser()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setUserId(data.user?.id ?? null);
+      })
+      .catch(() => {
+        // sec-fix/A0.5e: si getUser falla (red caída, token corrupto, etc),
+        // userId queda null. CRÍTICO: authReady debe pasar a true igual via
+        // .finally — sino la página se cuelga en `loading` permanente (el
+        // mismo bug por otra puerta). La página va a renderizar
+        // <SessionExpiredView /> con el CTA "Refrescar" que permite reintentar.
+        if (cancelled) return;
+        setUserId(null);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setAuthReady(true);
+      });
+
+    return () => { cancelled = true; };
   }, [demoMode]);
 
   // Migration de localStorage legacy (Victoria BLOCKER #1).
@@ -148,6 +176,7 @@ export default function HubCasesPage() {
     loading: [loading, permsLoading, teamLoading],
     accountId,
     userId,
+    authReady,
   });
   const ready = pageState.status === "ready" || pageState.status === "demo";
 
