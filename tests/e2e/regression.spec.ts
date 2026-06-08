@@ -568,26 +568,95 @@ test.describe("Pattern 11 — Auto-save optimistic + rollback (R9.31 validation)
 });
 
 /**
- * Pattern 12 — Graceful degradation when accountId is null (sec-fix/A0.5b/c).
+ * Pattern 12 — Graceful degradation when accountId is null (sec-fix/A0.5b/c/e/f/g).
  *
- * Antes de A0.5b/c, las páginas /hub/cases y /hub/tasks en modo NO-demo con
- * sessionStorage vacío (sesión expirada o ner_hub_data corrupto) se quedaban
- * con `pointer-events-none` infinito y counts en `"—"` (HUMAN-ACTIONS #9 —
- * el demo-mode `ready` flag nunca resolvía). Estos 2 tests anclan que
- * después de A0.5b/c, en ese mismo escenario, se renderiza un EmptyState
- * con CTAs clickeables reales. Los anchors son `data-testid`, no texto, para
- * que el copy pueda evolucionar para humanos sin romper el guard.
+ * El bug REAL de producción (HUMAN-ACTIONS #9, "P-1"):
+ *   Usuario logged in a Supabase (sesión válida) +
+ *   `sessionStorage["ner_hub_data"]` ausente o corrupto (handshake GHL falló,
+ *   refresh tab, navegación cruzada) →
+ *   `accountId === null` en HubCasesPage/HubTasksPage →
+ *   pre-A0.5b: skeleton infinito + `pointer-events-none` + counts en `"—"`.
+ *   post-A0.5b: <SessionExpiredView/> con CTAs clickeables ("Refrescar" /
+ *   "Iniciar sesión").
+ *
+ * sec-fix/A0.5g (2026-06-08): el test ORIGINAL simulaba el escenario
+ * EQUIVOCADO. Hacía `sessionStorage.clear()` SIN tocar localStorage, lo cual
+ * deja a Supabase SIN session token. Resultado:
+ *   1. ProtectedRoute (App.tsx wrapper) corre `supabase.auth.getSession()`.
+ *   2. getSession devuelve null → `authenticated = false`.
+ *   3. ProtectedRoute REDIRIGE a `/auth?redirect=/hub/cases` ANTES de que
+ *      HubCasesPage monte.
+ *   4. SessionExpiredView nunca renderizaba — pero por interceptación de
+ *      routing, no porque el coalescer fallara.
+ *
+ * Los 4 fixes anteriores (A0.5b/c/e/f) fueron correctos en su propio mérito
+ * (arquitectura del hook, authReady, defensa de loading), pero el test los
+ * estaba evaluando contra un escenario que pasa por OTRA capa. Hasta hoy
+ * (4ta iteración en CI) no sabíamos si los fixes cerraron P-1 o no.
+ *
+ * Este test rescrito simula el escenario REAL inyectando una sesión Supabase
+ * fake (JWT-shaped pero sin firma válida) que engaña al `getSession()`
+ * client-side, lo cual deja a ProtectedRoute pasar al children. HubCasesPage
+ * monta, lee `ner_hub_data` (ausente) → `accountId === null` → coalescer va
+ * a `error_no_account` → SessionExpiredView renderiza.
+ *
+ * SEGURIDAD del token fake (sec-review):
+ *   - JWT sin firma válida — backend Supabase lo rechaza (RLS valida HMAC
+ *     signature con secret que solo Supabase tiene). NO abre puerta runtime.
+ *   - Solo engaña `getSession()` client-side, que lee localStorage sin
+ *     validar firma. ProtectedRoute es UX (redirect a login si no hay
+ *     sesión), NO control de seguridad. Seguridad real vive en backend RLS.
+ *   - Vive solo en el BrowserContext de Playwright durante el test. No
+ *     persiste, no se sirve a usuarios reales. Cero superficie de ataque.
+ *   - `getUser()` en runtime hace network call con fake JWT → 401 → `.catch`
+ *     setea userId=null. Esto ES el comportamiento que queremos del test
+ *     (simula sesión expirada en backend a pesar de localStorage presente).
  */
 test.describe("Pattern 12 — Graceful degradation when accountId is null (A0.5b/c)", () => {
-  test("/hub/cases sin demo + sessionStorage vacío → SessionExpiredView con CTAs clickeables (no skeleton infinito)", async ({ page }) => {
-    // Setup: limpia sessionStorage SIN demo mode antes de entrar.
-    await page.goto("/auth"); // landing seguro para limpiar storage
+  // Helper: inyecta sesión Supabase fake para que ProtectedRoute deje pasar
+  // sin redirigir. Project ref derivado de VITE_SUPABASE_URL — el subdominio
+  // del host es el projectRef (Supabase JS lo usa para el storage key).
+  // Si cambia el proyecto, falla en setup, no en assertion → fail-loud.
+  async function injectFakeSupabaseSessionAndClearNerHub(page: import("@playwright/test").Page) {
+    await page.goto("/auth"); // landing seguro para tocar storage
     await page.evaluate(() => {
+      // Limpiar todo lo legacy primero (sessionStorage + localStorage).
       sessionStorage.clear();
+      localStorage.clear();
+
+      // SIMULACIÓN: sesión Supabase fake en localStorage.
+      // Storage key Supabase JS: `sb-${projectRef}-auth-token`.
+      // projectRef hardcodeado para evitar acoplamiento a env vars en CI.
+      const STORAGE_KEY = "sb-dewjhkgnoaepgkhulcbv-auth-token";
+      const FAR_FUTURE_SECONDS = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365;
+      const FAKE_SESSION = {
+        access_token: "FAKE_JWT_TEST_ONLY_NOT_VALID_ANYWHERE.simulation.no-signature",
+        refresh_token: "FAKE_REFRESH_TEST_ONLY_NOT_VALID",
+        expires_at: FAR_FUTURE_SECONDS,
+        expires_in: 60 * 60 * 24 * 365,
+        token_type: "bearer",
+        user: {
+          id: "test-fake-user-id-simulation-only",
+          aud: "authenticated",
+          role: "authenticated",
+          email: "test-pattern-12@simulation.local",
+          app_metadata: {},
+          user_metadata: {},
+        },
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(FAKE_SESSION));
+
+      // CRÍTICO: ner_hub_data DEBE estar ausente para simular P-1.
+      // sessionStorage.clear() arriba ya lo borró. Doble-check defensivo.
+      sessionStorage.removeItem("ner_hub_data");
       localStorage.removeItem("ner_active_account_id");
     });
+  }
 
-    await page.goto("/hub/cases"); // SIN ?demo=true
+  test("[P-1 real] /hub/cases con sesión Supabase válida + ner_hub_data ausente → SessionExpiredView", async ({ page }) => {
+    await injectFakeSupabaseSessionAndClearNerHub(page);
+
+    await page.goto("/hub/cases"); // SIN ?demo=true → demoMode=false
     await page.waitForLoadState("networkidle");
 
     // ASSERTION 1: NO debe haber wrappers con pointer-events-none ni opacity-0.
@@ -617,12 +686,8 @@ test.describe("Pattern 12 — Graceful degradation when accountId is null (A0.5b
     await expect(loginCta).toBeEnabled();
   });
 
-  test("/hub/tasks sin demo + sessionStorage vacío → SessionExpiredView con CTAs clickeables (no skeleton infinito)", async ({ page }) => {
-    await page.goto("/auth");
-    await page.evaluate(() => {
-      sessionStorage.clear();
-      localStorage.removeItem("ner_active_account_id");
-    });
+  test("[P-1 real] /hub/tasks con sesión Supabase válida + ner_hub_data ausente → SessionExpiredView", async ({ page }) => {
+    await injectFakeSupabaseSessionAndClearNerHub(page);
 
     await page.goto("/hub/tasks"); // SIN ?demo=true
     await page.waitForLoadState("networkidle");
