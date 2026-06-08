@@ -214,7 +214,12 @@ export default function HubCasesPage() {
       setTeamLoading(false);
       return;
     }
-    if (!accountId) return;
+    // sec-fix/A0.5f: si no hay accountId, NO HAY equipo que cargar — el
+    // flag debe quedar en false explícito. Antes el early-return dejaba
+    // `teamLoading` en true forever (estado inicial useState(true)) cuando
+    // accountId era null, lo cual atascaba useHubPageState en `loading` y
+    // bloqueaba el render de SessionExpiredView (Pattern 12 lo cazó).
+    if (!accountId) { setTeamLoading(false); return; }
 
     async function loadTeam() {
       const { data: mems, error: memErr } = await supabase

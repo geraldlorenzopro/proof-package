@@ -137,7 +137,13 @@ describe("useHubPageState — discriminated union", () => {
     });
   });
 
-  describe("priority ordering (demo > loading > error_no_account > ready)", () => {
+  describe("priority ordering (demo > !authReady=loading > error_no_account > loading > ready)", () => {
+    /**
+     * sec-fix/A0.5f: el orden cambió para que `error_no_account` gane sobre
+     * `loading.some()` cuando `authReady=true && accountId=null`. Antes,
+     * cualquier flag de loading atascada bloqueaba el render de
+     * SessionExpiredView. Ver useHubPageReady.ts para razón completa.
+     */
     it("demo wins over loading, error, ready", () => {
       const s = useHubPageState({
         demoMode: true,
@@ -149,7 +155,11 @@ describe("useHubPageState — discriminated union", () => {
       expect(s.status).toBe("demo");
     });
 
-    it("loading wins over error, ready (when not demo)", () => {
+    it("error_no_account wins over loading once authReady && accountId=null (sec-fix/A0.5f)", () => {
+      // Pre-A0.5f este test esperaba "loading". Ahora gana error_no_account
+      // porque flags de loading atascados (effects que olvidaron resetear)
+      // no deben bloquear el render del SessionExpiredView cuando sabemos
+      // que no hay cuenta contra la cual cargar.
       const s = useHubPageState({
         demoMode: false,
         loading: [true],
@@ -157,7 +167,7 @@ describe("useHubPageState — discriminated union", () => {
         userId: null,
         authReady: true,
       });
-      expect(s.status).toBe("loading");
+      expect(s.status).toBe("error_no_account");
     });
 
     it("!authReady puts in loading even if accountId would be null (auth en vuelo)", () => {
@@ -180,6 +190,67 @@ describe("useHubPageState — discriminated union", () => {
         authReady: true,
       });
       expect(s.status).toBe("error_no_account");
+    });
+
+    it("loading sigue ganando sobre ready cuando accountId presente && queries en vuelo", () => {
+      // Para cuentas válidas, loading sigue siendo respetado — solo cambia
+      // el caso accountId=null.
+      const s = useHubPageState({
+        demoMode: false,
+        loading: [true],
+        accountId: "acct-1",
+        userId: "user-1",
+        authReady: true,
+      });
+      expect(s.status).toBe("loading");
+    });
+  });
+
+  describe("sec-fix/A0.5f regression guard — flags de loading atascados con accountId=null", () => {
+    /**
+     * Pattern 12 E2E (CI A0.5e) cazó este bug en producción simulada:
+     * `teamLoading` en HubCasesPage/HubTasksPage quedaba en `true` permanente
+     * porque el useEffect early-returneaba sin resetear el flag en el branch
+     * `!accountId` (estado inicial `useState(true)`). useHubPageState pre-A0.5f
+     * ponía status="loading" por ese flag atascado, y SessionExpiredView
+     * nunca renderizaba.
+     *
+     * Estos tests anclan que el coalescer es robusto contra ese tipo de bug
+     * río arriba (defensa en profundidad). El fix de origen
+     * (setTeamLoading(false) en HubCasesPage:217 y HubTasksPage:203, más
+     * setTasksLoading(false) en HubTasksPage) está en el mismo commit;
+     * estos tests sobreviven incluso si alguien rompe ese fix en el futuro.
+     */
+    it("teamLoading atascado en true + authReady + accountId=null → error_no_account (no loading)", () => {
+      expect(useHubPageState({
+        demoMode: false,
+        loading: [false, false, /* teamLoading atascado */ true],
+        accountId: null,
+        userId: null,
+        authReady: true,
+      })).toEqual({ status: "error_no_account" });
+    });
+
+    it("tasksLoading + teamLoading ambos atascados + accountId=null → error_no_account", () => {
+      // HubTasksPage tiene 2 flags atascables (teamLoading + tasksLoading).
+      // Aún con los 2 atascados, debe llegar a error_no_account.
+      expect(useHubPageState({
+        demoMode: false,
+        loading: [/* casesLoading */ false, /* tasksLoading */ true, /* teamLoading */ true],
+        accountId: null,
+        userId: null,
+        authReady: true,
+      })).toEqual({ status: "error_no_account" });
+    });
+
+    it("TODOS los loading flags atascados en true + accountId=null → error_no_account (defensa máxima)", () => {
+      expect(useHubPageState({
+        demoMode: false,
+        loading: [true, true, true, true],
+        accountId: null,
+        userId: null,
+        authReady: true,
+      })).toEqual({ status: "error_no_account" });
     });
   });
 
