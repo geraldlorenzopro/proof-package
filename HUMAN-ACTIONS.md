@@ -575,6 +575,173 @@ to confirm 33/33 vitest tests pass on the GH runner).
 
 ---
 
+## 11. Bypass-of-CI-gate audit (2026-06-08) — both faces documented
+
+**Status:** Search conducted 2026-06-08 as part of closing the
+sec-fix/A0.5 chain. The auditor's first question on any merge-with-red-CI
+sequence is *"how often did `--no-verify` get used?"*. The answer has
+two faces. Documenting both, because a half-honest answer to that
+question is worse than the underlying issue.
+
+### Face 1 — the literal bypass: NOT found
+
+`--no-verify` is the git flag that skips local hooks. Searched for any
+trace in repository history:
+
+```
+git log --all --grep="--no-verify"          # 0 matches (modulo false positives on "verify"/"vitest")
+grep -r "no-verify\|HUSKY=0\|skip-hooks"     # 1 match: tests/README.md:71 (documentation)
+```
+
+The pre-push hook itself (`.husky/pre-push`, installed 2026-06-05 in
+`7e0ca74`, "Sprint A · Pre-push hook + Playwright smoke") is correctly
+implemented:
+
+- 3 fast checks (<30s): `tsc --noEmit`, `vite build`, anti-pattern grep
+- `set -e` — any check failure aborts the push
+- Escape hatch documented IN THE HOOK FILE itself:
+  > *"Para BYPASS temporal (URGENT only): `git push --no-verify`. Pero
+  > después abrir PR con explicación + fix."*
+- Mirrored in `tests/README.md:71`
+
+**No silent bypass pattern.** Zero developers ran `--no-verify` and
+hid it from history. The hook is on, documented, with a documented
+escape hatch that nobody used.
+
+### Face 2 — the REAL bypass: merges with red CI did happen
+
+The literal flag tells half the story. The OTHER half — the half an
+auditor will see when they run `gh pr list --json statusCheckRollup`
+against `main` — is that **every single merge on `main` during the
+window of entries #9/#10 happened with `conclusion: failure` on the
+`e2e.yml` workflow.** That is the bypass that actually occurred. Not
+ignored; *waved through* with a documented reason. The distinction
+matters for the auditor.
+
+Categorized by cause:
+
+#### (A) Era pre-A0.5 — chronic red was entry #9's root cause
+
+PRs and direct pushes from `Round 9.20` (commit `63b63a6`, 2026-06-03)
+through PR #7 (`B1-hubpage-sentinel`, 2026-06-07) merged red because
+of **one functional bug**: `useDemoMode` set `sessionStorage["ner_demo_mode"]`
+but never seeded `sessionStorage["ner_hub_data"]`, so `/hub/cases?demo=true`
+froze with `pointer-events-none` and `"—"` counts. 7 regression.spec.ts
+tests failed, but they were detecting **one demo-mode bug**, not 7
+distinct regressions. Diagnosed during Sprint A (entry #9). Fixed in
+the sec-fix/A0.5a/b/c chain.
+
+Commits in this window with red CI from this single cause:
+
+| Commit | Title | CI red because |
+|---|---|---|
+| `63b63a6` | Round 9.20 · Anti-flash universal pattern | demo bug + Patterns 4/10a fragile |
+| `020d646` | Round 9.22 · Tooltip overflow fix robusto | ditto |
+| `5539e18` | Round 9.23 · Próximo Paso completion flow | ditto |
+| `29e419a` | Round 9.25 · Tipo Proceso stack format | ditto |
+| `04cdb18` | Round 9.26 · Sprint legal + compliance | ditto |
+| `4843f31` | Round 9.27 · 5 bugs Mr. Lorenzo screenshots | ditto |
+| `aaece78` | Round 9.28 · Reactivar tarea completada | ditto |
+| `e09350d` | Round 9.29 · 2 fixes | ditto |
+| `10c7e88` | Round 9.30 · Popovers cierran on scroll | ditto |
+| `7f3bb89` | Round 9.31 · Auto-save audit Pipeline | ditto |
+| `99be121` | PR #1 R9.32 rescue | ditto (Sprint A diagnostic phase) |
+| `727c331` | PR #2 sec-fix/A0.5d | ditto |
+| `c09ba9e` | PR #3 chore/ci-add-vitest-step | ditto |
+| `94bd496` | PR #4 sec-fix/A0-purge-dossier | ditto |
+| `82dca57` | PR #5 sec-fix/A29-with-check | ditto |
+| `d87aeec` | PR #6 chore/human-actions-v2 | ditto |
+| `e116544` | PR #7 sec-fix/B1-hubpage-sentinel | ditto |
+
+**Encuadre:** these merges did not ignore functional failures. The
+red was a single, identified, documented, in-flight remediation
+(entry #9). The Sprint A retrospective for the auditor is the
+existence of #9 itself — *"control was non-operational from R9.28
+through R9.31; root cause was a demo-mode `ready` flag never resolving;
+detected and fixed during Sprint A remediation."*
+
+#### (B) Era A0.5 — smoke baseline infra debt
+
+PRs #8 (`A0.5a`, 2026-06-08) through PR #16 (rename, 2026-06-08)
+merged red because of **hub-smoke.spec.ts Linux baselines missing**.
+This is documented in detail in #9's Resolution block, but the
+relevant facts for the audit register:
+
+- Smoke baseline commit `67c14a8` ("test: initial baseline screenshots
+  Sprint A", 2026-06-05) committed 7 `.png` files **all with the
+  `-darwin` suffix**. Linux baselines were never generated.
+- That baseline commit is **74 commits ANTES** de A0.5b — pre-existing
+  to the sec-fix/A0.5 work.
+- Error pattern in CI: `"A snapshot doesn't exist at .../*-linux.png,
+  writing actual."` (no baseline to compare against), NOT
+  `"doesn't match"` (visual regression introduced).
+- During the A0.5 chain, regression.spec.ts went green
+  progressively (Pattern 12 ×2 green at PR #13, Pattern 4 + 10a
+  green at PR #14). Smoke remained red the whole time because of
+  the same darwin-only baseline issue.
+
+| Commit | PR | CI status detail |
+|---|---|---|
+| `5d18dbd` | #8 A0.5a | regression red (in-flight remediation) + smoke red (baseline) |
+| `56b2907` | #9 A0.5b | ditto |
+| `56e97a0` | #10 A0.5c | ditto |
+| `94d00df` | #11 A0.5e | ditto |
+| `c9816ed` | #12 A0.5f | ditto |
+| `164ab7b` | #13 A0.5g | regression GREEN for Pattern 12 ×2 (P-1 real); smoke red (baseline) |
+| `d572e5c` | #14 A0.5h | **regression 25/25 GREEN** (Pattern 4 + 10a fixed); smoke red (baseline) |
+| `6d8da80` | #15 chore human-actions | docs only; regression 25/25 GREEN; smoke red (baseline) |
+| `2ccf27c` | #16 chore rename hook | rename only; regression 25/25 GREEN; smoke red (baseline) |
+
+**Encuadre:** zero new failures introduced by any A0.5 PR. The smoke
+red is the documented infra debt from entry #9's Resolution. Each
+merge was on a clearly attributable known cause, on a PR explicitly
+documented as such in its body, with the underlying functional
+remediation visible to the auditor as the same window where
+`regression.spec.ts` went from 14 failing to 25 passing.
+
+### Net statement for the auditor
+
+> *"During the window covered by entries #9 and #10, every merge on
+> `main` carried `conclusion: failure` on the `e2e.yml` workflow.
+> Causes are categorized in entry #11: (A) a single chronic demo-mode
+> bug detected and remediated during Sprint A (entries #9 root cause +
+> sec-fix/A0.5a-h chain), and (B) a pre-existing visual regression
+> baseline gap that was always darwin-only and never generated for
+> linux (entry #9 Resolution block). No commit in history bypassed
+> the local pre-push hook via `--no-verify`. No silent skip pattern
+> was found. The hook is correctly implemented, documents its escape
+> hatch, and was not actually used as such. The merges on red CI
+> were not silent overrides; each had a known, documented cause and
+> a remediation path. Functional closure: 25/25 `regression.spec.ts`
+> tests green. Visual baselines for linux remain pending, tracked as
+> its own PR with visual review required."*
+
+### Open residual risk — `lovable-sync-*` branches
+
+Carried over from entry #8: 2 `lovable-sync-*` branches remain alive
+in remote, not merged to `main`:
+
+- `lovable-sync-1779996417` — touches `ConvertLeadToCaseModal`,
+  `SmartFormsLayout`, `SmartFormsList`, `send-email` edge function
+- `lovable-sync-1779996490` — touches `SmartFormsLayout`,
+  `hubSections.ts`, `SmartFormsList`, `send-email` edge function
+  (commit `1fc5be8` "Eliminó menciones a GHL")
+
+These are NOT the test-deleting branches that entry #8 warned about
+(those were purged earlier in Sprint A). They touch product code,
+not the CI gate itself. **But they are side-channel branches**: if
+Lovable is asked to merge them while CI is still red for any reason,
+they could merge bypassing review of their actual content. Decision
+pending on what to do with them (review + merge, close, or fold into
+explicit PRs with full diff visible).
+
+**Owner of follow-up:**
+- Mr. Lorenzo decides fate of the 2 `lovable-sync-*` branches.
+- Claude Code (this entry) flags them as open risk in #11 so they
+  are not invisible in the audit register.
+
+---
+
 ## Last updated
 
 2026-06-06 — initial creation during Sprint A security remediation. Add
@@ -599,3 +766,11 @@ injection, Pattern 4 + 10a re-anchored to `data-testid`). CI overall
 still red due to pre-existing missing Linux baselines for
 hub-smoke.spec.ts visual regression — documented as separate infra
 debt, baselines PR pending visual review by Mr. Lorenzo before commit.
+2026-06-08 — entry #11 added after closing the sec-fix/A0.5 chain.
+Documents both faces of the bypass-of-CI-gate question: no `--no-verify`
+literal traces in repo history; but merges with red CI did occur,
+categorized into (A) pre-A0.5 era with chronic red from entry #9's
+demo-mode root cause and (B) A0.5 era with red from pre-existing
+hub-smoke darwin-only baselines. Encuadre: not silent overrides;
+each red had documented cause + remediation path. `lovable-sync-*`
+branches flagged as residual open risk pending Mr. Lorenzo's decision.
