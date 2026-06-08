@@ -156,12 +156,29 @@ test.describe("Pattern 3 — Filtros default neutrales (no trap)", () => {
 });
 
 test.describe("Pattern 4 — Truncate exige tooltip", () => {
-  test("Chips truncadas en CaseTable tienen tooltip Radix wrapper", async ({ page }) => {
+  /**
+   * sec-fix/A0.5h: el test ORIGINAL anclaba a `button:has-text("·")` —
+   * un selector frágil porque dependía de que el chip mostrara el carácter
+   * "·" inline (formato single-line "FORM · description"). En Round 9.25
+   * (4-agentes consensus, ver CaseTypeInlineEdit.tsx:185-218), el chip se
+   * refactorizó a stacked 2-líneas: formNumber arriba, description abajo,
+   * SIN el "·" dentro del <button>. La funcionalidad (chip + tooltip Radix)
+   * sigue intacta — el selector quedó stale.
+   *
+   * Verificación honesta (frágil-vs-regresión):
+   *   - Elemento (chip clickeable con tooltip): SIGUE existiendo ✓
+   *   - Selector (busca "·" en button): NO matchea porque ya no está ahí ✗
+   *   - Conclusión: FRÁGIL — anclar a data-testid="case-type-chip".
+   */
+  test("Chips de Tipo de proceso en CaseTable tienen tooltip Radix wrapper", async ({ page }) => {
     await page.goto(DEMO_HUB_CASES);
     await page.waitForLoadState("networkidle");
 
-    // Encontrar el primer chip Tipo de proceso
-    const firstChip = page.locator('button:has-text("·")').first();
+    // Anclamos a data-testid en CaseTypeInlineEdit:200 (resistente a
+    // refactors de copy + layout). El test sigue verificando la propiedad
+    // que importa: chip clickeable → muestra tooltip Radix al hover.
+    const firstChip = page.locator('[data-testid="case-type-chip"]').first();
+    await expect(firstChip).toBeVisible({ timeout: 5000 });
     await firstChip.hover();
     await page.waitForTimeout(500);
 
@@ -208,6 +225,23 @@ test.describe("Pattern 10 — Modales muestran labels legibles + dropdowns shadc
   // vez de "I-130 · Cónyuge IR-1" (shortLabel). Más <select> nativo
   // que se abría hacia arriba. Fix: usar getCaseTypeLabel + shadcn Select.
 
+  /**
+   * sec-fix/A0.5h: el test ORIGINAL buscaba el chip via regex
+   * `/^(García|Rodríguez|Hernández|...)/` anclado con `^`. Los demo cases
+   * tienen nombres FULL `"Roberto García Suárez"`, `"María Rodríguez Vega"`
+   * etc. — empiezan con primer NOMBRE, no con apellido. La regex nunca
+   * matchaba → timeout 30s.
+   *
+   * Verificación honesta (frágil-vs-regresión):
+   *   - QuickNoteModal: SIGUE renderizando con chip caso visible (verificado
+   *     en QuickNoteModal.tsx:274-280, prefilledCase.client_name resuelve
+   *     a label legible "Roberto García Suárez · I-130 · Cónyuge IR-1").
+   *   - El bug que el test quería atrapar (raw key "i130-spouse-ir1") YA
+   *     está fixed por R9.27 (getCaseTypeLabel resolver).
+   *   - Selector (regex con surnames anchored al inicio): NO matchea por
+   *     estructura del demo data, nunca lo hizo.
+   *   - Conclusión: FRÁGIL — anclar a data-testid="quick-note-case-chip".
+   */
   test("QuickNoteModal chip caso muestra label legible (no raw key)", async ({ page }) => {
     await page.goto("/hub/cases?demo=true");
     await page.waitForLoadState("networkidle");
@@ -219,10 +253,18 @@ test.describe("Pattern 10 — Modales muestran labels legibles + dropdowns shadc
     await noteBtn.click();
     await page.waitForTimeout(500);
 
-    // Chip caso NO debe mostrar raw key tipo "i130-spouse-ir1"
-    const chipText = await page.locator("text=/^(García|Rodríguez|Hernández|Castillo|Acosta|Vargas|Rivas|Cabrera|Aguilar|Solano|Morales)/").first().textContent();
-    // No debe contener pattern típico de key (lowercase con guiones tipo i130-spouse-X)
-    expect(chipText).not.toMatch(/^[a-z]\d+-[a-z]+-[a-z]+\d?$/);
+    // Anclamos a data-testid (resistente a cambios de demo data + copy).
+    // El chip muestra `prefilledCase.client_name` + opcionalmente `· {caseTypeLabel}`.
+    const chip = page.locator('[data-testid="quick-note-case-chip"]');
+    await expect(chip).toBeVisible({ timeout: 5_000 });
+
+    const chipText = (await chip.textContent())?.trim() ?? "";
+    expect(chipText.length).toBeGreaterThan(0);
+
+    // Bug original (R9.27): chip mostraba raw key tipo "i130-spouse-ir1".
+    // Pattern a evitar: lowercase con guiones (i130-spouse-X, n400-citizen-X).
+    // El fix R9.27 resuelve via getCaseTypeLabel — verificamos que se aplicó.
+    expect(chipText).not.toMatch(/[a-z]\d+-[a-z]+-[a-z]+/);
   });
 
   test("QuickTaskModal usa shadcn Select (no select nativo) para Atar caso", async ({ page }) => {

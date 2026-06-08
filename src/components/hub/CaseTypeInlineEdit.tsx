@@ -200,6 +200,7 @@ export default function CaseTypeInlineEdit({ caseId, currentCaseType, onCaseType
           <button
             ref={triggerRef}
             type="button"
+            data-testid="case-type-chip"
             onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
             disabled={saving}
             className="inline-flex flex-col items-start gap-0 px-2 py-1 rounded border bg-ai-blue/15 border-ai-blue/30 hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-wait max-w-full text-left"
