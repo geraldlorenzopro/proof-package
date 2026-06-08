@@ -34,7 +34,7 @@ import TaskViewTabs, { type TaskViewKey } from "@/components/hub/TaskViewTabs";
 import { useCasePipeline } from "@/hooks/useCasePipeline";
 import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
-import { useHubPageState } from "@/hooks/useHubPageReady";
+import { useHubPageState } from "@/hooks/useHubPageState";
 import SessionExpiredView from "@/components/hub/SessionExpiredView";
 import { logAccess } from "@/lib/auditLog";
 import { cn } from "@/lib/utils";
