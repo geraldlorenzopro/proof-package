@@ -271,7 +271,10 @@ export default function QuickNoteModal({ open, onOpenChange, onCreated, prefille
                 <Label>Caso</Label>
                 {/* Round 9.27 Mr. Lorenzo screenshot: mostraba "i130-spouse-ir1" raw key.
                     Ahora resuelve a label legible "I-130 · Cónyuge IR-1". */}
-                <div className="inline-flex items-center gap-1.5 text-[12px] font-medium text-cyan-accent bg-cyan-accent/10 border border-cyan-accent/30 rounded px-2.5 py-1">
+                <div
+                  data-testid="quick-note-case-chip"
+                  className="inline-flex items-center gap-1.5 text-[12px] font-medium text-cyan-accent bg-cyan-accent/10 border border-cyan-accent/30 rounded px-2.5 py-1"
+                >
                   <FileText className="w-3 h-3" />
                   {prefilledCase.client_name}
                   {prefilledCase.case_type && (
