@@ -81,10 +81,29 @@ export interface UseHubPageStateOpts {
   accountId: string | null;
   /** userId resuelto. null cuando auth aún está en vuelo. */
   userId: string | null;
+  /**
+   * True cuando `supabase.auth.getUser()` resolvió (devolvió user o null).
+   * False cuando todavía está en vuelo.
+   *
+   * sec-fix/A0.5e: este flag es necesario para distinguir 2 casos que antes
+   * colapsaban en `userId === null`:
+   *   - auth en vuelo (no llamamos `getUser` aún) → `userId` null + `authReady` false → status `loading`
+   *   - auth resolvió y no hay sesión → `userId` null + `authReady` true + `accountId` null → status `error_no_account`
+   *
+   * Sin este flag, el `SessionExpiredView` nunca se renderizaba porque el
+   * hook se quedaba en `loading` permanente (Pattern 12 E2E lo cazó en CI).
+   */
+  authReady: boolean;
 }
 
 /**
  * Coalescer canónico para hub pages — discriminated union de 4 estados.
+ *
+ * Prioridad:
+ *   1. demo (gana sobre todo)
+ *   2. loading (si `!authReady` o alguna query in-flight)
+ *   3. error_no_account (auth resolvió pero `accountId` es null)
+ *   4. ready (todo resuelto, accountId presente)
  *
  * @example
  *   const state = useHubPageState({
@@ -92,6 +111,7 @@ export interface UseHubPageStateOpts {
  *     loading: [casesLoading, permsLoading, teamLoading],
  *     accountId,
  *     userId,
+ *     authReady,
  *   });
  *
  *   if (state.status === "demo" || state.status === "ready") {
@@ -104,19 +124,22 @@ export interface UseHubPageStateOpts {
  *   return <SessionExpiredView />;
  */
 export function useHubPageState(opts: UseHubPageStateOpts): HubPageState {
-  const { demoMode, loading, accountId, userId } = opts;
+  const { demoMode, loading, accountId, authReady } = opts;
 
   // 1. Demo bypasses gates — los mocks están listos sincronicamente.
   if (demoMode) {
     return { status: "demo" };
   }
 
-  // 2. Alguna query crítica en vuelo, o auth/account aún resolviendo.
-  if (loading.some(Boolean) || userId === null) {
+  // 2. Auth aún en vuelo, o alguna query crítica cargando.
+  //    sec-fix/A0.5e: chequeamos `authReady` explícito (no `userId === null`)
+  //    para que "auth resolvió devolviendo null" caiga al estado siguiente
+  //    (`error_no_account`), no a este (`loading`).
+  if (!authReady || loading.some(Boolean)) {
     return { status: "loading" };
   }
 
-  // 3. Loading terminó pero accountId nulo → sesión inválida.
+  // 3. Auth terminó, no hay accountId → sesión inválida.
   if (accountId === null) {
     return { status: "error_no_account" };
   }

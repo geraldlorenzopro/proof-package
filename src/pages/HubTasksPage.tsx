@@ -51,10 +51,32 @@ export default function HubTasksPage() {
 
   const demoMode = useDemoMode();
   const [userId, setUserId] = useState<string | null>(null);
+  // sec-fix/A0.5e: ver HubCasesPage para razón completa. Distingue auth en
+  // vuelo de auth resolvió-con-null (o throw) para que useHubPageState pueda
+  // diferenciar `loading` de `error_no_account`.
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    if (demoMode) { setUserId("demo-u-vanessa"); return; }
-    void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+    if (demoMode) { setUserId("demo-u-vanessa"); setAuthReady(true); return; }
+
+    let cancelled = false;
+    void supabase.auth.getUser()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setUserId(data.user?.id ?? null);
+      })
+      .catch(() => {
+        // Si getUser throw (red, token corrupto), userId queda null y
+        // authReady pasa a true via .finally — sino la página se cuelga.
+        if (cancelled) return;
+        setUserId(null);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setAuthReady(true);
+      });
+
+    return () => { cancelled = true; };
   }, [demoMode]);
 
   // SOC II CC7.2: audit access al mount.
@@ -158,6 +180,7 @@ export default function HubTasksPage() {
     loading: [casesLoading, tasksLoading, teamLoading],
     accountId,
     userId,
+    authReady,
   });
   const ready = pageState.status === "ready" || pageState.status === "demo";
 
