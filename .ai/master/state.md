@@ -1,12 +1,58 @@
 # NER Immigration AI — Estado del Producto
 
-**Última actualización:** 2026-06-03 (Sprint catálogo migratorio + invitación con Resend + auditoría DS-117)
-**Audit por:** Claude Code (Opus 4.7) + Lovable (Gemini) UX review + Mr. Lorenzo UX validation
-**Próximo update:** post-test invitación real con paralegales activos + verificación visual de progress bar en case-engine
+**Última actualización:** 2026-06-08 (Sprint A security remediation — cierre cadena A0.5a→h + cleanup hygiene)
+**Audit por:** Claude Code (Opus 4.7) + Mr. Lorenzo (SOC 2 / HIPAA / ABA)
+**Próximo update:** post-baselines Linux para hub-smoke (PR con review visual) + arranque Bloque 1 PHI
 
 ---
 
-## 🆕 Sprint 2026-06-03 — Catálogo migratorio expandido + Email Resend cerrado — CERRADO
+## 🆕 Sprint 2026-06-08 — Sprint A remediation cierre + Column A hygiene — CERRADO
+
+**Continuación de la sesión del 2026-06-06/07. Cierre de la cadena más larga de sec-fixes hasta ahora.**
+
+### Resumen ejecutivo del día
+
+| Categoría | PRs | Estado |
+|---|---|:--:|
+| **Cadena sec-fix/A0.5 cierre P-1** | #8 A0.5a → #14 A0.5h (7 PRs) | ✅ HUMAN-ACTIONS #9 criterio funcional cumplido |
+| **Pattern 12 reescrito al escenario REAL** (sesión Supabase válida + ner_hub_data ausente) | #13 A0.5g | ✅ Verde con fake JWT-shaped sec-reviewed |
+| **Pattern 4 + 10a verificación frágil** | #14 A0.5h | ✅ Anclados a `data-testid` (refactor R9.25 + demo names) |
+| **HUMAN-ACTIONS #9 functional closure doc** | #15 | ✅ Resolution block con evidencia anti-regresión visual |
+| **Rename `useHubPageReady.ts` → `useHubPageState.ts`** | #16 | ✅ API consistency (post-A0.5c eliminó wrappers) |
+| **HUMAN-ACTIONS #11 bypass audit** | #17 (pending) | 🟡 PR abierto, CI corriendo |
+
+### Lecciones LOCKED del día
+
+1. **"Fix que falla repetido = estás mirando el lugar equivocado"** — el freno de la 4ta iteración cazó que P-1 estaba en `ProtectedRoute`, no en el coalescer. Llegamos a A0.5b/c/e/f sin que el test pudiera dictaminar.
+2. **Tests pueden simular el escenario equivocado** — el Pattern 12 original (`sessionStorage.clear()`) validaba la branch de routing, no la del coalescer. Sin reescribirlo (A0.5g), no había manera de saber si los 4 fixes cerraron P-1.
+3. **"Pre-existente" requiere evidencia, no afirmación** — los Linux baselines faltantes necesitaron 4 evidencias empíricas (commit antigüedad, naming pattern, error type, historial CI) para distinguir de regresión visual.
+4. **Modo acelerado vs diff-before-push** — UI/test/cleanup non-PHI corren "de corrido", reporte al final de bloque. PHI/RLS/auth/destructive requieren diff antes de push.
+
+### Cierre criterio funcional (HUMAN-ACTIONS #9)
+
+| Test | Status pre-A0.5 | Status post-cadena |
+|---|:--:|:--:|
+| Pattern 1-3, 5-9, 11 | 🔴 (chronic demo bug) | ✅ |
+| Pattern 4 | 🔴 (selector `"·"` stale) | ✅ (data-testid) |
+| Pattern 10a | 🔴 (regex anchor mismatch) | ✅ (data-testid) |
+| Pattern 12 ×2 (P-1 real) | N/A (no existía) | ✅ (fake session inject) |
+| **TOTAL regression.spec.ts** | **14 rojos** | **25/25 ✅** |
+
+### Deuda documentada (NO bloquea cierre funcional, pero CI sigue rojo overall)
+
+- `hub-smoke.spec.ts` Linux baselines faltantes — PR aparte con review visual de Mr. Lorenzo antes de commit
+- 2 branches `lovable-sync-*` vivas — decisión pendiente (HUMAN-ACTIONS #11)
+
+### Columna A cleanup hygiene también cerrada
+
+- CLAUDE.md known issues auditado — 5 entradas legacy stale removidas (cleanup ya estaba hecho, lista vieja)
+- `tmp/vawa.zip` confirmado inexistente (no leak VAWA)
+- `--no-verify` history search — 0 menciones literales, hook bien implementado, escape hatch documentado
+- Sin patrón de bypass oculto encontrado
+
+---
+
+## Sprint 2026-06-03 — Catálogo migratorio expandido + Email Resend cerrado — CERRADO
 
 **Sesión web continuación del sprint anterior. ~25 commits.**
 

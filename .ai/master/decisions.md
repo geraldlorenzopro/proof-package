@@ -4,6 +4,86 @@ Archivo append-only. Cada decisión queda registrada con fecha, contexto,
 alternativas consideradas, y razón de elección. **No editar decisiones
 pasadas — agregar nueva decisión que las supersede si cambian.**
 
+## 2026-06-08 — Lecciones operativas del cierre Sprint A (cadena A0.5a→h)
+
+### Contexto
+
+Cierre de la cadena más larga de sec-fixes hasta hoy (7 PRs + 2 docs) para
+remediar HUMAN-ACTIONS #9 (chronic red CI causado por demo-mode bug en
+`/hub/cases`+`/hub/tasks`). Tomó 4 iteraciones llegar al diagnóstico
+correcto. 3 lecciones operativas LOCKED.
+
+### Lección 1 — "Fix que falla repetido = estás mirando el lugar equivocado"
+
+A0.5a (discriminated union), A0.5b/c (migration to coalescer), A0.5e
+(authReady), A0.5f (priority reorder + setLoading reset) — los 4 fixes
+tocaron la capa del HOOK + páginas. Cada uno técnicamente correcto en su
+propio mérito. Pero Pattern 12 ×2 siguió rojo.
+
+Mr. Lorenzo flageó al freno de la 4ta iteración: *"NO más parches sueltos
+— paramos y mapeamos TODOS los flags de loading de las 2 páginas de una
+vez antes de tocar nada."* El mapeo exhaustivo (subagente Explore + grep)
+reveló que el problema NO era flag de loading — era `ProtectedRoute`
+interceptando antes de que `HubCasesPage` montara (capa 5 de arriba).
+
+**Regla:** si un fix falla, no iteres en la misma capa. Hacé mapeo
+exhaustivo de las capas implicadas y verificá CUÁL ataja la ejecución
+antes de llegar al sitio que estás cambiando. En este caso:
+ProtectedRoute → HubLayout → HubPage → Hook → Flags. El bug estaba en
+capa 1, no en capas 4-5.
+
+### Lección 2 — Tests pueden simular el escenario equivocado
+
+El Pattern 12 original hacía `sessionStorage.clear()` SIN tocar localStorage.
+Eso deja a Supabase sin session token → ProtectedRoute redirige a `/auth`
+ANTES de que `HubCasesPage` monte. El test "validaba" la branch de routing,
+no la branch del coalescer. **Por 4 iteraciones, no había manera de saber
+si los fixes cerraron P-1.**
+
+A0.5g reescribió el test al escenario REAL (sesión Supabase válida +
+`ner_hub_data` ausente) via inyección de fake JWT-shaped en localStorage.
+SEC-review de la inyección documentada inline en el test + en el PR body
+(JWT sin firma válida → backend rechaza con 401 → cero impacto runtime
+real).
+
+**Regla:** cuando un test "valida" algo durante N iteraciones de fix sin
+revelar el verdadero estado, sospechá que está simulando el escenario
+equivocado. Verificá manualmente que el test toca exactamente las capas
+del bug REAL de producción.
+
+### Lección 3 — "Pre-existente" requiere evidencia, no afirmación
+
+Cuando el CI quedó rojo solo por `hub-smoke.spec.ts` post-A0.5h, mi
+primer instinto fue: *"es infra pre-existente, mergeo y deuda separada"*.
+Mr. Lorenzo no aceptó: *"'Pre-existente' tiene que ser algo que puedo
+DEMOSTRAR, no asumir."*
+
+Recolecté 4 evidencias empíricas:
+1. Commit baseline `67c14a8` (5 jun 2026) tiene SOLO `-darwin.png`, nunca `-linux.png`
+2. Es ancestor de A0.5b en 74 commits — NO causado por A0.5
+3. Error pattern es `"snapshot doesn't exist"` (no baseline para comparar) NO `"doesn't match"` (regresión visual)
+4. CI smoke step nunca corrió limpio en Linux históricamente porque regression.spec.ts siempre fallaba antes
+
+**Regla:** para distinguir infra debt de regresión, requerí evidencia
+sobre las 4 dimensiones: (a) cuándo se creó, (b) si es ancestor del cambio
+sospechoso, (c) qué tipo de error es (missing vs mismatch), (d) historia
+del componente afectado. Sin esas 4, "pre-existente" es afirmación sin
+respaldo y no vale para SOC 2.
+
+### Modo de trabajo LOCKED post-A0.5h
+
+- **Columna A (corre solo):** dead imports, stale files (excepto vawa.zip
+  que pausa por sensibilidad federal), rename con import update, docs
+  refresh, known issues triage. Merge propio cuando regression verde, sin
+  consultar.
+- **Columna B (pausa y espera):** PHI (Bloque 1: A1/A2/A3), RLS/auth,
+  cifrado, edge functions nuevas, migrations, secrets, BAA, cualquier
+  deploy via Lovable, regenerar baselines visuales (requiere review visual).
+- **Reporting:** por bloque al cerrar, incluyendo qué mergeó, status CI,
+  qué quedó pendiente.
+
+---
+
 ## 2026-06-06 (madrugada) — Round 9 hotfix BLOCKERS post Round 8 autonomous
 
 ### Contexto
