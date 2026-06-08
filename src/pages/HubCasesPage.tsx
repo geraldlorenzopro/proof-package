@@ -23,7 +23,7 @@ import { useDemoMode, DEMO_CASES } from "@/hooks/useDemoData";
 import { useTrackPageView } from "@/hooks/useTrackPageView";
 import { useCaseViews, filterCasesByView } from "@/hooks/useCaseViews";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useHubPageState } from "@/hooks/useHubPageReady";
+import { useHubPageState } from "@/hooks/useHubPageState";
 import SessionExpiredView from "@/components/hub/SessionExpiredView";
 import { groupCases, sortCases, SORT_LABELS, type GroupByKey, type SortKey } from "@/lib/caseGrouping";
 import { getCaseTypeByKey } from "@/lib/caseTypes";

@@ -19,7 +19,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { useHubPageState } from "@/hooks/useHubPageReady";
+import { useHubPageState } from "@/hooks/useHubPageState";
 
 describe("useHubPageState — discriminated union", () => {
   describe("demo mode", () => {
@@ -142,7 +142,7 @@ describe("useHubPageState — discriminated union", () => {
      * sec-fix/A0.5f: el orden cambió para que `error_no_account` gane sobre
      * `loading.some()` cuando `authReady=true && accountId=null`. Antes,
      * cualquier flag de loading atascada bloqueaba el render de
-     * SessionExpiredView. Ver useHubPageReady.ts para razón completa.
+     * SessionExpiredView. Ver useHubPageState.ts para razón completa.
      */
     it("demo wins over loading, error, ready", () => {
       const s = useHubPageState({
