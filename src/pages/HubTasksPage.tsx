@@ -200,7 +200,20 @@ export default function HubTasksPage() {
       setTeamLoading(false);
       return;
     }
-    if (!accountId) return;
+    // sec-fix/A0.5f: si no hay accountId, NO HAY equipo ni tasks que cargar
+    // contra ninguna cuenta. Reseteamos AMBOS flags atascados:
+    //   - teamLoading: useState(true) inicial — sin reset, el early-return
+    //     dejaba el flag pegado.
+    //   - tasksLoading: useState(true) inicial — solo se hidrata vía callback
+    //     desde TasksByDateView, pero TasksByDateView solo monta cuando
+    //     pageState === "ready" (chicken-and-egg con accountId=null).
+    // Sin esto, useHubPageState quedaba en `loading` permanente y
+    // SessionExpiredView nunca renderizaba (Pattern 12 lo cazó).
+    if (!accountId) {
+      setTeamLoading(false);
+      setTasksLoading(false);
+      return;
+    }
 
     async function loadTeam() {
       const { data: mems, error: memErr } = await supabase

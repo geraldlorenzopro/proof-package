@@ -99,11 +99,29 @@ export interface UseHubPageStateOpts {
 /**
  * Coalescer canónico para hub pages — discriminated union de 4 estados.
  *
- * Prioridad:
+ * Prioridad (sec-fix/A0.5f reordenada — ver razón abajo):
  *   1. demo (gana sobre todo)
- *   2. loading (si `!authReady` o alguna query in-flight)
- *   3. error_no_account (auth resolvió pero `accountId` es null)
- *   4. ready (todo resuelto, accountId presente)
+ *   2. !authReady → loading (auth en vuelo, NO distinguimos error vs cargando aún)
+ *   3. authReady && accountId=null → error_no_account (gana sobre loading)
+ *   4. loading.some → loading (queries reales para una cuenta válida)
+ *   5. ready (todo resuelto, accountId presente)
+ *
+ * sec-fix/A0.5f (2026-06-08): el orden previo (A0.5e) era
+ * `2'. !authReady || loading.some → loading`. Eso significaba que cualquier
+ * flag de loading atascada en `true` impedía llegar a `error_no_account`,
+ * aun con `authReady=true && accountId=null`. Pattern 12 cazó esto en CI:
+ * `teamLoading` en HubCasesPage/HubTasksPage se quedaba en `true` cuando el
+ * useEffect early-returneaba sin resetear el flag, y `SessionExpiredView`
+ * nunca renderizaba.
+ *
+ * Justificación semántica del reorden (no es solo un parche para el bug
+ * de hoy): si `authReady=true && accountId=null`, los flags de loading que
+ * dependen de esa cuenta son IRRELEVANTES — no hay nada que cargar contra
+ * ninguna cuenta. Es correcto renderizar `error_no_account` aunque los
+ * downstream sigan reportando "loading". El bug de los setLoading(false)
+ * faltantes ya se arregla en HubCasesPage/HubTasksPage en el mismo commit;
+ * este orden es la red de seguridad contra el próximo hook que olvide
+ * resetear su flag en el branch `!accountId`.
  *
  * @example
  *   const state = useHubPageState({
@@ -131,20 +149,27 @@ export function useHubPageState(opts: UseHubPageStateOpts): HubPageState {
     return { status: "demo" };
   }
 
-  // 2. Auth aún en vuelo, o alguna query crítica cargando.
-  //    sec-fix/A0.5e: chequeamos `authReady` explícito (no `userId === null`)
-  //    para que "auth resolvió devolviendo null" caiga al estado siguiente
-  //    (`error_no_account`), no a este (`loading`).
-  if (!authReady || loading.some(Boolean)) {
+  // 2. Auth aún en vuelo — no distinguimos error vs cargando aún.
+  //    sec-fix/A0.5e: chequeamos `authReady` explícito (no `userId === null`).
+  if (!authReady) {
     return { status: "loading" };
   }
 
-  // 3. Auth terminó, no hay accountId → sesión inválida.
+  // 3. Auth resolvió pero accountId=null → sesión inválida.
+  //    sec-fix/A0.5f: este check sube ARRIBA de `loading.some()` para que
+  //    flags de loading atascados (effects que early-returnean sin reset)
+  //    no bloqueen el render de SessionExpiredView. Ver bloque de comentario
+  //    arriba para razón semántica.
   if (accountId === null) {
     return { status: "error_no_account" };
   }
 
-  // 4. Todo resuelto.
+  // 4. Cuenta válida — alguna query crítica todavía en vuelo.
+  if (loading.some(Boolean)) {
+    return { status: "loading" };
+  }
+
+  // 5. Todo resuelto.
   return { status: "ready" };
 }
 
