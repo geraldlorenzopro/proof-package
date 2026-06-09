@@ -297,6 +297,92 @@ adjust Lovable prompts).
 
 ---
 
+### Resolution (2026-06-09) — branches triaged, picker rescued, rest closed
+
+**Status:** Disposition closed. Both `lovable-sync-*` branches awaiting
+delete from GitHub UI (sandbox restriction — see operational note below).
+
+**What was decided**
+
+Read-only triage 2026-06-09 of both branches (current state, NOT the
+2026-06-06 state described above) found that the destructive test-deletion
+content described in this entry is **no longer present**. The branches
+appear to have been rebased/cleaned by Lovable in the interim. Current
+contents:
+
+| Branch | Files changed | Tests deleted? |
+|---|:--:|:--:|
+| `lovable-sync-1779996417` | 4 files (+225/-84) | NO |
+| `lovable-sync-1779996490` | 5 files (+233/-92, superset of 417) | NO |
+
+However, while no test files are deleted, the current branch contents
+**REVERT Mr. Lorenzo's own fixes**:
+
+- `src/lib/hubSections.ts` (branch 490 only): removes keys `'tareas'`
+  and `'auditoria'` from the `HubSectionKey` enum → would TS-error the
+  modern code and regress Pattern 12 work.
+- `src/components/smartforms/SmartFormsLayout.tsx`: reverts Mr. Lorenzo's
+  v8.6 simplification (2026-05-28) that removed Smart Forms branding,
+  nav tabs, and settings gear from the top bar.
+- `src/pages/SmartFormsList.tsx`: removes the anti-staff filter
+  Mr. Lorenzo demanded 2026-05-28 (*"Lorenzo, Gerald aparece como
+  cliente — NO"*) + removes the `is_test=false` filter.
+- `supabase/functions/send-email/index.ts`: reverts the Resend → GHL
+  migration completed 2026-06-03. Restoring this would break the
+  branded NER email path.
+
+The branches' base predates Sprint A; their diff vs current `main` is
+not "what they add" but "what they revert." Merging either would
+mass-undo recent work.
+
+**One feature was genuinely additive and worth rescuing:** the extra
+forms picker (commit `ac34d31`, 2026-05-28) lets a paralegal add ad-hoc
+USCIS forms (I-601A waiver, I-907 premium, etc.) at case-creation time
+in `ConvertLeadToCaseModal`, instead of needing to navigate elsewhere
+after the case opens. Real I-130-with-waiver scenario.
+
+**Action taken**
+
+- Cherry-pick of ONLY the picker delta (`ConvertLeadToCaseModal.tsx`)
+  in PR #22 (`feat/extra-forms-picker-convert-lead`), merged
+  2026-06-09 as commit `75e2c55`. Mejora sobre el original: filtro
+  defensivo previo al insert en `case_forms` para evitar
+  `UNIQUE(case_id, form_type)` collision, vs el `console.warn`
+  silencioso de la branch.
+- Schema verification documented: `extra_forms` is NOT a new column;
+  the picker inserts rows in `case_forms` (existing migration
+  2026-03-12) and writes `extra_forms` + `forms_count` into the audit
+  log metadata (JSONB, no schema change). Backward compatible.
+- All other parts of both branches discarded.
+
+**Pending: physical branch deletion from GitHub UI**
+
+The sandbox where Claude Code runs blocks `git push --delete` against
+the remote (network policy). Both branches remain visible at:
+
+- https://github.com/geraldlorenzopro/proof-package/branches
+- Filter by `lovable-sync` → click trash icon for each
+
+Once deleted, this entry can be marked fully closed. Until then, the
+risk is residual but bounded: the branches' destructive content lives
+in their history, but they cannot reach `main` without an explicit PR
++ merge that an auditor would see in the change log.
+
+**Forward-looking actions from the original entry that remain open**
+
+The follow-up actions #3 (pre-merge CI gate against deletion of
+`tests/e2e/**`, `.github/**`, etc.) and #4 (train Lovable prompt) from
+the 2026-06-06 list are **independent of this disposition** and should
+still be addressed. They protect against future destructive Lovable PRs,
+not the two branches at hand.
+
+**Owner of the residual:**
+- Mr. Lorenzo: physical delete of the 2 branches from GitHub UI.
+- Claude Code (future session): implement the pre-merge deletion-gate
+  CI check (action #3) when scope is reached.
+
+---
+
 ## 9. Chronic red CI on `main` — quality gate non-operational (🔴 SOC 2 first-order risk)
 
 **Status:** Discovered 2026-06-06 while opening PR #1 (R9.32 rescue).
@@ -774,3 +860,14 @@ demo-mode root cause and (B) A0.5 era with red from pre-existing
 hub-smoke darwin-only baselines. Encuadre: not silent overrides;
 each red had documented cause + remediation path. `lovable-sync-*`
 branches flagged as residual open risk pending Mr. Lorenzo's decision.
+2026-06-09 — entry #8 Resolution block appended. Read-only triage
+2026-06-09 found both `lovable-sync-*` branches no longer contain
+the destructive test-deletion content (cleaned by Lovable in the
+interim), but their current state reverts Mr. Lorenzo's own fixes
+(filtro anti-staff, simplificación v8.6 SmartFormsLayout, Resend → GHL,
+removal of `tareas`/`auditoria` from hubSections enum). The extra
+forms picker (commit ac34d31) was rescued via PR #22 cherry-pick with
+a defensive UNIQUE-collision filter improvement over the original.
+Physical branch deletion pending Mr. Lorenzo's manual action in GitHub
+UI (sandbox blocks `git push --delete`). Forward-looking actions #3
+(pre-merge deletion gate) and #4 (Lovable prompt training) remain open.

@@ -41,7 +41,7 @@
 ### Deuda documentada (NO bloquea cierre funcional, pero CI sigue rojo overall)
 
 - `hub-smoke.spec.ts` Linux baselines faltantes — **workflow `update-smoke-baselines.yml` existe en main (PR #20 mergeado, workflow_dispatch manual) pero NO disparar hasta que la UI esté estable.** Mr. Lorenzo decisión 2026-06-09: está rediseñando UI, regenerar ahora = baselines obsoletos en días + loop de regeneración. Smoke rojo sigue como deuda documentada (HUMAN-ACTIONS #9 Resolution + #11). Disparar cuando la UI se estabilice.
-- 2 branches `lovable-sync-*` vivas — decisión pendiente (HUMAN-ACTIONS #11)
+- ~~2 branches `lovable-sync-*` vivas~~ → **CERRADAS 2026-06-09** (Mr. Lorenzo decisión). Análisis read-only mostró que ambas eran base PRE-Sprint A (pre-Round 7) que mergeadas revertían fixes propios de Mr. Lorenzo (filtro anti-staff 28/5, simplificación v8.6 SmartFormsLayout, Resend → GHL en send-email, removían keys `'tareas'` y `'auditoria'` del enum hubSections). Rescatado **solo el extra forms picker** (commit `ac34d31`) vía cherry-pick limpio en PR #22, con mejora sobre la branch original (filtro defensivo previo al insert en `case_forms` para evitar UNIQUE collision, vs el `console.warn` silencioso del original). HUMAN-ACTIONS #8 + #11 follow-up cerrado.
 
 ### Columna A cleanup hygiene también cerrada
 
