@@ -1,0 +1,101 @@
+name: Protected paths deletion gate
+
+# HUMAN-ACTIONS #8 follow-up action #3 — implementado 2026-06-09.
+#
+# Bloquea cualquier PR que ELIMINE archivos bajo paths protegidos.
+# Defensa contra el escenario que cazó el entry #8 original: Lovable
+# (o cualquier autor) borra silenciosamente los CI gates como parte de
+# un cambio aparentemente cosmético, dejando merges futuros volando a
+# ciegas.
+#
+# Paths protegidos (eliminación bloquea CI):
+#   - tests/e2e/**/*.spec.ts (suites E2E que validan bug patterns conocidos)
+#   - tests/e2e/hub-smoke.spec.ts-snapshots/** (visual regression baselines)
+#   - .github/workflows/** (los workflows que enforce los gates)
+#   - HUMAN-ACTIONS.md (registro SOC 2 de pendientes auditables)
+#   - supabase/migrations/** (esquema versionado, eliminación irreversible)
+#
+# Modificación está permitida (solo bloquea DELETE/RENAME-OUT). Si un PR
+# legítimamente necesita borrar uno de estos archivos:
+#   1. Mr. Lorenzo lo aprueba explícito en el PR body
+#   2. Workflow se desactiva via env override (ALLOW_PROTECTED_DELETE=1)
+#   3. Después se rehabilita
+#
+# Workflow separado para no contaminar e2e.yml y correr en paralelo
+# (rápido: solo git diff, no playwright).
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for deletions under protected paths
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          PROTECTED_PATTERNS=(
+            'tests/e2e/.*\.spec\.ts$'
+            'tests/e2e/hub-smoke\.spec\.ts-snapshots/'
+            '\.github/workflows/'
+            '^HUMAN-ACTIONS\.md$'
+            'supabase/migrations/'
+          )
+
+          # git diff con --diff-filter=DR captura DELETE y RENAME (con destino fuera)
+          # --name-status devuelve "D path" o "R<n> oldpath newpath"
+          DELETED=$(git diff --diff-filter=DR --name-status "${BASE_SHA}" "${HEAD_SHA}" || true)
+
+          if [ -z "${DELETED}" ]; then
+            echo "✅ No deletions detected. Gate passed."
+            exit 0
+          fi
+
+          echo "Files deleted/renamed in this PR:"
+          echo "${DELETED}"
+          echo ""
+
+          VIOLATIONS=""
+          while IFS= read -r line; do
+            [ -z "${line}" ] && continue
+            # Pull old path (column 2 for D, column 2 for R)
+            OLDPATH=$(echo "${line}" | awk '{print $2}')
+
+            for pattern in "${PROTECTED_PATTERNS[@]}"; do
+              if echo "${OLDPATH}" | grep -qE "${pattern}"; then
+                VIOLATIONS="${VIOLATIONS}  - ${OLDPATH} (matched: ${pattern})\n"
+                break
+              fi
+            done
+          done <<< "${DELETED}"
+
+          if [ -n "${VIOLATIONS}" ]; then
+            echo "❌ Protected path deletion detected:"
+            echo -e "${VIOLATIONS}"
+            echo ""
+            echo "Paths protegidos no se pueden eliminar via PR. Razones documentadas en"
+            echo "HUMAN-ACTIONS.md entry #8."
+            echo ""
+            echo "Si la eliminación es LEGÍTIMA (refactor de tests, migration squash, etc):"
+            echo "  1. Documentá razón explícita en PR body"
+            echo "  2. Mr. Lorenzo aprueba"
+            echo "  3. Workflow puede desactivarse temporalmente"
+            exit 1
+          fi
+
+          echo "✅ No protected paths deleted. Gate passed."
