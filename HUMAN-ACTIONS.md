@@ -828,6 +828,155 @@ explicit PRs with full diff visible).
 
 ---
 
+## 12. `sandbox_exec` role — platform-managed migration executor (closed 2026-06-09)
+
+**Status:** Investigated, documented, closed. No action required.
+
+**Discovery context:** During the Bloque 1 PHI investigation (A1/A29/A30
+deploy planning), a SQL audit of column-level grants on `client_profiles`
+surfaced a Postgres role named `sandbox_exec` with:
+
+- `rolcanlogin = true` (can login)
+- `rolbypassrls = true` (bypasses Row Level Security on all tables)
+- `rolsuper = false`
+- `SELECT` privileges on 50+ columns of `client_profiles` (a_number, dob,
+  phone, mobile_phone, ssn_last4 — all PII) + 57 columns of `client_cases`
+  (incl. matter_value)
+- Listed in `pg_default_acl` with `defaclrole = postgres` receiving
+  default grants (`ar` = INSERT + REFERENCES) on every new public table
+
+The combination of `rolbypassrls + rolcanlogin + PHI access across all
+firms` would, if reachable, be a cross-tenant PII bypass that defeats the
+RLS isolation verified for the 12-firm launch.
+
+**Read-only verification performed (2026-06-08):**
+
+| Check | Result | Interpretation |
+|---|---|---|
+| `sandbox_exec` appearances in NER source tree (grep all extensions) | 0 matches | NER code never invokes it |
+| `.env*` / `supabase/config.toml` / `src/integrations/lovable/` mentions | 0 | Not exposed via NER config |
+| Edge function connection strings reference | 0 | Not used by NER backend |
+| `authenticator` PostgREST member-of `sandbox_exec` | NO | JWT cannot SET ROLE to it |
+| `pg_stat_activity` connections as `sandbox_exec` | only normal pool | No anomalous active sessions |
+| Password set (`pg_authid.rolpassword IS NOT NULL`) | YES | Credential exists somewhere in platform infra |
+
+**Lovable's confirmation (2026-06-09):**
+
+Lovable Cloud support clarified:
+
+> *"`sandbox_exec` is the Lovable Cloud migration executor role. It runs
+> DDL on behalf of the platform during deploys. `rolbypassrls` is
+> required because DDL operations cross tenant boundaries (the platform
+> applies schema changes to the multi-tenant database). The `postgres`
+> role inherits from it. The role is platform-managed and provisioned
+> automatically; any external modification (grants, attributes,
+> existence) will be re-applied by Lovable's reconciliation process
+> on the next deploy. Equivalent in privilege scope to `service_role`,
+> with the additional `bypassrls` justified for DDL."*
+
+**Risk assessment (post-Lovable response):**
+
+- **Attack surface from NER side**: ZERO. Code never references the role,
+  no env exposes credential, JWT path cannot reach it.
+- **Attack surface from platform side**: equivalent to compromise of
+  Lovable infra itself (which would already compromise the `service_role`
+  key and the postgres superuser). Not a new vector introduced by the
+  presence of `sandbox_exec` — it shares the trust model of the platform's
+  service_role.
+- **Compliance framing for auditor**: documented as platform-managed
+  privileged role with `bypassrls` justified by multi-tenant DDL.
+  Equivalent control category to `service_role`. No incremental gap.
+
+**Action policy:** **DO NOT modify** `sandbox_exec` attributes,
+membership, or grants. Lovable's reconciliation re-provisions any
+local change. The PII grants on its row in `pg_default_acl` and on
+existing tables are residual from when the role was created (with
+defaults that we cannot revoke without breaking Lovable's deploy
+pipeline). When A30 runs, it MUST NOT include `sandbox_exec` in its
+REVOKE list — only `anon` and `authenticated`.
+
+**Owner:** Closed. Documented for auditor. No follow-up unless Lovable
+notifies of changes to the platform's role model.
+
+---
+
+## 13. Single-database environment — no staging (CC8.1 control gap, 2026-06-09)
+
+**Status:** Open control gap. Documented honestly for auditor.
+Mitigation defined; permanent resolution depends on Lovable's product
+roadmap.
+
+**Discovery context:** During Bloque 1 PHI deploy planning, asked
+Lovable Cloud whether the NER project has a non-production environment
+(staging / preview / branch DB) to validate migrations before they
+touch prod. Lovable's response:
+
+> *"Supabase Database Branching is discontinued and not available on
+> Lovable Cloud-managed projects. There is a single database. The
+> preview URL of a feature branch deployment connects to the same
+> production database. This is a known platform-level limitation on
+> the current Lovable Cloud architecture. CC8.1 (change management)
+> control gap — documented and acknowledged."*
+
+**Impact:** Every schema migration goes directly against the
+production database that serves 12 firms with PHI. There is no
+isolated environment in which to:
+
+- Test that a migration applies cleanly (no errors)
+- Verify that the post-migration state matches expectations
+- Validate that no live functionality breaks
+- Rollback in isolation if something goes wrong
+
+This is the classic CC8.1 (Change Management) control gap from the
+SOC 2 Trust Services Criteria.
+
+**Mitigation protocol (locked 2026-06-09 with Mr. Lorenzo):**
+
+Until Lovable provides a staging path, every schema migration applied
+to production must follow this protocol:
+
+1. **Read-only audit first.** Migration SQL reviewed by Mr. Lorenzo +
+   Claude Code; cross-references current schema state (via SQL queries
+   in the Supabase dashboard SQL editor) to predict impact and detect
+   anything that would fail.
+2. **Backup verified BEFORE apply.** Either:
+   - On-demand backup taken via Supabase dashboard immediately before,
+     OR
+   - Confirmation of automated backup within the last 24h that includes
+     the relevant tables
+   The backup snapshot ID and timestamp are recorded in the deploy log.
+3. **One migration at a time.** No batched apply. Each migration runs,
+   gets verified with a follow-up SELECT/SHOW query proving the
+   intended state, before moving to the next.
+4. **Documented rollback plan per migration.** Either an inverse SQL
+   script, or a documented "restore from backup snapshot X" with
+   estimated downtime, prepared and reviewed BEFORE apply.
+5. **Lovable runner OR SQL editor manual.** Mr. Lorenzo decides per
+   migration which path. SQL editor manual gives more control (full
+   transaction visibility, instant abort); Lovable runner integrates
+   with the deploy workflow but the platform error reporting is
+   sometimes opaque.
+6. **No apply in business hours** unless emergency. Window prefers
+   off-hours to bound user impact if rollback is needed.
+
+**Open question requiring Lovable answer (2026-06-09):**
+
+- What backup retention / on-demand backup / PITR options exist on the
+  current NER project tier? Free tier = daily 7-day retention only.
+  Pro tier = daily + on-demand. Pro + PITR add-on = point-in-time
+  recovery to the second. The mitigation above assumes at least
+  on-demand backups; if the project is on Free tier, the protocol
+  needs to factor in 24h granularity as the recovery floor.
+
+**Owner of follow-up:**
+- Mr. Lorenzo: confirm tier + backup options with Lovable.
+- Mr. Lorenzo + Claude Code: design the per-migration deploy package
+  (SQL + rollback + verification queries) following the protocol above.
+- Lovable (long-term): provide a staging / branching path; this entry
+  remains open until that exists.
+
+---
+
 ## Last updated
 
 2026-06-06 — initial creation during Sprint A security remediation. Add
@@ -871,3 +1020,19 @@ a defensive UNIQUE-collision filter improvement over the original.
 Physical branch deletion pending Mr. Lorenzo's manual action in GitHub
 UI (sandbox blocks `git push --delete`). Forward-looking actions #3
 (pre-merge deletion gate) and #4 (Lovable prompt training) remain open.
+2026-06-09 — entry #12 added documenting the `sandbox_exec` Postgres
+role discovered during Bloque 1 PHI audit. Role has rolcanlogin + rolbypassrls
++ PII column grants across all firms, which would be a cross-tenant bypass
+if reachable. Read-only verification (NER source / config / JWT path / active
+connections) showed NO reachability from app side. Lovable Cloud confirmed
+the role is their platform-managed migration executor with bypassrls
+justified by multi-tenant DDL. Trust scope equivalent to service_role.
+DO NOT modify — any change re-applied by Lovable reconciliation. Closed.
+2026-06-09 — entry #13 added documenting CC8.1 control gap: NER project
+runs on a single Lovable Cloud database with no staging / branching
+available (Lovable confirmed branching discontinued on their platform).
+Every migration touches prod directly. Mitigation protocol locked: read-only
+audit + backup-before-apply + one-migration-at-a-time + per-migration
+rollback plan + off-hours window. Backup tier (Free vs Pro vs PITR) still
+to be confirmed with Lovable. This gap is honest evidence for the auditor,
+not something to hide.
