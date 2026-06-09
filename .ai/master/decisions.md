@@ -4,6 +4,115 @@ Archivo append-only. Cada decisión queda registrada con fecha, contexto,
 alternativas consideradas, y razón de elección. **No editar decisiones
 pasadas — agregar nueva decisión que las supersede si cambian.**
 
+## 2026-06-09 (tarde) — Arranque Bloque 1 PHI + 5 decisiones LOCKED de prod-deploy
+
+### Contexto
+
+Arranque de Bloque 1 (A1 → A29 → A30). El read-only audit de la DB de
+prod produjo 3 hallazgos no previstos que cambian el plan de deploy:
+`sandbox_exec`, cadena de migrations cortada, y `pg_default_acl` que
+re-grantea automáticamente. Plus Lovable confirmó que NO hay staging
+(CC8.1 control gap). 5 decisiones LOCKED para no improvisar.
+
+### Decisión 1 — A1 (PII safe view) confirmado seguro standalone
+
+`useCasePipeline.ts:231` cambia `from("client_profiles")` →
+`from("client_profiles_safe")`. Es 1 línea de frontend. NO depende del
+estado de A30 ni de la cadena de migrations rota. Puede pushearse hoy
+sin esperar el deploy plan. Schema verification:
+
+- `client_profiles_safe` view EXISTS en prod (migration `20260605202251`
+  applied) — definición tiene 5 PII columns con CASE WHEN
+  `user_can_see_pii` mask
+- Tier 1-3 (owner/admin/attorney/paralegal/member) ven PII via view
+- Tier 4-5 (assistant/readonly) ven NULL — cierra leak actual del
+  raw read
+- Search por A-number / phone en HubCasesPage:256-297 sigue funcionando
+  para Tier 1-3 (caso paralegal real, que es el 90% de uso)
+
+### Decisión 2 — A30 (REVOKE PII) requiere TAMBIÉN ajustar pg_default_acl
+
+Hallazgo crítico via SQL audit: `pg_default_acl` del schema public tiene
+default privileges que CONCEDEN privileges a `anon`, `authenticated`,
+`sandbox_exec` automáticamente cuando se crea o altera una tabla.
+
+Por eso el REVOKE de las migrations `084830` / `202251` quedó como
+applied en tracking pero NO está vigente en grants reales — algún ALTER
+TABLE posterior re-grantea por defaults.
+
+A30 limpio requiere 3 piezas (no solo REVOKE):
+
+1. `ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE
+   ALL ON TABLES FROM anon, authenticated;` — cierra el agujero futuro
+2. `REVOKE SELECT/INSERT/UPDATE/REFERENCES(a_number, phone, ...) ON
+   client_profiles FROM authenticated, anon;` — cierra el agujero
+   actual sobre las 5 columnas PII
+3. `DO $$ ... assertion ... RAISE EXCEPTION ... $$` — atomic check
+   que falla la TX si quedó algún residual grant
+
+**IMPORTANTE**: A30 NO toca `sandbox_exec` (ver decisión 3).
+
+### Decisión 3 — `sandbox_exec` documentado, NO se toca
+
+Read-only audit + confirmación de Lovable Cloud: `sandbox_exec` es el
+rol ejecutor de migraciones platform-managed. `rolbypassrls` justificado
+por DDL multi-tenant. Trust scope equivalente a `service_role`.
+
+Mitigaciones verificadas:
+- NER source code NO referencia el rol (grep 0 matches)
+- NO en `.env*` / `supabase/config.toml` / `src/integrations/lovable/`
+- NO accesible vía JWT (authenticator no es member de sandbox_exec)
+- Sin conexiones anómalas en `pg_stat_activity`
+
+Política locked: **NO modificar atributos, membership ni grants de
+sandbox_exec**. Lovable's reconciliation re-aplica cualquier cambio
+local en el próximo deploy → cambios manuales se pierden y rompen
+deploys futuros. Documentado en HUMAN-ACTIONS entry #12 como rol
+platform-managed equivalente a service_role.
+
+### Decisión 4 — CC8.1 control gap: single-DB documentado, NO ocultado
+
+Lovable confirmó que NO hay staging / Database Branching disponible
+en proyectos Lovable Cloud. Cada migration toca prod directo.
+
+Mitigación protocol locked para todo apply futuro (no solo A30):
+
+1. Read-only audit del SQL ANTES de aplicar (Mr. Lorenzo + Claude Code)
+2. **Backup verificado** ANTES del apply (snapshot ID y timestamp
+   registrados en deploy log)
+3. **Una migration a la vez**, con verification SELECT post-apply
+4. Rollback plan documentado per-migration ANTES del apply
+5. SQL editor manual o Lovable runner — Mr. Lorenzo decide per
+   migration
+6. Off-hours window (no business hours unless emergency)
+
+Documentado en HUMAN-ACTIONS entry #13. Este gap es **evidencia honesta
+para el auditor SOC 2, no algo a ocultar**. Lovable lo etiquetó como
+CC8.1 ellos mismos.
+
+### Decisión 5 — Footer y messaging públicos: "auditoría en curso" mantenido
+
+Verificación de los 3 sitios públicos que mencionan SOC 2 / HIPAA /
+ABA:
+
+| Lugar | Texto | Status |
+|---|---|---|
+| `HubLayout.tsx:347` | "SOC 2 Type II · auditoría en curso" | ✅ honesto |
+| `SecurityPage.tsx:43` | status `in-progress`, "Auditoría en curso · Q2 2027" | ✅ honesto |
+| `PrivacyPage.tsx:142` | "SOC 2 Type II auditoría en curso (Q2 2027)" | ✅ honesto |
+
+**NUNCA cambiar a "certificado" hasta que la auditoría SOC 2 Type II
+emita el reporte final.** Afirmar certificación sin tenerla es
+materialmente falso para auditor, regulatorio y comercial.
+
+⚠️ **Flag para revisar antes del lanzamiento**: `PrivacyPage.tsx:125`
+afirma `"Backups: 90 días"` como claim de retención. Verificar contra
+realidad del tier de Lovable/Supabase. Si tier actual da menos
+(ej. 7 días Free), claim es **inexacto** → fix antes de las 12 firmas.
+Pendiente respuesta de Lovable sobre tier.
+
+---
+
 ## 2026-06-09 — Cierre cleanup pre-Bloque 1 + locks operativos
 
 ### Contexto
