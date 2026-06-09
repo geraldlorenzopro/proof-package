@@ -1,9 +1,43 @@
 # NER Immigration AI — Code Map
 
 > **Audience:** Claude Code en futuras sesiones + revisores técnicos.
-> **Last updated:** 2026-05-11
+> **Last updated:** 2026-05-11 (full pass) + 2026-06-09 (delta appendix)
 > **Scope:** File-by-file inventory of all 46 tables, 51 edge functions, ~150 pages/components, 11+ critical hooks.
 > **Source of truth:** Este documento refleja lo que existe hoy en el repo.
+
+## ⚠️ Changes since 2026-05-11 — Sprint A security remediation (delta 2026-06-09)
+
+**Nuevos archivos / renames críticos** (no presentes en el inventario debajo):
+
+| Path | Origen | Función |
+|---|---|---|
+| `src/hooks/useHubPageState.ts` (renombrado de `useHubPageReady.ts`) | PR #8 A0.5a + #16 rename | Coalescer canónico discriminated union loading/ready/demo/error_no_account para hub pages. Reemplazó el boolean flat. |
+| `src/components/hub/SessionExpiredView.tsx` | PR #9 A0.5b | EmptyState con CTAs "Refrescar" + "Iniciar sesión" cuando `accountId=null` en modo no-demo. `data-testid="session-expired-view"`. Cierra el bug histórico HUMAN-ACTIONS #9 (skeleton infinito). |
+| `src/hooks/useNerAccountId.ts` | PR #2 A0.5d | Fuente canónica de `accountId`. Devuelve null en demo (kill del sentinel string). Hook que los 15+ sitios de `sessionStorage["ner_hub_data"]` inline DEBEN consumir (B-1 pendiente). |
+| `src/components/hub/ConvertLeadToCaseModal.tsx` (extendido) | PR #22 cherry-pick | Agrega extra forms picker — paralegal puede sumar I-601A waiver + I-907 premium en la creación de un I-130, sin navegar fuera. Inserta rows en `case_forms` + audit log metadata con `extra_forms` array + `forms_count` updated. Filtro defensivo previo al insert evita UNIQUE collision. |
+| `.github/workflows/update-smoke-baselines.yml` + `.github/scripts/create-baselines-pr.sh` | PR #20 | `workflow_dispatch` manual para regenerar Linux baselines de hub-smoke. **NO disparar hasta que UI esté estable** (decisions.md 2026-06-09). |
+| `.github/workflows/protected-paths-gate.yml` | PR #25 | Bloquea PRs que ELIMINEN `tests/e2e/**/*.spec.ts`, `tests/e2e/hub-smoke.spec.ts-snapshots/**`, `.github/workflows/**`, `HUMAN-ACTIONS.md`, `supabase/migrations/**`. Defensa contra deletions silenciosos (escenario que cazó HUMAN-ACTIONS #8). |
+| `tests/e2e/regression.spec.ts` Pattern 12 (reescrito) | PR #13 A0.5g | Simula el escenario P-1 real (sesión Supabase válida + `ner_hub_data` ausente) via inyección de fake JWT-shaped en localStorage. Sec-review documentada inline. |
+
+**Refactors que cambiaron contratos existentes:**
+
+- `useHubPageState` toma `authReady: boolean` explícito (PR #11 A0.5e) — distingue auth-en-vuelo de auth-resolvió-null. Prioridad reordenada en PR #12 A0.5f: `error_no_account` gana sobre `loading.some()` cuando `authReady && accountId=null` (red de seguridad contra setLoading(false) faltantes en effects).
+- `Pattern 4` ancla a `data-testid="case-type-chip"` en `CaseTypeInlineEdit.tsx:200` (PR #14 A0.5h) — selector previo `button:has-text("·")` quedó stale por refactor R9.25 (stacked 2-line chip).
+- `Pattern 10a` ancla a `data-testid="quick-note-case-chip"` en `QuickNoteModal.tsx:274` (PR #14 A0.5h) — regex previo `^(García|...)` nunca matcheó porque demo names empiezan con primer nombre.
+
+**Migrations nuevas en este sprint:** ninguna. Los fixes A0.5 son frontend/CI only.
+
+**Edge functions tocadas:** ninguna. La cadena A0.5 NO requirió cambios de backend.
+
+**Archivos a regenerar / pendientes:**
+
+- `tests/e2e/hub-smoke.spec.ts-snapshots/*-linux.png` — baselines Linux nunca generadas. Workflow existe para regenerarlas (no disparar hasta UI estable).
+
+**Deuda transversal documentada (NO Columna A):**
+
+- **B-1: account_id inline reads** — 15+ sitios leen `sessionStorage["ner_hub_data"]` inline. HubLeadsPage:117-127 detectado. **Mr. Lorenzo LOCKED como NO autonomía** (toca `ner_impersonate` = auth-adjacent). Refactor a `useNerAccountId` debe hacerse deliberado y junto, con su ojo. Ver decisions.md 2026-06-09 + state.md sección B-1.
+
+---
 
 ## ⚠️ Changes since 2026-04-29 — quick delta
 
