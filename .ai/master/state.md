@@ -2,7 +2,33 @@
 
 **Última actualización:** 2026-06-08 (Sprint A security remediation — cierre cadena A0.5a→h + cleanup hygiene)
 **Audit por:** Claude Code (Opus 4.7) + Mr. Lorenzo (SOC 2 / HIPAA / ABA)
-**Próximo update:** post-baselines Linux para hub-smoke (PR con review visual) + arranque Bloque 1 PHI
+**Próximo update:** retomar Columna B según el orden LOCKED debajo. Sesión cerrada 2026-06-08 al final del Bloque 2 (docs refresh).
+
+---
+
+## 🎯 Próxima sesión — orden de Columna B (LOCKED 2026-06-08 por Mr. Lorenzo)
+
+Para arrancar fresco sin re-mapear:
+
+1. **Baselines hub-smoke Linux** (chico, cierra el último rojo del CI, NO es PHI).
+   - Generar los 7 `*-linux.png` en container Linux
+   - **MOSTRAR los screenshots a Mr. Lorenzo ANTES de commitearlos** — review visual obligatorio (regenerar a ciegas graba como "correcto" cualquier glitch)
+   - Una vez aprobados: PR con baselines + CI 100% verde de arranque
+2. **Decisión sobre las 2 branches `lovable-sync-*`** (riesgo abierto del entry #8 + listado en #11).
+   - `lovable-sync-1779996417` (toca ConvertLeadToCaseModal + SmartFormsLayout + send-email edge fn)
+   - `lovable-sync-1779996490` (toca SmartFormsLayout + hubSections + send-email + "Eliminó menciones a GHL")
+   - Mr. Lorenzo necesita mirar el contenido antes de decidir review/close/fold
+3. **Bloque 1 PHI** (A1/A2/A3) — el grande, con atención dedicada de Mr. Lorenzo.
+   - A1: `sec-fix/A1-pii-safe-view` (refactor hook `useCasePipeline` → `client_profiles_safe`)
+   - Una vez A1 deployado: abrir PR de A30 (`sec-fix/A30-revoke-pii`)
+   - A2/A3: contenido pendiente que Mr. Lorenzo pasa desde sus notas
+4. **A4–A28** — Mr. Lorenzo pasa el contenido desde sus notas privadas (la dossier original fue purgada por A0). NO inventar ni asumir qué son.
+
+### Reglas de arranque
+
+- **Read-only hasta que Mr. Lorenzo arranque explícitamente** la próxima sesión
+- **NO tocar Columna B ni las `lovable-sync-*` sin él**
+- Releer este bloque + decisions.md 2026-06-08 + HUMAN-ACTIONS.md #9/#10/#11 antes de proponer nada
 
 ---
 
