@@ -14,11 +14,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Briefcase, Search, Sparkles, FileText, Check } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Loader2, Briefcase, Search, Sparkles, FileText, Check, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/auditLog";
 import { CASE_TYPES, CATEGORY_LABELS, type CaseTypeMeta, type CaseTypeCategory } from "@/lib/caseTypes";
 import { getPrimaryFormForCaseType, getFormsForCaseType } from "@/lib/caseTypeToForms";
+import { USCIS_FORMS_CATALOG } from "@/lib/uscisForms";
 
 type ProcessStage = "uscis" | "nvc" | "embajada" | "court" | "ice";
 type CreationMode = "simple" | "smart";
@@ -83,6 +85,16 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
   const [templates, setTemplates] = useState<SmartTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [enabledForms, setEnabledForms] = useState<Record<string, boolean>>({});
+
+  // Extra ad-hoc forms (ambos modos) — sumados al margen del template/case_type.
+  // Use case: I-130 + I-601A waiver + I-907 premium. Cherry-pickeado de
+  // lovable-sync-1779996417 commit ac34d31 (2026-05-28). Las demás partes
+  // de esa branch revertían fixes del 28/5 (filtro anti-staff, simplificación
+  // v8.6 SmartFormsLayout, Resend→GHL en send-email) → close de la branch
+  // documentado en HUMAN-ACTIONS #8/#11.
+  const [extraForms, setExtraForms] = useState<string[]>([]);
+  const [extraSearch, setExtraSearch] = useState("");
+  const [extraPickerOpen, setExtraPickerOpen] = useState(false);
 
   // Shared
   const [processStage, setProcessStage] = useState<ProcessStage>("uscis");
@@ -182,6 +194,34 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
   const selectedType = CASE_TYPES.find(t => t.key === caseTypeKey);
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
   const enabledFormCount = Object.values(enabledForms).filter(Boolean).length;
+
+  // Forms ya incluidos por el modo activo — para excluir del picker de extras.
+  // Si user desmarca un form del template, deja de estar en baseFormCodes y
+  // puede agregarlo via extras (no choca con UNIQUE(case_id, form_type) porque
+  // el form desmarcado tampoco se inserta en case_forms en el flow normal).
+  const baseFormCodes = useMemo<Set<string>>(() => {
+    const set = new Set<string>();
+    if (mode === "simple" && selectedType) {
+      const primary = getPrimaryFormForCaseType(selectedType.key);
+      if (primary) set.add(primary.toUpperCase());
+    }
+    if (mode === "smart" && selectedTemplate) {
+      for (const f of selectedTemplate.forms_included) {
+        if (enabledForms[f.form_type]) set.add(f.form_type.toUpperCase());
+      }
+    }
+    return set;
+  }, [mode, selectedType, selectedTemplate, enabledForms]);
+
+  const availableExtraForms = useMemo(() => {
+    const q = extraSearch.toLowerCase().trim();
+    return USCIS_FORMS_CATALOG.filter(f => {
+      if (baseFormCodes.has(f.code.toUpperCase())) return false;
+      if (extraForms.includes(f.code)) return false;
+      if (!q) return true;
+      return f.code.toLowerCase().includes(q) || f.name.toLowerCase().includes(q);
+    });
+  }, [baseFormCodes, extraForms, extraSearch]);
 
   const clientName = useMemo(() => {
     if (!lead) return "";
@@ -285,12 +325,40 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
         }
       }
 
+      // Forms ad-hoc del picker (ambos modos) → case_forms.
+      // Filtro defensivo: si user agregó extras y después re-habilitó el mismo
+      // form del template, la UI excluye del picker pero el state extraForms
+      // podría tenerlo todavía. Filtramos para evitar UNIQUE(case_id, form_type)
+      // collision en case_forms.
+      if (extraForms.length > 0) {
+        const filteredExtras = extraForms.filter(c => !baseFormCodes.has(c.toUpperCase()));
+        if (filteredExtras.length > 0) {
+          const baseOrder = mode === "smart" && selectedTemplate
+            ? selectedTemplate.forms_included.length
+            : 1;
+          const extraRows = filteredExtras.map((code, idx) => ({
+            case_id: caseRow.id,
+            account_id: lead.account_id,
+            form_type: code,
+            status: "pending",
+            sort_order: baseOrder + idx + 1,
+          }));
+          const { error: extraErr } = await supabase.from("case_forms" as any).insert(extraRows as any);
+          if (extraErr) console.warn("[convert-lead] extra forms insert", extraErr);
+        }
+      }
+
       // UPDATE lead → client
       await supabase
         .from("client_profiles")
         .update({ contact_stage: "client", updated_at: new Date().toISOString() } as any)
         .eq("id", lead.id);
 
+      // forms_count incluye los extras del picker para reflejar el total
+      // de forms preparados en este caso. extra_forms va como array para
+      // que el auditor sepa qué se agregó ad-hoc vs lo del template.
+      const extraFormsApplied = extraForms.filter(c => !baseFormCodes.has(c.toUpperCase()));
+      const totalForms = (mode === "smart" ? enabledFormCount : 1) + extraFormsApplied.length;
       logAudit({
         action: "case.created" as any,
         entity_type: "case",
@@ -300,17 +368,19 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
           process_stage: processStage,
           mode,
           template_id: mode === "smart" ? selectedTemplateId : null,
-          forms_count: mode === "smart" ? enabledFormCount : 1,
+          forms_count: totalForms,
+          extra_forms: extraFormsApplied,
           from_lead: lead.id,
         },
       });
 
       const descSuffix = mode === "smart"
-        ? `${enabledFormCount} formulario${enabledFormCount === 1 ? "" : "s"} preparado${enabledFormCount === 1 ? "" : "s"}`
+        ? `${totalForms} formulario${totalForms === 1 ? "" : "s"} preparado${totalForms === 1 ? "" : "s"}`
         : (() => {
-            const c = getFormsForCaseType(selectedType!.key).length;
-            return c > 0
-              ? `${selectedType!.shortLabel} · ${c} formulario${c === 1 ? "" : "s"} sugerido${c === 1 ? "" : "s"}`
+            const baseCount = getFormsForCaseType(selectedType!.key).length;
+            const sumWithExtras = baseCount + extraFormsApplied.length;
+            return sumWithExtras > 0
+              ? `${selectedType!.shortLabel} · ${sumWithExtras} formulario${sumWithExtras === 1 ? "" : "s"} sugerido${sumWithExtras === 1 ? "" : "s"}`
               : `${selectedType!.shortLabel} · ${PIPELINE_OPTIONS.find(p => p.value === processStage)?.label}`;
           })();
 
@@ -558,6 +628,92 @@ export default function ConvertLeadToCaseModal({ open, onOpenChange, lead, onCre
                         );
                       })}
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* EXTRA FORMS — picker ad-hoc (ambos modos).
+              Use case: I-130 + I-601A waiver + I-907 premium. */}
+          {((mode === "simple" && selectedType) || (mode === "smart" && selectedTemplate)) && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Formularios adicionales {extraForms.length > 0 && <span className="text-cyan-accent ml-1">({extraForms.length})</span>}
+                </Label>
+                <Popover open={extraPickerOpen} onOpenChange={setExtraPickerOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 text-[11px] font-semibold text-cyan-accent hover:text-cyan-accent/80 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" /> Agregar formulario
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="end">
+                    <div className="p-2 border-b border-border/40">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50" />
+                        <Input
+                          autoFocus
+                          placeholder="Buscar form (I-601A, I-907...)"
+                          value={extraSearch}
+                          onChange={e => setExtraSearch(e.target.value)}
+                          className="pl-7 h-8 text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {availableExtraForms.length === 0 ? (
+                        <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+                          {extraSearch ? "Sin resultados" : "Todos los forms ya están agregados"}
+                        </div>
+                      ) : (
+                        availableExtraForms.map(f => (
+                          <button
+                            key={f.code}
+                            type="button"
+                            onClick={() => {
+                              setExtraForms(prev => [...prev, f.code]);
+                              setExtraSearch("");
+                              setExtraPickerOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-cyan-accent/10 transition-colors border-b border-border/20 last:border-b-0"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-mono font-semibold text-foreground">{f.code}</span>
+                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 shrink-0">{f.category}</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">{f.name}</p>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {extraForms.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground/70">
+                  ¿Este caso lleva otros forms? (ej. I-601A waiver, I-907 premium)
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {extraForms.map(code => (
+                    <span
+                      key={code}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-cyan-accent/10 border border-cyan-accent/30 text-[11px] font-mono font-semibold text-cyan-accent"
+                    >
+                      {code}
+                      <button
+                        type="button"
+                        onClick={() => setExtraForms(prev => prev.filter(c => c !== code))}
+                        className="hover:text-foreground transition-colors"
+                        aria-label={`Quitar ${code}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
