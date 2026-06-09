@@ -4,6 +4,102 @@ Archivo append-only. Cada decisión queda registrada con fecha, contexto,
 alternativas consideradas, y razón de elección. **No editar decisiones
 pasadas — agregar nueva decisión que las supersede si cambian.**
 
+## 2026-06-09 — Cierre cleanup pre-Bloque 1 + locks operativos
+
+### Contexto
+
+Sesión de cierre del Sprint A: rescate de feature del lovable-sync, cierre
+del último 🟡 documentado, locks operativos para evitar pisar la línea de
+Columna A en frentes auth-adjacent. Modo "autonomía total" en bajo riesgo
+genuino con paradas explícitas en PHI / auth / impersonación.
+
+### Decisión 1 — Baselines hub-smoke: workflow existe, NO disparar hasta UI estable
+
+Workflow `update-smoke-baselines.yml` (PR #20) está en main como
+`workflow_dispatch` manual. Mr. Lorenzo decisión: NO disparar ahora porque
+está rediseñando UI activamente → regenerar = baselines obsoletos en días
++ loop de regeneración. Smoke rojo sigue como deuda documentada de infra
+en HUMAN-ACTIONS #9 Resolution + #11. Disparar cuando la UI se estabilice.
+
+### Decisión 2 — Lovable-sync branches: close, picker rescatado
+
+Triage 2026-06-09 de `lovable-sync-1779996417` y `lovable-sync-1779996490`:
+
+- **El contenido destructivo descrito en HUMAN-ACTIONS #8 original
+  (delete de tests) YA NO está presente** — Lovable las cleanup en el
+  interim entre 2026-06-06 y hoy.
+- **Pero el contenido CURRENT revierte fixes de Mr. Lorenzo**:
+  filtro anti-staff (28/5), simplificación v8.6 SmartFormsLayout,
+  Resend → GHL en send-email, remoción de keys `'tareas'` y `'auditoria'`
+  del enum hubSections.
+- **Un único rescate**: extra forms picker (`ConvertLeadToCaseModal`)
+  para casos con I-601A waiver / I-907 premium. Use case real.
+- **Cherry-pick limpio** (PR #22, commit `75e2c55`): SOLO el picker.
+  Con mejora sobre el original: **filtro defensivo previo al insert**
+  en `case_forms` para prevenir `UNIQUE(case_id, form_type)` collision,
+  vs el `console.warn` silencioso de la branch.
+- **Schema verification**: `extra_forms` NO es column nueva. Rows en
+  `case_forms` (existente desde 2026-03-12) + audit log metadata JSONB.
+- Branches a borrar manualmente desde GitHub UI (sandbox bloquea
+  `git push --delete`). HUMAN-ACTIONS #8 Resolution block agregado.
+
+### Decisión 3 — B-1 LOCKED como NO autonomía (auth-adjacent)
+
+**Decisión recurrente, no preguntar de nuevo:** el refactor de los 15+
+sitios que leen `sessionStorage["ner_hub_data"]` inline → `useNerAccountId`
+es **B-1, su propio frente, NO Columna A**.
+
+Razones:
+1. **Esas líneas LEEN `ner_impersonate`** → decisión de autorización
+   (qué cuenta usa un user que actúa como otra). Aunque NO sea schema
+   RLS, es **auth-adjacent** y requiere el ojo de Mr. Lorenzo. La regla
+   "no toca schema RLS → bajo riesgo" NO captura esto.
+2. **Es deuda transversal**, no follow-up suelto. Documentada al
+   arreglar el sentinel A0.5d (15+ sitios). Se hace deliberada y junta,
+   no parcheando un archivo porque apareció de paso.
+
+Aplica a HubLeadsPage + otros 14+ callers. Hook canónico ya existe:
+`src/hooks/useNerAccountId.ts`.
+
+### Decisión 4 — Protected paths deletion gate (HUMAN-ACTIONS #8 #3)
+
+Workflow `protected-paths-gate.yml` (PR #25) bloquea PRs que ELIMINEN:
+- `tests/e2e/**/*.spec.ts`
+- `tests/e2e/hub-smoke.spec.ts-snapshots/**`
+- `.github/workflows/**`
+- `HUMAN-ACTIONS.md`
+- `supabase/migrations/**`
+
+Workflow separado del `e2e.yml` (no contamina + corre en paralelo,
+rápido porque solo `git diff`, sin Playwright). Modificación permitida,
+solo bloquea DELETE/RENAME-OUT. Override documentado para deletes
+legítimos (Mr. Lorenzo approve + disable temporal).
+
+### Decisión 5 — Modo "autonomía total" refinado
+
+**Mr. Lorenzo 2026-06-09:**
+
+**AUTONOMÍA (hacer + mergear via MCP sin pedir OK por PR):**
+- Cleanup
+- Docs
+- Tests (cuando NO son nuevos diseños de regression guards)
+- Hardening NO-PHI / NO-auth / NO-impersonación
+- 🟡/⚪ items pendientes
+- **Si algo de bajo riesgo rompe CI → arreglar o revertir solo y seguir**
+
+**PARAR Y ESPERAR Mr. Lorenzo:**
+1. Bloque 1 PHI + cualquier dato de cliente
+2. RLS / auth / cifrado
+3. Cualquier deploy via Lovable a prod
+4. **Impersonación** (`ner_impersonate` reads, lógica de actuar-como-otro)
+5. Evidencia de auditoría o decisiones de criterio (preparar, Mr. Lorenzo decide)
+
+**Estado pendiente que Mr. Lorenzo provee:** contenido de A4-A28
+(notas privadas — la dossier original fue purgada por A0). NO inventar
+ni asumir qué son.
+
+---
+
 ## 2026-06-08 — Lecciones operativas del cierre Sprint A (cadena A0.5a→h)
 
 ### Contexto
