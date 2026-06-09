@@ -123,7 +123,7 @@ export default function PrivacyPage() {
           <li><strong>Casos activos</strong>: retención por la duración de la relación con la firma + 30 días grace</li>
           <li><strong>Casos cerrados/archivados</strong>: retención por 7 años (estándar legal USA para casos migratorios)</li>
           <li><strong>Audit logs</strong>: 7 años (SOC 2 + HIPAA requirement)</li>
-          <li><strong>Backups</strong>: 90 días</li>
+          <li><strong>Backups</strong>: 7 días de retención automática (Lovable Cloud platform tier). Snapshots manuales adicionales pueden ser retenidos por períodos extendidos cuando aplique (ej. previo a migraciones de schema).</li>
           <li><strong>Eliminación bajo demanda</strong>: implementamos soft-delete inmediato + purge físico tras retention legal expiration</li>
         </ul>
 
