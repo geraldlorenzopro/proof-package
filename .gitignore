@@ -27,6 +27,12 @@ dist-ssr
 .tmp_*
 tmp/
 
+# pg_dump snapshots (CC8.1 compensating control, HUMAN-ACTIONS #13).
+# Contienen PHI de las 12 firmas — NUNCA commitear.
+# Generados por scripts/pre-migration-backup.sh.
+backups/
+*.sql.gz
+
 # Reportes del orquestador — generados por scripts/orchestrator.ts
 # Quedan locales por default (pueden tener decisiones sensibles).
 # Si querés commitear uno específico: git add -f .ai/reportes/<archivo>.md
